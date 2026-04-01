@@ -61,6 +61,7 @@ export function bootstrapRunEventIndexing({
           provider: row.provider || '',
           result_count: row.result_count || 0,
           field_yield: null,
+          tier: row.tier || null,
           run_id: runId,
           category,
           product_id: productId,

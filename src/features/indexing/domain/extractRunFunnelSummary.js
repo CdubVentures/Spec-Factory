@@ -21,6 +21,9 @@ export function extractRunFunnelSummary(events = [], counters = {}) {
     domains_total: 0,
     domains_safe: 0,
     domains_caution: 0,
+    tier1_queries: 0,
+    tier2_queries: 0,
+    tier3_queries: 0,
   };
 
   for (const evt of events) {
@@ -30,6 +33,12 @@ export function extractRunFunnelSummary(events = [], counters = {}) {
     if (type === 'search_finished') {
       funnel.queries_executed += 1;
       funnel.results_found += Number(payload.result_count ?? 0);
+      // WHY: Tier classification from event payload (added by discovery_query_completed → search_finished).
+      const tier = String(payload.tier || '');
+      const hint = String(payload.hint_source || '');
+      if (tier === 'seed' || hint.startsWith('tier1')) funnel.tier1_queries += 1;
+      else if (tier === 'group_search' || hint.startsWith('tier2')) funnel.tier2_queries += 1;
+      else if (tier === 'key_search' || hint.startsWith('tier3')) funnel.tier3_queries += 1;
     } else if (type === 'fetch_queued') {
       funnel.urls_selected += 1;
     } else if (type === 'serp_selector_completed') {

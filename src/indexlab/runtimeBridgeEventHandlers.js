@@ -464,6 +464,28 @@ async function handleBrandResolved(state, deps, { ts, row }) {
         payload: brandPayload,
       });
     } catch { /* best-effort */ }
+    // WHY: Ensure the product exists in the products table with resolved brand.
+    // Runs may reference product_ids that were never seeded from the catalog.
+    const productId = String(state.context?.productId || '').trim();
+    const brand = String(row.brand || '').trim();
+    const identity = state.identityLock || {};
+    if (productId && brand) {
+      try {
+        const existing = state.specDb.getProduct(productId);
+        if (!existing) {
+          state.specDb.upsertProduct({
+            product_id: productId,
+            brand,
+            model: String(identity.model || '').trim(),
+            variant: String(identity.variant || '').trim(),
+            status: 'active',
+            seed_urls: [],
+            identifier: null,
+            brand_identifier: '',
+          });
+        }
+      } catch { /* best-effort */ }
+    }
   }
 }
 
@@ -686,6 +708,8 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
       slot: slot.slot,
       tasks_started: slot.tasks_started,
       is_fallback: Boolean(row.is_fallback),
+      tier: row.tier || null,
+      hint_source: row.hint_source || null,
     }, ts);
   } else if (eventName === 'search_request_throttled') {
     const query = String(row.query || '').trim();

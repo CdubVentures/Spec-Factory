@@ -93,3 +93,21 @@ describe('buildProductCheckpoint — sources', () => {
     assert.deepEqual(cp.sources, []);
   });
 });
+
+describe('buildProductCheckpoint — query_cooldowns', () => {
+  test('query_cooldowns defaults to empty array when omitted', () => {
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [] });
+    assert.deepEqual(cp.query_cooldowns, []);
+  });
+
+  test('query_cooldowns carries through when provided', () => {
+    const cooldowns = [
+      { query_hash: 'h1', query_text: 'razer viper specs', tier: 'seed', provider: '', cooldown_until: '2026-05-01T00:00:00Z', attempt_count: 1 },
+      { query_hash: 'h2', query_text: 'razer viper rtings.com', tier: 'seed', provider: 'rtings.com', cooldown_until: '2026-05-01T00:00:00Z', attempt_count: 2 },
+    ];
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [], queryCooldowns: cooldowns });
+    assert.equal(cp.query_cooldowns.length, 2);
+    assert.equal(cp.query_cooldowns[0].query_hash, 'h1');
+    assert.equal(cp.query_cooldowns[1].provider, 'rtings.com');
+  });
+});

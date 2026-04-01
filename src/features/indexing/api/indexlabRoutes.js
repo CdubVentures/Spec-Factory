@@ -1,4 +1,6 @@
 import { createStorageManagerHandler } from './storageManagerRoutes.js';
+import { createDeletionStore } from '../../../db/stores/deletionStore.js';
+import { defaultIndexLabRoot, defaultLocalOutputRoot, defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { computeQueryIndexSummary, computeUrlIndexSummary } from '../pipeline/shared/createQueryIndex.js';
 import { computePromptIndexSummary } from '../pipeline/shared/createPromptIndex.js';
 import { computeKnobSnapshots } from '../telemetry/knobTelemetryCapture.js';
@@ -103,6 +105,21 @@ export function registerIndexlabRoutes(ctx) {
       typeof ctx.readJsonBody + '\n');
   }
 
+  // WHY: Build deletion store + fsRoots for full cascade deletes.
+  // getSpecDb may return null on boot — deletionStore is lazily resolved per-request.
+  const storageFsRoots = {
+    runs: currentIndexLabRoot(),
+    output: ctx.OUTPUT_ROOT || defaultLocalOutputRoot(),
+    products: defaultProductRoot(),
+  };
+  function resolveDeletionStore(category) {
+    const cat = String(category || '').trim();
+    if (!cat) return null;
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(cat) : null;
+    if (!specDb?.db) return null;
+    return createDeletionStore({ db: specDb.db, category: specDb.category });
+  }
+
   const handleStorageManagerRoutes = storageGuardOk
     ? createStorageManagerHandler({
       jsonRes,
@@ -124,6 +141,8 @@ export function registerIndexlabRoutes(ctx) {
         }
         return { ok: true, run_id: runId, deleted_from: 'local' };
       },
+      resolveDeletionStore,
+      fsRoots: storageFsRoots,
     })
     : null;
 
@@ -424,6 +443,7 @@ export function registerIndexlabRoutes(ctx) {
           query: q.query,
           provider: q.provider,
           result_count: q.result_count,
+          tier: q.tier || null,
           run_id: q.run_id,
           ts: q.ts,
         });

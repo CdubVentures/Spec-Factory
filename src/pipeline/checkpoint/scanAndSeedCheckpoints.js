@@ -25,6 +25,7 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
     runs_seeded: 0,
     sources_seeded: 0,
     artifacts_seeded: 0,
+    cooldowns_seeded: 0,
     errors: [],
   };
 
@@ -46,6 +47,7 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
     try {
       const r = seedFromCheckpoint({ specDb, checkpoint: cp });
       if (r.product_seeded) stats.products_seeded += 1;
+      stats.cooldowns_seeded += r.cooldowns_seeded || 0;
     } catch (err) {
       stats.errors.push({ file: filePath, error: String(err.message || err) });
     }

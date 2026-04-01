@@ -14,15 +14,13 @@ const inactiveCls = 'border-transparent text-slate-600 hover:text-slate-900 dark
 const baseCls = 'inline-flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors';
 const disabledCls = `${baseCls} border-transparent opacity-40 cursor-not-allowed text-slate-400/70`;
 
-function TabGroup({ tabs, isAll, isTestMode }: { tabs: readonly TabDef[]; isAll: boolean; isTestMode: boolean }) {
+function TabGroup({ tabs, isTestMode }: { tabs: readonly TabDef[]; isTestMode: boolean }) {
   return (
     <>
       {tabs.map((tab) => {
-        const disabled = (isAll && tab.disabledOnAll) || (isTestMode && tab.disabledOnTest);
+        const disabled = isTestMode && tab.disabledOnTest;
         if (disabled) {
-          const title = isTestMode && tab.disabledOnTest
-            ? 'Not available in Field Test'
-            : 'Select a specific category to use this tab';
+          const title = 'Not available in Field Test';
           return (
             <span
                 key={tab.path}
@@ -91,7 +89,6 @@ const gearIcon = (
 
 export function TabNav() {
   const category = useUiStore((s) => s.category);
-  const isAll = category === 'all';
   const testMode = isTestCategory(category);
   const { data: serper } = useSerperCreditQuery();
   const { data: llmConfig } = useQuery({
@@ -112,7 +109,7 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Cross-category surfaces">
           {globalIcon}
         </span>
-        <TabGroup tabs={GLOBAL_TABS} isAll={isAll} isTestMode={testMode} />
+        <TabGroup tabs={GLOBAL_TABS} isTestMode={testMode} />
       </div>
 
       {/* Category group — center */}
@@ -120,8 +117,8 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Scoped to selected category">
           {categoryIcon}
         </span>
-        <TabGroup tabs={CATALOG_TABS} isAll={isAll} isTestMode={testMode} />
-        <TabGroup tabs={OPS_TABS} isAll={isAll} isTestMode={testMode} />
+        <TabGroup tabs={CATALOG_TABS} isTestMode={testMode} />
+        <TabGroup tabs={OPS_TABS} isTestMode={testMode} />
       </div>
 
       {/* Settings group — pushed to far right */}
@@ -129,7 +126,7 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`}>
           {gearIcon}
         </span>
-        <TabGroup tabs={SETTINGS_TABS} isAll={isAll} isTestMode={testMode} />
+        <TabGroup tabs={SETTINGS_TABS} isTestMode={testMode} />
         {serper?.configured && (
           <span className="ml-1.5 pl-1.5 border-l sf-border-default inline-flex items-center" title="Serper API credits remaining">
             <Chip

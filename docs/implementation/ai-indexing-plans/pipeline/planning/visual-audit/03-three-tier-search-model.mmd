@@ -22,9 +22,8 @@ flowchart LR
   T1_GATE{"TIER 1 Gate\nSeed needed?\nNot on cooldown?"}
   T1_GATE -- "Yes" --> T1_SPEC["Seed Query:\nbrand + model + 'specifications'"]
   T1_GATE -- "Yes" --> T1_SRC["Source Seed:\nbrand + model + source_name"]
-  T1_SPEC --> T1_CHECK["Completion:\nnew_fields_closed >= 1"]
-  T1_SRC --> T1_CHECK
-  T1_CHECK --> T1_COOL["Cooldown 30 days\nnext run skips"]
+  T1_SPEC --> T1_COOL["Cooldown:\ncooldown_until = now + 30 days"]
+  T1_SRC --> T1_COOL
   T1_COOL --> MERGE
 
   T2_GATE{"TIER 2 Gate\ncoverage < 80%?\nunresolved >= 3?\ngroup_query_count < 3?"}

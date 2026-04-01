@@ -46,7 +46,6 @@ import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
-  const isAll = category === 'all';
   const clearProcessOutput = useRuntimeStore((s) => s.clearProcessOutput);
   const setRuntimeProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
   const liveIndexLabByRun = useIndexLabStore((s) => s.byRun);
@@ -122,7 +121,7 @@ export function IndexingPage() {
   const { data: catalog = [] } = useQuery({
     queryKey: ['catalog', category, 'indexing'],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
-    enabled: !isAll,
+    enabled: true,
     refetchInterval: 5000
   });
 
@@ -131,7 +130,6 @@ export function IndexingPage() {
     runViewCleared,
   } = useIndexingRunSelectionState({
     isProcessRunning,
-    isAll,
     category,
     processStatusRunId,
     processStartedAt: String(processStatus?.startedAt || ''),
@@ -255,7 +253,6 @@ export function IndexingPage() {
     processStatus,
     runtimeSettingsAuthorityReady,
     runtimeSettingsLoading,
-    isAll,
     replayPending,
   });
 
@@ -266,7 +263,6 @@ export function IndexingPage() {
   const pickerPanelProps = {
     collapsed: panelCollapsed.picker,
     onToggle: () => togglePanel('picker'),
-    isAll,
     busy,
     processRunning,
     singleBrand,

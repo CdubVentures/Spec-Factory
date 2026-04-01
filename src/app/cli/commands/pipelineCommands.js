@@ -3,6 +3,7 @@ import pathNode from 'node:path';
 import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { buildProductId } from '../../../shared/primitives.js';
+import { loadProductCatalog, findProductByIdentity } from '../../../features/catalog/products/productCatalog.js';
 import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlCheckpoint.js';
 import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
 import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
@@ -92,7 +93,15 @@ export function createPipelineCommands({
       const variant = String(args.variant || '').trim();
       const sku = String(args.sku || '').trim();
       const title = String(args.title || (!seedIsUrl ? seed : '')).trim();
-      const generatedProductId = productIdArg || buildProductId(category);
+      // WHY: Reuse existing product_id when brand+model match — prevents duplicate
+      // random hex IDs for the same product across runs.
+      let generatedProductId = productIdArg;
+      if (!generatedProductId) {
+        try {
+          const catalog = await loadProductCatalog(config, category);
+          generatedProductId = findProductByIdentity(catalog, brand, model, variant) || buildProductId(category);
+        } catch { generatedProductId = buildProductId(category); }
+      }
       const job = {
         productId: generatedProductId,
         category,
@@ -282,12 +291,16 @@ export function createPipelineCommands({
           runtimeOpsPanels,
         });
         // WHY: Checkpoint writes are independent — run in parallel.
+        // WHY: Snapshot query cooldowns into product.json so tier progression
+        // survives DB rebuilds. Product.json is the durable SSOT (never pruned).
+        const queryCooldowns = specDb?.getQueryCooldownsByProduct?.(result.productId) || [];
         const productCp = buildProductCheckpoint({
           identity: result.job?.identityLock || {},
           category,
           productId: result.productId,
           runId: result.runId,
           sources: checkpoint.sources,
+          queryCooldowns,
         });
         writeCrawlCheckpoint({
           checkpoint,
@@ -350,7 +363,15 @@ export function createPipelineCommands({
 
     await assertCategorySchemaReady({ category, storage, config });
 
-    const productId = String(args['product-id'] || '').trim() || buildProductId(category);
+    // WHY: Reuse existing product_id when brand+model match — prevents duplicate
+    // random hex IDs for the same product across runs.
+    let productId = String(args['product-id'] || '').trim();
+    if (!productId) {
+      try {
+        const catalog = await loadProductCatalog(config, category);
+        productId = findProductByIdentity(catalog, brand, model, variant) || buildProductId(category);
+      } catch { productId = buildProductId(category); }
+    }
 
     const identityLock = {
       brand,

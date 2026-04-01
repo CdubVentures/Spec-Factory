@@ -1,6 +1,6 @@
 // WHY: SQL store for url_crawl_ledger + query_cooldowns.
 // Replaces frontier.db with per-product, per-category data in spec.sqlite.
-// URL crawl history is rebuildable from product.json; cooldowns are ephemeral.
+// URL crawl history and query cooldowns are both rebuildable from product.json.
 
 export function createCrawlLedgerStore({ db, category, stmts }) {
 
@@ -126,6 +126,10 @@ export function createCrawlLedgerStore({ db, category, stmts }) {
     return result.changes || 0;
   }
 
+  function getQueryCooldownsByProduct(productId) {
+    return stmts._getQueryCooldownsByProduct.all(String(productId || ''));
+  }
+
   return {
     upsertUrlCrawlEntry,
     getUrlCrawlEntry,
@@ -133,6 +137,7 @@ export function createCrawlLedgerStore({ db, category, stmts }) {
     aggregateDomainStats,
     upsertQueryCooldown,
     getQueryCooldown,
+    getQueryCooldownsByProduct,
     buildQueryExecutionHistory,
     purgeExpiredCooldowns,
   };

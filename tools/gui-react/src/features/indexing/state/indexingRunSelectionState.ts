@@ -13,7 +13,6 @@ import type { IndexLabRunsResponse } from '../types.ts';
 
 interface UseIndexingRunSelectionStateInput {
   isProcessRunning: boolean;
-  isAll: boolean;
   category: string;
   processStatusRunId: string;
   processStartedAt: string;
@@ -26,7 +25,6 @@ interface UseIndexingRunSelectionStateInput {
 export function useIndexingRunSelectionState(input: UseIndexingRunSelectionStateInput) {
   const {
     isProcessRunning,
-    isAll,
     category,
     processStatusRunId,
     processStartedAt,
@@ -35,7 +33,7 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     clearedRunViewId,
     setClearedRunViewId,
   } = input;
-  const categoryScope = isAll ? '' : category;
+  const categoryScope = category;
 
   const { data: indexlabRunsResp } = useQuery({
     queryKey: buildIndexLabRunsQueryKey({ category: categoryScope, limit: 80 }),
@@ -46,7 +44,6 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
   const indexlabRuns = useMemo(
     () => deriveIndexLabRuns({
       indexlabRunsResp,
-      isAll,
       category,
       processStatusRunId,
       selectedIndexLabRunId,
@@ -55,7 +52,6 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     }),
     [
       indexlabRunsResp,
-      isAll,
       category,
       processStatusRunId,
       selectedIndexLabRunId,
@@ -71,11 +67,10 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
 
   const domainChecklistCategory = useMemo(
     () => deriveDomainChecklistCategory({
-      isAll,
       category,
       selectedRunForChecklist,
     }),
-    [isAll, category, selectedRunForChecklist],
+    [category, selectedRunForChecklist],
   );
 
   const runViewCleared = Boolean(

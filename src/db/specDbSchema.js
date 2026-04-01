@@ -935,6 +935,7 @@ CREATE TABLE IF NOT EXISTS query_index (
   provider TEXT,
   result_count INTEGER NOT NULL DEFAULT 0,
   field_yield TEXT,
+  tier TEXT DEFAULT NULL,
   ts TEXT NOT NULL,
   created_at TEXT DEFAULT (datetime('now'))
 );

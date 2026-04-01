@@ -927,6 +927,9 @@ export interface RunFunnelSummary {
   domains_total: number;
   domains_safe: number;
   domains_caution: number;
+  tier1_queries: number;
+  tier2_queries: number;
+  tier3_queries: number;
 }
 
 export interface DomainBreakdownRow {
@@ -982,6 +985,7 @@ export interface ProductHistoryQueryRow {
   query: string;
   provider: string;
   result_count: number;
+  tier: string | null;
   run_id: string;
   ts: string;
 }

@@ -38,7 +38,6 @@ interface UseIndexingRunMutationsInput {
   processStatus: ProcessStatus | undefined;
   runtimeSettingsAuthorityReady: boolean;
   runtimeSettingsLoading: boolean;
-  isAll: boolean;
   replayPending: boolean;
   preflightCheck?: () => PreflightResult | null;
 }
@@ -66,7 +65,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     processStatus,
     runtimeSettingsAuthorityReady,
     runtimeSettingsLoading,
-    isAll,
     replayPending,
     preflightCheck,
   } = input;
@@ -177,7 +175,7 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
 
   const busy = startIndexLabMut.isPending || stopMut.isPending || startSearxngMut.isPending || replayPending;
   const runtimeSettingsReady = runtimeSettingsAuthorityReady && !runtimeSettingsLoading;
-  const canRunSingle = !isAll && !!singleProductId && runtimeSettingsReady;
+  const canRunSingle = !!singleProductId && runtimeSettingsReady;
 
   const actionError =
     (startIndexLabMut.error as Error)?.message

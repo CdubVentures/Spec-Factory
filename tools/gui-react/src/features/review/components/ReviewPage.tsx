@@ -663,9 +663,6 @@ export function ReviewPage() {
   }, [layout, products]);
   const allGreensAccepted = pendingGreenAcceptCount === 0;
 
-  if (category === 'all') {
-    return <p className="mt-8 text-center sf-status-text-muted">Select a specific category from the sidebar to review products.</p>;
-  }
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || !indexData || indexData.total === 0) {
     const hasCatalog = catalogRows && catalogRows.length > 0;

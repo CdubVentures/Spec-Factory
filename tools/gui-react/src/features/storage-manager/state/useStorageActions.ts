@@ -5,6 +5,8 @@ import type {
   BulkDeleteResponse,
   PruneResponse,
   PurgeResponse,
+  DeleteUrlResponse,
+  PurgeProductHistoryResponse,
 } from '../types.ts';
 
 function useInvalidateStorage() {
@@ -51,6 +53,38 @@ export function usePurgeRuns() {
   return useMutation({
     mutationFn: () =>
       api.post<PurgeResponse>('/storage/purge', { confirmToken: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+interface DeleteUrlParams {
+  url: string;
+  productId: string;
+  category: string;
+}
+
+export function useDeleteUrl() {
+  const invalidate = useInvalidateStorage();
+  return useMutation({
+    mutationFn: (params: DeleteUrlParams) =>
+      api.post<DeleteUrlResponse>('/storage/urls/delete', params),
+    onSuccess: invalidate,
+  });
+}
+
+interface PurgeProductHistoryParams {
+  productId: string;
+  category: string;
+}
+
+export function usePurgeProductHistory() {
+  const invalidate = useInvalidateStorage();
+  return useMutation({
+    mutationFn: ({ productId, category }: PurgeProductHistoryParams) =>
+      api.post<PurgeProductHistoryResponse>(
+        `/storage/products/${encodeURIComponent(productId)}/purge-history`,
+        { category },
+      ),
     onSuccess: invalidate,
   });
 }

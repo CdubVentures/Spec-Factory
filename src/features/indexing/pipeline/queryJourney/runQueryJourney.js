@@ -48,6 +48,9 @@ export async function runQueryJourney({
     tier: String(row?.tier || '').trim(),
     group_key: String(row?.group_key || '').trim(),
     normalized_key: String(row?.normalized_key || '').trim(),
+    // WHY: source_host identifies which authority site a seed query targets.
+    // deriveSeedStatus uses it (via provider → source_name) to track per-source cooldowns.
+    source_host: String(row?.source_host || '').trim(),
     original_query: row?.original_query || undefined,
   }));
 

@@ -81,6 +81,8 @@ export const MIGRATIONS = [
     updated_at TEXT,
     PRIMARY KEY (root_domain, category, scope, scope_key)
   )`,
+  // WHY: Tier column on query_index — enables per-query tier display in run history panel.
+  `ALTER TABLE query_index ADD COLUMN tier TEXT DEFAULT NULL`,
 ];
 
 export const SECONDARY_INDEXES = `

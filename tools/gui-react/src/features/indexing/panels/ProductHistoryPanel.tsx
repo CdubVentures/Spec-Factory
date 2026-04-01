@@ -104,8 +104,16 @@ function buildTabs(run: ProductHistoryRunRow | undefined, urls: ProductHistoryUr
 
 /* ── Column defs ──────────────────────────────────────────────────── */
 
+function tierChip(tier: string | null): { label: string; cls: string } {
+  if (tier === 'seed') return { label: 'T1', cls: 'sf-chip-danger' };
+  if (tier === 'group_search') return { label: 'T2', cls: 'sf-chip-info' };
+  if (tier === 'key_search') return { label: 'T3', cls: 'sf-chip-success' };
+  return { label: '-', cls: 'sf-chip-neutral' };
+}
+
 const queryColumns: ColumnDef<ProductHistoryQueryRow, unknown>[] = [
-  { accessorKey: 'query', header: 'Query', size: 380 },
+  { accessorKey: 'query', header: 'Query', size: 340 },
+  { id: 'tier', header: 'Tier', accessorFn: (r) => r.tier, cell: ({ row }) => { const t = tierChip(row.original.tier); return <Chip label={t.label} className={t.cls} />; }, size: 50 },
   { accessorKey: 'provider', header: 'Provider', cell: ({ row }) => <Chip label={row.original.provider} className="sf-chip-accent" />, size: 80 },
   { accessorKey: 'result_count', header: 'Results', size: 65 },
   { accessorKey: 'ts', header: 'Time', cell: ({ row }) => <span className="sf-text-muted">{relTime(row.original.ts)}</span>, size: 80 },
@@ -450,7 +458,16 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     return new Date(r.ended_at).getTime() - new Date(r.started_at).getTime();
   }), [data?.runs]);
 
-  // WHY: 4 donut charts derived from existing response data — no backend changes.
+  const tierDonutData = useMemo(() => {
+    if (!selRun) return [];
+    const f = selRun.funnel;
+    return [
+      { name: 'T1 Seeds', value: f.tier1_queries ?? 0, color: '#f97583' },
+      { name: 'T2 Groups', value: f.tier2_queries ?? 0, color: '#79c0ff' },
+      { name: 'T3 Keys', value: f.tier3_queries ?? 0, color: '#7ee787' },
+    ].filter((d) => d.value > 0);
+  }, [selRun]);
+
   const urlOutcomeData = useMemo(() => {
     if (!selRun) return [];
     const f = selRun.funnel;
@@ -486,7 +503,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     ];
   }, [selRun]);
 
-  if (!productId || category === 'all') return null;
+  if (!productId) return null;
 
   return (
     <div className="sf-surface-panel p-0 order-[-10] flex flex-col flex-1 min-h-0">
@@ -582,7 +599,8 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
 
           {/* ─── Charts 2x2 Grid ─────────────────────────────────── */}
           {selRun && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <MiniDonut title="Tier Allocation" data={tierDonutData} />
               <MiniDonut title="URL Outcomes" data={urlOutcomeData} />
               <MiniDonut title="Domain Safety" data={domainSafetyData} />
               <MiniDonut title="Domain Roles" data={domainRoleData} />

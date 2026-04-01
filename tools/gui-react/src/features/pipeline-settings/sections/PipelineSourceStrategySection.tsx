@@ -57,7 +57,6 @@ function discoveryBadgeClass(method: string): string {
 
 interface PipelineSourceStrategySectionProps {
   category: string;
-  isAll: boolean;
   sourceStrategyHydrated: boolean;
   sourceStrategyEntries: SourceEntry[];
   sourceStrategyLoading: boolean;
@@ -391,7 +390,6 @@ function FormCsvInput({
 
 export function PipelineSourceStrategySection({
   category,
-  isAll,
   sourceStrategyHydrated,
   sourceStrategyEntries,
   sourceStrategyLoading,
@@ -424,18 +422,7 @@ export function PipelineSourceStrategySection({
           </div>
         </div>
       </header>
-      {isAll ? (
-        <div className="rounded sf-callout sf-callout-neutral px-3 py-2.5">
-          <p className="sf-text-label font-semibold">Source strategy is configured per category.</p>
-          <p className="mt-1 sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-            Select a specific category to manage source strategy entries.
-          </p>
-          <p className="mt-1 sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-            Switch the sidebar category from All Categories to a specific category to edit that category&apos;s
-            `sources.json` entries, discovery settings, crawl config, and field coverage in full.
-          </p>
-        </div>
-      ) : !sourceStrategyHydrated ? (
+      {!sourceStrategyHydrated ? (
         <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
           Loading source strategy...
         </p>

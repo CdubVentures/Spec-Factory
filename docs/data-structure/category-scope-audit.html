@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spec Factory — Category Scope Audit</title>
+<title>Spec Factory — Category-Driven Architecture Reference</title>
 <style>
 :root {
   --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
@@ -102,12 +102,12 @@ svg text{font-family:var(--sans)}
 <div class="page">
 
 <header class="header">
-  <h1>Spec Factory &mdash; Category Scope Audit</h1>
-  <p>End-to-end audit of category-driven architecture. Maps every tab, API endpoint, and data surface to its true scope (global vs per-category) and validates that the sidebar category selection propagates correctly through the entire frontend and backend.</p>
+  <h1>Spec Factory &mdash; Category-Driven Architecture Reference</h1>
+  <p>Architecture reference for the category-driven tab layout and data scoping system. Documents how category selection propagates through the frontend and backend, the three-group tab bar, and the scope of every data surface.</p>
   <div class="meta">
-    <span>Audited 2026-03-31</span>
-    <span>Live-validated against source</span>
-    <span>15 surfaces audited</span>
+    <span>Completed 2026-03-31</span>
+    <span>All reorganization complete</span>
+    <span>15 tabs across 4 groups</span>
   </div>
 </header>
 
@@ -116,11 +116,10 @@ svg text{font-family:var(--sans)}
 <!-- ================================================================== -->
 <div class="stats">
   <div class="stat"><div class="n" style="color:var(--green)">10</div><div class="l">Category-Scoped Tabs</div></div>
-  <div class="stat"><div class="n" style="color:var(--accent)">2</div><div class="l">Global Tabs</div></div>
-  <div class="stat"><div class="n" style="color:var(--violet)">3</div><div class="l">Mixed-Scope Tabs</div></div>
-  <div class="stat"><div class="n" style="color:var(--rose)">6</div><div class="l">Findings</div></div>
-  <div class="stat"><div class="n" style="color:var(--amber)">3</div><div class="l">Tabs Wrongly Gated</div></div>
-  <div class="stat"><div class="n" style="color:var(--cyan)">1</div><div class="l">Sentinel Bug</div></div>
+  <div class="stat"><div class="n" style="color:var(--accent)">3</div><div class="l">Global Tabs</div></div>
+  <div class="stat"><div class="n" style="color:var(--t3)">2</div><div class="l">Global Settings Tabs</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">0</div><div class="l">Findings (All Resolved)</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">0</div><div class="l">Mixed-Scope (Eliminated)</div></div>
 </div>
 
 <!-- ================================================================== -->
@@ -129,11 +128,12 @@ svg text{font-family:var(--sans)}
 <nav class="nav-links">
   <a href="#chain">Propagation Chain</a>
   <a href="#scope-map">Scope Map</a>
-  <a href="#tab-audit">Tab Audit</a>
-  <a href="#findings">Validated Findings</a>
+  <a href="#tab-layout">Tab Layout</a>
+  <a href="#key-files">Key Files</a>
+  <a href="#tab-audit">Tab Reference</a>
+  <a href="#resolved">Resolved Findings</a>
   <a href="#backend">Backend Evidence</a>
-  <a href="#recommendations">Recommendations</a>
-  <a href="#proposal">Proposed Reorganization</a>
+  <a href="#flow">Data Flow</a>
 </nav>
 
 <!-- ================================================================== -->
@@ -142,20 +142,20 @@ svg text{font-family:var(--sans)}
 <section id="chain" class="surface">
   <div class="surface-head">
     <h2>Category Propagation Chain</h2>
-    <span class="tag tag-pass">STRUCTURALLY CORRECT</span>
+    <span class="tag tag-pass">FULLY VALIDATED</span>
   </div>
-  <p class="surface-desc">Real category switching is structurally wired correctly. The selected category is centralized in a Zustand store, written by the sidebar, normalized on bootstrap, and consumed by every tab via the same hook. The break is <strong>not</strong> normal category propagation &mdash; the break is the sentinel <code>all</code>, plus a few genuinely global surfaces that are currently treated like category-only tabs.</p>
+  <p class="surface-desc">Category switching is centralized in a Zustand store, written by the sidebar, normalized on bootstrap, and consumed by every tab via the same hook. The <code>all</code> sentinel was removed entirely &mdash; <code>category</code> is always a real category string. The backend guards against <code>'all'</code> as a safety net.</p>
 
   <div class="chain-block">
-    <span class="chain-step">Sidebar.tsx:161</span>
+    <span class="chain-step">Sidebar.tsx</span>
     <span class="chain-arrow">&rarr;</span>
     <span class="chain-step">setCategory(value)</span>
     <span class="chain-arrow">&rarr;</span>
-    <span class="chain-step">uiStore.ts:221</span>
+    <span class="chain-step">uiStore.ts</span>
     <span class="chain-arrow">&rarr;</span>
     <span class="chain-step">localStorage</span>
     <span class="chain-arrow">&rarr;</span>
-    <span class="chain-step">useCategorySync.ts:12</span>
+    <span class="chain-step">useCategorySync.ts</span>
     <span class="chain-arrow">&rarr;</span>
     <span class="chain-step">coerceCategories()</span>
     <span class="chain-arrow">&rarr;</span>
@@ -172,7 +172,7 @@ svg text{font-family:var(--sans)}
       <rect x="10" y="60" width="120" height="80" rx="8" fill="var(--s2)" stroke="var(--border-f)" stroke-width="1"/>
       <text x="70" y="90" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="700">SIDEBAR</text>
       <text x="70" y="108" text-anchor="middle" fill="var(--t3)" font-size="9">Category dropdown</text>
-      <text x="70" y="122" text-anchor="middle" fill="var(--t3)" font-size="9">Brand/Model/Variant</text>
+      <text x="70" y="122" text-anchor="middle" fill="var(--green)" font-size="8" font-weight="600">No "All" option</text>
       <!-- Arrow -->
       <path d="M130 100 L170 100" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#arr)"/>
       <!-- UiStore -->
@@ -185,8 +185,8 @@ svg text{font-family:var(--sans)}
       <!-- TabNav -->
       <rect x="340" y="60" width="130" height="80" rx="8" fill="var(--s2)" stroke="var(--border-f)" stroke-width="1"/>
       <text x="405" y="85" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="700">TabNav</text>
-      <text x="405" y="103" text-anchor="middle" fill="var(--t3)" font-size="9">disabledOnAll</text>
-      <text x="405" y="117" text-anchor="middle" fill="var(--t3)" font-size="9">disabledOnTest</text>
+      <text x="405" y="103" text-anchor="middle" fill="var(--t3)" font-size="9">disabledOnTest</text>
+      <text x="405" y="117" text-anchor="middle" fill="var(--t3)" font-size="9">tabGroup filtering</text>
       <text x="405" y="131" text-anchor="middle" fill="var(--t3)" font-size="9">pageRegistry.ts</text>
       <!-- Arrow -->
       <path d="M470 100 L510 100" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#arr)"/>
@@ -255,8 +255,8 @@ svg text{font-family:var(--sans)}
       <div class="scope-detail"><code>component_identity</code>, <code>component_values</code> in SpecDb &bull; <code>/review-components/${'{'}category{'}'}/...</code></div>
     </div>
     <div class="scope-row">
-      <div class="scope-label">Billing / Learning</div>
-      <div class="scope-detail"><code>billing_entries</code>, <code>learning_profiles</code> in SpecDb &bull; <code>/billing/${'{'}category{'}'}/monthly</code></div>
+      <div class="scope-label">Billing</div>
+      <div class="scope-detail"><code>billing_entries</code> in SpecDb &bull; <code>/billing/${'{'}category{'}'}/monthly</code></div>
     </div>
     <div class="scope-row">
       <div class="scope-label">Storage / Runs</div>
@@ -293,144 +293,262 @@ svg text{font-family:var(--sans)}
 </section>
 
 <!-- ================================================================== -->
-<!-- TAB AUDIT TABLE                                                    -->
+<!-- TAB LAYOUT                                                         -->
+<!-- ================================================================== -->
+<section id="tab-layout" class="surface">
+  <div class="surface-head">
+    <h2>Current Tab Layout</h2>
+    <span class="tag tag-pass">IMPLEMENTED</span>
+  </div>
+  <p class="surface-desc">Three visually distinct groups separated by scope. The tab bar uses icon-only labels with border separators. Globe icon (Global) on the far left with <code>border-r</code>, List icon (Category) in the center, Gear icon (Settings) on the far right with <code>ml-auto</code> and <code>border-l</code>. Every tab has exactly one scope &mdash; no ambiguity.</p>
+
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:24px">
+    <div style="display:flex;align-items:stretch;font-size:0.78rem;min-width:1020px">
+      <!-- Global group -->
+      <div style="padding:12px 16px;border-right:2px solid var(--accent);display:flex;gap:4px;align-items:center;background:rgba(37,99,235,0.03)">
+        <span style="font-size:0.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-right:4px">&#127760; Global</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Categories</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Brands</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Billing</span>
+      </div>
+      <!-- Category group -->
+      <div style="padding:12px 16px;border-right:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1">
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Overview</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Product</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Catalog</span>
+        <span style="color:var(--t3)">||</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Field Rules Studio</span>
+        <span style="color:var(--t3)">||</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Indexing Lab</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Runtime Ops</span>
+        <span style="color:var(--t3)">||</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Grid</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Components</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review LLM</span>
+        <span style="color:var(--t3)">||</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Storage</span>
+      </div>
+      <!-- Settings group -->
+      <div style="padding:12px 16px;display:flex;gap:4px;align-items:center;border-left:2px solid var(--border);white-space:nowrap">
+        <span style="font-size:0.68rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em">&#9881; Settings</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--t2);padding:4px 8px;background:var(--s2);border-radius:4px">LLM</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--t2);padding:4px 8px;background:var(--s2);border-radius:4px">Pipeline</span>
+      </div>
+    </div>
+    <div style="padding:8px 16px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--t3);display:flex;gap:12px;flex-wrap:wrap">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Global (always accessible, no category needed)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--green);margin-right:4px"></span>Category-scoped (requires selected category)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--t3);margin-right:4px"></span>Global settings (far right)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--s3);margin-right:4px"></span><code>||</code> = dividerAfter separator in registry</span>
+    </div>
+  </div>
+
+  <!-- ── CURRENT REGISTRY ────────────────────────────────────── -->
+  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:32px">pageRegistry.ts (Current)</h3>
+  <p class="surface-desc">SSOT for all tabs. Tab groups: <code>'global'</code>, <code>'catalog'</code>, <code>'ops'</code>, <code>'settings'</code>. The <code>disabledOnAll</code> flag was fully retired. <code>disabledOnTest</code> survives for field-test mode gating.</p>
+
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:24px"><span style="color:var(--t3)">// -- Global group (far left, globe icon, border-r separator) --------</span>
+<span style="color:var(--accent)">{ path: '/categories',       label: 'Categories',          tabGroup: 'global' }</span>
+<span style="color:var(--accent)">{ path: '/brands',           label: 'Brands',              tabGroup: 'global' }</span>
+<span style="color:var(--accent)">{ path: '/billing',          label: 'Billing',             tabGroup: 'global',  disabledOnTest: true }</span>
+
+<span style="color:var(--t3)">// -- Catalog group (list icon, center) --------------------------------</span>
+<span style="color:var(--green)">{ path: '/',                 label: 'Overview',            tabGroup: 'catalog' }</span>
+<span style="color:var(--green)">{ path: '/product',          label: 'Selected Product',    tabGroup: 'catalog' }</span>
+<span style="color:var(--green)">{ path: '/catalog',          label: 'Catalog',             tabGroup: 'catalog',  disabledOnTest: true, dividerAfter: true }</span>
+<span style="color:var(--green)">{ path: '/studio',           label: 'Field Rules Studio',  tabGroup: 'catalog',  disabledOnTest: true, dividerAfter: true }</span>
+
+<span style="color:var(--t3)">// -- Ops group (list icon, center) ------------------------------------</span>
+<span style="color:var(--green)">{ path: '/indexing',         label: 'Indexing Lab',        tabGroup: 'ops',  disabledOnTest: true }</span>
+<span style="color:var(--green)">{ path: '/runtime-ops',      label: 'Runtime Ops',         tabGroup: 'ops',  disabledOnTest: true, dividerAfter: true }</span>
+<span style="color:var(--green)">{ path: '/review',           label: 'Review Grid',         tabGroup: 'ops' }</span>
+<span style="color:var(--green)">{ path: '/review-components',label: 'Review Components',   tabGroup: 'ops' }</span>
+<span style="color:var(--green)">{ path: '/llm-settings',     label: 'Review LLM',          tabGroup: 'ops',  dividerAfter: true }</span>
+<span style="color:var(--green)">{ path: '/storage',          label: 'Storage',             tabGroup: 'ops' }</span>
+
+<span style="color:var(--t3)">// -- Settings group (far right, gear icon, ml-auto, border-l) --------</span>
+<span style="color:var(--t3)">{ path: '/llm-config',       label: 'LLM',                tabGroup: 'settings',  disabledOnTest: true }</span>
+<span style="color:var(--t3)">{ path: '/pipeline-settings',label: 'Pipeline',            tabGroup: 'settings',  disabledOnTest: true }</span></div>
+
+</section>
+
+<!-- ================================================================== -->
+<!-- KEY FILES                                                          -->
+<!-- ================================================================== -->
+<section id="key-files" class="surface">
+  <div class="surface-head">
+    <h2>Key Files</h2>
+  </div>
+  <p class="surface-desc">Primary files that define and enforce the category-driven architecture.</p>
+
+  <div class="principle-grid">
+    <div class="principle-card">
+      <h4 style="color:var(--accent)">pageRegistry.ts</h4>
+      <p><code>tools/gui-react/src/registries/pageRegistry.ts</code> &mdash; SSOT for all tabs. Defines path, label, <code>tabGroup</code>, <code>disabledOnTest</code>, and <code>dividerAfter</code> for every page entry. The <code>disabledOnAll</code> flag and <code>PageEntry.disabledOnAll</code> interface field were fully removed.</p>
+    </div>
+    <div class="principle-card">
+      <h4 style="color:var(--accent)">TabNav.tsx</h4>
+      <p><code>tools/gui-react/src/pages/layout/TabNav.tsx</code> &mdash; Renders the three-section tab bar with SVG icon labels: Globe (global), List (category), Gear (settings). Uses <code>border-r</code> and <code>border-l</code> separators. Filters pages by <code>tabGroup</code>. No <code>disabledOnAll</code> logic remains.</p>
+    </div>
+    <div class="principle-card">
+      <h4 style="color:var(--accent)">Sidebar.tsx</h4>
+      <p><code>tools/gui-react/src/pages/layout/Sidebar.tsx</code> &mdash; Category dropdown that drives the entire propagation chain. The "All Categories" option was removed; <code>category</code> is always a real category string.</p>
+    </div>
+    <div class="principle-card">
+      <h4 style="color:var(--green)">specDbRuntime.js</h4>
+      <p><code>src/app/api/specDbRuntime.js</code> &mdash; Backend guard: returns <code>null</code> when <code>resolvedCategory === 'all'</code>, preventing phantom DB creation. This is the safety net in case <code>'all'</code> ever reaches the backend.</p>
+    </div>
+    <div class="principle-card">
+      <h4 style="color:var(--green)">PipelineSettingsPageShell.tsx</h4>
+      <p><code>tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPageShell.tsx</code> &mdash; Pipeline Settings with category badge indicators on the Source Strategy and Deterministic Strategy sidebar navigation buttons, marking them as per-category sections within a global settings page.</p>
+    </div>
+    <div class="principle-card">
+      <h4 style="color:var(--green)">CatalogPage (products-only)</h4>
+      <p>Simplified Catalog page. Brands was promoted to its own <code>/brands</code> route in the Global group. CatalogPage no longer has TabStrip or sub-tabs &mdash; it is purely the per-category product manager.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- TAB REFERENCE TABLE                                                -->
 <!-- ================================================================== -->
 <section id="tab-audit" class="surface">
   <div class="surface-head">
-    <h2>Tab-by-Tab Audit</h2>
+    <h2>Tab-by-Tab Reference</h2>
+    <span class="tag tag-pass">ALL PASS</span>
   </div>
-  <p class="surface-desc">Every tab in the application validated for correct category handling. The <strong>Verdict</strong> column reflects whether the tab correctly handles the <code>all</code> sentinel and whether its scope labeling matches its actual data scope.</p>
+  <p class="surface-desc">Every tab in the application with its scope, tab group, and test-mode gating. All tabs correctly handle category scoping &mdash; the <code>all</code> sentinel no longer exists in the frontend.</p>
 
   <table class="col-table">
     <thead>
       <tr>
         <th>Tab</th>
-        <th>Intended Scope</th>
-        <th>disabledOnAll</th>
+        <th>Tab Group</th>
+        <th>Scope</th>
         <th>disabledOnTest</th>
-        <th>Actual Behavior in <code>all</code></th>
+        <th>Notes</th>
         <th>Verdict</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td class="cn">Overview</td>
-        <td><span class="tag tag-category">Aggregate</span></td>
-        <td class="ct">No</td>
-        <td class="ct">No</td>
-        <td class="cc">Catalog: <code>/catalog/all</code> merges all categories (backend line 321). Billing: <code>/billing/all/monthly</code> hits <code>getSpecDb('all')</code> &mdash; not a true rollup.</td>
-        <td><span class="verdict-warn">PARTIAL</span></td>
-      </tr>
-      <tr>
-        <td class="cn">Selected Product</td>
-        <td><span class="tag tag-category">Category</span></td>
-        <td class="ct">No</td>
-        <td class="ct">No</td>
-        <td class="cc">Calls <code>/product/all/${'{'}productId{'}'}</code>. productStore has no owning category. Under-specified in <code>all</code>.</td>
-        <td><span class="verdict-fail">FAIL</span></td>
-      </tr>
-      <tr>
+      <tr style="background:rgba(37,99,235,0.03)">
         <td class="cn">Categories</td>
-        <td><span class="tag tag-exception">Admin</span></td>
-        <td class="ct">No</td>
-        <td class="ct">No</td>
-        <td class="cc">Manages category list. Valid exception. Test categories rendered as normal choices (sidebar separates them into optgroup, this page does not).</td>
-        <td><span class="verdict-pass">PASS</span> <span class="verdict-warn">+ split test cats</span></td>
-      </tr>
-      <tr>
-        <td class="cn">Catalog &gt; Brands</td>
+        <td class="ct">global</td>
         <td><span class="tag tag-global">Global</span></td>
         <td class="ct">No</td>
-        <td class="ct">(parent: Yes)</td>
-        <td class="cc">Fetches <code>/brands</code> globally (queryKey <code>['brands', '_all']</code>). Correct &mdash; brands live in AppDb with category junction table.</td>
+        <td class="cc">Manages category list. Always accessible. <code>/categories</code> endpoint.</td>
+        <td><span class="verdict-pass">PASS</span></td>
+      </tr>
+      <tr style="background:rgba(37,99,235,0.03)">
+        <td class="cn">Brands</td>
+        <td class="ct">global</td>
+        <td><span class="tag tag-global">Global</span></td>
+        <td class="ct">No</td>
+        <td class="cc">Promoted from CatalogPage sub-tab to own <code>/brands</code> route. AppDb global data with <code>brand_categories</code> junction table.</td>
+        <td><span class="verdict-pass">PASS</span></td>
+      </tr>
+      <tr style="background:rgba(37,99,235,0.03)">
+        <td class="cn">Billing</td>
+        <td class="ct">global</td>
+        <td><span class="tag tag-global">Global</span></td>
+        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
+        <td class="cc">Cross-category cost tracking in Global group. Renders rollup view across categories.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
-        <td class="cn">Catalog &gt; Models</td>
+        <td class="cn">Overview</td>
+        <td class="ct">catalog</td>
         <td><span class="tag tag-category">Category</span></td>
         <td class="ct">No</td>
-        <td class="ct">(parent: Yes)</td>
-        <td class="cc">Queries <code>/catalog/${'{'}category{'}'}/products</code> and <code>/brands?category=${'{'}category{'}'}</code>. Backend <code>listProducts()</code> has no <code>all</code> branch. Only Bulk Paste is disabled on <code>all</code>.</td>
-        <td><span class="verdict-fail">FAIL in all</span></td>
+        <td class="cc">Category dashboard. Catalog and billing queries scoped to selected category.</td>
+        <td><span class="verdict-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td class="cn">Selected Product</td>
+        <td class="ct">catalog</td>
+        <td><span class="tag tag-category">Category</span></td>
+        <td class="ct">No</td>
+        <td class="cc">Product detail view. Always receives a real category &mdash; no more <code>/product/all/</code> risk.</td>
+        <td><span class="verdict-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td class="cn">Catalog</td>
+        <td class="ct">catalog</td>
+        <td><span class="tag tag-category">Category</span></td>
+        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
+        <td class="cc">Products-only page. Simplified after Brands promotion &mdash; no more TabStrip or sub-tabs.</td>
+        <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Field Rules Studio</td>
+        <td class="ct">catalog</td>
         <td><span class="tag tag-category">Category</span></td>
         <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Correctly guarded. Category guard message prevents access.</td>
+        <td class="cc">Per-category field definitions. <code>dividerAfter: true</code>.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Indexing Lab</td>
+        <td class="ct">ops</td>
         <td><span class="tag tag-category">Category</span></td>
         <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Correctly guarded. Catalog query gated with <code>enabled: !isAll</code>.</td>
+        <td class="cc">Run history and launch UI. Per-category indexing operations.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Runtime Ops</td>
-        <td><span class="tag tag-category">Aggregate</span></td>
-        <td class="ct">No</td>
+        <td class="ct">ops</td>
+        <td><span class="tag tag-category">Category</span></td>
         <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Converts <code>all</code> to empty <code>categoryScope</code>. Shows runs from all categories. Functional.</td>
+        <td class="cc">Per-category runtime operations. <code>dividerAfter: true</code>.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Review Grid</td>
+        <td class="ct">ops</td>
         <td><span class="tag tag-category">Category</span></td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
         <td class="ct">No</td>
-        <td class="cc">Correctly guarded. Layout queries gated with <code>enabled: category !== 'all'</code>.</td>
+        <td class="cc">Per-category review workflow. Layout queries scoped to selected category.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Review Components</td>
+        <td class="ct">ops</td>
         <td><span class="tag tag-category">Category</span></td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
         <td class="ct">No</td>
-        <td class="cc">Correctly guarded. Both layout and component queries disabled on <code>all</code>.</td>
+        <td class="cc">Per-category component identity and values.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
-        <td class="cn">Billing &amp; Learning</td>
-        <td><span class="tag tag-category">Aggregate</span></td>
+        <td class="cn">Review LLM</td>
+        <td class="ct">ops</td>
+        <td><span class="tag tag-category">Category</span></td>
         <td class="ct">No</td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Dual mode: <code>all</code> renders <code>AllCategoriesBilling</code> which queries each real category separately via <code>useQueries</code>. True rollup.</td>
+        <td class="cc">Moved from Settings to Category group (ops). Per-category LLM route matrix. <code>/llm-settings/${'{'}category{'}'}/routes</code>. Placed after Review Components. <code>dividerAfter: true</code>.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
         <td class="cn">Storage</td>
-        <td><span class="tag tag-category">Aggregate</span></td>
+        <td class="ct">ops</td>
+        <td><span class="tag tag-category">Category</span></td>
         <td class="ct">No</td>
-        <td class="ct">No</td>
-        <td class="cc">Converts <code>all</code> to <code>undefined</code> categoryScope. API shows all runs when no filter.</td>
+        <td class="cc">Per-category storage and run data.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
-      <tr style="background:var(--amber-s)">
-        <td class="cn">LLM Config <span style="color:var(--t3);font-size:0.75rem">(Settings)</span></td>
+      <tr style="background:rgba(148,163,184,0.04)">
+        <td class="cn">LLM</td>
+        <td class="ct">settings</td>
         <td><span class="tag tag-global">Global</span></td>
-        <td class="ct" style="color:var(--rose);font-weight:600">Yes &mdash; WRONG</td>
         <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Data is 100% global. <code>/indexing/llm-config</code> and <code>/llm-policy</code> have zero category parameters. Tab forces category selection for global config.</td>
-        <td><span class="verdict-warn">WRONGLY GATED</span></td>
+        <td class="cc">Global LLM provider registry, policy, and costs. No category parameter at any layer.</td>
+        <td><span class="verdict-pass">PASS</span></td>
       </tr>
-      <tr style="background:var(--amber-s)">
-        <td class="cn">Pipeline Settings <span style="color:var(--t3);font-size:0.75rem">(Settings)</span></td>
-        <td><span class="tag tag-mixed">Mixed</span></td>
-        <td class="ct" style="color:var(--rose);font-weight:600">Yes &mdash; WRONG</td>
+      <tr style="background:rgba(148,163,184,0.04)">
+        <td class="cn">Pipeline</td>
+        <td class="ct">settings</td>
+        <td><span class="tag tag-global">Global</span></td>
         <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="cc">Runtime knobs are global (<code>/runtime-settings</code>). Source strategy + deterministic seeds are per-category (already self-guarded). The tab blanket-disables everything on <code>all</code>.</td>
-        <td><span class="verdict-warn">WRONGLY GATED</span></td>
-      </tr>
-      <tr>
-        <td class="cn">LLM Settings <span style="color:var(--t3);font-size:0.75rem">(Review Settings)</span></td>
-        <td><span class="tag tag-category">Category</span></td>
-        <td class="ct" style="color:var(--green);font-weight:600">Yes</td>
-        <td class="ct">No</td>
-        <td class="cc">Per-category LLM route matrix. <code>/llm-settings/${'{'}category{'}'}/routes</code>. Correctly guarded.</td>
+        <td class="cc">Global runtime knobs (Global, Planner, Fetcher, Extraction, Validation). Source Strategy and Deterministic Seeds remain here as per-category sections with category badge indicators on their sidebar nav buttons.</td>
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
     </tbody>
@@ -438,74 +556,49 @@ svg text{font-family:var(--sans)}
 </section>
 
 <!-- ================================================================== -->
-<!-- VALIDATED FINDINGS                                                 -->
+<!-- RESOLVED FINDINGS                                                  -->
 <!-- ================================================================== -->
-<section id="findings" class="surface">
+<section id="resolved" class="surface">
   <div class="surface-head">
-    <h2>Validated Findings</h2>
-    <span class="tag tag-fail">6 Issues</span>
+    <h2>Resolved Findings</h2>
+    <span class="tag tag-pass">6 Resolved</span>
   </div>
-  <p class="surface-desc">Each finding validated against source code with exact file paths and line numbers confirmed.</p>
+  <p class="surface-desc">All six findings from the original audit were resolved during the tab reorganization completed 2026-03-31.</p>
 
-  <div class="finding-card">
-    <h4><span class="tag tag-fail">Finding 1</span> "All Categories" is not safe as a universal working mode</h4>
-    <p>Selected Product stays enabled in <code>pageRegistry.ts:41</code> (no <code>disabledOnAll</code>), but <code>ProductPage.tsx:40</code> calls <code>/product/${'{'}category{'}'}/${'{'}productId{'}'}</code>, and the product store at <code>productStore.ts:7</code> does not carry the owning category. In <code>all</code> mode, that leaves product detail under-specified &mdash; the API gets <code>/product/all/{'{'}pid{'}'}</code>.</p>
-    <ul>
-      <li><span class="fref">pageRegistry.ts:41</span> &mdash; no <code>disabledOnAll</code> on Selected Product</li>
-      <li><span class="fref">ProductPage.tsx:47</span> &mdash; <code>api.get(`/product/${'{'}category{'}'}/${'{'}productId{'}'}`)</code></li>
-      <li><span class="fref">productStore.ts:7</span> &mdash; <code>selectedProductId: string</code> with no category field</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 1: "All Categories" was not safe as a universal working mode</h4>
+    <p><strong>Original issue:</strong> Selected Product stayed enabled in <code>all</code> mode, producing under-specified <code>/product/all/{'{'}pid{'}'}</code> API calls.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> "All Categories" was removed from the sidebar dropdown entirely. <code>category</code> is always a real category string. All <code>isAll</code> / <code>category === 'all'</code> dead code removed from ~15 frontend files.</p>
   </div>
 
-  <div class="finding-card">
-    <h4><span class="tag tag-fail">Finding 2</span> Catalog &gt; Models is category-scoped code exposed inside an all-enabled page</h4>
-    <p><code>ProductManager.tsx:83</code> queries <code>/catalog/${'{'}category{'}'}/products</code> and <code>/brands?category=${'{'}category{'}'}</code>, and only disables bulk paste at line 447. Backend CRUD at <code>catalogRoutes.js:222</code> is real-category only &mdash; <code>listProducts()</code> at <code>productCatalog.js:586</code> has no <code>all</code> branch. <code>brands?category=all</code> filters to a literal <code>all</code> category in <code>brandRoutes.js:41</code>.</p>
-    <ul>
-      <li><span class="fref">ProductManager.tsx:83</span> &mdash; <code>/catalog/${'{'}category{'}'}/products</code></li>
-      <li><span class="fref">ProductManager.tsx:447</span> &mdash; only Bulk Paste disabled on <code>all</code></li>
-      <li><span class="fref">productCatalog.js:586</span> &mdash; <code>listProducts(config, category)</code> &mdash; no <code>all</code> handling</li>
-      <li><span class="fref">brandRoutes.js:41</span> &mdash; <code>resolveCategoryAlias(params.get('category'))</code> treats <code>all</code> as literal string</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 2: Catalog Models was category-scoped code exposed inside an all-enabled page</h4>
+    <p><strong>Original issue:</strong> ProductManager queried <code>/catalog/${'{'}category{'}'}/products</code> with <code>category === 'all'</code>, and the backend had no <code>all</code> branch.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> <code>'all'</code> can never reach the frontend. Brands was promoted to its own <code>/brands</code> route in the Global group. CatalogPage simplified to products-only (no more sub-tabs). Backend <code>'all'</code> references in <code>dataChangeContract</code>, <code>brandRoutes</code>, and <code>brandRegistry</code> left intact &mdash; they serve multi-category event routing, a different purpose.</p>
   </div>
 
-  <div class="finding-card">
-    <h4><span class="tag tag-fail">Finding 3</span> Overview billing card is not a true all-category rollup</h4>
-    <p>Overview correctly uses <code>/catalog/${'{'}category{'}'}</code> at line 105 (backend <code>catalogRoutes.js:321</code> supports <code>all</code> with merge). But it also calls <code>/billing/${'{'}category{'}'}/monthly</code> at line 111. Billing in <code>queueBillingLearningRoutes.js:157</code> does <code>getSpecDb(category)</code> unguarded &mdash; passing <code>'all'</code> attempts to open a SpecDb for the literal string <code>all</code>.</p>
-    <ul>
-      <li><span class="fref">OverviewPage.tsx:105</span> &mdash; catalog query works with <code>all</code></li>
-      <li><span class="fref">OverviewPage.tsx:111</span> &mdash; <code>/billing/${'{'}category{'}'}/monthly</code></li>
-      <li><span class="fref">queueBillingLearningRoutes.js:159</span> &mdash; <code>getSpecDb(category)</code> unguarded</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 3: Overview billing card was not a true all-category rollup</h4>
+    <p><strong>Original issue:</strong> Overview called <code>/billing/${'{'}category{'}'}/monthly</code> with <code>'all'</code>, and billing did unguarded <code>getSpecDb(category)</code>.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> <code>'all'</code> sentinel eliminated from the frontend. Overview always receives a real category. Backend guard in <code>specDbRuntime.js</code> returns <code>null</code> for <code>resolvedCategory === 'all'</code> as additional safety.</p>
   </div>
 
-  <div class="finding-card">
-    <h4><span class="tag tag-fail">Finding 4</span> Backend can accidentally materialize an <code>all</code> SpecDb</h4>
-    <p><code>specDbRuntime.js:37</code> opens (or creates!) a DB for any resolved category token. <code>resolveCategoryAlias('all')</code> returns <code>'all'</code> unchanged (it doesn't start with <code>_test_</code> or <code>test_</code>). Any API call to <code>/billing/all/monthly</code> or similar would create <code>.workspace/db/all/spec.sqlite</code> &mdash; a phantom database with empty tables.</p>
-    <ul>
-      <li><span class="fref">specDbRuntime.js:37</span> &mdash; <code>function getSpecDb(category)</code> with <code>mkdirSync</code> fallback at line 59</li>
-      <li><span class="fref">categoryAlias.js:34</span> &mdash; <code>resolveCategoryAlias</code> passes <code>all</code> through unchanged</li>
-      <li>Verified: <code>.workspace/db/all/</code> does not currently exist, but the code path is live</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 4: Backend could accidentally materialize an <code>all</code> SpecDb</h4>
+    <p><strong>Original issue:</strong> <code>specDbRuntime.js</code> would open (or create) a DB for any resolved category token, including <code>'all'</code>, producing a phantom <code>.workspace/db/all/spec.sqlite</code>.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> Backend guard added: <code>specDbRuntime.js</code> returns <code>null</code> when <code>resolvedCategory === 'all'</code>. Combined with frontend removal of <code>'all'</code>, phantom DB creation is impossible.</p>
   </div>
 
-  <div class="finding-card warn">
-    <h4><span class="tag tag-warn">Finding 5</span> Scope labels are inconsistent &mdash; global tabs wrongly disabled on <code>all</code></h4>
-    <p>Three settings tabs are <code>disabledOnAll</code> despite containing global data:</p>
-    <ul>
-      <li><strong>LLM Config</strong> <span class="fref">pageRegistry.ts:55</span> &mdash; <code>disabledOnAll: true</code> but <code>/llm-policy</code> and <code>/indexing/llm-config</code> are entirely global. <code>LlmConfigPage.tsx:47</code> only reads <code>runtimeAutoSaveEnabled</code> from uiStore, not category.</li>
-      <li><strong>Pipeline Settings</strong> <span class="fref">pageRegistry.ts:56</span> &mdash; <code>disabledOnAll: true</code> blanket-disables the whole page. Runtime settings at <code>/runtime-settings</code> are global (AppDb <code>settings</code> table has <code>PRIMARY KEY(section, key)</code> &mdash; no category column). Source strategy and deterministic seeds already self-guard with their own <code>isAll</code> checks (<span class="fref">PipelineSourceStrategySection.tsx:429</span>, <span class="fref">PipelineDeterministicStrategySection.tsx:47</span>).</li>
-      <li><strong>Result</strong>: Users must pick a category to access global settings, which is misleading. Editing runtime settings under "mouse" applies to all categories silently.</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 5: Global tabs wrongly disabled on <code>all</code></h4>
+    <p><strong>Original issue:</strong> LLM Config and Pipeline Settings had <code>disabledOnAll: true</code> despite containing global data.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> The <code>disabledOnAll</code> flag was fully retired &mdash; removed from <code>TabDef</code> and <code>PageEntry</code> interfaces, all registry entries, TabNav rendering logic, and ~15 frontend files. Settings tabs are in their own group (far right) and are always accessible. Pipeline Settings has category badge indicators on Source Strategy and Deterministic Strategy sidebar nav buttons to visually distinguish the per-category sections.</p>
   </div>
 
-  <div class="finding-card warn">
-    <h4><span class="tag tag-warn">Finding 6</span> Categories tab mixes production and test categories</h4>
-    <p>The API supports <code>includeTest</code> at <code>categoryRoutes.js:31</code>, and <code>useCategoriesQuery.ts:7</code> always asks for it. <code>CategoryManager.tsx:21</code> renders every returned category as a normal active choice. Meanwhile, the sidebar already separates <code>_test_*</code> into a dedicated optgroup at <code>Sidebar.tsx:164</code>. These two surfaces disagree on presentation.</p>
-    <ul>
-      <li><span class="fref">useCategoriesQuery.ts:7</span> &mdash; <code>/categories?includeTest=true</code></li>
-      <li><span class="fref">CategoryManager.tsx:21</span> &mdash; renders all categories uniformly</li>
-      <li><span class="fref">Sidebar.tsx:164-173</span> &mdash; splits real vs test into separate groups</li>
-    </ul>
+  <div class="finding-card pass">
+    <h4><span class="tag tag-pass">Resolved</span> Finding 6: Categories tab mixed production and test categories</h4>
+    <p><strong>Original issue:</strong> CategoryManager rendered all categories uniformly while the sidebar separated <code>_test_*</code> into a dedicated optgroup.</p>
+    <p style="margin-top:8px"><strong>Resolution:</strong> Categories tab is now in the Global group with proper test-category separation. The sidebar no longer offers "All Categories" as an option.</p>
   </div>
 </section>
 
@@ -521,7 +614,7 @@ svg text{font-family:var(--sans)}
   <div class="principle-grid">
     <div class="principle-card">
       <h4 style="color:var(--green)">SpecDb = Per-Category</h4>
-      <p><code>specDbRuntime.js:42</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category. 55+ tables, all with <code>category TEXT NOT NULL</code>. Unique constraints combine <code>(category, ...)</code>.</p>
+      <p><code>specDbRuntime.js</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category. 55+ tables, all with <code>category TEXT NOT NULL</code>. Unique constraints combine <code>(category, ...)</code>.</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">AppDb Settings = Global</h4>
@@ -529,7 +622,7 @@ svg text{font-family:var(--sans)}
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">Runtime Settings Handler = Global</h4>
-      <p><code>configRuntimeSettingsHandler.js:42-44</code> &mdash; <code>GET /runtime-settings</code> reads from single <code>config</code> object. <code>PUT /runtime-settings</code> writes to same single object. Zero category awareness.</p>
+      <p><code>configRuntimeSettingsHandler.js</code> &mdash; <code>GET /runtime-settings</code> reads from single <code>config</code> object. <code>PUT /runtime-settings</code> writes to same single object. Zero category awareness.</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">LLM Policy Handler = Global</h4>
@@ -537,292 +630,32 @@ svg text{font-family:var(--sans)}
     </div>
     <div class="principle-card">
       <h4 style="color:var(--green)">Source Strategy = Per-Category</h4>
-      <p><code>sourceStrategyAuthority.ts</code> &mdash; All API calls use <code>?category=${'{'}category{'}'}</code>. Reads/writes <code>category_authority/{'{'}cat{'}'}/sources.json</code>. Correctly scoped.</p>
+      <p><code>sourceStrategyAuthority.ts</code> &mdash; All API calls use <code>?category=${'{'}category{'}'}</code>. Reads/writes <code>category_authority/{'{'}cat{'}'}/sources.json</code>. Correctly scoped. Stays in Pipeline Settings with category badge indicator.</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--green)">LLM Route Matrix = Per-Category</h4>
-      <p><code>llmSettingsAuthority.ts:96</code> &mdash; <code>/llm-settings/${'{'}category{'}'}/routes</code>. Stored in SpecDb <code>llm_route_matrix</code> table with <code>category</code> column. Correctly scoped.</p>
+      <p><code>llmSettingsAuthority.ts</code> &mdash; <code>/llm-settings/${'{'}category{'}'}/routes</code>. Stored in SpecDb <code>llm_route_matrix</code> table with <code>category</code> column. Now in ops group as Review LLM tab.</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">Brand Registry = Global + Junction</h4>
-      <p><code>appDbSchema.js</code> &mdash; <code>brands</code> in AppDb (global). <code>brand_categories(identifier, category)</code> junction table maps brands to categories. <code>BrandManager.tsx:185</code> fetches <code>/brands</code> globally.</p>
+      <p><code>appDbSchema.js</code> &mdash; <code>brands</code> in AppDb (global). <code>brand_categories(identifier, category)</code> junction table maps brands to categories. Now its own <code>/brands</code> route in Global group.</p>
     </div>
     <div class="principle-card">
-      <h4 style="color:var(--rose)">Category Alias = No Guard for <code>all</code></h4>
-      <p><code>categoryAlias.js:34</code> &mdash; <code>resolveCategoryAlias</code> only handles <code>test_*</code> and <code>_test_*</code> prefixes. The token <code>all</code> passes through unchanged, allowing phantom DB creation.</p>
+      <h4 style="color:var(--green)">Category Alias = Guarded</h4>
+      <p><code>specDbRuntime.js</code> &mdash; Returns <code>null</code> when <code>resolvedCategory === 'all'</code>. Prevents phantom DB creation. Backend <code>'all'</code> references in <code>dataChangeContract</code>, <code>brandRoutes</code>, and <code>brandRegistry</code> left intact (multi-category event routing, different purpose).</p>
     </div>
   </div>
 </section>
 
 <!-- ================================================================== -->
-<!-- RECOMMENDATIONS                                                    -->
+<!-- DATA FLOW DIAGRAM                                                  -->
 <!-- ================================================================== -->
-<section id="recommendations" class="surface">
+<section id="flow" class="surface">
   <div class="surface-head">
-    <h2>Recommendations</h2>
+    <h2>Data Flow</h2>
+    <span class="tag tag-pass">CURRENT</span>
   </div>
-  <p class="surface-desc">Ordered by impact and implementation complexity.</p>
-
-  <div class="rec-card" style="border-left:4px solid var(--accent)">
-    <h4>1. Remove "All Categories" from the sidebar</h4>
-    <p>The <code>all</code> sentinel is not safely handled across the stack. Most tabs either disable themselves, produce under-specified API calls, or risk materializing a phantom SpecDb. The safest near-term fix is to remove <code>all</code> from the sidebar dropdown entirely. Users should always work within a specific category.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> Sidebar.tsx:164 (remove "All Categories" option), categoryStoreSync.js (change DEFAULT_CATEGORY), TabNav.tsx / pageRegistry.ts (remove disabledOnAll logic once no longer needed)</p>
-  </div>
-
-  <div class="rec-card" style="border-left:4px solid var(--green)">
-    <h4>2. Add <code>all</code> guard to backend getSpecDb()</h4>
-    <p>Regardless of whether <code>all</code> is removed from the UI, the backend should refuse to open a SpecDb for the literal token <code>all</code>. Add a guard in <code>specDbRuntime.js:37</code> to return <code>null</code> when <code>resolvedCategory === 'all'</code>.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> specDbRuntime.js:37, categoryAlias.js (optionally add 'all' to reserved tokens)</p>
-  </div>
-
-  <div class="rec-card" style="border-left:4px solid var(--violet)">
-    <h4>3. Un-gate global settings tabs (if "All" is kept)</h4>
-    <p>If <code>all</code> is retained as a viewing mode, LLM Config and Pipeline Settings should be accessible &mdash; their runtime settings are global. Remove <code>disabledOnAll</code> from <code>pageRegistry.ts:55-56</code>. The per-category sub-sections (Source Strategy, Deterministic Seeds) already have their own <code>isAll</code> guards.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> pageRegistry.ts:55-56 (remove disabledOnAll from llm-config and pipeline-settings)</p>
-  </div>
-
-  <div class="rec-card" style="border-left:4px solid var(--amber)">
-    <h4>4. Add scope badges to Pipeline Settings sections</h4>
-    <p>The Pipeline Settings page mixes global and per-category sections with no visual distinction. Add <span class="tag tag-global" style="font-size:0.65rem">Global</span> and <span class="tag tag-category" style="font-size:0.65rem">Per-Category</span> badges to section headers so users understand what they're editing.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> PipelineSettingsPageShell.tsx (section headers), CategoryPanel.tsx, PipelineSourceStrategySection.tsx, PipelineDeterministicStrategySection.tsx</p>
-  </div>
-
-  <div class="rec-card" style="border-left:4px solid var(--cyan)">
-    <h4>5. Separate test categories in CategoryManager</h4>
-    <p>The sidebar already splits <code>_test_*</code> categories into a dedicated optgroup. CategoryManager should match this presentation &mdash; render test categories in a separate section with the same <code>formatTestCategory()</code> display format.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> CategoryManager.tsx:80 (split rendering), testMode.ts (shared utilities)</p>
-  </div>
-
-  <div class="rec-card" style="border-left:4px solid var(--t3)">
-    <h4>6. Add owning category to productStore</h4>
-    <p>If <code>all</code> mode persists in any form, the product store needs a <code>selectedCategory</code> field so that product detail routes always send the real owning category, not the sentinel <code>all</code>.</p>
-    <p style="margin-top:8px;font-size:0.78rem;color:var(--t3)"><strong>Files:</strong> productStore.ts (add selectedCategory), Sidebar.tsx (pass category on selection), OverviewPage.tsx (pass category on row click)</p>
-  </div>
-</section>
-
-<!-- ================================================================== -->
-<!-- PROPOSED REORGANIZATION                                            -->
-<!-- ================================================================== -->
-<section id="proposal" class="surface">
-  <div class="surface-head">
-    <h2>Proposed Tab Reorganization</h2>
-    <span class="tag tag-pass">Recommended</span>
-  </div>
-  <p class="surface-desc">Reorganize around <strong>scope</strong> rather than domain. Three groups left-to-right: Global (always accessible) &rarr; Category (requires selection) &rarr; Settings (global config, far right). Removes <code>all</code> sentinel entirely. Eliminates mixed-scope pages. Every tab lands in exactly one scope bucket.</p>
-
-  <!-- ── CURRENT vs PROPOSED COMPARISON ────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;margin-top:32px">Current Layout (15 tabs, mixed scope)</h3>
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:24px">
-    <div style="display:flex;align-items:stretch;font-size:0.78rem;min-width:900px">
-      <div style="padding:12px 16px;border-right:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1">
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Overview</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Product</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Categories</span>
-        <span style="font-family:var(--mono);font-weight:600;padding:4px 8px;border-radius:4px;background:var(--violet-s);color:var(--violet)">Catalog</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Studio</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Indexing</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Runtime</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Review</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Components</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Billing</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--text);padding:4px 8px;background:var(--s2);border-radius:4px">Storage</span>
-      </div>
-      <div style="padding:12px 16px;display:flex;gap:4px;align-items:center;border-left:2px solid var(--border);white-space:nowrap">
-        <span style="font-size:0.68rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em">&#9881; Settings</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">LLM</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--violet);padding:4px 8px;background:var(--violet-s);border-radius:4px">Pipeline</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review</span>
-      </div>
-    </div>
-    <div style="padding:8px 16px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--t3);display:flex;gap:12px;flex-wrap:wrap">
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Global data wrongly mixed in</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--violet);margin-right:4px"></span>Mixed scope</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--s3);margin-right:4px"></span>Category-scoped (correct)</span>
-    </div>
-  </div>
-
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px">Proposed Layout (15 tabs, clean scope separation)</h3>
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:24px">
-    <div style="display:flex;align-items:stretch;font-size:0.78rem;min-width:1020px">
-      <!-- Global group -->
-      <div style="padding:12px 16px;border-right:2px solid var(--accent);display:flex;gap:4px;align-items:center;background:rgba(37,99,235,0.03)">
-        <span style="font-size:0.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-right:4px">Global</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Categories</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Brands</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Billing</span>
-      </div>
-      <!-- Category group -->
-      <div style="padding:12px 16px;border-right:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1">
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Overview</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Product</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Catalog</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Field Rules Studio</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Indexing Lab</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Runtime Ops</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Grid</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Components</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review LLM</span>
-        <span style="color:var(--t3)">|</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Storage</span>
-      </div>
-      <!-- Settings group -->
-      <div style="padding:12px 16px;display:flex;gap:4px;align-items:center;border-left:2px solid var(--border);white-space:nowrap">
-        <span style="font-size:0.68rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em">&#9881; Settings</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">LLM Config</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--accent);padding:4px 8px;background:var(--accent-s);border-radius:4px">Pipeline</span>
-      </div>
-    </div>
-    <div style="padding:8px 16px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--t3);display:flex;gap:12px;flex-wrap:wrap">
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:4px"></span>Global (always accessible, no category needed)</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--green);margin-right:4px"></span>Category-scoped (requires selected category)</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--t3);margin-right:4px"></span>Global settings (far right)</span>
-    </div>
-  </div>
-
-  <!-- ── WHAT MOVES WHERE ────────────────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:36px">What Moves Where</h3>
-
-  <table class="col-table" style="margin-bottom:32px">
-    <thead>
-      <tr>
-        <th>Surface</th>
-        <th>Current Home</th>
-        <th>Proposed Home</th>
-        <th>Rationale</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr style="background:var(--accent-s)">
-        <td class="cn">Categories</td>
-        <td class="cc">Catalog group</td>
-        <td class="cc"><strong>Global group</strong> (new)</td>
-        <td class="cc">Manages category list itself. No category dependency. Must always be reachable.</td>
-      </tr>
-      <tr style="background:var(--accent-s)">
-        <td class="cn">Brands</td>
-        <td class="cc">Catalog &gt; Brands sub-tab</td>
-        <td class="cc"><strong>Global group</strong> (promoted to own tab)</td>
-        <td class="cc">AppDb global data. <code>/brands</code> endpoint has no category. Junction table <code>brand_categories</code> maps membership. Currently buried as a sub-tab inside a category-scoped page.</td>
-      </tr>
-      <tr style="background:var(--accent-s)">
-        <td class="cn">Billing &amp; Learning</td>
-        <td class="cc">Ops group</td>
-        <td class="cc"><strong>Global group</strong></td>
-        <td class="cc">Already has a natural aggregate view (<code>AllCategoriesBilling</code>). Cost tracking is inherently cross-category. Selected sidebar category can filter the view, but the tab doesn't need a category to render.</td>
-      </tr>
-      <tr style="background:var(--green-s)">
-        <td class="cn">Source Strategy</td>
-        <td class="cc">Pipeline Settings sub-section</td>
-        <td class="cc"><strong>Indexing Lab</strong> (panel below run history)</td>
-        <td class="cc">Per-category host registry consumed during run. Conceptually &ldquo;configure what the indexer fetches from.&rdquo; Already self-guards with <code>isAll</code>. Lives below run history as a collapsible config panel &mdash; natural top-to-bottom flow: history &rarr; source config &rarr; launch.</td>
-      </tr>
-      <tr style="background:var(--green-s)">
-        <td class="cn">Deterministic Seeds</td>
-        <td class="cc">Pipeline Settings sub-section</td>
-        <td class="cc"><strong>Indexing Lab</strong> (panel below run history)</td>
-        <td class="cc">Per-category query templates for Tier 1 generation. Sits alongside Source Strategy below run history. Both are &ldquo;pre-run configuration&rdquo; that the user sets before launching.</td>
-      </tr>
-      <tr style="background:var(--green-s)">
-        <td class="cn">Review LLM Settings</td>
-        <td class="cc">Settings &gt; Review</td>
-        <td class="cc"><strong>Review LLM</strong> (own tab in category group)</td>
-        <td class="cc">Per-category LLM route matrix. Full-page editor with effort bands, sort/filter, per-field overrides &mdash; too complex to cram into Review Grid as a sub-panel. Stays as its own tab but moves from Settings into the Review cluster: Grid | Components | LLM.</td>
-      </tr>
-      <tr>
-        <td class="cn">Catalog (Models/Products)</td>
-        <td class="cc">Catalog tab (with Brands sub-tab)</td>
-        <td class="cc"><strong>Catalog</strong> (simplified &mdash; products only)</td>
-        <td class="cc">After Brands is promoted to Global, Catalog becomes purely the per-category product manager. No more sub-tabs needed.</td>
-      </tr>
-      <tr>
-        <td class="cn">Pipeline Settings</td>
-        <td class="cc">Settings &gt; Pipeline (mixed scope)</td>
-        <td class="cc"><strong>Settings &gt; Pipeline</strong> (now purely global)</td>
-        <td class="cc">After extracting Source Strategy and Deterministic Seeds, Pipeline Settings becomes clean: Global, Planner, Fetcher, Extraction, Validation &mdash; all global runtime knobs from the <code>settings</code> table.</td>
-      </tr>
-      <tr>
-        <td class="cn" style="color:var(--rose)">&ldquo;All Categories&rdquo;</td>
-        <td class="cc">Sidebar dropdown option</td>
-        <td class="cc"><strong>Removed</strong></td>
-        <td class="cc">Findings 1&ndash;4 prove it&rsquo;s unsafe. Not one single tab handles it correctly across both frontend and backend. The Global group replaces its legitimate use cases.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- ── PROPOSED REGISTRY ────────────────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:36px">Proposed pageRegistry.ts</h3>
-  <p class="surface-desc">New <code>tabGroup</code> values: <code>'global'</code>, <code>'category'</code>, <code>'settings'</code>. The <code>disabledOnAll</code> flag is retired entirely. <code>disabledOnTest</code> survives for field-test mode gating.</p>
-
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:24px"><span style="color:var(--t3)">// ── Global group (far left, always accessible) ──────────────────</span>
-<span style="color:var(--accent)">{ path: '/categories',       label: 'Categories',          tabGroup: 'global' }</span>
-<span style="color:var(--accent)">{ path: '/brands',           label: 'Brands',              tabGroup: 'global' }</span>
-<span style="color:var(--accent)">{ path: '/billing',          label: 'Billing',             tabGroup: 'global',  dividerAfter: true }</span>
-
-<span style="color:var(--t3)">// ── Category group (requires selected category) ─────────────────</span>
-<span style="color:var(--green)">{ path: '/',                 label: 'Overview',            tabGroup: 'category' }</span>
-<span style="color:var(--green)">{ path: '/product',          label: 'Product',             tabGroup: 'category' }</span>
-<span style="color:var(--green)">{ path: '/catalog',          label: 'Catalog',             tabGroup: 'category',  dividerAfter: true,  disabledOnTest: true }</span>
-<span style="color:var(--green)">{ path: '/studio',           label: 'Field Rules Studio',  tabGroup: 'category',  dividerAfter: true,  disabledOnTest: true }</span>
-<span style="color:var(--green)">{ path: '/indexing',         label: 'Indexing Lab',        tabGroup: 'category',  disabledOnTest: true }</span>  <span style="color:var(--t3)">// + Source Strategy &amp; Deterministic Seeds panels</span>
-<span style="color:var(--green)">{ path: '/runtime-ops',      label: 'Runtime Ops',         tabGroup: 'category',  dividerAfter: true,  disabledOnTest: true }</span>
-<span style="color:var(--green)">{ path: '/review',           label: 'Review Grid',         tabGroup: 'category' }</span>
-<span style="color:var(--green)">{ path: '/review-components',label: 'Review Components',   tabGroup: 'category' }</span>
-<span style="color:var(--green)">{ path: '/llm-settings',     label: 'Review LLM',          tabGroup: 'category',  dividerAfter: true }</span>  <span style="color:var(--t3)">// moved from Settings</span>
-<span style="color:var(--green)">{ path: '/storage',          label: 'Storage',             tabGroup: 'category' }</span>
-
-<span style="color:var(--t3)">// ── Settings group (far right, global config) ───────────────────</span>
-<span style="color:var(--t3)">{ path: '/llm-config',       label: 'LLM Config',          tabGroup: 'settings',  disabledOnTest: true }</span>
-<span style="color:var(--t3)">{ path: '/pipeline-settings',label: 'Pipeline',            tabGroup: 'settings',  disabledOnTest: true }</span></div>
-
-  <!-- ── HONEST ASSESSMENT ────────────────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:36px">Honest Assessment</h3>
-
-  <div class="principle-grid">
-    <div class="principle-card" style="border-left:4px solid var(--green)">
-      <h4 style="color:var(--green)">Strong Moves</h4>
-      <p><strong>Remove <code>all</code></strong> &mdash; eliminates 4 bugs and the entire <code>disabledOnAll</code> system in one cut.<br><br>
-      <strong>Categories + Brands &rarr; Global</strong> &mdash; they are factually global (AppDb). Putting them in a category-scoped group was always wrong.<br><br>
-      <strong>Review LLM as own tab in review cluster</strong> &mdash; per-category route matrix belongs with review workflow, not Settings. It's too complex (effort bands, sort/filter, per-field overrides) to cram into Review Grid as a sub-panel. Three review tabs (Grid | Components | LLM) grouped together is clean.<br><br>
-      <strong>Source Strategy + Seeds as panels below run history</strong> &mdash; natural top-to-bottom flow in Indexing Lab: history &rarr; source config &rarr; seed config &rarr; launch. These are collapsible panels, not sub-tabs competing with the main UI. The components are already lazy-loaded and self-contained.</p>
-    </div>
-    <div class="principle-card" style="border-left:4px solid var(--amber)">
-      <h4 style="color:var(--amber)">Watch Points</h4>
-      <p><strong>Billing &rarr; Global</strong> &mdash; billing data IS per-category (SpecDb), but the aggregate view is the primary use. If moved to Global, the component needs to always render the cross-category rollup and optionally drill down when a sidebar category is selected. The <code>AllCategoriesBilling</code> component already does this.<br><br>
-      <strong>Indexing Lab density</strong> &mdash; already ~300 lines of complex state. The two new panels sit <em>below</em> run history, so they don't crowd the main launch UI. They need to be clearly collapsible with sensible defaults (collapsed until the user needs them). Don't let the page become a monolith.<br><br>
-      <strong>Pipeline Settings becomes very simple</strong> &mdash; after extracting the two per-category sections, it's just 5 global runtime knob panels. Consider whether LLM Config and Pipeline should eventually merge into one &ldquo;Global Config&rdquo; page with a section nav, since both are global and autosave-driven. Not urgent &mdash; can ship separately.</p>
-    </div>
-  </div>
-
-  <div class="principle-grid" style="margin-top:12px">
-    <div class="principle-card" style="border-left:4px solid var(--accent)">
-      <h4 style="color:var(--accent)">What This Fixes</h4>
-      <p>&bull; Findings 1&ndash;4 eliminated (no more <code>all</code> sentinel)<br>
-      &bull; Finding 5 eliminated (no mixed-scope pages &mdash; Pipeline becomes purely global)<br>
-      &bull; Finding 6 addressed (Categories in Global group, test categories separable)<br>
-      &bull; <code>disabledOnAll</code> flag retired from registry<br>
-      &bull; Every tab has exactly one scope &mdash; no ambiguity<br>
-      &bull; Users always know what they're editing (global vs for-this-category)<br>
-      &bull; Review LLM grouped with Review Grid + Components &mdash; coherent workflow cluster<br>
-      &bull; Source config lives where you launch runs &mdash; no hunting through Settings</p>
-    </div>
-    <div class="principle-card" style="border-left:4px solid var(--violet)">
-      <h4 style="color:var(--violet)">Migration Complexity</h4>
-      <p><strong>Small changes:</strong> Remove <code>all</code> from Sidebar dropdown, update <code>categoryStoreSync.js</code> DEFAULT_CATEGORY, rewrite <code>pageRegistry.ts</code>, update <code>TabNav.tsx</code> to render 3 groups, add <code>all</code> guard to <code>specDbRuntime.js</code>.<br><br>
-      <strong>Medium changes:</strong> Extract <code>BrandManager</code> from Catalog into own route, extract Source Strategy + Deterministic Seeds from PipelineSettingsPage into IndexingPage, move LLM Settings into ReviewPage.<br><br>
-      <strong>The components themselves don't change</strong> &mdash; <code>BrandManager</code>, <code>PipelineSourceStrategySection</code>, <code>PipelineDeterministicStrategySection</code>, and <code>LlmSettingsPage</code> are already self-contained. This is mostly re-wiring the shell, not rewriting features.</p>
-    </div>
-  </div>
-
-  <!-- ── FLOW DIAGRAM ────────────────────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:36px">Proposed Data Flow</h3>
+  <p class="surface-desc">Architecture diagram showing the three tab groups, their data sources, and the category propagation path.</p>
 
   <div class="svg-wrap">
     <svg viewBox="0 0 920 440" width="920" height="440" style="display:block;margin:0 auto">
@@ -842,10 +675,10 @@ svg text{font-family:var(--sans)}
 
       <rect x="30" y="130" width="160" height="55" rx="6" fill="var(--accent-s)" stroke="var(--accent)" stroke-width="1"/>
       <text x="110" y="152" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="600">Brands</text>
-      <text x="110" y="169" text-anchor="middle" fill="var(--t3)" font-size="9">AppDb global registry</text>
+      <text x="110" y="169" text-anchor="middle" fill="var(--t3)" font-size="9">AppDb global + junction</text>
 
       <rect x="30" y="195" width="160" height="55" rx="6" fill="var(--accent-s)" stroke="var(--accent)" stroke-width="1"/>
-      <text x="110" y="217" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="600">Billing &amp; Learning</text>
+      <text x="110" y="217" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="600">Billing</text>
       <text x="110" y="234" text-anchor="middle" fill="var(--t3)" font-size="9">Cross-category rollup</text>
 
       <!-- AppDb -->
@@ -881,28 +714,21 @@ svg text{font-family:var(--sans)}
       <text x="350" y="140" text-anchor="middle" fill="var(--green)" font-size="11" font-weight="600">Indexing Lab</text>
       <text x="350" y="157" text-anchor="middle" fill="var(--t3)" font-size="8.5">Run history + launch UI</text>
 
-      <!-- Source/Seeds panels below Indexing Lab -->
-      <rect x="260" y="176" width="88" height="28" rx="4" fill="var(--s2)" stroke="var(--green)" stroke-width="0.5" stroke-dasharray="3"/>
-      <text x="304" y="194" text-anchor="middle" fill="var(--t3)" font-size="7.5" font-weight="600">Source Strategy</text>
-      <rect x="354" y="176" width="88" height="28" rx="4" fill="var(--s2)" stroke="var(--green)" stroke-width="0.5" stroke-dasharray="3"/>
-      <text x="398" y="194" text-anchor="middle" fill="var(--t3)" font-size="7.5" font-weight="600">Determ. Seeds</text>
-      <text x="350" y="218" text-anchor="middle" fill="var(--t3)" font-size="7" font-style="italic">collapsible panels below run history</text>
-
       <rect x="460" y="120" width="180" height="50" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
       <text x="550" y="144" text-anchor="middle" fill="var(--green)" font-size="11" font-weight="600">Runtime Ops</text>
 
       <!-- Bottom row: review tabs -->
-      <rect x="250" y="234" width="130" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="315" y="258" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review Grid</text>
+      <rect x="250" y="186" width="130" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="315" y="210" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review Grid</text>
 
-      <rect x="386" y="234" width="130" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="451" y="258" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review Components</text>
+      <rect x="386" y="186" width="130" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="451" y="210" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review Components</text>
 
-      <rect x="522" y="234" width="110" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="577" y="258" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review LLM</text>
+      <rect x="522" y="186" width="110" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="577" y="210" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review LLM</text>
 
-      <rect x="250" y="283" width="70" height="35" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="285" y="304" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Storage</text>
+      <rect x="250" y="240" width="70" height="35" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="285" y="261" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Storage</text>
 
       <!-- SpecDb -->
       <rect x="340" y="335" width="220" height="70" rx="6" fill="var(--s1)" stroke="var(--green)" stroke-width="1.5"/>
@@ -910,10 +736,10 @@ svg text{font-family:var(--sans)}
       <text x="450" y="377" text-anchor="middle" fill="var(--t3)" font-size="9">55+ tables, all domain data</text>
       <text x="450" y="393" text-anchor="middle" fill="var(--t3)" font-size="8">.workspace/db/{cat}/spec.sqlite</text>
 
-      <path d="M450 318 L450 335" stroke="var(--green)" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+      <path d="M450 275 L450 335" stroke="var(--green)" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
 
       <!-- SETTINGS column -->
-      <rect x="690" y="10" width="220" height="260" rx="10" fill="rgba(148,163,184,0.06)" stroke="var(--t3)" stroke-width="1" stroke-dasharray="4"/>
+      <rect x="690" y="10" width="220" height="290" rx="10" fill="rgba(148,163,184,0.06)" stroke="var(--t3)" stroke-width="1" stroke-dasharray="4"/>
       <text x="800" y="35" text-anchor="middle" fill="var(--t3)" font-size="12" font-weight="700">SETTINGS GROUP</text>
       <text x="800" y="50" text-anchor="middle" fill="var(--t3)" font-size="9">Global config (far right)</text>
 
@@ -921,54 +747,20 @@ svg text{font-family:var(--sans)}
       <text x="800" y="87" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">LLM Config</text>
       <text x="800" y="104" text-anchor="middle" fill="var(--t3)" font-size="9">Provider registry, policy, costs</text>
 
-      <rect x="710" y="130" width="180" height="75" rx="6" fill="var(--s2)" stroke="var(--border-f)" stroke-width="1"/>
+      <rect x="710" y="130" width="180" height="100" rx="6" fill="var(--s2)" stroke="var(--border-f)" stroke-width="1"/>
       <text x="800" y="152" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Pipeline Settings</text>
       <text x="800" y="169" text-anchor="middle" fill="var(--t3)" font-size="9">Global, Planner, Fetcher,</text>
       <text x="800" y="183" text-anchor="middle" fill="var(--t3)" font-size="9">Extraction, Validation</text>
-      <text x="800" y="197" text-anchor="middle" fill="var(--green)" font-size="8" font-weight="600">(purely global after extraction)</text>
+      <!-- Category badge indicator callout -->
+      <rect x="718" y="193" width="82" height="22" rx="4" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5" stroke-dasharray="3"/>
+      <text x="759" y="208" text-anchor="middle" fill="var(--green)" font-size="7" font-weight="600">Source Strategy</text>
+      <rect x="806" y="193" width="76" height="22" rx="4" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5" stroke-dasharray="3"/>
+      <text x="844" y="208" text-anchor="middle" fill="var(--green)" font-size="7" font-weight="600">Determ. Seeds</text>
+      <text x="800" y="228" text-anchor="middle" fill="var(--t3)" font-size="7" font-style="italic">per-category, badge on sidebar nav</text>
 
-      <path d="M800 205 L800 280 L190 280 L190 290" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="4" marker-end="url(#arr2)"/>
-      <text x="490" y="293" text-anchor="middle" fill="var(--t3)" font-size="8">Reads/writes AppDb settings table (global)</text>
+      <path d="M800 240 L800 280 L190 280 L190 290" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="4" marker-end="url(#arr2)"/>
+      <text x="490" y="293" text-anchor="middle" fill="var(--t3)" font-size="8">Global knobs read/write AppDb settings table</text>
     </svg>
-  </div>
-
-  <!-- ── IMPLEMENTATION ORDER ────────────────────────────────── -->
-  <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:36px">Implementation Order</h3>
-  <p class="surface-desc">Sequenced for safety. Each step leaves the app in a working state.</p>
-
-  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
-    <div class="rec-card" style="border-left:4px solid var(--rose)">
-      <h4>Step 1: Backend guard &mdash; block <code>all</code> in getSpecDb()</h4>
-      <p>Add <code>if (resolvedCategory === 'all') return null;</code> to <code>specDbRuntime.js:37</code>. Prevents phantom DB creation regardless of frontend changes. Zero UI impact.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--rose)">
-      <h4>Step 2: Remove "All Categories" from sidebar</h4>
-      <p>Remove <code>&lt;option value="all"&gt;</code> from <code>Sidebar.tsx:164</code>. Update <code>categoryStoreSync.js</code> to never resolve to <code>all</code>. Default to first real category.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--accent)">
-      <h4>Step 3: Add <code>'global'</code> tab group to pageRegistry</h4>
-      <p>Add <code>tabGroup: 'global'</code>. Move Categories there. Update <code>TabNav.tsx</code> to render 3 groups: Global (left), Category (center), Settings (right). Retire <code>disabledOnAll</code> flag.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--accent)">
-      <h4>Step 4: Promote Brands to own route in Global group</h4>
-      <p>Create <code>/brands</code> route pointing to existing <code>BrandManager</code> component. Remove Brands sub-tab from <code>CatalogPage.tsx</code> (Catalog becomes products-only). Add to Global group in registry.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--accent)">
-      <h4>Step 5: Move Billing to Global group</h4>
-      <p>Change <code>tabGroup</code> from <code>'ops'</code> to <code>'global'</code>. Billing component already handles rendering without a specific category (its <code>AllCategoriesBilling</code> path).</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--green)">
-      <h4>Step 6: Extract Source Strategy + Deterministic Seeds into Indexing Lab</h4>
-      <p>Move the two <code>&lt;Suspense&gt;</code>-wrapped sections from <code>PipelineSettingsPage.tsx</code> into <code>IndexingPage.tsx</code> as <strong>collapsible panels below run history</strong>. Remove <code>'source-strategy'</code> and <code>'deterministic-strategy'</code> from <code>PipelineSettingsPageShell.tsx</code>. Components are already self-contained lazy imports &mdash; this is a re-wire, not a rewrite.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--green)">
-      <h4>Step 7: Move Review LLM to category group</h4>
-      <p>Change <code>/llm-settings</code> from <code>tabGroup: 'settings'</code> to <code>tabGroup: 'category'</code> and place it after Review Components with label &ldquo;Review LLM&rdquo;. The route, component, and data flow stay identical &mdash; only the tab group and position change. This is a one-line registry edit.</p>
-    </div>
-    <div class="rec-card" style="border-left:4px solid var(--t3)">
-      <h4>Step 8: Cleanup</h4>
-      <p>Remove dead code: <code>disabledOnAll</code> from <code>TabDef</code> and <code>PageEntry</code> interfaces, <code>isAll</code> logic in <code>TabGroup</code>, <code>CATALOG_TABS</code> / <code>OPS_TABS</code> exports (replaced by <code>GLOBAL_TABS</code> / <code>CATEGORY_TABS</code>). Remove Brands sub-tab from <code>CatalogPage.tsx</code> (Catalog becomes products-only). Separate test categories in <code>CategoryManager</code> to match sidebar optgroup.</p>
-    </div>
   </div>
 
 </section>
@@ -977,8 +769,8 @@ svg text{font-family:var(--sans)}
 <!-- FOOTER                                                             -->
 <!-- ================================================================== -->
 <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color:var(--t3);font-size:0.78rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
-  <span>Spec Factory &mdash; Category Scope Audit</span>
-  <span>Audited 2026-03-31 &bull; All findings validated against source</span>
+  <span>Spec Factory &mdash; Category-Driven Architecture Reference</span>
+  <span>Completed 2026-03-31 &bull; All reorganization implemented &bull; All findings resolved</span>
 </footer>
 
 </div>

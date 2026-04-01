@@ -76,6 +76,7 @@ export interface RunSourceEntry {
   fetch_error: string | null;
   html_size?: number;
   video_size?: number;
+  screenshot_size?: number;
   total_size?: number;
 }
 
@@ -145,6 +146,24 @@ export interface PruneResponse {
 export interface PurgeResponse {
   ok: boolean;
   purged: number;
+}
+
+export interface DeleteUrlResponse {
+  ok: boolean;
+  url: string;
+  product_id: string;
+  reason?: string;
+  sql?: { rows_deleted: number };
+  fs?: { files_deleted: number; product_json_updated: boolean };
+}
+
+export interface PurgeProductHistoryResponse {
+  ok: boolean;
+  product_id: string;
+  runs_deleted: number;
+  sql?: { rows_deleted: number };
+  fs?: { run_dirs_deleted: number; output_dir_deleted: boolean; product_json_reset: boolean };
+  error?: string;
 }
 
 export interface ExportResponse {

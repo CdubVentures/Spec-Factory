@@ -44,7 +44,6 @@ function TemplateRow({ value, index, onChange, onRemove, disabled }: TemplateRow
 
 export function PipelineDeterministicStrategySection() {
   const category = useUiStore((s) => s.category);
-  const isAll = category === 'all';
 
   const {
     seeds,
@@ -55,7 +54,7 @@ export function PipelineDeterministicStrategySection() {
     saveSeeds,
   } = useSpecSeedsAuthority({
     category,
-    enabled: !isAll,
+    enabled: true,
     onError: () => {},
     onSaved: () => {},
   });
@@ -92,16 +91,6 @@ export function PipelineDeterministicStrategySection() {
     commitDraft([...effectiveSeeds, '']);
   }, [effectiveSeeds, commitDraft]);
 
-  if (isAll) {
-    return (
-      <div className="rounded sf-surface-elevated p-6 text-center">
-        <p className="sf-text-label" style={{ color: 'var(--sf-muted)' }}>
-          Select a category to configure its deterministic spec seed templates.
-        </p>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="rounded sf-surface-elevated p-6 text-center">
@@ -125,9 +114,6 @@ export function PipelineDeterministicStrategySection() {
           <div>
             <h3 className="text-base font-semibold" style={{ color: 'var(--sf-text)' }}>
               Deterministic Strategy
-              <span className="ml-2 text-sm font-normal" style={{ color: 'var(--sf-muted)' }}>
-                {category}
-              </span>
             </h3>
             <p className="sf-text-label" style={{ color: 'var(--sf-muted)' }}>
               Ordered spec seed query templates for Tier 1 generation. Each template becomes a search query.

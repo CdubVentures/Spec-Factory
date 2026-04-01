@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Tier Search System — Architecture Reference</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;padding:32px;max-width:1400px;margin:0 auto;line-height:1.7}
+h1{color:#58a6ff;font-size:26px;margin-bottom:4px}
+h2{color:#f0f6fc;font-size:20px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid #21262d}
+h3{color:#58a6ff;font-size:16px;margin:24px 0 8px}
+h4{color:#c9d1d9;font-size:14px;margin:16px 0 6px}
+.subtitle{color:#8b949e;font-size:13px;margin-bottom:32px}
+p{color:#c9d1d9;font-size:13px;margin:6px 0}
+ul,ol{padding-left:20px;margin:6px 0}
+li{font-size:13px;margin:3px 0}
+code{background:#21262d;padding:2px 6px;border-radius:3px;font-size:12px;color:#e6edf3;font-family:'Cascadia Code','Fira Code',monospace}
+pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;font-size:12px;overflow-x:auto;margin:12px 0;color:#e6edf3;font-family:'Cascadia Code','Fira Code',monospace;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#161b22;color:#58a6ff;padding:8px 10px;text-align:left;border-bottom:2px solid #30363d;white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:16px 0}
+.warn-box{background:#2d1f00;border:1px solid #f0883e;border-radius:8px;padding:16px;margin:16px 0}
+.warn-box h3{color:#f0883e}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:stretch}
+.phase{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px 14px;min-width:160px;flex:1}
+.phase.active{border-color:#58a6ff}
+.phase .name{color:#58a6ff;font-weight:700;font-size:13px}
+.phase .desc{color:#8b949e;font-size:11px;margin-top:4px}
+.phase .out{color:#7ee787;font-size:11px;margin-top:4px}
+.arrow{display:flex;align-items:center;color:#484f58;font-size:20px;padding:0 4px}
+.tier-card{background:#161b22;border-radius:8px;padding:16px;margin:8px 0;border-left:4px solid}
+.tier-card.t1{border-color:#f97583}
+.tier-card.t2{border-color:#79c0ff}
+.tier-card.t3{border-color:#7ee787}
+.tier-card h4{margin-top:0}
+.t1-text{color:#f97583} .t2-text{color:#79c0ff} .t3-text{color:#7ee787}
+.setting-row td:first-child{color:#58a6ff;font-weight:600;white-space:nowrap}
+.setting-row td:nth-child(2){color:#7ee787;text-align:center}
+.setting-row td:nth-child(3){color:#f0883e;text-align:center}
+.file-ref{color:#8b949e;font-size:11px}
+.db-col{background:#1a2332;padding:12px;border-radius:6px;margin:8px 0}
+.db-col h4{color:#79c0ff;margin:0 0 6px}
+.mermaid-like{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;margin:12px 0;font-family:'Cascadia Code',monospace;font-size:12px;line-height:2;color:#c9d1d9}
+.mermaid-like .arrow-r{color:#58a6ff}
+.mermaid-like .label{color:#7ee787}
+.mermaid-like .node{color:#f0f6fc;font-weight:600}
+.mermaid-like .dim{color:#484f58}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;margin-right:4px}
+.tag.t1{background:#3d1f28;color:#f97583}
+.tag.t2{background:#1a2a3d;color:#79c0ff}
+.tag.t3{background:#1a3d2a;color:#7ee787}
+.tag.sql{background:#1a2a3d;color:#79c0ff}
+.tag.json{background:#2d1f00;color:#f0883e}
+.tag.ephemeral{background:#3d1f28;color:#f97583}
+.source-list{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.source-chip{background:#21262d;color:#c9d1d9;padding:2px 8px;border-radius:12px;font-size:11px}
+nav{position:sticky;top:0;background:#0d1117;padding:8px 0 12px;border-bottom:1px solid #21262d;z-index:10;margin-bottom:24px}
+nav a{color:#58a6ff;text-decoration:none;font-size:12px;margin-right:16px}
+nav a:hover{text-decoration:underline}
+</style></head><body>
+
+<h1>Tier Search System — Architecture Reference</h1>
+<div class="subtitle">How the 3-tier search system works end-to-end: NeedSet → Search Profile → Execution → Cooldown → Next Run</div>
+
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#pipeline">Pipeline Phases</a>
+  <a href="#tiers">3-Tier Model</a>
+  <a href="#cooldown">Cooldown System</a>
+  <a href="#persistence">Persistence</a>
+  <a href="#settings">Settings</a>
+  <a href="#sources">Source Hosts</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="overview">System Overview</h2>
+
+<div class="box">
+<p>The IndexLab pipeline uses a <strong>3-tier search system</strong> to discover product information. Each run generates search queries across 3 tiers, executes them, crawls the results, and records cooldowns. The next run reads those cooldowns and shifts budget to the next tier.</p>
+
+<div class="mermaid-like">
+<span class="node">Run N starts</span>
+  <span class="arrow-r">→</span> <span class="label">Read query_cooldowns from SQLite</span>
+  <span class="arrow-r">→</span> <span class="label">deriveSeedStatus()</span> <span class="dim">// which seeds are on cooldown?</span>
+  <span class="arrow-r">→</span> <span class="label">computeGroupQueryCount()</span> <span class="dim">// how many times has each group been searched?</span>
+  <span class="arrow-r">→</span> <span class="label">isGroupSearchWorthy()</span> <span class="dim">// coverage, unresolved count, max repeats</span>
+  <span class="arrow-r">→</span> <span class="label">computeTierAllocation()</span> <span class="dim">// budget split: T1 → T2 → T3</span>
+  <span class="arrow-r">→</span> <span class="label">buildSearchProfile()</span> <span class="dim">// generate actual query strings per tier</span>
+  <span class="arrow-r">→</span> <span class="label">Execute queries (Serper API)</span>
+  <span class="arrow-r">→</span> <span class="label">recordQuery() writes cooldown to SQLite</span> <span class="dim">// REAL-TIME, not end-of-run</span>
+  <span class="arrow-r">→</span> <span class="label">Crawl discovered URLs (Playwright)</span>
+  <span class="arrow-r">→</span> <span class="node">Run N+1 reads updated cooldowns</span>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="pipeline">Pipeline Phase Sequence</h2>
+
+<div class="flow">
+  <div class="phase"><div class="name">00 Bootstrap</div><div class="desc">Load identity, field rules, learning artifacts</div><div class="out">→ variables, categoryConfig</div></div>
+  <div class="arrow">→</div>
+  <div class="phase active"><div class="name">01 NeedSet</div><div class="desc">Assess field needs, build focus groups, derive seed status, compute tier allocation</div><div class="out">→ focusGroups, seedStatus</div></div>
+  <div class="arrow">‖</div>
+  <div class="phase"><div class="name">02 Brand Resolver</div><div class="desc">Resolve official + support domains</div><div class="out">→ brandResolution</div></div>
+</div>
+<div class="flow">
+  <div class="phase active"><div class="name">03 Search Profile</div><div class="desc">Deterministic query generation: T1 seeds → T2 groups → T3 keys</div><div class="out">→ query_rows with tier metadata</div></div>
+  <div class="arrow">→</div>
+  <div class="phase"><div class="name">04 Search Planner</div><div class="desc">LLM enhancement of queries (optional)</div><div class="out">→ enhancedRows</div></div>
+  <div class="arrow">→</div>
+  <div class="phase"><div class="name">05 Query Journey</div><div class="desc">Dedupe, rank by tier order, identity guard, budget cap</div><div class="out">→ final query list</div></div>
+</div>
+<div class="flow">
+  <div class="phase active"><div class="name">06 Search Execution</div><div class="desc">Run queries via Serper/SearXNG. <strong>Writes cooldowns to SQL in real-time.</strong></div><div class="out">→ searchResults + cooldowns persisted</div></div>
+  <div class="arrow">→</div>
+  <div class="phase"><div class="name">07 SERP Selector</div><div class="desc">Rank/filter discovered URLs</div><div class="out">→ discoveredUrls</div></div>
+  <div class="arrow">→</div>
+  <div class="phase"><div class="name">08 Crawl + Extract</div><div class="desc">Browser crawl, field extraction, evidence indexing</div><div class="out">→ run.json checkpoint</div></div>
+</div>
+
+<h3>Key Phase Details</h3>
+
+<h4>Phase 01: NeedSet (where tier decisions happen)</h4>
+<div class="box">
+<p><strong>File:</strong> <code>src/features/indexing/pipeline/needSet/searchPlanningContext.js</code></p>
+<p>This is where the tier system makes its decisions. It runs 4 steps:</p>
+<ol>
+  <li><strong><code>deriveSeedStatus()</code></strong> — Reads <code>queryExecutionHistory</code> from SQLite. For each seed type (specs, brand, sources), checks if <code>cooldown_until &gt; now</code>. If yes → <code>is_needed: false</code>.</li>
+  <li><strong><code>computeGroupQueryCount()</code></strong> — Counts how many active-cooldown group queries exist per <code>group_key</code>. Only queries with <code>cooldown_until &gt; now</code> are counted.</li>
+  <li><strong><code>isGroupSearchWorthy()</code></strong> — A group is "worthy" of a broad search if:
+    <ul>
+      <li>Coverage ratio &lt; 80% (<code>needsetGroupSearchCoverageThreshold</code>)</li>
+      <li>Unresolved fields ≥ 3 (<code>needsetGroupSearchMinUnresolved</code>)</li>
+      <li>Group query count &lt; 3 (<code>needsetGroupSearchMaxRepeats</code>)</li>
+      <li>Phase is not "hold"</li>
+    </ul>
+  </li>
+  <li><strong><code>computeTierAllocation()</code></strong> — Splits the query budget across tiers in priority order:
+    <ul>
+      <li>T1 seeds get first dibs (needed seeds consume budget)</li>
+      <li>T2 groups fill remaining budget (worthy groups sorted by productivity)</li>
+      <li>T3 keys fill whatever's left (individual field queries from non-worthy groups)</li>
+    </ul>
+  </li>
+</ol>
+</div>
+
+<h4>Phase 03: Search Profile (where queries are generated)</h4>
+<div class="box">
+<p><strong>File:</strong> <code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code></p>
+<p>Iterates through <code>tierHierarchyOrder</code> and generates queries per tier until budget is consumed:</p>
+<pre>for (const tierId of effectiveTierOrder) {
+  if (tierRows.length >= maxQueryCap) break;  // budget exhausted
+  if (tierId === seedTierOrder[0]) → buildTier1Queries(...)
+  if (tierId === 'group_searches') → buildTier2Queries(...)
+  if (tierId === 'key_searches')   → buildTier3Queries(...)
+}</pre>
+</div>
+
+<h4>Phase 06: Search Execution (where cooldowns are written)</h4>
+<div class="box">
+<p><strong>File:</strong> <code>src/features/indexing/pipeline/searchExecution/executeSearchQueries.js</code></p>
+<p>After each query executes, <code>frontierDb.recordQuery()</code> writes to SQLite <strong>immediately</strong> — not at end-of-run:</p>
+<pre>// Line 208-218 — called after EACH query completes
+frontierDb?.recordQuery?.({
+  productId, query, provider: seedSourceHost,
+  tier, group_key, normalized_key, hint_source,
+  results: providerResults,
+});
+// → upsertQueryCooldown() sets cooldown_until = now + 30 days</pre>
+<p>This means: even if a run is killed mid-execution, cooldowns for completed queries are already persisted.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="tiers">The 3-Tier Search Model</h2>
+
+<div class="tier-card t1">
+  <h4><span class="tag t1">TIER 1</span> Seed Queries — Cast the Wide Net</h4>
+  <p>Broad queries targeting known authority sites and product specification pages.</p>
+  <h4>3 Sub-Types (in <code>tierHierarchyOrder</code> priority):</h4>
+  <table>
+    <tr><td><strong>brand_seeds</strong></td><td><code>{product} {official_domain}</code>, <code>{product} {support_domain}</code></td><td>Brand resolver provides domains</td></tr>
+    <tr><td><strong>spec_seeds</strong></td><td><code>{product} specifications</code></td><td>Always 1 query, template-driven</td></tr>
+    <tr><td><strong>source_seeds</strong></td><td><code>{product} {source_host}</code></td><td>One per source host (rtings.com, techpowerup.com, etc.)</td></tr>
+  </table>
+  <h4>Cooldown:</h4>
+  <p><code>deriveSeedStatus()</code> checks <code>cooldown_until &gt; now</code> per seed. Provider field stores the <code>source_host</code> (e.g., <code>"rtings.com"</code>) for source seeds, empty string for spec/brand seeds. This is how per-source cooldowns are tracked.</p>
+  <h4>Budget Impact:</h4>
+  <p>With 22 source hosts, T1 can consume the entire budget (10) for the first 2-3 runs. Seeds cool down in batches of ~10 per run.</p>
+</div>
+
+<div class="tier-card t2">
+  <h4><span class="tag t2">TIER 2</span> Group Searches — Targeted Field Clusters</h4>
+  <p>One broad query per "search-worthy" field group, ordered by <code>productivity_score</code>.</p>
+  <h4>Query Format:</h4>
+  <pre>{brand} {model} {variant} {group_label} {group_description_long}</pre>
+  <p>Example: <code>Razer Viper V3 Pro sensor performance dpi polling rate lift distance</code></p>
+  <h4>Worthiness Gate (<code>isGroupSearchWorthy</code>):</h4>
+  <table>
+    <tr><td>Coverage ratio</td><td>&lt; 80%</td><td><code>needsetGroupSearchCoverageThreshold</code></td></tr>
+    <tr><td>Unresolved fields</td><td>≥ 3</td><td><code>needsetGroupSearchMinUnresolved</code></td></tr>
+    <tr><td>Prior searches</td><td>&lt; 3</td><td><code>needsetGroupSearchMaxRepeats</code></td></tr>
+    <tr><td>Phase</td><td>≠ "hold"</td><td>Budget-aware phase assignment</td></tr>
+  </table>
+  <h4>Exhaustion:</h4>
+  <p><code>computeGroupQueryCount()</code> counts active-cooldown rows where <code>tier = 'group_search'</code> AND <code>group_key</code> matches AND <code>cooldown_until &gt; now</code>. After 3 searches, the group is exhausted → keys take over.</p>
+</div>
+
+<div class="tier-card t3">
+  <h4><span class="tag t3">TIER 3</span> Key Searches — Individual Field Queries</h4>
+  <p>Targeted queries for specific unresolved fields from non-worthy groups. Uses <strong>progressive enrichment</strong>.</p>
+  <h4>Progressive Enrichment (controlled by <code>keySearchEnrichmentOrder</code>):</h4>
+  <table>
+    <tr><td><code>repeat_count=0</code></td><td><code>{product} {normalized_key}</code></td><td>Bare query</td></tr>
+    <tr><td><code>repeat_count=1</code></td><td><code>+ {aliases}</code></td><td>Add alternative names</td></tr>
+    <tr><td><code>repeat_count=2</code></td><td><code>+ {domain_hint}</code></td><td>Add untried source site</td></tr>
+    <tr><td><code>repeat_count=3+</code></td><td><code>+ {content_type}</code></td><td>Add doc type (manual_pdf, etc.)</td></tr>
+  </table>
+  <p>Each enrichment level is cumulative. The <code>normalized_key_queue</code> is sorted by availability → difficulty → repeat count → need score.</p>
+</div>
+
+<h3>Budget Allocation Flow</h3>
+<pre>
+Total budget = searchProfileQueryCap (default: 10)
+│
+├─ T1: Seeds (brand → spec → sources in tierHierarchyOrder)
+│  Consume: min(needed_seeds, remaining_budget)
+│  Remaining = budget - T1_count
+│
+├─ T2: Groups (sorted by productivity_score DESC)
+│  Consume: min(worthy_groups, remaining_budget)
+│  Remaining = budget - T1_count - T2_count
+│
+└─ T3: Keys (from non-worthy groups, sorted by availability)
+   Consume: min(available_keys, remaining_budget)
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="cooldown">Cooldown System</h2>
+
+<h3>How Cooldowns Work</h3>
+<div class="box">
+<p>Both seed and group cooldowns use the <strong>same pattern</strong>:</p>
+<pre>
+// When a query executes (real-time, not end-of-run):
+cooldown_until = new Date(Date.now() + queryCooldownDays * 86400000).toISOString()
+→ upsertQueryCooldown({ query_hash, product_id, cooldown_until, ... })
+
+// When next run starts:
+queryExecutionHistory = buildQueryExecutionHistory(productId)
+→ SELECT * FROM query_cooldowns WHERE product_id = ? ORDER BY last_executed_at DESC
+
+// Seed check (deriveSeedStatus):
+if (latest.cooldown_until > now) → is_needed: false  // on cooldown, skip
+
+// Group check (computeGroupQueryCount):
+count queries WHERE tier='group_search' AND group_key=? AND cooldown_until > now
+if (count >= 3) → group exhausted, skip
+</pre>
+</div>
+
+<h3>Lifecycle Across Runs</h3>
+<table>
+  <thead><tr><th>Run</th><th>T1 Seeds</th><th>T2 Groups</th><th>T3 Keys</th><th>What Happens</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td class="t1-text"><strong>FIRE</strong></td><td>—</td><td>—</td><td>No history → all 22 source seeds + spec seed needed. Seeds consume full budget.</td></tr>
+    <tr><td>2-3</td><td class="t1-text">FIRE (remaining)</td><td class="t2-text">START</td><td>—</td><td>~10 seeds cooled per run. As T1 shrinks, T2 groups get budget.</td></tr>
+    <tr><td>4-5</td><td>COOL</td><td class="t2-text"><strong>FIRE</strong></td><td class="t3-text">START</td><td>All seeds cooled. Groups get full budget. Some groups exhaust → keys start.</td></tr>
+    <tr><td>6+</td><td>COOL</td><td>EXHAUSTED</td><td class="t3-text"><strong>FIRE</strong></td><td>All groups exhausted (3x max). Keys get entire budget with progressive enrichment.</td></tr>
+    <tr><td>30+ days later</td><td class="t1-text"><strong>RE-FIRE</strong></td><td class="t2-text"><strong>RE-FIRE</strong></td><td>—</td><td>All cooldowns expired. Full cycle resets.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="persistence">Persistence & Data Storage</h2>
+
+<h3>What Gets Stored Where</h3>
+
+<div class="db-col">
+  <h4><span class="tag sql">SQL</span> query_cooldowns (spec.sqlite) — <span class="tag ephemeral">EPHEMERAL</span></h4>
+  <table>
+    <tr><th>Column</th><th>Type</th><th>Purpose</th></tr>
+    <tr><td><code>query_hash</code></td><td>TEXT (PK)</td><td>Hash of product_id + normalized query text</td></tr>
+    <tr><td><code>product_id</code></td><td>TEXT (PK)</td><td>Product identifier</td></tr>
+    <tr><td><code>tier</code></td><td>TEXT</td><td><code>seed</code> | <code>group_search</code> | <code>key_search</code></td></tr>
+    <tr><td><code>provider</code></td><td>TEXT</td><td>Source host for seeds (e.g., <code>rtings.com</code>), search engine for groups/keys</td></tr>
+    <tr><td><code>group_key</code></td><td>TEXT</td><td>Field group (for T2/T3)</td></tr>
+    <tr><td><code>normalized_key</code></td><td>TEXT</td><td>Field key (for T3)</td></tr>
+    <tr><td><code>attempt_count</code></td><td>INT</td><td>Times this exact query was executed</td></tr>
+    <tr><td><code>cooldown_until</code></td><td>TEXT</td><td>ISO timestamp when query becomes eligible for re-execution</td></tr>
+    <tr><td><code>last_executed_at</code></td><td>TEXT</td><td>When query last ran</td></tr>
+  </table>
+  <p><strong>Written:</strong> Real-time during search execution via <code>crawlLedgerAdapter.recordQuery()</code></p>
+  <p><strong>Read:</strong> At run start via <code>buildQueryExecutionHistory(productId)</code></p>
+</div>
+
+<div class="box">
+  <h3>Rebuild Safety: Cooldowns Persist via product.json</h3>
+  <p>Query cooldowns are snapshotted into <code>product.json</code> at end-of-run via <code>buildProductCheckpoint()</code>.
+  On DB rebuild, <code>seedProductCheckpoint()</code> re-seeds them into <code>query_cooldowns</code> SQL table.</p>
+  <p>If <code>spec.sqlite</code> is deleted and rebuilt from checkpoints:</p>
+  <ul>
+    <li><code>url_crawl_ledger</code> is rebuilt from product.json sources ✓</li>
+    <li><code>query_cooldowns</code> is rebuilt from product.json <code>query_cooldowns</code> array ✓</li>
+  </ul>
+  <p>Product.json is the durable SSOT — never pruned (unlike run.json which was pruned after 7 days, now kept forever).</p>
+</div>
+
+<div class="db-col">
+  <h4><span class="tag json">JSON</span> product.json (.workspace/products/) — <span style="color:#7ee787">PERSISTENT</span></h4>
+  <p>Contains: identity, sources (URL crawl history), fields, provenance, <strong>query_cooldowns</strong>. Updated at end-of-run.</p>
+  <p>Query cooldowns are snapshotted from SQL at end-of-run and re-seeded on DB rebuild.</p>
+</div>
+
+<div class="db-col">
+  <h4><span class="tag json">JSON</span> run.json (.workspace/runs/) — <span style="color:#7ee787">PERSISTENT</span></h4>
+  <p>Contains: run metadata, fetch plan, counters, sources crawled, search profile, NeedSet output.</p>
+  <p>Written at end-of-run. Used for GUI replay and audit trail.</p>
+</div>
+
+<h3>Data Flow Diagram</h3>
+<div class="mermaid-like">
+<span class="node">Pipeline Start</span>
+  <span class="arrow-r">→</span> <span class="label">specDb.buildQueryExecutionHistory(productId)</span>
+  <span class="dim">// SQL SELECT * FROM query_cooldowns WHERE product_id = ?</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">deriveSeedStatus(queryHistory, identity, config, sourceHosts)</span>
+  <span class="dim">// For each seed: cooldown_until > now? → is_needed: false</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">buildSearchPlanningContext({needSetOutput, queryHistory, ...})</span>
+  <span class="dim">// Groups fields, checks worthiness, allocates budget</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">buildSearchProfile({seedStatus, focusGroups, ...})</span>
+  <span class="dim">// Generates query strings: T1 seeds → T2 groups → T3 keys</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">executeSearchQueries()</span>
+  <span class="dim">// Runs queries. After EACH query:</span>
+  <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow-r">→</span> <span class="label">crawlLedgerAdapter.recordQuery({...})</span>
+  <span class="dim">// SQL UPSERT INTO query_cooldowns (cooldown_until = now + 30 days)</span>
+  <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="dim">// provider = source_host for seeds, search_engine for groups/keys</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">Crawl URLs with Playwright</span>
+  <br>
+  <span class="arrow-r">→</span> <span class="label">Write run.json + update product.json</span>
+  <span class="dim">// end-of-run checkpoint (no cooldown data)</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="settings">Pipeline Settings</h2>
+
+<h3>Tier & Budget Settings</h3>
+<table>
+  <thead><tr><th>Setting</th><th>Default</th><th>Range</th><th>What It Controls</th></tr></thead>
+  <tbody class="setting-row">
+    <tr><td><code>searchProfileQueryCap</code></td><td>10</td><td>1–100</td><td>Total query budget per run — the SOLE hard ceiling</td></tr>
+    <tr><td><code>tierHierarchyOrder</code></td><td>brand_seeds,spec_seeds,<br>source_seeds,group_searches,<br>key_searches</td><td>CSV</td><td>Priority order for budget allocation. Can reorder or omit tiers.</td></tr>
+    <tr><td><code>queryCooldownDays</code></td><td>30</td><td>0–90</td><td>Days before a query can re-run for the same product (0 = no cooldown)</td></tr>
+  </tbody>
+</table>
+
+<h3>NeedSet / Group Search Settings</h3>
+<table>
+  <thead><tr><th>Setting</th><th>Default</th><th>Range</th><th>What It Controls</th></tr></thead>
+  <tbody class="setting-row">
+    <tr><td><code>needsetGroupSearchCoverageThreshold</code></td><td>0.80</td><td>0–1</td><td>Coverage ratio above which a group stops getting searched</td></tr>
+    <tr><td><code>needsetGroupSearchMinUnresolved</code></td><td>3</td><td>1–20</td><td>Minimum unresolved fields to trigger a group search</td></tr>
+    <tr><td><code>needsetGroupSearchMaxRepeats</code></td><td>3</td><td>1–10</td><td>Maximum broad searches per group before exhaustion</td></tr>
+    <tr><td><code>needsetGroupQueryTermsCap</code></td><td>5</td><td>1–20</td><td>Max query terms per group in NeedSet output</td></tr>
+  </tbody>
+</table>
+
+<h3>Key Search Settings</h3>
+<table>
+  <thead><tr><th>Setting</th><th>Default</th><th>Range</th><th>What It Controls</th></tr></thead>
+  <tbody class="setting-row">
+    <tr><td><code>keySearchEnrichmentOrder</code></td><td>aliases,domain_hints,<br>content_types</td><td>CSV</td><td>Progressive enrichment stages for T3 key queries</td></tr>
+    <tr><td><code>queryBuilderMaxAliases</code></td><td>12</td><td>1–50</td><td>Max product name aliases used in query generation</td></tr>
+    <tr><td><code>queryBuilderFieldQueryCap</code></td><td>3</td><td>1–20</td><td>Max queries per individual field</td></tr>
+  </tbody>
+</table>
+
+<h3>Search Engine Settings</h3>
+<table>
+  <thead><tr><th>Setting</th><th>Default</th><th>Range</th><th>What It Controls</th></tr></thead>
+  <tbody class="setting-row">
+    <tr><td><code>searchEngines</code></td><td>google</td><td>CSV enum</td><td>Primary search engine(s): google, bing, google-proxy, duckduckgo, brave</td></tr>
+    <tr><td><code>searchEnginesFallback</code></td><td>bing</td><td>CSV enum</td><td>Fallback when primary fails</td></tr>
+    <tr><td><code>serperEnabled</code></td><td>true</td><td>bool</td><td>Enable Serper API as search provider</td></tr>
+    <tr><td><code>serperBurstEnabled</code></td><td>true</td><td>bool</td><td>Fire all Serper queries concurrently</td></tr>
+    <tr><td><code>serpSelectorMaxKeep</code></td><td>50</td><td>1–500</td><td>Max URLs SERP selector keeps per run</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="sources">Source Hosts</h2>
+
+<div class="box">
+<p><strong>Source:</strong> <code>category_authority/mouse/sources.json</code></p>
+<p>Each source host gets a T1 seed query on its first run. After execution, the seed goes on 30-day cooldown.</p>
+
+<h4>Lab Tier (instrumented measurement)</h4>
+<div class="source-list">
+  <span class="source-chip">rtings.com</span>
+  <span class="source-chip">techpowerup.com</span>
+  <span class="source-chip">tomshardware.com</span>
+  <span class="source-chip">lttlabs.com</span>
+  <span class="source-chip">igorslab.de</span>
+  <span class="source-chip">techgearlab.com</span>
+</div>
+
+<h4>Database / Aggregator Tier</h4>
+<div class="source-list">
+  <span class="source-chip">eloshapes.com</span>
+  <span class="source-chip">mousespecs.org</span>
+  <span class="source-chip">sensor.fyi</span>
+  <span class="source-chip">rocketjumpninja.com</span>
+  <span class="source-chip">prosettings.net</span>
+  <span class="source-chip">gaminggem.com</span>
+  <span class="source-chip">mousecompare.com</span>
+  <span class="source-chip">thegamingsetup.com</span>
+  <span class="source-chip">pcpartpicker.com</span>
+  <span class="source-chip">versus.com</span>
+  <span class="source-chip">reddit.com</span>
+</div>
+
+<h4>Retailer Tier</h4>
+<div class="source-list">
+  <span class="source-chip">amazon.com</span>
+  <span class="source-chip">bestbuy.com</span>
+  <span class="source-chip">newegg.com</span>
+  <span class="source-chip">bhphotovideo.com</span>
+  <span class="source-chip">microcenter.com</span>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Key Files</h2>
+<table>
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>src/features/indexing/pipeline/needSet/searchPlanningContext.js</code></td><td>deriveSeedStatus, computeGroupQueryCount, isGroupSearchWorthy, computeTierAllocation, buildSearchPlanningContext</td></tr>
+    <tr><td><code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code></td><td>buildTier1/2/3Queries, buildSearchProfile, determineQueryModes</td></tr>
+    <tr><td><code>src/features/indexing/pipeline/searchExecution/executeSearchQueries.js</code></td><td>Query execution + real-time cooldown recording (provider = source_host for seeds)</td></tr>
+    <tr><td><code>src/features/indexing/pipeline/queryJourney/runQueryJourney.js</code></td><td>Dedup, ranking, identity guard, budget cap. Carries source_host through.</td></tr>
+    <tr><td><code>src/features/indexing/orchestration/shared/crawlLedgerAdapter.js</code></td><td>recordQuery() → upsertQueryCooldown(). Cooldown = now + queryCooldownDays.</td></tr>
+    <tr><td><code>src/db/stores/crawlLedgerStore.js</code></td><td>buildQueryExecutionHistory() reads from query_cooldowns table</td></tr>
+    <tr><td><code>src/shared/settingsRegistry.js</code></td><td>All setting definitions (single source of truth)</td></tr>
+    <tr><td><code>category_authority/mouse/sources.json</code></td><td>22 approved source hosts for mouse category</td></tr>
+  </tbody>
+</table>
+
+</body></html>

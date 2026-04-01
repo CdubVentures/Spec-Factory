@@ -8,6 +8,7 @@ export interface SidebarNavItem<T extends string> {
   label: string;
   subtitle: string;
   tip: string;
+  badge?: ReactNode;
 }
 
 interface SidebarShellProps<T extends string> {
@@ -53,8 +54,11 @@ export function SidebarShell<T extends string>({
             <button
               key={item.id}
               onClick={() => onSelect(item.id)}
-              className={`group w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
+              className={`group relative w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
             >
+              {item.badge && (
+                <span className="absolute top-[-6px] right-[3px]">{item.badge}</span>
+              )}
               <div className="flex items-center gap-2.5">
                 {renderIcon(item.id, isActive)}
                 <div className="min-w-0 flex-1">

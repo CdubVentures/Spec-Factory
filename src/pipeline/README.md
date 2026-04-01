@@ -5,9 +5,9 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 ## Public API (The Contract)
 
 - `runProduct.js` → `runProduct({ storage, config, s3Key, ... })` — main pipeline entry point. Returns `{ crawlResults, runId, category, productId, fetchPlanStats, startMs, job }`
-- `checkpoint/buildCrawlCheckpoint.js` → `buildCrawlCheckpoint(opts)` — pure builder for run.json (schema v2: sources + needset + search_profile + run_summary + identity)
+- `checkpoint/buildCrawlCheckpoint.js` → `buildCrawlCheckpoint(opts)` — pure builder for run.json (schema v2/3: sources + needset + search_profile + run_summary + identity + runtime_ops_panels)
 - `checkpoint/writeCrawlCheckpoint.js` → `writeCrawlCheckpoint(opts)` — writes `{runId}/run.json` + optional SQL run_artifacts
-- `checkpoint/buildProductCheckpoint.js` → `buildProductCheckpoint(opts)` — pure builder for product.json (identity + sources)
+- `checkpoint/buildProductCheckpoint.js` → `buildProductCheckpoint(opts)` — pure builder for product.json (identity + sources + query_cooldowns)
 - `checkpoint/mergeProductSources.js` → `mergeProductSources(opts)` — content-addressed source dedup across runs
 - `checkpoint/seedFromCheckpoint.js` → `seedFromCheckpoint({ specDb, checkpoint })` — rebuild SQL state from run.json or product.json
 - `checkpoint/scanAndSeedCheckpoints.js` → `scanAndSeedCheckpoints({ specDb, indexLabRoot })` — walk disk and seed all checkpoints

@@ -39,12 +39,17 @@ export function runSizeBytes(run: RunInventoryRow): number {
   return run.size_bytes ?? run.storage_metrics?.total_size_bytes ?? 0;
 }
 
-// WHY: Group by product_id (stable), not picker_label (contains run tokens).
-// Display name is derived from brand+model when available, else cleaned product_id.
+// WHY: Group by resolved identity (brand+model), not product_id.
+// Multiple random product_id hashes can map to the same real product.
+// Falls back to product_id only when brand+model is unavailable.
 export function groupRunsByProduct(runs: RunInventoryRow[]): ProductGroup[] {
   const map = new Map<string, RunInventoryRow[]>();
   for (const run of runs) {
-    const groupKey = run.product_id || 'unknown';
+    const brand = run.brand || '';
+    const model = run.model || '';
+    const groupKey = brand && model
+      ? `${brand.toLowerCase()} ${model.toLowerCase()}`
+      : run.product_id || 'unknown';
     if (!map.has(groupKey)) map.set(groupKey, []);
     map.get(groupKey)!.push(run);
   }

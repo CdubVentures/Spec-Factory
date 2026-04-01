@@ -130,7 +130,7 @@ function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'store
 
 export function RuntimeOpsPage() {
   const category = useUiStore((s) => s.category);
-  const categoryScope = category === 'all' ? '' : category;
+  const categoryScope = category;
   const selectedRunId = useIndexLabStore((s) => s.pickerRunId);
   const setSelectedRunId = useIndexLabStore((s) => s.setPickerRunId);
   const [activeTab, setActiveTab] = usePersistedTab<RuntimeOpsTab>(
@@ -306,6 +306,8 @@ export function RuntimeOpsPage() {
             isRunning={isSelectedRunActive}
             runStatus={selectedRun?.status ?? ''}
             bootProgress={summary?.boot_progress}
+            startedAt={selectedRun?.started_at}
+            endedAt={selectedRun?.ended_at}
           />
         )}
         <label className="shrink-0 sf-text-caption sf-text-muted font-medium">Run:</label>

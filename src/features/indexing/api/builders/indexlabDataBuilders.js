@@ -343,14 +343,35 @@ export async function readIndexLabRunAutomationQueue(runId) {
 
 export async function listIndexLabRuns(opts) {
   // WHY: Thread catalog brand/model/variant into label builder so hex IDs display real names.
-  if (opts?.category && !opts.catalogProducts && _config) {
+  if (!opts?.catalogProducts && _config) {
     try {
-      const catalog = await loadProductCatalog(_config, opts.category);
       const map = new Map();
-      for (const [pid, entry] of Object.entries(catalog.products || {})) {
-        map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+      if (opts?.category) {
+        // Single category — load just that catalog.
+        const catalog = await loadProductCatalog(_config, opts.category);
+        for (const [pid, entry] of Object.entries(catalog.products || {})) {
+          map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+        }
+      } else {
+        // WHY: "all" view (no category filter) — load catalogs for every known category
+        // so hex product IDs resolve to human-readable brand+model labels.
+        const catRoot = path.resolve(_config.categoryAuthorityRoot || 'category_authority');
+        const entries = await fs.readdir(catRoot, { withFileTypes: true }).catch(() => []);
+        const cats = entries
+          .filter((e) => e.isDirectory() && !e.name.startsWith('_') && e.name !== 'tests')
+          .map((e) => e.name);
+        await Promise.all(cats.map(async (cat) => {
+          try {
+            const catalog = await loadProductCatalog(_config, cat);
+            for (const [pid, entry] of Object.entries(catalog.products || {})) {
+              map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+            }
+          } catch { /* skip unloadable catalog */ }
+        }));
       }
-      return _runListBuilder.listIndexLabRuns({ ...opts, catalogProducts: map });
+      if (map.size > 0) {
+        return _runListBuilder.listIndexLabRuns({ ...opts, catalogProducts: map });
+      }
     } catch { /* fall through to no-catalog path */ }
   }
   return _runListBuilder.listIndexLabRuns(opts);

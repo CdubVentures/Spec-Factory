@@ -75,7 +75,6 @@ function makePlanningContext() {
         total_queries: 1,
         complete: 0,
         incomplete: 1,
-        pending_scrapes: 2,
       },
     },
   };
@@ -240,7 +239,6 @@ describe('runNeedSet public contract', { concurrency: false }, () => {
     ok(result.seedStatus, 'seedStatus exists');
     ok(result.seedStatus.query_completion_summary, 'query completion summary exists');
     strictEqual(typeof result.seedStatus.query_completion_summary.total_queries, 'number');
-    strictEqual(typeof result.seedStatus.query_completion_summary.pending_scrapes, 'number');
     ok(result.seedStatus.specs_seed, 'specs_seed exists');
     strictEqual(typeof result.seedStatus.specs_seed.is_needed, 'boolean');
     ok(result.seedStatus.brand_seed, 'brand_seed exists');

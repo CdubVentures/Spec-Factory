@@ -37,6 +37,7 @@ export function createSpecDbRuntime({
   function getSpecDb(category) {
     const resolvedCategory = resolveCategoryAlias(category);
     if (!resolvedCategory) return null;
+    if (resolvedCategory === 'all') return null;
     if (specDbCache.has(resolvedCategory)) return specDbCache.get(resolvedCategory);
 
     const primaryPath = path.join(config.specDbDir || '.workspace/db', resolvedCategory, 'spec.sqlite');

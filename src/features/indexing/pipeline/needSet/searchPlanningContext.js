@@ -229,8 +229,7 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
 
 export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, categorySourceHosts = []) {
   const queries = queryExecutionHistory?.queries || [];
-  // WHY: queryCooldownDays is the canonical knob; needsetSeedCooldownDays kept for backward compat.
-  const cooldownMs = config.seedCooldownMs ?? (configInt(config, 'queryCooldownDays') ?? configInt(config, 'needsetSeedCooldownDays') ?? 30) * 86400000;
+  const cooldownMs = config.seedCooldownMs ?? (configInt(config, 'queryCooldownDays') || 30) * 86400000;
   const now = Date.now();
 
   function seedStatusFor(matchFn) {
@@ -297,7 +296,6 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, c
       total_queries: queries.length,
       complete,
       incomplete: queries.length - complete,
-      pending_scrapes: queries.reduce((sum, q) => sum + (q.pending_count || 0), 0),
     },
   };
 }

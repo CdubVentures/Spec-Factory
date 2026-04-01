@@ -18,7 +18,7 @@ flowchart LR
   RUN --> UH
   RUN --> CL
 
-  QH["PER-QUERY HISTORY\n(frontierDb)\nquery_hash, status,\nresults_returned,\nfields_extracted,\nnew_fields_closed"]
+  QH["PER-QUERY HISTORY\n(query_cooldowns)\nquery_hash, tier, provider,\nattempt_count, result_count,\ncooldown_until"]
 
   FH["PER-FIELD HISTORY\n(finalization)\nquery_count = repeat_count,\ndomains_tried,\ncontent_types_tried,\nurls_examined"]
 

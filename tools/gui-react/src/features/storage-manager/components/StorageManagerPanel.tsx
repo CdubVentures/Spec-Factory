@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useStorageRuns } from '../state/useStorageRuns.ts';
-import { useDeleteRun, useBulkDeleteRuns } from '../state/useStorageActions.ts';
+import { useDeleteRun, useBulkDeleteRuns, useDeleteUrl, usePurgeProductHistory } from '../state/useStorageActions.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { groupRunsByProduct } from '../helpers.ts';
 import { StorageOverviewBar } from './StorageOverviewBar.tsx';
@@ -22,10 +22,22 @@ export function StorageManagerPanel() {
   const [deleteTarget, setDeleteTarget] = useState<string[] | null>(null);
   const singleDelete = useDeleteRun();
   const bulkDelete = useBulkDeleteRuns();
+  const urlDelete = useDeleteUrl();
+  const historyPurge = usePurgeProductHistory();
   const isDeleting = singleDelete.isPending || bulkDelete.isPending;
 
   const handleDeleteRun = useCallback((runId: string) => setDeleteTarget([runId]), []);
   const handleBulkDelete = useCallback((runIds: string[]) => setDeleteTarget(runIds), []);
+  const handleDeleteUrl = useCallback((url: string, productId: string, cat: string) => {
+    if (confirm(`Delete URL "${url}" and all its artifacts?`)) {
+      urlDelete.mutate({ url, productId, category: cat });
+    }
+  }, [urlDelete]);
+  const handlePurgeHistory = useCallback((productId: string, cat: string) => {
+    if (confirm(`Purge ALL run history for "${productId}"? This keeps the product identity but deletes all runs, artifacts, and extracted data.`)) {
+      historyPurge.mutate({ productId, category: cat });
+    }
+  }, [historyPurge]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -59,6 +71,10 @@ export function StorageManagerPanel() {
         onDeleteAll={handleBulkDelete}
         onDeleteRun={handleDeleteRun}
         isDeleting={isDeleting}
+        onDeleteUrl={handleDeleteUrl}
+        isDeletingUrl={urlDelete.isPending}
+        onPurgeHistory={handlePurgeHistory}
+        isPurgingHistory={historyPurge.isPending}
       />
 
       <StorageOperationsBar totalRuns={runs.length} />

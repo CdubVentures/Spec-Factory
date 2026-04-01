@@ -34,7 +34,7 @@ function mapProductSource(src, runId) {
  * @param {{ identity: object, category: string, productId: string, runId: string, sources: Array }} opts
  * @returns {object} Product checkpoint
  */
-export function buildProductCheckpoint({ identity, category, productId, runId, sources } = {}) {
+export function buildProductCheckpoint({ identity, category, productId, runId, sources, queryCooldowns } = {}) {
   const id = identity || {};
   const runSources = Array.isArray(sources) ? sources : [];
 
@@ -59,6 +59,7 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
     sources: runSources.map((src) => mapProductSource(src, runId)),
     fields: {},
     provenance: {},
+    query_cooldowns: Array.isArray(queryCooldowns) ? queryCooldowns : [],
     updated_at: new Date().toISOString(),
   };
 }

@@ -53,7 +53,6 @@ export function LlmSettingsPage() {
   const category = useUiStore((s) => s.category);
   const autoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
-  const isAll = category === 'all';
   const llmSettingsReady = useSettingsAuthorityStore((s) => s.snapshot.llmSettingsReady);
   const llmSettingsBootstrapRows = useLlmSettingsBootstrapRows(category);
   const [activeScope, setActiveScope] = usePersistedTab<LlmScope>(
@@ -114,7 +113,7 @@ export function LlmSettingsPage() {
     resetDefaults,
   } = useLlmSettingsAuthority({
     category,
-    enabled: !isAll,
+    enabled: true,
     rows,
     dirty,
     autoSaveEnabled,
@@ -152,7 +151,7 @@ export function LlmSettingsPage() {
       setLastSavedAt(new Date().toLocaleTimeString());
     },
   });
-  const llmHydrated = isAll || (llmSettingsReady && !isLoading);
+  const llmHydrated = llmSettingsReady && !isLoading;
 
   useEffect(() => {
     const normalizedRows = normalizeRowsEffortBand(llmSettingsBootstrapRows);
@@ -295,10 +294,6 @@ export function LlmSettingsPage() {
   function updateSelected(patch: Partial<LlmRouteRow>) {
     if (!selectedRow) return;
     updateRow(selectedRow.route_key, patch);
-  }
-
-  if (isAll) {
-    return <p className="sf-status-text-muted mt-8 text-center">Select a specific category to manage LLM settings.</p>;
   }
 
   if (!llmHydrated && rows.length === 0) {

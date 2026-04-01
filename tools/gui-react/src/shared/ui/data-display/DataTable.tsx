@@ -101,7 +101,7 @@ function DataTableInner<T>({
   data,
   columns,
   searchable = false,
-  maxHeight = 'max-h-[600px]',
+  maxHeight = 'max-h-[calc(100vh-280px)]',
   persistKey,
   onRowClick,
   onCellClick,

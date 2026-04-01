@@ -478,7 +478,7 @@ export function ProductManager() {
             searchable
             persistKey={`catalog:products:table:${category}`}
             onRowClick={openEdit}
-            maxHeight="max-h-[550px]"
+            maxHeight="max-h-[calc(100vh-280px)]"
           />
         </div>
       </div>

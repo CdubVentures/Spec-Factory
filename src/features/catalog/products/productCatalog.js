@@ -38,7 +38,7 @@ function emptyCatalog() {
 
 // WHY: With decoupled productIds (random hex), duplicate detection must be
 // identity-based, not ID-based. Returns the existing productId or null.
-function findProductByIdentity(catalog, brand, model, variant) {
+export function findProductByIdentity(catalog, brand, model, variant) {
   const b = String(brand ?? '').trim().toLowerCase();
   const m = String(model ?? '').trim().toLowerCase();
   const v = String(variant ?? '').trim().toLowerCase();

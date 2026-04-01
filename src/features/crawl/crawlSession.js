@@ -420,7 +420,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       // WHY: Crawlee's errorHandler fires before each retry. Emit a signal
       // so the GUI worker tab shows RETRY badge during retry attempts.
       // Non-retryable errors skip retry entirely — fail fast, don't waste time.
-      errorHandler: async ({ request }, error) => {
+      errorHandler: async ({ request, session }, error) => {
         const msg = error?.message || '';
         // WHY: These errors cannot be resolved by retrying with a new session.
         // Downloads = site serves a file. DNS = domain doesn't exist.
@@ -446,6 +446,29 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           && request.userData?.__capturedPage
         ) {
           request.noRetry = true;
+        }
+        // WHY: blocked:* errors — session rotation can't fix IP-based blocks.
+        // One retry already happened via maxRequestRetries (with session rotation
+        // since requestHandler calls session.retire() on block detection).
+        // Proxy retry in runFetchPlan handles persistent blocks.
+        if (!request.noRetry && msg.startsWith('blocked:')) {
+          request.noRetry = true;
+        }
+        // WHY: Handler timeout without captured page — page didn't even load.
+        // Allow one retry (retryCount 0), but if it failed again, the server
+        // is genuinely slow/dead. Don't burn more session rotations.
+        if (
+          !request.noRetry
+          && msg.includes('requestHandler timed out')
+          && !request.userData?.__capturedPage
+          && (request.retryCount ?? 0) >= 1
+        ) {
+          request.noRetry = true;
+        }
+        // WHY: Retire session for retryable errors so the retry uses a fresh
+        // fingerprint + cookies instead of the same identity that just failed.
+        if (!request.noRetry) {
+          session?.retire();
         }
         // WHY: Only emit retrying signal if an actual retry will happen.
         // noRetry errors go straight to failedRequestHandler — no misleading flash.
@@ -523,7 +546,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
       navigationTimeoutSecs: navTimeoutSecs,
-      maxSessionRotations: Number(settings.crawleeMaxSessionRotations) || 10,
+      maxSessionRotations: Number(settings.crawleeMaxSessionRotations) || 2,
       ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
       useSessionPool,
       persistCookiesPerSession: persistCookies,

@@ -157,3 +157,38 @@ test('specdb runtime keeps the cached db handle available when auto-seed fails',
     true,
   );
 });
+
+test('specdb runtime rejects the "all" sentinel — getSpecDb and getSpecDbReady return null without creating a database', async () => {
+  let dbCreated = false;
+
+  class TrackingDb {
+    constructor({ dbPath, category }) {
+      dbCreated = true;
+      this.dbPath = dbPath;
+      this.category = category;
+    }
+    isSeeded() {
+      return true;
+    }
+  }
+
+  const runtime = createSpecDbRuntime({
+    resolveCategoryAlias: (value) => String(value || '').trim(),
+    specDbClass: TrackingDb,
+    path,
+    fsSync: {
+      accessSync: () => {},
+      mkdirSync: () => {},
+    },
+    syncSpecDbForCategory: async () => createSyncResult(),
+    config: { localMode: true },
+    logger: { log: () => {}, error: () => {} },
+  });
+
+  const db = runtime.getSpecDb('all');
+  assert.equal(db, null, 'getSpecDb("all") must return null');
+  assert.equal(dbCreated, false, 'no database should be created for "all"');
+
+  const ready = await runtime.getSpecDbReady('all');
+  assert.equal(ready, null, 'getSpecDbReady("all") must return null');
+});

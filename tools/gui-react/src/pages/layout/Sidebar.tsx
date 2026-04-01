@@ -4,7 +4,6 @@ import { useProductStore } from '../../stores/productStore.ts';
 import { useRuntimeStore } from '../../stores/runtimeStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { useCatalogQuery } from '../../hooks/useCatalogQuery.ts';
-import { StatusBadge } from '../../shared/ui/feedback/StatusBadge.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { isTestCategory, formatTestCategory } from '../../utils/testMode.ts';
 
@@ -233,17 +232,6 @@ export function Sidebar() {
         )}
       </div>
 
-      {selectedProductId && (
-        <div className="text-xs space-y-1">
-          <p className="font-mono text-slate-600 dark:text-slate-300 truncate" title={selectedProductId}>
-            {selectedProductId}
-          </p>
-          <p>Brands: {brands.length} | Models: {models.length}</p>
-          {catalog.find((r) => r.productId === selectedProductId) && (
-            <StatusBadge status={catalog.find((r) => r.productId === selectedProductId)!.status} />
-          )}
-        </div>
-      )}
 
       <div className="border-t border-white/10 pt-3">
         {processStatus.running && (

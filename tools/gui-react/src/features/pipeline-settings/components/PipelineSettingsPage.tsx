@@ -56,7 +56,6 @@ function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategory
 
 export function PipelineSettingsPage() {
   const category = useUiStore((s) => s.category);
-  const isAll = category === 'all';
   const sourceStrategySettingsReady = useSettingsAuthorityStore(
     (s) => s.snapshot.sourceStrategyReady,
   );
@@ -191,7 +190,7 @@ export function PipelineSettingsPage() {
     deleteEntry,
   } = useSourceStrategyAuthority({
     category,
-    enabled: !isAll,
+    enabled: true,
     onError: (error) => {
       setSourceStrategySaveState({
         kind: 'error',
@@ -212,7 +211,7 @@ export function PipelineSettingsPage() {
     },
   });
 
-  const sourceStrategyHydrated = isAll || sourceStrategyIsError || (sourceStrategySettingsReady && !sourceStrategyLoading);
+  const sourceStrategyHydrated = sourceStrategyIsError || (sourceStrategySettingsReady && !sourceStrategyLoading);
 
   const sourceStrategyStatus = resolveSourceStrategyStatus({
     isSaving: sourceStrategySaving,
@@ -292,8 +291,7 @@ export function PipelineSettingsPage() {
                     {sourceStrategyStatus.text}
                   </span>
                 ) : null}
-                {!isAll ? (
-                  <button
+                <button
                     type="button"
                     onClick={beginCreateSourceDraft}
                     disabled={sourceStrategySaving}
@@ -301,7 +299,6 @@ export function PipelineSettingsPage() {
                   >
                     Add Source
                   </button>
-                ) : null}
               </div>
             ) : null}
     </>
@@ -326,7 +323,6 @@ export function PipelineSettingsPage() {
           <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading source strategy section...</p>}>
             <SourceStrategySection
               category={category}
-              isAll={isAll}
               sourceStrategyHydrated={sourceStrategyHydrated}
               sourceStrategyEntries={sourceStrategyEntries}
               sourceStrategyLoading={sourceStrategyLoading}
@@ -368,6 +364,7 @@ export function PipelineSettingsPage() {
       onSelectSection={setActiveSection}
       headerActions={headerActions}
       activePanel={activePanel}
+      category={category}
     />
   );
 }

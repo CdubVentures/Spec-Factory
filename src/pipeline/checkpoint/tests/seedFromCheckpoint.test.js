@@ -270,3 +270,57 @@ describe('seedFromCheckpoint: validation', () => {
     assert.equal(result.type, 'product');
   });
 });
+
+// ── Query cooldown persistence tests ──────────────────────────────────────────
+
+describe('seedFromCheckpoint: query_cooldowns via product checkpoint', () => {
+  const SAMPLE_COOLDOWNS = [
+    { query_hash: 'h1', query_text: 'razer viper specifications', provider: '', tier: 'seed', group_key: null, normalized_key: null, hint_source: 'tier1_seed', attempt_count: 1, result_count: 5, last_executed_at: '2026-03-29T10:00:00Z', cooldown_until: '2026-04-28T10:00:00Z' },
+    { query_hash: 'h2', query_text: 'razer viper rtings.com', provider: 'rtings.com', tier: 'seed', group_key: null, normalized_key: null, hint_source: 'tier1_seed', attempt_count: 2, result_count: 8, last_executed_at: '2026-03-29T10:01:00Z', cooldown_until: '2026-04-28T10:01:00Z' },
+    { query_hash: 'h3', query_text: 'razer viper sensor performance', provider: 'serper', tier: 'group_search', group_key: 'sensor_performance', normalized_key: null, hint_source: 'tier2_group', attempt_count: 1, result_count: 10, last_executed_at: '2026-03-29T10:02:00Z', cooldown_until: '2026-04-28T10:02:00Z' },
+  ];
+
+  test('seeds query_cooldowns from product checkpoint', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ query_cooldowns: SAMPLE_COOLDOWNS });
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    assert.equal(result.cooldowns_seeded, 3);
+    const history = db.buildQueryExecutionHistory('mouse-razer-viper');
+    assert.equal(history.queries.length, 3);
+  });
+
+  test('re-seeding same product is idempotent', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ query_cooldowns: SAMPLE_COOLDOWNS });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    const history = db.buildQueryExecutionHistory('mouse-razer-viper');
+    assert.equal(history.queries.length, 3);
+  });
+
+  test('skips cooldowns without query_hash or cooldown_until', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({
+      query_cooldowns: [
+        { query_hash: '', query_text: 'no hash', cooldown_until: '2026-04-28T10:00:00Z' },
+        { query_hash: 'h1', query_text: 'no cooldown', cooldown_until: '' },
+        ...SAMPLE_COOLDOWNS,
+      ],
+    });
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    assert.equal(result.cooldowns_seeded, 3);
+  });
+
+  test('empty query_cooldowns is fine', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ query_cooldowns: [] });
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    assert.equal(result.cooldowns_seeded, 0);
+  });
+
+  test('missing query_cooldowns is fine (backward compat)', () => {
+    const db = createHarness();
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
+    assert.equal(result.cooldowns_seeded, 0);
+  });
+});

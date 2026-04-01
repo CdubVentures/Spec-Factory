@@ -1,17 +1,21 @@
-export function createStorageManagerHandler({
-  jsonRes,
-  readJsonBody,
-  toInt,
-  broadcastWs,
-  listIndexLabRuns,
-  resolveIndexLabRunDirectory,
-  indexLabRoot,
-  outputRoot,
-  storage,
-  isRunStillActive,
-  readRunMeta,
-  deleteArchivedRun,
-}) {
+export function createStorageManagerHandler(opts) {
+  const {
+    jsonRes,
+    readJsonBody,
+    toInt,
+    broadcastWs,
+    listIndexLabRuns,
+    resolveIndexLabRunDirectory,
+    indexLabRoot,
+    outputRoot,
+    storage,
+    isRunStillActive,
+    readRunMeta,
+    deleteArchivedRun,
+    fsRoots,
+  } = opts;
+  // WHY: getSpecDb(category) requires a category — resolved per-request.
+  const resolveDeletionStore = opts.resolveDeletionStore || (() => null);
 
   function resolveBackend() {
     return { type: 'local' };
@@ -95,6 +99,22 @@ export function createStorageManagerHandler({
                     source.video_size = st.size; urlSize += st.size;
                   } catch { /* file may not exist */ }
                 }
+                // WHY: Screenshots are named screenshot-{worker_id}-{hash}-{idx}-{type}.jpg
+                if (source.screenshot_count > 0 && source.worker_id) {
+                  try {
+                    const ssDir = join(runDir, 'screenshots');
+                    const prefix = `screenshot-${source.worker_id}-`;
+                    const ssFiles = await fsPromises.readdir(ssDir);
+                    let ssSize = 0;
+                    for (const f of ssFiles) {
+                      if (f.startsWith(prefix)) {
+                        const st = await fsPromises.stat(join(ssDir, f)).catch(() => null);
+                        if (st) ssSize += st.size;
+                      }
+                    }
+                    if (ssSize > 0) { source.screenshot_size = ssSize; urlSize += ssSize; }
+                  } catch { /* screenshots dir may not exist */ }
+                }
                 source.total_size = urlSize;
               }
             }
@@ -103,12 +123,22 @@ export function createStorageManagerHandler({
         return jsonRes(res, 200, { run_id: runId, ...meta, sources, identity });
       }
 
-      // DELETE /storage/runs/:runId — delete single run
+      // DELETE /storage/runs/:runId — delete single run (full cascade)
       if (runId && !parts[3] && method === 'DELETE') {
         if (typeof isRunStillActive === 'function' && isRunStillActive(runId)) {
           return jsonRes(res, 409, { ok: false, error: 'run_in_progress', run_id: runId });
         }
         try {
+          // WHY: Resolve productId + category from run metadata so caller doesn't need to provide them.
+          const meta = typeof readRunMeta === 'function' ? await readRunMeta(runId) : null;
+          const productId = String(meta?.product_id || '').trim();
+          const category = String(meta?.category || '').trim();
+          const _ds = resolveDeletionStore(category);
+          if (_ds && productId && category && fsRoots) {
+            const result = _ds.deleteRun({ runId, productId, category, fsRoots });
+            return jsonRes(res, 200, result);
+          }
+          // Fallback: filesystem-only delete
           const result = await deleteArchivedRun(runId);
           return jsonRes(res, 200, { ok: true, ...result });
         } catch (err) {
@@ -128,8 +158,17 @@ export function createStorageManagerHandler({
             continue;
           }
           try {
-            const result = await deleteArchivedRun(id);
-            deleted.push({ run_id: id, deleted_from: result?.deleted_from || 'unknown' });
+            const meta = typeof readRunMeta === 'function' ? await readRunMeta(id) : null;
+            const productId = String(meta?.product_id || '').trim();
+            const category = String(meta?.category || '').trim();
+            const _ds2 = resolveDeletionStore(category);
+            if (_ds2 && productId && category && fsRoots) {
+              const result = _ds2.deleteRun({ runId: id, productId, category, fsRoots });
+              deleted.push({ run_id: id, deleted_from: 'local', sql_rows: result.sql?.rows_deleted || 0 });
+            } else {
+              const result = await deleteArchivedRun(id);
+              deleted.push({ run_id: id, deleted_from: result?.deleted_from || 'unknown' });
+            }
           } catch (err) {
             errors.push({ run_id: id, error: String(err?.message || err) });
           }
@@ -168,7 +207,14 @@ export function createStorageManagerHandler({
         if (!id) continue;
         if (typeof isRunStillActive === 'function' && isRunStillActive(id)) continue;
         try {
-          await deleteArchivedRun(id);
+          const productId = String(run?.product_id || '').trim();
+          const category = String(run?.category || '').trim();
+          const _ds3 = resolveDeletionStore(category);
+          if (_ds3 && productId && category && fsRoots) {
+            _ds3.deleteRun({ runId: id, productId, category, fsRoots });
+          } else {
+            await deleteArchivedRun(id);
+          }
           pruned.push(id);
         } catch (err) {
           errors.push({ run_id: id, error: String(err?.message || err) });
@@ -190,13 +236,71 @@ export function createStorageManagerHandler({
         if (!id) continue;
         if (typeof isRunStillActive === 'function' && isRunStillActive(id)) continue;
         try {
-          await deleteArchivedRun(id);
+          const productId = String(run?.product_id || '').trim();
+          const category = String(run?.category || '').trim();
+          const _ds4 = resolveDeletionStore(category);
+          if (_ds4 && productId && category && fsRoots) {
+            _ds4.deleteRun({ runId: id, productId, category, fsRoots });
+          } else {
+            await deleteArchivedRun(id);
+          }
           purged += 1;
         } catch {
           // Best-effort purge
         }
       }
       return jsonRes(res, 200, { ok: true, purged });
+    }
+
+    // POST /storage/urls/delete — delete a URL and all its artifacts (body: { url, productId, category })
+    if (parts[1] === 'urls' && parts[2] === 'delete' && !parts[3] && method === 'POST') {
+      const body = await readJsonBody(req);
+      const url = String(body?.url || '').trim();
+      const productId = String(body?.productId || '').trim();
+      const category = String(body?.category || '').trim();
+      const _dsUrl = resolveDeletionStore(category);
+      if (!_dsUrl || !fsRoots) {
+        return jsonRes(res, 501, { ok: false, error: 'deletion_store_not_available' });
+      }
+      if (!url || !productId) {
+        return jsonRes(res, 400, { ok: false, error: 'url_and_productId_required' });
+      }
+      try {
+        const result = _dsUrl.deleteUrl({ url, productId, category, fsRoots });
+        return jsonRes(res, 200, result);
+      } catch (err) {
+        return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });
+      }
+    }
+
+    // POST /storage/products/:pid/purge-history — delete all run history for a product
+    if (parts[1] === 'products' && parts[2] && parts[3] === 'purge-history' && !parts[4] && method === 'POST') {
+      const productId = String(parts[2]).trim();
+      const body = await readJsonBody(req);
+      const category = String(body?.category || '').trim();
+      if (!productId || !category) {
+        return jsonRes(res, 400, { ok: false, error: 'productId_and_category_required' });
+      }
+      const _dsPurge = resolveDeletionStore(category);
+      if (!_dsPurge || !fsRoots) {
+        return jsonRes(res, 501, { ok: false, error: 'deletion_store_not_available' });
+      }
+      // WHY: Check no active runs exist for this product before wiping history.
+      const runs = await listIndexLabRuns({ limit: 10000 });
+      const activeRun = runs.find(r =>
+        String(r?.product_id || '').trim() === productId &&
+        typeof isRunStillActive === 'function' &&
+        isRunStillActive(String(r?.run_id || ''))
+      );
+      if (activeRun) {
+        return jsonRes(res, 409, { ok: false, error: 'product_has_active_run', run_id: activeRun.run_id });
+      }
+      try {
+        const result = _dsPurge.deleteProductHistory({ productId, category, fsRoots });
+        return jsonRes(res, 200, result);
+      } catch (err) {
+        return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });
+      }
     }
 
     // GET /storage/export

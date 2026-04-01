@@ -762,6 +762,7 @@ export class SpecDb {
   aggregateDomainStats(domains, pid) { return this._crawlLedgerStore.aggregateDomainStats(domains, pid); }
   upsertQueryCooldown(row) { this._crawlLedgerStore.upsertQueryCooldown(row); }
   getQueryCooldown(hash, pid) { return this._crawlLedgerStore.getQueryCooldown(hash, pid); }
+  getQueryCooldownsByProduct(pid) { return this._crawlLedgerStore.getQueryCooldownsByProduct(pid); }
   buildQueryExecutionHistory(pid) { return this._crawlLedgerStore.buildQueryExecutionHistory(pid); }
   purgeExpiredCooldowns() { return this._crawlLedgerStore.purgeExpiredCooldowns(); }
 

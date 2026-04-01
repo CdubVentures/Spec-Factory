@@ -58,11 +58,11 @@ describe('V4 - computeGroupQueryCount', () => {
   it('counts tier=group_search matching group_key', () => {
     const history = {
       queries: [
-        { tier: 'group_search', group_key: 'sp', status: 'scrape_complete' },
-        { tier: 'group_search', group_key: 'sp', status: 'scrape_incomplete' },
-        { tier: 'group_search', group_key: 'other', status: 'scrape_complete' },
-        { tier: 'key_search', group_key: 'sp', status: 'scrape_complete' },
-        { tier: 'seed', group_key: null, status: 'scrape_complete' },
+        { tier: 'group_search', group_key: 'sp' },
+        { tier: 'group_search', group_key: 'sp' },
+        { tier: 'group_search', group_key: 'other' },
+        { tier: 'key_search', group_key: 'sp' },
+        { tier: 'seed', group_key: null },
       ],
     };
     assert.equal(computeGroupQueryCount('sp', history), 2);

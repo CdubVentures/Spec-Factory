@@ -32,6 +32,7 @@ export function createTelemetryIndexStore({ db, category, stmts }) {
       provider: row.provider || '',
       result_count: Number(row.result_count) || 0,
       field_yield: typeof row.field_yield === 'string' ? row.field_yield : JSON.stringify(row.field_yield || null),
+      tier: row.tier || null,
       ts: row.ts || new Date().toISOString(),
     });
   }

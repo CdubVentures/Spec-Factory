@@ -8,7 +8,6 @@
 export interface TabDef {
   readonly path: string;
   readonly label: string;
-  readonly disabledOnAll?: boolean;
   readonly disabledOnTest?: boolean;
   readonly dividerAfter?: boolean;
   readonly dividerBefore?: boolean;
@@ -27,7 +26,6 @@ interface PageEntry {
   readonly tabGroup: 'global' | 'catalog' | 'ops' | 'settings';
   readonly loader: () => Promise<Record<string, unknown>>;
   readonly exportName: string;
-  readonly disabledOnAll?: boolean;
   readonly disabledOnTest?: boolean;
   readonly dividerAfter?: boolean;
   readonly dividerBefore?: boolean;
@@ -38,25 +36,26 @@ interface PageEntry {
 export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
   // ── Global group (far left, always accessible) ────────────────
   { path: '/categories',  label: 'Categories',          tabGroup: 'global',  loader: () => import('../features/catalog/components/CategoryManager.tsx'),             exportName: 'CategoryManager' },
+  { path: '/brands',      label: 'Brands',              tabGroup: 'global',  loader: () => import('../features/studio/components/BrandManager.tsx'),                   exportName: 'BrandManager' },
   { path: '/billing',     label: 'Billing',              tabGroup: 'global',  loader: () => import('../pages/billing/BillingPage.tsx'),                               exportName: 'BillingPage',            disabledOnTest: true },
 
   // ── Catalog group ───────────────────────────────────────────────
   { path: '/',            label: 'Overview',            tabGroup: 'catalog', loader: () => import('../pages/overview/OverviewPage.tsx'),                            exportName: 'OverviewPage' },
-  { path: '/product',     label: 'Selected Product',    tabGroup: 'catalog', loader: () => import('../pages/product/ProductPage.tsx'),                              exportName: 'ProductPage',            dividerAfter: true },
+  { path: '/product',     label: 'Selected Product',    tabGroup: 'catalog', loader: () => import('../pages/product/ProductPage.tsx'),                              exportName: 'ProductPage' },
   { path: '/catalog',     label: 'Catalog',             tabGroup: 'catalog', loader: () => import('../features/catalog/components/CatalogPage.tsx'),                 exportName: 'CatalogPage',            disabledOnTest: true, dividerAfter: true },
-  { path: '/studio',      label: 'Field Rules Studio',  tabGroup: 'catalog', loader: () => import('../features/studio/components/StudioPage.tsx'),                   exportName: 'StudioPage',             disabledOnAll: true, disabledOnTest: true, dividerAfter: true },
+  { path: '/studio',      label: 'Field Rules Studio',  tabGroup: 'catalog', loader: () => import('../features/studio/components/StudioPage.tsx'),                   exportName: 'StudioPage',             disabledOnTest: true, dividerAfter: true },
 
   // ── Ops group ───────────────────────────────────────────────────
-  { path: '/indexing',           label: 'Indexing Lab',        tabGroup: 'ops', loader: () => import('../features/indexing/components/IndexingPage.tsx'),              exportName: 'IndexingPage',           disabledOnAll: true, disabledOnTest: true },
+  { path: '/indexing',           label: 'Indexing Lab',        tabGroup: 'ops', loader: () => import('../features/indexing/components/IndexingPage.tsx'),              exportName: 'IndexingPage',           disabledOnTest: true },
   { path: '/runtime-ops',        label: 'Runtime Ops',         tabGroup: 'ops', loader: () => import('../features/runtime-ops/components/RuntimeOpsPage.tsx'),        exportName: 'RuntimeOpsPage',         disabledOnTest: true, dividerAfter: true },
   { path: '/review',             label: 'Review Grid',         tabGroup: 'ops', loader: () => import('../features/review/components/ReviewPage.tsx'),                 exportName: 'ReviewPage',             disabledOnAll: true },
-  { path: '/review-components',  label: 'Review Components',   tabGroup: 'ops', loader: () => import('../pages/component-review/ComponentReviewPage.tsx'),            exportName: 'ComponentReviewPage',    disabledOnAll: true, dividerAfter: true },
+  { path: '/review-components',  label: 'Review Components',   tabGroup: 'ops', loader: () => import('../pages/component-review/ComponentReviewPage.tsx'),            exportName: 'ComponentReviewPage',    disabledOnAll: true },
+  { path: '/llm-settings',       label: 'Review LLM',         tabGroup: 'ops', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        dividerAfter: true },
   { path: '/storage',            label: 'Storage',             tabGroup: 'ops', loader: () => import('../pages/storage/StoragePage.tsx'),                             exportName: 'StoragePage' },
 
   // ── Settings group (far-right) ─────────────────────────────────
-  { path: '/llm-config',         label: 'LLM',                tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage',          disabledOnAll: true, disabledOnTest: true },
-  { path: '/pipeline-settings',  label: 'Pipeline',           tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage', disabledOnAll: true, disabledOnTest: true },
-  { path: '/llm-settings',       label: 'Review',             tabGroup: 'settings', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        disabledOnAll: true },
+  { path: '/llm-config',         label: 'LLM',                tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage',          disabledOnTest: true },
+  { path: '/pipeline-settings',  label: 'Pipeline',           tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage', disabledOnTest: true },
 ]);
 
 // ── Derived exports ─────────────────────────────────────────────────
@@ -65,7 +64,6 @@ function toTabDef(entry: PageEntry): TabDef {
   return {
     path: entry.path,
     label: entry.label,
-    ...(entry.disabledOnAll ? { disabledOnAll: true } : {}),
     ...(entry.disabledOnTest ? { disabledOnTest: true } : {}),
     ...(entry.dividerAfter ? { dividerAfter: true } : {}),
     ...(entry.dividerBefore ? { dividerBefore: true } : {}),

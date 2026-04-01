@@ -702,8 +702,8 @@ export function prepareStatements(db) {
       SELECT * FROM knob_snapshots WHERE category = ? ORDER BY ts DESC LIMIT ?
     `),
     _insertQueryIndexEntry: db.prepare(`
-      INSERT INTO query_index (category, run_id, product_id, query, provider, result_count, field_yield, ts)
-      VALUES (@category, @run_id, @product_id, @query, @provider, @result_count, @field_yield, @ts)
+      INSERT INTO query_index (category, run_id, product_id, query, provider, result_count, field_yield, tier, ts)
+      VALUES (@category, @run_id, @product_id, @query, @provider, @result_count, @field_yield, @tier, @ts)
     `),
     _getQueryIndexByCategory: db.prepare(`
       SELECT * FROM query_index WHERE category = ? ORDER BY ts DESC LIMIT ?

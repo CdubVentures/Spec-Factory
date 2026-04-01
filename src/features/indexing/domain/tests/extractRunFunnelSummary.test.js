@@ -4,8 +4,8 @@ import { extractRunFunnelSummary, extractDomainBreakdown, extractFetchErrors, ex
 
 // ── Event factories (match actual telemetry.events shape) ────────
 
-function searchFinished(query, resultCount = 10) {
-  return { stage: 'search', event: 'search_finished', payload: { query, result_count: resultCount } };
+function searchFinished(query, resultCount = 10, tier = null, hint_source = null) {
+  return { stage: 'search', event: 'search_finished', payload: { query, result_count: resultCount, tier, hint_source } };
 }
 
 function fetchQueued(url) {
@@ -99,6 +99,45 @@ describe('extractRunFunnelSummary', () => {
     assert.equal(f.queries_executed, 1);
     assert.equal(f.results_found, 0);
     assert.equal(f.candidates_unique, 0);
+  });
+
+  it('counts tier1/tier2/tier3 from search_finished events', () => {
+    const events = [
+      searchFinished('brand model specs', 10, 'seed', 'tier1_seed'),
+      searchFinished('brand model rtings.com', 8, 'seed', 'tier1_seed'),
+      searchFinished('brand model sensor', 5, 'group_search', 'tier2_group'),
+      searchFinished('brand model dpi', 3, 'key_search', 'tier3_key'),
+      searchFinished('brand model weight', 2, 'key_search', 'tier3_key'),
+    ];
+    const f = extractRunFunnelSummary(events, {});
+    assert.equal(f.tier1_queries, 2);
+    assert.equal(f.tier2_queries, 1);
+    assert.equal(f.tier3_queries, 2);
+    assert.equal(f.queries_executed, 5);
+  });
+
+  it('tier counts default to 0 when no tier data in events', () => {
+    const events = [
+      searchFinished('brand model specs', 10),
+      searchFinished('brand model other', 5),
+    ];
+    const f = extractRunFunnelSummary(events, {});
+    assert.equal(f.tier1_queries, 0);
+    assert.equal(f.tier2_queries, 0);
+    assert.equal(f.tier3_queries, 0);
+    assert.equal(f.queries_executed, 2);
+  });
+
+  it('classifies by hint_source when tier field is missing', () => {
+    const events = [
+      searchFinished('q1', 10, null, 'tier1_seed'),
+      searchFinished('q2', 5, null, 'tier2_group'),
+      searchFinished('q3', 3, null, 'tier3_key'),
+    ];
+    const f = extractRunFunnelSummary(events, {});
+    assert.equal(f.tier1_queries, 1);
+    assert.equal(f.tier2_queries, 1);
+    assert.equal(f.tier3_queries, 1);
   });
 });
 

@@ -31,7 +31,7 @@ export function ComponentReviewPage() {
   const { data: layout, isLoading: layoutLoading } = useQuery({
     queryKey: ['componentReviewLayout', category],
     queryFn: () => api.get<ComponentReviewLayout>(`/review-components/${category}/layout`),
-    enabled: category !== 'all',
+    enabled: true,
   });
 
   // Resolve tab on layout load with category-scoped persisted fallback.
@@ -56,7 +56,7 @@ export function ComponentReviewPage() {
   const { data: componentData, isLoading: componentLoading } = useQuery({
     queryKey: ['componentReviewData', category, activeSubTab],
     queryFn: () => api.get<ComponentReviewPayload>(`/review-components/${category}/components?type=${activeSubTab}`),
-    enabled: category !== 'all' && !!activeSubTab && activeSubTab !== 'enums',
+    enabled: !!activeSubTab && activeSubTab !== 'enums',
   });
 
   const enumReviewQuery = useEnumReviewData({
@@ -99,9 +99,6 @@ export function ComponentReviewPage() {
     return null;
   }, [activeSubTab, componentData, enumDataFromStore]);
 
-  if (category === 'all') {
-    return <p className="sf-text-muted mt-8 text-center">Select a specific category to review components.</p>;
-  }
   if (layoutLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || layout.types.length === 0) {
     return <p className="sf-text-muted mt-8 text-center">No component data found. Run a compile first.</p>;

@@ -3,7 +3,6 @@ import type { IndexLabRunSummary, IndexLabRunsResponse } from '../types.ts';
 
 interface DeriveIndexLabRunsInput {
   indexlabRunsResp: IndexLabRunsResponse | undefined;
-  isAll: boolean;
   category: string;
   processStatusRunId: string;
   selectedIndexLabRunId: string;
@@ -12,14 +11,12 @@ interface DeriveIndexLabRunsInput {
 }
 
 interface DeriveDomainChecklistCategoryInput {
-  isAll: boolean;
   category: string;
   selectedRunForChecklist: IndexLabRunSummary | null;
 }
 
 export function deriveIndexLabRuns({
   indexlabRunsResp,
-  isAll,
   category,
   processStatusRunId,
   selectedIndexLabRunId,
@@ -27,9 +24,7 @@ export function deriveIndexLabRuns({
   processStartedAt,
 }: DeriveIndexLabRunsInput): IndexLabRunSummary[] {
   const rows = indexlabRunsResp?.runs || [];
-  const scopedRows = isAll
-    ? rows
-    : rows.filter((row) => normalizeToken(row.category) === normalizeToken(category));
+  const scopedRows = rows.filter((row) => normalizeToken(row.category) === normalizeToken(category));
   const activeRunId = String(processStatusRunId || selectedIndexLabRunId || '').trim();
   if (!activeRunId || scopedRows.some((row) => String(row.run_id || '').trim() === activeRunId)) {
     return scopedRows;
@@ -51,10 +46,8 @@ export function deriveSelectedRunForChecklist(indexlabRuns: IndexLabRunSummary[]
 }
 
 export function deriveDomainChecklistCategory({
-  isAll,
   category,
   selectedRunForChecklist,
 }: DeriveDomainChecklistCategoryInput) {
-  if (!isAll) return String(category || '').trim();
-  return String(selectedRunForChecklist?.category || '').trim();
+  return String(category || '').trim();
 }

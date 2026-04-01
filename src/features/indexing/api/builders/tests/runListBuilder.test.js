@@ -166,3 +166,133 @@ test('completed local run with counters exposes stored counters in the row contr
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+// --- SQL path: brand/model from products table (Tier 1) ---
+
+test('SQL path resolves brand/model from products table when available', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-sql-brand-${Date.now()}`);
+  const runId = '20260330090000-abc123';
+  await fs.mkdir(path.join(tmpDir, runId), { recursive: true });
+  try {
+    const specDb = makeSpecDb();
+    specDb.upsertRun(sampleRun({ run_id: runId, product_id: 'mouse-c730517d' }));
+    specDb.upsertProduct({
+      category: 'mouse',
+      product_id: 'mouse-c730517d',
+      brand: 'Acer',
+      model: 'Cestus 310',
+      variant: '310',
+      status: 'active',
+    });
+    const builder = makeBuilder(tmpDir, specDb);
+    const rows = await builder.listIndexLabRuns({ category: 'mouse' });
+    const row = rows.find((r) => r.run_id === runId);
+    assert.ok(row, 'run should appear');
+    assert.equal(row.brand, 'Acer', 'brand from products table');
+    assert.equal(row.model, 'Cestus 310', 'model from products table');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+// --- File fallback identity resolution ---
+
+test('file fallback reads identity from top-level meta.identity (not run.identity)', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-identity-fallback-${Date.now()}`);
+  const runId = '20260330082515-8a3d3e';
+  const runDir = path.join(tmpDir, runId);
+  await fs.mkdir(runDir, { recursive: true });
+  // WHY: run.json stores identity as a sibling of run, not nested inside run.
+  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify({
+    schema_version: 2,
+    checkpoint_type: 'crawl',
+    run: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-c730517d',
+      status: 'completed',
+    },
+    identity: {
+      brand: 'Acer',
+      model: 'Cestus 310',
+      variant: '',
+    },
+    counters: { urls_crawled: 16 },
+  }));
+  try {
+    // No specDb, no category filter → forces file fallback path
+    const builder = makeBuilder(tmpDir, null);
+    const rows = await builder.listIndexLabRuns();
+    const row = rows.find((r) => r.run_id === runId);
+    assert.ok(row, 'run should appear via file fallback');
+    assert.equal(row.brand, 'Acer', 'brand should be resolved from meta.identity');
+    assert.equal(row.model, 'Cestus 310', 'model should be resolved from meta.identity');
+    assert.equal(row.product_id, 'mouse-c730517d');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('file fallback with schema_version 3 also resolves identity correctly', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-identity-v3-${Date.now()}`);
+  const runId = '20260401044308-399c5d';
+  const runDir = path.join(tmpDir, runId);
+  await fs.mkdir(runDir, { recursive: true });
+  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify({
+    schema_version: 3,
+    checkpoint_type: 'crawl',
+    run: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-b164e302',
+      status: 'completed',
+    },
+    identity: {
+      brand: 'Endgame Gear',
+      model: 'OP1we',
+      variant: '',
+    },
+    counters: { urls_crawled: 26 },
+  }));
+  try {
+    const builder = makeBuilder(tmpDir, null);
+    const rows = await builder.listIndexLabRuns();
+    const row = rows.find((r) => r.run_id === runId);
+    assert.ok(row, 'v3 run should appear via file fallback');
+    assert.equal(row.brand, 'Endgame Gear');
+    assert.equal(row.model, 'OP1we');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('file fallback filters out unknown brand', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-unknown-brand-${Date.now()}`);
+  const runId = '20260401014855-bfee4e';
+  const runDir = path.join(tmpDir, runId);
+  await fs.mkdir(runDir, { recursive: true });
+  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify({
+    schema_version: 2,
+    run: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-666900ad',
+      status: 'completed',
+    },
+    identity: {
+      brand: 'unknown',
+      model: 'unknown-model',
+    },
+    counters: {},
+  }));
+  try {
+    const builder = makeBuilder(tmpDir, null);
+    const rows = await builder.listIndexLabRuns();
+    const row = rows.find((r) => r.run_id === runId);
+    assert.ok(row, 'run should still appear');
+    assert.equal(row.brand, '', 'unknown brand should be filtered to empty');
+    assert.equal(row.model, '', 'unknown-model should be filtered to empty');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});

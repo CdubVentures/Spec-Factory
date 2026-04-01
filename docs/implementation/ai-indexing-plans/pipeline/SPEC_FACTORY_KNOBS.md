@@ -170,7 +170,6 @@
 | `needsetGroupSearchCoverageThreshold` | float | 0.8 | 0–1 | `NEEDSET_GROUP_SEARCH_COVERAGE_THRESHOLD` |
 | `needsetGroupSearchMaxRepeats` | int | 3 | 1–10 | `NEEDSET_GROUP_SEARCH_MAX_REPEATS` |
 | `needsetGroupSearchMinUnresolved` | int | 3 | 1–20 | `NEEDSET_GROUP_SEARCH_MIN_UNRESOLVED` |
-| `needsetSeedCooldownDays` | int | 30 | 1–90 | `NEEDSET_SEED_COOLDOWN_DAYS` |
 
 ---
 

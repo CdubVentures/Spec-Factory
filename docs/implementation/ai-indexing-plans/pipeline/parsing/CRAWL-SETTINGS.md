@@ -26,7 +26,7 @@
 | `crawleeMaxRequestRetries` | int | `1` | 0–5 | Native retries with session rotation. We do our own block detection + proxy retry. |
 | `crawleeBrowserRetirePageCount` | int | `10` | 1–50 | Retire browser after N pages |
 | `crawleeMaxRequestsPerMinute` | int | `0` | 0–1000 | Global RPM cap (0 = unlimited) |
-| `crawleeMaxSessionRotations` | int | `10` | 1–50 | Max session swaps before giving up on a URL |
+| `crawleeMaxSessionRotations` | int | `2` | 1–50 | Max session swaps before giving up on a URL |
 | `crawleeRetryOnBlocked` | bool | `false` | — | Crawlee's built-in 403/429 auto-retry (disabled — we use bypassStrategies.js) |
 | `crawleeMaxOpenPagesPerBrowser` | int | `4` | 1–20 | Tabs per browser. Capped at slotCount. Each tab is incognito-isolated. |
 
@@ -135,7 +135,12 @@
 
 `Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked` (451).
 
-Also: `requestHandler timed out` with `__capturedPage` already stashed → `noRetry` (page loaded but plugins were slow — retrying wastes another full timeout).
+Also non-retryable:
+- `requestHandler timed out` with `__capturedPage` already stashed → page loaded but plugins were slow — retrying wastes another full timeout.
+- `blocked:*` errors (403, 429, captcha, cloudflare, access_denied, etc.) → session rotation can't fix IP-based blocks. Proxy retry in `runFetchPlan` handles persistent blocks.
+- `requestHandler timed out` without `__capturedPage` at `retryCount >= 1` → page didn't load on first try either, server is genuinely slow/dead.
+
+Retryable errors retire the session before retry so the attempt uses a fresh fingerprint + cookies.
 
 ## Testing
 

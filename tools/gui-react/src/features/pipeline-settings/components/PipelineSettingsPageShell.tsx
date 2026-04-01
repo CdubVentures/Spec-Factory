@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
+import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 
 export type PipelineSectionId =
   | 'global'
@@ -141,11 +142,14 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
   );
 }
 
+const CATEGORY_SCOPED: ReadonlySet<PipelineSectionId> = new Set(['source-strategy', 'deterministic-strategy']);
+
 interface PipelineSettingsPageShellProps {
   activeSection: PipelineSectionId;
   onSelectSection: (section: PipelineSectionId) => void;
   headerActions: ReactNode;
   activePanel: ReactNode;
+  category?: string;
 }
 
 export function PipelineSettingsPageShell({
@@ -153,11 +157,20 @@ export function PipelineSettingsPageShell({
   onSelectSection,
   headerActions,
   activePanel,
+  category,
 }: PipelineSettingsPageShellProps) {
+  const items = useMemo(() =>
+    PIPELINE_SECTIONS.map((s) =>
+      CATEGORY_SCOPED.has(s.id) && category
+        ? { ...s, badge: <Chip label={category} className="sf-chip-info text-[8px] !px-1 !rounded-[1px] !rounded-tr-[4px]" /> }
+        : s,
+    ),
+  [category]);
+
   return (
     <SidebarShell
       title="Pipeline Settings"
-      items={PIPELINE_SECTIONS}
+      items={items}
       activeItem={activeSection}
       onSelect={onSelectSection}
       renderIcon={(id, active) => <SectionNavIcon id={id} active={active} />}

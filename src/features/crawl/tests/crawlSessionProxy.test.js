@@ -156,6 +156,7 @@ test('optimized defaults are applied', () => {
   assert.equal(config.requestHandlerTimeoutSecs, 45);
   assert.equal(config.navigationTimeoutSecs, 20);
   assert.equal(config.maxRequestRetries, 1);
+  assert.equal(config.maxSessionRotations, 2);
   assert.equal(config.browserPoolOptions.retireBrowserAfterPageCount, 10);
 });
 

@@ -760,7 +760,7 @@ export function BrandManager() {
               searchable
               persistKey="catalog:brands:table"
               onRowClick={openEdit}
-              maxHeight="max-h-[550px]"
+              maxHeight="max-h-[calc(100vh-280px)]"
             />{" "}
           </div>{" "}
         </div>{" "}

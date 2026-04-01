@@ -20,7 +20,6 @@ interface VariantOption {
 interface PickerPanelProps {
   collapsed: boolean;
   onToggle: () => void;
-  isAll: boolean;
   busy: boolean;
   processRunning: boolean;
   singleBrand: string;
@@ -75,7 +74,6 @@ function ambiguityBarColor(level: string): string {
 export function PickerPanel({
   collapsed,
   onToggle,
-  isAll,
   busy,
   processRunning,
   singleBrand,
@@ -126,7 +124,7 @@ export function PickerPanel({
           onChange={(e) => {
             onBrandChange(e.target.value);
           }}
-          disabled={isAll || busy}
+          disabled={busy}
           className="px-2 py-2 text-sm rounded sf-select"
           title="Step 1: Choose brand."
         >
@@ -142,7 +140,7 @@ export function PickerPanel({
           onChange={(e) => {
             onModelChange(e.target.value);
           }}
-          disabled={isAll || busy || !singleBrand}
+          disabled={busy || !singleBrand}
           className="px-2 py-2 text-sm rounded sf-select"
           title="Step 2: Choose model."
         >
@@ -156,7 +154,7 @@ export function PickerPanel({
         <select
           value={singleProductId}
           onChange={(e) => onProductIdChange(e.target.value)}
-          disabled={isAll || busy || !singleModel}
+          disabled={busy || !singleModel}
           className="px-2 py-2 text-sm rounded sf-select"
           title="Step 3: Choose variant."
         >
@@ -254,7 +252,7 @@ Variant-empty review hint:
             </div>
             <button
               onClick={onClearSelectedRunView}
-              disabled={isAll || busy || !selectedIndexLabRunId}
+              disabled={busy || !selectedIndexLabRunId}
               className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded sf-icon-button shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Clear only selected run containers from the current view."
             >
@@ -262,7 +260,7 @@ Variant-empty review hint:
             </button>
             <button
               onClick={onReplaySelectedRunView}
-              disabled={isAll || busy || !selectedIndexLabRunId}
+              disabled={busy || !selectedIndexLabRunId}
               className="w-full h-10 self-start inline-flex items-center justify-center px-3 text-sm rounded sf-icon-button shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Replay selected run from persisted events/artifacts."
             >

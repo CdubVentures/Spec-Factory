@@ -144,6 +144,32 @@ function seedProductCheckpoint(specDb, cp) {
     last_completed_at: cp.updated_at || null,
   });
 
+  // WHY: Rebuild query_cooldowns so tier progression survives DB rebuild.
+  // Product.json carries the latest cooldown snapshot — one row per unique query.
+  const cooldowns = Array.isArray(cp.query_cooldowns) ? cp.query_cooldowns : [];
+  let cooldownsSeeded = 0;
+  for (const cd of cooldowns) {
+    if (!cd.query_hash || !cd.cooldown_until) continue;
+    if (typeof specDb.upsertQueryCooldown === 'function') {
+      specDb.upsertQueryCooldown({
+        query_hash: cd.query_hash,
+        product_id: cp.product_id || '',
+        category: cp.category || '',
+        query_text: cd.query_text || '',
+        provider: cd.provider || '',
+        tier: cd.tier || null,
+        group_key: cd.group_key || null,
+        normalized_key: cd.normalized_key || null,
+        hint_source: cd.hint_source || null,
+        attempt_count: cd.attempt_count || 1,
+        result_count: cd.result_count || 0,
+        last_executed_at: cd.last_executed_at || cp.updated_at || '',
+        cooldown_until: cd.cooldown_until,
+      });
+      cooldownsSeeded++;
+    }
+  }
+
   return {
     type: 'product',
     product_id: cp.product_id || '',
@@ -151,6 +177,7 @@ function seedProductCheckpoint(specDb, cp) {
     runs_seeded: 0,
     sources_seeded: 0,
     artifacts_seeded: 0,
+    cooldowns_seeded: cooldownsSeeded,
     product_seeded: true,
     queue_seeded: true,
   };

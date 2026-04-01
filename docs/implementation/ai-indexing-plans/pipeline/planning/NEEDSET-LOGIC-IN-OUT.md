@@ -186,7 +186,7 @@ provenance evidence arrays, identity intermediate state.
 - `group_query_count` counts Tier 2 broad searches only, NOT per-key retries
 - `group_search_worthy` uses `group_query_count`, not `group_key_retry_count`
 - Phase is productivity-based AND budget-aware
-- Seed completion requires `new_fields_closed >= 1`
+- Seed cooldown uses `cooldown_until > now` (same pattern as group cooldown)
 - `passA_specs_seed` derives from `seedStatus.specs_seed.is_needed`, not round number
 - `tier_allocation` mirrors Search Profile's priority order (seeds -> groups -> keys)
 - `configInt` is now clamped to registry `min`/`max` with NaN fallback to registry default

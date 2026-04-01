@@ -230,8 +230,7 @@
       "query_completion_summary": {
         "total_queries": "number",
         "complete": "number",
-        "incomplete": "number",
-        "pending_scrapes": "number"
+        "incomplete": "number"
       }
     },
 

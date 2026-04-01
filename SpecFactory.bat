@@ -14,6 +14,8 @@ if /I "%ACTION%"=="start" goto :action_start
 if /I "%ACTION%"=="start-api" goto :action_start_api
 if /I "%ACTION%"=="reload" goto :action_reload
 if /I "%ACTION%"=="refresh" goto :action_refresh
+if /I "%ACTION%"=="rebuild-frontend" goto :action_rebuild_frontend
+if /I "%ACTION%"=="rebuild-restart" goto :action_rebuild_restart
 if /I "%ACTION%"=="build-gui" goto :action_build_gui
 if /I "%ACTION%"=="build-exe" goto :action_build_exe
 if /I "%ACTION%"=="build-launcher" goto :action_build_launcher
@@ -45,17 +47,21 @@ echo   [1] Start Server            (API + browser)
 echo   [2] Full Reload             (kill all + rebuild + restart)
 echo   [3] Refresh Browser         (force reload localhost:8788)
 echo.
+echo   --- Hot Rebuild (safe while server is running) ---
+echo   [4] Rebuild Frontend        (vite build only, skip native)
+echo   [5] Rebuild + Restart API   (vite build + restart server)
+echo.
 echo   --- Build ---
-echo   [4] Build GUI               (rebuild native + vite build)
-echo   [5] Build GUI (Quick)       (build + sync gui-dist for exe)
-echo   [6] Build EXE               (full SpecFactory.exe pipeline)
-echo   [7] Build EXE (Quick)       (GUI only + sync gui-dist)
-echo   [8] Build Launcher EXE
+echo   [6] Build GUI               (rebuild native + vite build)
+echo   [7] Build GUI (Quick)       (build + sync gui-dist for exe)
+echo   [8] Build EXE               (full SpecFactory.exe pipeline)
+echo   [9] Build EXE (Quick)       (GUI only + sync gui-dist)
+echo   [10] Build Launcher EXE
 echo.
 echo   --- Manage ---
-echo   [9] Kill Processes          (kill tracked SF PIDs + port 8788)
-echo   [10] Process Status         (show tracked PIDs)
-echo   [11] Cleanup Artifacts      (remove out/, artifacts/)
+echo   [11] Kill Processes         (kill tracked SF PIDs + port 8788)
+echo   [12] Process Status         (show tracked PIDs)
+echo   [13] Cleanup Artifacts      (remove out/, artifacts/)
 echo.
 echo   [H] Help    [Q] Quit
 echo.
@@ -65,14 +71,16 @@ set /P "CHOICE=  Enter choice: "
 if /I "!CHOICE!"=="1" goto :action_start
 if /I "!CHOICE!"=="2" goto :action_reload
 if /I "!CHOICE!"=="3" goto :action_refresh
-if /I "!CHOICE!"=="4" goto :action_build_gui
-if /I "!CHOICE!"=="5" goto :action_build_gui_quick
-if /I "!CHOICE!"=="6" goto :action_build_exe
-if /I "!CHOICE!"=="7" goto :action_build_exe_quick
-if /I "!CHOICE!"=="8" goto :action_build_launcher
-if /I "!CHOICE!"=="9" goto :action_kill
-if /I "!CHOICE!"=="10" goto :action_status
-if /I "!CHOICE!"=="11" goto :action_cleanup
+if /I "!CHOICE!"=="4" goto :action_rebuild_frontend
+if /I "!CHOICE!"=="5" goto :action_rebuild_restart
+if /I "!CHOICE!"=="6" goto :action_build_gui
+if /I "!CHOICE!"=="7" goto :action_build_gui_quick
+if /I "!CHOICE!"=="8" goto :action_build_exe
+if /I "!CHOICE!"=="9" goto :action_build_exe_quick
+if /I "!CHOICE!"=="10" goto :action_build_launcher
+if /I "!CHOICE!"=="11" goto :action_kill
+if /I "!CHOICE!"=="12" goto :action_status
+if /I "!CHOICE!"=="13" goto :action_cleanup
 if /I "!CHOICE!"=="H" goto :show_help
 if /I "!CHOICE!"=="Q" goto :done_quiet
 if /I "!CHOICE!"=="q" goto :done_quiet
@@ -182,6 +190,86 @@ call :check_node
 if %ERRORLEVEL% NEQ 0 goto :done
 echo.
 call node tools\dev-stack-control.js refresh-page
+goto :done
+
+:: ── Rebuild Frontend (Hot) ──────────────────────────────────────────
+:action_rebuild_frontend
+call :check_node
+if %ERRORLEVEL% NEQ 0 goto :done
+echo.
+echo   Rebuilding frontend (vite build only)...
+echo   Skipping native module rebuild - safe while server is running.
+echo.
+pushd "%ROOT%\tools\gui-react"
+call npm run build
+popd
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Frontend build failed.
+  goto :done
+)
+echo.
+echo   Frontend rebuilt successfully.
+echo   Refresh your browser at http://localhost:8788 to see changes.
+goto :done
+
+:: ── Rebuild + Restart API ───────────────────────────────────────────
+:action_rebuild_restart
+call :check_node
+if %ERRORLEVEL% NEQ 0 goto :done
+echo.
+echo   ============================================
+echo     Rebuild + Restart API
+echo   ============================================
+echo.
+echo   [1/3] Rebuilding frontend (vite build only)...
+pushd "%ROOT%\tools\gui-react"
+call npm run build
+popd
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Frontend build failed. Aborting.
+  goto :done
+)
+echo         Done.
+echo.
+echo   [2/3] Stopping API server...
+set "STATE_DIR=%ROOT%\.server-state"
+set "API_PID_FILE=%STATE_DIR%\spec-factory-api.pid"
+if exist "%API_PID_FILE%" (
+  set /p PID=<"%API_PID_FILE%"
+  if defined PID (
+    tasklist /FI "PID eq !PID!" 2>nul | find "!PID!" >nul 2>nul
+    if !ERRORLEVEL! EQU 0 (
+      echo         Killing API PID !PID!
+      taskkill /F /PID !PID! >nul 2>nul
+    ) else (
+      echo         API PID !PID! already gone.
+    )
+    del "%API_PID_FILE%" >nul 2>nul
+  )
+  set "PID="
+)
+for /f "tokens=5" %%p in ('netstat -aon ^| findstr ":8788 " ^| findstr "LISTENING"') do (
+  if "%%p" NEQ "0" (
+    echo         Killing leftover process on port 8788 ^(PID %%p^)
+    taskkill /F /PID %%p >nul 2>nul
+  )
+)
+timeout /t 2 /nobreak >nul
+echo         Done.
+echo.
+echo   [3/3] Starting server...
+call node tools\dev-stack-control.js start-api
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Server failed to start. Check .server-state\spec-factory-api.log
+  goto :done
+)
+echo.
+echo   ============================================
+echo     Rebuild + Restart complete!  http://localhost:8788
+echo   ============================================
 goto :done
 
 :: ── Build GUI ─────────────────────────────────────────────────────────
@@ -551,6 +639,8 @@ echo     start              Start server + open browser
 echo     start-api          Start API only (no browser)
 echo     reload             Kill all + rebuild GUI + restart server
 echo     refresh            Refresh browser at localhost:8788
+echo     rebuild-frontend   Vite build only (safe while server running)
+echo     rebuild-restart    Vite build + restart API server
 echo     build-gui          Build GUI (--quick to also sync gui-dist)
 echo     build-exe          Build SpecFactory.exe (--quick for GUI only)
 echo     build-launcher     Build Launcher EXE

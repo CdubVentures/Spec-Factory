@@ -55,7 +55,7 @@ describe('PAGE_REGISTRY structural invariants', () => {
 
   it('optional boolean fields are boolean or undefined', async () => {
     const { PAGE_REGISTRY } = await getModule();
-    const optionalBooleans = ['disabledOnAll', 'disabledOnTest', 'dividerAfter', 'dividerBefore'];
+    const optionalBooleans = ['disabledOnTest', 'dividerAfter', 'dividerBefore'];
     for (const entry of PAGE_REGISTRY) {
       for (const key of optionalBooleans) {
         const value = entry[key];
@@ -101,7 +101,7 @@ describe('CATALOG_TABS derivation', () => {
         .map((entry) => [
           entry.label,
           {
-            disabledOnAll: entry.disabledOnAll,
+
             disabledOnTest: entry.disabledOnTest,
           },
         ]),
@@ -110,7 +110,7 @@ describe('CATALOG_TABS derivation', () => {
       CATALOG_TABS.map((tab) => [
         tab.label,
         {
-          disabledOnAll: tab.disabledOnAll,
+
           disabledOnTest: tab.disabledOnTest,
         },
       ]),
@@ -155,7 +155,7 @@ describe('OPS_TABS derivation', () => {
         .map((entry) => [
           entry.label,
           {
-            disabledOnAll: entry.disabledOnAll,
+
             disabledOnTest: entry.disabledOnTest,
           },
         ]),
@@ -164,7 +164,7 @@ describe('OPS_TABS derivation', () => {
       OPS_TABS.map((tab) => [
         tab.label,
         {
-          disabledOnAll: tab.disabledOnAll,
+
           disabledOnTest: tab.disabledOnTest,
         },
       ]),
@@ -209,7 +209,7 @@ describe('GLOBAL_TABS derivation', () => {
         .map((entry) => [
           entry.label,
           {
-            disabledOnAll: entry.disabledOnAll,
+
             disabledOnTest: entry.disabledOnTest,
           },
         ]),
@@ -218,7 +218,7 @@ describe('GLOBAL_TABS derivation', () => {
       GLOBAL_TABS.map((tab) => [
         tab.label,
         {
-          disabledOnAll: tab.disabledOnAll,
+
           disabledOnTest: tab.disabledOnTest,
         },
       ]),

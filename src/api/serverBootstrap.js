@@ -166,13 +166,6 @@ export function bootstrapServer({ projectRoot }) {
     })
     .catch(() => { /* non-critical */ });
 
-  // ── Run directory cleanup (fire-and-forget, 7-day TTL) ──
-  import('../features/crawl/runtimeCleanup.js')
-    .then(({ cleanupStaleRunDirs }) => {
-      cleanupStaleRunDirs({ baseDir: INDEXLAB_ROOT, maxAgeMs: 7 * 24 * 60 * 60 * 1000 });
-    })
-    .catch(() => { /* non-critical */ });
-
   // ── Snapshot cap (fire-and-forget, keep 10 most recent) ──
   import('../core/config/snapshotCleanup.js')
     .then(({ cleanupOldSnapshots }) => {

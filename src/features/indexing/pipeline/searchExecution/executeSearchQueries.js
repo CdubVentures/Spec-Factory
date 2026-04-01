@@ -82,10 +82,16 @@ export async function executeSearchQueries({
       });
       rawResults.push(...internalRows.map((row) => ({ ...row, query })));
       const internalSelectedRow = resolveSelectedQueryRow(query);
+      // WHY: Same source_host logic as external path.
+      const internalProfileRow = resolveProfileQueryRow(query);
+      const internalTier = internalSelectedRow?.tier || internalProfileRow?.tier || '';
+      const internalSeedProvider = internalTier === 'seed'
+        ? (internalProfileRow?.source_host || internalSelectedRow?.source_host || '')
+        : 'internal';
       frontierDb?.recordQuery?.({
         productId: job.productId,
         query,
-        provider: 'internal',
+        provider: internalSeedProvider,
         fields: missingFields,
         results: internalRows,
         tier: internalSelectedRow?.tier || null,
@@ -205,10 +211,21 @@ export async function executeSearchQueries({
           }
         } catch { /* index recording must not crash the pipeline */ }
         const externalSelectedRow = resolveSelectedQueryRow(query);
+        // WHY: For seed queries, provider must be the source_host (e.g. 'rtings.com')
+        // so deriveSeedStatus can match source seeds by source_name. For specs/brand
+        // seeds (no source_host), provider stays empty so source_name is falsy.
+        // For group/key searches, provider is the search engine name.
+        // source_host lives on the profile row (buildSearchProfile output), NOT
+        // on the selected row (which passes through the LLM planner and loses it).
+        const profileRow = resolveProfileQueryRow(query);
+        const effectiveTier = externalSelectedRow?.tier || profileRow?.tier || '';
+        const seedSourceHost = effectiveTier === 'seed'
+          ? (profileRow?.source_host || externalSelectedRow?.source_host || '')
+          : configValue(config, 'searchEngines');
         const queryRecord = frontierDb?.recordQuery?.({
           productId: job.productId,
           query,
-          provider: configValue(config, 'searchEngines'),
+          provider: seedSourceHost,
           fields: missingFields,
           results: providerResults,
           tier: externalSelectedRow?.tier || null,
@@ -223,6 +240,8 @@ export async function executeSearchQueries({
           result_count: providerResults.length,
           duration_ms: durationMs,
           is_fallback: usedFallback,
+          tier: effectiveTier || null,
+          hint_source: externalSelectedRow?.hint_source || profileRow?.hint_source || null,
         });
         if (providerResults.length > 0) {
           const engines = [...new Set(providerResults.map((r) => r?.provider).filter(Boolean))];
@@ -314,12 +333,15 @@ export async function executeSearchQueries({
           provider: 'plan',
           is_fallback: false,
         });
+        const plannedRow = resolveSelectedQueryRow(query) || resolveProfileQueryRow(query);
         logger?.info?.('discovery_query_completed', {
           query,
           provider: 'plan',
           result_count: rows.length,
           duration_ms: 0,
           is_fallback: false,
+          tier: plannedRow?.tier || null,
+          hint_source: plannedRow?.hint_source || null,
         });
         logger?.info?.('search_results_collected', {
           query,

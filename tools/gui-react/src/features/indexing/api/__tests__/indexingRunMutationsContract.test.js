@@ -103,7 +103,6 @@ test('start mutation invalidates the full indexlab run-list family for structure
       processStatus: undefined,
       runtimeSettingsAuthorityReady: true,
       runtimeSettingsLoading: false,
-      isAll: false,
       replayPending: false,
       preflightCheck() {
         return { valid: true, errors: [] };

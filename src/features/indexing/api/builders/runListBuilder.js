@@ -320,10 +320,14 @@ export function createRunListBuilder({
         fileStatus.toLowerCase() === 'running' && !isRunStillActive(fileRunId)
       ) ? 'completed' : fileStatus;
       const fileCounters = run.counters || teleMeta.counters || {};
-      const identity = run.identity && typeof run.identity === 'object' ? run.identity : {};
-      const fileBrand = toToken(identity.brand);
-      const fileModel = toToken(identity.model);
-      const fileVariant = toToken(identity.variant);
+      // WHY: identity lives at meta.identity (sibling of run), not run.identity.
+      // run.json schema: { run: { run_id, ... }, identity: { brand, model, ... } }
+      const identity = meta.identity && typeof meta.identity === 'object' ? meta.identity : {};
+      const idBrand = toToken(identity.brand);
+      const fileBrand = (idBrand && idBrand.toLowerCase() !== 'unknown') ? idBrand : '';
+      const idModel = toToken(identity.model);
+      const fileModel = fileBrand ? idModel : '';
+      const fileVariant = fileBrand ? toToken(identity.variant) : '';
       const fileMetrics = await computeRunStorageMetrics(runDir);
       return {
         run_id: fileRunId,

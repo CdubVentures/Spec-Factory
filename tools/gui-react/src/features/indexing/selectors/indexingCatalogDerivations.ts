@@ -108,6 +108,14 @@ export function useIndexingCatalogDerivations(input: UseIndexingCatalogDerivatio
 
     if (singleProductId && !variantOptions.some((option) => option.productId === singleProductId)) {
       setSingleProductId('');
+      return;
+    }
+
+    // WHY: When exactly one variant exists for a brand+model, skip the variant
+    // dropdown and auto-select. Forcing the user to click "(base / no variant)"
+    // when there's no real choice is pointless friction.
+    if (singleBrand && singleModel && !singleProductId && variantOptions.length === 1) {
+      setSingleProductId(variantOptions[0].productId);
     }
   }, [
     catalogRows.length,

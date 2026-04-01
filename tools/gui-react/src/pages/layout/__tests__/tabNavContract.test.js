@@ -135,28 +135,6 @@ test('TabNav exposes the active route through link semantics instead of relying 
   assert.equal(productLink?.props?.['aria-current'], undefined);
 });
 
-test('TabNav disables category-scoped tabs as plain text with explanatory titles', async () => {
-  globalThis.__tabNavHarness = { category: 'all', currentPath: '/' };
-  const { TabNav } = await loadTabNavModule();
-  const tree = renderElement(TabNav());
-
-  const anchors = collectNodes(tree, (node) => node.type === 'a');
-  const disabledSpans = collectNodes(
-    tree,
-    (node) => node.type === 'span' && typeof node.props?.title === 'string' && node.props.title.length > 0,
-  );
-
-  const studioDisabled = disabledSpans.find((node) => node.props?.children === 'Field Rules Studio');
-  const reviewGridDisabled = disabledSpans.find((node) => node.props?.children === 'Review Grid');
-  const storageLink = anchors.find((node) => node.props?.children === 'Storage');
-
-  assert.ok(studioDisabled, 'expected Field Rules Studio to render as disabled text for all-category mode');
-  assert.equal(studioDisabled?.props?.title, 'Select a specific category to use this tab');
-  assert.ok(reviewGridDisabled, 'expected Review Grid to render as disabled text for all-category mode');
-  assert.equal(reviewGridDisabled?.props?.title, 'Select a specific category to use this tab');
-  assert.ok(storageLink, 'expected Storage to stay navigable for all-category mode');
-});
-
 test('TabNav disables test-mode tabs without removing still-supported routes', async () => {
   globalThis.__tabNavHarness = { category: '_test_mouse', currentPath: '/', isTestMode: true };
   const { TabNav } = await loadTabNavModule();
@@ -179,17 +157,20 @@ test('TabNav disables test-mode tabs without removing still-supported routes', a
   assert.ok(storageLink, 'expected Storage to remain reachable in test mode');
 });
 
-test('TabNav renders Categories and Billing as navigable links in the global group', async () => {
+test('TabNav renders Categories, Brands, and Billing as navigable links in the global group', async () => {
   globalThis.__tabNavHarness = { category: 'mouse', currentPath: '/categories' };
   const { TabNav } = await loadTabNavModule();
   const tree = renderElement(TabNav());
 
   const anchors = collectNodes(tree, (node) => node.type === 'a');
   const categoriesLink = anchors.find((node) => node.props?.children === 'Categories');
+  const brandsLink = anchors.find((node) => node.props?.children === 'Brands');
   const billingLink = anchors.find((node) => node.props?.children === 'Billing');
 
   assert.ok(categoriesLink, 'expected Categories nav link in global group');
   assert.equal(categoriesLink?.props?.href, '/categories');
+  assert.ok(brandsLink, 'expected Brands nav link in global group');
+  assert.equal(brandsLink?.props?.href, '/brands');
   assert.ok(billingLink, 'expected Billing nav link in global group');
   assert.equal(billingLink?.props?.href, '/billing');
 });

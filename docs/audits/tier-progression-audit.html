@@ -1,406 +1,540 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<title>Tier Progression Audit — 2026-04-01T01:54:28.994Z</title>
+<title>Live Tier Progression Audit</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; padding: 24px; }
-  h1 { color: #58a6ff; margin-bottom: 8px; }
-  .subtitle { color: #8b949e; margin-bottom: 24px; font-size: 14px; }
-  h2 { color: #f0f6fc; margin: 24px 0 8px; }
-  .pid { color: #8b949e; font-weight: normal; font-size: 14px; }
-  .meta { color: #8b949e; font-size: 13px; margin-bottom: 12px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-  th { background: #161b22; color: #58a6ff; padding: 8px 10px; text-align: left; border-bottom: 2px solid #30363d; }
-  td { padding: 6px 10px; border-bottom: 1px solid #21262d; }
-  tr:hover { background: #161b22; }
-  tr.first td { background: #1a2332; }
-  tr.reset-row td { background: #2a1a1a; }
-  .detail-row td { padding: 0 10px; }
-  .detail-row details { padding: 4px 0; }
-  .detail-row summary { cursor: pointer; color: #58a6ff; font-size: 12px; }
-  .queries { font-family: 'Cascadia Code', monospace; font-size: 11px; padding: 8px 0; line-height: 1.8; }
-  .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; margin-right: 4px; }
-  .t1 { color: #f97583; } .tag.t1 { background: #3d1f28; }
-  .t2 { color: #79c0ff; } .tag.t2 { background: #1a2a3d; }
-  .t3 { color: #7ee787; } .tag.t3 { background: #1a3d2a; }
-  .on { color: #f97583; font-weight: bold; font-size: 11px; }
-  .off { color: #7ee787; font-weight: bold; font-size: 11px; }
-  .reset { background: #f97583; color: #0d1117; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; margin-left: 4px; }
-  .validation { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 24px 0; }
-  .validation h3 { color: #f0f6fc; margin-bottom: 12px; }
-  .check { padding: 4px 0; font-size: 13px; }
-  .check.pass { color: #7ee787; }
-  .check.fail { color: #f97583; font-weight: bold; }
-  .proof-box { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 24px 0; }
-  .proof-box h3 { color: #58a6ff; margin-bottom: 8px; }
-  .proof-box p { color: #8b949e; font-size: 13px; line-height: 1.6; }
-  .proof-box code { background: #21262d; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #c9d1d9; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;padding:32px;max-width:1600px;margin:0 auto}
+h1{color:#58a6ff;font-size:24px;margin-bottom:4px}
+.subtitle{color:#8b949e;font-size:13px;margin-bottom:32px;line-height:1.6}
+h2{color:#f0f6fc;margin:32px 0 8px;font-size:18px}
+.pid{color:#484f58;font-weight:normal;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+th{background:#161b22;color:#58a6ff;padding:8px 6px;text-align:left;border-bottom:2px solid #30363d;white-space:nowrap}
+td{padding:5px 6px;border-bottom:1px solid #21262d;vertical-align:top}
+td.num{text-align:center;font-weight:600}
+td.highlight{color:#f0883e}
+td.run-num{font-weight:700;color:#f0f6fc;font-size:14px}
+td.mono{font-family:monospace;font-size:11px;color:#8b949e}
+.t1-col{color:#f97583} .t2-col{color:#79c0ff} .t3-col{color:#7ee787}
+th.t1-col{color:#f97583} th.t2-col{color:#79c0ff} th.t3-col{color:#7ee787}
+tr.run-header:hover{background:#161b22}
+tr.first-run td{background:#122135}
+tr.detail td{padding:0 6px 4px}
+tr.detail details{font-size:11px}
+tr.detail summary{cursor:pointer;color:#58a6ff;padding:2px 0}
+.q-list{padding:6px 0;font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;line-height:2}
+.q-row{padding:2px 0}
+.q-meta{color:#8b949e;min-width:140px;display:inline-block}
+code{background:#21262d;padding:2px 6px;border-radius:3px;color:#e6edf3;font-size:11px}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;margin-right:4px;min-width:65px;text-align:center}
+.tag.t1{background:#3d1f28;color:#f97583}
+.tag.t2{background:#1a2a3d;color:#79c0ff}
+.tag.t3{background:#1a3d2a;color:#7ee787}
+.bar{white-space:nowrap;font-family:monospace;letter-spacing:0px;font-size:10px}
+.bar-t1{color:#f97583}.bar-t2{color:#79c0ff}.bar-t3{color:#7ee787}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:20px 0}
+.box h3{color:#58a6ff;margin-bottom:8px;font-size:15px}
+.box p,.box li{color:#8b949e;font-size:13px;line-height:1.7}
+.box code{font-size:11px}
+.box ul{padding-left:20px;margin-top:6px}
+.chk{padding:3px 0;font-size:13px}
+.chk.pass{color:#7ee787}
+.chk.fail{color:#f97583;font-weight:700}
+.verdict{font-size:18px;font-weight:700;margin-top:12px;padding:8px 0}
+.verdict.pass{color:#7ee787}
+.verdict.fail{color:#f97583}
+.source-list{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.source-chip{background:#21262d;color:#c9d1d9;padding:2px 8px;border-radius:12px;font-size:11px}
 </style></head><body>
-<h1>Tier Progression Audit</h1>
-<div class="subtitle">Generated: 2026-04-01T01:54:28.994Z | Products: 2 | Runs per product: 12 | Budget: 10 | Cooldown: 30 days</div>
 
-<div class="proof-box">
+<h1>Live Tier Progression Audit</h1>
+<div class="subtitle">
+  Generated: 2026-04-01T06:24:19.836Z<br>
+  Real end-to-end pipeline runs with actual search queries, URL crawling, and SQLite persistence.<br>
+  2 products &times; 12 runs = 24 total pipeline executions.
+</div>
+
+<div class="box">
   <h3>What This Proves</h3>
-  <p>Each run opens a <strong>real SQLite database</strong>, reads <code>query_cooldowns</code> via <code>buildQueryExecutionHistory()</code>,
-  runs the <strong>real production planning pipeline</strong> (<code>buildSearchPlanningContext</code> + <code>buildSearchProfile</code>),
-  then writes the generated queries back to the DB via <code>crawlLedgerAdapter.recordQuery()</code>.</p>
-  <p>The next run reads those cooldowns back and the tier system reacts:</p>
-  <ul style="margin-top:8px;padding-left:20px;color:#c9d1d9;font-size:13px;line-height:1.8;">
-    <li><strong style="color:#f97583">Run 1:</strong> No history in DB &rarr; seeds (T1) fire, consuming budget</li>
-    <li><strong style="color:#79c0ff">Runs 2-3:</strong> Seeds on cooldown &rarr; groups (T2) get full budget</li>
-    <li><strong style="color:#7ee787">Runs 4-9:</strong> Groups exhausted (3x max) &rarr; keys (T3) take over</li>
-    <li><strong style="color:#f97583">Run 10:</strong> Cooldowns force-expired (simulating 30+ days) &rarr; full cycle resets</li>
+  <p>Each run is a <strong>real <code>node src/cli/spec.js indexlab</code></strong> invocation that:</p>
+  <ul>
+    <li>Reads <code>query_cooldowns</code> from <code>.workspace/db/mouse/spec.sqlite</code></li>
+    <li>Runs <code>deriveSeedStatus()</code> to check which seeds are on cooldown</li>
+    <li>Generates real search queries via Serper API</li>
+    <li>Crawls real URLs with Playwright</li>
+    <li>Writes query cooldowns to SQLite <strong>in real-time</strong> as each query executes</li>
+    <li>Next run sees those cooldowns and shifts to the next tier</li>
   </ul>
 </div>
 
-<div class="validation">
-  <h3>Validation Checks</h3>
-  <div class="check pass">✅ Razer Viper V3 Pro: Run 1 seeds fire</div><div class="check pass">✅ Razer Viper V3 Pro: Run 2 seeds on cooldown</div><div class="check pass">✅ Razer Viper V3 Pro: Run 2 groups/keys active</div><div class="check pass">✅ Razer Viper V3 Pro: Runs 2-9 seeds stayed cooled</div><div class="check pass">✅ Razer Viper V3 Pro: Tier 3 keys activated (runs 4-9)</div><div class="check pass">✅ Razer Viper V3 Pro: Run 10 seeds re-fire (cooldown expired)</div><div class="check pass">✅ Razer Viper V3 Pro: Budget never exceeded</div><div class="check pass">✅ Razer Viper V3 Pro: DB query count grows across runs</div><div class="check pass">✅ Cougar Airblader Tournament: Run 1 seeds fire</div><div class="check pass">✅ Cougar Airblader Tournament: Run 2 seeds on cooldown</div><div class="check pass">✅ Cougar Airblader Tournament: Run 2 groups/keys active</div><div class="check pass">✅ Cougar Airblader Tournament: Runs 2-9 seeds stayed cooled</div><div class="check pass">✅ Cougar Airblader Tournament: Tier 3 keys activated (runs 4-9)</div><div class="check pass">✅ Cougar Airblader Tournament: Run 10 seeds re-fire (cooldown expired)</div><div class="check pass">✅ Cougar Airblader Tournament: Budget never exceeded</div><div class="check pass">✅ Cougar Airblader Tournament: DB query count grows across runs</div>
+<div class="box">
+  <h3>Source Hosts (22 approved)</h3>
+  <div class="source-list">
+    <span class="source-chip">rtings.com</span><span class="source-chip">techpowerup.com</span><span class="source-chip">tomshardware.com</span><span class="source-chip">lttlabs.com</span><span class="source-chip">igorslab.de</span><span class="source-chip">techgearlab.com</span><span class="source-chip">pcpartpicker.com</span><span class="source-chip">reddit.com</span><span class="source-chip">eloshapes.com</span><span class="source-chip">versus.com</span><span class="source-chip">mousespecs.org</span><span class="source-chip">sensor.fyi</span><span class="source-chip">prosettings.net</span><span class="source-chip">mousecompare.com</span><span class="source-chip">rocketjumpninja.com</span><span class="source-chip">gaminggem.com</span><span class="source-chip">thegamingsetup.com</span><span class="source-chip">amazon.com</span><span class="source-chip">bestbuy.com</span><span class="source-chip">newegg.com</span><span class="source-chip">bhphotovideo.com</span><span class="source-chip">microcenter.com</span>
+  </div>
+</div>
+
+<div class="box">
+  <h3>Validation Results</h3>
+  <div class="chk pass">✅ <strong>Razer Viper V3 Pro</strong>: Run 1 wrote seed queries to DB</div><div class="chk pass">✅ <strong>Razer Viper V3 Pro</strong>: Seed count stabilized (cooldown working)</div><div class="chk fail">❌ <strong>Razer Viper V3 Pro</strong>: Group queries appeared by run 3+</div><div class="chk fail">❌ <strong>Razer Viper V3 Pro</strong>: Key queries appeared in later runs</div><div class="chk fail">❌ <strong>Razer Viper V3 Pro</strong>: DB rows grew across runs</div><div class="chk pass">✅ <strong>Razer Viper V3 Pro</strong>: URLs were actually crawled</div><div class="chk pass">✅ <strong>Razer Viper V3 Pro</strong>: New queries decreased over time (cooldown effect)</div><div class="chk pass">✅ <strong>Cougar Airblader Tournament</strong>: Run 1 wrote seed queries to DB</div><div class="chk fail">❌ <strong>Cougar Airblader Tournament</strong>: Seed count stabilized (cooldown working)</div><div class="chk pass">✅ <strong>Cougar Airblader Tournament</strong>: Group queries appeared by run 3+</div><div class="chk pass">✅ <strong>Cougar Airblader Tournament</strong>: Key queries appeared in later runs</div><div class="chk pass">✅ <strong>Cougar Airblader Tournament</strong>: DB rows grew across runs</div><div class="chk pass">✅ <strong>Cougar Airblader Tournament</strong>: URLs were actually crawled</div><div class="chk fail">❌ <strong>Cougar Airblader Tournament</strong>: New queries decreased over time (cooldown effect)</div>
+  <div class="verdict fail">❌ SOME CHECKS FAILED</div>
 </div>
 
 
-    <div class="product-section">
-      <h2>Razer Viper V3 Pro <span class="pid">(audit-razer-viper)</span></h2>
-      <div class="meta">Total time: <strong>43ms</strong> | Final DB queries: <strong>117</strong> | Runs: <strong>12</strong></div>
-      <table>
-        <thead><tr>
-          <th>Run</th><th>Time</th><th>Seeds</th><th>T1</th><th>T2</th><th>T3</th><th>Total Q</th><th>DB Before</th><th>Worthy</th><th>Exhausted</th><th>Tier Bar</th>
-        </tr></thead>
-        <tbody><tr class="first">
-        <td>1</td>
-        <td>14ms</td>
-        <td><span class="on">FIRE</span> </td>
-        <td><strong>3</strong></td>
-        <td><strong>7</strong></td>
-        <td><strong>0</strong></td>
-        <td>10</td>
-        <td>0</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1">███</span><span class="t2">███████</span><span class="t3"></span></td>
+    <section class="product">
+      <h2>Razer Viper V3 Pro <span class="pid">mouse-audit-razer-viper</span></h2>
+      <table><thead><tr>
+        <th>Run</th><th>Run ID</th><th>Time</th><th>URLs</th><th>OK</th>
+        <th class="t1-col">T1 Seeds</th><th class="t2-col">T2 Groups</th><th class="t3-col">T3 Keys</th>
+        <th>Total DB</th><th>New</th><th>Cumulative Tier Distribution</th>
+      </tr></thead><tbody>
+      <tr class="run-header first-run">
+        <td class="run-num">1</td>
+        <td class="mono">20260401054609-b18e1f</td>
+        <td class="num">59.7s</td>
+        <td class="num">18</td>
+        <td class="num">18</td>
+        <td class="num t1-col">10</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">10</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">██████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t1">T1</span> Razer Viper V3 Pro specifications<br><span class="tag t1">T1</span> Razer Viper V3 Pro rtings.com<br><span class="tag t1">T1</span> Razer Viper V3 Pro techpowerup.com<br><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link</div></details></td></tr><tr class="">
-        <td>2</td>
-        <td>2ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>10</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro lttlabs.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro tomshardware.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro specifications</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro razer.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro techpowerup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro pcpartpicker.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro rtings.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro support.razer.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro techgearlab.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro igorslab.de</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">2</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">13</td>
+        <td class="num">13</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+1</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Razer Viper V3 Pro Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth</div></details></td></tr><tr class="">
-        <td>3</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>20</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>1 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro reddit.com</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">3</td>
+        <td class="mono">20260401054909-782d37</td>
+        <td class="num">54.4s</td>
+        <td class="num">15</td>
+        <td class="num">15</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Razer Viper V3 Pro Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth</div></details></td></tr><tr class="">
-        <td>4</td>
-        <td>3ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>1</strong></td>
-        <td><strong>9</strong></td>
-        <td>10</td>
-        <td>30</td>
-        <td>1</td>
-        <td>7</td>
-        <td><span class="t1"></span><span class="t2">█</span><span class="t3">█████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">4</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">8</td>
+        <td class="num">8</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [switches] Razer Viper V3 Pro Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration</div></details></td></tr><tr class="">
-        <td>5</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>40</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">5</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">6</td>
+        <td class="num">6</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration<br><span class="tag t3">T3</span> [dpi] Razer Viper V3 Pro dpi</div></details></td></tr><tr class="">
-        <td>6</td>
-        <td>2ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>50</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">6</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">8</td>
+        <td class="num">7</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration<br><span class="tag t3">T3</span> [dpi] Razer Viper V3 Pro dpi</div></details></td></tr><tr class="">
-        <td>7</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>60</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">7</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">6</td>
+        <td class="num">6</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration<br><span class="tag t3">T3</span> [dpi] Razer Viper V3 Pro dpi</div></details></td></tr><tr class="">
-        <td>8</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>70</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">8</td>
+        <td class="mono">20260401055804-92b851</td>
+        <td class="num">58.3s</td>
+        <td class="num">8</td>
+        <td class="num">8</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration<br><span class="tag t3">T3</span> [dpi] Razer Viper V3 Pro dpi</div></details></td></tr><tr class="">
-        <td>9</td>
-        <td>2ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>80</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">9</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">7</td>
+        <td class="num">7</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Razer Viper V3 Pro connection<br><span class="tag t3">T3</span> [connectivity] Razer Viper V3 Pro connectivity<br><span class="tag t3">T3</span> [cable type] Razer Viper V3 Pro cable type<br><span class="tag t3">T3</span> [computer side connector] Razer Viper V3 Pro computer side connector<br><span class="tag t3">T3</span> [bluetooth] Razer Viper V3 Pro bluetooth<br><span class="tag t3">T3</span> [battery hours] Razer Viper V3 Pro battery hours<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth<br><span class="tag t3">T3</span> [acceleration] Razer Viper V3 Pro acceleration<br><span class="tag t3">T3</span> [dpi] Razer Viper V3 Pro dpi</div></details></td></tr><tr class="reset-row">
-        <td>10</td>
-        <td>2ms</td>
-        <td><span class="on">FIRE</span> <span class="reset">COOLDOWN RESET</span></td>
-        <td><strong>3</strong></td>
-        <td><strong>7</strong></td>
-        <td><strong>0</strong></td>
-        <td>10</td>
-        <td>90</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1">███</span><span class="t2">███████</span><span class="t3"></span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">10</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">13</td>
+        <td class="num">13</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t1">T1</span> Razer Viper V3 Pro specifications<br><span class="tag t1">T1</span> Razer Viper V3 Pro rtings.com<br><span class="tag t1">T1</span> Razer Viper V3 Pro techpowerup.com<br><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link</div></details></td></tr><tr class="">
-        <td>11</td>
-        <td>13ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>97</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">11</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">5</td>
+        <td class="num">3</td>
+        <td class="num t1-col">0</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">0</td>
+        <td class="num highlight">+-11</td>
+        <td class="bar"><span class="bar-t1"></span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Razer Viper V3 Pro Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth</div></details></td></tr><tr class="">
-        <td>12</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>107</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>-11 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">12</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">8</td>
+        <td class="num">8</td>
+        <td class="num t1-col">10</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">10</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">██████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Razer Viper V3 Pro Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Razer Viper V3 Pro Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Razer Viper V3 Pro Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Razer Viper V3 Pro General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Razer Viper V3 Pro Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Razer Viper V3 Pro Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Razer Viper V3 Pro Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Razer Viper V3 Pro Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Razer Viper V3 Pro height<br><span class="tag t3">T3</span> [lngth] Razer Viper V3 Pro lngth</div></details></td></tr></tbody>
-      </table>
-    </div>
-    <div class="product-section">
-      <h2>Cougar Airblader Tournament <span class="pid">(audit-cougar-airblader)</span></h2>
-      <div class="meta">Total time: <strong>27ms</strong> | Final DB queries: <strong>117</strong> | Runs: <strong>12</strong></div>
-      <table>
-        <thead><tr>
-          <th>Run</th><th>Time</th><th>Seeds</th><th>T1</th><th>T2</th><th>T3</th><th>Total Q</th><th>DB Before</th><th>Worthy</th><th>Exhausted</th><th>Tier Bar</th>
-        </tr></thead>
-        <tbody><tr class="first">
-        <td>1</td>
-        <td>2ms</td>
-        <td><span class="on">FIRE</span> </td>
-        <td><strong>3</strong></td>
-        <td><strong>7</strong></td>
-        <td><strong>0</strong></td>
-        <td>10</td>
-        <td>0</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1">███</span><span class="t2">███████</span><span class="t3"></span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro razer.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro support.razer.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro techgearlab.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro tomshardware.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro specifications</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro techpowerup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro lttlabs.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro igorslab.de</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro rtings.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>razer viper v3 pro pcpartpicker.com</code></div></div>
+        </details>
+      </td></tr></tbody></table>
+    </section>
+    <section class="product">
+      <h2>Cougar Airblader Tournament <span class="pid">mouse-audit-cougar-airblader</span></h2>
+      <table><thead><tr>
+        <th>Run</th><th>Run ID</th><th>Time</th><th>URLs</th><th>OK</th>
+        <th class="t1-col">T1 Seeds</th><th class="t2-col">T2 Groups</th><th class="t3-col">T3 Keys</th>
+        <th>Total DB</th><th>New</th><th>Cumulative Tier Distribution</th>
+      </tr></thead><tbody>
+      <tr class="run-header first-run">
+        <td class="run-num">1</td>
+        <td class="mono">unknown</td>
+        <td class="num">47.3s</td>
+        <td class="num">9</td>
+        <td class="num">9</td>
+        <td class="num t1-col">11</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">11</td>
+        <td class="num highlight">+0</td>
+        <td class="bar"><span class="bar-t1">███████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t1">T1</span> Cougar Airblader Tournament specifications<br><span class="tag t1">T1</span> Cougar Airblader Tournament rtings.com<br><span class="tag t1">T1</span> Cougar Airblader Tournament techpowerup.com<br><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link</div></details></td></tr><tr class="">
-        <td>2</td>
-        <td>2ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>10</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>0 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">2</td>
+        <td class="mono">20260401060750-6b00d4</td>
+        <td class="num">72.0s</td>
+        <td class="num">11</td>
+        <td class="num">11</td>
+        <td class="num t1-col">0</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">0</td>
+        <td class="num highlight">+-11</td>
+        <td class="bar"><span class="bar-t1"></span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Cougar Airblader Tournament Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth</div></details></td></tr><tr class="">
-        <td>3</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>20</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>-11 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">3</td>
+        <td class="mono">unknown</td>
+        <td class="num">72.8s</td>
+        <td class="num">17</td>
+        <td class="num">17</td>
+        <td class="num t1-col">10</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">10</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">██████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Cougar Airblader Tournament Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth</div></details></td></tr><tr class="">
-        <td>4</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>1</strong></td>
-        <td><strong>9</strong></td>
-        <td>10</td>
-        <td>30</td>
-        <td>1</td>
-        <td>7</td>
-        <td><span class="t1"></span><span class="t2">█</span><span class="t3">█████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[techgearlab.com]</span> <code>cougar airblader tournament techgearlab.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[reddit.com]</span> <code>cougar airblader tournament reddit.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[igorslab.de]</span> <code>cougar airblader tournament igorslab.de</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[lttlabs.com]</span> <code>cougar airblader tournament lttlabs.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[techpowerup.com]</span> <code>cougar airblader tournament techpowerup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[pcpartpicker.com]</span> <code>cougar airblader tournament pcpartpicker.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[rtings.com]</span> <code>cougar airblader tournament rtings.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament specifications</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[cougargaming.com]</span> <code>cougar airblader tournament cougargaming.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[tomshardware.com]</span> <code>cougar airblader tournament tomshardware.com</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">4</td>
+        <td class="mono">20260401061015-7ef82f</td>
+        <td class="num">87.7s</td>
+        <td class="num">18</td>
+        <td class="num">15</td>
+        <td class="num t1-col">19</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">19</td>
+        <td class="num highlight">+9</td>
+        <td class="bar"><span class="bar-t1">███████████████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [switches] Cougar Airblader Tournament Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration</div></details></td></tr><tr class="">
-        <td>5</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>40</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>9 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[rocketjumpninja.com]</span> <code>cougar airblader tournament rocketjumpninja.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[mousecompare.com]</span> <code>cougar airblader tournament mousecompare.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[thegamingsetup.com]</span> <code>cougar airblader tournament thegamingsetup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[versus.com]</span> <code>cougar airblader tournament versus.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[gaminggem.com]</span> <code>cougar airblader tournament gaminggem.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[sensor.fyi]</span> <code>cougar airblader tournament sensor.fyi</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[prosettings.net]</span> <code>cougar airblader tournament prosettings.net</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[eloshapes.com]</span> <code>cougar airblader tournament eloshapes.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[mousespecs.org]</span> <code>cougar airblader tournament mousespecs.org</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">5</td>
+        <td class="mono">20260401061142-22a8df</td>
+        <td class="num">97.9s</td>
+        <td class="num">18</td>
+        <td class="num">13</td>
+        <td class="num t1-col">25</td>
+        <td class="num t2-col">4</td>
+        <td class="num t3-col">0</td>
+        <td class="num">29</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">█████████████████████████</span><span class="bar-t2">████</span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration<br><span class="tag t3">T3</span> [dpi] Cougar Airblader Tournament dpi</div></details></td></tr><tr class="">
-        <td>6</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>50</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament user manual</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[connectivity]</span> <code>cougar airblader tournament connection type wireless bluetooth</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament review</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[ergonomics]</span> <code>cougar airblader tournament ergonomic design shape</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[dimensions]</span> <code>cougar airblader tournament dimensions specifications</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[sensor_performance]</span> <code>cougar airblader tournament sensor dpi polling rate acceleration</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament datasheet</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament official site</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament product page</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament unboxing</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">6</td>
+        <td class="mono">unknown</td>
+        <td class="num">91.5s</td>
+        <td class="num">15</td>
+        <td class="num">15</td>
+        <td class="num t1-col">0</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">0</td>
+        <td class="num highlight">+-29</td>
+        <td class="bar"><span class="bar-t1"></span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration<br><span class="tag t3">T3</span> [dpi] Cougar Airblader Tournament dpi</div></details></td></tr><tr class="">
-        <td>7</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>60</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>-29 new queries written to SQL</summary>
+        <div class="q-list"><em>no new queries (all on cooldown)</em></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">7</td>
+        <td class="mono">20260401061452-d305e6</td>
+        <td class="num">86.9s</td>
+        <td class="num">15</td>
+        <td class="num">13</td>
+        <td class="num t1-col">10</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">10</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">██████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration<br><span class="tag t3">T3</span> [dpi] Cougar Airblader Tournament dpi</div></details></td></tr><tr class="">
-        <td>8</td>
-        <td>2ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>70</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[techgearlab.com]</span> <code>cougar airblader tournament techgearlab.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[reddit.com]</span> <code>cougar airblader tournament reddit.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[rtings.com]</span> <code>cougar airblader tournament rtings.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[tomshardware.com]</span> <code>cougar airblader tournament tomshardware.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[lttlabs.com]</span> <code>cougar airblader tournament lttlabs.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta"></span> <code>cougar airblader tournament specifications</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[pcpartpicker.com]</span> <code>cougar airblader tournament pcpartpicker.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[igorslab.de]</span> <code>cougar airblader tournament igorslab.de</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[techpowerup.com]</span> <code>cougar airblader tournament techpowerup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[cougargaming.com]</span> <code>cougar airblader tournament cougargaming.com</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">8</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">13</td>
+        <td class="num">13</td>
+        <td class="num t1-col">19</td>
+        <td class="num t2-col">0</td>
+        <td class="num t3-col">0</td>
+        <td class="num">19</td>
+        <td class="num highlight">+9</td>
+        <td class="bar"><span class="bar-t1">███████████████████</span><span class="bar-t2"></span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration<br><span class="tag t3">T3</span> [dpi] Cougar Airblader Tournament dpi</div></details></td></tr><tr class="">
-        <td>9</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>0</strong></td>
-        <td><strong>10</strong></td>
-        <td>10</td>
-        <td>80</td>
-        <td>0</td>
-        <td>8</td>
-        <td><span class="t1"></span><span class="t2"></span><span class="t3">██████████</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>9 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[thegamingsetup.com]</span> <code>cougar airblader tournament thegamingsetup.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[rocketjumpninja.com]</span> <code>cougar airblader tournament rocketjumpninja.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[gaminggem.com]</span> <code>cougar airblader tournament gaminggem.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[mousecompare.com]</span> <code>cougar airblader tournament mousecompare.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[mousespecs.org]</span> <code>cougar airblader tournament mousespecs.org</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[prosettings.net]</span> <code>cougar airblader tournament prosettings.net</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[eloshapes.com]</span> <code>cougar airblader tournament eloshapes.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[versus.com]</span> <code>cougar airblader tournament versus.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[sensor.fyi]</span> <code>cougar airblader tournament sensor.fyi</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">9</td>
+        <td class="mono">20260401061818-7ce4f6</td>
+        <td class="num">98.2s</td>
+        <td class="num">18</td>
+        <td class="num">16</td>
+        <td class="num t1-col">24</td>
+        <td class="num t2-col">4</td>
+        <td class="num t3-col">0</td>
+        <td class="num">28</td>
+        <td class="num highlight">+9</td>
+        <td class="bar"><span class="bar-t1">████████████████████████</span><span class="bar-t2">████</span><span class="bar-t3"></span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t3">T3</span> [connection] Cougar Airblader Tournament connection<br><span class="tag t3">T3</span> [connectivity] Cougar Airblader Tournament connectivity<br><span class="tag t3">T3</span> [cable type] Cougar Airblader Tournament cable type<br><span class="tag t3">T3</span> [computer side connector] Cougar Airblader Tournament computer side connector<br><span class="tag t3">T3</span> [bluetooth] Cougar Airblader Tournament bluetooth<br><span class="tag t3">T3</span> [battery hours] Cougar Airblader Tournament battery hours<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth<br><span class="tag t3">T3</span> [acceleration] Cougar Airblader Tournament acceleration<br><span class="tag t3">T3</span> [dpi] Cougar Airblader Tournament dpi</div></details></td></tr><tr class="reset-row">
-        <td>10</td>
-        <td>1ms</td>
-        <td><span class="on">FIRE</span> <span class="reset">COOLDOWN RESET</span></td>
-        <td><strong>3</strong></td>
-        <td><strong>7</strong></td>
-        <td><strong>0</strong></td>
-        <td>10</td>
-        <td>90</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1">███</span><span class="t2">███████</span><span class="t3"></span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>9 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[bhphotovideo.com]</span> <code>cougar airblader tournament bhphotovideo.com</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[ergonomics]</span> <code>cougar airblader tournament ergonomic shape form factor grip</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[sensor_performance]</span> <code>cougar airblader tournament sensor performance dpi polling rate acceleration</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[bestbuy.com]</span> <code>cougar airblader tournament bestbuy.com</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[connectivity]</span> <code>cougar airblader tournament connectivity wireless bluetooth cable type</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[amazon.com]</span> <code>cougar airblader tournament amazon.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[newegg.com]</span> <code>cougar airblader tournament newegg.com</code></div><div class="q-row"><span class="tag t1">T1 SEED</span> <span class="q-meta">[microcenter.com]</span> <code>cougar airblader tournament microcenter.com</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[dimensions]</span> <code>cougar airblader tournament dimensions length width height</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">10</td>
+        <td class="mono">unknown</td>
+        <td class="num">56.4s</td>
+        <td class="num">10</td>
+        <td class="num">9</td>
+        <td class="num t1-col">24</td>
+        <td class="num t2-col">18</td>
+        <td class="num t3-col">2</td>
+        <td class="num">44</td>
+        <td class="num highlight">+16</td>
+        <td class="bar"><span class="bar-t1">████████████████████████</span><span class="bar-t2">██████████████████</span><span class="bar-t3">██</span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t1">T1</span> Cougar Airblader Tournament specifications<br><span class="tag t1">T1</span> Cougar Airblader Tournament rtings.com<br><span class="tag t1">T1</span> Cougar Airblader Tournament techpowerup.com<br><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link</div></details></td></tr><tr class="">
-        <td>11</td>
-        <td>13ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>97</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>16 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[sensor_performance]</span> <code>cougar airblader tournament sensor performance dpi polling rate acceleration flawless hardware</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[ergonomics]</span> <code>cougar airblader tournament ergonomics shape form factor grip hump flare</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament buttons features sensor brand type latency</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[encoder]</span> <code>cougar airblader tournament encoder brand specifications</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[general]</span> <code>cougar airblader tournament general product information release date price colors design</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[switches]</span> <code>cougar airblader tournament switches brand type hot swappable debounce click latency</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[construction]</span> <code>cougar airblader tournament construction build quality materials weight feet coating</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[connectivity]</span> <code>cougar airblader tournament connectivity wireless bluetooth cable type connectors</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[controls]</span> <code>cougar airblader tournament switch durability</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[switches]</span> <code>cougar airblader tournament switches switch brand type click latency</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[controls]</span> <code>cougar airblader tournament switch life span</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[construction]</span> <code>cougar airblader tournament construction build quality materials weight</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[ergonomics]</span> <code>cougar airblader tournament ergonomics shape form factor grip</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[encoder]</span> <code>cougar airblader tournament encoder specifications brand</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament buttons features sensor type brand</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[general]</span> <code>cougar airblader tournament general product information release date price colors</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">11</td>
+        <td class="mono">unknown</td>
+        <td class="num">120.0s</td>
+        <td class="num">15</td>
+        <td class="num">14</td>
+        <td class="num t1-col">24</td>
+        <td class="num t2-col">26</td>
+        <td class="num t3-col">9</td>
+        <td class="num">59</td>
+        <td class="num highlight">+15</td>
+        <td class="bar"><span class="bar-t1">████████████████████████</span><span class="bar-t2">██████████████████████████</span><span class="bar-t3">█████████</span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Cougar Airblader Tournament Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth</div></details></td></tr><tr class="">
-        <td>12</td>
-        <td>1ms</td>
-        <td><span class="off">COOL</span> </td>
-        <td><strong>0</strong></td>
-        <td><strong>8</strong></td>
-        <td><strong>2</strong></td>
-        <td>10</td>
-        <td>107</td>
-        <td>8</td>
-        <td>0</td>
-        <td><span class="t1"></span><span class="t2">████████</span><span class="t3">██</span></td>
+      <tr class="detail"><td colspan="11">
+        <details><summary>15 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[general]</span> <code>cougar airblader tournament release date price colors design specifications</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament middle buttons</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament sensor link</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament side buttons</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[dimensions]</span> <code>cougar airblader tournament measurements length width height</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[construction]</span> <code>cougar airblader tournament build quality materials weight feet coating</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[encoder]</span> <code>cougar airblader tournament encoder brand type specifications</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[sensor_performance]</span> <code>cougar airblader tournament sensor specifications dpi polling rate acceleration</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament ips</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament sensor type</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[controls]</span> <code>cougar airblader tournament switch lifespan million clicks</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[switches]</span> <code>cougar airblader tournament switches switch brand type hot swappable debounce</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[electronics]</span> <code>cougar airblader tournament microcontroller chip processor</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[connectivity]</span> <code>cougar airblader tournament connectivity wireless bluetooth cable type connection specs</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament buttons features side buttons middle buttons sensor brand</code></div></div>
+        </details>
+      </td></tr>
+      <tr class="run-header ">
+        <td class="run-num">12</td>
+        <td class="mono">20260401062254-b2589e</td>
+        <td class="num">87.3s</td>
+        <td class="num">15</td>
+        <td class="num">14</td>
+        <td class="num t1-col">24</td>
+        <td class="num t2-col">27</td>
+        <td class="num t3-col">18</td>
+        <td class="num">69</td>
+        <td class="num highlight">+10</td>
+        <td class="bar"><span class="bar-t1">████████████████████████</span><span class="bar-t2">███████████████████████████</span><span class="bar-t3">██████████████████</span></td>
       </tr>
-      <tr class="detail-row"><td colspan="11"><details><summary>Queries</summary><div class="queries"><span class="tag t2">T2</span> [ergonomics] Cougar Airblader Tournament Ergonomics shape ergonomic features form factor front flare grip hand size hump<br><span class="tag t2">T2</span> [connectivity] Cougar Airblader Tournament Connectivity connection wireless specs battery hours bluetooth cable type computer side connector connection connectivity<br><span class="tag t2">T2</span> [buttons_features] Cougar Airblader Tournament Buttons &amp; Features buttons feature set adjustable scroll wheel ips lift lift settings<br><span class="tag t2">T2</span> [general] Cougar Airblader Tournament General general product information colors design discontinued encoder life span encoder steps encoder type<br><span class="tag t2">T2</span> [sensor_performance] Cougar Airblader Tournament Sensor &amp; Performance sensor performance metrics acceleration dpi flawless sensor hardware acceleration<br><span class="tag t2">T2</span> [construction] Cougar Airblader Tournament Construction build quality materials adjustable weight coating feet material honeycomb frame<br><span class="tag t2">T2</span> [switches] Cougar Airblader Tournament Switches switch specifications click force click latency click latency list debounce hot swappable<br><span class="tag t2">T2</span> [encoder] Cougar Airblader Tournament Encoder encoder specifications encoder encoder brand encoder link<br><span class="tag t3">T3</span> [height] Cougar Airblader Tournament height<br><span class="tag t3">T3</span> [lngth] Cougar Airblader Tournament lngth</div></details></td></tr></tbody>
-      </table>
-    </div>
+      <tr class="detail"><td colspan="11">
+        <details><summary>10 new queries written to SQL</summary>
+        <div class="q-list"><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament thumb buttons</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament lod settings</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament max tracking speed</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament memory profiles</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament customizable buttons</code></div><div class="q-row"><span class="tag t2">T2 GROUP</span> <span class="q-meta">[dimensions]</span> <code>cougar airblader tournament dimensions length width height specifications</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament sensor datasheet</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament lift off distance</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament dpi button</code></div><div class="q-row"><span class="tag t3">T3 KEY</span> <span class="q-meta">[buttons_features]</span> <code>cougar airblader tournament sensor technology</code></div></div>
+        </details>
+      </td></tr></tbody></table>
+    </section>
 
-<div class="proof-box">
-  <h3>Persistence Proof</h3>
-  <p>All cooldowns are persisted in SQLite table <code>query_cooldowns</code> with columns:
-  <code>query_hash</code>, <code>product_id</code>, <code>tier</code>, <code>group_key</code>,
-  <code>cooldown_until</code>, <code>attempt_count</code>, <code>result_count</code>, <code>last_executed_at</code>.</p>
-  <p><code>deriveSeedStatus()</code> now checks <code>cooldown_until &gt; now</code> — identical pattern to
-  <code>computeGroupQueryCount()</code> which has always worked correctly for group cooldowns.</p>
-  <p>The old broken logic checked <code>status === 'scrape_complete'</code> and <code>new_fields_closed &gt;= 1</code>,
-  but the DB never stored those fields. Seeds were always <code>is_needed: true</code>, starving T2/T3 of budget.</p>
+<div class="box">
+  <h3>Bug That Was Fixed</h3>
+  <p><code>deriveSeedStatus()</code> checked <code>status === 'scrape_complete'</code> and <code>new_fields_closed &gt;= 1</code>,
+  but the DB never stored those fields. Seeds were <strong>always</strong> <code>is_needed: true</code>.</p>
+  <p><strong>Fix:</strong> Now checks <code>cooldown_until &gt; now</code> &mdash; same pattern as group cooldowns.</p>
 </div>
 
 </body></html>
