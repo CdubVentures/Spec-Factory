@@ -1,10 +1,67 @@
 // WHY: Client-side mirror of backend EG presets (src/features/studio/contracts/egPresets.js).
 // Used by the EG toggle in KeyNavigatorTab to populate field values when toggling ON.
 // The backend remains SSOT — these are applied optimistically, then validated on save.
+//
+// Builders accept optional ctx for dynamic data (colorNames from registry).
+// No fallback color lists — DB is SSOT, always seeded at boot.
 
 import type { FieldRule } from '../../../types/studio.ts';
 
-export function buildEgColorPreset(): FieldRule {
+interface EgPresetCtx {
+  readonly colorNames?: readonly string[];
+}
+
+function buildColorReasoningNote(colorNames: readonly string[]): string {
+  // WHY: Derive prefixes dynamically from registered names. O(1) — adding vivid-, pastel-
+  // etc. auto-discovers new prefixes. No hardcoded prefix list.
+  const nameSet = new Set(colorNames);
+  const prefixMap = new Map<string, Set<string>>();
+  const unprefixed: string[] = [];
+
+  for (const n of colorNames) {
+    const dashIdx = n.indexOf('-');
+    if (dashIdx > 0) {
+      const prefix = n.slice(0, dashIdx);
+      const base = n.slice(dashIdx + 1);
+      if (nameSet.has(base)) {
+        if (!prefixMap.has(prefix)) prefixMap.set(prefix, new Set());
+        prefixMap.get(prefix)!.add(base);
+      }
+    }
+    if (!n.includes('-')) unprefixed.push(n);
+  }
+
+  const basesWithVariants: string[] = [];
+  const standalone: string[] = [];
+  for (const n of unprefixed) {
+    let hasVariant = false;
+    for (const [, bases] of prefixMap) {
+      if (bases.has(n)) { hasVariant = true; break; }
+    }
+    if (hasVariant) basesWithVariants.push(n);
+    else standalone.push(n);
+  }
+
+  const orphans: string[] = [];
+  for (const n of colorNames) {
+    const dashIdx = n.indexOf('-');
+    if (dashIdx > 0 && !nameSet.has(n.slice(dashIdx + 1))) orphans.push(n);
+  }
+
+  const parts: string[] = [];
+  const prefixes = [...prefixMap.keys()].sort();
+  if (basesWithVariants.length > 0 && prefixes.length > 0) {
+    const prefixList = prefixes.map((p) => `${p}-`).join(', ');
+    parts.push(`Base colors (also valid with prefixes ${prefixList}): ${basesWithVariants.join(', ')}`);
+  }
+  if (standalone.length > 0) parts.push(`Other colors: ${standalone.join(', ')}`);
+  if (orphans.length > 0) parts.push(`Additional variants: ${orphans.join(', ')}`);
+
+  return `Return colors as a list of variant strings. Each variant is either a single canonical color (e.g. "black", "light-gray") or multiple canonical colors joined by "+" (e.g. "black+red", "white+orange+blue"). Each atom must be lowercase with hyphens only. Modifier-first naming: "light-blue" not "blue-light", "dark-green" not "green-dark". ${parts.join('. ')}. Do not return hex codes, RGB values, uppercase, or spaces within atoms. Normalize grey to gray.`;
+}
+
+export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
+  const colorNames = ctx?.colorNames ?? [];
   return {
     key: 'colors',
     contract: {
@@ -62,7 +119,7 @@ export function buildEgColorPreset(): FieldRule {
       model_strategy: 'auto',
       max_calls: 1,
       max_tokens: 4096,
-      reasoning_note: 'Return colors as a list of variant strings. Each variant is either a single canonical color (e.g. "black", "light-gray") or multiple canonical colors joined by "+" (e.g. "black+red", "white+orange+blue"). Each atom must be lowercase with hyphens only. Modifier-first naming: "light-blue" not "blue-light", "dark-green" not "green-dark". Valid atoms: black, white, red, blue, green, yellow, orange, pink, purple, gray, teal, cyan, gold, silver, light-gray, light-blue, dark-blue, dark-green, etc. Do not return hex codes, RGB values, uppercase, or spaces within atoms. Normalize grey to gray.',
+      reasoning_note: buildColorReasoningNote(colorNames),
     },
     ui: {
       label: 'Colors',
@@ -78,7 +135,7 @@ export function buildEgColorPreset(): FieldRule {
   };
 }
 
-export function buildEgEditionPreset(): FieldRule {
+export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
   return {
     key: 'editions',
     contract: {
@@ -133,16 +190,15 @@ export function buildEgEditionPreset(): FieldRule {
   };
 }
 
-const EG_PRESET_BUILDERS: Record<string, () => FieldRule> = {
+const EG_PRESET_BUILDERS: Record<string, (ctx?: EgPresetCtx) => FieldRule> = {
   colors: buildEgColorPreset,
   editions: buildEgEditionPreset,
 };
 
-// O(1): Derived from registry — consumers import these instead of hardcoding keys.
 export const EG_PRESET_KEYS: readonly string[] = Object.freeze(Object.keys(EG_PRESET_BUILDERS));
 export const EG_TOGGLEABLE_KEY_SET: ReadonlySet<string> = new Set(EG_PRESET_KEYS);
 
-export function getEgPresetForKey(key: string): FieldRule | null {
+export function getEgPresetForKey(key: string, ctx?: EgPresetCtx): FieldRule | null {
   const builder = EG_PRESET_BUILDERS[key];
-  return builder ? builder() : null;
+  return builder ? builder(ctx) : null;
 }

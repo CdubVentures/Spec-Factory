@@ -427,7 +427,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <span class="dir">_overrides/</span>                      <span class="comment"># Review/publish overrides (~26 files)</span>
     <span class="json">sources.json</span>                     <span class="comment"># 22 KB   &mdash; seed specification sources</span>
   <span class="dir">_global/</span>
-    <span class="json">brand_registry.json</span>              <span class="comment"># Brand definitions (seeds app.sqlite)</span>
+    <span class="json">brand_registry.json</span>              <span class="comment"># Brand definitions (seed + GUI write-back)</span>
   <span class="dir">_runtime/</span>                          <span class="comment"># Legacy migration source (NOT git-ignored, NOT active write path)</span>
     <span class="json">user-settings.json</span>               <span class="comment"># Legacy location — active write: .workspace/global/user-settings.json</span>
     <span class="dir">snapshots/</span>                       <span class="comment"># Legacy — active: .workspace/runtime/snapshots/ (capped at 10)</span>
@@ -491,9 +491,9 @@ code{font-family:var(--mono);font-size:0.85em}
       <summary><span class="card-name">_global/brand_registry.json</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-git">Committed</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Canonical brand definitions. Seeds the brands table in app.sqlite on initialization.</td></tr>
-          <tr><td class="pk">Written by</td><td class="pv">Manual curation</td></tr>
-          <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; edited when new brands are added to the system</td></tr>
+          <tr><td class="pk">Purpose</td><td class="pv">Canonical brand definitions. Seeds the brands table in app.sqlite on initialization. Synced back from SQL after every HTTP mutation so data survives DB rebuild.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">GUI Brand Manager (automatic write-back after mutations)</td></tr>
+          <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; kept in sync with SQL via write-back</td></tr>
         </table>
       </div>
     </details>
@@ -761,10 +761,10 @@ code{font-family:var(--mono);font-size:0.85em}
       </tr>
       <tr>
         <td class="fname">brand_registry.json</td>
-        <td>Manual curation</td>
-        <td>On brand addition</td>
+        <td>GUI write-back</td>
+        <td>After every brand mutation</td>
         <td>Permanent (committed)</td>
-        <td>Manual reconstruction</td>
+        <td>Auto-rebuilt from SQL on mutation</td>
         <td class="crit">Yes</td>
       </tr>
       <tr>

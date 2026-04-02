@@ -15,6 +15,7 @@ describe('APP_DB_SCHEMA', () => {
     'brand_renames',
     'settings',
     'studio_maps',
+    'color_registry',
   ];
 
   for (const table of expectedTables) {

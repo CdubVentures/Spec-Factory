@@ -63,6 +63,7 @@ export interface BuildStudioPageActivePanelPropsInput {
   selectedKey: string;
   onSelectKey: (nextKey: string) => void;
   onSave: () => void;
+  onPersistOrder: (order: string[]) => void;
   savePending: boolean;
   saveSuccess: boolean;
   enumLists: EnumEntry[];
@@ -116,6 +117,7 @@ export function buildStudioPageActivePanelProps({
   selectedKey,
   onSelectKey,
   onSave,
+  onPersistOrder,
   savePending,
   saveSuccess,
   enumLists,
@@ -172,6 +174,7 @@ export function buildStudioPageActivePanelProps({
       selectedKey,
       onSelectKey,
       onSave,
+      onPersistOrder,
       saving: savePending,
       saveSuccess,
       knownValues: normalizedKnownValues,

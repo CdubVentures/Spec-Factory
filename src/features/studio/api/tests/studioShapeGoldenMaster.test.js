@@ -182,7 +182,7 @@ test('StudioConfigSchema declares data_lists as an explicit schema field', () =>
 test('derived key arrays match expected shape keys', () => {
   assert.deepEqual([...STUDIO_PAYLOAD_KEYS].sort(), [
     'category', 'compileStale', 'compiledAt', 'egEditablePaths', 'egLockedKeys',
-    'egToggles', 'fieldOrder', 'fieldRules', 'guardrails', 'mapSavedAt', 'uiFieldCatalog',
+    'egToggles', 'fieldOrder', 'fieldRules', 'guardrails', 'mapSavedAt', 'registeredColors', 'uiFieldCatalog',
   ]);
   assert.deepEqual([...FIELD_STUDIO_MAP_RESPONSE_KEYS].sort(), ['error', 'file_path', 'map']);
   assert.deepEqual([...TOOLTIP_BANK_RESPONSE_KEYS].sort(), ['configuredPath', 'entries', 'files']);

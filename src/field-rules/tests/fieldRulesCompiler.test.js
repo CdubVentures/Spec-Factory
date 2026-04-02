@@ -9,6 +9,7 @@ import {
   normalizeFieldRulesForPhase1,
   validateRules
 } from '../compiler.js';
+import { EG_LOCKED_KEYS } from '../../features/studio/index.js';
 import {
   buildMouseWorkbookMap,
   buildMouseWorkbookMapWithOverrides,
@@ -314,4 +315,37 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
   assert.equal(typeof row.parse, 'object');
   assert.equal(typeof row.evidence, 'object');
   assert.equal(row.evidence.required, false);
+});
+
+test('compile-time EG injection: EG-locked keys appear in compiled output even when absent from source map', async () => {
+  const { root, helperRoot, categoriesRoot, workbookPath } = await cloneCompiledMouseBaseline('phase1-eg-inject-');
+  try {
+    // Build a map that deliberately EXCLUDES colors and editions
+    const mapWithoutEg = buildMouseWorkbookMap(workbookPath);
+    mapWithoutEg.selected_keys = mapWithoutEg.selected_keys.filter(
+      (k) => !EG_LOCKED_KEYS.includes(k)
+    );
+    delete mapWithoutEg.field_overrides?.colors;
+    delete mapWithoutEg.field_overrides?.editions;
+
+    const result = await compileRules({
+      category: 'mouse',
+      fieldStudioSourcePath: workbookPath,
+      fieldStudioMap: mapWithoutEg,
+      config: { categoryAuthorityRoot: helperRoot, categoriesRoot },
+    });
+    assert.equal(result.compiled, true);
+
+    // Read the compiled field_rules.json
+    const fieldRulesPath = path.join(helperRoot, 'mouse', '_generated', 'field_rules.json');
+    const fieldRules = JSON.parse(await fs.readFile(fieldRulesPath, 'utf8'));
+
+    // Every EG-locked key must appear in compiled fields
+    for (const k of EG_LOCKED_KEYS) {
+      assert.ok(fieldRules.fields?.[k], `EG-locked key '${k}' must be in compiled field_rules.json`);
+      assert.equal(fieldRules.fields[k].field_key, k);
+    }
+  } finally {
+    await removeRoot(root);
+  }
 });

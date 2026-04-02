@@ -49,4 +49,12 @@ CREATE TABLE IF NOT EXISTS studio_maps (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (category)
 );
+
+CREATE TABLE IF NOT EXISTS color_registry (
+  name       TEXT PRIMARY KEY,
+  hex        TEXT NOT NULL,
+  css_var    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;

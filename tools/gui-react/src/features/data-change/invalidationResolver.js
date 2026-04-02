@@ -100,6 +100,12 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['candidates', CATEGORY_TOKEN],
     ['componentImpact'],
   ]),
+  'color-registry': Object.freeze([
+    ['colors'],
+  ]),
+  'color-edition-finder': Object.freeze([
+    ['color-edition-finder', CATEGORY_TOKEN],
+  ]),
   categories: Object.freeze([
     ['categories'],
     ['categories-real'],
@@ -131,6 +137,7 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'brand',
   'catalog',
   'categories',
+  'color-registry',
   'component',
   'enum',
   'identity',
@@ -163,6 +170,9 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'brand-rename': ['brand', 'catalog', 'identity', 'queue'],
   'brand-update': ['brand', 'catalog', 'identity'],
   'brand-delete': ['brand', 'catalog', 'identity'],
+  'color-add': ['color-registry'],
+  'color-update': ['color-registry'],
+  'color-delete': ['color-registry'],
   'llm-settings-updated': ['settings', 'indexing'],
   'llm-settings-reset': ['settings', 'indexing'],
   'runtime-settings-updated': ['settings', 'indexing'],

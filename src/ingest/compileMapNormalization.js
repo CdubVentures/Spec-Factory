@@ -507,7 +507,10 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       min_identifiers: 2,
       anti_merge_rules: []
     },
-    manual_enum_values: manualEnumValues
+    manual_enum_values: manualEnumValues,
+    field_groups: Array.isArray(map.field_groups)
+      ? orderedUniqueStrings(toArray(map.field_groups).map(g => String(g || '').trim()).filter(Boolean))
+      : []
   };
 }
 

@@ -154,11 +154,11 @@ export function PickerPanel({
         <select
           value={singleProductId}
           onChange={(e) => onProductIdChange(e.target.value)}
-          disabled={busy || !singleModel}
+          disabled={busy || !singleModel || variantOptions.length <= 1}
           className="px-2 py-2 text-sm rounded sf-select"
           title="Step 3: Choose variant."
         >
-          <option value="">3) select variant</option>
+          <option value="">{variantOptions.length <= 1 ? '(auto)' : '3) select variant'}</option>
           {variantOptions.map((option) => (
             <option key={option.productId} value={option.productId}>
               {option.label}

@@ -7,6 +7,8 @@ import { queryEnhancerResponseZodSchema, buildEnhancerSystemPrompt } from '../se
 import { brandResolverLlmResponseSchema, BRAND_RESOLVER_SYSTEM_PROMPT } from '../brandResolver/brandResolverLlmAdapter.js';
 import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
+import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
+import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
 
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   'needset': {
@@ -24,5 +26,19 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   'serp-selector': {
     system_prompt: SERP_SELECT_URLS_SYSTEM_PROMPT,
     response_schema: serpSelectorOutputSchema(),
+  },
+  'color-finder': {
+    system_prompt: buildColorEditionFinderPrompt({
+      colorNames: ['black', 'white', 'red', 'gray', 'light-gray', 'light-blue', 'dark-green', 'teal', 'yellow', 'blue'],
+      colors: [
+        { name: 'black', hex: '#000000' }, { name: 'white', hex: '#ffffff' },
+        { name: 'red', hex: '#ef4444' }, { name: 'gray', hex: '#6b7280' },
+        { name: 'light-gray', hex: '#d1d5db' }, { name: 'light-blue', hex: '#60a5fa' },
+        { name: 'dark-green', hex: '#15803d' }, { name: 'teal', hex: '#14b8a6' },
+        { name: 'yellow', hex: '#eab308' }, { name: 'blue', hex: '#3b82f6' },
+      ],
+      product: { brand: '{brand}', model: '{model}', category: '{category}', seed_urls: ['{seed_url}'] },
+    }),
+    response_schema: zodToLlmSchema(colorEditionFinderResponseSchema),
   },
 });

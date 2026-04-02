@@ -7,6 +7,7 @@ import { APP_DB_SCHEMA } from './appDbSchema.js';
 
 export class AppDb {
   constructor({ dbPath }) {
+    this.dbPath = dbPath;
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
@@ -84,6 +85,21 @@ export class AppDb {
     this._countBrandRenames = this.db.prepare('SELECT COUNT(*) as c FROM brand_renames');
     this._countSettings = this.db.prepare('SELECT COUNT(*) as c FROM settings');
     this._countStudioMaps = this.db.prepare('SELECT COUNT(*) as c FROM studio_maps');
+
+    // ── Color Registry ──
+
+    this._upsertColor = this.db.prepare(`
+      INSERT INTO color_registry (name, hex, css_var)
+      VALUES (@name, @hex, @css_var)
+      ON CONFLICT(name) DO UPDATE SET
+        hex = excluded.hex,
+        css_var = excluded.css_var,
+        updated_at = datetime('now')
+    `);
+    this._getColor = this.db.prepare('SELECT * FROM color_registry WHERE name = ?');
+    this._listColors = this.db.prepare('SELECT * FROM color_registry ORDER BY name');
+    this._deleteColor = this.db.prepare('DELETE FROM color_registry WHERE name = ?');
+    this._countColors = this.db.prepare('SELECT COUNT(*) as c FROM color_registry');
 
     // WHY: transaction for setBrandCategories (delete + re-insert atomically)
     this._setBrandCategoriesTx = this.db.transaction((identifier, categories) => {
@@ -206,6 +222,24 @@ export class AppDb {
     return this._listStudioMaps.all();
   }
 
+  // ── Color Registry ──
+
+  upsertColor({ name, hex, css_var }) {
+    this._upsertColor.run({ name, hex, css_var });
+  }
+
+  getColor(name) {
+    return this._getColor.get(name) || null;
+  }
+
+  listColors() {
+    return this._listColors.all();
+  }
+
+  deleteColor(name) {
+    return this._deleteColor.run(name).changes;
+  }
+
   // ── Lifecycle ──
 
   isSeeded() {
@@ -219,6 +253,7 @@ export class AppDb {
       brand_renames: this._countBrandRenames.get().c,
       settings: this._countSettings.get().c,
       studio_maps: this._countStudioMaps.get().c,
+      color_registry: this._countColors.get().c,
     };
   }
 

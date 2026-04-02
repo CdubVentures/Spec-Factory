@@ -7,14 +7,19 @@ export function useStudioFieldRulesState() {
   const initialized = useFieldRulesStore((state) => state.initialized);
   const egLockedKeys = useFieldRulesStore((state) => state.egLockedKeys);
   const egToggles = useFieldRulesStore((state) => state.egToggles);
+  const registeredColors = useFieldRulesStore((state) => state.registeredColors);
+
+  const groupsDirty = useFieldRulesStore((state) => state.groupsDirty);
 
   return {
     editedRules,
     editedFieldOrder,
     pendingRenames,
     initialized,
+    groupsDirty,
     egLockedKeys,
     egToggles,
+    registeredColors,
   };
 }
 
@@ -24,6 +29,7 @@ export function useStudioFieldRulesActions() {
   const reset = useFieldRulesStore((state) => state.reset);
   const clearRenames = useFieldRulesStore((state) => state.clearRenames);
   const clearEdited = useFieldRulesStore((state) => state.clearEdited);
+  const clearGroupsDirty = useFieldRulesStore((state) => state.clearGroupsDirty);
   const updateField = useFieldRulesStore((state) => state.updateField);
   const setEgToggle = useFieldRulesStore((state) => state.setEgToggle);
   const addKey = useFieldRulesStore((state) => state.addKey);
@@ -41,6 +47,7 @@ export function useStudioFieldRulesActions() {
     reset,
     clearRenames,
     clearEdited,
+    clearGroupsDirty,
     updateField,
     setEgToggle,
     addKey,

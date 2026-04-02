@@ -35,6 +35,19 @@ test('getUserSettingsState returns the initial user settings', () => {
   assert.equal(ctx.getUserSettingsState(), initial);
 });
 
+test('createConfigPersistenceContext applies initial runtime settings onto config immediately', () => {
+  const config = { llmModelPlan: 'gemini-2.5-flash' };
+  createConfigPersistenceContext({
+    config,
+    initialUserSettings: {
+      runtime: {
+        llmModelPlan: 'gpt-5',
+      },
+    },
+  });
+  assert.equal(config.llmModelPlan, 'gpt-5');
+});
+
 test('getUiSettingsState returns a ui snapshot object', () => {
   const ctx = createConfigPersistenceContext({
     config: {},

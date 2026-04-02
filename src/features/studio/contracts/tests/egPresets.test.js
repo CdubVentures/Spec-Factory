@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  EG_CANONICAL_COLORS,
   EG_PRESET_REGISTRY,
   EG_LOCKED_KEYS,
   EG_EDITABLE_PATHS,
@@ -16,40 +15,6 @@ import {
   isEgEditablePath,
   resolveEgLockedKeys,
 } from '../egPresets.js';
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-describe('EG_CANONICAL_COLORS', () => {
-  it('is a non-empty frozen array of strings', () => {
-    assert.ok(Array.isArray(EG_CANONICAL_COLORS));
-    assert.ok(EG_CANONICAL_COLORS.length >= 10, 'expected at least 10 canonical colors');
-    for (const c of EG_CANONICAL_COLORS) {
-      assert.equal(typeof c, 'string');
-      assert.ok(c.length > 0);
-    }
-    assert.ok(Object.isFrozen(EG_CANONICAL_COLORS));
-  });
-
-  it('includes core EG colors', () => {
-    const expected = ['black', 'white', 'red', 'blue', 'green', 'gray', 'orange', 'pink', 'purple', 'yellow'];
-    for (const c of expected) {
-      assert.ok(EG_CANONICAL_COLORS.includes(c), `missing canonical color: ${c}`);
-    }
-  });
-
-  it('includes light/dark variants (modifier-first)', () => {
-    assert.ok(EG_CANONICAL_COLORS.includes('light-gray'));
-    assert.ok(EG_CANONICAL_COLORS.includes('dark-blue'));
-    assert.ok(EG_CANONICAL_COLORS.includes('light-blue'));
-    assert.ok(EG_CANONICAL_COLORS.includes('dark-green'));
-  });
-
-  it('does not contain "+" multi-color strings', () => {
-    for (const c of EG_CANONICAL_COLORS) {
-      assert.ok(!c.includes('+'), `canonical color must be atomic, got: ${c}`);
-    }
-  });
-});
 
 describe('EG_LOCKED_KEYS', () => {
   it('contains colors and editions', () => {
@@ -144,6 +109,45 @@ describe('buildEgColorFieldRule', () => {
     assert.ok(rule.ai_assist.reasoning_note.includes('lowercase'));
     assert.ok(rule.ai_assist.reasoning_note.includes('+'));
     assert.ok(rule.ai_assist.reasoning_note.includes('hex'));
+  });
+
+  it('reasoning_note is empty-safe when called without ctx', () => {
+    const rule = buildEgColorFieldRule();
+    assert.ok(rule.ai_assist.reasoning_note.includes('lowercase'));
+    assert.ok(rule.ai_assist.reasoning_note.includes('+'));
+    assert.ok(!rule.ai_assist.reasoning_note.includes('etc.'), 'must not contain "etc."');
+  });
+
+  it('reasoning_note derives prefixes dynamically from registry names', () => {
+    const rule = buildEgColorFieldRule({
+      colorNames: ['red', 'blue', 'light-red', 'light-blue', 'dark-red', 'dark-blue', 'white'],
+    });
+    const note = rule.ai_assist.reasoning_note;
+    // Prefixes discovered from data, not hardcoded
+    assert.ok(note.includes('dark-,'), 'dark- prefix discovered');
+    assert.ok(note.includes('light-'), 'light- prefix discovered');
+    assert.ok(note.includes('red'), 'base color listed');
+    assert.ok(note.includes('blue'), 'base color listed');
+    assert.ok(note.includes('Other colors: white'), 'standalone listed separately');
+  });
+
+  it('reasoning_note discovers custom prefixes (vivid-, pastel-, etc.)', () => {
+    const rule = buildEgColorFieldRule({
+      colorNames: ['red', 'vivid-red', 'pastel-red', 'white'],
+    });
+    const note = rule.ai_assist.reasoning_note;
+    assert.ok(note.includes('pastel-'), 'pastel- prefix auto-discovered');
+    assert.ok(note.includes('vivid-'), 'vivid- prefix auto-discovered');
+    assert.ok(note.includes('Other colors: white'));
+  });
+
+  it('reasoning_note lists orphan prefixed names as additional variants', () => {
+    const rule = buildEgColorFieldRule({
+      colorNames: ['red', 'light-coral', 'dark-navy'],
+    });
+    const note = rule.ai_assist.reasoning_note;
+    assert.ok(note.includes('light-coral'), 'orphan listed');
+    assert.ok(note.includes('dark-navy'), 'orphan listed');
   });
 
   it('has search_hints with domain hints populated', () => {

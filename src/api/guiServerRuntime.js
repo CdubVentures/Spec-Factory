@@ -17,6 +17,10 @@ import { registerTestModeRoutes } from '../app/api/routes/testModeRoutes.js';
 import { registerQueueBillingLearningRoutes } from '../features/indexing/api/queueBillingLearningRoutes.js';
 import { registerSourceStrategyRoutes } from '../features/indexing/api/sourceStrategyRoutes.js';
 import { registerSpecSeedsRoutes } from '../features/indexing/api/specSeedsRoutes.js';
+import { registerColorRoutes } from '../features/color-registry/api/colorRoutes.js';
+import { createColorRouteContext } from '../features/color-registry/api/colorRouteContext.js';
+import { registerColorEditionFinderRoutes } from '../features/color-edition/api/colorEditionFinderRoutes.js';
+import { createColorEditionFinderRouteContext } from '../features/color-edition/api/colorEditionFinderRouteContext.js';
 import { registerRuntimeOpsRoutes } from '../features/indexing/api/runtimeOpsRoutes.js';
 import {
   createApiPathParser,
@@ -158,6 +162,15 @@ export function createGuiServerRuntime({
       brandRouteContext: createBrandRouteContext({
         jsonRes, readJsonBody, config, storage,
         resolveCategoryAlias, broadcastWs, getSpecDb, loadProductCatalog, appDb,
+        brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
+      }),
+      colorRouteContext: createColorRouteContext({
+        jsonRes, readJsonBody, appDb, broadcastWs,
+        colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
+      }),
+      colorEditionFinderRouteContext: createColorEditionFinderRouteContext({
+        jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
+        colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
       }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,
@@ -167,7 +180,7 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
         listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
         getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
-        reviewLayoutByCategory, loadProductCatalog,
+        reviewLayoutByCategory, loadProductCatalog, appDb,
       }),
       catalogRouteContext: createCatalogRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
@@ -210,6 +223,8 @@ export function createGuiServerRuntime({
       { key: 'runtimeOps', registrar: registerRuntimeOpsRoutes },
       { key: 'catalog', registrar: registerCatalogRoutes },
       { key: 'brand', registrar: registerBrandRoutes },
+      { key: 'color', registrar: registerColorRoutes },
+      { key: 'colorEditionFinder', registrar: registerColorEditionFinderRoutes },
       { key: 'studio', registrar: registerStudioRoutes },
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },
       { key: 'queueBillingLearning', registrar: registerQueueBillingLearningRoutes },

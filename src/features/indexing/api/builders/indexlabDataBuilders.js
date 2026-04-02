@@ -35,6 +35,98 @@ let _runListBuilder = null;
 const EVENT_CACHE_TTL_MS = 5_000;
 let _eventCache = new Map();
 
+function summarizeNeedSetArtifact(needset) {
+  if (!needset || typeof needset !== 'object') return null;
+  return {
+    total_fields: Number.parseInt(String(needset.total_fields ?? 0), 10) || 0,
+    generated_at: needset.generated_at || null,
+    summary: needset.summary || null,
+    rows_count: Array.isArray(needset.rows) ? needset.rows.length : 0,
+  };
+}
+
+function summarizeSearchProfileArtifact(searchProfile) {
+  if (!searchProfile || typeof searchProfile !== 'object') return null;
+  return {
+    status: String(searchProfile.status || '').trim() || 'pending',
+    query_count: Number.parseInt(String(
+      searchProfile.query_count
+      ?? searchProfile.selected_query_count
+      ?? (Array.isArray(searchProfile.query_rows) ? searchProfile.query_rows.length : 0)
+      ?? 0
+    ), 10) || 0,
+    generated_at: searchProfile.generated_at || null,
+  };
+}
+
+function normalizeRunMetaFromFile(payload, fallbackRunId = '') {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const summaryMeta = payload.telemetry?.meta;
+  if (summaryMeta && typeof summaryMeta === 'object') {
+    return {
+      ...summaryMeta,
+      run_id: String(summaryMeta.run_id || fallbackRunId).trim(),
+      category: String(summaryMeta.category || '').trim(),
+      product_id: String(summaryMeta.product_id || '').trim(),
+      status: String(summaryMeta.status || '').trim(),
+      started_at: String(summaryMeta.started_at || '').trim(),
+      ended_at: String(summaryMeta.ended_at || '').trim(),
+      stage_cursor: String(summaryMeta.stage_cursor || '').trim(),
+      identity_fingerprint: String(summaryMeta.identity_fingerprint || '').trim(),
+      identity_lock_status: String(summaryMeta.identity_lock_status || '').trim(),
+      dedupe_mode: String(summaryMeta.dedupe_mode || '').trim(),
+      counters: summaryMeta.counters && typeof summaryMeta.counters === 'object'
+        ? summaryMeta.counters
+        : {},
+      startup_ms: summaryMeta.startup_ms && typeof summaryMeta.startup_ms === 'object'
+        ? summaryMeta.startup_ms
+        : {},
+      needset_summary: summaryMeta.needset_summary ?? null,
+      search_profile_summary: summaryMeta.search_profile_summary ?? null,
+    };
+  }
+
+  const run = payload.run && typeof payload.run === 'object' ? payload.run : payload;
+  const counters = run.counters && typeof run.counters === 'object'
+    ? run.counters
+    : (payload.counters && typeof payload.counters === 'object' ? payload.counters : {});
+  const createdAt = String(payload.created_at || '').trim();
+
+  return {
+    run_id: String(run.run_id || fallbackRunId).trim(),
+    category: String(run.category || '').trim(),
+    product_id: String(run.product_id || '').trim(),
+    status: String(run.status || '').trim() || 'completed',
+    started_at: String(run.started_at || createdAt).trim(),
+    ended_at: String(run.ended_at || createdAt).trim(),
+    stage_cursor: String(run.stage_cursor || '').trim(),
+    identity_fingerprint: String(run.identity_fingerprint || '').trim(),
+    identity_lock_status: String(run.identity_lock_status || '').trim(),
+    dedupe_mode: String(run.dedupe_mode || '').trim(),
+    counters,
+    startup_ms: payload.startup_ms && typeof payload.startup_ms === 'object'
+      ? payload.startup_ms
+      : {},
+    needset_summary: summarizeNeedSetArtifact(payload.needset),
+    search_profile_summary: summarizeSearchProfileArtifact(payload.search_profile),
+  };
+}
+
+async function readRunMetaFromDisk(runDir, fallbackRunId = '') {
+  if (!runDir) return null;
+
+  const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
+  const summaryMeta = normalizeRunMetaFromFile(summary, fallbackRunId);
+  if (summaryMeta?.run_id) return summaryMeta;
+
+  const checkpoint = await safeReadJson(path.join(runDir, 'run.json'));
+  const checkpointMeta = normalizeRunMetaFromFile(checkpoint, fallbackRunId);
+  if (checkpointMeta?.run_id) return checkpointMeta;
+
+  return null;
+}
+
 export async function resolveIndexLabRunDirectory(runId) {
   const token = String(runId || '').trim();
   if (!token) return '';
@@ -54,7 +146,7 @@ export async function resolveIndexLabRunDirectory(runId) {
       if (!entry.isDirectory()) continue;
       const candidateDir = safeJoin(indexLabRoot, entry.name);
       if (!candidateDir) continue;
-      const meta = await safeReadJson(path.join(candidateDir, 'run.json'));
+      const meta = await readRunMetaFromDisk(candidateDir, token);
       if (meta && String(meta.run_id || '').trim() === token) return candidateDir;
     }
   } catch { /* indexLabRoot doesn't exist or unreadable */ }
@@ -104,6 +196,12 @@ export async function readIndexLabRunMeta(runId) {
       } catch { continue; }
     }
   }
+
+  // Tier 2: archived-run file fallback. Some runs are present on disk as
+  // checkpoints but have not been re-seeded into SQL yet.
+  const runDir = await resolveIndexLabRunDirectory(token);
+  const fileMeta = await readRunMetaFromDisk(runDir, token);
+  if (fileMeta) return fileMeta;
 
   return null;
 }

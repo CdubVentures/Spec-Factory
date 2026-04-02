@@ -5,6 +5,8 @@ export const GUI_API_ROUTE_ORDER = [
   'runtimeOps',
   'catalog',
   'brand',
+  'color',
+  'colorEditionFinder',
   'studio',
   'dataAuthority',
   'queueBillingLearning',

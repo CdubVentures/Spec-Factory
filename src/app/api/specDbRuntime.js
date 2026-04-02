@@ -1,3 +1,5 @@
+import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
+
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`${name} must be a function`);
@@ -18,6 +20,8 @@ export function createSpecDbRuntime({
   syncSpecDbForCategory,
   config,
   logger = console,
+  indexLabRoot = '',
+  productRoot = '',
 } = {}) {
   assertFunction('resolveCategoryAlias', resolveCategoryAlias);
   assertFunction('specDbClass', specDbClass);
@@ -32,7 +36,31 @@ export function createSpecDbRuntime({
 
   const specDbCache = new Map();
   const specDbSeedPromises = new Map();
+  const checkpointReseedPromises = new Map();
   const reviewLayoutByCategory = new Map();
+
+  // WHY: Re-seed run metadata from checkpoint files on disk. Runs
+  // independently of triggerAutoSeed so it fires even when isSeeded()
+  // returns true (partial rebuild: products > 0, runs = 0).
+  function triggerCheckpointReseed(category, db) {
+    if (!indexLabRoot) return;
+    const resolvedCategory = resolveCategoryAlias(category);
+    if (!resolvedCategory) return;
+    if (checkpointReseedPromises.has(resolvedCategory)) return;
+    const promise = (async () => {
+      try {
+        const seedResult = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot, productRoot });
+        if (seedResult.runs_seeded > 0) {
+          logger.log(`[auto-seed] ${resolvedCategory}: ${seedResult.runs_seeded} runs re-seeded from checkpoints`);
+        }
+      } catch (err) {
+        logger.error(`[auto-seed] ${resolvedCategory} checkpoint re-seed failed:`, err?.message || err);
+      } finally {
+        checkpointReseedPromises.delete(resolvedCategory);
+      }
+    })();
+    checkpointReseedPromises.set(resolvedCategory, promise);
+  }
 
   function getSpecDb(category) {
     const resolvedCategory = resolveCategoryAlias(category);
@@ -47,6 +75,7 @@ export function createSpecDbRuntime({
       const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory });
       if (db.isSeeded()) {
         specDbCache.set(resolvedCategory, db);
+        triggerCheckpointReseed(resolvedCategory, db);
         return db;
       }
       specDbCache.set(resolvedCategory, db);
@@ -91,6 +120,7 @@ export function createSpecDbRuntime({
       } finally {
         specDbSeedPromises.delete(resolvedCategory);
       }
+      triggerCheckpointReseed(resolvedCategory, db);
     })();
     specDbSeedPromises.set(resolvedCategory, promise);
   }
@@ -105,6 +135,14 @@ export function createSpecDbRuntime({
         await pending;
       } catch {
         // keep best available db handle
+      }
+    }
+    const checkpointPending = checkpointReseedPromises.get(resolvedCategory);
+    if (checkpointPending) {
+      try {
+        await checkpointPending;
+      } catch {
+        // best-effort — db still usable without checkpoint runs
       }
     }
     return getSpecDb(resolvedCategory);

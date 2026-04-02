@@ -194,6 +194,7 @@ export function createQueueProductStore({ db, category, stmts }) {
       product_id: row.product_id || '',
       brand: row.brand ?? '',
       model: row.model ?? '',
+      base_model: row.base_model ?? '',
       variant: row.variant ?? '',
       status: row.status || 'active',
       seed_urls: Array.isArray(row.seed_urls) ? JSON.stringify(row.seed_urls) : (row.seed_urls ?? null),

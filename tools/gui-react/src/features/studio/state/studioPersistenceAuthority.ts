@@ -35,8 +35,16 @@ export function useStudioPersistenceAuthority({
     },
   });
 
+  // WHY: Fire-and-forget order persistence. No query invalidation — this
+  // intentionally avoids triggering React Query refetch → rehydration.
+  const saveFieldKeyOrderMut = useMutation({
+    mutationFn: (order: string[]) =>
+      api.put<{ ok: boolean }>(`/studio/${category}/field-key-order`, { order }),
+  });
+
   return {
     saveMapMut,
     saveStudioDocsMut,
+    saveFieldKeyOrderMut,
   };
 }

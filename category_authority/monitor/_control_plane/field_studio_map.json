@@ -2180,7 +2180,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "aspect_ratio": {
       "aliases": [
@@ -2307,7 +2308,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "audio_output": {
       "aliases": [
@@ -2433,7 +2435,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "backlight_type": {
       "aliases": [
@@ -2565,7 +2568,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "base_model": {
       "aliases": [],
@@ -2687,7 +2691,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "black_uniformity": {
       "aliases": [
@@ -2839,7 +2844,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "brand": {
       "aliases": [],
@@ -2961,7 +2967,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "brightness_hdr_peak": {
       "aliases": [
@@ -3107,7 +3114,8 @@
       },
       "unit": "nits",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "brightness_sdr": {
       "aliases": [
@@ -3257,7 +3265,8 @@
       },
       "unit": "nits",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "cable_length": {
       "aliases": [
@@ -3389,7 +3398,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "cable_type": {
       "aliases": [
@@ -3514,7 +3524,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "cables_included": {
       "aliases": [
@@ -3646,7 +3657,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "Features"
     },
     "category": {
       "aliases": [],
@@ -3767,7 +3779,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "color": {
       "aliases": [
@@ -3898,7 +3911,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "General"
     },
     "color_accuracy_delta_e": {
       "aliases": [
@@ -4032,7 +4046,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "color_gamut_adobe_rgb": {
       "aliases": [
@@ -4171,7 +4186,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "color_gamut_dci_p3": {
       "aliases": [
@@ -4311,7 +4327,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "color_gamut_srgb": {
       "aliases": [
@@ -4451,7 +4468,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "contrast_ratio": {
       "aliases": [
@@ -4579,7 +4597,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "contrast_ratio_dynamic": {
       "aliases": [
@@ -4703,7 +4722,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "crosshair_overlay": {
       "aliases": [
@@ -4829,7 +4849,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "curve_radius": {
       "aliases": [
@@ -4956,7 +4977,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "curved": {
       "aliases": [
@@ -5080,7 +5102,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "daisy_chain": {
       "aliases": [
@@ -5207,7 +5230,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "depth": {
       "aliases": [
@@ -5346,7 +5370,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "discontinued": {
       "aliases": [
@@ -5470,7 +5495,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "display_stream_compression": {
       "aliases": [
@@ -5598,7 +5624,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "displayport_ports": {
       "aliases": [
@@ -5727,7 +5754,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "displayport_version": {
       "aliases": [
@@ -5856,7 +5884,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "energy_rating": {
       "aliases": [
@@ -5983,7 +6012,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "ethernet_rj45": {
       "aliases": [
@@ -6112,7 +6142,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "factory_calibrated": {
       "aliases": [
@@ -6237,7 +6268,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "flicker_free": {
       "aliases": [
@@ -6364,7 +6396,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "flicker_frequency": {
       "aliases": [
@@ -6519,7 +6552,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "frc": {
       "aliases": [
@@ -6645,7 +6679,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "gradient_handling": {
       "aliases": [
@@ -6782,7 +6817,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "gray_uniformity_50": {
       "aliases": [
@@ -6935,7 +6971,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "gtin": {
       "aliases": [],
@@ -7056,7 +7093,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "hdmi_ports": {
       "aliases": [
@@ -7184,7 +7222,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "hdmi_version": {
       "aliases": [
@@ -7314,7 +7353,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "hdr_support": {
       "aliases": [
@@ -7451,7 +7491,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "Color & Image Quality"
     },
     "headphone_jack": {
       "aliases": [
@@ -7577,7 +7618,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "height": {
       "aliases": [
@@ -7718,7 +7760,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "height_adjustment": {
       "aliases": [
@@ -7846,7 +7889,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Ergonomics"
     },
     "height_with_stand": {
       "aliases": [
@@ -7985,7 +8029,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "horizontal_viewing_angle": {
       "aliases": [
@@ -8138,7 +8183,8 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "input_lag": {
       "aliases": [
@@ -8279,7 +8325,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "input_lag_120hz": {
       "aliases": [
@@ -8431,7 +8478,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "input_lag_60hz": {
       "aliases": [
@@ -8583,7 +8631,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "input_lag_max_refresh": {
       "aliases": [
@@ -8735,7 +8784,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "kvm_switch": {
       "aliases": [
@@ -8861,7 +8911,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "local_dimming_zones": {
       "aliases": [
@@ -8995,7 +9046,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "low_blue_light": {
       "aliases": [
@@ -9122,7 +9174,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "macos_compatibility": {
       "aliases": [
@@ -9259,7 +9312,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "material": {
       "aliases": [
@@ -9384,7 +9438,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "max_refresh_rate_displayport": {
       "aliases": [
@@ -9541,7 +9596,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "max_refresh_rate_hdmi": {
       "aliases": [
@@ -9698,7 +9754,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "microphone": {
       "aliases": [
@@ -9827,7 +9884,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "model": {
       "aliases": [],
@@ -9949,7 +10007,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "motion_blur_reduction": {
       "aliases": [
@@ -10080,7 +10139,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "mpn": {
       "aliases": [],
@@ -10201,7 +10261,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "native_colors": {
       "aliases": [
@@ -10338,7 +10399,8 @@
       },
       "unit": "M",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "osd_type": {
       "aliases": [
@@ -10465,7 +10527,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "overdrive": {
       "aliases": [
@@ -10591,7 +10654,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "overshoot_120hz": {
       "aliases": [
@@ -10744,7 +10808,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "overshoot_60hz": {
       "aliases": [
@@ -10897,7 +10962,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "overshoot_max_refresh": {
       "aliases": [
@@ -11051,7 +11117,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "panel_bit_depth": {
       "aliases": [
@@ -11179,7 +11246,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "panel_coating": {
       "aliases": [
@@ -11308,7 +11376,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "panel_manufacturer": {
       "aliases": [
@@ -11435,7 +11504,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "panel_type": {
       "aliases": [
@@ -11568,7 +11638,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "pip_pbp": {
       "aliases": [
@@ -11697,7 +11768,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "pivot_rotation": {
       "aliases": [
@@ -11824,7 +11896,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Ergonomics"
     },
     "pixel_density": {
       "aliases": [
@@ -11966,7 +12039,8 @@
       },
       "unit": "ppi",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "power_consumption_max": {
       "aliases": [
@@ -12106,7 +12180,8 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "power_consumption_typical": {
       "aliases": [
@@ -12248,7 +12323,8 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "price_range": {
       "aliases": [
@@ -12383,7 +12459,8 @@
       },
       "unit": "usd",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "ps5_compatibility": {
       "aliases": [
@@ -12520,7 +12597,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "reflections": {
       "aliases": [
@@ -12674,7 +12752,8 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "refresh_rate": {
       "aliases": [
@@ -12824,7 +12903,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "release_date": {
       "aliases": [
@@ -12950,7 +13030,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "resolution": {
       "aliases": [
@@ -13081,7 +13162,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "response_time_120hz": {
       "aliases": [
@@ -13234,7 +13316,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "response_time_60hz": {
       "aliases": [
@@ -13387,7 +13470,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "response_time_gtg": {
       "aliases": [
@@ -13531,7 +13615,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "response_time_mprt": {
       "aliases": [
@@ -13672,7 +13757,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "screen_size": {
       "aliases": [
@@ -13822,7 +13908,8 @@
       },
       "unit": "in",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "sku": {
       "aliases": [],
@@ -13944,7 +14031,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "speakers": {
       "aliases": [
@@ -14071,7 +14159,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "subpixel_layout": {
       "aliases": [
@@ -14196,7 +14285,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Display Panel"
     },
     "swivel_range": {
       "aliases": [
@@ -14322,7 +14412,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Ergonomics"
     },
     "text_clarity": {
       "aliases": [
@@ -14459,7 +14550,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "thunderbolt_ports": {
       "aliases": [
@@ -14587,7 +14679,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "thunderbolt_version": {
       "aliases": [
@@ -14716,7 +14809,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "tilt_range": {
       "aliases": [
@@ -14844,7 +14938,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Ergonomics"
     },
     "usb_c_ports": {
       "aliases": [
@@ -14972,7 +15067,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "usb_hub": {
       "aliases": [
@@ -15098,7 +15194,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "usb_power_delivery_watts": {
       "aliases": [
@@ -15242,7 +15339,8 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "variable_refresh_rate": {
       "aliases": [
@@ -15368,7 +15466,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "variant": {
       "aliases": [],
@@ -15491,7 +15590,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "vertical_viewing_angle": {
       "aliases": [
@@ -15644,7 +15744,8 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "vesa_mount": {
       "aliases": [
@@ -15774,7 +15875,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "vrr_range": {
       "aliases": [
@@ -15901,7 +16003,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "wall_mountable": {
       "aliases": [
@@ -16026,7 +16129,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Ergonomics"
     },
     "warranty": {
       "aliases": [
@@ -16152,7 +16256,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "webcam": {
       "aliases": [
@@ -16282,7 +16387,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "weight_with_stand": {
       "aliases": [
@@ -16427,7 +16533,8 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "weight_without_stand": {
       "aliases": [
@@ -16573,7 +16680,8 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "wide_color_gamut": {
       "aliases": [
@@ -16699,7 +16807,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Color & Image Quality"
     },
     "width": {
       "aliases": [
@@ -16840,7 +16949,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions & Weight"
     },
     "xbox_series_xs_compatibility": {
       "aliases": [
@@ -16978,7 +17088,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     }
   },
   "field_studio_source_path": "",
@@ -17646,5 +17757,17 @@
   },
   "ui_defaults": {},
   "version": 2,
-  "version_note": "Full monitor contract refresh: 111 fields, modern ports plus lab-depth performance and compatibility"
+  "version_note": "Full monitor contract refresh: 111 fields, modern ports plus lab-depth performance and compatibility",
+  "field_groups": [
+    "Identity",
+    "Display Panel",
+    "Performance",
+    "Color & Image Quality",
+    "Connectivity",
+    "Dimensions & Weight",
+    "Ergonomics",
+    "Features",
+    "Power",
+    "General"
+  ]
 }

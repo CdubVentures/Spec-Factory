@@ -76,6 +76,7 @@ interface BuildStudioPageShellControllerStateInput {
   setAutoSaveMapEnabled: (nextValue: boolean) => void;
   setSelectedKey: (nextKey: string) => void;
   saveFromStore: (options?: { force?: boolean }) => void | Promise<unknown>;
+  persistFieldKeyOrder: (order: string[]) => void;
   setAutoSaveEnabled: (nextValue: boolean) => void;
   runEnumConsistency: (
     fieldKey: string,
@@ -162,6 +163,7 @@ export function buildStudioPageShellControllerState({
   setAutoSaveMapEnabled,
   setSelectedKey,
   saveFromStore,
+  persistFieldKeyOrder,
   setAutoSaveEnabled,
   runEnumConsistency,
   runCompileFromStudio,
@@ -253,6 +255,7 @@ export function buildStudioPageShellControllerState({
     onSave: () => {
       void saveFromStore({ force: true });
     },
+    onPersistOrder: persistFieldKeyOrder,
     savePending: saveStudioDocsMutState.isPending,
     saveSuccess: saveStudioDocsMutState.isSuccess,
     enumLists: deriveStudioEnumListsWithValues(knownValuesSource),

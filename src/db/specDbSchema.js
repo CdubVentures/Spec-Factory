@@ -203,7 +203,7 @@ CREATE INDEX IF NOT EXISTS idx_ill_list_value ON item_list_links(list_value_id);
 CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL, product_id TEXT NOT NULL,
-  brand TEXT DEFAULT '', model TEXT DEFAULT '', variant TEXT DEFAULT '',
+  brand TEXT DEFAULT '', model TEXT DEFAULT '', base_model TEXT DEFAULT '', variant TEXT DEFAULT '',
   status TEXT DEFAULT 'active', seed_urls TEXT, identifier TEXT, brand_identifier TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, product_id)
@@ -1032,6 +1032,27 @@ CREATE TABLE IF NOT EXISTS field_studio_map (
   map_hash TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Field key order (instant order persistence for drag-drop, no version bump)
+CREATE TABLE IF NOT EXISTS field_key_order (
+  category TEXT PRIMARY KEY,
+  order_json TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Color & Edition Finder (per-product LLM discovery summary, rebuildable from product JSON)
+CREATE TABLE IF NOT EXISTS color_edition_finder (
+  category        TEXT NOT NULL,
+  product_id      TEXT NOT NULL,
+  colors          TEXT DEFAULT '[]',
+  editions        TEXT DEFAULT '[]',
+  default_color   TEXT DEFAULT '',
+  cooldown_until  TEXT DEFAULT '',
+  latest_ran_at   TEXT DEFAULT '',
+  run_count       INTEGER DEFAULT 0,
+  PRIMARY KEY (category, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_cef_cooldown ON color_edition_finder(cooldown_until);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

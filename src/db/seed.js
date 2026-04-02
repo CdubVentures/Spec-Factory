@@ -1149,15 +1149,20 @@ async function seedProductCatalog(db, config, category) {
     for (const [productId, entry] of Object.entries(catalog.products)) {
       if (!isObject(entry)) continue;
       const model = String(entry.model || '').trim();
+      const baseModel = String(entry.base_model || model).trim();
       let variant = cleanVariant(entry.variant);
       // WHY: Fabricated variants (tokens already in model) must never reach the DB.
-      if (variant && isFabricatedVariant(model, variant)) {
+      // Use base_model for the check when available — variant tokens naturally
+      // appear in the full model name but NOT in the base_model.
+      const fabricationRef = baseModel !== model ? baseModel : model;
+      if (variant && isFabricatedVariant(fabricationRef, variant)) {
         variant = '';
       }
       db.upsertProduct({
         product_id: productId,
         brand: entry.brand || '',
         model,
+        base_model: baseModel,
         variant,
         status: entry.status || 'active',
         seed_urls: Array.isArray(entry.seed_urls) ? entry.seed_urls : [],

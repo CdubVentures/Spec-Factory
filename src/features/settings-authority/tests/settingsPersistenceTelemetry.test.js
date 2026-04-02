@@ -13,6 +13,7 @@ import {
   resetSettingsPersistenceCounters,
 } from '../../../observability/settingsPersistenceCounters.js';
 import { AppDb } from '../../../db/appDb.js';
+import { seedAppDb } from '../../../db/appDbSeed.js';
 
 async function makeSettingsRoot(prefix) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -89,6 +90,34 @@ test('persistUserSettingsSections concurrent section writes preserve all section
   assert.deepStrictEqual(snapshot.convergence, {});
   assert.equal(snapshot.ui.runtimeAutoSaveEnabled, false);
 
+  appDb.close();
+});
+
+test('persistUserSettingsSections mirrors app.sqlite writes so rebuild seed keeps latest runtime values', async () => {
+  const settingsRoot = await makeSettingsRoot('settings-sql-mirror-');
+  const appDb = makeInMemoryAppDb();
+
+  await persistUserSettingsSections({
+    appDb,
+    settingsRoot,
+    runtime: {
+      llmModelPlan: 'gpt-5',
+      llmProvider: 'openai',
+    },
+  });
+
+  const rebuiltDb = makeInMemoryAppDb();
+  seedAppDb({
+    appDb: rebuiltDb,
+    brandRegistryPath: '/nonexistent/brands.json',
+    userSettingsPath: path.join(settingsRoot, 'user-settings.json'),
+  });
+
+  const rebuilt = loadUserSettingsSync({ appDb: rebuiltDb });
+  assert.equal(rebuilt.runtime.llmModelPlan, 'gpt-5');
+  assert.equal(rebuilt.runtime.llmProvider, 'openai');
+
+  rebuiltDb.close();
   appDb.close();
 });
 

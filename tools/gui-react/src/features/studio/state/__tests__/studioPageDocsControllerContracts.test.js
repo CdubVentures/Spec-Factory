@@ -35,6 +35,7 @@ function createHarness(overrides = {}) {
       editedFieldOrder: [],
       pendingRenames: {},
       initialized: false,
+      groupsDirty: false,
       hydrate(rules, fieldOrder) {
         harness.storeCalls.push({ kind: 'hydrate', rules, fieldOrder });
         harness.fieldRulesStore.editedRules = JSON.parse(JSON.stringify(rules));
@@ -66,6 +67,11 @@ function createHarness(overrides = {}) {
       },
       clearEdited() {
         harness.storeCalls.push({ kind: 'clearEdited' });
+        harness.needsRerender = true;
+      },
+      clearGroupsDirty() {
+        harness.storeCalls.push({ kind: 'clearGroupsDirty' });
+        harness.fieldRulesStore.groupsDirty = false;
         harness.needsRerender = true;
       },
       getSnapshot() {
@@ -307,11 +313,13 @@ test('useStudioPageDocsController opens an authority conflict when the server ve
       editedFieldOrder: ['dpi'],
       pendingRenames: {},
       initialized: true,
+      groupsDirty: false,
       hydrate() {},
       rehydrate() {},
       reset() {},
       clearRenames() {},
       clearEdited() {},
+      clearGroupsDirty() {},
       getSnapshot() {
         return {
           rules: harness.fieldRulesStore.editedRules,
@@ -380,6 +388,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
       editedFieldOrder: ['dpi'],
       pendingRenames: {},
       initialized: true,
+      groupsDirty: false,
       hydrate() {},
       rehydrate(rules, fieldOrder) {
         harness.storeCalls.push({ kind: 'rehydrate', rules, fieldOrder });
@@ -393,6 +402,9 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
       },
       clearEdited() {
         harness.storeCalls.push({ kind: 'clearEdited' });
+      },
+      clearGroupsDirty() {
+        harness.storeCalls.push({ kind: 'clearGroupsDirty' });
       },
       getSnapshot() {
         return {
@@ -447,6 +459,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
         field_overrides: {
           dpi: { label: 'DPI' },
         },
+        field_groups: [],
       },
     });
     assert.equal(savedResult.autoSaveStatus, 'saved');

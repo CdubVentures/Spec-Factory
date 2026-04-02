@@ -74,6 +74,7 @@ export function buildModelDropdownOptions(
   registry: LlmProviderEntry[],
   roleFilter?: LlmModelRole | LlmModelRole[],
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean,
+  ensureValues?: readonly string[],
 ): DropdownModelOption[] {
   const result: DropdownModelOption[] = [];
   const registryModelIds = new Set<string>();
@@ -87,13 +88,26 @@ export function buildModelDropdownOptions(
     }
   }
 
+  // WHY: Bare model IDs that must appear in the result (e.g. the current stored value).
+  // If a model is available in the registry but excluded by role filter, it should NOT
+  // show as "(not available)" — the role filter is a convenience, not an availability gate.
+  const ensureBareIds = new Set<string>();
+  if (ensureValues) {
+    for (const v of ensureValues) {
+      if (!v) continue;
+      const colonIdx = v.indexOf(':');
+      ensureBareIds.add(colonIdx > 0 ? v.slice(colonIdx + 1) : v);
+    }
+  }
+
   // 1. Collect enabled registry models matching role filter
   for (const provider of registry) {
     if (apiKeyFilter && !apiKeyFilter(provider)) continue;
     for (const model of provider.models) {
       if (roleFilter) {
         const roles = Array.isArray(roleFilter) ? roleFilter : [roleFilter];
-        if (!roles.includes(model.role)) continue;
+        const pinned = ensureBareIds.has(model.modelId);
+        if (!roles.includes(model.role) && !pinned) continue;
       }
       const effectiveAccessMode = model.accessMode ?? provider.accessMode;
       result.push({
@@ -131,12 +145,26 @@ export function buildModelDropdownOptions(
   return result;
 }
 
+/**
+ * Finds an option matching `value` — either exact match or bare-model-ID match.
+ * WHY: Stored values may be bare model IDs ("gemini-2.5-flash") while dropdown
+ * options use composite keys ("default-gemini:gemini-2.5-flash").
+ */
+export function resolveOptionByValue(
+  options: readonly DropdownModelOption[],
+  value: string,
+): DropdownModelOption | undefined {
+  if (!value) return undefined;
+  return options.find((o) => o.value === value)
+    ?? options.find((o) => o.value.endsWith(`:${value}`));
+}
+
 export function ensureValueInOptions(
   options: readonly DropdownModelOption[],
   value: string,
 ): DropdownModelOption | null {
   if (!value) return null;
-  if (options.some((o) => o.value === value)) return null;
+  if (resolveOptionByValue(options, value)) return null;
   // WHY: Show bare modelId in the fallback label, not the composite key
   const colonIdx = value.indexOf(':');
   const displayId = colonIdx > 0 ? value.slice(colonIdx + 1) : value;

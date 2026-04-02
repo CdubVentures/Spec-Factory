@@ -421,6 +421,12 @@ function enqueueUserSettingsPersist(task) {
   return nextTask;
 }
 
+function shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot }) {
+  if (!appDb) return false;
+  if (settingsRoot !== null || categoryAuthorityRoot !== null) return true;
+  return String(appDb?.dbPath || '').trim() !== ':memory:';
+}
+
 function resolveRequestedSections({
   runtime = null,
   studio = null,
@@ -482,6 +488,11 @@ export async function persistUserSettingsSections(options = {}) {
       const payload = deriveSettingsArtifactsFromUserSettings(merged).snapshot;
       assertValidSnapshot(payload);
       writeSettingsToAppDb(appDb, payload);
+      if (shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot })) {
+        const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
+        const filePath = path.join(resolvedRoot, USER_SETTINGS_FILE);
+        await writeUserSettingsFile(filePath, payload);
+      }
       recordSettingsWriteOutcome({
         sections: requestedSections,
         target: 'app.sqlite',
@@ -524,8 +535,7 @@ export async function persistUserSettingsSections(options = {}) {
       const payload = deriveSettingsArtifactsFromUserSettings(sections).snapshot;
       assertValidSnapshot(payload);
       const filePath = path.join(resolvedRoot, USER_SETTINGS_FILE);
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      await fs.writeFile(filePath, JSON.stringify(payload, null, 2));
+      await writeUserSettingsFile(filePath, payload);
       recordSettingsWriteOutcome({
         sections: requestedSections,
         target: USER_SETTINGS_FILE,
@@ -610,7 +620,6 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
   };
 }
-
 
 
 

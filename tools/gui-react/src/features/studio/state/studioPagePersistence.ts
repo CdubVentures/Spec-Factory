@@ -130,6 +130,14 @@ export function buildStudioPersistMap({
     .map((key) => String(key || '').trim())
     .filter((key) => key && !key.startsWith('__grp::'));
 
+  const fieldGroups: string[] = [];
+  for (const key of snapshot.fieldOrder) {
+    if (key.startsWith('__grp::')) {
+      const name = key.slice(7);
+      if (name && !fieldGroups.includes(name)) fieldGroups.push(name);
+    }
+  }
+
   const selectedKeySet = new Set(selectedKeys);
   const allOverrides = stripEditedFlagFromRules(snapshot.rules);
   const prunedOverrides: Record<string, Record<string, unknown>> = {};
@@ -141,6 +149,7 @@ export function buildStudioPersistMap({
     ...baseMap,
     selected_keys: selectedKeys,
     field_overrides: prunedOverrides,
+    field_groups: fieldGroups,
   };
 
   // WHY: Merge store's eg_toggles into the persist map so toggle state is saved.

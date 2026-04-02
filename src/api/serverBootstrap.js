@@ -106,7 +106,7 @@ export function bootstrapServer({ projectRoot }) {
     sessionCache, resolveCategoryAlias,
     specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
     appDb,
-  } = createBootstrapSessionLayer({ config, HELPER_ROOT, storage });
+  } = createBootstrapSessionLayer({ config, HELPER_ROOT, storage, INDEXLAB_ROOT });
 
   // ── Realtime bridge (stays inline — circular closure binding) ──
   let processStatusProvider = () => ({ running: false });

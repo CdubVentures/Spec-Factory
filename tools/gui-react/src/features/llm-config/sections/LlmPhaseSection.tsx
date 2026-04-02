@@ -42,12 +42,12 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     : null;
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter, resolved ? [resolved.baseModel] : undefined),
+    [llmModelOptions, registry, apiKeyFilter, resolved?.baseModel],
   );
   const reasoningOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter, resolved ? [resolved.reasoningModel] : undefined),
+    [llmModelOptions, registry, apiKeyFilter, resolved?.reasoningModel],
   );
 
   const updateOverrideField = useCallback((field: string, value: string | boolean | number | null) => {

@@ -13,7 +13,7 @@ export interface LlmPhaseOverride {
   thinkingEffort: string;
 }
 
-export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate';
+export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder';
 
 export type LlmPhaseOverrides = {
   [K in LlmOverridePhaseId]?: Partial<LlmPhaseOverride>;

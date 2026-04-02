@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
 import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
 import { KeyContractSection } from "./key-sections/KeyContractSection.tsx";
@@ -17,6 +17,7 @@ import {
   useStudioFieldRulesActions,
   useStudioFieldRulesState,
 } from "../state/studioFieldRulesController.ts";
+import { useFieldRulesStore } from "../state/useFieldRulesStore.ts";
 import {
   validateNewKeyTs,
   rewriteConstraintsTs,
@@ -64,6 +65,7 @@ export function KeyNavigatorTab({
   selectedKey,
   onSelectKey,
   onSave,
+  onPersistOrder,
   saving,
   saveSuccess,
   knownValues,
@@ -76,7 +78,7 @@ export function KeyNavigatorTab({
   onRunEnumConsistency,
   enumConsistencyPending,
 }: KeyNavigatorTabProps) {
-  const { editedRules, editedFieldOrder, egLockedKeys, egToggles } = useStudioFieldRulesState();
+  const { editedRules, editedFieldOrder, egLockedKeys, egToggles, registeredColors } = useStudioFieldRulesState();
   const {
     updateField,
     setEgToggle,
@@ -188,17 +190,30 @@ export function KeyNavigatorTab({
     [bulkPreviewRows],
   );
 
+  // WHY: Stabilize refs so callbacks passed to DndContext don't churn.
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const onPersistOrderRef = useRef(onPersistOrder);
+  onPersistOrderRef.current = onPersistOrder;
+
   const saveIfAutoSaveEnabled = useCallback(() => {
     if (!autoSaveEnabled) return;
-    onSave();
-  }, [autoSaveEnabled, onSave]);
+    onSaveRef.current();
+  }, [autoSaveEnabled]);
+
+  // WHY: Reads store directly (not stale React state) so the order
+  // sent to SQL reflects the mutation that just ran synchronously.
+  const persistOrderNow = useCallback(() => {
+    const { editedFieldOrder: current } = useFieldRulesStore.getState();
+    onPersistOrderRef.current(current);
+  }, []);
 
   const handleReorder = useCallback(
     (activeItem: string, overItem: string) => {
       reorder(activeItem, overItem);
-      saveIfAutoSaveEnabled();
+      persistOrderNow();
     },
-    [reorder, saveIfAutoSaveEnabled],
+    [reorder, persistOrderNow],
   );
 
   function handleSaveAll() {
@@ -256,7 +271,7 @@ export function KeyNavigatorTab({
     addGroup(name);
     setShowAddGroupForm(false);
     setAddGroupValue("");
-    saveIfAutoSaveEnabled();
+    persistOrderNow();
   }
 
   function handleBulkImport() {
@@ -288,6 +303,7 @@ export function KeyNavigatorTab({
       return;
     removeGroup(group);
     setSelectedGroup("");
+    persistOrderNow();
     saveIfAutoSaveEnabled();
   }
 
@@ -300,6 +316,7 @@ export function KeyNavigatorTab({
     if (validateNewGroupTs(trimmed, otherGroups)) return;
     renameGroup(oldName, trimmed);
     setSelectedGroup(trimmed);
+    persistOrderNow();
     saveIfAutoSaveEnabled();
   }
 
@@ -346,7 +363,7 @@ export function KeyNavigatorTab({
 
   return (
     <>
-      <div className="flex gap-4" style={{ minHeight: "calc(100vh - 350px)" }}>
+      <div className="flex gap-4 min-h-[calc(100vh-350px)]">
         {/* Key list */}
         <div className="w-56 flex-shrink-0 border-r sf-border-default pr-3 overflow-y-auto max-h-[calc(100vh-350px)]">
           <div className="flex items-center justify-between mb-2">
@@ -537,7 +554,8 @@ export function KeyNavigatorTab({
                     type="checkbox"
                     checked={egToggles[selectedKey] !== false}
                     onChange={(e) => {
-                      const preset = getEgPresetForKey(selectedKey);
+                      const ctx = registeredColors.length > 0 ? { colorNames: registeredColors } : undefined;
+                      const preset = getEgPresetForKey(selectedKey, ctx);
                       if (preset) setEgToggle(selectedKey, e.target.checked, preset);
                     }}
                     className="rounded sf-border-soft"

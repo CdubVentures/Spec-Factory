@@ -104,6 +104,7 @@ export function StudioPage() {
   const egLockedKeys = studio?.egLockedKeys;
   const egEditablePaths = studio?.egEditablePaths;
   const egToggles = studio?.egToggles;
+  const registeredColors = studio?.registeredColors;
 
   const {
     saveMapMut,
@@ -118,6 +119,7 @@ export function StudioPage() {
     storeFieldOrder,
     hasUnsavedChanges,
     saveFromStore,
+    persistFieldKeyOrder,
     reloadAuthoritySnapshot,
     keepLocalChangesForAuthorityConflict,
   } = useStudioPageDocsController({
@@ -134,6 +136,7 @@ export function StudioPage() {
     egLockedKeys,
     egEditablePaths,
     egToggles,
+    registeredColors,
   });
 
   const studioPageShellControllerState = buildStudioPageShellControllerState({
@@ -172,6 +175,7 @@ export function StudioPage() {
     setAutoSaveMapEnabled,
     setSelectedKey,
     saveFromStore,
+    persistFieldKeyOrder,
     setAutoSaveEnabled,
     runEnumConsistency,
     runCompileFromStudio,

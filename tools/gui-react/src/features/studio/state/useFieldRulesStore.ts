@@ -39,15 +39,18 @@ interface FieldRulesState {
   editedFieldOrder: string[];
   pendingRenames: Record<string, string>;
   initialized: boolean;
+  groupsDirty: boolean;
   egLockedKeys: readonly string[];
   egEditablePaths: readonly string[];
   egToggles: Record<string, boolean>;
+  registeredColors: readonly string[];
 
-  hydrate: (rules: RuleMap, fieldOrder: string[], egLockedKeys?: readonly string[], egEditablePaths?: readonly string[], egToggles?: Record<string, boolean>) => void;
-  rehydrate: (rules: RuleMap, fieldOrder: string[], egLockedKeys?: readonly string[], egEditablePaths?: readonly string[], egToggles?: Record<string, boolean>) => void;
+  hydrate: (rules: RuleMap, fieldOrder: string[], egLockedKeys?: readonly string[], egEditablePaths?: readonly string[], egToggles?: Record<string, boolean>, registeredColors?: readonly string[]) => void;
+  rehydrate: (rules: RuleMap, fieldOrder: string[], egLockedKeys?: readonly string[], egEditablePaths?: readonly string[], egToggles?: Record<string, boolean>, registeredColors?: readonly string[]) => void;
   reset: () => void;
   clearRenames: () => void;
   clearEdited: () => void;
+  clearGroupsDirty: () => void;
 
   updateField: (key: string, path: string, value: unknown) => void;
   setEgToggle: (key: string, enabled: boolean, preset: FieldRule) => void;
@@ -75,11 +78,13 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
   editedFieldOrder: [],
   pendingRenames: {},
   initialized: false,
+  groupsDirty: false,
   egLockedKeys: [],
   egEditablePaths: [],
   egToggles: {},
+  registeredColors: [],
 
-  hydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles) => {
+  hydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors) => {
     const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
     for (const key of Object.keys(cleaned)) {
       delete cleaned[key]._edited;
@@ -89,13 +94,15 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       editedFieldOrder: [...fieldOrder],
       pendingRenames: {},
       initialized: true,
+      groupsDirty: false,
       egLockedKeys: egLockedKeys ?? [],
       egEditablePaths: egEditablePaths ?? [],
       egToggles: egToggles ?? {},
+      registeredColors: registeredColors ?? [],
     });
   },
 
-  rehydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles) => {
+  rehydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors) => {
     const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
     for (const key of Object.keys(cleaned)) {
       delete cleaned[key]._edited;
@@ -105,9 +112,11 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       editedFieldOrder: [...fieldOrder],
       pendingRenames: {},
       initialized: true,
+      groupsDirty: false,
       egLockedKeys: egLockedKeys ?? [],
       egEditablePaths: egEditablePaths ?? [],
       egToggles: egToggles ?? {},
+      registeredColors: registeredColors ?? [],
     });
   },
 
@@ -133,6 +142,10 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       }
       return { editedRules: cleaned };
     });
+  },
+
+  clearGroupsDirty: () => {
+    set({ groupsDirty: false });
   },
 
   updateField: (key, path, value) => {
@@ -276,16 +289,18 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       return {
         editedFieldOrder: nextOrder,
         editedRules: syncGroupsFromOrder(nextOrder, state.editedRules),
+        groupsDirty: true,
       };
     });
   },
 
   addGroup: (name) => {
     set((state) => {
-      const nextOrder = [`__grp::${name}`, ...state.editedFieldOrder];
+      const nextOrder = [...state.editedFieldOrder, `__grp::${name}`];
       return {
         editedFieldOrder: nextOrder,
         editedRules: syncGroupsFromOrder(nextOrder, state.editedRules),
+        groupsDirty: true,
       };
     });
   },
@@ -305,7 +320,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
           updatedRules[k] = rule;
         }
       }
-      return { editedFieldOrder: nextOrder, editedRules: updatedRules };
+      return { editedFieldOrder: nextOrder, editedRules: updatedRules, groupsDirty: true };
     });
   },
 
@@ -325,7 +340,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
           updatedRules[k] = rule;
         }
       }
-      return { editedFieldOrder: nextOrder, editedRules: updatedRules };
+      return { editedFieldOrder: nextOrder, editedRules: updatedRules, groupsDirty: true };
     });
   },
 

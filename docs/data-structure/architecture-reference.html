@@ -496,9 +496,9 @@ svg text{font-family:var(--sans)}
     </details>
 
     <details class="card" data-search="brand_registry.json brand definitions">
-      <summary><span class="tname">brand_registry.json</span><span class="tags"><span class="tag tag-path">category_authority/_global/</span><span class="tag tag-immutable">Seed</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <summary><span class="tname">brand_registry.json</span><span class="tags"><span class="tag tag-path">category_authority/_global/</span><span class="tag tag-immutable">Seed + Write-Back</span><span class="tag tag-sql">In SQL</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Brand definitions seed file. Seeds the app.sqlite brands table on first boot. SQL is authoritative after initial seed.<br><strong>Written by:</strong> Manual / compiler<br><strong>Mutable?</strong> Seed-only<br><strong>In SQL?</strong> Yes &mdash; app.sqlite brands table</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Brand definitions. Seeds the app.sqlite brands table on first boot. Synced back from SQL after every HTTP mutation so data survives DB rebuild.<br><strong>Written by:</strong> GUI Brand Manager (automatic write-back after mutations)<br><strong>Mutable?</strong> Yes &mdash; kept in sync with SQL via write-back<br><strong>In SQL?</strong> Yes &mdash; app.sqlite brands table (primary)</p>
       </div>
     </details>
 
@@ -834,7 +834,7 @@ svg text{font-family:var(--sans)}
       <span class="file">field_studio_map.json</span>            <span class="comment">-- Sheet-to-field mapping (all categories)</span>
       <span class="file">rename_log.json</span>                  <span class="comment">-- Rename audit trail (mouse only)</span>
   <span class="dir">_global/</span>
-    <span class="file">brand_registry.json</span>                <span class="comment">-- Brand seed file (global)</span>
+    <span class="file">brand_registry.json</span>                <span class="comment">-- Brand definitions (seed + GUI write-back)</span>
   <span class="dir">_runtime/</span>                              <span class="comment">-- Legacy settings (git-ignored)</span>
     <span class="file">user-settings.json</span>                 <span class="comment">-- Legacy path (current default: .workspace/global/)</span></div>
 </section>

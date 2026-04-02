@@ -281,7 +281,7 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
 function seedProductIdentity(specDb, { productId }) {
   specDb.upsertProduct({
     category: specDb.category, product_id: productId,
-    brand: 'TestBrand', model: 'TestModel', variant: '',
+    brand: 'TestBrand', model: 'TestModel', base_model: 'TestModel', variant: '',
     status: 'active', seed_urls: '[]', identifier: '', brand_identifier: '',
   });
   specDb.upsertQueueProduct({

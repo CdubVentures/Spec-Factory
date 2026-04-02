@@ -31,6 +31,7 @@ export interface StudioPageActivePanelKeyProps {
   selectedKey: string;
   onSelectKey: (nextKey: string) => void;
   onSave: () => void;
+  onPersistOrder: (order: string[]) => void;
   saving: boolean;
   saveSuccess: boolean;
   knownValues: Record<string, string[]>;

@@ -1502,9 +1502,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="surface-head">
     <h2>AppDb</h2>
     <span class="tag" style="background:var(--green-s);color:var(--green)">Global</span>
-    <span class="tag tag-cols">5 tables</span>
+    <span class="tag tag-cols">6 tables</span>
   </div>
-  <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, and field studio maps.</p>
+  <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, field studio maps, and color registry.</p>
   <div class="domain-group">
   <div class="domain-label">Global State</div>
   <details class="table-card" data-table="brands">
@@ -1571,6 +1571,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
 </tbody></table>
     
+  </div>
+</details>
+<details class="table-card" data-table="color_registry">
+  <summary><span class="tname">color_registry</span><span class="tags"><span class="tag tag-pk">PK: name</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">name</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">hex</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">css_var</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+
   </div>
 </details>
 </div>

@@ -6,6 +6,7 @@ import path from 'node:path';
 
 import {
   initIndexLabDataBuilders,
+  resolveIndexLabRunDirectory,
   readIndexLabRunNeedSet,
   readIndexLabRunSearchProfile
 } from '../indexlabDataBuilders.js';
@@ -125,6 +126,100 @@ test('readIndexLabRunMeta: returns SQL row when no run dir exists on disk', asyn
     assert.ok(meta, 'should return SQL row, not null');
     assert.equal(meta.run_id, 'run-sql-only');
     assert.equal(meta.category, 'mouse');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('readIndexLabRunMeta: falls back to run.json when SQL row is missing', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-meta-file-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab');
+  const outputRoot = path.join(tempRoot, 'out');
+  await fs.mkdir(indexLabRoot, { recursive: true });
+  await fs.mkdir(outputRoot, { recursive: true });
+
+  const runId = 'run-file-only';
+  await createRunFixture({
+    rootDir: indexLabRoot,
+    runId,
+    meta: {
+      schema_version: 3,
+      checkpoint_type: 'crawl',
+      created_at: '2026-03-02T00:00:00.000Z',
+      run: {
+        run_id: runId,
+        category: 'mouse',
+        product_id: 'mouse-file-only',
+        status: 'completed',
+      },
+      counters: {
+        urls_crawled: 12,
+        urls_successful: 10,
+      },
+    },
+    events: [],
+  });
+
+  try {
+    initIndexLabDataBuilders({
+      indexLabRoot,
+      outputRoot,
+      storage: createStorageStub(),
+      config: {},
+      getSpecDbReady: async () => null,
+      isProcessRunning: () => false,
+    });
+
+    const meta = await readIndexLabRunMeta(runId);
+    assert.ok(meta, 'should fall back to file-backed metadata');
+    assert.equal(meta.run_id, runId);
+    assert.equal(meta.category, 'mouse');
+    assert.equal(meta.product_id, 'mouse-file-only');
+    assert.equal(meta.status, 'completed');
+    assert.deepEqual(meta.counters, {
+      urls_crawled: 12,
+      urls_successful: 10,
+    });
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('resolveIndexLabRunDirectory: matches aliased directory via nested run.run_id', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-alias-run-dir-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab');
+  const outputRoot = path.join(tempRoot, 'out');
+  await fs.mkdir(indexLabRoot, { recursive: true });
+  await fs.mkdir(outputRoot, { recursive: true });
+
+  const runId = 'run-aliased-id';
+  const aliasDir = 'watch-latest';
+  const runDir = path.join(indexLabRoot, aliasDir);
+  await fs.mkdir(runDir, { recursive: true });
+  await fs.writeFile(path.join(runDir, 'run.json'), `${JSON.stringify({
+    schema_version: 3,
+    checkpoint_type: 'crawl',
+    created_at: '2026-03-02T00:00:00.000Z',
+    run: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-watch-latest',
+      status: 'completed',
+    },
+  })}\n`, 'utf8');
+
+  try {
+    initIndexLabDataBuilders({
+      indexLabRoot,
+      outputRoot,
+      storage: createStorageStub(),
+      config: {},
+      getSpecDbReady: async () => null,
+      isProcessRunning: () => false,
+    });
+
+    const resolved = await resolveIndexLabRunDirectory(runId);
+    assert.equal(resolved, runDir);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

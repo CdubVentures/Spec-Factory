@@ -232,8 +232,12 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
 
     const res = createMockRes();
     await handler(['indexlab', 'run', runId], new URLSearchParams(), 'GET', null, res);
-    // SQL is SSOT — disk-only fixtures produce no meta, handler returns 404
-    assert.equal(res.statusCode, 404);
+    // Disk checkpoints now backfill run detail when the SQL row is missing.
+    const body = parseResBody(res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.run_id, runId);
+    assert.equal(body.status, 'failed');
+    assert.equal(body.terminal_reason, 'max_run_seconds_reached');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

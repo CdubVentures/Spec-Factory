@@ -134,6 +134,27 @@ test('validateFieldStudioMap rejects component_sources sheet mode without sheet 
   );
 });
 
+test('normalizeFieldStudioMap preserves field_groups in order, trimmed and deduped', () => {
+  const checked = validateFieldStudioMap({
+    version: 2,
+    field_groups: ['  Specs ', 'General', '', 'Specs', 'Empty Group'],
+  });
+
+  assert.deepEqual(checked.normalized.field_groups, ['Specs', 'General', 'Empty Group']);
+});
+
+test('normalizeFieldStudioMap returns empty field_groups when absent', () => {
+  const checked = validateFieldStudioMap({ version: 2 });
+
+  assert.deepEqual(checked.normalized.field_groups, []);
+});
+
+test('normalizeFieldStudioMap returns empty field_groups when not an array', () => {
+  const checked = validateFieldStudioMap({ version: 2, field_groups: 'not-an-array' });
+
+  assert.deepEqual(checked.normalized.field_groups, []);
+});
+
 test('validateFieldStudioMap still requires key_list for field-studio-source-backed component maps', () => {
   const checked = validateFieldStudioMap({
     version: 2,

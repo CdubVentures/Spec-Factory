@@ -48,6 +48,7 @@ export interface UseStudioPageDocsControllerInput {
   egLockedKeys?: readonly string[];
   egEditablePaths?: readonly string[];
   egToggles?: Record<string, boolean>;
+  registeredColors?: readonly string[];
 }
 
 export interface UseStudioPageDocsControllerResult {
@@ -65,6 +66,7 @@ export interface UseStudioPageDocsControllerResult {
   storeFieldOrder: string[];
   hasUnsavedChanges: boolean;
   saveFromStore: (options?: { force?: boolean }) => void;
+  persistFieldKeyOrder: (order: string[]) => void;
   reloadAuthoritySnapshot: () => void;
   keepLocalChangesForAuthorityConflict: () => void;
 }
@@ -83,8 +85,14 @@ export function useStudioPageDocsController({
   egLockedKeys,
   egEditablePaths,
   egToggles,
+  registeredColors,
 }: UseStudioPageDocsControllerInput): UseStudioPageDocsControllerResult {
   const hydrated = useRef(false);
+  // WHY: After save, clearEdited makes hasUnsavedEdits=false before the query
+  // refetch completes. Authority sync rehydrates with STALE cache → snap-back.
+  // This skips ONE rehydration. We do NOT update authorityVersionRef when
+  // suppressing, so the next run (with fresh data) still rehydrates.
+  const suppressRehydrationRef = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>(
     'idle',
   );
@@ -93,11 +101,13 @@ export function useStudioPageDocsController({
     useState('');
   const fieldRulesState = useStudioFieldRulesState();
   const fieldRulesActions = useStudioFieldRulesActions();
-  const { saveMapMut, saveStudioDocsMut } = useStudioPersistenceAuthority({
+  const { saveMapMut, saveStudioDocsMut, saveFieldKeyOrderMut } = useStudioPersistenceAuthority({
     category,
     onStudioDocsSaved: () => {
+      suppressRehydrationRef.current = true;
       fieldRulesActions.clearRenames();
       fieldRulesActions.clearEdited();
+      fieldRulesActions.clearGroupsDirty();
       invalidateFieldRulesQueries(queryClient, category);
       // WHY: refetch compileStale after save — map_hash changed in SQL
       queryClient.invalidateQueries({ queryKey: ['studio', category] });
@@ -146,11 +156,19 @@ export function useStudioPageDocsController({
       hydrated.current = false;
     }
     if (action.hydrate) {
-      fieldRulesActions.hydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
+      fieldRulesActions.hydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
     }
+    let didRehydrate = false;
     if (action.rehydrate) {
-      fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
-      hydrated.current = false;
+      if (suppressRehydrationRef.current) {
+        // WHY: Skip stale-data rehydration. Do NOT update authorityVersionRef
+        // so the next run (after refetch) still sees versionChanged=true.
+        suppressRehydrationRef.current = false;
+      } else {
+        fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
+        hydrated.current = false;
+        didRehydrate = true;
+      }
     }
     if (
       shouldOpenStudioAuthorityConflict({
@@ -164,7 +182,7 @@ export function useStudioPageDocsController({
       setAuthorityConflictDetectedAt(new Date().toISOString());
     }
 
-    if ((action.hydrate || action.rehydrate) && hasServerRules) {
+    if ((action.hydrate || didRehydrate) && hasServerRules) {
       authorityVersionRef.current = nextVersion;
       ignoredConflictVersionRef.current = '';
       setAuthorityConflictVersion('');
@@ -189,6 +207,7 @@ export function useStudioPageDocsController({
     autoSaveEnabled,
     autoSaveMapEnabled,
     initialized: fieldRulesState.initialized,
+    groupsDirty: fieldRulesState.groupsDirty,
     serverRules: rules,
     serverFieldOrder: fieldOrder,
     editedRules: fieldRulesState.editedRules,
@@ -367,7 +386,7 @@ export function useStudioPageDocsController({
 
   const reloadAuthoritySnapshot = useCallback(() => {
     if (Object.keys(rules).length === 0) return;
-    fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
+    fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
     authorityVersionRef.current = authoritySnapshotVersion;
     ignoredConflictVersionRef.current = '';
     setAuthorityConflictVersion('');
@@ -383,6 +402,11 @@ export function useStudioPageDocsController({
     setAuthorityConflictDetectedAt('');
   }, [authorityConflictVersion]);
 
+  const persistFieldKeyOrder = useCallback(
+    (order: string[]) => { saveFieldKeyOrderMut.mutate(order); },
+    [saveFieldKeyOrderMut],
+  );
+
   return {
     saveMapMut,
     saveStudioDocsMut,
@@ -396,6 +420,7 @@ export function useStudioPageDocsController({
     storeFieldOrder,
     hasUnsavedChanges,
     saveFromStore,
+    persistFieldKeyOrder,
     reloadAuthoritySnapshot,
     keepLocalChangesForAuthorityConflict,
   };

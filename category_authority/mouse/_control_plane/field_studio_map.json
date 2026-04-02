@@ -770,6 +770,18 @@
       "weight"
     ]
   },
+  "field_groups": [
+    "General",
+    "Sensor & Performance",
+    "Switches",
+    "Buttons & Features",
+    "Encoder",
+    "Connectivity",
+    "Construction",
+    "Ergonomics",
+    "Dimensions",
+    "Electronics"
+  ],
   "field_overrides": {
     "acceleration": {
       "ai_assist": {
@@ -991,7 +1003,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "adjustable_scroll_wheel",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1166,7 +1178,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "adjustable_weight",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1349,7 +1361,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "battery_hours",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1506,7 +1518,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "bluetooth",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1680,7 +1692,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "cable_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1826,7 +1838,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "click_force",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1903,7 +1915,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
         "label": "Click Force",
@@ -1987,7 +1999,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "click_latency",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2065,7 +2077,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "number",
         "label": "Click Latency",
@@ -2177,7 +2189,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "click_latency_list",
       "list_rules": {
         "dedupe": true,
@@ -2323,7 +2335,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "structured_list_editor",
         "label": "Click Latency (By Mode)",
@@ -2411,7 +2423,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "coating",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -2505,43 +2517,36 @@
     },
     "colors": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
         "model_strategy": "auto",
-        "reasoning_note": ""
+        "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): blue, gray, green, pink, red. Other colors: black, cyan, gold, indigo, lime, magenta, orange, purple, rose, silver, teal, violet, white, yellow.\n\nRegistered colors with hex values: black, blue, cyan, dark-blue, dark-green, dark-red, gold, gray, green, indigo, light-blue, light-gray, light-green, light-pink, light-red, lime, magenta, orange, pink, purple, red, rose, silver, teal, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nOnly add a new color to new_colors as an absolute last resort — when NO registered color is a reasonable visual match. New colors must be basic, common names (e.g. \"seafoam\", \"burgundy\", \"coral\") — never marketing names. New colors require a hex code."
       },
-      "aliases": [],
-      "availability": "expected",
-      "component": null,
-      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": "set_union",
           "max_items": 100,
           "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
         "type": "string",
+        "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "Colors",
-      "effort": 3,
       "enum": {
         "match": {
-          "strategy": "alias"
+          "strategy": "exact"
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true
+          "mark_needs_curation": false
         },
-        "policy": "open_prefer_known",
-        "source": null
+        "policy": "open"
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "open",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
@@ -2552,25 +2557,7 @@
           "tier3"
         ]
       },
-      "evidence_required": true,
-      "field_key": "colors",
-      "field_studio_hints": {
-        "dataEntry": {
-          "key_cell": "B13",
-          "note": "general features",
-          "row": 13,
-          "sample_values": [
-            "white+black, gray+black",
-            "white, black",
-            "white, black",
-            "white, black"
-          ],
-          "sheet": "dataEntry"
-        }
-      },
-      "group": "ungrouped",
       "key": "colors",
-      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -2580,7 +2567,24 @@
         ],
         "template": "list_of_tokens_delimited",
         "token_map": {
-          "grey": "gray"
+          "blue-dark": "dark-blue",
+          "blue-light": "light-blue",
+          "dark blue": "dark-blue",
+          "dark green": "dark-green",
+          "dark red": "dark-red",
+          "gray-light": "light-gray",
+          "green-dark": "dark-green",
+          "green-light": "light-green",
+          "grey": "gray",
+          "light blue": "light-blue",
+          "light gray": "light-gray",
+          "light green": "light-green",
+          "light grey": "light-gray",
+          "light pink": "light-pink",
+          "light red": "light-red",
+          "pink-light": "light-pink",
+          "red-dark": "dark-red",
+          "red-light": "light-red"
         }
       },
       "priority": {
@@ -2590,7 +2594,6 @@
         "publish_gate": false,
         "required_level": "expected"
       },
-      "required_level": "expected",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -2609,23 +2612,11 @@
         ]
       },
       "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "ungrouped",
-        "guidance_md": null,
+        "group": "general",
         "input_control": "token_list",
         "label": "Colors",
-        "order": 13,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+        "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'."
+      }
     },
     "computer_side_connector": {
       "ai_assist": {
@@ -2687,7 +2678,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "computer_side_connector",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2839,7 +2830,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "connection",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2996,7 +2987,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "connectivity",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -3153,7 +3144,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "debounce",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3220,7 +3211,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "number",
         "label": "Debounce",
@@ -3298,7 +3289,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "design",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -3369,7 +3360,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Design",
@@ -3444,7 +3435,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "discontinued",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3536,7 +3527,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "text",
         "label": "Discontinued",
@@ -3623,7 +3614,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "Sensor & Performance",
       "key": "dpi",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -3717,33 +3708,25 @@
     },
     "editions": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
         "model_strategy": "auto",
-        "reasoning_note": ""
+        "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, add it to new_colors with its hex."
       },
-      "aliases": [
-        "editions"
-      ],
-      "availability": "sometimes",
-      "component": null,
-      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": "set_union",
           "max_items": 50,
           "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
         "type": "string",
+        "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "Editions",
-      "effort": 3,
       "enum": {
         "match": {
           "strategy": "exact"
@@ -3752,8 +3735,7 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open",
-        "source": null
+        "policy": "open"
       },
       "enum_policy": "open",
       "evidence": {
@@ -3766,19 +3748,7 @@
           "tier3"
         ]
       },
-      "evidence_required": true,
-      "field_key": "editions",
-      "field_studio_hints": {
-        "dataEntry": {
-          "key_cell": null,
-          "row": null,
-          "sample_values": [],
-          "sheet": "dataEntry"
-        }
-      },
-      "group": "ungrouped",
       "key": "editions",
-      "output_shape": "list",
       "parse": {
         "delimiters": [
           ","
@@ -3793,7 +3763,6 @@
         "publish_gate": false,
         "required_level": "optional"
       },
-      "required_level": "optional",
       "search_hints": {
         "content_types": [],
         "domain_hints": [],
@@ -3805,23 +3774,11 @@
         ]
       },
       "ui": {
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "ungrouped",
-        "guidance_md": null,
+        "group": "general",
         "input_control": "token_list",
         "label": "Editions",
-        "order": 76,
-        "placeholder": "unk",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition).",
-        "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+        "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition)."
+      }
     },
     "encoder": {
       "ai_assist": {
@@ -3879,7 +3836,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "encoder",
+      "group": "Encoder",
       "key": "encoder",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4017,7 +3974,7 @@
         },
         "related_to": "encoder"
       },
-      "group": "encoder",
+      "group": "Encoder",
       "key": "encoder_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4150,7 +4107,7 @@
         },
         "related_to": "encoder"
       },
-      "group": "encoder",
+      "group": "Encoder",
       "key": "encoder_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4298,7 +4255,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "feet_material",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4634,7 +4591,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "form_factor",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4792,7 +4749,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "front_flare",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4929,7 +4886,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "grip",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -5079,7 +5036,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "hand_size",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -5410,7 +5367,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "dimensions",
+      "group": "Dimensions",
       "key": "height",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -5573,7 +5530,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "honeycomb_frame",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -5750,7 +5707,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -5846,7 +5803,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
         "label": "Hot Swappable",
@@ -5938,7 +5895,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "hump",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6085,7 +6042,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "ips",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6152,7 +6109,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "number",
         "label": "Max IPS",
@@ -6237,7 +6194,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "lift",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -6334,7 +6291,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "list_editor",
         "label": "Lift-off Distance (LOD)",
@@ -6418,7 +6375,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "lift_settings",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -6489,7 +6446,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Lift Settings",
@@ -6576,7 +6533,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "lighting",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -6649,7 +6606,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Lighting",
@@ -6736,7 +6693,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "dimensions",
+      "group": "Dimensions",
       "key": "lngth",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -6896,7 +6853,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "material",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7049,7 +7006,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "electronics",
+      "group": "Electronics",
       "key": "mcu",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7186,7 +7143,7 @@
         },
         "related_to": "mcu"
       },
-      "group": "electronics",
+      "group": "Electronics",
       "key": "mcu_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7322,7 +7279,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "middle_buttons",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7466,7 +7423,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "motion_sync",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7561,7 +7518,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Motion Sync",
@@ -7638,7 +7595,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "mouse_side_connector",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7779,7 +7736,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "nvidia_reflex",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7874,7 +7831,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "NVIDIA Reflex",
@@ -7955,7 +7912,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "onboard_memory",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8132,7 +8089,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "onboard_memory_value",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8275,7 +8232,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "paracord",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8630,7 +8587,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "price_range",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8692,7 +8649,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "text",
         "label": "Price (MSRP)",
@@ -8773,7 +8730,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "profile_switching",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8948,7 +8905,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "programmable_buttons",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9091,7 +9048,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "release_date",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9164,7 +9121,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "text",
         "label": "Release Date",
@@ -9245,7 +9202,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "rgb",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9341,7 +9298,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "text",
         "label": "RGB",
@@ -9573,7 +9530,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9637,7 +9594,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Brand",
@@ -9721,7 +9678,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_date",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9791,7 +9748,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Date",
@@ -9875,7 +9832,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_latency",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9952,7 +9909,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Latency",
@@ -10064,7 +10021,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_latency_list",
       "list_rules": {
         "dedupe": true,
@@ -10209,7 +10166,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "structured_list_editor",
         "label": "Sensor Latency (By Mode)",
@@ -10288,7 +10245,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10346,7 +10303,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Link",
@@ -10438,7 +10395,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10498,7 +10455,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Type",
@@ -10591,7 +10548,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "shape",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10737,7 +10694,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "shift_latency",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10801,7 +10758,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "number",
         "label": "DPI Shift Latency",
@@ -10883,7 +10840,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "side_buttons",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11029,7 +10986,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "construction",
+      "group": "Switches",
       "key": "silent_clicks",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11125,7 +11082,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
         "label": "Silent Clicks",
@@ -11202,7 +11159,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ungrouped",
+      "group": "General",
       "key": "sku",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11263,7 +11220,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "ungrouped",
+        "group": "General",
         "guidance_md": null,
         "input_control": "text",
         "label": "SKU / Part #",
@@ -11344,7 +11301,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "smoothing",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11439,7 +11396,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Smoothing",
@@ -11523,7 +11480,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "switch",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -11590,7 +11547,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "component_picker",
         "label": "Switch",
@@ -11670,7 +11627,7 @@
         },
         "related_to": "switch"
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "switch_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11735,7 +11692,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
         "label": "Switch Brand",
@@ -11828,7 +11785,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Switche",
+      "group": "Switches",
       "key": "switch_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11888,7 +11845,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switche",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
         "label": "Switch Type",
@@ -11934,7 +11891,7 @@
       },
       "data_type": "string",
       "difficulty": "medium",
-      "display_name": "switch_link",
+      "display_name": "Switches LInk",
       "effort": 5,
       "enum": {
         "match": {
@@ -11971,7 +11928,7 @@
           "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
         ]
       },
-      "group": "controls",
+      "group": "Switches",
       "key": "switches_link",
       "output_shape": "scalar",
       "parse": {
@@ -12026,10 +11983,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Unsorted",
+        "group": "Switches",
         "guidance_md": null,
         "input_control": "text",
-        "label": "switches_link",
+        "label": "Switches LInk",
         "order": 999,
         "placeholder": "unk",
         "prefix": null,
@@ -12103,7 +12060,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "ergonomics",
+      "group": "Ergonomics",
       "key": "thumb_rest",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -12245,7 +12202,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "buttons_features",
+      "group": "Buttons & Features",
       "key": "tilt_scroll_wheel",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -12427,7 +12384,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "construction",
+      "group": "Construction",
       "key": "weight",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -12589,7 +12546,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "dimensions",
+      "group": "Dimensions",
       "key": "width",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -12751,7 +12708,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "connectivity",
+      "group": "Connectivity",
       "key": "wireless_charging",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -13049,82 +13006,82 @@
     "variant_row": 5
   },
   "selected_keys": [
+    "sku",
+    "design",
+    "colors",
+    "release_date",
+    "editions",
+    "discontinued",
+    "price_range",
+    "lighting",
+    "rgb",
     "sensor",
-    "polling_rate",
-    "acceleration",
-    "dpi",
-    "flawless_sensor",
-    "hardware_acceleration",
-    "ips",
-    "smoothing",
-    "lift",
-    "lift_settings",
-    "motion_sync",
-    "nvidia_reflex",
     "sensor_brand",
+    "sensor_type",
+    "sensor_link",
     "sensor_date",
     "sensor_latency",
     "sensor_latency_list",
-    "sensor_link",
-    "sensor_type",
+    "flawless_sensor",
+    "dpi",
+    "ips",
+    "acceleration",
+    "hardware_acceleration",
+    "polling_rate",
+    "lift",
+    "lift_settings",
+    "smoothing",
+    "motion_sync",
+    "nvidia_reflex",
     "shift_latency",
-    "adjustable_scroll_wheel",
-    "middle_buttons",
-    "onboard_memory",
-    "onboard_memory_value",
-    "profile_switching",
-    "programmable_buttons",
-    "side_buttons",
-    "tilt_scroll_wheel",
-    "adjustable_weight",
-    "coating",
-    "feet_material",
-    "honeycomb_frame",
-    "material",
-    "silent_clicks",
-    "weight",
-    "battery_hours",
-    "bluetooth",
-    "cable_type",
-    "computer_side_connector",
-    "connection",
-    "connectivity",
-    "mouse_side_connector",
-    "paracord",
-    "wireless_charging",
+    "switch",
+    "switch_brand",
+    "switch_type",
+    "switches_link",
+    "hot_swappable",
     "click_force",
     "click_latency",
     "click_latency_list",
     "debounce",
-    "hot_swappable",
-    "switch",
-    "switch_brand",
-    "switch_type",
-    "colors",
-    "editions",
-    "design",
-    "discontinued",
-    "lighting",
-    "price_range",
-    "release_date",
-    "rgb",
-    "sku",
+    "silent_clicks",
+    "programmable_buttons",
+    "side_buttons",
+    "middle_buttons",
+    "onboard_memory",
+    "onboard_memory_value",
+    "profile_switching",
+    "adjustable_scroll_wheel",
+    "tilt_scroll_wheel",
     "encoder",
     "encoder_brand",
     "encoder_link",
+    "connection",
+    "connectivity",
+    "bluetooth",
+    "wireless_charging",
+    "cable_type",
+    "paracord",
+    "computer_side_connector",
+    "mouse_side_connector",
+    "battery_hours",
+    "material",
+    "coating",
+    "feet_material",
+    "honeycomb_frame",
+    "adjustable_weight",
+    "weight",
+    "shape",
     "form_factor",
-    "front_flare",
     "grip",
     "hand_size",
     "hump",
-    "shape",
+    "front_flare",
     "thumb_rest",
-    "height",
     "lngth",
     "width",
+    "height",
     "mcu",
-    "mcu_link",
-    "switches_link"
+    "mcu_link"
   ],
   "sheet_roles": [],
   "tooltip_source": {

@@ -1,0 +1,114 @@
+{
+  "_doc": "Global color registry. Managed by GUI.",
+  "_version": 1,
+  "colors": {
+    "black": {
+      "hex": "#3A3F41",
+      "css_var": "--color-black"
+    },
+    "blue": {
+      "hex": "#3b82f6",
+      "css_var": "--color-blue"
+    },
+    "cyan": {
+      "hex": "#06b6d4",
+      "css_var": "--color-cyan"
+    },
+    "dark-blue": {
+      "hex": "#1d4ed8",
+      "css_var": "--color-dark-blue"
+    },
+    "dark-green": {
+      "hex": "#15803d",
+      "css_var": "--color-dark-green"
+    },
+    "dark-red": {
+      "hex": "#dc2626",
+      "css_var": "--color-dark-red"
+    },
+    "gold": {
+      "hex": "#ca8a04",
+      "css_var": "--color-gold"
+    },
+    "gray": {
+      "hex": "#6b7280",
+      "css_var": "--color-gray"
+    },
+    "green": {
+      "hex": "#22c55e",
+      "css_var": "--color-green"
+    },
+    "indigo": {
+      "hex": "#6366f1",
+      "css_var": "--color-indigo"
+    },
+    "light-blue": {
+      "hex": "#60a5fa",
+      "css_var": "--color-light-blue"
+    },
+    "light-gray": {
+      "hex": "#9ca3af",
+      "css_var": "--color-light-gray"
+    },
+    "light-green": {
+      "hex": "#86efac",
+      "css_var": "--color-light-green"
+    },
+    "light-pink": {
+      "hex": "#f9a8d4",
+      "css_var": "--color-light-pink"
+    },
+    "light-red": {
+      "hex": "#fca5a5",
+      "css_var": "--color-light-red"
+    },
+    "lime": {
+      "hex": "#84cc16",
+      "css_var": "--color-lime"
+    },
+    "magenta": {
+      "hex": "#d946ef",
+      "css_var": "--color-magenta"
+    },
+    "orange": {
+      "hex": "#f97316",
+      "css_var": "--color-orange"
+    },
+    "pink": {
+      "hex": "#ec4899",
+      "css_var": "--color-pink"
+    },
+    "purple": {
+      "hex": "#a855f7",
+      "css_var": "--color-purple"
+    },
+    "red": {
+      "hex": "#ef4444",
+      "css_var": "--color-red"
+    },
+    "rose": {
+      "hex": "#f43f5e",
+      "css_var": "--color-rose"
+    },
+    "silver": {
+      "hex": "#94a3b8",
+      "css_var": "--color-silver"
+    },
+    "teal": {
+      "hex": "#14b8a6",
+      "css_var": "--color-teal"
+    },
+    "violet": {
+      "hex": "#8b5cf6",
+      "css_var": "--color-violet"
+    },
+    "white": {
+      "hex": "#ffffff",
+      "css_var": "--color-white"
+    },
+    "yellow": {
+      "hex": "#eab308",
+      "css_var": "--color-yellow"
+    }
+  }
+}

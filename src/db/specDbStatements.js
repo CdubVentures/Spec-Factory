@@ -242,13 +242,14 @@ export function prepareStatements(db) {
 
     _upsertProduct: db.prepare(`
       INSERT INTO products (
-        category, product_id, brand, model, variant, status, seed_urls, identifier, brand_identifier
+        category, product_id, brand, model, base_model, variant, status, seed_urls, identifier, brand_identifier
       ) VALUES (
-        @category, @product_id, @brand, @model, @variant, @status, @seed_urls, @identifier, @brand_identifier
+        @category, @product_id, @brand, @model, @base_model, @variant, @status, @seed_urls, @identifier, @brand_identifier
       )
       ON CONFLICT(category, product_id) DO UPDATE SET
         brand = COALESCE(excluded.brand, brand),
         model = COALESCE(excluded.model, model),
+        base_model = COALESCE(NULLIF(excluded.base_model, ''), base_model),
         variant = COALESCE(excluded.variant, variant),
         status = excluded.status,
         seed_urls = COALESCE(excluded.seed_urls, seed_urls),
@@ -845,5 +846,46 @@ export function prepareStatements(db) {
           ELSE field_studio_map.updated_at
         END
     `),
+
+    _getFieldKeyOrder: db.prepare(
+      'SELECT order_json, updated_at FROM field_key_order WHERE category = ?'
+    ),
+    _setFieldKeyOrder: db.prepare(`
+      INSERT INTO field_key_order (category, order_json, updated_at)
+      VALUES (@category, @order_json, datetime('now'))
+      ON CONFLICT(category) DO UPDATE SET
+        order_json = excluded.order_json,
+        updated_at = datetime('now')
+    `),
+    _deleteFieldKeyOrder: db.prepare(
+      'DELETE FROM field_key_order WHERE category = ?'
+    ),
+
+    // --- Color & Edition Finder ---
+    _upsertColorEditionFinder: db.prepare(`
+      INSERT INTO color_edition_finder (
+        category, product_id, colors, editions, default_color,
+        cooldown_until, latest_ran_at, run_count
+      ) VALUES (
+        @category, @product_id, @colors, @editions, @default_color,
+        @cooldown_until, @latest_ran_at, @run_count
+      )
+      ON CONFLICT(category, product_id) DO UPDATE SET
+        colors = excluded.colors,
+        editions = excluded.editions,
+        default_color = excluded.default_color,
+        cooldown_until = excluded.cooldown_until,
+        latest_ran_at = excluded.latest_ran_at,
+        run_count = excluded.run_count
+    `),
+    _getColorEditionFinder: db.prepare(
+      'SELECT * FROM color_edition_finder WHERE category = ? AND product_id = ?'
+    ),
+    _listColorEditionFinderByCategory: db.prepare(
+      'SELECT * FROM color_edition_finder WHERE category = ? ORDER BY product_id'
+    ),
+    _getColorEditionFinderOnCooldown: db.prepare(
+      'SELECT * FROM color_edition_finder WHERE category = ? AND product_id = ? AND cooldown_until > ?'
+    ),
   };
 }

@@ -106,6 +106,7 @@ export interface StudioConfig {
   field_overrides?: Record<string, unknown>;
   manual_enum_values?: Record<string, string[]>;
   expectations?: Record<string, unknown>;
+  field_groups?: string[];
   identity?: Record<string, unknown>;
   [k: string]: unknown;
 }
@@ -122,6 +123,7 @@ export interface StudioPayload {
   egLockedKeys?: string[];
   egEditablePaths?: string[];
   egToggles?: Record<string, boolean>;
+  registeredColors?: string[];
 }
 
 export interface FieldStudioMapResponse {

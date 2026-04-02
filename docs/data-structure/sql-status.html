@@ -510,17 +510,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 15: AppDb</span>
-      <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps</span>
+      <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps, color_registry</span>
       <span class="tags"><span class="badge badge-complete">Complete</span></span>
     </summary>
     <div class="wave-body">
-      <p>Global application database fully migrated. Brand management, settings persistence, and studio maps all SQL-backed in app.sqlite.</p>
+      <p>Global application database fully migrated. Brand management, settings persistence, studio maps, and color registry all SQL-backed in app.sqlite.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>brands</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>brand_categories</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>brand_renames</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>settings</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>studio_maps</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>color_registry</code><span class="note">SQL only &mdash; 77 rows seeded</span></div>
       </div>
     </div>
   </details>
@@ -702,6 +703,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <tr><td></td><td><code class="tbl-name">brand_renames</code></td><td class="col-count">7</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
         <tr><td></td><td><code class="tbl-name">settings</code></td><td class="col-count">5</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
         <tr><td></td><td><code class="tbl-name">studio_maps</code></td><td class="col-count">4</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
+        <tr><td></td><td><code class="tbl-name">color_registry</code></td><td class="col-count">5</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
         <!-- crawlLedgerStore (SpecDb) -->
         <tr><td><code class="store-name">crawlLedgerStore</code></td><td><code class="tbl-name">query_cooldowns</code></td><td class="col-count">13</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td></td><td><code class="tbl-name">url_crawl_ledger</code></td><td class="col-count">24</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
@@ -793,10 +795,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <line x1="310" y1="150" x2="340" y2="150" stroke="#3f3f46" stroke-width="1.5" stroke-dasharray="4 3"/>
 
       <!-- AppDb -->
-      <rect x="340" y="50" width="280" height="200" rx="12" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+      <rect x="340" y="50" width="280" height="215" rx="12" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
       <text x="480" y="82" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="14" font-weight="700" fill="#22c55e">AppDb</text>
       <text x="480" y="100" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Global &middot; app.sqlite</text>
-      <text x="480" y="130" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">5</text>
+      <text x="480" y="130" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">6</text>
       <text x="480" y="147" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">tables</text>
       <line x1="360" y1="160" x2="600" y2="160" stroke="#e2e8f0" stroke-width="1"/>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#475569">
@@ -805,6 +807,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <text x="360" y="210">brand_renames</text>
         <text x="360" y="225">settings</text>
         <text x="360" y="240">studio_maps</text>
+        <text x="360" y="255">color_registry</text>
       </g>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#22c55e" text-anchor="end">
         <text x="600" y="180">SQL only</text>
@@ -812,6 +815,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <text x="600" y="210">SQL only</text>
         <text x="600" y="225">SQL only</text>
         <text x="600" y="240">SQL only</text>
+        <text x="600" y="255">SQL only</text>
       </g>
 
     </svg>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Structured-Metadata Extraction Plugin — Implementation Roadmap</title>
+<style>
+  :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; line-height: 1.6; }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; color: var(--accent); }
+  h1 + p { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: .4rem; }
+  h3 { font-size: .95rem; margin: 1.25rem 0 .5rem; color: var(--orange); }
+
+  .phase-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .phase-card.current { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+  .phase-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+  .phase-badge { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 6px; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+  .badge-1a { background: #1f3a1f; color: var(--green); border: 1px solid var(--green); }
+  .badge-1b { background: #2a2210; color: var(--orange); border: 1px solid var(--orange); }
+  .badge-1c { background: #1a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+  .badge-1d { background: #3a1a1a; color: var(--red); border: 1px solid var(--red); }
+  .badge-1e { background: #0d2740; color: var(--accent); border: 1px solid var(--accent); }
+  .phase-title { font-size: 1.05rem; font-weight: 600; }
+  .phase-goal { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; margin: .5rem 0; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: .4rem .6rem; border-bottom: 1px solid var(--border); font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; }
+  td { padding: .4rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .file-path { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: .78rem; color: var(--accent); }
+  .scope { color: var(--muted); font-size: .78rem; }
+  .new { color: var(--green); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
+  .mod { color: var(--orange); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
+  .gen { color: var(--purple); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
+
+  .verify { background: #0d1f0d; border: 1px solid #1a3a1a; border-radius: 6px; padding: .6rem .8rem; margin-top: .75rem; font-family: monospace; font-size: .78rem; color: var(--green); white-space: pre-wrap; }
+  .gate { background: #1a1008; border: 1px solid #3a2a10; border-radius: 6px; padding: .5rem .8rem; margin-top: .5rem; font-size: .8rem; color: var(--orange); }
+
+  .overview-table { margin: 1.5rem 0 2rem; }
+  .overview-table th { background: var(--surface); }
+  .overview-table td:first-child { font-weight: 700; white-space: nowrap; }
+
+  .folder-tree { font-family: monospace; font-size: .8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; line-height: 1.7; }
+  .folder-tree .dir { color: var(--accent); }
+  .folder-tree .file { color: var(--text); }
+  .folder-tree .test { color: var(--green); }
+  .folder-tree .comment { color: var(--muted); font-style: italic; }
+
+  .section-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 600; margin-bottom: .35rem; }
+</style>
+</head>
+<body>
+
+<h1>Structured-Metadata Extraction Plugin</h1>
+<p>Implementation roadmap &mdash; 5 phases, each a separate pass. Complete &rarr; verify &rarr; stop &rarr; next phase.</p>
+
+<!-- ═══════════════════ OVERVIEW TABLE ═══════════════════ -->
+
+<h2>Phase Overview</h2>
+<table class="overview-table">
+  <thead>
+    <tr><th>Phase</th><th>Name</th><th>What It Does</th><th>Gate</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="color:var(--green)">1a</td><td>Plugin Skeleton + Registry Wiring</td><td>No-op plugin registered, stage def added. Proves O(1) wiring.</td><td>extractionPluginRegistryContract + plugin unit test</td></tr>
+    <tr><td style="color:var(--orange)">1b</td><td>Settings + Configuration</td><td>9 settings entries (hero + max items + 6 surface toggles).</td><td>pluginSettingsContract test</td></tr>
+    <tr><td style="color:var(--purple)">1c</td><td>HTML Parsers</td><td>6 cheerio parsers + wire into plugin onExtract.</td><td>All 6 parser tests + plugin integration test</td></tr>
+    <tr><td style="color:var(--red)">1d</td><td>Artifact Persistence + Pipeline Wiring</td><td>JSON persister, DI callback, event emission.</td><td>Persister test + runtimeOpsExtractionPluginBuilders test</td></tr>
+    <tr><td style="color:var(--accent)">1e</td><td>Frontend Panel + Codegen</td><td>Codegen, panel component, stage registry wiring.</td><td>tsc --noEmit + all contract tests + tab visible</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════ FOLDER STRUCTURE ═══════════════════ -->
+
+<h2>Target Folder Structure (Backend)</h2>
+<div class="folder-tree">
+<span class="dir">src/features/extraction/plugins/structured-metadata/</span>
+    <span class="file">structuredMetadataPlugin.js</span>            <span class="comment"># 1a &mdash; plugin object (name, phase, onExtract, summarize)</span>
+    <span class="file">structuredMetadataArtifactPersister.js</span>  <span class="comment"># 1d &mdash; writes JSON to {runDir}/structured-metadata/</span>
+    <span class="dir">parsers/</span>
+        <span class="file">parseJsonLd.js</span>                     <span class="comment"># 1c &mdash; &lt;script type="application/ld+json"&gt;</span>
+        <span class="file">parseOpenGraph.js</span>                  <span class="comment"># 1c &mdash; &lt;meta property="og:*"&gt;</span>
+        <span class="file">parseTwitterCard.js</span>                <span class="comment"># 1c &mdash; &lt;meta name="twitter:*"&gt;</span>
+        <span class="file">parseMicrodata.js</span>                  <span class="comment"># 1c &mdash; [itemscope]/[itemprop] traversal</span>
+        <span class="file">parseRdfa.js</span>                       <span class="comment"># 1c &mdash; [typeof]/[property]/[vocab] attributes</span>
+        <span class="file">parseMicroformats.js</span>               <span class="comment"># 1c &mdash; .h-*/.p-*/.u-* class patterns</span>
+    <span class="dir">tests/</span>
+        <span class="test">structuredMetadataPlugin.test.js</span>            <span class="comment"># 1a &mdash; shape + integration tests</span>
+        <span class="test">structuredMetadataArtifactPersister.test.js</span> <span class="comment"># 1d</span>
+        <span class="test">parseJsonLd.test.js</span>                        <span class="comment"># 1c</span>
+        <span class="test">parseOpenGraph.test.js</span>                     <span class="comment"># 1c</span>
+        <span class="test">parseTwitterCard.test.js</span>                   <span class="comment"># 1c</span>
+        <span class="test">parseMicrodata.test.js</span>                     <span class="comment"># 1c</span>
+        <span class="test">parseRdfa.test.js</span>                          <span class="comment"># 1c</span>
+        <span class="test">parseMicroformats.test.js</span>                  <span class="comment"># 1c</span>
+</div>
+
+<h2>Frontend Areas Affected</h2>
+<div class="folder-tree">
+<span class="dir">tools/gui-react/src/features/runtime-ops/panels/extraction/</span>
+    <span class="file">ExtractionStructuredMetadataPanel.tsx</span>   <span class="comment"># 1e &mdash; new panel component</span>
+    <span class="file">extractionStageRegistry.ts</span>             <span class="comment"># 1e &mdash; add component to EXTRACTION_COMPONENTS map</span>
+    <span class="file">extractionStageSelectProps.ts</span>          <span class="comment"># 1e &mdash; add select props entry</span>
+    <span class="file">extractionStageKeys.generated.ts</span>       <span class="comment"># 1e &mdash; auto-generated by codegen</span>
+</div>
+
+<!-- ═══════════════════ PHASE 1a ═══════════════════ -->
+
+<div class="phase-card current">
+  <div class="phase-header">
+    <div class="phase-badge badge-1a">1a</div>
+    <div class="phase-title">Plugin Skeleton + Registry Wiring</div>
+  </div>
+  <div class="phase-goal">Get a no-op plugin registered and passing all contract tests. Proves O(1) wiring works before any extraction logic.</div>
+
+  <div class="section-label">Files</div>
+  <table>
+    <thead><tr><th>Status</th><th>File</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="new">new</span></td><td class="file-path">src/features/extraction/plugins/structured-metadata/structuredMetadataPlugin.js</td><td class="scope">Plugin object: name, phase: 'transform', concurrent: true, no-op onExtract, defensive summarize</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">src/features/extraction/plugins/structured-metadata/tests/structuredMetadataPlugin.test.js</td><td class="scope">Shape tests: name, phase, concurrent, onExtract returns { surfaces: {} }, summarize handles null</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/features/extraction/plugins/pluginRegistry.js</td><td class="scope">+2 lines: import + registry entry</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/core/config/runtimeStageDefs.js</td><td class="scope">+1 line: stage def entry at line 28</td></tr>
+    </tbody>
+  </table>
+  <div class="verify">node --test src/features/extraction/plugins/structured-metadata/tests/structuredMetadataPlugin.test.js
+node --test src/features/extraction/plugins/tests/extractionPluginRegistryContract.test.js</div>
+  <div class="gate">Gate: Both green &rarr; stop &rarr; Phase 1b</div>
+</div>
+
+<!-- ═══════════════════ PHASE 1b ═══════════════════ -->
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-badge badge-1b">1b</div>
+    <div class="phase-title">Settings + Configuration</div>
+  </div>
+  <div class="phase-goal">Add 9 settings entries to settingsRegistry. Each extraction plugin must have its own uiSection with a hero toggle &mdash; enforced by contract test.</div>
+
+  <div class="section-label">Files</div>
+  <table>
+    <thead><tr><th>Status</th><th>File</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/shared/settingsRegistry.js</td><td class="scope">+9 lines at line 192: hero (structuredMetadataEnabled), max items, 6 surface toggles. All uiCategory:"extraction", uiSection:"structured-metadata"</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-label" style="margin-top:.75rem">Settings</div>
+  <table>
+    <thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="file-path">structuredMetadataEnabled</td><td>bool</td><td>true</td><td>Hero toggle (uiHero: true)</td></tr>
+      <tr><td class="file-path">structuredMetadataMaxItemsPerSurface</td><td>int</td><td>50</td><td>Cap items per surface (1&ndash;500)</td></tr>
+      <tr><td class="file-path">structuredMetadataJsonLdEnabled</td><td>bool</td><td>true</td><td>JSON-LD surface toggle</td></tr>
+      <tr><td class="file-path">structuredMetadataOpenGraphEnabled</td><td>bool</td><td>true</td><td>OpenGraph surface toggle</td></tr>
+      <tr><td class="file-path">structuredMetadataTwitterEnabled</td><td>bool</td><td>true</td><td>Twitter Card surface toggle</td></tr>
+      <tr><td class="file-path">structuredMetadataMicrodataEnabled</td><td>bool</td><td>true</td><td>Microdata surface toggle</td></tr>
+      <tr><td class="file-path">structuredMetadataRdfaEnabled</td><td>bool</td><td>true</td><td>RDFa surface toggle</td></tr>
+      <tr><td class="file-path">structuredMetadataMicroformatsEnabled</td><td>bool</td><td>true</td><td>Microformats surface toggle</td></tr>
+    </tbody>
+  </table>
+  <div class="verify">node --test src/shared/tests/pluginSettingsContract.test.js</div>
+  <div class="gate">Gate: Green &rarr; stop &rarr; Phase 1c</div>
+</div>
+
+<!-- ═══════════════════ PHASE 1c ═══════════════════ -->
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-badge badge-1c">1c</div>
+    <div class="phase-title">HTML Parsers (Core Extraction Logic)</div>
+  </div>
+  <div class="phase-goal">Build 6 pure-function cheerio parsers. Wire into plugin's onExtract. This is the bulk of domain logic.</div>
+
+  <div class="section-label">Files</div>
+  <table>
+    <thead><tr><th>Status</th><th>File</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseJsonLd.js</td><td class="scope">&lt;script type="application/ld+json"&gt; &rarr; JSON.parse, handle malformed</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseOpenGraph.js</td><td class="scope">&lt;meta property="og:*"&gt; &rarr; key/value pairs</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseTwitterCard.js</td><td class="scope">&lt;meta name="twitter:*"&gt; + property= form</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseMicrodata.js</td><td class="scope">[itemscope]/[itemprop] &rarr; nested item trees</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseRdfa.js</td><td class="scope">[typeof]/[property]/[vocab] RDFa attributes</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">parsers/parseMicroformats.js</td><td class="scope">.h-*/.p-*/.u-* Microformats2 classes</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseJsonLd.test.js</td><td class="scope">Valid, multi-block, malformed, empty, maxItems, nested @graph</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseOpenGraph.test.js</td><td class="scope">Standard og:*, missing content, empty, maxItems</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseTwitterCard.test.js</td><td class="scope">Both name= and property= forms, empty, maxItems</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseMicrodata.test.js</td><td class="scope">Single/nested itemscope, itemtype, empty, maxItems</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseRdfa.test.js</td><td class="scope">typeof/property/content, nested, empty, maxItems</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">tests/parseMicroformats.test.js</td><td class="scope">h-entry/h-card, p-*/u-* children, nested, empty, maxItems</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">structuredMetadataPlugin.js</td><td class="scope">Replace no-op onExtract with real logic: check toggles, call parsers, assemble surfaces</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">tests/structuredMetadataPlugin.test.js</td><td class="scope">Add integration tests: populated surfaces, hero disabled, per-surface toggles, null HTML</td></tr>
+    </tbody>
+  </table>
+  <div class="verify">node --test src/features/extraction/plugins/structured-metadata/tests/</div>
+  <div class="gate">Gate: All parser + plugin tests green &rarr; stop &rarr; Phase 1d</div>
+</div>
+
+<!-- ═══════════════════ PHASE 1d ═══════════════════ -->
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-badge badge-1d">1d</div>
+    <div class="phase-title">Artifact Persistence + Pipeline Wiring</div>
+  </div>
+  <div class="phase-goal">Persister writes JSON to disk. DI callback wired into crawlSession + runProduct. Events flow to API builder (auto-discovered, zero builder changes).</div>
+
+  <div class="section-label">Files</div>
+  <table>
+    <thead><tr><th>Status</th><th>File</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="new">new</span></td><td class="file-path">structured-metadata/structuredMetadataArtifactPersister.js</td><td class="scope">persistStructuredMetadataArtifact({ surfaces, metadataDir, workerId, url }) &rarr; writes JSON, returns { filename, content_hash, size_bytes }</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">structured-metadata/tests/structuredMetadataArtifactPersister.test.js</td><td class="scope">tmpDir write/read, null surfaces, deterministic filename, content_hash</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/features/extraction/index.js</td><td class="scope">+1 export: persistStructuredMetadataArtifact</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/features/crawl/crawlSession.js</td><td class="scope">+1 DI param (onStructuredMetadataPersist) + ~15 lines post-transform persistence + extraction_artifacts_persisted event</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">src/pipeline/runProduct.js</td><td class="scope">+1 dir setup + ~6 lines callback wiring + import</td></tr>
+    </tbody>
+  </table>
+  <div class="verify">node --test src/features/extraction/plugins/structured-metadata/tests/
+node --test src/features/indexing/api/builders/tests/runtimeOpsExtractionPluginBuilders.test.js</div>
+  <div class="gate">Gate: All green &rarr; stop &rarr; Phase 1e</div>
+</div>
+
+<!-- ═══════════════════ PHASE 1e ═══════════════════ -->
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-badge badge-1e">1e</div>
+    <div class="phase-title">Frontend Panel + Codegen</div>
+  </div>
+  <div class="phase-goal">Run codegen to generate TypeScript keys. Create panel component. Wire into extraction stage registry. "Structured Metadata" tab appears in Runtime Ops &rarr; Workers &rarr; Extraction.</div>
+
+  <div class="section-label">Files</div>
+  <table>
+    <thead><tr><th>Status</th><th>File</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td><span class="gen">gen</span></td><td class="file-path">panels/extraction/extractionStageKeys.generated.ts</td><td class="scope">Auto-generated: adds 'structured-metadata' to EXTRACTION_STAGE_KEYS + ExtractionTabKey + EXTRACTION_STAGE_META</td></tr>
+      <tr><td><span class="new">new</span></td><td class="file-path">panels/extraction/ExtractionStructuredMetadataPanel.tsx</td><td class="scope">Panel component using ExtractionArtifactPanel with config object. Domain-grouped table, hero stats, surfaces column.</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">panels/extraction/extractionStageRegistry.ts</td><td class="scope">+1 import + add 'structured-metadata' to EXTRACTION_COMPONENTS map</td></tr>
+      <tr><td><span class="mod">mod</span></td><td class="file-path">panels/extraction/extractionStageSelectProps.ts</td><td class="scope">+5 lines: 'structured-metadata' select props entry</td></tr>
+    </tbody>
+  </table>
+  <div class="verify">node tools/gui-react/scripts/generateRuntimeStageKeys.js
+cd tools/gui-react &amp;&amp; npx tsc --noEmit
+node --test src/features/extraction/plugins/tests/extractionPluginRegistryContract.test.js
+node --test src/shared/tests/pluginSettingsContract.test.js</div>
+  <div class="gate">Gate: TypeScript zero errors. All contract tests green. Tab visible in GUI.</div>
+</div>
+
+</body>
+</html>

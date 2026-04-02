@@ -27,6 +27,8 @@ export function createConfigPersistenceContext({
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
 
+  applyDerivedSettingsArtifacts(initialSettingsArtifacts);
+
   async function persistCanonicalSections({
     runtime = null,
     ui = null,

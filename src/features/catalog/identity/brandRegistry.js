@@ -7,9 +7,11 @@
  * A brand is global — it can belong to multiple categories (e.g. Razer → mouse, keyboard, headset).
  * The registry is the single source for brand names, aliases, and category assignments.
  *
- * All brand state is persisted via appDb (SQL). JSON files are seed-only archives.
+ * All brand state is persisted via appDb (SQL). JSON is synced after every HTTP mutation
+ * so data survives DB rebuild.
  */
 
+import { writeFileSync } from 'node:fs';
 import { slugify } from './slugify.js';
 import { loadCatalogProducts, discoverCategoriesLocal } from '../products/catalogProductLoader.js';
 import { generateIdentifier } from './productIdentity.js';
@@ -549,4 +551,30 @@ export async function getBrandImpactAnalysis({ config, appDb, slug, getSpecDb = 
     product_details,
     total_products,
   };
+}
+
+/**
+ * Write-back: dump current SQL brand state to brand_registry.json.
+ * Called after every HTTP mutation so data survives DB rebuild.
+ */
+export async function writeBackBrandRegistry(appDb, brandRegistryPath) {
+  if (!brandRegistryPath) return;
+  const rows = appDb.listBrands();
+  const brands = {};
+  for (const row of rows) {
+    const categories = appDb.getCategoriesForBrand(row.identifier);
+    brands[row.slug] = {
+      canonical_name: row.canonical_name,
+      identifier: row.identifier,
+      aliases: JSON.parse(row.aliases || '[]'),
+      categories,
+      website: row.website || '',
+      added_at: row.created_at,
+      added_by: row.added_by,
+    };
+  }
+  writeFileSync(brandRegistryPath, JSON.stringify(
+    { _doc: 'Global brand registry. Managed by GUI.', _version: 1, brands },
+    null, 2,
+  ));
 }

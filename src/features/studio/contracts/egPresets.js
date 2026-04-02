@@ -1,23 +1,16 @@
 // WHY: SSOT for EG-compatible field rule presets.
 // Colors and editions are always EG-formatted in every category.
-// This module defines the locked field shapes, canonical color palette,
-// and the lock/editable path lists that the GUI uses for read-only rendering.
+// This module defines the locked field shapes and the lock/editable path lists
+// that the GUI uses for read-only rendering.
 //
 // O(1): Adding a new EG-locked field = add one builder + register in EG_PRESET_REGISTRY.
 // Everything else (locked keys, toggles, scaffolding, backfill, compile injection,
 // server-side lock, frontend toggle UI) derives automatically.
-
-// ── Canonical EG color palette (atomic names only, no "+" multi-colors) ──────
-
-export const EG_CANONICAL_COLORS = Object.freeze([
-  'black', 'white', 'red', 'blue', 'green', 'yellow', 'orange',
-  'pink', 'purple', 'gray', 'teal', 'cyan', 'indigo', 'violet',
-  'magenta', 'gold', 'silver', 'lime', 'rose',
-  // light variants (modifier-first: matches CSS --color-light-X)
-  'light-gray', 'light-blue', 'light-green', 'light-pink', 'light-red',
-  // dark variants (modifier-first: matches CSS --color-dark-X)
-  'dark-blue', 'dark-green', 'dark-red',
-]);
+//
+// Builders accept an optional `ctx` object for dynamic data injection.
+// Currently: ctx.colorNames (from color_registry DB table).
+// Adding new dynamic data = add to ctx. No if-blocks.
+// No fallback color lists — DB is always seeded at boot via seedColorRegistry().
 
 // ── Editable paths (which dot-paths are user-editable on locked fields) ──────
 
@@ -29,9 +22,109 @@ export const EG_EDITABLE_PATHS = Object.freeze([
   'ui.tooltip_md',
 ]);
 
-// ── Field rule builders ──────────────────────────────────────────────────────
+// ── Dynamic reasoning note builder ──────────────────────────────────────────
 
-export function buildEgColorFieldRule() {
+function buildColorReasoningNote(colorNames, colors) {
+  // WHY: Full extraction guidance for color discovery — used by both the
+  // extraction pipeline and the Color & Edition Finder. This is the SSOT
+  // for how LLMs should discover, match, and format product colors.
+  //
+  // O(1): adding vivid-red, pastel-blue, etc. auto-discovers "vivid-", "pastel-" as prefixes.
+  // No hardcoded prefix list. The registry IS the config.
+
+  const nameSet = new Set(colorNames);
+  const prefixMap = new Map(); // prefix → Set<base>
+  const unprefixed = []; // names with no hyphen (potential bases)
+
+  // Pass 1: identify all names that look like {prefix}-{base}
+  for (const n of colorNames) {
+    const dashIdx = n.indexOf('-');
+    if (dashIdx > 0) {
+      const prefix = n.slice(0, dashIdx);
+      const base = n.slice(dashIdx + 1);
+      if (nameSet.has(base)) {
+        if (!prefixMap.has(prefix)) prefixMap.set(prefix, new Set());
+        prefixMap.get(prefix).add(base);
+      }
+    }
+    if (!n.includes('-')) {
+      unprefixed.push(n);
+    }
+  }
+
+  // Pass 2: bases = unprefixed names that have at least one prefixed variant
+  const basesWithVariants = [];
+  const standalone = [];
+  for (const n of unprefixed) {
+    let hasVariant = false;
+    for (const [, bases] of prefixMap) {
+      if (bases.has(n)) { hasVariant = true; break; }
+    }
+    if (hasVariant) basesWithVariants.push(n);
+    else standalone.push(n);
+  }
+
+  // Pass 3: orphans = prefixed names whose base is NOT registered
+  const orphans = [];
+  for (const n of colorNames) {
+    const dashIdx = n.indexOf('-');
+    if (dashIdx > 0) {
+      const base = n.slice(dashIdx + 1);
+      if (!nameSet.has(base)) orphans.push(n);
+    }
+  }
+
+  // Build prefix summary
+  const parts = [];
+  const prefixes = [...prefixMap.keys()].sort();
+  if (basesWithVariants.length > 0 && prefixes.length > 0) {
+    const prefixList = prefixes.map((p) => `${p}-`).join(', ');
+    parts.push(`Base colors (also valid with prefixes ${prefixList}): ${basesWithVariants.join(', ')}`);
+  }
+  if (standalone.length > 0) {
+    parts.push(`Other colors: ${standalone.join(', ')}`);
+  }
+  if (orphans.length > 0) {
+    parts.push(`Additional variants: ${orphans.join(', ')}`);
+  }
+
+  // Build registered color list with hex values for visual matching
+  const colorEntries = Array.isArray(colors) ? colors : [];
+  const colorListStr = colorEntries.length > 0
+    ? colorEntries.map(c => `${c.name} (${c.hex})`).join(', ')
+    : colorNames.join(', ');
+
+  return [
+    'Discover every color variant this product is or has been available in.',
+    'Check the manufacturer product page (color selectors, variant dropdowns, "available in" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.',
+    '',
+    'Each color is either a single atom ("black", "light-gray") or multiple atoms joined by "+" in dominant visual order.',
+    'Dominant means the color with the most surface area — "black+red" means mostly black with red accents.',
+    'The first color in the array is the most common / default variant (the one shown on the product\'s main marketing page).',
+    '',
+    'Formatting rules:',
+    '- lowercase only, hyphens between words',
+    '- Modifier-first: "light-blue" not "blue-light", "dark-green" not "green-dark"',
+    '- Normalize "grey" to "gray"',
+    '- Translate marketing names to the nearest registered color. "Midnight" → "black", "Arctic" → "white", "Thunderbolt Yellow" → "yellow". Never use marketing names as atoms.',
+    '',
+    parts.join('. ') + '.',
+    '',
+    `Registered colors with hex values: ${colorListStr}`,
+    '',
+    'Match product colors to registered colors by visual similarity using the hex values above. If a registered color\'s hex is close to the product\'s actual color, use the registered name.',
+    'Only add a new color to new_colors as an absolute last resort — when NO registered color is a reasonable visual match. New colors must be basic, common names (e.g. "seafoam", "burgundy", "coral") — never marketing names. New colors require a hex code.',
+  ].join('\n');
+}
+
+// ── Field rule builders ──────────────────────────────────────────────────────
+// WHY: ctx.colorNames comes from appDb.listColors() (DB is SSOT).
+// If ctx is absent, reasoning_note uses an empty list — the DB is always
+// seeded before any studio route runs, so this only affects bare unit tests.
+
+export function buildEgColorFieldRule(ctx) {
+  const colorNames = ctx?.colorNames ?? [];
+  const colors = ctx?.colors ?? [];
   return {
     key: 'colors',
     contract: {
@@ -91,7 +184,7 @@ export function buildEgColorFieldRule() {
       model_strategy: 'auto',
       max_calls: 1,
       max_tokens: 4096,
-      reasoning_note: 'Return colors as a list of variant strings. Each variant is either a single canonical color (e.g. "black", "light-gray") or multiple canonical colors joined by "+" (e.g. "black+red", "white+orange+blue"). Each atom must be lowercase with hyphens only. Modifier-first naming: "light-blue" not "blue-light", "dark-green" not "green-dark". Valid atoms: black, white, red, blue, green, yellow, orange, pink, purple, gray, teal, cyan, gold, silver, light-gray, light-blue, dark-blue, dark-green, etc. Do not return hex codes, RGB values, uppercase, or spaces within atoms. Normalize grey to gray.',
+      reasoning_note: buildColorReasoningNote(colorNames, colors),
     },
     ui: {
       label: 'Colors',
@@ -107,7 +200,7 @@ export function buildEgColorFieldRule() {
   };
 }
 
-export function buildEgEditionFieldRule() {
+export function buildEgEditionFieldRule(ctx) {
   return {
     key: 'editions',
     contract: {
@@ -146,7 +239,17 @@ export function buildEgEditionFieldRule() {
       model_strategy: 'auto',
       max_calls: 1,
       max_tokens: 4096,
-      reasoning_note: 'Return editions as kebab-case slugs. Lowercase, hyphens only, no spaces. Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness. Do not return display names or title case.',
+      reasoning_note: [
+        'Discover every special, limited, or collaboration edition of this product.',
+        'Check the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.',
+        '',
+        'Each edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, "+"-joined, dominant-first). Every edition adds at least one color entry to the product\'s color list.',
+        '',
+        'Formatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.',
+        'Examples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.',
+        'Do not return display names or title case.',
+        'If an edition has a unique color not in the registered list, add it to new_colors with its hex.',
+      ].join('\n'),
     },
     ui: {
       label: 'Editions',
@@ -180,15 +283,15 @@ export const EG_DEFAULT_TOGGLES = Object.freeze(
 
 // ── Registry helpers ─────────────────────────────────────────────────────────
 
-export function buildAllEgDefaults() {
+export function buildAllEgDefaults(ctx) {
   return Object.fromEntries(
-    Object.entries(EG_PRESET_REGISTRY).map(([k, builder]) => [k, builder()])
+    Object.entries(EG_PRESET_REGISTRY).map(([k, builder]) => [k, builder(ctx)])
   );
 }
 
-export function getEgPresetForKey(key) {
+export function getEgPresetForKey(key, ctx) {
   const builder = EG_PRESET_REGISTRY[key];
-  return builder ? builder() : null;
+  return builder ? builder(ctx) : null;
 }
 
 // WHY: Generic editable-path preserver. When replacing a locked field with its
@@ -228,13 +331,13 @@ export function isEgEditablePath(path) {
 // WHY: The save API must enforce locked field integrity. For any locked key,
 // non-editable paths are reset to the preset; editable paths are preserved.
 
-export function sanitizeEgLockedOverrides(fieldOverrides, egToggles) {
+export function sanitizeEgLockedOverrides(fieldOverrides, egToggles, ctx) {
   if (!fieldOverrides || typeof fieldOverrides !== 'object') return fieldOverrides;
   const sanitized = { ...fieldOverrides };
   const activeKeys = resolveEgLockedKeys(egToggles || EG_DEFAULT_TOGGLES);
   for (const k of activeKeys) {
     if (!sanitized[k]) continue;
-    sanitized[k] = preserveEgEditablePaths(sanitized[k], EG_PRESET_REGISTRY[k]());
+    sanitized[k] = preserveEgEditablePaths(sanitized[k], EG_PRESET_REGISTRY[k](ctx));
   }
   return sanitized;
 }

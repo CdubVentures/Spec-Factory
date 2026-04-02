@@ -24,6 +24,7 @@ import {
   EG_EDITABLE_PATHS,
   EG_DEFAULT_TOGGLES,
   getEgPresetForKey,
+  preserveEgEditablePaths,
   sanitizeEgLockedOverrides,
   resolveEgLockedKeys,
 } from '../contracts/egPresets.js';
@@ -55,6 +56,7 @@ export function registerStudioRoutes(ctx) {
     loadProductCatalog,
     cleanVariant,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
+    appDb,
   } = ctx;
   const hasStudioMapHandlers = (
     typeof loadFieldStudioMap === 'function'
@@ -80,14 +82,25 @@ export function registerStudioRoutes(ctx) {
       const egToggles = mapData?.map?.eg_toggles || { ...EG_DEFAULT_TOGGLES };
       const activeLockedKeys = resolveEgLockedKeys(egToggles);
 
+      // WHY: Dynamic color list from color_registry DB — the SSOT for valid atoms.
+      const registeredColors = appDb ? appDb.listColors().map((c) => c.name) : [];
+      const egCtx = registeredColors.length > 0 ? { colorNames: registeredColors } : undefined;
+
       // WHY: Backfill EG fields for categories created before this feature.
       // O(1): generic loop over EG_LOCKED_KEYS — new registry entries auto-backfill.
       const fields = { ...session.mergedFields };
       let needsMigrate = false;
       for (const k of EG_LOCKED_KEYS) {
         if (!fields[k] && egToggles[k] !== false) {
-          fields[k] = getEgPresetForKey(k);
+          fields[k] = getEgPresetForKey(k, egCtx);
           needsMigrate = true;
+        }
+      }
+
+      // WHY: Re-apply preset for locked fields to ensure reasoning_note reflects current registry.
+      for (const k of activeLockedKeys) {
+        if (fields[k]) {
+          fields[k] = preserveEgEditablePaths(fields[k], getEgPresetForKey(k, egCtx));
         }
       }
 
@@ -102,7 +115,7 @@ export function registerStudioRoutes(ctx) {
         const patched = { ...mapData.map };
         const overrides = { ...(patched.field_overrides || {}) };
         for (const k of EG_LOCKED_KEYS) {
-          if (!overrides[k]) overrides[k] = getEgPresetForKey(k);
+          if (!overrides[k]) overrides[k] = getEgPresetForKey(k, egCtx);
         }
         patched.field_overrides = overrides;
         if (!patched.eg_toggles) patched.eg_toggles = { ...EG_DEFAULT_TOGGLES };
@@ -131,6 +144,7 @@ export function registerStudioRoutes(ctx) {
         egLockedKeys: activeLockedKeys,
         egEditablePaths: [...EG_EDITABLE_PATHS],
         egToggles,
+        registeredColors,
       }));
     }
 
@@ -412,10 +426,14 @@ export function registerStudioRoutes(ctx) {
         ? validation.normalized
         : body;
       // WHY: Server-side lock enforcement — reset non-editable paths on locked fields to preset.
+      // Dynamic color names from registry ensure reasoning_note stays current.
       if (normalizedFieldStudioMap.field_overrides) {
+        const saveColors = appDb ? appDb.listColors().map((c) => c.name) : [];
+        const saveCtx = saveColors.length > 0 ? { colorNames: saveColors } : undefined;
         normalizedFieldStudioMap.field_overrides = sanitizeEgLockedOverrides(
           normalizedFieldStudioMap.field_overrides,
-          normalizedFieldStudioMap.eg_toggles
+          normalizedFieldStudioMap.eg_toggles,
+          saveCtx,
         );
       }
       try {
@@ -480,6 +498,23 @@ export function registerStudioRoutes(ctx) {
       } catch (err) {
         return jsonRes(res, 500, { error: 'save_failed', message: err.message });
       }
+    }
+
+    // Studio field key order (lightweight instant order persistence, no version bump)
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-key-order' && method === 'PUT') {
+      const category = parts[1];
+      const body = await readJsonBody(req);
+      const order = Array.isArray(body?.order) ? body.order : null;
+      if (!order) {
+        return jsonRes(res, 400, { error: 'order_required', message: 'order must be a string array' });
+      }
+      const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      if (!specDb) {
+        return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
+      }
+      specDb.setFieldKeyOrder(category, JSON.stringify(order));
+      sessionCache.invalidateSessionCache(category);
+      return jsonRes(res, 200, { ok: true, category });
     }
 
     // Studio map validate

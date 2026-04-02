@@ -19,6 +19,7 @@ export {
   seedBrandsFromCatalog,
   renameBrand,
   getBrandImpactAnalysis,
+  writeBackBrandRegistry,
 } from './identity/brandRegistry.js';
 export {
   buildCanonicalIdentityIndex,

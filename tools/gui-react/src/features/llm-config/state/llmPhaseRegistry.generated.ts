@@ -10,6 +10,7 @@ export const LLM_PHASE_IDS = [
   'brand-resolver',
   'serp-selector',
   'validate',
+  'color-finder',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
@@ -19,4 +20,5 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   { id: 'brand-resolver', label: 'Brand Resolver', subtitle: 'Base Model', tip: 'Base Model shared with SERP Selector. Opt-in reasoning toggle overrides with shared Reasoning Model.', roles: ['triage'], sharedWith: ['serp-selector'] },
   { id: 'serp-selector', label: 'SERP Selector', subtitle: 'Base Model', tip: 'LLM-based URL selector that decides fetch-worthiness. Uses triage token budget.', roles: ['triage'], sharedWith: ['brand-resolver'] },
   { id: 'validate', label: 'Validate', subtitle: 'Base Model', tip: 'Model override for the validation pass that confirms uncertain field candidates.', roles: ['validate'] },
+  { id: 'color-finder', label: 'Color & Edition Finder', subtitle: 'Discovery', tip: 'Discovers product color variants and limited editions using web search. Runs independently of the crawl pipeline.', roles: ['triage'] },
 ] as const;

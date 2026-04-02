@@ -69,7 +69,7 @@ export function deriveVariantOptions(catalogRows: CatalogRow[], singleBrand: str
     .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand) && normalizeToken(row.base_model || row.model) === normalizeToken(singleModel))
     .map((row) => ({
       productId: row.productId,
-      label: row.variant ? displayVariant(String(row.variant)) : String(row.model || ''),
+      label: displayVariant(String(row.variant || '')),
     }));
 }
 

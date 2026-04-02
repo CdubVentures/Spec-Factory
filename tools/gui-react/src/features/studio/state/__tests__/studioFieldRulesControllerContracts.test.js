@@ -73,6 +73,7 @@ test('studioFieldRulesController exposes selected state without leaking the full
     'egToggles',
     'initialized',
     'pendingRenames',
+    'registeredColors',
   ]);
   assert.deepEqual(state.editedFieldOrder, ['dpi']);
   assert.equal(state.initialized, true);

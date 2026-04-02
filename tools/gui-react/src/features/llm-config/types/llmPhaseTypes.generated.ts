@@ -7,7 +7,8 @@ export type LlmPhaseId =
   | 'search-planner'
   | 'brand-resolver'
   | 'serp-selector'
-  | 'validate';
+  | 'validate'
+  | 'color-finder';
 
 export interface LlmPhaseDefinition {
   id: LlmPhaseId;

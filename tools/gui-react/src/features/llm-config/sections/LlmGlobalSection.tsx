@@ -46,12 +46,12 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   const [dismissedAlerts, , replaceDismissedAlerts] = usePersistedExpandMap('llmConfig:global:dismissedAlerts');
 
   const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter, [runtimeDraft.llmModelPlan]),
+    [llmModelOptions, registry, apiKeyFilter, runtimeDraft.llmModelPlan],
   );
   const reasoningOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
+    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter, [runtimeDraft.llmModelReasoning]),
+    [llmModelOptions, registry, apiKeyFilter, runtimeDraft.llmModelReasoning],
   );
   const allOptions = useMemo(
     () => buildModelDropdownOptions(llmModelOptions, registry, undefined, apiKeyFilter),

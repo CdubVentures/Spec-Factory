@@ -51,7 +51,7 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
       brand,
       brand_identifier: String(row.brand_identifier || '').trim(),
       model,
-      base_model: '',
+      base_model: String(row.base_model || '').trim(),
       variant,
       status: qp.status || (summary ? 'complete' : 'pending'),
       hasFinal,

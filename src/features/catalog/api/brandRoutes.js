@@ -21,6 +21,8 @@ export function registerBrandRoutes(ctx) {
     broadcastWs,
     getSpecDb,
     loadProductCatalog,
+    brandRegistryPath,
+    writeBackBrandRegistry,
   } = ctx;
 
   function resolveSpecDb(category) {
@@ -34,6 +36,10 @@ export function registerBrandRoutes(ctx) {
   // The old per-product cascade is gone, so this sync is no longer needed.
   // Kept as a no-op for API compatibility (callers still pass cascade_results).
   async function syncRenameCascadeProducts() {}
+
+  function afterMutation() {
+    writeBackBrandRegistry(appDb, brandRegistryPath).catch(() => {});
+  }
 
   return async function handleBrandRoutes(parts, params, method, req, res) {
     // GET /api/v1/brands?category=mouse  (optional filter)
@@ -71,6 +77,7 @@ export function registerBrandRoutes(ctx) {
           category: eventCategory,
           meta: { seeded: Number(result?.seeded || 0) },
         });
+        afterMutation();
       }
       return jsonRes(res, 200, result);
     }
@@ -92,6 +99,7 @@ export function registerBrandRoutes(ctx) {
           categories: targetCategory === 'all' ? [] : [targetCategory],
           meta: { count: Number(result?.created || 0) },
         });
+        afterMutation();
       }
       return jsonRes(res, result.ok ? 200 : 400, result);
     }
@@ -123,6 +131,7 @@ export function registerBrandRoutes(ctx) {
           categories,
           meta: { slug: result.slug || '' },
         });
+        afterMutation();
       }
       return jsonRes(res, result.ok ? 201 : 400, result);
     }
@@ -185,6 +194,7 @@ export function registerBrandRoutes(ctx) {
               cascaded_products: Number(renameResult.cascaded_products || 0),
             },
           });
+          afterMutation();
 
           return jsonRes(res, 200, renameResult);
         }
@@ -203,6 +213,7 @@ export function registerBrandRoutes(ctx) {
           categories,
           meta: { slug: result.slug || brandSlug },
         });
+        afterMutation();
       }
       return jsonRes(res, result.ok ? 200 : 404, result);
     }
@@ -220,6 +231,7 @@ export function registerBrandRoutes(ctx) {
           categories,
           meta: { slug: parts[1] },
         });
+        afterMutation();
       }
       let status = 404;
       if (result.ok) status = 200;

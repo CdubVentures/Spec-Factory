@@ -116,9 +116,13 @@ function seedCrawlCheckpoint(specDb, cp) {
 function seedProductCheckpoint(specDb, cp) {
   const identity = cp.identity || {};
   const model = String(identity.model || '').trim();
+  const baseModel = String(identity.base_model || model).trim();
   // WHY: Fabricated variants (tokens already in model) must never reach the DB.
+  // Use base_model for the check when available — variant tokens naturally
+  // appear in the full model name but NOT in the base_model.
   let variant = cleanVariant(identity.variant);
-  if (variant && isFabricatedVariant(model, variant)) {
+  const fabricationRef = baseModel !== model ? baseModel : model;
+  if (variant && isFabricatedVariant(fabricationRef, variant)) {
     variant = '';
   }
 
@@ -127,6 +131,7 @@ function seedProductCheckpoint(specDb, cp) {
     product_id: cp.product_id || '',
     brand: identity.brand || '',
     model,
+    base_model: baseModel,
     variant,
     status: identity.status || 'active',
     seed_urls: Array.isArray(identity.seed_urls) ? JSON.stringify(identity.seed_urls) : (identity.seed_urls || null),

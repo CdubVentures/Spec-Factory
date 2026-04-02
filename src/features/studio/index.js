@@ -22,7 +22,6 @@ export {
 
 // EG compatibility presets (colors + editions field rule SSOT).
 export {
-  EG_CANONICAL_COLORS,
   EG_PRESET_REGISTRY,
   EG_LOCKED_KEYS,
   EG_EDITABLE_PATHS,

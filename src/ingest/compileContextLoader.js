@@ -138,9 +138,16 @@ export async function loadCompileContext({
   // WHY: Ensure EG-locked defaults always appear in compiled output, even if
   // the category's field_studio_map was created before this default existed.
   // O(1): derived from EG_PRESET_REGISTRY — new registry entries auto-compile.
+  // Read live color names from the color_registry JSON so the compiled
+  // reasoning_note reflects the current registry (not an empty list).
+  const colorRegistryDoc = await readJsonIfExists(path.join(helperRoot, '_global', 'color_registry.json'));
+  const compileColorNames = (colorRegistryDoc && typeof colorRegistryDoc.colors === 'object')
+    ? Object.keys(colorRegistryDoc.colors)
+    : [];
+  const egCtx = compileColorNames.length > 0 ? { colorNames: compileColorNames } : undefined;
   for (const k of EG_LOCKED_KEYS) {
     if (!effectiveFieldOverrides[k]) {
-      effectiveFieldOverrides[k] = getEgPresetForKey(k);
+      effectiveFieldOverrides[k] = getEgPresetForKey(k, egCtx);
     }
   }
 
@@ -164,7 +171,13 @@ export async function loadCompileContext({
       label: titleFromKey(key),
       key,
     }));
-  const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows];
+  // WHY: EG-locked keys must appear in candidateKeyRows so the selectedKeySet
+  // filter keeps them. Without this, they're in the selected set but absent
+  // from candidates, so the filter drops them.
+  const egKeyRows = EG_LOCKED_KEYS
+    .filter((k) => !extractedKeySet.has(k) && !componentPropertyKeySet.has(k))
+    .map((k) => ({ row: 0, label: titleFromKey(k), key: k }));
+  const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows, ...egKeyRows];
   const keyRows = selectedKeySet.size > 0
     ? candidateKeyRows.filter((row) => (
       selectedKeySet.has(normalizeFieldKey(row.key))

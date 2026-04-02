@@ -2234,7 +2234,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "actuation_distance": {
       "aliases": [
@@ -2390,7 +2391,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "actuation_force": {
       "aliases": [
@@ -2548,7 +2550,8 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "adjustable_actuation_max": {
       "aliases": [
@@ -2705,7 +2708,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "adjustable_actuation_min": {
       "aliases": [
@@ -2862,7 +2866,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "adjustable_feet": {
       "aliases": [
@@ -2998,7 +3003,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "adjustable_input_granularity": {
       "aliases": [
@@ -3134,7 +3140,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "analog_input": {
       "aliases": [
@@ -3272,7 +3279,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "anti_ghosting": {
       "aliases": [
@@ -3410,7 +3418,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "arrow_keys": {
       "aliases": [
@@ -3547,7 +3556,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "backlighting": {
       "aliases": [
@@ -3684,7 +3694,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "base_model": {
       "aliases": [
@@ -3820,7 +3831,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "battery_capacity": {
       "aliases": [
@@ -3971,7 +3983,8 @@
       },
       "unit": "mAh",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "battery_life_off": {
       "aliases": [
@@ -4131,7 +4144,8 @@
       },
       "unit": "hours",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "battery_life_rgb": {
       "aliases": [
@@ -4291,7 +4305,8 @@
       },
       "unit": "hours",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "bluetooth_version": {
       "aliases": [
@@ -4427,7 +4442,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "bottom_out_force": {
       "aliases": [
@@ -4585,7 +4601,8 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "brand": {
       "aliases": [
@@ -4721,7 +4738,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "cable_length": {
       "aliases": [
@@ -4886,7 +4904,8 @@
       },
       "unit": "m",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "cable_type": {
       "aliases": [
@@ -5022,7 +5041,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "case_material": {
       "aliases": [
@@ -5158,7 +5178,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "category": {
       "aliases": [
@@ -5294,7 +5315,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "charging_method": {
       "aliases": [
@@ -5431,7 +5453,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Power"
     },
     "color": {
       "aliases": [
@@ -5588,7 +5611,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "General"
     },
     "compatible_os": {
       "aliases": [
@@ -5745,7 +5769,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "General"
     },
     "connection": {
       "aliases": [
@@ -5901,7 +5926,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "Connectivity"
     },
     "debounce_time": {
       "aliases": [
@@ -6056,7 +6082,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "depth": {
       "aliases": [
@@ -6211,7 +6238,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "detachable_cable": {
       "aliases": [
@@ -6346,7 +6374,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "discontinued": {
       "aliases": [
@@ -6483,7 +6512,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "doubleshot": {
       "aliases": [
@@ -6620,7 +6650,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "foam_dampening": {
       "aliases": [
@@ -6756,7 +6787,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "form_factor": {
       "aliases": [
@@ -6893,7 +6925,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "function_row": {
       "aliases": [
@@ -7030,7 +7063,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "gasket_mount": {
       "aliases": [
@@ -7166,7 +7200,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "gtin": {
       "aliases": [
@@ -7304,7 +7339,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "height_front": {
       "aliases": [
@@ -7461,7 +7497,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "height_rear": {
       "aliases": [
@@ -7618,7 +7655,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "hot_swappable": {
       "aliases": [
@@ -7757,7 +7795,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "included_accessories": {
       "aliases": [
@@ -7914,7 +7953,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "General"
     },
     "key_count": {
       "aliases": [
@@ -8055,7 +8095,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "key_rollover": {
       "aliases": [
@@ -8193,7 +8234,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "keycap_material": {
       "aliases": [
@@ -8330,7 +8372,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "keycap_profile": {
       "aliases": [
@@ -8467,7 +8510,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "keycap_thickness": {
       "aliases": [
@@ -8623,7 +8667,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "knob_dial": {
       "aliases": [
@@ -8766,7 +8811,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "layout": {
       "aliases": [
@@ -8903,7 +8949,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "layout_standard": {
       "aliases": [
@@ -9044,7 +9091,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "legends": {
       "aliases": [
@@ -9183,7 +9231,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "macro_keys": {
       "aliases": [
@@ -9320,7 +9369,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "media_controls": {
       "aliases": [
@@ -9457,7 +9507,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "model": {
       "aliases": [
@@ -9593,7 +9644,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "mounting_style": {
       "aliases": [
@@ -9729,7 +9781,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "mpn": {
       "aliases": [
@@ -9865,7 +9918,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "multi_device_pairing": {
       "aliases": [
@@ -10003,7 +10057,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "multi_device_pairing_count": {
       "aliases": [
@@ -10146,7 +10201,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "multi_key_latency": {
       "aliases": [
@@ -10303,7 +10359,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "numpad": {
       "aliases": [
@@ -10440,7 +10497,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Layout"
     },
     "onboard_memory": {
       "aliases": [
@@ -10577,7 +10635,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "onboard_profile_count": {
       "aliases": [
@@ -10721,7 +10780,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "os_mode_switch": {
       "aliases": [
@@ -10858,7 +10918,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "per_key_rgb": {
       "aliases": [
@@ -10997,7 +11058,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "plate_material": {
       "aliases": [
@@ -11133,7 +11195,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "polling_rate_wired": {
       "aliases": [
@@ -11289,7 +11352,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "polling_rate_wireless": {
       "aliases": [
@@ -11445,7 +11509,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "price_range": {
       "aliases": [
@@ -11582,7 +11647,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "qmk_via_support": {
       "aliases": [
@@ -11723,7 +11789,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "rapid_trigger": {
       "aliases": [
@@ -11859,7 +11926,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "release_date": {
       "aliases": [
@@ -11996,7 +12064,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "rgb_zones": {
       "aliases": [
@@ -12133,7 +12202,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "scan_rate": {
       "aliases": [
@@ -12289,7 +12359,8 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "shine_through": {
       "aliases": [
@@ -12428,7 +12499,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Keycaps"
     },
     "single_key_latency": {
       "aliases": [
@@ -12585,7 +12657,8 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "sku": {
       "aliases": [
@@ -12721,7 +12794,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "socd_cleaning": {
       "aliases": [
@@ -12859,7 +12933,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Performance"
     },
     "software": {
       "aliases": [
@@ -12996,7 +13071,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Features"
     },
     "software_required": {
       "aliases": [
@@ -13133,7 +13209,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "sound_dampening": {
       "aliases": [
@@ -13269,7 +13346,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Sound"
     },
     "sound_profile": {
       "aliases": [
@@ -13407,7 +13485,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Sound"
     },
     "south_facing_leds": {
       "aliases": [
@@ -13545,7 +13624,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "stabilizer_lubed": {
       "aliases": [
@@ -13681,7 +13761,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "stabilizer_mount": {
       "aliases": [
@@ -13819,7 +13900,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "stabilizer_type": {
       "aliases": [
@@ -13955,7 +14037,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Build"
     },
     "switch_brand": {
       "aliases": [
@@ -14092,7 +14175,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_compatibility": {
       "aliases": [
@@ -14230,7 +14314,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_feel": {
       "aliases": [
@@ -14367,7 +14452,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_lifespan": {
       "aliases": [
@@ -14527,7 +14613,8 @@
       },
       "unit": "million keystrokes",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_name": {
       "aliases": [
@@ -14668,7 +14755,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_output_type": {
       "aliases": [
@@ -14807,7 +14895,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_pin_support": {
       "aliases": [
@@ -14945,7 +15034,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "switch_type": {
       "aliases": [
@@ -15082,7 +15172,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "total_travel": {
       "aliases": [
@@ -15238,7 +15329,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Switch"
     },
     "typing_angle": {
       "aliases": [
@@ -15393,7 +15485,8 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "typing_noise": {
       "aliases": [
@@ -15529,7 +15622,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Sound"
     },
     "usb_passthrough": {
       "aliases": [
@@ -15665,7 +15759,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "variant": {
       "aliases": [
@@ -15803,7 +15898,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Identity"
     },
     "warranty": {
       "aliases": [
@@ -15938,7 +16034,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "General"
     },
     "weight": {
       "aliases": [
@@ -16113,7 +16210,8 @@
       },
       "unit": "kg",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "width": {
       "aliases": [
@@ -16266,7 +16364,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Dimensions"
     },
     "wired_interface": {
       "aliases": [
@@ -16402,7 +16501,8 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "group": "Connectivity"
     },
     "wireless_technology": {
       "aliases": [
@@ -16558,7 +16658,8 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "group": "Connectivity"
     }
   },
   "field_studio_source_path": "",
@@ -17072,16 +17173,6 @@
     "legends",
     "shine_through",
     "doubleshot",
-    "connection",
-    "wired_interface",
-    "wireless_technology",
-    "bluetooth_version",
-    "multi_device_pairing",
-    "multi_device_pairing_count",
-    "cable_type",
-    "cable_length",
-    "detachable_cable",
-    "usb_passthrough",
     "polling_rate_wired",
     "polling_rate_wireless",
     "scan_rate",
@@ -17105,6 +17196,16 @@
     "knob_dial",
     "qmk_via_support",
     "os_mode_switch",
+    "connection",
+    "wired_interface",
+    "wireless_technology",
+    "bluetooth_version",
+    "multi_device_pairing",
+    "multi_device_pairing_count",
+    "cable_type",
+    "cable_length",
+    "detachable_cable",
+    "usb_passthrough",
     "case_material",
     "plate_material",
     "mounting_style",
@@ -17114,6 +17215,9 @@
     "stabilizer_mount",
     "stabilizer_lubed",
     "south_facing_leds",
+    "typing_noise",
+    "sound_profile",
+    "sound_dampening",
     "width",
     "depth",
     "height_front",
@@ -17121,9 +17225,6 @@
     "weight",
     "typing_angle",
     "adjustable_feet",
-    "typing_noise",
-    "sound_profile",
-    "sound_dampening",
     "battery_capacity",
     "battery_life_off",
     "battery_life_rgb",
@@ -17149,5 +17250,19 @@
   },
   "ui_defaults": {},
   "version": 2,
-  "version_note": "Keyboard category rebuilt as a contract-first field studio map."
+  "version_note": "Keyboard category rebuilt as a contract-first field studio map.",
+  "field_groups": [
+    "Identity",
+    "Switch",
+    "Layout",
+    "Keycaps",
+    "Performance",
+    "Features",
+    "Connectivity",
+    "Build",
+    "Sound",
+    "Dimensions",
+    "Power",
+    "General"
+  ]
 }

@@ -140,7 +140,7 @@
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
 | GET | `/api/v1/field-labels/:category` | session-derived field labels | none | none | `{ category, labels }` |
-| GET | `/api/v1/studio/:category/payload` | studio payload | none | none | field rules, order, UI catalog, guardrails |
+| GET | `/api/v1/studio/:category/payload` | studio payload (backfills missing EG defaults; returns `egLockedKeys`, `egEditablePaths`, `egToggles`) | none | none | field rules, order, UI catalog, guardrails, EG lock state |
 | GET | `/api/v1/studio/:category/products` | product list for studio context | none | none | `{ products, brands }` |
 | POST | `/api/v1/studio/:category/compile` | start compile-rules process | none | none | process status |
 | POST | `/api/v1/studio/:category/validate-rules` | start validate-rules process | none | none | process status |
@@ -149,7 +149,7 @@
 | POST | `/api/v1/studio/:category/enum-consistency` | enum-consistency review/apply from suggestions | none | `{ field, apply?, maxPending?, formatGuidance? }` | consistency payload |
 | GET | `/api/v1/studio/:category/component-db` | read component DB projection from SpecDb | none | none | component-db payload |
 | GET | `/api/v1/studio/:category/field-studio-map` | read preferred field-studio map | none | none | map payload |
-| PUT | `/api/v1/studio/:category/field-studio-map` | save field-studio map | none | field-studio map JSON | save result |
+| PUT | `/api/v1/studio/:category/field-studio-map` | save field-studio map (sanitizes locked EG field overrides) | none | field-studio map JSON | save result |
 | POST | `/api/v1/studio/:category/validate-field-studio-map` | validate field-studio map | none | field-studio map JSON | validation result |
 | GET | `/api/v1/studio/:category/tooltip-bank` | read tooltip-bank aggregate | none | none | tooltip entries + files |
 | POST | `/api/v1/studio/:category/invalidate-cache` | invalidate session/studio caches | none | none | `{ ok: true }` |

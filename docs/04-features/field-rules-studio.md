@@ -31,12 +31,27 @@
 6. The route emits `field-studio-map-saved` data-change events and invalidates session/review caches.
 7. Compile or validate actions call `startProcess('src/cli/spec.js', ['compile-rules' ...])` or `['validate-rules' ...]`, which runs the CLI pipeline and refreshes generated artifacts.
 
+## EG Default Keys (Registry-Driven)
+
+Default field keys (e.g. `colors`, `editions`) are managed by `EG_PRESET_REGISTRY` in `src/features/studio/contracts/egPresets.js`. Adding a new locked default = one builder + one registry entry. All propagation is automatic:
+
+| Layer | When | File |
+|-------|------|------|
+| Scaffold | New category creation | `src/field-rules/compilerCategoryInit.js` — `buildAllEgDefaults()` |
+| Compile | Any `compile-rules` invocation | `src/ingest/compileContextLoader.js` — injects synthetic keyRows + overrides for missing EG keys |
+| Studio GET | Payload load | `src/features/studio/api/studioRoutes.js` — backfills missing keys, persists via write-on-read migration |
+| Studio PUT | Save | `src/features/studio/api/studioRoutes.js` — `sanitizeEgLockedOverrides()` resets non-editable paths to preset |
+| Frontend | Toggle UI | `tools/gui-react/src/features/studio/state/egPresetsClient.ts` — `EG_PRESET_KEYS` derived from registry |
+
+Lock enforcement: only paths listed in `EG_EDITABLE_PATHS` (aliases, search hints, tooltip) can be customized. All other paths are reset to the preset on save. Backfill is lazy — existing categories get defaults on next compile or Studio GET.
+
 ## Side Effects
 
 - Writes `category_authority/{category}/_control_plane/field_studio_map.json`.
 - Writes the `studio` section inside `.workspace/global/user-settings.json` through settings-authority.
 - Invalidates `sessionCache` and `reviewLayoutByCategory`.
 - Compile actions refresh generated rule files under `category_authority/{category}/_generated/`.
+- Studio payload GET may trigger write-on-read migration for missing EG default keys (persists to SQL + JSON).
 
 ## Error Paths
 

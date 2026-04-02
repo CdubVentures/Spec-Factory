@@ -7,12 +7,17 @@ import { createSpecDbRuntime } from '../../app/api/specDbRuntime.js';
 import { SpecDb } from '../../db/specDb.js';
 import { AppDb } from '../../db/appDb.js';
 import { seedAppDb } from '../../db/appDbSeed.js';
+import { seedColorRegistry } from '../../features/color-registry/index.js';
+import {
+  applyRuntimeSettingsToConfig,
+  loadUserSettingsSync,
+} from '../../features/settings-authority/index.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from '../services/specDbSyncService.js';
 import { safeReadJson } from '../helpers/fileHelpers.js';
 import { defaultUserSettingsRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 export function createBootstrapSessionLayer({
-  config, HELPER_ROOT, storage,
+  config, HELPER_ROOT, storage, INDEXLAB_ROOT = '',
 }) {
   const resolveCategoryAlias = createCategoryAliasResolver({
     helperRoot: HELPER_ROOT,
@@ -34,6 +39,7 @@ export function createBootstrapSessionLayer({
     syncSpecDbForCategory: syncSpecDbForCategoryService,
     config,
     logger: console,
+    indexLabRoot: INDEXLAB_ROOT,
   });
 
   const sessionCache = createSessionCache({
@@ -53,6 +59,11 @@ export function createBootstrapSessionLayer({
     brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
     userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
   });
+  const persistedSettings = loadUserSettingsSync({ appDb });
+  applyRuntimeSettingsToConfig(config, persistedSettings.runtime);
+
+  const colorRegistryPath = path.resolve(HELPER_ROOT, '_global', 'color_registry.json');
+  seedColorRegistry(appDb, colorRegistryPath);
 
   return {
     sessionCache, resolveCategoryAlias,

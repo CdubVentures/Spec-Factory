@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { ensureValueInOptions } from '../state/llmModelDropdownOptions.ts';
+import { ensureValueInOptions, resolveOptionByValue } from '../state/llmModelDropdownOptions.ts';
 import type { DropdownModelOption } from '../state/llmModelDropdownOptions.ts';
 import { ModelBadgeGroup } from './ModelAccessBadges.tsx';
 import type { LlmModelRole, LlmAccessMode } from '../types/llmProviderRegistryTypes.ts';
@@ -82,8 +82,16 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
     return list;
   }, [options, allowNone, noneLabel, missingOption]);
 
-  // Find display label for current value
-  const selectedItem = useMemo(() => items.find((i) => i.value === value), [items, value]);
+  // Find display label for current value (supports bare model IDs matching composite keys)
+  const selectedItem = useMemo(() => {
+    const exact = items.find((i) => i.value === value);
+    if (exact) return exact;
+    // WHY: Stored values may be bare model IDs; find the composite-key match
+    if (value && !value.includes(':')) {
+      return items.find((i) => i.value.endsWith(`:${value}`));
+    }
+    return undefined;
+  }, [items, value]);
   const displayLabel = selectedItem?.label || value || noneLabel;
   const selectedRole = selectedItem?.role;
 

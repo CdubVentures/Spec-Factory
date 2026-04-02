@@ -68,21 +68,48 @@ function remapSelectedKeys(order = [], fields = {}, keyMap = {}) {
   return mapped;
 }
 
-function buildGroupedFieldOrder(fieldOrder = [], mergedFields = {}) {
-  const grouped = [];
+function buildGroupedFieldOrder(fieldOrder = [], mergedFields = {}, fieldGroups = []) {
+  if (!Array.isArray(fieldGroups) || fieldGroups.length === 0) {
+    // WHY: Legacy path — derive group order from first occurrence in fieldOrder.
+    const grouped = [];
+    const keysByGroup = new Map();
+    const groupOrder = [];
+    for (const field of fieldOrder) {
+      const rule = isObject(mergedFields[field]) ? mergedFields[field] : {};
+      const ui = isObject(rule.ui) ? rule.ui : {};
+      const group = String(ui.group || rule.group || 'ungrouped').trim() || 'ungrouped';
+      if (!keysByGroup.has(group)) {
+        keysByGroup.set(group, []);
+        groupOrder.push(group);
+      }
+      keysByGroup.get(group).push(field);
+    }
+    for (const group of groupOrder) {
+      grouped.push(`__grp::${group}`);
+      grouped.push(...keysByGroup.get(group));
+    }
+    return grouped;
+  }
+
+  // WHY: field_groups-driven path — use explicit group list for order and empty group preservation.
+  const fieldGroupSet = new Set(fieldGroups);
+  const defaultGroup = fieldGroups[0];
   const keysByGroup = new Map();
-  const groupOrder = [];
+  for (const g of fieldGroups) keysByGroup.set(g, []);
+
   for (const field of fieldOrder) {
     const rule = isObject(mergedFields[field]) ? mergedFields[field] : {};
     const ui = isObject(rule.ui) ? rule.ui : {};
-    const group = String(ui.group || rule.group || 'ungrouped').trim() || 'ungrouped';
-    if (!keysByGroup.has(group)) {
-      keysByGroup.set(group, []);
-      groupOrder.push(group);
+    const group = String(ui.group || rule.group || '').trim();
+    if (fieldGroupSet.has(group)) {
+      keysByGroup.get(group).push(field);
+    } else {
+      keysByGroup.get(defaultGroup).push(field);
     }
-    keysByGroup.get(group).push(field);
   }
-  for (const group of groupOrder) {
+
+  const grouped = [];
+  for (const group of fieldGroups) {
     grouped.push(`__grp::${group}`);
     grouped.push(...keysByGroup.get(group));
   }
@@ -189,7 +216,13 @@ export function createSessionCache({
       ? selectedKeys
       : normalizeFieldOrder(compiledOrder, mergedFields);
 
-    const mergedFieldOrder = buildGroupedFieldOrder(baseFieldOrder, mergedFields);
+    const savedFieldGroups = Array.isArray(savedMap.field_groups) ? savedMap.field_groups : [];
+    // WHY: field_key_order table is the fast-path for instant order persistence.
+    // When populated, it IS the full mergedFieldOrder (already has __grp:: markers).
+    const fieldKeyOrderRow = specDb?.getFieldKeyOrder?.(category) ?? null;
+    const mergedFieldOrder = fieldKeyOrderRow
+      ? JSON.parse(fieldKeyOrderRow.order_json)
+      : buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 

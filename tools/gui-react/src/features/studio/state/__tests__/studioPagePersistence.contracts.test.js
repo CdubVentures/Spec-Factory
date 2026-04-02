@@ -180,6 +180,44 @@ test('studio page persistence prunes orphaned field_overrides keys not in fieldO
   assert.deepEqual(payload.selected_keys, ['active_key']);
   assert.ok('active_key' in payload.field_overrides, 'active_key should be in field_overrides');
   assert.ok(!('orphaned_key' in payload.field_overrides), 'orphaned_key should be pruned from field_overrides');
+  assert.deepEqual(payload.field_groups, ['main'], 'field_groups should be extracted from __grp:: markers');
+});
+
+test('studio page persistence extracts field_groups from __grp:: markers preserving order and deduplicating', async () => {
+  const { buildStudioPersistMap } = await loadStudioPagePersistence();
+
+  const payload = buildStudioPersistMap({
+    baseMap: { version: 2, selected_keys: [], field_overrides: {} },
+    snapshot: {
+      fieldOrder: ['__grp::Specs', 'dpi', '__grp::General', 'brand', '__grp::Empty', '__grp::Specs'],
+      rules: {
+        dpi: { required_level: 'required' },
+        brand: { required_level: 'optional' },
+      },
+      renames: {},
+    },
+  });
+
+  assert.deepEqual(payload.field_groups, ['Specs', 'General', 'Empty']);
+  assert.deepEqual(payload.selected_keys, ['dpi', 'brand']);
+});
+
+test('studio page persistence returns empty field_groups when fieldOrder has no group markers', async () => {
+  const { buildStudioPersistMap } = await loadStudioPagePersistence();
+
+  const payload = buildStudioPersistMap({
+    baseMap: { version: 2, selected_keys: [], field_overrides: {} },
+    snapshot: {
+      fieldOrder: ['sku', 'weight'],
+      rules: {
+        sku: { required_level: 'required' },
+        weight: { required_level: 'optional' },
+      },
+      renames: {},
+    },
+  });
+
+  assert.deepEqual(payload.field_groups, []);
 });
 
 test('studio page persistence keeps autosave attempt gating stable for force and duplicate fingerprints', async () => {

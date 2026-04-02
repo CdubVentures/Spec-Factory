@@ -48,6 +48,7 @@ export interface StudioPageViewStateOptions {
   autoSaveEnabled: boolean;
   autoSaveMapEnabled: boolean;
   initialized: boolean;
+  groupsDirty: boolean;
   serverRules: Record<string, FieldRule>;
   serverFieldOrder: string[];
   editedRules: Record<string, FieldRule>;
@@ -371,6 +372,7 @@ export function deriveStudioPageViewState({
   autoSaveEnabled,
   autoSaveMapEnabled,
   initialized,
+  groupsDirty,
   serverRules,
   serverFieldOrder,
   editedRules,
@@ -385,7 +387,7 @@ export function deriveStudioPageViewState({
     effectiveAutoSaveMapEnabled: autoSaveAllEnabled || autoSaveMapEnabled,
     storeRules: initialized ? editedRules : serverRules,
     storeFieldOrder: initialized ? editedFieldOrder : serverFieldOrder,
-    hasUnsavedChanges: Object.values(editedRules).some((rule) =>
+    hasUnsavedChanges: groupsDirty || Object.values(editedRules).some((rule) =>
       Boolean((rule as Record<string, unknown>)?._edited),
     ),
   };

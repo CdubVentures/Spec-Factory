@@ -34,7 +34,9 @@ import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
+import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
+import { createColorEditionFinderStore } from './stores/colorEditionFinderStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -148,6 +150,9 @@ export class SpecDb {
     this._fieldStudioMapStore = createFieldStudioMapStore({
       stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap },
     });
+    this._fieldKeyOrderStore = createFieldKeyOrderStore({
+      stmts: { _getFieldKeyOrder: this._getFieldKeyOrder, _setFieldKeyOrder: this._setFieldKeyOrder, _deleteFieldKeyOrder: this._deleteFieldKeyOrder },
+    });
     this._crawlLedgerStore = createCrawlLedgerStore({
       db: this.db,
       category: this.category,
@@ -161,6 +166,16 @@ export class SpecDb {
         _getQueryCooldownRaw: this._getQueryCooldownRaw,
         _getQueryCooldownsByProduct: this._getQueryCooldownsByProduct,
         _purgeExpiredCooldowns: this._purgeExpiredCooldowns,
+      },
+    });
+    this._colorEditionFinderStore = createColorEditionFinderStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertColorEditionFinder: this._upsertColorEditionFinder,
+        _getColorEditionFinder: this._getColorEditionFinder,
+        _listColorEditionFinderByCategory: this._listColorEditionFinderByCategory,
+        _getColorEditionFinderOnCooldown: this._getColorEditionFinderOnCooldown,
       },
     });
   }
@@ -710,7 +725,8 @@ export class SpecDb {
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries', 'llm_cache', 'learning_profiles', 'category_brain',
       'source_intel_domains', 'source_intel_field_rewards',
-      'source_corpus', 'runtime_events'
+      'source_corpus', 'runtime_events',
+      'color_edition_finder'
     ];
     const result = {};
     for (const table of tables) {
@@ -765,6 +781,12 @@ export class SpecDb {
   getQueryCooldownsByProduct(pid) { return this._crawlLedgerStore.getQueryCooldownsByProduct(pid); }
   buildQueryExecutionHistory(pid) { return this._crawlLedgerStore.buildQueryExecutionHistory(pid); }
   purgeExpiredCooldowns() { return this._crawlLedgerStore.purgeExpiredCooldowns(); }
+
+  // --- Color & Edition Finder ---
+  upsertColorEditionFinder(row) { this._colorEditionFinderStore.upsert(row); }
+  getColorEditionFinder(pid) { return this._colorEditionFinderStore.get(pid); }
+  listColorEditionFinderByCategory(cat) { return this._colorEditionFinderStore.listByCategory(cat); }
+  getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
 
   // --- LLM Cache ---
 
@@ -841,5 +863,11 @@ export class SpecDb {
 
   getFieldStudioMap() { return this._fieldStudioMapStore.getFieldStudioMap(); }
   upsertFieldStudioMap(mapJson, mapHash) { return this._fieldStudioMapStore.upsertFieldStudioMap(mapJson, mapHash); }
+
+  // --- Field Key Order (instant order persistence) ---
+
+  getFieldKeyOrder(category) { return this._fieldKeyOrderStore.getFieldKeyOrder(category); }
+  setFieldKeyOrder(category, orderJson) { return this._fieldKeyOrderStore.setFieldKeyOrder(category, orderJson); }
+  deleteFieldKeyOrder(category) { return this._fieldKeyOrderStore.deleteFieldKeyOrder(category); }
 
 }

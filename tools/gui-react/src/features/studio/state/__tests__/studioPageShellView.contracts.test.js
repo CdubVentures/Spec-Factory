@@ -80,6 +80,7 @@ test('studio page view state keeps active-tab, autosave, and store-selection rul
       autoSaveEnabled: true,
       autoSaveMapEnabled: false,
       initialized: false,
+      groupsDirty: false,
       serverRules,
       serverFieldOrder,
       editedRules,
@@ -102,6 +103,7 @@ test('studio page view state keeps active-tab, autosave, and store-selection rul
       autoSaveEnabled: false,
       autoSaveMapEnabled: false,
       initialized: true,
+      groupsDirty: false,
       serverRules,
       serverFieldOrder,
       editedRules,
@@ -116,4 +118,39 @@ test('studio page view state keeps active-tab, autosave, and store-selection rul
       hasUnsavedChanges: true,
     },
   );
+});
+
+test('hasUnsavedChanges detects group-only changes via groupsDirty flag', async () => {
+  const { deriveStudioPageViewState } = await loadStudioPageDerivedState();
+
+  const cleanRules = { dpi: { required_level: 'required' } };
+  const fieldOrder = ['__grp::sensor', 'dpi'];
+
+  const dirty = deriveStudioPageViewState({
+    activeTab: 'keys',
+    autoSaveAllEnabled: false,
+    autoSaveEnabled: false,
+    autoSaveMapEnabled: false,
+    initialized: true,
+    groupsDirty: true,
+    serverRules: cleanRules,
+    serverFieldOrder: fieldOrder,
+    editedRules: cleanRules,
+    editedFieldOrder: fieldOrder,
+  });
+  assert.equal(dirty.hasUnsavedChanges, true, 'groupsDirty should flag unsaved');
+
+  const clean = deriveStudioPageViewState({
+    activeTab: 'keys',
+    autoSaveAllEnabled: false,
+    autoSaveEnabled: false,
+    autoSaveMapEnabled: false,
+    initialized: true,
+    groupsDirty: false,
+    serverRules: cleanRules,
+    serverFieldOrder: fieldOrder,
+    editedRules: cleanRules,
+    editedFieldOrder: fieldOrder,
+  });
+  assert.equal(clean.hasUnsavedChanges, false, 'clean state should not be unsaved');
 });

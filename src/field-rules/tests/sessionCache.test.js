@@ -23,6 +23,7 @@ function makeDeps({
   mapMtimeIso = '2026-02-20T12:00:00.000Z',
   keyMigrations = null,
   sqlRow = null,
+  fieldKeyOrderRow = null,
 } = {}) {
   let readCount = 0;
 
@@ -51,10 +52,11 @@ function makeDeps({
 
   // WHY: getSpecDb stub returns a minimal specDb mock with field studio map methods.
   const getSpecDb = () => {
-    if (sqlRow === null) return null;
+    if (sqlRow === null && fieldKeyOrderRow === null) return null;
     return {
       getFieldStudioMap: () => sqlRow,
       upsertFieldStudioMap: () => {},
+      getFieldKeyOrder: () => fieldKeyOrderRow,
     };
   };
 
@@ -142,6 +144,106 @@ describe('sessionCache', () => {
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'switches_link']);
+  });
+
+  it('uses field_groups for group order when present in saved map', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'polling_rate', 'weight'],
+        field_overrides: {
+          polling_rate: { type: 'number', label: 'Polling Rate', ui: { label: 'Polling Rate (Hz)', group: 'sensor' } },
+        },
+        field_groups: ['physical', 'sensor'],
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::physical', 'weight', '__grp::sensor', 'dpi_max', 'polling_rate']
+    );
+  });
+
+  it('preserves empty groups from field_groups', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'weight'],
+        field_overrides: {},
+        field_groups: ['sensor', 'empty_group', 'physical'],
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', '__grp::empty_group', '__grp::physical', 'weight']
+    );
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
+  });
+
+  it('falls back to derive-from-fields when field_groups is empty', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'polling_rate', 'weight'],
+        field_overrides: {
+          polling_rate: { type: 'number', label: 'Polling Rate', ui: { label: 'Polling Rate (Hz)', group: 'sensor' } },
+        },
+        field_groups: [],
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
+  });
+
+  it('routes unmatched fields to the first group when using field_groups', async () => {
+    const deps = makeDeps({
+      mapDoc: {
+        selected_keys: ['dpi_max', 'weight'],
+        field_overrides: {},
+        field_groups: ['sensor'],
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'weight']
+    );
+  });
+
+  it('uses field_key_order table when populated (bypasses buildGroupedFieldOrder)', async () => {
+    const storedOrder = ['__grp::Custom', 'weight', '__grp::Sensor', 'dpi_max', 'polling_rate'];
+    const deps = makeDeps({
+      sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
+      fieldKeyOrderRow: { order_json: JSON.stringify(storedOrder), updated_at: '2026-01-02' },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(result.mergedFieldOrder, storedOrder);
+    assert.deepEqual(result.cleanFieldOrder, ['weight', 'dpi_max', 'polling_rate']);
+  });
+
+  it('falls back to buildGroupedFieldOrder when field_key_order is empty', async () => {
+    const deps = makeDeps({
+      sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
+      fieldKeyOrderRow: null,
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
   });
 
   it('labels are derived from merged fields', async () => {

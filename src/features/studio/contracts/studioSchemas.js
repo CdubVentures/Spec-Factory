@@ -109,6 +109,7 @@ export const StudioConfigSchema = z.object({
   field_overrides: z.record(z.string(), z.unknown()).optional(),
   manual_enum_values: z.record(z.string(), z.array(z.string())).optional(),
   expectations: z.record(z.string(), z.unknown()).optional(),
+  field_groups: z.array(z.string()).optional(),
   identity: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
@@ -128,6 +129,7 @@ export const StudioPayloadSchema = z.object({
   egLockedKeys: z.array(z.string()).optional(),
   egEditablePaths: z.array(z.string()).optional(),
   egToggles: z.record(z.string(), z.boolean()).optional(),
+  registeredColors: z.array(z.string()).optional(),
 });
 
 // WHY: .passthrough() — GET handler returns raw objects with pass-through keys

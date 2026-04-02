@@ -322,7 +322,7 @@
       <h1>Identity Validation Roadmap</h1>
       <div class="subtitle">Color Registry &bull; Release Date &bull; Color &amp; Edition Variants &bull; Visual Verification &bull; URL Validation</div>
     </div>
-    <div class="badge">Draft &mdash; April 2026</div>
+    <div class="badge">In Progress &mdash; April 2026</div>
   </div>
 
   <!-- ═══════════════════════ TOC ═══════════════════════ -->
@@ -436,6 +436,11 @@
 
     <p>A <strong>global color atom registry</strong> &mdash; the SSOT for every valid color name and its hex code. Lives in its own tab after Brands in the global tab group. The LLM must return only registered atoms. Multi-color variants join atoms with <code>+</code> in dominant color order.</p>
 
+    <div class="callout callout-info">
+      <span class="callout-icon">&#10003;</span>
+      <div><p><strong>COMPLETED.</strong> Color Registry is fully built and operational. 77 colors seeded (36 base + 23 light + 18 dark variants). CRUD API, GUI tab, write-back JSON, WebSocket propagation, and SSOT wiring to Field Rules Studio all implemented. Prefixes (light-, dark-) are auto-discovered from registry data &mdash; O(1) for adding new prefix families (vivid-, pastel-, etc.).</p></div>
+    </div>
+
     <div class="callout callout-critical">
       <span class="callout-icon">&#9888;</span>
       <div><p><strong>This must be built FIRST</strong> &mdash; before the Color &amp; Edition Finder runs. The finder&rsquo;s LLM prompt references the registry as a closed enum. Without it, there&rsquo;s no enforcement.</p></div>
@@ -447,7 +452,8 @@
   name       <span class="type">TEXT PRIMARY KEY</span>,   <span class="comment">-- "black", "light-blue", "dark-green"</span>
   hex        <span class="type">TEXT NOT NULL</span>,       <span class="comment">-- "#3A3F41", "#60a5fa"</span>
   css_var    <span class="type">TEXT NOT NULL</span>,       <span class="comment">-- "--color-black", "--color-light-blue"</span>
-  created_at <span class="type">TEXT NOT NULL DEFAULT</span> (datetime(<span class="str">'now'</span>))
+  created_at <span class="type">TEXT NOT NULL DEFAULT</span> (datetime(<span class="str">'now'</span>)),
+  updated_at <span class="type">TEXT NOT NULL DEFAULT</span> (datetime(<span class="str">'now'</span>))
 );</pre>
 
     <h3>Multi-Color Variant Format</h3>
@@ -477,12 +483,15 @@
 
     <h3>GUI: Color Registry Tab</h3>
     <ul>
-      <li><strong>Location:</strong> Global tab group, after Brands</li>
-      <li><strong>One entry in <code>pageRegistry.ts</code></strong> (O(1) tab registration)</li>
-      <li><strong>Table view:</strong> Name, hex swatch, CSS variable, edit/delete actions</li>
-      <li><strong>Add color form:</strong> Name + hex picker</li>
-      <li><strong>Pre-seeded:</strong> ~30 canonical EG colors on first load</li>
-      <li><strong>Used by:</strong> Color &amp; Edition Finder LLM prompt (closed enum), review grid validation, swatch rendering</li>
+      <li><strong>Location:</strong> Global tab group, after Brands (one <code>pageRegistry.ts</code> entry, O(1) registration)</li>
+      <li><strong>Dashboard grid:</strong> Responsive card grid with color swatches, name, hex code, CSS variable</li>
+      <li><strong>Color picker popup:</strong> Native color picker + hex/RGB text inputs for precise entry</li>
+      <li><strong>Add/delete:</strong> Inline add-color form, per-color delete with confirmation</li>
+      <li><strong>Search &amp; filter:</strong> Real-time filtering by color name</li>
+      <li><strong>Pre-seeded:</strong> 77 colors (36 base + 23 light + 18 dark variants from EG CSS palette)</li>
+      <li><strong>Write-back:</strong> JSON export at <code>category_authority/_global/color_registry.json</code> &mdash; survives DB rebuild</li>
+      <li><strong>WebSocket:</strong> Real-time data-change events propagate updates to all connected clients</li>
+      <li><strong>Used by:</strong> Field Rules Studio (SSOT wiring), Color &amp; Edition Finder LLM prompt (closed enum), swatch rendering</li>
     </ul>
 
     <h3>LLM Integration</h3>
@@ -603,17 +612,56 @@
     </div>
 
     <h3>Cooldown State Storage</h3>
-    <pre><span class="comment">// Stored per product in identity_validation_state table</span>
-{
+    <p>Each finder tracks its own cooldown via a dedicated <strong>SQL table</strong> (queryable gating) and a <strong>per-product JSON file</strong> (cumulative discovery log + rebuild SSOT). The finder does <em>not</em> write final field values directly &mdash; it produces candidates that flow through the existing <code>candidates &rarr; item_field_state</code> pipeline.</p>
+
+    <h4>SQL: <code>color_edition_finder</code> table (specDb, per-category)</h4>
+    <pre><span class="kw">CREATE TABLE</span> color_edition_finder (
+  category        <span class="type">TEXT NOT NULL</span>,
+  product_id      <span class="type">TEXT NOT NULL</span>,
+  colors          <span class="type">TEXT DEFAULT '[]'</span>,      <span class="comment">-- JSON array, merged across runs</span>
+  editions        <span class="type">TEXT DEFAULT '[]'</span>,      <span class="comment">-- JSON array, merged across runs</span>
+  default_color   <span class="type">TEXT DEFAULT ''</span>,
+  cooldown_until  <span class="type">TEXT DEFAULT ''</span>,
+  latest_ran_at   <span class="type">TEXT DEFAULT ''</span>,
+  run_count       <span class="type">INTEGER DEFAULT 0</span>,
+  <span class="kw">PRIMARY KEY</span> (category, product_id)
+);</pre>
+
+    <h4>JSON: <code>.workspace/products/{pid}/color_edition.json</code></h4>
+    <p>Cumulative discovery log. One file per product. Survives SQL rebuilds. Each color/edition entry tracks which run and model discovered it. IndexLab reads this for per-discovery detail; SQL is for dashboard queries and cooldown gating.</p>
+    <pre>{
   <span class="key">"product_id"</span>: <span class="str">"mouse-1d3c6fa6"</span>,
-  <span class="key">"release_date_completed"</span>: <span class="kw">true</span>,
-  <span class="key">"release_date_completed_at"</span>: <span class="str">"2026-04-01T12:00:00Z"</span>,
+  <span class="key">"category"</span>: <span class="str">"mouse"</span>,
+  <span class="key">"cooldown_until"</span>: <span class="str">"2026-05-01T12:00:00Z"</span>,
+  <span class="key">"default_color"</span>: <span class="str">"black"</span>,
+  <span class="key">"run_count"</span>: <span class="num">4</span>,
+  <span class="key">"last_ran_at"</span>: <span class="str">"2026-07-15T10:30:00Z"</span>,
+  <span class="key">"colors"</span>: {
+    <span class="key">"black"</span>:     { <span class="key">"found_run"</span>: <span class="num">1</span>, <span class="key">"found_at"</span>: <span class="str">"2026-04-01T..."</span>, <span class="key">"model"</span>: <span class="str">"gpt-5.4"</span> },
+    <span class="key">"white"</span>:     { <span class="key">"found_run"</span>: <span class="num">1</span>, <span class="key">"found_at"</span>: <span class="str">"2026-04-01T..."</span>, <span class="key">"model"</span>: <span class="str">"gpt-5.4"</span> },
+    <span class="key">"black+red"</span>: { <span class="key">"found_run"</span>: <span class="num">4</span>, <span class="key">"found_at"</span>: <span class="str">"2026-07-15T..."</span>, <span class="key">"model"</span>: <span class="str">"gpt-6"</span> }
+  },
+  <span class="key">"editions"</span>: {
+    <span class="key">"cyberpunk-2077-edition"</span>: { <span class="key">"found_run"</span>: <span class="num">2</span>, <span class="key">"found_at"</span>: <span class="str">"2026-05-02T..."</span>, <span class="key">"model"</span>: <span class="str">"gpt-5.4"</span> }
+  }
+}</pre>
 
-  <span class="key">"color_edition_completed"</span>: <span class="kw">true</span>,
-  <span class="key">"color_edition_completed_at"</span>: <span class="str">"2026-04-01T12:00:00Z"</span>,
-  <span class="key">"color_edition_cooldown_days"</span>: <span class="num">30</span>,
-  <span class="key">"color_edition_next_eligible"</span>: <span class="str">"2026-05-01T12:00:00Z"</span>,
+    <h4>Rebuild path (SQL loss recovery)</h4>
+    <p>On specDb rebuild, the system reads each product's <code>color_edition.json</code> and re-populates the <code>color_edition_finder</code> table: merged colors/editions arrays, latest cooldown_until, run_count, latest_ran_at. Same pattern as <code>product.json &rarr; products</code> table seeding.</p>
 
+    <h4>Data flow per finder run</h4>
+    <ol>
+      <li>LLM returns colors + editions (validated against color registry closed enum; re-prompt on unknown atoms)</li>
+      <li>Append discoveries to <code>color_edition.json</code> (merge top-level colors/editions, increment run_count)</li>
+      <li>Upsert <code>color_edition_finder</code> row in specDb (merged arrays + cooldown)</li>
+      <li>Feed colors/editions as <strong>candidates</strong> into existing <code>candidates</code> table (finder is just another source)</li>
+      <li>Pipeline reviews/accepts &rarr; <code>item_field_state</code> &rarr; <code>product.json</code> checkpoint (existing flow)</li>
+    </ol>
+
+    <h4>Visual Verification cooldown (future)</h4>
+    <pre><span class="comment">// Same pattern: dedicated SQL table + per-product JSON file</span>
+<span class="comment">// visual_verification_finder table + .workspace/products/{pid}/visual_verification.json</span>
+{
   <span class="key">"visual_verification_complete"</span>: <span class="kw">false</span>,
   <span class="key">"visual_verification_coverage"</span>: {
     <span class="key">"total_needed"</span>: <span class="num">6</span>,           <span class="comment">// 3 colors &times; 2 angles</span>
@@ -801,7 +849,7 @@
           <tr><td>Single color</td><td><code>"black"</code></td><td>Lowercase, no spaces</td></tr>
           <tr><td>Two colors</td><td><code>"black+red"</code></td><td>Rendered as 45&deg; linear gradient swatch</td></tr>
           <tr><td>Three+ colors</td><td><code>"white+orange+blue"</code></td><td>Rendered as conic gradient swatch</td></tr>
-          <tr><td>Light/dark variants</td><td><code>"gray-light"</code>, <code>"blue-dark"</code></td><td>Hyphenated modifier</td></tr>
+          <tr><td>Light/dark variants</td><td><code>"light-gray"</code>, <code>"dark-blue"</code></td><td>Modifier-first hyphenated</td></tr>
           <tr><td>Edition-specific colors</td><td><code>"black+red"</code> on <code>"cyberpunk-2077-edition"</code></td><td>Color+edition pair in images array</td></tr>
         </tbody>
       </table>
@@ -900,7 +948,7 @@
       <h2>Hex Color Mapping</h2>
     </div>
 
-    <p>The EG site defines ~30 named colors as CSS custom properties. The LLM must map discovered product colors to these canonical names. If a product color doesn't match a known name, the LLM provides the hex value and a suggested canonical name.</p>
+    <p>Hex codes are now stored in the <code>color_registry</code> table and served dynamically via the CRUD API &mdash; no hardcoded palette. The registry contains 77 colors (36 base + 23 light + 18 dark variants) seeded from the EG CSS palette. The LLM must map discovered product colors to registered canonical names. If a product color doesn&rsquo;t match a known name, the model returns the nearest canonical name + the actual hex. New colors are added to the registry, not to code.</p>
 
     <h3>EG Site Canonical Color Palette</h3>
     <div class="tbl-wrap">
@@ -936,16 +984,16 @@
             <td><code>--color-silver</code></td><td><code>#c0c0c0</code></td><td><div class="swatch" style="background:#c0c0c0;width:18px;height:18px;display:inline-block;"></div></td>
           </tr>
           <tr>
-            <td><code>--color-gray-light</code></td><td><code>#a0aec0</code></td><td><div class="swatch" style="background:#a0aec0;width:18px;height:18px;display:inline-block;"></div></td>
-            <td><code>--color-blue-dark</code></td><td><code>#1d4ed8</code></td><td><div class="swatch" style="background:#1d4ed8;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-light-gray</code></td><td><code>#a0aec0</code></td><td><div class="swatch" style="background:#a0aec0;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-dark-blue</code></td><td><code>#1d4ed8</code></td><td><div class="swatch" style="background:#1d4ed8;width:18px;height:18px;display:inline-block;"></div></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="callout callout-warn">
-      <span class="callout-icon">&#9888;</span>
-      <div><p><strong>LLM color mapping instruction:</strong> The prompt tells the model to use canonical EG color names whenever possible. For colors not in the palette (e.g., "Glacier Blue"), the model returns the nearest canonical name + the actual hex. A human review step flags new colors that need CSS variable additions.</p></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">&#10003;</span>
+      <div><p><strong>Registry-driven.</strong> Hex codes are now dynamically served from <code>color_registry</code> in appDb. The static palette above is the seed data &mdash; new colors are added via the GUI or API and immediately available to all consumers. <code>buildEgColorFieldRule(ctx)</code> reads registered colors and auto-discovers prefixes (light-, dark-, vivid-, etc.) from registry data.</p></div>
     </div>
   </div>
 
@@ -1262,31 +1310,23 @@
 
     <h3>New SQL Tables</h3>
 
-    <h4>product_variants (Color &amp; Edition Finder)</h4>
-    <pre><span class="kw">CREATE TABLE</span> product_variants (
-  id            <span class="type">INTEGER PRIMARY KEY</span>,
-  product_id    <span class="type">TEXT NOT NULL</span>,
-  color         <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- EG "+" format: "black+red"</span>
-  edition       <span class="type">TEXT</span>,                     <span class="comment">-- kebab slug or NULL for standard</span>
-  sku           <span class="type">TEXT</span>,
-  availability  <span class="type">TEXT DEFAULT 'unknown'</span>,   <span class="comment">-- in_stock | discontinued | announced | unknown</span>
-  product_url   <span class="type">TEXT</span>,
-  is_default    <span class="type">INTEGER DEFAULT 0</span>,
-  discovered_by <span class="type">TEXT</span>,
-  discovered_at <span class="type">TEXT NOT NULL</span>,
-  <span class="kw">UNIQUE</span>(product_id, color, edition)
+    <h4>color_edition_finder (Color &amp; Edition Finder)</h4>
+    <p>Queryable summary + cooldown gating. Full per-discovery detail lives in <code>.workspace/products/{pid}/color_edition.json</code>. Hex mappings derive from global <code>color_registry</code> in appDb (no duplication). Resolved field values flow through existing <code>candidates &rarr; item_field_state</code> pipeline.</p>
+    <pre><span class="kw">CREATE TABLE</span> color_edition_finder (
+  category        <span class="type">TEXT NOT NULL</span>,
+  product_id      <span class="type">TEXT NOT NULL</span>,
+  colors          <span class="type">TEXT DEFAULT '[]'</span>,      <span class="comment">-- JSON array, merged across all runs</span>
+  editions        <span class="type">TEXT DEFAULT '[]'</span>,      <span class="comment">-- JSON array, merged across all runs</span>
+  default_color   <span class="type">TEXT DEFAULT ''</span>,
+  cooldown_until  <span class="type">TEXT DEFAULT ''</span>,
+  latest_ran_at   <span class="type">TEXT DEFAULT ''</span>,
+  run_count       <span class="type">INTEGER DEFAULT 0</span>,
+  <span class="kw">PRIMARY KEY</span> (category, product_id)
 );</pre>
-
-    <h4>product_color_hex (Color &amp; Edition Finder)</h4>
-    <pre><span class="kw">CREATE TABLE</span> product_color_hex (
-  id            <span class="type">INTEGER PRIMARY KEY</span>,
-  category      <span class="type">TEXT NOT NULL</span>,
-  color_name    <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- atomic: "black", "red" (no "+")</span>
-  hex_value     <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- "#3A3F41"</span>
-  css_var       <span class="type">TEXT</span>,                     <span class="comment">-- "--color-black" (EG CSS variable name)</span>
-  is_canonical  <span class="type">INTEGER DEFAULT 1</span>,       <span class="comment">-- 1 = matches EG palette, 0 = new color</span>
-  <span class="kw">UNIQUE</span>(category, color_name)
-);</pre>
+    <div class="callout callout-info">
+      <span class="callout-icon">&#128270;</span>
+      <div><p><strong>No <code>product_variants</code> or <code>product_color_hex</code> tables.</strong> The old design over-specified: SKU, availability, product_url are ecommerce inventory (different domain). Hex codes already live in the global <code>color_registry</code> (appDb). The finder is just another <em>source of candidates</em> for the <code>colors</code> and <code>editions</code> field keys &mdash; not a separate data store.</p></div>
+    </div>
 
     <h4>product_images (Visual Verification)</h4>
     <pre><span class="kw">CREATE TABLE</span> product_images (
@@ -1360,8 +1400,6 @@
   index.js
   colorEditionFinder.js
   colorEditionSchema.js
-  hexMapper.js
-  egFormatBuilder.js
   colorEditionStore.js
   README.md</pre>
       </div>
@@ -1519,22 +1557,46 @@
       <h2>Implementation Sequence</h2>
     </div>
 
-    <h3>Phase 1: Color &amp; Edition Finder</h3>
+    <h3>Phase 0: Color Registry + Field Rules SSOT <span style="color:var(--green);font-weight:700;font-size:12px;margin-left:8px;">&#10003; DONE</span></h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">0A. Color Registry Table + CRUD API</div>
+        <div class="tl-body"><code>color_registry</code> table in appDb. <code>GET/POST/PUT/DELETE /api/v1/colors</code>. Write-back JSON at <code>category_authority/_global/color_registry.json</code>. 77 colors seeded.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">0B. GUI Tab</div>
+        <div class="tl-body">Dashboard grid with swatches, color picker popup, search/filter, add/delete. <code>pageRegistry.ts</code> entry. WebSocket data-change events.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">0C. Field Rules Studio SSOT Wiring</div>
+        <div class="tl-body"><code>EG_CANONICAL_COLORS</code> constant deleted. <code>buildEgColorFieldRule(ctx)</code> reads <code>appDb.listColors()</code>. Auto-discovers prefixes (light-, dark-). <code>registeredColors</code> threaded through store/controller/frontend.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">0D. EG Presets + Lock Architecture</div>
+        <div class="tl-body">Per-field EG toggles, locked fields, write-on-read migration, <code>sanitizeEgLockedOverrides</code> with dynamic colors, <code>preserveEgEditablePaths</code>.</div>
+      </div>
+    </div>
+
+    <h3>Phase 1: Color &amp; Edition Finder <span style="color:var(--orange);font-weight:700;font-size:12px;margin-left:8px;">NEXT</span></h3>
     <div class="timeline">
       <div class="tl-item">
         <div class="tl-dot purple"></div>
         <div class="tl-title">1A. Schema &amp; Store</div>
-        <div class="tl-body"><code>product_variants</code> + <code>product_color_hex</code> tables. Zod schema for LLM response. Store module.</div>
+        <div class="tl-body"><code>color_edition_finder</code> table (specDb, cooldown + queryable summary). <code>color_edition.json</code> per-product file (cumulative discovery log, rebuild SSOT at <code>.workspace/products/{pid}/color_edition.json</code>). Zod schema for LLM response. Store module with JSON read/write + SQL upsert. Rebuild path: JSON &rarr; SQL on specDb loss.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot purple"></div>
         <div class="tl-title">1B. Finder Engine</div>
-        <div class="tl-body">GPT-5.4 web search call. EG format builder (colors array, editions, hex_map). LLM phase registration.</div>
+        <div class="tl-body">GPT-5.4 xhigh + web search call. EG format builder (colors array, editions, hex_map). LLM phase registration.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot purple"></div>
         <div class="tl-title">1C. API + Launch Integration</div>
-        <div class="tl-body">API routes. Wire into IndexLab launch panel as toggle. WebSocket events for progress.</div>
+        <div class="tl-body">API routes. Wire into Identity Validation Panel as toggle. WebSocket events for progress.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot green"></div>
@@ -1629,7 +1691,7 @@
 
   <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
   <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);text-align:center;">
-    <p style="font-size:12px;color:var(--text-3);">Spec Factory &mdash; Parallel Features Roadmap &mdash; Draft April 2026</p>
+    <p style="font-size:12px;color:var(--text-3);">Spec Factory &mdash; Parallel Features Roadmap &mdash; In Progress April 2026</p>
   </div>
 
 </div>

@@ -36,6 +36,7 @@ describe('AppDb — construction', () => {
       assert.equal(c.brand_renames, 0);
       assert.equal(c.settings, 0);
       assert.equal(c.studio_maps, 0);
+      assert.equal(c.color_registry, 0);
     } finally {
       db.close();
     }
@@ -277,6 +278,62 @@ describe('AppDb — studio maps', () => {
     assert.equal(rows.length, 2);
     assert.equal(rows[0].category, 'keyboard');
     assert.equal(rows[1].category, 'mouse');
+  });
+});
+
+// ── Color Registry CRUD ──
+
+describe('AppDb — color registry CRUD', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('upsertColor + getColor roundtrip', () => {
+    db.upsertColor({ name: 'red', hex: '#ef4444', css_var: '--color-red' });
+    const row = db.getColor('red');
+    assert.equal(row.name, 'red');
+    assert.equal(row.hex, '#ef4444');
+    assert.equal(row.css_var, '--color-red');
+  });
+
+  it('listColors returns all rows sorted by name', () => {
+    db.upsertColor({ name: 'red', hex: '#ef4444', css_var: '--color-red' });
+    db.upsertColor({ name: 'blue', hex: '#3b82f6', css_var: '--color-blue' });
+    db.upsertColor({ name: 'green', hex: '#22c55e', css_var: '--color-green' });
+    const list = db.listColors();
+    assert.equal(list.length, 3);
+    assert.equal(list[0].name, 'blue');
+    assert.equal(list[1].name, 'green');
+    assert.equal(list[2].name, 'red');
+  });
+
+  it('deleteColor returns changes count', () => {
+    db.upsertColor({ name: 'red', hex: '#ef4444', css_var: '--color-red' });
+    const changes = db.deleteColor('red');
+    assert.equal(changes, 1);
+    assert.equal(db.getColor('red'), null);
+  });
+
+  it('deleteColor returns 0 for missing name', () => {
+    assert.equal(db.deleteColor('nonexistent'), 0);
+  });
+
+  it('upsertColor updates hex on conflict', () => {
+    db.upsertColor({ name: 'red', hex: '#ef4444', css_var: '--color-red' });
+    db.upsertColor({ name: 'red', hex: '#ff0000', css_var: '--color-red' });
+    const row = db.getColor('red');
+    assert.equal(row.hex, '#ff0000');
+    assert.equal(db.listColors().length, 1);
+  });
+
+  it('getColor returns null for missing name', () => {
+    assert.equal(db.getColor('nonexistent'), null);
+  });
+
+  it('counts includes color_registry', () => {
+    db.upsertColor({ name: 'red', hex: '#ef4444', css_var: '--color-red' });
+    db.upsertColor({ name: 'blue', hex: '#3b82f6', css_var: '--color-blue' });
+    assert.equal(db.counts().color_registry, 2);
   });
 });
 

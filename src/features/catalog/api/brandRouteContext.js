@@ -1,7 +1,7 @@
 import {
   loadBrandRegistry, addBrand, addBrandsBulk,
   updateBrand, removeBrand, getBrandsForCategory, seedBrandsFromActiveFiltering,
-  renameBrand, getBrandImpactAnalysis,
+  renameBrand, getBrandImpactAnalysis, writeBackBrandRegistry,
 } from '../index.js';
 import { upsertQueueProduct } from '../../../queue/queueState.js';
 
@@ -13,7 +13,7 @@ export function createBrandRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, config, storage,
     resolveCategoryAlias, broadcastWs, getSpecDb,
-    loadProductCatalog, appDb,
+    loadProductCatalog, appDb, brandRegistryPath,
   } = options;
 
   return {
@@ -21,6 +21,6 @@ export function createBrandRouteContext(options = {}) {
     addBrand, addBrandsBulk, updateBrand, removeBrand, getBrandsForCategory,
     seedBrandsFromActiveFiltering, renameBrand, getBrandImpactAnalysis,
     resolveCategoryAlias, upsertQueueProduct, broadcastWs, getSpecDb,
-    loadProductCatalog,
+    loadProductCatalog, brandRegistryPath, writeBackBrandRegistry,
   };
 }

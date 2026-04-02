@@ -9,6 +9,7 @@ export const PAGE_REGISTRY_MODULE_STUBS = Object.freeze({
   '../features/catalog/components/CatalogPage.tsx': createPageStub('CatalogPage'),
   '../features/studio/components/StudioPage.tsx': createPageStub('StudioPage'),
   '../features/studio/components/BrandManager.tsx': createPageStub('BrandManager'),
+  '../features/color-registry/components/ColorRegistryPage.tsx': createPageStub('ColorRegistryPage'),
   '../features/indexing/components/IndexingPage.tsx': createPageStub('IndexingPage'),
   '../features/pipeline-settings/components/PipelineSettingsPage.tsx': createPageStub('PipelineSettingsPage'),
   '../features/runtime-ops/components/RuntimeOpsPage.tsx': createPageStub('RuntimeOpsPage'),
