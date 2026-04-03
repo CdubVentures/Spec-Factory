@@ -15,7 +15,6 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 - `checkpoint/writeProductCheckpoint.js` → `writeProductCheckpoint(opts)` — read-merge-write `{outRoot}/product.json`
 - `seams/bootstrapRunProductExecutionState.js` → prepare execution state (planner, LLM runtime, learning stores)
 - `urlQualityGate.js` → `isLowValueHost`
-- `dedupeOutcomeEvent.js` → `dedupeOutcomeToEventKey`, `buildDedupeOutcomeEvent`
 ## Dependencies (Allowed Imports)
 
 - `src/core/*` (config, LLM client)

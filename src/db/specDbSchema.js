@@ -343,48 +343,6 @@ CREATE TABLE IF NOT EXISTS source_registry (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS source_artifacts (
-  artifact_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  source_id TEXT NOT NULL REFERENCES source_registry(source_id),
-  artifact_type TEXT NOT NULL,
-  local_path TEXT NOT NULL,
-  content_hash TEXT,
-  mime_type TEXT,
-  size_bytes INTEGER,
-  captured_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS source_assertions (
-  assertion_id TEXT PRIMARY KEY,
-  source_id TEXT NOT NULL REFERENCES source_registry(source_id),
-  field_key TEXT NOT NULL,
-  context_kind TEXT NOT NULL CHECK(context_kind IN ('scalar','component','list')),
-  context_ref TEXT,
-  item_field_state_id INTEGER REFERENCES item_field_state(id),
-  component_value_id INTEGER REFERENCES component_values(id),
-  list_value_id INTEGER REFERENCES list_values(id),
-  enum_list_id INTEGER REFERENCES enum_lists(id),
-  value_raw TEXT,
-  value_normalized TEXT,
-  unit TEXT,
-  candidate_id TEXT,
-  extraction_method TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS source_evidence_refs (
-  evidence_ref_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  assertion_id TEXT NOT NULL REFERENCES source_assertions(assertion_id),
-  evidence_url TEXT,
-  snippet_id TEXT,
-  quote TEXT,
-  method TEXT,
-  tier INTEGER,
-  retrieved_at TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
 -- Key review tables (AI decisions, user overrides, contract snapshots)
 
 CREATE TABLE IF NOT EXISTS key_review_state (
@@ -474,7 +432,7 @@ CREATE TABLE IF NOT EXISTS key_review_runs (
 CREATE TABLE IF NOT EXISTS key_review_run_sources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   key_review_run_id INTEGER NOT NULL REFERENCES key_review_runs(run_id),
-  assertion_id TEXT NOT NULL REFERENCES source_assertions(assertion_id),
+  assertion_id TEXT NOT NULL,
   packet_role TEXT,
   position INTEGER,
   created_at TEXT DEFAULT (datetime('now'))
@@ -505,7 +463,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_component
   WHERE target_kind = 'component_key';
 
 CREATE INDEX IF NOT EXISTS idx_sr_item ON source_registry(category, item_identifier);
-CREATE INDEX IF NOT EXISTS idx_sa_field ON source_assertions(field_key, context_kind);
 CREATE INDEX IF NOT EXISTS idx_krs_kind ON key_review_state(category, target_kind, field_key);
 CREATE INDEX IF NOT EXISTS idx_krs_selected_candidate ON key_review_state(category, selected_candidate_id);
 CREATE INDEX IF NOT EXISTS idx_krr_state ON key_review_runs(key_review_state_id, stage, status);
@@ -649,65 +606,6 @@ CREATE TABLE IF NOT EXISTS run_artifacts (
 );
 CREATE INDEX IF NOT EXISTS idx_rart_run_id ON run_artifacts(run_id);
 CREATE INDEX IF NOT EXISTS idx_rart_category ON run_artifacts(category);
-
--- Migration Phase 10: Evidence index tables
-CREATE TABLE IF NOT EXISTS evidence_documents (
-  doc_id TEXT PRIMARY KEY,
-  content_hash TEXT NOT NULL,
-  parser_version TEXT NOT NULL,
-  url TEXT NOT NULL,
-  host TEXT NOT NULL DEFAULT '',
-  tier INTEGER DEFAULT 99,
-  role TEXT DEFAULT '',
-  category TEXT NOT NULL DEFAULT '',
-  product_id TEXT NOT NULL DEFAULT '',
-  dedupe_outcome TEXT NOT NULL DEFAULT 'new',
-  indexed_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(content_hash, parser_version)
-);
-
-CREATE TABLE IF NOT EXISTS evidence_chunks (
-  chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  doc_id TEXT NOT NULL REFERENCES evidence_documents(doc_id),
-  snippet_id TEXT NOT NULL,
-  chunk_index INTEGER NOT NULL,
-  chunk_type TEXT NOT NULL DEFAULT '',
-  text TEXT NOT NULL DEFAULT '',
-  normalized_text TEXT NOT NULL DEFAULT '',
-  snippet_hash TEXT NOT NULL DEFAULT '',
-  extraction_method TEXT NOT NULL DEFAULT '',
-  field_hints TEXT NOT NULL DEFAULT '[]',
-  UNIQUE(doc_id, snippet_id)
-);
-
-CREATE TABLE IF NOT EXISTS evidence_facts (
-  fact_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  chunk_id INTEGER NOT NULL REFERENCES evidence_chunks(chunk_id),
-  doc_id TEXT NOT NULL REFERENCES evidence_documents(doc_id),
-  field_key TEXT NOT NULL,
-  value_raw TEXT NOT NULL DEFAULT '',
-  value_normalized TEXT NOT NULL DEFAULT '',
-  unit TEXT NOT NULL DEFAULT '',
-  extraction_method TEXT NOT NULL DEFAULT '',
-  confidence REAL NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_ed_category_product ON evidence_documents(category, product_id);
-CREATE INDEX IF NOT EXISTS idx_ed_content_hash ON evidence_documents(content_hash);
-CREATE INDEX IF NOT EXISTS idx_ec_doc ON evidence_chunks(doc_id);
-CREATE INDEX IF NOT EXISTS idx_ec_snippet ON evidence_chunks(snippet_id);
-CREATE INDEX IF NOT EXISTS idx_ef_doc ON evidence_facts(doc_id);
-CREATE INDEX IF NOT EXISTS idx_ef_field ON evidence_facts(field_key);
-CREATE INDEX IF NOT EXISTS idx_ef_chunk ON evidence_facts(chunk_id);
-
-CREATE VIRTUAL TABLE IF NOT EXISTS evidence_chunks_fts USING fts5(
-  text,
-  normalized_text,
-  field_hints,
-  content='evidence_chunks',
-  content_rowid='chunk_id',
-  tokenize='porter unicode61'
-);
 
 -- Sprint 4: LLM-Guided Discovery tables
 

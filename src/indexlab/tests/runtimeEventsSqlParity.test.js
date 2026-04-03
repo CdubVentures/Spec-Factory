@@ -134,7 +134,6 @@ test('all common pipeline event types reach SQL via logger', () => {
     'bootstrap_step',
     'browser_pool_warming',
     'browser_pool_warmed',
-    'evidence_index_result',
     'prime_sources_built',
     'serp_selector_completed',
     'domains_classified',

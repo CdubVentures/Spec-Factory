@@ -191,31 +191,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     sourceMethod: 'crawl',
   });
 
-  // source_artifacts (camelCase API)
-  specDb.insertSourceArtifact({
-    sourceId: `src_${runId}_${contentHash.slice(0, 8)}`,
-    artifactType: 'html', localPath: `${contentHash.slice(0, 12)}.html.gz`,
-    contentHash, mimeType: 'text/html', sizeBytes: 50000,
-  });
-
-  // source_assertions (camelCase API)
-  specDb.upsertSourceAssertion({
-    assertionId: `asrt_${runId}_weight`,
-    sourceId: `src_${runId}_${contentHash.slice(0, 8)}`,
-    fieldKey: 'weight', contextKind: 'scalar', contextRef: productId,
-    itemFieldStateId: null, componentValueId: null,
-    listValueId: null, enumListId: null,
-    valueRaw: '80g', valueNormalized: '80', unit: 'g',
-    candidateId: `cand_${runId}_weight`, extractionMethod: 'llm_extract',
-  });
-
-  // source_evidence_refs (camelCase API)
-  specDb.insertSourceEvidenceRef({
-    assertionId: `asrt_${runId}_weight`,
-    evidenceUrl: url, snippetId: `sn_${contentHash.slice(0, 8)}`,
-    quote: 'Weight: 80g', method: 'llm_extract', tier: 1,
-    retrievedAt: now,
-  });
 
   // curation_suggestions (use run+url combo for uniqueness)
   specDb.db.prepare(`INSERT OR IGNORE INTO curation_suggestions (suggestion_id, category, suggestion_type, field_key, value, normalized_value, status, source, product_id, run_id, first_seen_at, last_seen_at)
@@ -355,9 +330,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
 
     // Source lineage cascade
     assert.equal(countRows(h.specDb.db, 'source_registry', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_artifacts'), 0);
-    assert.equal(countRows(h.specDb.db, 'source_assertions'), 0);
-    assert.equal(countRows(h.specDb.db, 'source_evidence_refs'), 0);
 
     // Product identity must survive
     assert.equal(countRows(h.specDb.db, 'products', 'product_id = ?', [PID_A]), 1);
@@ -658,9 +630,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'component_review_queue', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_registry', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_artifacts'), 0);
-    assert.equal(countRows(h.specDb.db, 'source_assertions'), 0);
-    assert.equal(countRows(h.specDb.db, 'source_evidence_refs'), 0);
     assert.equal(countRows(h.specDb.db, 'field_history', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'product_id = ?', [PID_A]), 0);

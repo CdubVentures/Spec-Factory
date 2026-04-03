@@ -281,3 +281,22 @@
 [auto-seed] run_repair_handoff_live_characterization_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\run_repair_handoff_live_characterization_001\_generated\field_rules.json
 [auto-seed] tests failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\tests\_generated\field_rules.json
 [auto-seed] test_v3_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\test_v3_001\_generated\field_rules.json
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\Spec Factory\.workspace\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\Spec Factory\.workspace\runs
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DcPsdMig.js, BrandManager-CPBMvwNH.js, buttonClasses-DdWdVcJt.js, CatalogPage-BVdvst1b.js, CategoryManager-H2O6icYr.js, ColorRegistryPage-BzkFiYR5.js, colors-DrFtcRO7.js, ComponentReviewPage-C5g7dZw6.js, DataTable-25ctIxis.js, DrawerShell-cdjePsYH.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-L7VU3oxJ.js, FlagsSection-hO-X_qxz.js, formatting-B6A_RRxb.js, index-Chx-6AVy.js, index-Df9P1GMc.css, IndexingPage-aZh3OpKv.js, invalidateFieldRulesQueries-VZpqUzdb.js, LlmConfigPage-BAHNBYL0.js, LlmGlobalSection-BZLTjd_o.js, llmPhaseOverridesBridge.generated-Cu1UB6Z4.js, LlmPhaseSection-lF79MlNy.js, LlmProviderRegistrySection-CL4YTf2R.js, LlmSettingsPage-BZV3VUhD.js, MetricRow-D_hTP0AY.js, ModelAccessBadges-qyT9pHFE.js, ModelSelectDropdown-DZprqGzs.js, OverviewPage-CHK-Zg9b.js, PipelineDeterministicStrategySection-C98ULA1V.js, PipelineSettingsPage-DWXlUSH4.js, PipelineSourceStrategySection-C-BhwiJ5.js, ProductPage-D4JX8ML0.js, ReviewPage-CPb1ugqQ.js, RuntimeFlowDraftPayload-CBrIO2bf.js, RuntimeOpsPage-B2y0ZJSt.js, settingsStatus-AVm2qVB3.js, SidebarShell-7D56-Im8.js, sortable.esm-DHLR6drX.js, Sparkline-DpfYBocK.js, StoragePage-CrH_sCoh.js, studioConstants-nqhBdjjj.js, StudioPage-BNPUmMcQ.js, TabStrip-r04xn31b.js, TestModePage-R-edrqfV.js, TierHierarchyPanel-tsYdj7p-.js, TierPicker-D8vlENV_.js, TrafficLight-DioLRezk.js, useFieldLabels-CdJdEu3V.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-C3F9BWoW.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-m5T7E6R-.js
+[auto-seed] mouse: 1 color-edition rows re-seeded from product files
+[auto-seed] mouse: 343 products re-seeded from catalog
+[auto-seed] mouse: 11 runs re-seeded from checkpoints
+[auto-seed] papaudit310a failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\papaudit310a\_generated\field_rules.json
+[auto-seed] products failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\products\_generated\field_rules.json
+[auto-seed] run_repair_handoff_live_characterization_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\run_repair_handoff_live_characterization_001\_generated\field_rules.json
+[auto-seed] tests failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\tests\_generated\field_rules.json
+[auto-seed] test_v3_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\test_v3_001\_generated\field_rules.json

@@ -95,7 +95,6 @@ test('contract-driven seeded review contracts survive DB materialization and rev
     );
 
     assert.ok(candidateWithEvidence, 'expected at least one candidate with source_host, snippet_id, and quote');
-    assert.ok(counts.source_evidence_refs > 0, 'source_evidence_refs should be populated for evidence-bearing candidates');
 
     const expectedKeyReviewCounts = [
       {

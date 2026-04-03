@@ -45,7 +45,6 @@ const SURFACES = [
 const PRIMARY_PUBLIC_FILES = new Map([
   ['src/db/specDb.js', 'dot'],
   ['src/db/appDb.js', 'dot'],
-  ['src/index/evidenceIndexDb.js', 'plain'],
   ['src/db/appDbSeed.js', 'plain'],
 ]);
 
@@ -80,14 +79,6 @@ const CONSOLIDATION_NOTES = new Map([
   ['specdb:data_authority_sync', {
     recommendation: 'Merge',
     note: 'Previous consolidation plan folds this into category_brain.',
-  }],
-  ['specdb:source_artifacts', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into source_registry.',
-  }],
-  ['specdb:source_evidence_refs', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into source_assertions.',
   }],
   ['specdb:key_review_runs', {
     recommendation: 'Merge',
@@ -488,17 +479,6 @@ function preferTableForFile(candidates, relPath, text) {
     }
   }
 
-  if (
-    text.includes('evidence_chunks_fts') ||
-    text.includes('indexDocument') ||
-    text.includes('searchEvidenceByField') ||
-    lower.includes('evidenceindex')
-  ) {
-    const specEvidence = candidates.find((entry) => entry.surfaceKey === 'specdb');
-    if (specEvidence) {
-      return specEvidence;
-    }
-  }
 
   if (
     text.includes('ComponentLexiconStore') ||
@@ -533,7 +513,6 @@ function buildAliasMap(textByFile, tableEntries) {
 function buildDefinitions(textByFile, tableEntries, aliasMap) {
   const relevantPrefixes = [
     'src/db/',
-    'src/index/evidenceIndexDb.js',
     'src/features/indexing/learning/learningStores.js',
   ];
 

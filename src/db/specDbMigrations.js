@@ -10,10 +10,6 @@ export const MIGRATIONS = [
   `ALTER TABLE component_values ADD COLUMN component_identity_id INTEGER REFERENCES component_identity(id)`,
   `ALTER TABLE list_values ADD COLUMN source_timestamp TEXT`,
   `ALTER TABLE list_values ADD COLUMN list_id INTEGER REFERENCES enum_lists(id)`,
-  `ALTER TABLE source_assertions ADD COLUMN item_field_state_id INTEGER REFERENCES item_field_state(id)`,
-  `ALTER TABLE source_assertions ADD COLUMN component_value_id INTEGER REFERENCES component_values(id)`,
-  `ALTER TABLE source_assertions ADD COLUMN list_value_id INTEGER REFERENCES list_values(id)`,
-  `ALTER TABLE source_assertions ADD COLUMN enum_list_id INTEGER REFERENCES enum_lists(id)`,
   `ALTER TABLE key_review_state ADD COLUMN item_field_state_id INTEGER REFERENCES item_field_state(id)`,
   `ALTER TABLE key_review_state ADD COLUMN component_value_id INTEGER REFERENCES component_values(id)`,
   `ALTER TABLE key_review_state ADD COLUMN component_identity_id INTEGER REFERENCES component_identity(id)`,
@@ -95,9 +91,6 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_sid_scope ON source_intel_domains(root_domain, scope);
   CREATE INDEX IF NOT EXISTS idx_cv_identity_id ON component_values(component_identity_id);
   CREATE INDEX IF NOT EXISTS idx_lv_list_id ON list_values(list_id);
-  CREATE INDEX IF NOT EXISTS idx_sa_item_slot ON source_assertions(item_field_state_id);
-  CREATE INDEX IF NOT EXISTS idx_sa_component_slot ON source_assertions(component_value_id);
-  CREATE INDEX IF NOT EXISTS idx_sa_list_slot ON source_assertions(list_value_id, enum_list_id);
   CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_grid_slot ON key_review_state(category, item_field_state_id)
     WHERE target_kind = 'grid_key' AND item_field_state_id IS NOT NULL;
   CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_enum_slot ON key_review_state(category, list_value_id)

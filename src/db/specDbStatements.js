@@ -355,44 +355,6 @@ export function prepareStatements(db) {
         updated_at = datetime('now')
     `),
 
-    _insertSourceArtifact: db.prepare(`
-      INSERT INTO source_artifacts (
-        source_id, artifact_type, local_path, content_hash, mime_type, size_bytes
-      ) VALUES (
-        @source_id, @artifact_type, @local_path, @content_hash, @mime_type, @size_bytes
-      )
-    `),
-
-    _upsertSourceAssertion: db.prepare(`
-      INSERT INTO source_assertions (
-        assertion_id, source_id, field_key, context_kind, context_ref,
-        item_field_state_id, component_value_id, list_value_id, enum_list_id,
-        value_raw, value_normalized, unit, candidate_id, extraction_method
-      ) VALUES (
-        @assertion_id, @source_id, @field_key, @context_kind, @context_ref,
-        @item_field_state_id, @component_value_id, @list_value_id, @enum_list_id,
-        @value_raw, @value_normalized, @unit, @candidate_id, @extraction_method
-      )
-      ON CONFLICT(assertion_id) DO UPDATE SET
-        item_field_state_id = COALESCE(excluded.item_field_state_id, item_field_state_id),
-        component_value_id = COALESCE(excluded.component_value_id, component_value_id),
-        list_value_id = COALESCE(excluded.list_value_id, list_value_id),
-        enum_list_id = COALESCE(excluded.enum_list_id, enum_list_id),
-        value_raw = COALESCE(excluded.value_raw, value_raw),
-        value_normalized = COALESCE(excluded.value_normalized, value_normalized),
-        unit = COALESCE(excluded.unit, unit),
-        extraction_method = COALESCE(excluded.extraction_method, extraction_method),
-        updated_at = datetime('now')
-    `),
-
-    _insertSourceEvidenceRef: db.prepare(`
-      INSERT INTO source_evidence_refs (
-        assertion_id, evidence_url, snippet_id, quote, method, tier, retrieved_at
-      ) VALUES (
-        @assertion_id, @evidence_url, @snippet_id, @quote, @method, @tier, @retrieved_at
-      )
-    `),
-
     _insertKeyReviewState: db.prepare(`
       INSERT INTO key_review_state (
         category, target_kind, item_identifier, field_key, enum_value_norm,

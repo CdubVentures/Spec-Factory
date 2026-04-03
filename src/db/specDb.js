@@ -104,8 +104,7 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _upsertLlmRoute: this._upsertLlmRoute,
-        _upsertSourceRegistry: this._upsertSourceRegistry, _insertSourceArtifact: this._insertSourceArtifact,
-        _upsertSourceAssertion: this._upsertSourceAssertion, _insertSourceEvidenceRef: this._insertSourceEvidenceRef
+        _upsertSourceRegistry: this._upsertSourceRegistry
       }
     });
     this._fieldHistoryStore = createFieldHistoryStore({
@@ -686,12 +685,7 @@ export class SpecDb {
   // --- Source Capture ---
 
   upsertSourceRegistry(opts) { this._llmRouteSourceStore.upsertSourceRegistry(opts); }
-  insertSourceArtifact(opts) { this._llmRouteSourceStore.insertSourceArtifact(opts); }
-  upsertSourceAssertion(opts) { this._llmRouteSourceStore.upsertSourceAssertion(opts); }
-  insertSourceEvidenceRef(opts) { this._llmRouteSourceStore.insertSourceEvidenceRef(opts); }
   getSourcesForItem(id) { return this._llmRouteSourceStore.getSourcesForItem(id); }
-  getAssertionsForSource(id) { return this._llmRouteSourceStore.getAssertionsForSource(id); }
-  hasSourceEvidenceRef(assertionId) { return this._llmRouteSourceStore.hasSourceEvidenceRef(assertionId); }
 
   // --- Key Review Methods ---
 
@@ -720,7 +714,7 @@ export class SpecDb {
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
       'item_list_links', 'product_queue', 'product_runs', 'products', 'audit_log',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
-      'source_registry', 'source_artifacts', 'source_assertions', 'source_evidence_refs',
+      'source_registry',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries', 'llm_cache',
       'source_corpus', 'runtime_events',

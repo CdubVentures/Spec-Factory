@@ -5,7 +5,7 @@ import {
   readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
   readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
   readIndexLabRunSerpExplorer,
-  readIndexLabRunAutomationQueue, readIndexLabRunEvidenceIndex,
+  readIndexLabRunAutomationQueue,
   listIndexLabRuns,
 } from './index.js';
 import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from '../learning/index.js';
@@ -41,7 +41,7 @@ export function createIndexlabRouteContext(options = {}) {
     readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
     readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
-    readIndexLabRunAutomationQueue, readIndexLabRunEvidenceIndex,
+    readIndexLabRunAutomationQueue,
     listIndexLabRuns, buildRoundSummaryFromEvents, buildSearchHints,
     buildAnchorsSuggestions, buildKnownValuesSuggestions,
     evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,

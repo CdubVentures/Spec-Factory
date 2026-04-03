@@ -239,9 +239,6 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
         deleteKeyReviewStateRowsByIds(stateIds);
 
         db
-          .prepare('UPDATE source_assertions SET list_value_id = NULL WHERE list_value_id = ?')
-          .run(row.id);
-        db
           .prepare('DELETE FROM item_list_links WHERE category = ? AND field_key = ? AND list_value_id = ?')
           .run(category, fieldKey, row.id);
       }
@@ -315,9 +312,6 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
         deleteKeyReviewStateRowsByIds(oldStateIds);
 
         db
-          .prepare('UPDATE source_assertions SET list_value_id = ? WHERE list_value_id = ?')
-          .run(newRow.id, oldRow.id);
-        db
           .prepare('UPDATE item_list_links SET list_value_id = ? WHERE category = ? AND field_key = ? AND list_value_id = ?')
           .run(newRow.id, category, fieldKey, oldRow.id);
       }
@@ -331,9 +325,6 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
               AND list_value_id = ?
           `).all(category, oldRow.id).map((entry) => entry.id);
           deleteKeyReviewStateRowsByIds(oldStateIds);
-          db
-            .prepare('UPDATE source_assertions SET list_value_id = NULL WHERE list_value_id = ?')
-            .run(oldRow.id);
         }
         db
           .prepare('DELETE FROM list_values WHERE category = ? AND field_key = ? AND value = ?')

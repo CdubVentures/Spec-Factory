@@ -3,7 +3,7 @@ import { toBoolInt, toBand, makeRouteKey, baseLlmRoute, buildDefaultLlmRoutes } 
 
 /**
  * LLM Route Matrix + Source Capture store — extracted from SpecDb.
- * Owns: llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs tables.
+ * Owns: llm_route_matrix, source_registry tables.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
@@ -127,66 +127,10 @@ export function createLlmRouteSourceStore({ db, category, stmts }) {
     });
   }
 
-  function insertSourceArtifact({ sourceId, artifactType, localPath, contentHash, mimeType, sizeBytes }) {
-    stmts._insertSourceArtifact.run({
-      source_id: sourceId,
-      artifact_type: artifactType,
-      local_path: localPath,
-      content_hash: contentHash ?? null,
-      mime_type: mimeType ?? null,
-      size_bytes: sizeBytes ?? null
-    });
-  }
-
-  function upsertSourceAssertion({
-    assertionId, sourceId, fieldKey, contextKind, contextRef,
-    itemFieldStateId, componentValueId, listValueId, enumListId,
-    valueRaw, valueNormalized, unit, candidateId, extractionMethod
-  }) {
-    stmts._upsertSourceAssertion.run({
-      assertion_id: assertionId,
-      source_id: sourceId,
-      field_key: fieldKey,
-      context_kind: contextKind || 'scalar',
-      context_ref: contextRef ?? null,
-      item_field_state_id: itemFieldStateId ?? null,
-      component_value_id: componentValueId ?? null,
-      list_value_id: listValueId ?? null,
-      enum_list_id: enumListId ?? null,
-      value_raw: valueRaw ?? null,
-      value_normalized: valueNormalized ?? null,
-      unit: unit ?? null,
-      candidate_id: candidateId ?? null,
-      extraction_method: extractionMethod ?? null
-    });
-  }
-
-  function insertSourceEvidenceRef({ assertionId, evidenceUrl, snippetId, quote, method, tier, retrievedAt }) {
-    stmts._insertSourceEvidenceRef.run({
-      assertion_id: assertionId,
-      evidence_url: evidenceUrl ?? null,
-      snippet_id: snippetId ?? null,
-      quote: quote ?? null,
-      method: method ?? null,
-      tier: tier ?? null,
-      retrieved_at: retrievedAt ?? null
-    });
-  }
-
   function getSourcesForItem(itemIdentifier) {
     return db
       .prepare('SELECT * FROM source_registry WHERE category = ? AND item_identifier = ? ORDER BY source_tier ASC, source_host')
       .all(category, itemIdentifier);
-  }
-
-  function getAssertionsForSource(sourceId) {
-    return db
-      .prepare('SELECT * FROM source_assertions WHERE source_id = ? ORDER BY field_key')
-      .all(sourceId);
-  }
-
-  function hasSourceEvidenceRef(assertionId) {
-    return db.prepare('SELECT 1 FROM source_evidence_refs WHERE assertion_id = ? LIMIT 1').get(assertionId) || null;
   }
 
   return {
@@ -195,11 +139,6 @@ export function createLlmRouteSourceStore({ db, category, stmts }) {
     saveLlmRouteMatrix,
     resetLlmRouteMatrixToDefaults,
     upsertSourceRegistry,
-    insertSourceArtifact,
-    upsertSourceAssertion,
-    insertSourceEvidenceRef,
     getSourcesForItem,
-    getAssertionsForSource,
-    hasSourceEvidenceRef,
   };
 }

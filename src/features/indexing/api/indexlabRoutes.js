@@ -31,7 +31,6 @@ export function registerIndexlabRoutes(ctx) {
     readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
     readIndexLabRunAutomationQueue,
-    readIndexLabRunEvidenceIndex,
     listIndexLabRuns,
     buildRoundSummaryFromEvents,
     buildSearchHints,
@@ -283,17 +282,6 @@ export function registerIndexlabRoutes(ctx) {
         return jsonRes(res, 404, { error: 'automation_queue_not_found', run_id: runId });
       }
       return jsonRes(res, 200, queue);
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'evidence-index' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const query = String(params.get('q') || params.get('query') || '').trim();
-      const limit = Math.max(1, toInt(params.get('limit'), 40));
-      const payload = await readIndexLabRunEvidenceIndex(runId, { query, limit });
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'evidence_index_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, payload);
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'rounds' && method === 'GET') {

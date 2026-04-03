@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createAuditHarness,
-  makeEvidenceIndexEvent,
   makeFetchEvent,
   makeFieldsFilledEvent,
   makeLlmEvent,
@@ -14,8 +13,6 @@ import {
   makeSourceProcessedEvent,
 } from '../../indexlab/tests/helpers/auditHarness.js';
 import { buildRoundSummaryFromEvents } from '../roundSummary.js';
-import { buildEvidenceSearchPayload } from '../evidenceSearch.js';
-
 const RUN_ID = 'r_phase00_test_001';
 
 function createStandardAuditEvents(runId = RUN_ID) {
@@ -190,37 +187,6 @@ describe('Phase 00 event model contract', () => {
     }
   });
 
-  it('maps evidence index outcomes onto the public dedupe event stream', async (t) => {
-    const newHarness = createAuditHarness();
-    await newHarness.setup();
-    t.after(() => newHarness.cleanup());
-    await newHarness.feedEvents([
-      makeRunStartedEvent('r_dedupe_test_001'),
-      makeEvidenceIndexEvent('r_dedupe_test_001', { dedupe_outcome: 'new' }),
-    ]);
-    const newEvents = await newHarness.getEmittedEvents();
-    newHarness.assertEventExists(newEvents, 'indexed_new', 'dedupe-new');
-
-    const reusedHarness = createAuditHarness();
-    await reusedHarness.setup();
-    t.after(() => reusedHarness.cleanup());
-    await reusedHarness.feedEvents([
-      makeRunStartedEvent('r_dedupe_test_002'),
-      makeEvidenceIndexEvent('r_dedupe_test_002', { dedupe_outcome: 'reused' }),
-    ]);
-    const reusedEvents = await reusedHarness.getEmittedEvents();
-    reusedHarness.assertEventExists(reusedEvents, 'dedupe_hit', 'dedupe-reused');
-
-    const updatedHarness = createAuditHarness();
-    await updatedHarness.setup();
-    t.after(() => updatedHarness.cleanup());
-    await updatedHarness.feedEvents([
-      makeRunStartedEvent('r_dedupe_test_003'),
-      makeEvidenceIndexEvent('r_dedupe_test_003', { dedupe_outcome: 'updated' }),
-    ]);
-    const updatedEvents = await updatedHarness.getEmittedEvents();
-    updatedHarness.assertEventExists(updatedEvents, 'dedupe_updated', 'dedupe-updated');
-  });
 });
 
 describe('Phase 00 payload unwrap contracts', () => {
@@ -253,37 +219,4 @@ describe('Phase 00 payload unwrap contracts', () => {
     assert.equal(result.rounds[0].critical_count, 1);
   });
 
-  it('buildEvidenceSearchPayload reads dedupe outcomes from wrapped payload rows', () => {
-    const result = buildEvidenceSearchPayload({
-      dedupeEvents: [
-        {
-          run_id: 'r_test',
-          ts: '2026-02-20T00:00:00Z',
-          stage: 'index',
-          event: 'indexed_new',
-          payload: { dedupe_outcome: 'new', chunks_indexed: 8, url: 'https://example.com' },
-        },
-        {
-          run_id: 'r_test',
-          ts: '2026-02-20T00:00:01Z',
-          stage: 'index',
-          event: 'dedupe_hit',
-          payload: { dedupe_outcome: 'reused', chunks_indexed: 0, url: 'https://example.com/2' },
-        },
-        {
-          run_id: 'r_test',
-          ts: '2026-02-20T00:00:02Z',
-          stage: 'index',
-          event: 'dedupe_updated',
-          payload: { dedupe_outcome: 'updated', chunks_indexed: 3, url: 'https://example.com/3' },
-        },
-      ],
-      query: '',
-    });
-
-    assert.equal(result.dedupe_stream.new_count, 1);
-    assert.equal(result.dedupe_stream.reused_count, 1);
-    assert.equal(result.dedupe_stream.updated_count, 1);
-    assert.equal(result.dedupe_stream.total_chunks_indexed, 11);
-  });
 });

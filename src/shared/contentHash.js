@@ -36,3 +36,14 @@ export function computeFileContentHash(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) return '';
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
+
+/**
+ * Deterministic snippet ID from content hash + parser version + chunk index.
+ * WHY: Relocated from src/index/evidenceIndexDb.js (deleted) — tierAwareRetriever
+ * depends on this for stable snippet identity.
+ * @returns {string} `sn_` prefixed 16-char hex slug.
+ */
+export function generateStableSnippetId({ contentHash, parserVersion, chunkIndex }) {
+  const seed = `${String(contentHash || '')}|${String(parserVersion || '')}|${Number(chunkIndex || 0)}`;
+  return `sn_${sha256Hex(seed).slice(0, 16)}`;
+}

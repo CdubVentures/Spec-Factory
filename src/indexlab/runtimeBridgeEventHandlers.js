@@ -14,7 +14,6 @@ import {
   emit, finishFetchUrl
 } from './runtimeBridgeArtifacts.js';
 import { setStageCursor, recordStartupMs, startStage, finishStage } from './runtimeBridgeStageLifecycle.js';
-import { dedupeOutcomeToEventKey } from '../pipeline/dedupeOutcomeEvent.js';
 
 // ── Individual event handlers ──────────────────────────────────────────────
 
@@ -619,21 +618,6 @@ async function handleDomainsClassified(state, deps, { ts, row }) {
   }, ts);
 }
 
-async function handleEvidenceIndexResult(state, deps, { ts, row }) {
-  const dedupeOutcome = String(row.dedupe_outcome || 'unknown').trim();
-  const eventKey = dedupeOutcomeToEventKey(dedupeOutcome);
-  await emit(state, 'index', eventKey, {
-    scope: 'evidence_index',
-    url: String(row.url || ''),
-    host: String(row.host || ''),
-    doc_id: String(row.doc_id || ''),
-    dedupe_outcome: dedupeOutcome,
-    chunks_indexed: asInt(row.chunks_indexed, 0),
-    facts_indexed: asInt(row.facts_indexed, 0),
-    snippet_count: asInt(row.snippet_count, 0)
-  }, ts);
-}
-
 
 async function handlePrimeSourcesBuilt(state, deps, { ts, row }) {
   await startStage(state, 'index', ts, { trigger: 'prime_sources_built' });
@@ -944,7 +928,6 @@ const EVENT_HANDLERS = new Map([
   ['search_results_collected',        handleSearchResultsCollected],
   ['serp_selector_completed',           handleSerpSelectorCompleted],
   ['domains_classified',              handleDomainsClassified],
-  ['evidence_index_result',           handleEvidenceIndexResult],
   ['prime_sources_built',             handlePrimeSourcesBuilt],
   ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
   ['search_queued',                   handleSearchQueued],

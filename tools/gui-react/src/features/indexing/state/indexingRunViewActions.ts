@@ -51,7 +51,6 @@ export async function refreshIndexingPageData(input: RefreshIndexingPageDataInpu
       );
     }
     refreshes.push(
-      input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'run', token, 'evidence-index'] }),
       input.queryClient.invalidateQueries({ queryKey: ['runtime-ops', token] })
     );
   }

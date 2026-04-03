@@ -29,7 +29,7 @@ stores/
   billingStore.js          —  5 methods: billing_entries
   sourceIntelStore.js      — 12 methods: llm_cache + source_corpus + runtime_events
   queueProductStore.js     — 24 methods: product_queue + product_runs + products + audit_log + curation_suggestions + component_review_queue
-  llmRouteSourceStore.js   — 10 methods: llm_route_matrix + source_registry + source_artifacts + source_assertions + source_evidence_refs
+  llmRouteSourceStore.js   —  6 methods: llm_route_matrix + source_registry
 ```
 
 ## Pattern

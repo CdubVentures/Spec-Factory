@@ -43,23 +43,8 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
   function deleteSourcesByCategory(cat, sourceIds) {
     if (!sourceIds?.length) return 0;
-    let cleared = 0;
     const placeholders = sourceIds.map(() => '?').join(',');
-    db.prepare(`DELETE FROM key_review_run_sources WHERE assertion_id IN (SELECT assertion_id FROM source_assertions WHERE source_id IN (${placeholders}))`).run(...sourceIds);
-    db.prepare(`DELETE FROM source_evidence_refs WHERE assertion_id IN (SELECT assertion_id FROM source_assertions WHERE source_id IN (${placeholders}))`).run(...sourceIds);
-    cleared += db.prepare(`DELETE FROM source_assertions WHERE source_id IN (${placeholders})`).run(...sourceIds).changes;
-    db.prepare(`DELETE FROM source_artifacts WHERE source_id IN (${placeholders})`).run(...sourceIds);
-    cleared += db.prepare(`DELETE FROM source_registry WHERE source_id IN (${placeholders})`).run(...sourceIds).changes;
-    return cleared;
-  }
-
-  function deleteSourcesByItemFieldStates(itemFieldStateIds) {
-    if (!itemFieldStateIds?.length) return 0;
-    let cleared = 0;
-    const placeholders = itemFieldStateIds.map(() => '?').join(',');
-    db.prepare(`DELETE FROM source_evidence_refs WHERE assertion_id IN (SELECT assertion_id FROM source_assertions WHERE item_field_state_id IN (${placeholders}))`).run(...itemFieldStateIds);
-    cleared += db.prepare(`DELETE FROM source_assertions WHERE item_field_state_id IN (${placeholders})`).run(...itemFieldStateIds).changes;
-    return cleared;
+    return db.prepare(`DELETE FROM source_registry WHERE source_id IN (${placeholders})`).run(...sourceIds).changes;
   }
 
   function deleteCandidatesByProduct(category, productId) {
@@ -147,9 +132,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       const itemFieldStateIds = db.prepare('SELECT id FROM item_field_state WHERE category = ? AND product_id = ?').all(cat, pid).map((r) => r.id);
       const sourceIds = db.prepare('SELECT source_id FROM source_registry WHERE category = ? AND product_id = ?').all(cat, pid).map((r) => r.source_id);
 
-      if (itemFieldStateIds.length > 0) {
-        deletedSources += deleteSourcesByItemFieldStates(itemFieldStateIds);
-      }
       if (sourceIds.length > 0) {
         deletedSources += deleteSourcesByCategory(cat, sourceIds);
       }

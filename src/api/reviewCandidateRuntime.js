@@ -378,12 +378,10 @@ export function createReviewCandidateRuntime({
     if (!items.length) return { upserted: 0 };
 
     let upserted = 0;
-    let assertionsUpserted = 0;
     const sourceIds = new Set();
     const nowIso = new Date().toISOString();
     const categoryToken = String(specDb.category || category || '').trim();
     const lookupItemFieldSlotId = (pid, fk) => specDb.getItemFieldStateIdByProductAndField(pid, fk);
-    const lookupEvidenceRef = (assertionId) => specDb.hasSourceEvidenceRef(assertionId);
     for (const item of items) {
       const status = String(item?.status || '').trim().toLowerCase();
       if (status === 'dismissed') continue;
@@ -448,37 +446,6 @@ export function createReviewCandidateRuntime({
           run_id: item.run_id || null,
         });
         upserted += 1;
-        const assertionId = String(candidateId || '').trim();
-        if (!assertionId) return;
-        specDb.upsertSourceAssertion({
-          assertionId,
-          sourceId,
-          fieldKey: resolvedFieldKey,
-          contextKind: 'scalar',
-          contextRef: itemFieldStateId ? `item_field_state:${itemFieldStateId}` : `item_field:${productId}:${resolvedFieldKey}`,
-          itemFieldStateId,
-          componentValueId: null,
-          listValueId: null,
-          enumListId: null,
-          valueRaw: text,
-          valueNormalized: normalizedText,
-          unit: null,
-          candidateId: assertionId,
-          extractionMethod: method || item?.match_type || 'component_review',
-        });
-        assertionsUpserted += 1;
-        if (!lookupEvidenceRef(assertionId)) {
-          const quoteText = String(quote || snippetText || `Pipeline component review candidate for ${fieldKey}`).trim();
-          specDb.insertSourceEvidenceRef({
-            assertionId,
-            evidenceUrl: sourceUrl,
-            snippetId: String(item.review_id || '').trim() || null,
-            quote: quoteText || null,
-            method: method || item?.match_type || 'component_review',
-            tier: null,
-            retrievedAt: item.created_at || nowIso,
-          });
-        }
       };
 
       const primaryValue = String(item?.matched_component || item?.raw_query || '').trim();

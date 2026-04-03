@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { ruleUnit } from '../engine/ruleAccessors.js';
-import { generateStableSnippetId } from '../index/evidenceIndexDb.js';
+import { generateStableSnippetId } from '../shared/contentHash.js';
 import { toTierNumber, parseTierPreferenceFromRule, parseTierPreferenceFromNeedRow } from '../utils/tierHelpers.js';
 import { isObject, normalizeToken, toArray } from '../shared/primitives.js';
 

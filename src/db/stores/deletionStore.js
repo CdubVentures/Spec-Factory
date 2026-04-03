@@ -52,19 +52,8 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
   function deleteSourceLineage(sourceIds) {
     if (!sourceIds.length) return 0;
-    let deleted = 0;
     const ph = placeholders(sourceIds);
-    // key_review_run_sources via assertion chain
-    db.prepare(`DELETE FROM key_review_run_sources WHERE assertion_id IN (SELECT assertion_id FROM source_assertions WHERE source_id IN (${ph}))`).run(...sourceIds);
-    // source_evidence_refs via assertion chain
-    deleted += db.prepare(`DELETE FROM source_evidence_refs WHERE assertion_id IN (SELECT assertion_id FROM source_assertions WHERE source_id IN (${ph}))`).run(...sourceIds).changes;
-    // source_assertions
-    deleted += db.prepare(`DELETE FROM source_assertions WHERE source_id IN (${ph})`).run(...sourceIds).changes;
-    // source_artifacts
-    deleted += db.prepare(`DELETE FROM source_artifacts WHERE source_id IN (${ph})`).run(...sourceIds).changes;
-    // source_registry
-    deleted += db.prepare(`DELETE FROM source_registry WHERE source_id IN (${ph})`).run(...sourceIds).changes;
-    return deleted;
+    return db.prepare(`DELETE FROM source_registry WHERE source_id IN (${ph})`).run(...sourceIds).changes;
   }
 
   function deleteCandidatesByFilter(where, params) {
@@ -73,29 +62,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     const ph = placeholders(candIds);
     db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (${ph})`).run(...candIds);
     return db.prepare(`DELETE FROM candidates WHERE candidate_id IN (${ph})`).run(...candIds).changes;
-  }
-
-  function deleteEvidenceByContentHashes(hashes, productId) {
-    if (!hashes.length) return 0;
-    let deleted = 0;
-    const ph = placeholders(hashes);
-    const docIds = db.prepare(
-      `SELECT doc_id FROM evidence_documents WHERE content_hash IN (${ph}) AND product_id = ?`
-    ).all(...hashes, productId).map((r) => r.doc_id);
-    if (!docIds.length) return 0;
-    const dph = placeholders(docIds);
-    // FTS cleanup: mark rows as deleted via special insert
-    try {
-      const chunks = db.prepare(`SELECT chunk_id, text, normalized_text, field_hints FROM evidence_chunks WHERE doc_id IN (${dph})`).all(...docIds);
-      const ftsDelete = db.prepare("INSERT INTO evidence_chunks_fts(evidence_chunks_fts, rowid, text, normalized_text, field_hints) VALUES('delete', ?, ?, ?, ?)");
-      for (const c of chunks) {
-        try { ftsDelete.run(c.chunk_id, c.text, c.normalized_text, c.field_hints); } catch { /* best-effort */ }
-      }
-    } catch { /* FTS table may not exist */ }
-    deleted += db.prepare(`DELETE FROM evidence_facts WHERE doc_id IN (${dph})`).run(...docIds).changes;
-    deleted += db.prepare(`DELETE FROM evidence_chunks WHERE doc_id IN (${dph})`).run(...docIds).changes;
-    deleted += db.prepare(`DELETE FROM evidence_documents WHERE doc_id IN (${dph})`).run(...docIds).changes;
-    return deleted;
   }
 
   // ── deleteRun ───────────────────────────────────────────────────────────
@@ -144,10 +110,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE run_id = ?').run(rid).changes;
 
-      // Phase 5 — Evidence index
-      if (contentHashes.length) totalDeleted += deleteEvidenceByContentHashes(contentHashes, pid);
-
-      // Phase 6 — Run metadata
+      // Phase 5 — Run metadata
       totalDeleted += db.prepare('DELETE FROM run_artifacts WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM product_runs WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM runs WHERE run_id = ?').run(rid).changes;
@@ -241,9 +204,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
-
-      // Evidence index
-      if (contentHashes.length) totalDeleted += deleteEvidenceByContentHashes(contentHashes, pid);
 
       // Accumulated tables
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE canonical_url = ? AND product_id = ?').run(u, pid).changes;
@@ -394,10 +354,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE product_id = ?').run(pid).changes;
 
-      // Phase 6 — Evidence index
-      if (contentHashes.length) totalDeleted += deleteEvidenceByContentHashes(contentHashes, pid);
-
-      // Phase 7 — Run metadata
+      // Phase 6 — Run metadata
       if (allRunIds.length) {
         const ph = placeholders(allRunIds);
         totalDeleted += db.prepare(`DELETE FROM run_artifacts WHERE run_id IN (${ph})`).run(...allRunIds).changes;

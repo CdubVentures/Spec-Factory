@@ -28,11 +28,6 @@ export async function runReviewLaneReadContracts(t, harness) {
        FROM candidates
        WHERE category = ? AND candidate_id LIKE 'pl-cr_%'`
     ).get(CATEGORY)?.c || 0;
-    const assertionsBefore = db.db.prepare(
-      `SELECT COUNT(*) AS c
-       FROM source_assertions
-       WHERE assertion_id LIKE 'pl-cr_%'`
-    ).get()?.c || 0;
     const pipelineSourcesBefore = db.db.prepare(
       `SELECT COUNT(*) AS c
        FROM source_registry
@@ -51,13 +46,6 @@ export async function runReviewLaneReadContracts(t, harness) {
       syntheticRowsAfter.some((row) => String(row.value || '').trim().toLowerCase() === 'unk'),
       false,
     );
-
-    const assertionsAfter = db.db.prepare(
-      `SELECT COUNT(*) AS c
-       FROM source_assertions
-       WHERE assertion_id LIKE 'pl-cr_%'`
-    ).get()?.c || 0;
-    assert.equal(assertionsAfter, assertionsBefore);
 
     const pipelineSourcesAfter = db.db.prepare(
       `SELECT COUNT(*) AS c

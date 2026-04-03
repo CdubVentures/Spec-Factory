@@ -351,20 +351,4 @@ export function makeRunCompletedEvent(runId, overrides = {}) {
   };
 }
 
-export function makeEvidenceIndexEvent(runId, overrides = {}) {
-  return {
-    event: 'evidence_index_result',
-    runId,
-    ts: new Date().toISOString(),
-    level: 'info',
-    url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
-    host: 'www.razer.com',
-    doc_id: 'doc_abc',
-    dedupe_outcome: 'new',
-    chunks_indexed: 8,
-    facts_indexed: 3,
-    snippet_count: 5,
-    ...overrides
-  };
-}
 

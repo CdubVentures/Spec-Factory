@@ -195,9 +195,6 @@ function reconcileComponentDbRows(db, fieldRules) {
   const deleteComponentValue = db.db.prepare(
     'DELETE FROM component_values WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?'
   );
-  const deleteSourceAssertionsByValue = db.db.prepare(
-    'UPDATE source_assertions SET component_value_id = NULL WHERE component_value_id = ?'
-  );
   const deleteComponentValueReviewRows = db.db.prepare('DELETE FROM key_review_state WHERE component_value_id = ?');
   const deleteComponentIdentityReviewRows = db.db.prepare(
     'DELETE FROM key_review_state WHERE category = ? AND target_kind = ? AND component_identity_id = ?'
@@ -225,7 +222,6 @@ function reconcileComponentDbRows(db, fieldRules) {
         const valueId = valueRow.id;
         removedKeyReviewRows += deleteComponentValueReviewRows.run(valueId).changes || 0;
         removedValueRows += deleteComponentValuesById(db, valueId);
-        deleteSourceAssertionsByValue.run(valueId);
       }
 
       removedAliasRows += deleteComponentAliasRows.run(componentId).changes || 0;
@@ -1250,14 +1246,12 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
 
 function seedSourceAndKeyReview(db, category, fieldMeta) {
   let sourceRegistryCount = 0;
-  let sourceAssertionCount = 0;
-  let sourceEvidenceRefCount = 0;
   let keyReviewStateCount = 0;
   let keyReviewAuditCount = 0;
   let keyReviewRunCount = 0;
 
   const tx = db.db.transaction(() => {
-    // 9a: candidates → source_registry + source_assertions + source_evidence_refs
+    // 9a: candidates → source_registry
     const allCandidates = db.db.prepare(
       'SELECT * FROM candidates WHERE category = ?'
     ).all(db.category);
@@ -1367,48 +1361,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
             componentValueId = componentValueIdBySlot.get(
               `${componentType}::${linkRow.component_name}::${linkRow.component_maker || ''}::${c.field_key}`
             ) || null;
-          }
-        }
-        const contextRef = componentValueId
-          ? `component_value:${componentValueId}`
-          : (listValueId
-            ? `list_value:${listValueId}`
-            : (itemFieldStateId ? `item_field_state:${itemFieldStateId}` : (c.component_type || null)));
-
-        db.upsertSourceAssertion({
-          assertionId,
-          sourceId: src.sourceId,
-          fieldKey: c.field_key,
-          contextKind,
-          contextRef,
-          itemFieldStateId,
-          componentValueId,
-          listValueId,
-          enumListId,
-          valueRaw: c.value,
-          valueNormalized: c.normalized_value,
-          unit: null,
-          candidateId: c.candidate_id,
-          extractionMethod: c.source_method || c.llm_extract_model || null,
-        });
-        sourceAssertionCount++;
-
-        if (c.quote || c.evidence_url) {
-          // Idempotent: skip if an evidence ref already exists for this assertion
-          const existingRef = db.db.prepare(
-            'SELECT 1 FROM source_evidence_refs WHERE assertion_id = ? LIMIT 1'
-          ).get(assertionId);
-          if (!existingRef) {
-            db.insertSourceEvidenceRef({
-              assertionId,
-              evidenceUrl: c.evidence_url,
-              snippetId: c.snippet_id,
-              quote: c.quote,
-              method: c.source_method,
-              tier: c.source_tier,
-              retrievedAt: c.evidence_retrieved_at,
-            });
-            sourceEvidenceRefCount++;
           }
         }
       }
@@ -1721,16 +1673,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
             finishedAt: rev.ai_reviewed_at || null,
           });
           keyReviewRunCount++;
-
-          // Link to source assertion (candidate_id = assertion_id)
-          try {
-            db.insertKeyReviewRunSource({
-              keyReviewRunId: runId,
-              assertionId: rev.candidate_id,
-              packetRole: 'prime',
-              position: 0,
-            });
-          } catch { /* assertion may not exist */ }
         }
       }
     }
@@ -1739,8 +1681,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
 
   return {
     sourceRegistryCount,
-    sourceAssertionCount,
-    sourceEvidenceRefCount,
     keyReviewStateCount,
     keyReviewAuditCount,
     keyReviewRunCount,
@@ -1832,7 +1772,7 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
   // Step 9: Backfill source + key review tables from existing data
   const skrResult = seedSourceAndKeyReview(db, category, fieldMeta);
   if (logger) {
-    logger.log?.('info', `[seed] Source & Key Review: ${skrResult.sourceRegistryCount} sources, ${skrResult.sourceAssertionCount} assertions, ${skrResult.keyReviewStateCount} review states, ${skrResult.keyReviewAuditCount} audit entries`);
+    logger.log?.('info', `[seed] Source & Key Review: ${skrResult.sourceRegistryCount} sources, ${skrResult.keyReviewStateCount} review states, ${skrResult.keyReviewAuditCount} audit entries`);
   }
 
   // Re-run after key-review backfill to clear stale selected_candidate_id on legacy rows.
@@ -1867,8 +1807,6 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     suggestions_seeded: 0,
     review_queue_seeded: 0,
     source_registry_seeded: skrResult.sourceRegistryCount,
-    source_assertions_seeded: skrResult.sourceAssertionCount,
-    source_evidence_refs_seeded: skrResult.sourceEvidenceRefCount,
     key_review_states_seeded: skrResult.keyReviewStateCount,
     key_review_audit_seeded: skrResult.keyReviewAuditCount,
     key_review_runs_seeded: skrResult.keyReviewRunCount,

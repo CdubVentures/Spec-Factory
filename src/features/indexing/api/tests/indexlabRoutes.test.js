@@ -122,7 +122,6 @@ function createIndexlabRouteHandler(overrides = {}) {
     readIndexLabRunRunMetaPacket: () => null,
     readIndexLabRunSerpExplorer: () => null,
     readIndexLabRunAutomationQueue: () => null,
-    readIndexLabRunEvidenceIndex: () => null,
     listIndexLabRuns: () => [],
     buildRoundSummaryFromEvents: () => ({}),
     buildSearchHints: () => [],
@@ -227,7 +226,6 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
       readIndexLabRunRunMetaPacket: async () => null,
       readIndexLabRunSerpExplorer: async () => null,
       readIndexLabRunAutomationQueue: async () => null,
-      readIndexLabRunEvidenceIndex: async () => null,
     });
 
     const res = createMockRes();

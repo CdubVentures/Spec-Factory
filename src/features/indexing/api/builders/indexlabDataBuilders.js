@@ -3,7 +3,6 @@ import path from 'node:path';
 import { loadProductCatalog } from '../../../catalog/index.js';
 import { createPhaseDataReaders } from './phaseDataReaders.js';
 import { createRunArtifactReaders } from './runArtifactReaders.js';
-import { createEvidenceIndexReader } from './evidenceIndexReader.js';
 import { createDomainChecklistBuilder } from './domainChecklistBuilder.js';
 import { createAutomationQueueBuilder } from './automationQueueBuilder.js';
 import { createRunListBuilder } from './runListBuilder.js';
@@ -24,7 +23,6 @@ let _isProcessRunning = null;
 let _processStatus = null;
 let _phaseReaders = null;
 let _artifactReaders = null;
-let _evidenceReader = null;
 let _domainChecklistBuilder = null;
 let _automationQueueBuilder = null;
 let _runListBuilder = null;
@@ -271,11 +269,6 @@ export function initIndexLabDataBuilders({
     getOutputRoot: () => _outputRoot,
     getSpecDbReady: _getSpecDbReady,
   });
-  _evidenceReader = createEvidenceIndexReader({
-    resolveContext: resolveIndexLabRunContext,
-    readEvents: readIndexLabRunEvents,
-    getSpecDbReady: _getSpecDbReady,
-  });
   _domainChecklistBuilder = createDomainChecklistBuilder({
     readGzipJsonlEvents,
     readJsonlEvents,
@@ -429,10 +422,6 @@ export async function readIndexLabRunRunMetaPacket(runId) {
 
 export async function readIndexLabRunSerpExplorer(runId) {
   return _artifactReaders.readIndexLabRunSerpExplorer(runId);
-}
-
-export async function readIndexLabRunEvidenceIndex(runId, opts) {
-  return _evidenceReader.readIndexLabRunEvidenceIndex(runId, opts);
 }
 
 export async function readIndexLabRunAutomationQueue(runId) {

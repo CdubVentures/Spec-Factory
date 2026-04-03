@@ -20,7 +20,7 @@ IndexLab runtime bridge and orchestration support. Translates pipeline events in
 - `indexingSchemaPacketsValidator.js`: `validateIndexingSchemaPackets()` — AJV-based packet validation.
 
 ## Dependencies
-- Allowed: `src/core/config/`, `src/core/llm/`, `src/pipeline/` (dedupeOutcomeEvent), `src/shared/`.
+- Allowed: `src/core/config/`, `src/core/llm/`, `src/pipeline/`, `src/shared/`.
 - Forbidden: `src/features/` (indexlab is consumed BY features, not the reverse), `src/api/`, `src/db/`.
 
 ## Domain Invariants

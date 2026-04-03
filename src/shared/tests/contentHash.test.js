@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computePageContentHash, computeFileContentHash, sha256Hex } from '../contentHash.js';
+import { computePageContentHash, computeFileContentHash, sha256Hex, generateStableSnippetId } from '../contentHash.js';
 
 // --- computePageContentHash ---
 
@@ -82,6 +82,32 @@ describe('sha256Hex', () => {
       sha256Hex('hello'),
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
     );
+  });
+});
+
+// --- generateStableSnippetId ---
+
+describe('generateStableSnippetId', () => {
+  test('returns sn_ prefixed 16-char hex slug', () => {
+    const id = generateStableSnippetId({ contentHash: 'abc123', parserVersion: 'v1', chunkIndex: 0 });
+    assert.match(id, /^sn_[0-9a-f]{16}$/);
+  });
+
+  test('is deterministic — same input produces same id', () => {
+    const a = generateStableSnippetId({ contentHash: 'abc', parserVersion: 'v1', chunkIndex: 0 });
+    const b = generateStableSnippetId({ contentHash: 'abc', parserVersion: 'v1', chunkIndex: 0 });
+    assert.equal(a, b);
+  });
+
+  test('different inputs produce different ids', () => {
+    const a = generateStableSnippetId({ contentHash: 'abc', parserVersion: 'v1', chunkIndex: 0 });
+    const b = generateStableSnippetId({ contentHash: 'abc', parserVersion: 'v1', chunkIndex: 1 });
+    assert.notEqual(a, b);
+  });
+
+  test('handles null/undefined gracefully', () => {
+    const id = generateStableSnippetId({ contentHash: null, parserVersion: undefined, chunkIndex: undefined });
+    assert.match(id, /^sn_[0-9a-f]{16}$/);
   });
 });
 

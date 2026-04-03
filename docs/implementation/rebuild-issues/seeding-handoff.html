@@ -242,17 +242,34 @@ logging, error isolation, and stale-row pruning.
 
 <h2>5. Immediate Action Items (Priority Order)</h2>
 
+<p><strong>Phase 0: SSOT overlap resolution</strong> &mdash; must be done before the O(1) seed registry, because the registry needs exactly one JSON source per surface.</p>
+
+<table class="ref">
+<thead><tr><th>#</th><th>Item</th><th>Overlap</th><th>Effort</th><th>What Changes</th></tr></thead>
+<tbody>
+<tr><td>0a</td><td><strong>Product identity SSOT</strong> &mdash; product_catalog.json owns identity, product.json owns run history only</td><td>Overlap 1</td><td>Medium</td><td>Stop writing identity to product.json (or mark non-authoritative). Seed reads identity from catalog only.</td></tr>
+<tr><td>0b</td><td><strong>Queue state single path</strong> &mdash; kill dual-path adapter, product.json = run history, state.json = queue ops</td><td>Overlap 2</td><td>Medium</td><td>Remove SQL-direct queue writes. All queue mutations go to state.json. SQL rebuilt from both on seed.</td></tr>
+<tr><td>0c</td><td><strong>Settings &rarr; JSON-first</strong> &mdash; API writes to JSON directly, SQL is rebuilt on boot, no circular mirror</td><td>Overlap 3</td><td>Medium</td><td>userSettingsService writes JSON. Remove SQL &rarr; JSON write-back. SQL is read-only cache.</td></tr>
+<tr><td>0d</td><td><strong>Override backfill + flip</strong> &mdash; export SQL to .overrides.json, then make JSON the write target</td><td>Overlap 4</td><td>Medium</td><td>One-time backfill, then overrideWorkflow writes JSON first. SQL rebuilt from .overrides.json on seed.</td></tr>
+</tbody>
+</table>
+
+<p><strong>Phase 1: Full reconcile + cleanup</strong> &mdash; once SSOT is clean, make every surface do upsert + delete stale.</p>
+
 <table class="ref">
 <thead><tr><th>#</th><th>Item</th><th>Effort</th><th>Impact</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><strong>Override backfill</strong> &mdash; refresh all .overrides.json from SQL so AI review state is on disk</td><td>Small</td><td>AI review survives rebuild for all existing products</td></tr>
-<tr><td>2</td><td><strong>Remove 5 dead tables</strong> &mdash; curation_suggestions, component_review_queue, source_corpus, audit_log, runtime_events from schema + stores + statements</td><td>Medium</td><td>Clean schema, fewer tables to reason about</td></tr>
-<tr><td>3</td><td><strong>Full reconcile for brand_registry</strong> &mdash; delete brands removed from JSON (same pattern as color_registry)</td><td>Small</td><td>Brand JSON edits fully propagate</td></tr>
-<tr><td>4</td><td><strong>Full reconcile for product_catalog reseed</strong> &mdash; delete products removed from catalog JSON</td><td>Small</td><td>Product catalog JSON edits fully propagate</td></tr>
-<tr><td>5</td><td><strong>Full reconcile for user-settings</strong> &mdash; delete setting keys removed from JSON</td><td>Small</td><td>Settings JSON edits fully propagate</td></tr>
-<tr><td>6</td><td><strong>Fix product.json dedup bug</strong> &mdash; scanAndSeedCheckpoints creates duplicate products (Acer Cestus 310 &times;90). Checkpoint scanner needs brand+model+variant dedup, not just product_id.</td><td>Medium</td><td>Prevents duplicate product rows on rebuild</td></tr>
+<tr><td>1a</td><td><strong>Remove 5 dead tables</strong> &mdash; curation_suggestions, component_review_queue, source_corpus, audit_log, runtime_events</td><td>Medium</td><td>Clean schema, fewer tables to reason about</td></tr>
+<tr><td>1b</td><td><strong>Full reconcile for brand_registry</strong> &mdash; delete brands removed from JSON (color_registry pattern)</td><td>Small</td><td>Brand JSON edits fully propagate</td></tr>
+<tr><td>1c</td><td><strong>Full reconcile for product_catalog</strong> &mdash; delete products removed from catalog JSON</td><td>Small</td><td>Product catalog JSON edits fully propagate</td></tr>
+<tr><td>1d</td><td><strong>Full reconcile for user-settings</strong> &mdash; delete setting keys removed from JSON</td><td>Small</td><td>Settings JSON edits fully propagate</td></tr>
+<tr><td>1e</td><td><strong>Full reconcile for checkpoints</strong> &mdash; delete SQL rows for runs/products NOT found on disk</td><td>Small</td><td>Deleted run dirs clean up SQL</td></tr>
+<tr><td>1f</td><td><strong>Full reconcile for color_edition</strong> &mdash; delete rows for products NOT found on disk</td><td>Small</td><td>Deleted product dirs clean up SQL</td></tr>
+<tr><td>1g</td><td><strong>Fix product.json dedup bug</strong> &mdash; scanAndSeedCheckpoints creates duplicate products. Needs brand+model+variant dedup.</td><td>Medium</td><td>Prevents duplicate product rows on rebuild</td></tr>
 </tbody>
 </table>
+
+<p><strong>Phase 2: O(1) Seed Registry</strong> &mdash; unify seedSpecDb() monolith + reseedPhases[] into one registry. See Section 4.</p>
 
 <!-- ═══════════════════ SECTION 6 ═══════════════════ -->
 
@@ -289,114 +306,200 @@ logging, error isolation, and stale-row pruning.
 
 <!-- ═══════════════════ SECTION 7 ═══════════════════ -->
 
-<h2>7. JSON Data Duplication &amp; SSOT Violations</h2>
+<h2>7. SSOT Overlaps &mdash; JSON Must Be Sole Authority</h2>
 
-<p>Multiple JSON files contain overlapping data for the same entities. When they disagree, behavior is non-deterministic. This section maps every overlap, identifies the intended SSOT, and flags real problems.</p>
+<p><strong>Principle:</strong> JSON = SSOT. SQL = derived cache. Edit a JSON file, rebuild, SQL matches perfectly. No circular sync, no dual writes, no ambiguity about which copy wins.</p>
+<p>Four overlaps violate this principle today. Each must be resolved before the O(1) seed registry can be built, because the registry needs exactly one JSON source per surface &mdash; no conflicts.</p>
 
-<h3>Critical SSOT Violations (must fix)</h3>
-
-<div class="card">
-  <h4>Settings Circular Sync <span class="tag tag-issue">high severity</span></h4>
-  <p><strong>Overlap:</strong> <code>user-settings.json</code> &harr; <code>app.sqlite.settings</code></p>
-  <p><strong>Flow:</strong> Boot: JSON &rarr; SQL (hash-gated). Session: SQL mutates. Save: SQL &rarr; JSON (write-back). Next boot: JSON &rarr; SQL again.</p>
-  <p><strong>Problem:</strong> If a mutation happens but the write-back to JSON doesn&rsquo;t fire (crash, timeout), the change is lost on next boot. Two sessions editing concurrently = last-write-wins with no merge.</p>
-  <p><strong>Fix:</strong> Either drop JSON write-back and keep SQL as sole authority, or implement timestamp-based merge.</p>
-  <p><strong>Files:</strong> <code class="fp">src/db/appDbSeed.js</code>, <code class="fp">src/features/settings-authority/userSettingsService.js</code></p>
-</div>
+<!-- ── OVERLAP 1 ── -->
 
 <div class="card">
-  <h4>Queue State Dual Path <span class="tag tag-issue">medium severity</span></h4>
-  <p><strong>Overlap:</strong> <code>_queue/{cat}/state.json</code> vs <code>spec.sqlite.product_queue</code> vs <code>product.json</code> (runs_completed, latest_run_id)</p>
-  <p><strong>Problem:</strong> Queue storage adapter switches between SQL and JSON modes depending on whether specDb is available. No reconciliation on boot &mdash; whichever path is selected wins. If SQL and JSON diverge, reads are non-deterministic.</p>
-  <p><strong>Fix:</strong> Add hash-gated reconcile for queue state (same pattern as appDbSeed).</p>
+  <h4>Overlap 1: Product Identity <span class="tag tag-issue">blocking</span></h4>
+  <p><strong>Same data (brand, model, variant) lives in 4 places:</strong></p>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Written When</th><th>Contains</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">product_catalog.json</td><td>User adds product via GUI/CLI</td><td>brand, model, variant, category</td></tr>
+  <tr><td class="fp">product.json (per product)</td><td>Product added + after each run</td><td>Same identity fields + runs_completed, sources, fields</td></tr>
+  <tr><td class="fp">normalized.json (per product)</td><td>After extraction pipeline</td><td>Applied identity values (output snapshot)</td></tr>
+  <tr><td>SQL <code>products</code></td><td>Seed + reseed</td><td>Merged from all above</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Problem:</strong> If you edit <code>product_catalog.json</code> to fix a brand typo, <code>product.json</code> still has the old name. On rebuild, whoever seeds last wins &mdash; non-deterministic.</p>
+  <h4>Resolution</h4>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Role After Fix</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">product_catalog.json</td><td><span class="tag tag-done">SSOT</span> for product identity (brand, model, variant, category). Editable. Rebuild source.</td></tr>
+  <tr><td class="fp">product.json</td><td><strong>Run history only.</strong> Stores runs_completed, latest_run_id, sources[], fields[], query_cooldowns. Identity fields removed or marked as &ldquo;snapshot at creation, not authoritative.&rdquo;</td></tr>
+  <tr><td class="fp">normalized.json</td><td><strong>Derived output.</strong> Never read back during seed. Read-only snapshot of extraction results.</td></tr>
+  <tr><td>SQL <code>products</code></td><td><strong>Derived cache.</strong> Rebuilt from product_catalog.json (identity) + product.json (run history).</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Implementation:</strong></p>
+  <ol>
+    <li>Stop writing identity fields to <code>product.json</code> in <code>writeProductIdentity()</code> / <code>writeProductCheckpoint()</code> (or keep as non-authoritative snapshot with clear marker)</li>
+    <li>Seed path reads identity from <code>product_catalog.json</code> only, run history from <code>product.json</code></li>
+    <li>Reconcile: delete SQL products NOT in catalog JSON for that category</li>
+  </ol>
+  <p><strong>Files:</strong> <code class="fp">src/features/catalog/products/writeProductIdentity.js</code>, <code class="fp">src/pipeline/checkpoint/writeProductCheckpoint.js</code>, <code class="fp">src/db/seed.js</code> (seedProductCatalog)</p>
 </div>
+
+<!-- ── OVERLAP 2 ── -->
 
 <div class="card">
-  <h4>Override Data Drift <span class="tag tag-issue">medium severity</span></h4>
-  <p><strong>Overlap:</strong> <code>.overrides.json</code> vs <code>spec.sqlite.item_field_state</code> + <code>candidate_reviews</code></p>
-  <p><strong>Problem:</strong> Overrides written to JSON and SQL separately (not atomic). If JSON write succeeds but SQL fails (or vice versa), state diverges. On next <code>seedSpecDb()</code>, SQL re-seeds from JSON &mdash; if JSON write failed, the override is lost.</p>
-  <p><strong>Fix:</strong> Make override persistence atomic, or designate one as sole authority with the other as derived cache.</p>
+  <h4>Overlap 2: Queue / Run State <span class="tag tag-issue">blocking</span></h4>
+  <p><strong>Same data (runs_completed, latest_run_id, status) lives in 3 places:</strong></p>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Written When</th><th>Contains</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">_queue/state.json</td><td>Queue adapter writes after mutations</td><td>status, retry_count, last_run_id per product</td></tr>
+  <tr><td class="fp">product.json (per product)</td><td>After each run completes</td><td>runs_completed, latest_run_id, sources[]</td></tr>
+  <tr><td>SQL <code>product_queue</code></td><td>Seed + runtime</td><td>Full queue row (all fields)</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Problem:</strong> Queue adapter switches between SQL and JSON modes depending on whether specDb is available. No reconciliation &mdash; if SQL and JSON diverge, reads are non-deterministic. <code>runs_completed</code> in product.json can disagree with state.json.</p>
+  <h4>Resolution</h4>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Role After Fix</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">product.json</td><td><span class="tag tag-done">SSOT</span> for run accumulation: runs_completed, latest_run_id, sources[]. Updated after each run.</td></tr>
+  <tr><td class="fp">_queue/state.json</td><td><span class="tag tag-done">SSOT</span> for operational queue state: status, retry_count, priority. Separate concern from run history.</td></tr>
+  <tr><td>SQL <code>product_queue</code></td><td><strong>Derived cache.</strong> Rebuilt by merging product.json (run history) + state.json (queue ops). Single code path, no adapter switching.</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Implementation:</strong></p>
+  <ol>
+    <li>Kill the dual-path adapter &mdash; remove SQL-direct queue writes. All queue mutations write to state.json.</li>
+    <li>Seed path reads product.json for run history, state.json for queue ops, merges into SQL</li>
+    <li>Reconcile: delete SQL queue rows for products NOT found on disk</li>
+  </ol>
+  <p><strong>Files:</strong> <code class="fp">src/queue/queueState.js</code>, <code class="fp">src/pipeline/checkpoint/scanAndSeedCheckpoints.js</code>, <code class="fp">src/db/seed.js</code> (seedQueueState)</p>
 </div>
 
-<h3>Complete Overlap Map</h3>
+<!-- ── OVERLAP 3 ── -->
 
+<div class="card">
+  <h4>Overlap 3: Settings Circular Sync <span class="tag tag-issue">high severity</span></h4>
+  <p><strong>Same data (runtime, studio, ui settings) lives in 2 places:</strong></p>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Written When</th><th>Contains</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">user-settings.json</td><td>SQL mirrors to JSON after API mutations</td><td>runtime, convergence, storage, studio, ui sections</td></tr>
+  <tr><td>SQL <code>settings</code> + <code>studio_maps</code></td><td>Boot (from JSON) + API mutations</td><td>Same sections as rows</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Problem:</strong> Circular sync: Boot: JSON &rarr; SQL. Runtime: SQL mutates. Write-back: SQL &rarr; JSON. Next boot: JSON &rarr; SQL. If crash happens between SQL write and JSON mirror, the mutation is lost on next rebuild. Two concurrent sessions = last-write-wins with no merge.</p>
+  <h4>Resolution</h4>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Role After Fix</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">user-settings.json</td><td><span class="tag tag-done">SSOT</span> for all settings. API mutations write here directly. Editable by hand.</td></tr>
+  <tr><td>SQL <code>settings</code> + <code>studio_maps</code></td><td><strong>Derived cache.</strong> Rebuilt from JSON on boot via hash-gated reconcile. Never mutated at runtime.</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Implementation:</strong></p>
+  <ol>
+    <li>API mutation path (<code>userSettingsService</code>) writes to JSON file directly instead of SQL</li>
+    <li>Remove SQL &rarr; JSON mirror (the write-back). JSON is the only write target.</li>
+    <li>Boot path unchanged: JSON &rarr; SQL (hash-gated). But SQL is never mutated after boot.</li>
+    <li>Full reconcile: delete SQL setting keys NOT in JSON</li>
+  </ol>
+  <p><strong>Files:</strong> <code class="fp">src/features/settings-authority/userSettingsService.js</code>, <code class="fp">src/db/appDbSeed.js</code></p>
+</div>
+
+<!-- ── OVERLAP 4 ── -->
+
+<div class="card">
+  <h4>Overlap 4: Override Values <span class="tag tag-issue">medium severity</span></h4>
+  <p><strong>Same data (override_value, provenance, ai_review) lives in 3 places:</strong></p>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Written When</th><th>Contains</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">.overrides.json (per product)</td><td>Legacy: at review time. Phase E3: read-only</td><td>override_value, provenance, ai_review per field</td></tr>
+  <tr><td>SQL <code>item_field_state</code> + <code>candidate_reviews</code></td><td>Runtime (primary since Phase E3)</td><td>Same + more columns (confidence, timestamps)</td></tr>
+  <tr><td class="fp">latest/normalized.json</td><td>Finalize snapshot</td><td>Applied field values (derived output)</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Problem:</strong> Phase E3 made SQL the primary write target and JSON read-only. But for the &ldquo;JSON = SSOT&rdquo; goal, this is backwards. The .overrides.json files need to be the authority, and SQL must rebuild from them. Currently, pre-T3a products have stale .overrides.json files missing ai_review data.</p>
+  <h4>Resolution</h4>
+  <table class="ref">
+  <thead><tr><th>File</th><th>Role After Fix</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">.overrides.json</td><td><span class="tag tag-done">SSOT</span> for human decisions: override_value, provenance, ai_review. Runtime writes here first.</td></tr>
+  <tr><td>SQL <code>item_field_state</code></td><td><strong>Derived cache.</strong> Rebuilt from .overrides.json + candidates.json on seed.</td></tr>
+  <tr><td class="fp">latest/normalized.json</td><td><strong>Derived output.</strong> Never read back during seed. Snapshot only.</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Implementation:</strong></p>
+  <ol>
+    <li><strong>Backfill first:</strong> Export current SQL state to .overrides.json for all existing products (one-time, makes JSON current)</li>
+    <li>Flip write direction: override workflow writes to JSON first, SQL rebuilds from it</li>
+    <li>Seed path reads .overrides.json as authority for item_field_state override columns + candidate_reviews</li>
+    <li>normalized.json is never read during seed (output only)</li>
+  </ol>
+  <p><strong>Files:</strong> <code class="fp">src/features/review/domain/overrideWorkflow.js</code>, <code class="fp">src/features/review/domain/overrideHelpers.js</code>, <code class="fp">src/db/seed.js</code></p>
+</div>
+
+<!-- ── BENIGN OVERLAPS ── -->
+
+<h3>Benign Overlaps (no action needed)</h3>
 <table class="ref">
-<thead><tr><th>Data</th><th>Files That Contain It</th><th>SSOT Winner</th><th>Problem?</th></tr></thead>
+<thead><tr><th>Data</th><th>Files</th><th>Why It&rsquo;s Fine</th></tr></thead>
 <tbody>
 <tr>
-  <td><strong>Product identity</strong><br>(brand, model, variant)</td>
-  <td class="fp">product_catalog.json<br>product.json<br>normalized.json<br>SQL products</td>
-  <td>SQL is runtime authority. product_catalog.json is boot seed. product.json is immutable checkpoint.</td>
-  <td><span class="tag tag-done">benign</span> JSON is read-only</td>
+  <td><strong>Components</strong></td>
+  <td class="fp">component_db/*.json + _overrides/components/*.json</td>
+  <td>Intentional two-level layering: base source + mutation overlay. SQL is merged result.</td>
 </tr>
 <tr>
-  <td><strong>Queue state</strong><br>(status, rounds, last_run_id)</td>
-  <td class="fp">_queue/state.json<br>product.json<br>SQL product_queue</td>
-  <td>SQL primary, JSON fallback. product.json has partial subset.</td>
-  <td><span class="tag tag-issue">problem</span> dual-path, no reconcile</td>
+  <td><strong>Source URLs</strong></td>
+  <td class="fp">sources.json, run.json, product.json sources[]</td>
+  <td>Different scopes: strategy (input) vs execution (per-run) vs accumulation (cross-run). History files don&rsquo;t change when source strategy changes.</td>
 </tr>
 <tr>
-  <td><strong>Settings</strong><br>(runtime, storage, ui)</td>
-  <td class="fp">user-settings.json<br>SQL settings<br>runtime snapshots</td>
-  <td>Circular: JSON seeds SQL, SQL writes back to JSON.</td>
-  <td><span class="tag tag-issue">problem</span> circular sync</td>
-</tr>
-<tr>
-  <td><strong>Field overrides</strong><br>(override_value, provenance)</td>
-  <td class="fp">.overrides.json<br>normalized.json<br>SQL item_field_state</td>
-  <td>.overrides.json is override authority. normalized.json has applied values.</td>
-  <td><span class="tag tag-issue">problem</span> non-atomic dual write</td>
-</tr>
-<tr>
-  <td><strong>Candidate reviews</strong><br>(human + AI state)</td>
-  <td class="fp">.overrides.json (ai_review block)<br>SQL candidate_reviews</td>
-  <td>SQL is runtime authority. JSON is write-back for rebuild.</td>
-  <td><span class="tag tag-done">benign</span> clear direction (SQL &rarr; JSON)</td>
-</tr>
-<tr>
-  <td><strong>Components</strong><br>(identity, aliases, values)</td>
-  <td class="fp">component_db/*.json<br>_overrides/components/*.json<br>SQL tables</td>
-  <td>Intentional layering: source + mutations. SQL is merged result.</td>
-  <td><span class="tag tag-done">benign</span> intentional two-level</td>
-</tr>
-<tr>
-  <td><strong>Source URLs</strong><br>(strategy, crawl results, history)</td>
-  <td class="fp">sources.json<br>run.json<br>product.json sources<br>SQL crawl_sources</td>
-  <td>Clear separation: strategy vs execution vs accumulation vs index.</td>
-  <td><span class="tag tag-done">benign</span> different scopes</td>
-</tr>
-<tr>
-  <td><strong>Colors</strong><br>(name, hex)</td>
-  <td class="fp">color_registry.json<br>color_edition.json<br>SQL color_registry</td>
-  <td>color_registry.json is global SSOT. color_edition.json is per-product discovery (different data).</td>
-  <td><span class="tag tag-done">benign</span> different scopes</td>
+  <td><strong>Colors</strong></td>
+  <td class="fp">color_registry.json vs color_edition.json</td>
+  <td>Different data: global palette vs per-product discovery results.</td>
 </tr>
 <tr>
   <td><strong>Field ordering</strong></td>
-  <td class="fp">field_studio_map.json<br>field_key_order.json<br>SQL field_key_order</td>
-  <td>field_studio_map.json is primary. field_key_order.json is legacy fallback.</td>
-  <td><span class="tag tag-done">benign</span> fallback chain</td>
+  <td class="fp">field_studio_map.json vs field_key_order.json</td>
+  <td>Fallback chain with clear precedence. studio_map is primary.</td>
 </tr>
 <tr>
-  <td><strong>Run sources</strong><br>(per-URL crawl data)</td>
-  <td class="fp">run.json sources[]<br>product.json sources[]</td>
-  <td>run.json is per-run truth. product.json merges across runs (deduped by content_hash).</td>
-  <td><span class="tag tag-done">benign</span> accumulation pattern</td>
+  <td><strong>Run sources</strong></td>
+  <td class="fp">run.json sources[] vs product.json sources[]</td>
+  <td>Accumulation pattern: run.json is per-run, product.json merges across runs (deduped by content_hash).</td>
+</tr>
+<tr>
+  <td><strong>Candidate reviews</strong></td>
+  <td class="fp">.overrides.json (ai_review) vs SQL candidate_reviews</td>
+  <td>Covered by Overlap 4 resolution: .overrides.json becomes SSOT, SQL is cache.</td>
 </tr>
 </tbody>
 </table>
 
-<h3>Recommended SSOT Direction</h3>
+<!-- ── SSOT DIRECTION SUMMARY ── -->
 
-<p>For every overlap, the system should have <strong>exactly one write target</strong> with all other copies being derived:</p>
+<h3>SSOT Direction (after all 4 overlaps resolved)</h3>
+
+<p>Every data domain has <strong>exactly one JSON authority</strong>. SQL is always a derived cache rebuilt from JSON on boot.</p>
 
 <table class="ref">
-<thead><tr><th>Data</th><th>Should Be SSOT</th><th>Derived Copies</th></tr></thead>
+<thead><tr><th>Data Domain</th><th>JSON SSOT</th><th>SQL (Derived Cache)</th><th>Other Files</th></tr></thead>
 <tbody>
-<tr><td>Settings</td><td>SQL (app.sqlite.settings)</td><td>user-settings.json = export/rebuild seed only, never re-imported while SQL exists</td></tr>
-<tr><td>Queue state</td><td>SQL (product_queue)</td><td>state.json = export for rebuild only. product.json = checkpoint accumulator.</td></tr>
-<tr><td>Overrides</td><td>SQL (item_field_state + candidate_reviews)</td><td>.overrides.json = export for rebuild. Write-back should be atomic with SQL write.</td></tr>
-<tr><td>Product identity</td><td>SQL (products)</td><td>product_catalog.json = boot seed. product.json = checkpoint.</td></tr>
+<tr><td>Product identity</td><td class="fp">product_catalog.json</td><td>products</td><td>product.json = run history only (not identity)</td></tr>
+<tr><td>Run history</td><td class="fp">product.json + run.json</td><td>runs, product_runs, run_artifacts, crawl_sources</td><td>Immutable checkpoints, never edited</td></tr>
+<tr><td>Queue state</td><td class="fp">product.json + state.json</td><td>product_queue</td><td>Each owns its domain (run history vs ops)</td></tr>
+<tr><td>Settings</td><td class="fp">user-settings.json</td><td>settings, studio_maps</td><td>No mirror, no write-back. JSON only.</td></tr>
+<tr><td>Overrides</td><td class="fp">.overrides.json</td><td>item_field_state, candidate_reviews</td><td>normalized.json = derived output only</td></tr>
+<tr><td>Components</td><td class="fp">component_db/*.json + overrides</td><td>component_identity, _aliases, _values</td><td>Two-level layering (intentional)</td></tr>
+<tr><td>Lists / Enums</td><td class="fp">field rules + manual_enum_values.json</td><td>enum_lists, list_values</td><td>&mdash;</td></tr>
+<tr><td>Colors (global)</td><td class="fp">color_registry.json</td><td>color_registry</td><td>&mdash;</td></tr>
+<tr><td>Colors (per-product)</td><td class="fp">color_edition.json</td><td>color_edition_finder</td><td>&mdash;</td></tr>
+<tr><td>Brands</td><td class="fp">brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td>&mdash;</td></tr>
+<tr><td>LLM routes</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td><td>&mdash;</td></tr>
 </tbody>
 </table>
 

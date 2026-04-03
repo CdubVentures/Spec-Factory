@@ -37,7 +37,6 @@ function createMockCtx(overrides = {}) {
       readIndexLabRunRunMetaPacket: async () => null,
       readIndexLabRunSerpExplorer: async () => null,
       readIndexLabRunAutomationQueue: async () => null,
-      readIndexLabRunEvidenceIndex: async () => null,
       listIndexLabRuns: async () => [],
       buildRoundSummaryFromEvents: () => ({}),
       buildSearchHints: () => [],

@@ -48,8 +48,6 @@ const TABLES_WITH_PRODUCT_ID = [
   'bridge_events',
   'runtime_events',
   'billing_entries',
-  'evidence_documents',
-  'evidence_facts',
   'source_registry',
   'curation_suggestions',
   'component_review_queue',

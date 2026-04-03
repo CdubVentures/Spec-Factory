@@ -15,7 +15,6 @@ export {
   readIndexLabRunItemIndexingPacket,
   readIndexLabRunRunMetaPacket,
   readIndexLabRunSerpExplorer,
-  readIndexLabRunEvidenceIndex,
   readIndexLabRunAutomationQueue,
   listIndexLabRuns,
   buildIndexingDomainChecklist,

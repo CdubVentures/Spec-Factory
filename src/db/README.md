@@ -1,6 +1,6 @@
 ## Purpose
 
-SQLite-backed persistence layer for candidate data, review state, component identity, learning, billing, and queue management. Single `SpecDb` class provides a unified facade over 14 domain-specific store modules. Schema: 56 tables (55 regular + 1 FTS virtual table).
+SQLite-backed persistence layer for candidate data, review state, component identity, learning, billing, and queue management. Single `SpecDb` class provides a unified facade over 14 domain-specific store modules. Schema: 48 tables.
 
 Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, and seed hash tracking. Opened once at bootstrap, shared across all categories.
   - `getSeedHash(sourceKey)` / `setSeedHash(sourceKey, hash)` — hash-gated reconciliation state stored in settings table under `_seed_hashes` section
@@ -38,7 +38,7 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 ## Mutation Boundaries
 
 - SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 50 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route/source, telemetry indexes, crawl artifacts, evidence (FTS), brand/domain, runs, field_history, source_corpus
+- 48 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route/source, telemetry indexes, crawl artifacts, brand/domain, runs, field_history, source_corpus
 - 13 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, fieldHistoryStore, telemetryIndexStore, purgeStore, provenanceStore
 - Write access is through `SpecDb` methods only — consumers must not use raw SQL
 
