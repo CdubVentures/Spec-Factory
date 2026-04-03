@@ -12,7 +12,7 @@ Exports from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `pipeline/shared/`, `src/features/indexing/search/searchProviders.js`, `src/intel/sourceCorpus.js`, `src/core/config/`
+- **Allowed:** `pipeline/shared/`, `src/features/indexing/search/searchProviders.js`, `./sourceCorpus.js` (local), `src/core/config/`
 - **Forbidden:** Other pipeline phase folders
 
 ## Domain Invariants

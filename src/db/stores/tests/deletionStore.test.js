@@ -242,39 +242,7 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     brand: 'TestBrand', modelName: 'TestModel', variant: '',
   });
 
-  // source_intel_domains (INSERT OR REPLACE — safe for multi-run seeding)
-  specDb.upsertSourceIntelDomain({
-    root_domain: new URL(url).hostname, category: cat,
-    scope: 'domain', scope_key: new URL(url).hostname,
-    brand: '', attempts: 1, http_ok_count: 1,
-    identity_match_count: 1, major_anchor_conflict_count: 0,
-    fields_contributed_count: 1, fields_accepted_count: 1, accepted_critical_fields_count: 0,
-    products_seen: 1, approved_attempts: 1, candidate_attempts: 1,
-    parser_runs: 1, parser_success_count: 1,
-    parser_health_score_total: 0.95, endpoint_signal_count: 1,
-    endpoint_signal_score_total: 0.9, planner_score: 0.8,
-    field_reward_strength: 0.7, recent_products: JSON.stringify([productId]),
-    per_field_helpfulness: '{}', fingerprint_counts: '{}', extra_stats: '{}',
-  });
 
-  // source_intel_field_rewards (INSERT OR REPLACE)
-  specDb.upsertSourceIntelFieldReward({
-    root_domain: new URL(url).hostname, scope: 'domain',
-    scope_key: new URL(url).hostname, field: 'weight', method: 'llm_extract',
-    seen_count: 1, success_count: 1, fail_count: 0, contradiction_count: 0,
-    success_rate: 1.0, contradiction_rate: 0.0, reward_score: 1.0,
-  });
-
-  // learning_profiles (uses product_id in profile_id + run-unique content_hash for key)
-  specDb.upsertLearningProfile({
-    profile_id: `lp_${productId}_${contentHash.slice(0, 8)}`, category: cat,
-    brand: 'TestBrand', model: 'TestModel', variant: contentHash.slice(0, 4),
-    runs_total: 1, validated_runs: 0, validated: false,
-    unknown_field_rate: 0, unknown_field_rate_avg: 0,
-    parser_health_avg: 0.95, preferred_urls: '[]', feedback_urls: '[]',
-    uncertain_fields: '[]', host_stats: '{}',
-    critical_fields_below: '[]', last_run: runId, parser_health: 0.95,
-  });
 }
 
 /** Seed product identity rows (not deleted by deleteProductHistory). */

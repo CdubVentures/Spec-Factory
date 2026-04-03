@@ -57,14 +57,17 @@ function normalizeCatalogProducts(catalogDoc = {}) {
     if (!brand || !model) {
       continue;
     }
+    const baseModel = String(row.base_model || '').trim();
     // WHY: Defense-in-depth — strip fabricated variants at read boundary.
+    // Use base_model for the check, not full model (variant tokens appear in full model).
     let variant = cleanVariant(row.variant);
-    if (variant && isFabricatedVariant(model, variant)) {
+    if (variant && isFabricatedVariant(baseModel, variant)) {
       variant = '';
     }
     rows.push({
       productId: String(productId || '').trim(),
       brand,
+      base_model: baseModel,
       model,
       variant,
       brand_identifier: String(row.brand_identifier || '').trim(),
@@ -148,6 +151,7 @@ export async function loadCatalogProducts({ category, config = {} }) {
     return products.map((row) => ({
       productId: row.productId,
       brand: row.brand,
+      base_model: row.base_model,
       model: row.model,
       variant: row.variant,
       brand_identifier: row.brand_identifier || '',
@@ -159,7 +163,7 @@ export async function loadCatalogProducts({ category, config = {} }) {
 
 /**
  * Load products with field values from app-owned catalog + overrides docs.
- * Returns [{ brand, model, variant, canonical_fields: {...} }] or [].
+ * Returns [{ brand, base_model, model, variant, canonical_fields: {...} }] or [].
  */
 export async function loadCatalogProductsWithFields({ category, config = {} }) {
   const cat = String(category ?? '').trim().toLowerCase();
@@ -175,6 +179,7 @@ export async function loadCatalogProductsWithFields({ category, config = {} }) {
     return products.map((row) => ({
       productId: row.productId,
       brand: row.brand,
+      base_model: row.base_model,
       model: row.model,
       variant: row.variant,
       brand_identifier: row.brand_identifier || '',

@@ -9,7 +9,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { defaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
-import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../../intel/sourceCorpus.js';
+import { searchSourceCorpus as _defaultSearchSourceCorpus } from './sourceCorpus.js';
 import { configValue, configBool } from '../../../../shared/settingsAccessor.js';
 import {
   buildPlanOnlyResults,

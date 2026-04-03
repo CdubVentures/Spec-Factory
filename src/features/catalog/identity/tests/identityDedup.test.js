@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cleanVariant,
+  deriveFullModel,
   isFabricatedVariant,
   normalizeProductIdentity
 } from '../identityDedup.js';
@@ -123,4 +124,56 @@ test('normalizeProductIdentity: null inputs produce empty strings', () => {
   assert.equal(result.brand, '');
   assert.equal(result.model, '');
   assert.equal(result.variant, '');
+});
+
+// --- normalizeProductIdentity: canonical triple { base_model, model, variant } ---
+
+test('normalizeProductIdentity: returns base_model and derived model for base-only input', () => {
+  const result = normalizeProductIdentity('mouse', 'Razer', 'Viper V3 Pro', '');
+  assert.equal(result.base_model, 'Viper V3 Pro');
+  assert.equal(result.model, 'Viper V3 Pro');
+  assert.equal(result.variant, '');
+});
+
+test('normalizeProductIdentity: returns derived model when variant is real', () => {
+  const result = normalizeProductIdentity('mouse', 'Finalmouse', 'ULX Prophecy', 'Scream');
+  assert.equal(result.base_model, 'ULX Prophecy');
+  assert.equal(result.model, 'ULX Prophecy Scream');
+  assert.equal(result.variant, 'Scream');
+});
+
+test('normalizeProductIdentity: fabricated variant stripped, model equals base_model', () => {
+  const result = normalizeProductIdentity('mouse', 'Acer', 'Cestus 310', '310');
+  assert.equal(result.base_model, 'Cestus 310');
+  assert.equal(result.model, 'Cestus 310');
+  assert.equal(result.variant, '');
+  assert.equal(result.wasCleaned, true);
+  assert.equal(result.reason, 'fabricated_variant_stripped');
+});
+
+test('normalizeProductIdentity: null inputs produce empty base_model and model', () => {
+  const result = normalizeProductIdentity('mouse', null, null, null);
+  assert.equal(result.base_model, '');
+  assert.equal(result.model, '');
+  assert.equal(result.variant, '');
+});
+
+// --- deriveFullModel ---
+
+test('deriveFullModel: base + variant produces full name', () => {
+  assert.equal(deriveFullModel('ULX Prophecy', 'Scream'), 'ULX Prophecy Scream');
+});
+
+test('deriveFullModel: no variant returns base only', () => {
+  assert.equal(deriveFullModel('AW610M', ''), 'AW610M');
+});
+
+test('deriveFullModel: trims whitespace', () => {
+  assert.equal(deriveFullModel('  Viper V3 Pro  ', '  White  '), 'Viper V3 Pro White');
+});
+
+test('deriveFullModel: null/undefined handled', () => {
+  assert.equal(deriveFullModel(null, null), '');
+  assert.equal(deriveFullModel(undefined, ''), '');
+  assert.equal(deriveFullModel('G502', null), 'G502');
 });

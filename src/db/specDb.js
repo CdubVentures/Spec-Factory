@@ -84,7 +84,6 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _getLlmCache: this._getLlmCache, _upsertLlmCache: this._upsertLlmCache, _evictExpiredCache: this._evictExpiredCache,
-        _upsertLearningProfile: this._upsertLearningProfile, _upsertCategoryBrain: this._upsertCategoryBrain,
         _upsertSourceCorpus: this._upsertSourceCorpus, _insertRuntimeEvent: this._insertRuntimeEvent,
         _insertBridgeEvent: this._insertBridgeEvent, _getBridgeEventsByRunId: this._getBridgeEventsByRunId,
       }
@@ -723,8 +722,7 @@ export class SpecDb {
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
       'source_registry', 'source_artifacts', 'source_assertions', 'source_evidence_refs',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
-      'billing_entries', 'llm_cache', 'learning_profiles', 'category_brain',
-      'source_intel_domains', 'source_intel_field_rewards',
+      'billing_entries', 'llm_cache',
       'source_corpus', 'runtime_events',
       'color_edition_finder'
     ];
@@ -794,17 +792,6 @@ export class SpecDb {
   setLlmCacheEntry(k, r, ts, ttl) { this._sourceIntelStore.setLlmCacheEntry(k, r, ts, ttl); }
   evictExpiredCache(ms) { return this._sourceIntelStore.evictExpiredCache(ms); }
 
-  // --- Learning Profiles ---
-
-  upsertLearningProfile(p) { this._sourceIntelStore.upsertLearningProfile(p); }
-  getLearningProfile(pid) { return this._sourceIntelStore.getLearningProfile(pid); }
-
-  // --- Category Brain ---
-
-  upsertCategoryBrainArtifact(c, n, p) { this._sourceIntelStore.upsertCategoryBrainArtifact(c, n, p); }
-  getCategoryBrainArtifacts(c) { return this._sourceIntelStore.getCategoryBrainArtifacts(c); }
-  getCategoryBrainArtifact(c, n) { return this._sourceIntelStore.getCategoryBrainArtifact(c, n); }
-
   // --- Source Corpus ---
 
   upsertSourceCorpusDoc(d) { this._sourceIntelStore.upsertSourceCorpusDoc(d); }
@@ -845,13 +832,6 @@ export class SpecDb {
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
   getVideosByProduct(pid) { return this._artifactStore.getVideosByProduct(pid); }
   getCrawlSourceByHash(hash, pid) { return this._artifactStore.getCrawlSourceByHash(hash, pid); }
-
-  // --- Source Intelligence ---
-
-  upsertSourceIntelDomain(e) { this._sourceIntelStore.upsertSourceIntelDomain(e); }
-  upsertSourceIntelFieldReward(e) { this._sourceIntelStore.upsertSourceIntelFieldReward(e); }
-  persistSourceIntelFull(c, d) { this._sourceIntelStore.persistSourceIntelFull(c, d); }
-  loadSourceIntelDomains(c) { return this._sourceIntelStore.loadSourceIntelDomains(c); }
 
   // --- Field History (crash-recovery persistence for search progression) ---
 

@@ -22,6 +22,18 @@ export function cleanVariant(variant) {
 }
 
 /**
+ * Derive the full model name from base_model + variant.
+ * base_model is the family name, variant is the differentiator.
+ * model = base_model when no variant, base_model + " " + variant otherwise.
+ */
+export function deriveFullModel(baseModel, variant) {
+  const b = String(baseModel ?? '').trim();
+  const v = String(variant ?? '').trim();
+  if (!b) return v;
+  return v ? `${b} ${v}` : b;
+}
+
+/**
  * Detect whether a variant is "fabricated" — i.e. its tokens are
  * already present in the model name, so it adds no distinguishing info.
  *
@@ -50,19 +62,23 @@ export function isFabricatedVariant(model, variant) {
 }
 
 /**
- * Normalize a product identity for sync — strips fabricated variants
- * and produces a canonical productId.
+ * Canonical identity normalizer — the ONE place that owns the
+ * { base_model, variant } → { base_model, model, variant } derivation.
  *
- * Returns { productId, brand, model, variant, wasCleaned, reason }
+ * @param {string} category — reserved (unused, kept for call-site compat)
+ * @param {string} brand
+ * @param {string} model — the base_model value (user-entered family name)
+ * @param {string} variant
+ * @returns {{ brand: string, base_model: string, model: string, variant: string, wasCleaned: boolean, reason: string|null }}
  */
 export function normalizeProductIdentity(category, brand, model, variant) {
   const cleanedBrand = String(brand ?? '').trim();
-  const cleanedModel = String(model ?? '').trim();
+  const cleanedBaseModel = String(model ?? '').trim();
   let cleanedVariant = cleanVariant(variant);
   let wasCleaned = false;
   let reason = null;
 
-  if (cleanedVariant && isFabricatedVariant(cleanedModel, cleanedVariant)) {
+  if (cleanedVariant && isFabricatedVariant(cleanedBaseModel, cleanedVariant)) {
     cleanedVariant = '';
     wasCleaned = true;
     reason = 'fabricated_variant_stripped';
@@ -70,7 +86,8 @@ export function normalizeProductIdentity(category, brand, model, variant) {
 
   return {
     brand: cleanedBrand,
-    model: cleanedModel,
+    base_model: cleanedBaseModel,
+    model: deriveFullModel(cleanedBaseModel, cleanedVariant),
     variant: cleanedVariant,
     wasCleaned,
     reason

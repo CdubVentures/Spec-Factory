@@ -135,6 +135,13 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}WebSearch`] = phaseOverride.webSearch ?? false;
     merged[`${prefix}Thinking`] = phaseOverride.thinking ?? false;
     merged[`${prefix}ThinkingEffort`] = phaseOverride.thinkingEffort || '';
+    merged[`${prefix}FallbackModel`]          = phaseOverride.fallbackModel || merged[def.globalFallbackModel] || '';
+    merged[`${prefix}FallbackReasoningModel`] = phaseOverride.fallbackReasoningModel || merged[def.globalFallbackReasoningModel] || '';
+    merged[`${prefix}FallbackUseReasoning`]   = phaseOverride.fallbackUseReasoning ?? false;
+    merged[`${prefix}FallbackThinking`]       = phaseOverride.fallbackThinking ?? false;
+    merged[`${prefix}FallbackThinkingEffort`] = phaseOverride.fallbackThinkingEffort || '';
+    merged[`${prefix}FallbackWebSearch`]      = phaseOverride.fallbackWebSearch ?? false;
+    merged[`${prefix}DisableLimits`]          = phaseOverride.disableLimits ?? false;
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

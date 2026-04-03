@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computePageContentHash, computeFileContentHash } from '../contentHash.js';
+import { computePageContentHash, computeFileContentHash, sha256Hex } from '../contentHash.js';
 
 // --- computePageContentHash ---
 
@@ -39,6 +39,49 @@ describe('computePageContentHash', () => {
   test('returns empty string for whitespace-only input', () => {
     assert.equal(computePageContentHash('   '), '');
     assert.equal(computePageContentHash('\n\t'), '');
+  });
+});
+
+// --- sha256Hex ---
+
+describe('sha256Hex', () => {
+  test('returns 64-char hex SHA-256 for string input', () => {
+    const hash = sha256Hex('hello');
+    assert.equal(typeof hash, 'string');
+    assert.equal(hash.length, 64);
+    assert.match(hash, /^[0-9a-f]{64}$/);
+  });
+
+  test('is deterministic — same input produces same hash', () => {
+    assert.equal(sha256Hex('test'), sha256Hex('test'));
+  });
+
+  test('different input produces different hash', () => {
+    assert.notEqual(sha256Hex('aaa'), sha256Hex('bbb'));
+  });
+
+  test('returns empty string for empty input', () => {
+    assert.equal(sha256Hex(''), '');
+  });
+
+  test('returns empty string for null', () => {
+    assert.equal(sha256Hex(null), '');
+  });
+
+  test('returns empty string for undefined', () => {
+    assert.equal(sha256Hex(undefined), '');
+  });
+
+  test('does NOT trim — whitespace-only input produces a hash', () => {
+    const hash = sha256Hex('   ');
+    assert.equal(hash.length, 64);
+  });
+
+  test('known value: sha256("hello") matches expected', () => {
+    assert.equal(
+      sha256Hex('hello'),
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+    );
   });
 });
 

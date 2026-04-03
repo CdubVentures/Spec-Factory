@@ -421,6 +421,11 @@ function enqueueUserSettingsPersist(task) {
   return nextTask;
 }
 
+// WHY: user-settings.json is a durable seed cache for DB rebuild, not an independent
+// source of truth. seedAppDb reads it when app.sqlite is recreated from scratch.
+// Without this mirror, any settings persisted only to SQL are lost on rebuild.
+// Manual edits to user-settings.json are picked up on next DB rebuild but
+// overwritten on the next SQL persist.
 function shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot }) {
   if (!appDb) return false;
   if (settingsRoot !== null || categoryAuthorityRoot !== null) return true;
@@ -488,16 +493,28 @@ export async function persistUserSettingsSections(options = {}) {
       const payload = deriveSettingsArtifactsFromUserSettings(merged).snapshot;
       assertValidSnapshot(payload);
       writeSettingsToAppDb(appDb, payload);
-      if (shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot })) {
-        const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
-        const filePath = path.join(resolvedRoot, USER_SETTINGS_FILE);
-        await writeUserSettingsFile(filePath, payload);
-      }
       recordSettingsWriteOutcome({
         sections: requestedSections,
         target: 'app.sqlite',
         success: true,
       });
+      // WHY: Mirror SQL writes to user-settings.json so seedAppDb has current data
+      // on DB rebuild. Best-effort — SQL already committed, mirror failure must not
+      // propagate to the caller or mask the successful SQL write.
+      if (shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot })) {
+        try {
+          const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
+          const filePath = path.join(resolvedRoot, USER_SETTINGS_FILE);
+          await writeUserSettingsFile(filePath, payload);
+        } catch (mirrorErr) {
+          recordSettingsWriteOutcome({
+            sections: requestedSections,
+            target: USER_SETTINGS_FILE,
+            success: false,
+            reason: mirrorErr?.code || mirrorErr?.message || 'json_mirror_write_failed',
+          });
+        }
+      }
       return payload;
     } catch (error) {
       recordSettingsWriteOutcome({
@@ -578,6 +595,7 @@ export function snapshotUiSettings(state = {}) {
 const PHASE_RESOLUTION_INPUTS = [
   'llmPhaseOverridesJson', 'llmModelPlan', 'llmModelReasoning',
   'llmPlanUseReasoning', 'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage',
+  'llmPlanFallbackModel', 'llmReasoningFallbackModel',
 ];
 
 function rebuildDerivedConfigState(config, appliedKeys) {

@@ -16,6 +16,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 const columns: ColumnDef<CatalogRow, unknown>[] = [
   { accessorKey: 'brand', header: 'Brand', size: 100 },
   { accessorKey: 'model', header: 'Model', size: 150 },
+  { accessorKey: 'base_model', header: 'Base Model', size: 130 },
   {
     accessorKey: 'variant',
     header: 'Variant',
@@ -147,7 +148,7 @@ export function OverviewPage() {
           searchable
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
-          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model, row.variant)}
+          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.base_model, row.variant)}
         />
       </div>
     </div>

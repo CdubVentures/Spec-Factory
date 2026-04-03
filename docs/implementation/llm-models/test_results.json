@@ -1,0 +1,625 @@
+{
+  "timestamp": "2026-04-02 01:00:25",
+  "openai": [
+    {
+      "model": "gpt-5",
+      "base": {
+        "ok": true,
+        "time": 4.9
+      },
+      "thinking": {
+        "ok": true,
+        "time": 6.2,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 4.4,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.1,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5-high",
+      "base": {
+        "ok": true,
+        "time": 10.8
+      },
+      "thinking": {
+        "ok": true,
+        "time": 10.7,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 7.1,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 4.9,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5-medium",
+      "base": {
+        "ok": true,
+        "time": 5.6
+      },
+      "thinking": {
+        "ok": true,
+        "time": 8.6,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 4.9,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 4.8,
+        "valid_json": false
+      }
+    },
+    {
+      "model": "gpt-5-low",
+      "base": {
+        "ok": true,
+        "time": 2.3
+      },
+      "thinking": {
+        "ok": true,
+        "time": 5.1,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 3.5,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.7,
+        "valid_json": false
+      }
+    },
+    {
+      "model": "gpt-5-minimal",
+      "base": {
+        "ok": true,
+        "time": 1.9
+      },
+      "thinking": {
+        "ok": true,
+        "time": 2.3,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 1.8,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 1.9,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.1",
+      "base": {
+        "ok": true,
+        "time": 1.7
+      },
+      "thinking": {
+        "ok": true,
+        "time": 5.5,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 3.9,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.4,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.1-high",
+      "base": {
+        "ok": true,
+        "time": 3.3
+      },
+      "thinking": {
+        "ok": true,
+        "time": 3.3,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 3.8,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.3,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.1-medium",
+      "base": {
+        "ok": true,
+        "time": 4.0
+      },
+      "thinking": {
+        "ok": true,
+        "time": 4.5,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 2.5,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 1.7,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.1-low",
+      "base": {
+        "ok": true,
+        "time": 3.7
+      },
+      "thinking": {
+        "ok": true,
+        "time": 2.4,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 2.9,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 2.7,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.2",
+      "base": {
+        "ok": true,
+        "time": 1.5
+      },
+      "thinking": {
+        "ok": true,
+        "time": 3.1,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 2.1,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 2.1,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.2-xhigh",
+      "base": {
+        "ok": true,
+        "time": 1.5
+      },
+      "thinking": {
+        "ok": true,
+        "time": 7.9,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 5.1,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.1,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.2-high",
+      "base": {
+        "ok": true,
+        "time": 1.3
+      },
+      "thinking": {
+        "ok": true,
+        "time": 6.3,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 5.5,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 2.3,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.2-medium",
+      "base": {
+        "ok": true,
+        "time": 1.3
+      },
+      "thinking": {
+        "ok": true,
+        "time": 3.0,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 2.2,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 2.3,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.2-low",
+      "base": {
+        "ok": true,
+        "time": 1.2
+      },
+      "thinking": {
+        "ok": true,
+        "time": 3.3,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 1.6,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 2.1,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.4",
+      "base": {
+        "ok": true,
+        "time": 5.5
+      },
+      "thinking": {
+        "ok": true,
+        "time": 8.2,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 19.2,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 9.2,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.4-xhigh",
+      "base": {
+        "ok": true,
+        "time": 4.6
+      },
+      "thinking": {
+        "ok": true,
+        "time": 5.8,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 28.0,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 7.4,
+        "valid_json": false
+      }
+    },
+    {
+      "model": "gpt-5.4-high",
+      "base": {
+        "ok": true,
+        "time": 5.1
+      },
+      "thinking": {
+        "ok": true,
+        "time": 4.9,
+        "has_reasoning": false
+      },
+      "web": {
+        "ok": true,
+        "time": 17.0,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 5.5,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.4-medium",
+      "base": {
+        "ok": true,
+        "time": 11.5
+      },
+      "thinking": {
+        "ok": true,
+        "time": 8.5,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 12.9,
+        "has_date": true
+      },
+      "json": {
+        "ok": true,
+        "time": 3.3,
+        "valid_json": true
+      }
+    },
+    {
+      "model": "gpt-5.4-low",
+      "base": {
+        "ok": true,
+        "time": 3.5
+      },
+      "thinking": {
+        "ok": true,
+        "time": 5.7,
+        "has_reasoning": true
+      },
+      "web": {
+        "ok": true,
+        "time": 6.4,
+        "has_date": false
+      },
+      "json": {
+        "ok": true,
+        "time": 2.9,
+        "valid_json": true
+      }
+    }
+  ],
+  "gemini": [
+    {
+      "model": "gemini-2.5-flash-lite",
+      "base": {
+        "ok": true,
+        "time": 0.8
+      },
+      "web": {
+        "ok": false,
+        "time": 0.4,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 58s."
+      },
+      "json": {
+        "ok": false,
+        "time": 0.4,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 58s."
+      }
+    },
+    {
+      "model": "gemini-2.5-flash",
+      "base": {
+        "ok": true,
+        "time": 1.9
+      },
+      "web": {
+        "ok": false,
+        "time": 0.4,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 57s."
+      },
+      "json": {
+        "ok": false,
+        "time": 0.4,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 56s."
+      }
+    },
+    {
+      "model": "gemini-2.5-pro",
+      "base": {
+        "ok": false,
+        "time": 6.4,
+        "error": "No capacity available for model gemini-2.5-pro on the server"
+      },
+      "web": {
+        "ok": false,
+        "time": 6.1,
+        "error": "No capacity available for model gemini-2.5-pro on the server"
+      },
+      "json": {
+        "ok": false,
+        "time": 5.2,
+        "error": "No capacity available for model gemini-2.5-pro on the server"
+      }
+    },
+    {
+      "model": "gemini-3-flash-preview",
+      "base": {
+        "ok": false,
+        "time": 0.1,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 39s."
+      },
+      "web": {
+        "ok": false,
+        "time": 0.1,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 39s."
+      },
+      "json": {
+        "ok": false,
+        "time": 0.1,
+        "error": "You have exhausted your capacity on this model. Your quota will reset after 38s."
+      }
+    },
+    {
+      "model": "gemini-3.1-flash-lite-preview",
+      "base": {
+        "ok": false,
+        "time": 0.1,
+        "error": "Requested entity was not found."
+      },
+      "web": {
+        "ok": false,
+        "time": 0.1,
+        "error": "Requested entity was not found."
+      },
+      "json": {
+        "ok": false,
+        "time": 0.1,
+        "error": "Requested entity was not found."
+      }
+    },
+    {
+      "model": "gemini-3.1-pro-preview",
+      "base": {
+        "ok": false,
+        "time": 5.6,
+        "error": "No capacity available for model gemini-3.1-pro-preview on the server"
+      },
+      "web": {
+        "ok": true,
+        "time": 51.5,
+        "has_date": false
+      },
+      "json": {
+        "ok": true,
+        "time": 39.3,
+        "valid_json": false
+      }
+    }
+  ],
+  "claude": [
+    {
+      "model": "claude-sonnet-4-5",
+      "base": {
+        "ok": false,
+        "time": 6.0,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":411,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "thinking": {
+        "ok": false,
+        "time": 4.4,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":431,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "web": {
+        "ok": false,
+        "time": 5.1,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":1325,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Fail"
+      },
+      "json": {
+        "ok": false,
+        "time": 4.3,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":388,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      }
+    },
+    {
+      "model": "claude-opus-4-1",
+      "base": {
+        "ok": false,
+        "time": 4.1,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":373,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "thinking": {
+        "ok": false,
+        "time": 4.3,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":374,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "web": {
+        "ok": false,
+        "time": 4.3,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":889,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "json": {
+        "ok": false,
+        "time": 5.1,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":334,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      }
+    },
+    {
+      "model": "claude-opus-4-6",
+      "base": {
+        "ok": false,
+        "time": 3.9,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":416,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "thinking": {
+        "ok": false,
+        "time": 4.0,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":383,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "web": {
+        "ok": false,
+        "time": 4.3,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":390,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "json": {
+        "ok": false,
+        "time": 5.1,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":1170,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Fail"
+      }
+    },
+    {
+      "model": "claude-haiku-4-5",
+      "base": {
+        "ok": false,
+        "time": 5.5,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":458,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "thinking": {
+        "ok": false,
+        "time": 5.6,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":331,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "web": {
+        "ok": false,
+        "time": 4.7,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":345,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      },
+      "json": {
+        "ok": false,
+        "time": 4.2,
+        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":407,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
+      }
+    }
+  ]
+}

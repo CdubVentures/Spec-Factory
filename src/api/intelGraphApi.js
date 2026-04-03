@@ -1,40 +1,10 @@
 import http from 'node:http';
-import { loadSourceIntel } from '../intel/sourceIntel.js';
-import { nextBestUrlsFromHypotheses } from '../features/indexing/learning/index.js';
 import { toInt } from '../shared/valueNormalizers.js';
 
 function jsonResponse(res, statusCode, payload) {
   res.statusCode = statusCode;
   res.setHeader('content-type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
-}
-
-function topPathsForDomain(domain, limit = 10) {
-  return Object.values(domain?.per_path || {})
-    .sort((a, b) => (b.planner_score || 0) - (a.planner_score || 0))
-    .slice(0, Math.max(1, limit))
-    .map((row) => ({
-      path: row.path || '/',
-      planner_score: row.planner_score || 0,
-      attempts: row.attempts || 0,
-      identity_match_rate: row.identity_match_rate || 0,
-      major_anchor_conflict_rate: row.major_anchor_conflict_rate || 0,
-      fields_accepted_count: row.fields_accepted_count || 0
-    }));
-}
-
-function compactDomain(domain, topPathLimit = 10) {
-  return {
-    rootDomain: domain.rootDomain,
-    planner_score: domain.planner_score || 0,
-    attempts: domain.attempts || 0,
-    identity_match_rate: domain.identity_match_rate || 0,
-    major_anchor_conflict_rate: domain.major_anchor_conflict_rate || 0,
-    fields_accepted_count: domain.fields_accepted_count || 0,
-    accepted_critical_fields_count: domain.accepted_critical_fields_count || 0,
-    products_seen: domain.products_seen || 0,
-    top_paths: topPathsForDomain(domain, topPathLimit)
-  };
 }
 
 function pickBestEvidence(provenance, field, limit = 10) {
@@ -227,37 +197,13 @@ function includesOperation(query, operationName) {
 
 async function resolveGraphRequest({ storage, config, defaultCategory, query, variables, specDb = null }) {
   const category = String(variables.category || defaultCategory || 'mouse');
-  const intel = await loadSourceIntel({ storage, config, category });
-  const domains = Object.values(intel.data.domains || {});
-  const topPathLimit = toInt(variables.topPaths, 10);
   const data = {};
-
-  if (includesOperation(query, 'topDomains')) {
-    const limit = Math.max(1, toInt(variables.limit, 20));
-    data.topDomains = domains
-      .sort((a, b) => (b.planner_score || 0) - (a.planner_score || 0))
-      .slice(0, limit)
-      .map((domain) => compactDomain(domain, topPathLimit));
-  }
-
-  if (includesOperation(query, 'domainStats') || includesOperation(query, 'hostStats')) {
-    const rootDomain = String(variables.rootDomain || variables.host || '').toLowerCase().trim();
-    const found = domains.find((item) => item.rootDomain === rootDomain) || null;
-    const compact = found ? compactDomain(found, topPathLimit) : null;
-    if (includesOperation(query, 'domainStats')) {
-      data.domainStats = compact;
-    }
-    if (includesOperation(query, 'hostStats')) {
-      data.hostStats = compact;
-    }
-  }
 
   const needsProduct =
     includesOperation(query, 'product') ||
     includesOperation(query, 'missingCriticalFields') ||
     includesOperation(query, 'bestEvidence') ||
     includesOperation(query, 'whyFieldRejected') ||
-    includesOperation(query, 'nextBestUrls') ||
     includesOperation(query, 'conflictGraph');
   let productSnapshot = null;
   if (needsProduct) {
@@ -290,16 +236,6 @@ async function resolveGraphRequest({ storage, config, defaultCategory, query, va
       : null;
   }
 
-  if (includesOperation(query, 'nextBestUrls')) {
-    const field = String(variables.field || '').trim();
-    const limit = Math.max(1, toInt(variables.limit, 10));
-    data.nextBestUrls = nextBestUrlsFromHypotheses({
-      hypothesisQueue: productSnapshot?.summary?.hypothesis_queue || [],
-      field,
-      limit
-    });
-  }
-
   if (includesOperation(query, 'conflictGraph')) {
     const limit = Math.max(1, toInt(variables.limit, 100));
     data.conflictGraph = buildConflictGraph(productSnapshot, limit);
@@ -307,7 +243,7 @@ async function resolveGraphRequest({ storage, config, defaultCategory, query, va
 
   if (Object.keys(data).length === 0) {
     throw new Error(
-      'No supported operation found in query. Supported: topDomains, domainStats, hostStats, product, missingCriticalFields, bestEvidence, whyFieldRejected, nextBestUrls, conflictGraph'
+      'No supported operation found in query. Supported: product, missingCriticalFields, bestEvidence, whyFieldRejected, conflictGraph'
     );
   }
 

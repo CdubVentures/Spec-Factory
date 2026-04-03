@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { nowIso } from '../../../shared/primitives.js';
 import { createFieldRulesEngine } from '../../../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../../../engine/runtimeGate.js';
@@ -856,7 +857,14 @@ export async function finalizeOverrides({
     },
     overrides
   };
-  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
+  // WHY: Write override envelope to disk so AI review state and all override
+  // data survives DB rebuild. SQL is still the authoritative runtime source.
+  try {
+    const diskEnvelope = await readOverrideFile(overridePath, { specDb, category, productId });
+    if (diskEnvelope && overridePath) {
+      await fs.writeFile(overridePath, JSON.stringify(diskEnvelope, null, 2), 'utf8');
+    }
+  } catch { /* best-effort — SQL is authoritative */ }
 
   return {
     applied: true,

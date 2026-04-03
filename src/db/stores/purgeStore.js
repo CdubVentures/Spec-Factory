@@ -122,13 +122,11 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
       // Audit + optional tables
       clearedArtifacts += db.prepare('DELETE FROM audit_log WHERE category = ?').run(cat).changes;
-      try { clearedArtifacts += db.prepare('DELETE FROM category_brain WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM source_corpus WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM runtime_events WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM bridge_events WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM runs WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM run_artifacts WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
-      try { clearedArtifacts += db.prepare('DELETE FROM source_intel_domains WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
     });
     tx();
 

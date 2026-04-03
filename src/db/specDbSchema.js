@@ -556,93 +556,6 @@ CREATE TABLE IF NOT EXISTS llm_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_llmc_expiry ON llm_cache(timestamp);
 
--- Migration Phase 4: Learning profiles
-CREATE TABLE IF NOT EXISTS learning_profiles (
-  profile_id TEXT PRIMARY KEY,
-  category TEXT NOT NULL,
-  brand TEXT DEFAULT '',
-  model TEXT DEFAULT '',
-  variant TEXT DEFAULT '',
-  runs_total INTEGER DEFAULT 0,
-  validated_runs INTEGER DEFAULT 0,
-  validated INTEGER DEFAULT 0,
-  unknown_field_rate REAL DEFAULT 0,
-  unknown_field_rate_avg REAL DEFAULT 0,
-  parser_health_avg REAL DEFAULT 0,
-  preferred_urls TEXT DEFAULT '[]',
-  feedback_urls TEXT DEFAULT '[]',
-  uncertain_fields TEXT DEFAULT '[]',
-  host_stats TEXT DEFAULT '[]',
-  critical_fields_below TEXT DEFAULT '[]',
-  last_run TEXT DEFAULT '{}',
-  parser_health TEXT DEFAULT '{}',
-  updated_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_lp_category ON learning_profiles(category);
-
--- Migration Phase 5: Category brain
-CREATE TABLE IF NOT EXISTS category_brain (
-  category TEXT NOT NULL,
-  artifact_name TEXT NOT NULL,
-  payload TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  PRIMARY KEY (category, artifact_name)
-);
-
--- Migration Phase 6: Source intelligence
-CREATE TABLE IF NOT EXISTS source_intel_domains (
-  root_domain TEXT NOT NULL,
-  category TEXT NOT NULL,
-  scope TEXT NOT NULL DEFAULT 'domain',
-  scope_key TEXT NOT NULL DEFAULT '',
-  brand TEXT DEFAULT '',
-  attempts INTEGER DEFAULT 0,
-  http_ok_count INTEGER DEFAULT 0,
-  identity_match_count INTEGER DEFAULT 0,
-  major_anchor_conflict_count INTEGER DEFAULT 0,
-  fields_contributed_count INTEGER DEFAULT 0,
-  fields_accepted_count INTEGER DEFAULT 0,
-  accepted_critical_fields_count INTEGER DEFAULT 0,
-  products_seen INTEGER DEFAULT 0,
-  approved_attempts INTEGER DEFAULT 0,
-  candidate_attempts INTEGER DEFAULT 0,
-  parser_runs INTEGER DEFAULT 0,
-  parser_success_count INTEGER DEFAULT 0,
-  parser_health_score_total REAL DEFAULT 0,
-  endpoint_signal_count INTEGER DEFAULT 0,
-  endpoint_signal_score_total REAL DEFAULT 0,
-  planner_score REAL DEFAULT 0,
-  field_reward_strength REAL DEFAULT 0,
-  recent_products TEXT DEFAULT '[]',
-  per_field_helpfulness TEXT DEFAULT '{}',
-  fingerprint_counts TEXT DEFAULT '{}',
-  extra_stats TEXT DEFAULT '{}',
-  last_seen_at TEXT,
-  updated_at TEXT,
-  PRIMARY KEY (root_domain, category, scope, scope_key)
-);
-CREATE INDEX IF NOT EXISTS idx_sid_category ON source_intel_domains(category);
--- WHY: idx_sid_scope moved to SECONDARY_INDEXES (runs after migration that recreates source_intel_domains with scope column)
-
-CREATE TABLE IF NOT EXISTS source_intel_field_rewards (
-  root_domain TEXT NOT NULL,
-  scope TEXT NOT NULL DEFAULT 'domain',
-  scope_key TEXT NOT NULL DEFAULT '',
-  field TEXT NOT NULL,
-  method TEXT NOT NULL DEFAULT 'unknown',
-  seen_count REAL DEFAULT 0,
-  success_count REAL DEFAULT 0,
-  fail_count REAL DEFAULT 0,
-  contradiction_count REAL DEFAULT 0,
-  success_rate REAL DEFAULT 0,
-  contradiction_rate REAL DEFAULT 0,
-  reward_score REAL DEFAULT 0,
-  last_seen_at TEXT,
-  last_decay_at TEXT,
-  PRIMARY KEY (root_domain, scope, scope_key, field, method)
-);
-CREATE INDEX IF NOT EXISTS idx_sifr_domain ON source_intel_field_rewards(root_domain);
-
 -- Migration Phase 7: Source corpus
 CREATE TABLE IF NOT EXISTS source_corpus (
   url TEXT PRIMARY KEY,
@@ -1109,7 +1022,6 @@ export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs
 export const KEY_REVIEW_STATE_BOOLEAN_KEYS = Object.freeze(['ai_confirm_primary_interrupted', 'ai_confirm_shared_interrupted', 'user_override_ai_primary', 'user_override_ai_shared']);
 export const PRODUCT_RUN_BOOLEAN_KEYS = Object.freeze(['is_latest', 'validated']);
 export const SOURCE_CORPUS_BOOLEAN_KEYS = Object.freeze(['identity_match', 'approved_domain']);
-export const LEARNING_PROFILE_BOOLEAN_KEYS = Object.freeze(['validated']);
 export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
 
 // WHY: SSOT for component identity property keys (synthetic __-prefixed keys).

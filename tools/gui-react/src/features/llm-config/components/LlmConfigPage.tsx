@@ -208,6 +208,8 @@ export function LlmConfigPage() {
   const globalDraft = useMemo(() => ({
     llmModelPlan: policy.models.plan,
     llmModelReasoning: policy.models.reasoning,
+    llmPlanFallbackModel: policy.models.planFallback,
+    llmReasoningFallbackModel: policy.models.reasoningFallback,
     llmPlanUseReasoning: policy.reasoning.enabled,
     llmMaxOutputTokensPlan: policy.tokens.plan,
     llmMaxOutputTokensTriage: policy.tokens.triage,
@@ -216,8 +218,11 @@ export function LlmConfigPage() {
   }), [
     policy.models.plan,
     policy.models.reasoning,
+    policy.models.planFallback,
+    policy.models.reasoningFallback,
     policy.reasoning.enabled,
     policy.tokens.plan,
+    policy.tokens.triage,
     policy.timeoutMs,
     policy.tokens.maxTokens,
   ]);

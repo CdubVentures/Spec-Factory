@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spec Factory - O(1) and Vertical Audit</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --bg-deep: #e7dcc8;
+      --panel: rgba(255, 252, 247, 0.9);
+      --panel-strong: rgba(255, 252, 247, 0.98);
+      --line: rgba(50, 39, 23, 0.12);
+      --ink: #201810;
+      --muted: #685948;
+      --accent: #7a4f20;
+      --accent-2: #1f5d4b;
+      --danger: #a13324;
+      --warn: #a66a14;
+      --ok: #2d6948;
+      --shadow: 0 24px 60px rgba(44, 31, 16, 0.12);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(122, 79, 32, 0.16), transparent 34%),
+        radial-gradient(circle at top right, rgba(31, 93, 75, 0.14), transparent 28%),
+        linear-gradient(180deg, var(--bg) 0%, #efe7d9 100%);
+    }
+    .wrap { width: min(1320px, calc(100vw - 48px)); margin: 0 auto; padding: 32px 0 72px; }
+    .hero, .section {
+      background: linear-gradient(135deg, rgba(255, 249, 240, 0.96), rgba(245, 235, 220, 0.96));
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+    }
+    .hero { position: relative; overflow: hidden; padding: 34px 34px 28px; }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -120px -140px auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(122, 79, 32, 0.18), transparent 68%);
+      pointer-events: none;
+    }
+    .eyebrow, .severity, .kicker, th, .pill, .meta span, .nav a {
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .eyebrow {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(122, 79, 32, 0.08);
+      border: 1px solid rgba(122, 79, 32, 0.15);
+    }
+    h1 { margin: 16px 0 12px; font-size: clamp(36px, 5vw, 68px); line-height: 0.95; letter-spacing: -0.04em; max-width: 9.5em; }
+    .lede, .section-note, .foot { color: var(--muted); line-height: 1.6; }
+    .lede { margin: 0; max-width: 74ch; font-size: 18px; }
+    .meta, .nav { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .meta span, .nav a, .pill, .severity {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--line);
+      color: #4f4234;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.1;
+      text-decoration: none;
+    }
+    .section { margin-top: 24px; padding: 24px; border-radius: var(--radius); }
+    .section h2 { margin: 0 0 8px; font-size: 30px; letter-spacing: -0.03em; }
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+    .stat, .panel, .issue {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+    }
+    .stat { min-height: 148px; padding: 18px; }
+    .kicker { color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .value { margin-top: 10px; font-size: clamp(30px, 3.8vw, 48px); line-height: 0.95; letter-spacing: -0.05em; }
+    .detail { margin-top: 10px; color: #4e4338; font-size: 14px; line-height: 1.45; }
+    .bands { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+    .panel { padding: 18px; }
+    .panel h3, .issue h3 { margin: 0; letter-spacing: -0.02em; }
+    .panel h3 { font-size: 20px; }
+    .callout-list { margin: 0; padding-left: 20px; color: #473a2f; line-height: 1.58; }
+    .ranking { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .issue { position: relative; padding: 18px 18px 18px 22px; overflow: hidden; }
+    .issue::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--accent); }
+    .issue.blocker::before { background: var(--danger); }
+    .issue.major::before { background: var(--warn); }
+    .issue.moderate::before { background: var(--accent-2); }
+    .issue-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .issue h3 { font-size: 24px; letter-spacing: -0.03em; }
+    .issue .sub { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .severity { white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .severity.blocker { color: var(--danger); }
+    .severity.major { color: var(--warn); }
+    .severity.moderate { color: var(--accent-2); }
+    .issue dl { margin: 16px 0 0; display: grid; gap: 10px; }
+    .issue dt { color: var(--muted); font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .issue dd { margin: 3px 0 0; color: #43372b; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: rgba(255,255,255,0.7); }
+    th, td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(121, 94, 57, 0.06); }
+    tr:last-child td { border-bottom: none; }
+    .mono, code { font-family: Consolas, "SFMono-Regular", Menlo, monospace; font-size: 0.94em; }
+    .danger { color: var(--danger); }
+    .warn { color: var(--warn); }
+    .ok { color: var(--ok); }
+    @media (max-width: 1120px) { .stats, .ranking, .bands { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) {
+      .wrap { width: min(100vw - 24px, 1320px); padding-top: 16px; }
+      .hero, .section { padding: 18px; }
+      th, td { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="eyebrow">Architecture Audit • April 2, 2026</span>
+      <h1>Spec Factory O(1) + Vertical Slice Audit</h1>
+      <p class="lede">
+        Fresh live-repo audit of <code>src/</code> against the repo's own architecture rule: the preferred top-level shape is
+        <code>app</code>, <code>core</code>, <code>shared</code>, and <code>features</code>, and standard system changes should scale in
+        O(1) through registries and generic engines. The repo has broad structural drift, but the real delivery bottlenecks cluster
+        into a smaller set of high-friction areas.
+      </p>
+      <div class="meta">
+        <span><strong>32</strong> top-level <code>src/</code> directories scanned</span>
+        <span><strong>28</strong> non-canonical top-level directories</span>
+        <span><strong>13</strong> major offender areas</span>
+        <span><strong>58</strong> platform-to-feature internal bypass imports</span>
+        <span><strong>25</strong> files above 700 LOC</span>
+      </div>
+      <div class="nav">
+        <a href="#scoreboard">Scoreboard</a>
+        <a href="#offenders">Major Offenders</a>
+        <a href="#evidence">Evidence</a>
+        <a href="#plan">Refactor Order</a>
+      </div>
+    </section>
+
+    <section class="section" id="scoreboard">
+      <h2>Scoreboard</h2>
+      <p class="section-note">
+        Strict drift count and practical bottleneck count are different. Almost the whole tree is off the preferred shape, but not
+        every non-canonical folder blocks O(1) change cost equally.
+      </p>
+      <div class="stats">
+        <article class="stat">
+          <div class="kicker">Strict Drift</div>
+          <div class="value">28</div>
+          <div class="detail">
+            Top-level <code>src/</code> directories outside the canonical <code>app/core/shared/features</code> structure.
+          </div>
+        </article>
+        <article class="stat">
+          <div class="kicker">Major Offenders</div>
+          <div class="value">13</div>
+          <div class="detail">
+            Areas that materially increase change surface, split authority, or bypass feature-owned boundaries.
+          </div>
+        </article>
+        <article class="stat">
+          <div class="kicker">Undocumented</div>
+          <div class="value">21</div>
+          <div class="detail">
+            Top-level directories missing both <code>README.md</code> and <code>DOMAIN.md</code>, which raises boundary ambiguity.
+          </div>
+        </article>
+        <article class="stat">
+          <div class="kicker">API Bypass</div>
+          <div class="value">58</div>
+          <div class="detail">
+            Platform-layer imports into feature internals that skip feature public APIs and force cross-slice coordination.
+          </div>
+        </article>
+        <article class="stat">
+          <div class="kicker">Large Files</div>
+          <div class="value">25</div>
+          <div class="detail">
+            Files above the repo's 700-line soft limit. These concentrate drift, hidden coupling, and review overhead.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>What Counts As The Answer</h2>
+      <p class="section-note">
+        If the question is "how many areas are both non-vertical and not O(1)?", the useful answer is <strong>13 major offenders</strong>.
+        That is the set most likely to slow delivery, scatter ownership, or turn routine changes into multi-file hunts.
+      </p>
+      <div class="bands">
+        <article class="panel">
+          <h3>Blockers</h3>
+          <ul class="callout-list">
+            <li><code>src/pipeline</code></li>
+            <li><code>src/api</code> plus <code>src/app/api</code></li>
+            <li><code>src/categories</code></li>
+            <li><code>src/utils</code></li>
+            <li><code>src/indexlab</code></li>
+            <li><code>src/cli</code> plus <code>src/app/cli</code></li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>Structural Debt Satellites</h3>
+          <ul class="callout-list">
+            <li><code>src/testing</code></li>
+            <li><code>src/queue</code></li>
+            <li><code>src/publish</code></li>
+            <li><code>src/intel</code></li>
+            <li><code>src/retrieve</code></li>
+            <li><code>src/concurrency</code></li>
+            <li><code>src/billing</code></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="offenders">
+      <h2>Major Offenders</h2>
+      <p class="section-note">
+        Severity reflects delivery friction, authority split, and public-API bypass pressure, not just folder size.
+      </p>
+      <div class="ranking">
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/pipeline</code></h3>
+              <div class="sub">A second orchestration layer exists beside <code>src/features/indexing/pipeline/**</code>.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>pipeline -&gt; features = 14</code> production import edges, including deep indexing and crawl imports.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Indexing changes can require edits in top-level pipeline seams plus feature-owned pipeline code.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Runtime orchestration escapes the indexing slice instead of being vertically owned by it.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/api</code> + <code>src/app/api</code></h3>
+              <div class="sub">Two route-authority layers coexist, and the live server still reaches into feature internals.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>api -&gt; features = 33</code>; <code>api</code> alone accounts for <code>28</code> feature-internal bypass imports.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Route work can touch feature route files, server assembly, and stale route metadata instead of one authority.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Platform code assembles feature runtime behavior by importing internals instead of consuming feature exports.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/categories</code></h3>
+              <div class="sub">Category and source authority still sit outside the indexing slice while controlling indexing behavior.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd>Source and tier logic are split across <code>src/categories/loader.js</code>, <code>sourceFileService.js</code>, and <code>sourceRegistry.js</code>.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Tier or source changes are not one-file edits because authority, loading, and derivation are fragmented.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Indexing runtime depends on a top-level category layer rather than one feature-owned source authority path.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/utils</code></h3>
+              <div class="sub">The repo forbids it as a dumping ground, but production features still lean on it heavily.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>features -&gt; utils = 16</code> production edges, and the architecture doc explicitly bans new generic dumping-ground usage.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Routine changes require call-site hunting because behavior lives in ad hoc helpers rather than registries or slice APIs.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Ownership gets blurred across unrelated features whenever shared logic lands in a generic top-level bucket.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/indexlab</code></h3>
+              <div class="sub">A second app surface depends directly on indexing internals rather than a stable indexing contract.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd>Bridge and serializer files in <code>src/indexlab</code> track indexing runtime structures and event shapes directly.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Indexing contract changes leak into IndexLab adapters and runtime-bridge files instead of staying inside one exported API.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Observability and run-lab behavior are not cleanly attached to one feature boundary.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue blocker">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/cli</code> + <code>src/app/cli</code></h3>
+              <div class="sub">Command entrypoints are split across two top-level surfaces.</div>
+            </div>
+            <span class="severity blocker">Blocker</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>cli -&gt; app = 18</code> import edges and a large central command surface in <code>src/cli/spec.js</code>.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>CLI work can require edits in legacy command wiring plus app-owned command assembly.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>CLI ownership is split between shell-level code and app-level composition instead of one boundary.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue major">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/testing</code></h3>
+              <div class="sub">Huge harness files form a cross-cutting maintenance choke point.</div>
+            </div>
+            <span class="severity major">Major</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>testDataProvider.js = 2964 LOC</code> and <code>testRunnerPipeline.js = 1628 LOC</code>.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Test-mode evolution gets trapped in monoliths rather than small feature-owned contract harnesses.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Cross-slice harness logic grows outside the features it is meant to protect.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue major">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/queue</code></h3>
+              <div class="sub">Queue behavior sits in an undocumented top-level bucket and is imported directly by features.</div>
+            </div>
+            <span class="severity major">Major</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>features -&gt; queue = 7</code> production edges with no local boundary doc.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Queue changes require call-site coordination across features instead of flowing through a single queue contract.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Routing and queue orchestration live outside the slice that owns the runtime workflow.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue major">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/publish</code></h3>
+              <div class="sub">Publishing behavior remains a shared top-level layer rather than a feature-owned contract surface.</div>
+            </div>
+            <span class="severity major">Major</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>19</code> files, roughly <code>163 KB</code>, and direct feature imports without boundary documentation.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Publish-path changes risk scattering between consumer features and a top-level shared implementation.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Finalization logic is not clearly attached to one domain slice or app-level contract.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue major">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/retrieve</code></h3>
+              <div class="sub">Retrieval logic influences indexing outcomes from outside the indexing feature boundary.</div>
+            </div>
+            <span class="severity major">Major</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>tierAwareRetriever.js</code> alone is <code>777 LOC</code> in an undocumented top-level package.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Evidence scoring rules are harder to change safely because retrieval logic is not co-located with indexing authority.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Retrieval policy sits beside, not inside, the feature that owns indexing decisions.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue major">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/intel</code></h3>
+              <div class="sub">Learning and reporting surfaces exist as a sidecar top-level domain with partial runtime integration.</div>
+            </div>
+            <span class="severity major">Major</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd>Undocumented top-level package with direct consumers, but no clear feature-owned read/write contract.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Intel changes can affect batch, reporting, and indexing-adjacent paths without one governing interface.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Operational intelligence is neither a clean feature slice nor a clear core service.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue moderate">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/concurrency</code></h3>
+              <div class="sub">Small compared with the blockers, but structurally misplaced and undocumented.</div>
+            </div>
+            <span class="severity moderate">Moderate</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>13</code> files at the top level instead of a stable <code>core/concurrency</code> home.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Concurrency policy is not clearly centralized under a core contract.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>Infrastructure mechanics leak as their own top-level domain instead of an app or core service.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="issue moderate">
+          <div class="issue-top">
+            <div>
+              <h3><code>src/billing</code></h3>
+              <div class="sub">A small but still non-canonical domain with unclear placement and no local boundary contract.</div>
+            </div>
+            <span class="severity moderate">Moderate</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>6</code> files, undocumented, and still separate from both app-shell and feature boundaries.</dd>
+            </div>
+            <div>
+              <dt>O(1) Failure</dt>
+              <dd>Billing-related changes do not advertise a single authority path.</dd>
+            </div>
+            <div>
+              <dt>Vertical Failure</dt>
+              <dd>The domain is not clearly owned by one slice or one core boundary.</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="evidence">
+      <h2>Structural Evidence</h2>
+      <p class="section-note">
+        These counts come from a live scan of the current repo on April 2, 2026. Import-edge metrics exclude test files and focus
+        on production code because the goal is developer throughput and runtime ownership, not harness topology.
+      </p>
+      <div class="bands">
+        <article class="panel">
+          <h3>Top Cross-Directory Production Edges</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Edge</th>
+                <th>Count</th>
+                <th>What It Means</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">features -&gt; shared</td>
+                <td>101</td>
+                <td>Normal shared-boundary usage.</td>
+              </tr>
+              <tr>
+                <td class="mono">features -&gt; core</td>
+                <td>47</td>
+                <td>Normal core-boundary usage.</td>
+              </tr>
+              <tr>
+                <td class="mono">api -&gt; features</td>
+                <td class="danger">33</td>
+                <td>Large direct platform reach into feature code.</td>
+              </tr>
+              <tr>
+                <td class="mono">cli -&gt; app</td>
+                <td class="warn">18</td>
+                <td>Split command composition surface.</td>
+              </tr>
+              <tr>
+                <td class="mono">features -&gt; utils</td>
+                <td class="danger">16</td>
+                <td>Shared dumping-ground gravity.</td>
+              </tr>
+              <tr>
+                <td class="mono">pipeline -&gt; features</td>
+                <td class="danger">14</td>
+                <td>Top-level orchestration bypasses feature boundaries.</td>
+              </tr>
+              <tr>
+                <td class="mono">features -&gt; field-rules</td>
+                <td class="warn">12</td>
+                <td>Not counted as a top blocker, but still structurally non-canonical.</td>
+              </tr>
+              <tr>
+                <td class="mono">features -&gt; queue</td>
+                <td class="warn">7</td>
+                <td>Runtime queueing is not vertically owned.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <h3>Platform Layers Bypassing Feature Public APIs</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Layer</th>
+                <th>Bypasses</th>
+                <th>Public API Imports</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">src/api</td>
+                <td class="danger">28</td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td class="mono">src/pipeline</td>
+                <td class="danger">13</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td class="mono">src/app</td>
+                <td class="warn">8</td>
+                <td>3</td>
+              </tr>
+              <tr>
+                <td class="mono">src/cli</td>
+                <td class="warn">5</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td class="mono">src/indexlab</td>
+                <td class="warn">3</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td class="mono">src/testing</td>
+                <td>1</td>
+                <td>0</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Direct O(1) Drift Points</h2>
+      <p class="section-note">
+        The biggest O(1) failures are not abstract. They are concrete places where one routine change can still trigger edits across
+        multiple top-level authorities.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Split Authority</th>
+            <th>Why It Is Not O(1)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">GUI routes</td>
+            <td><code>src/api/guiServerRuntime.js</code> plus <code>src/app/api/routeRegistry.js</code></td>
+            <td>The mounted route list and exported route order are not the same SSOT, so route work can require multiple edits and drift review.</td>
+          </tr>
+          <tr>
+            <td class="mono">Indexing orchestration</td>
+            <td><code>src/pipeline/runProduct.js</code> plus <code>src/features/indexing/pipeline/**</code></td>
+            <td>Pipeline-stage changes can cross a top-level runner, feature orchestration helpers, and seam code.</td>
+          </tr>
+          <tr>
+            <td class="mono">Source and tier authority</td>
+            <td><code>src/categories/loader.js</code>, <code>sourceFileService.js</code>, <code>sourceRegistry.js</code></td>
+            <td>Tier and source behavior are loaded, validated, and transformed in separate layers instead of one registry chain.</td>
+          </tr>
+          <tr>
+            <td class="mono">CLI entrypoints</td>
+            <td><code>src/cli/spec.js</code> plus <code>src/app/cli/**</code></td>
+            <td>Command work is not guaranteed to stay inside one composition surface.</td>
+          </tr>
+          <tr>
+            <td class="mono">Utility behavior</td>
+            <td><code>src/utils/**</code> plus many feature call sites</td>
+            <td>Behavior accretes through helper reuse rather than one owned contract or registry.</td>
+          </tr>
+          <tr>
+            <td class="mono">Retrieval policy</td>
+            <td><code>src/retrieve/**</code> plus indexing consumers</td>
+            <td>Evidence-scoring policy is not vertically co-located with the slice that owns indexing outcomes.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Tree Shape Snapshot</h2>
+      <p class="section-note">
+        Not every non-canonical directory is equally harmful. The table below separates large top-level areas that are structurally
+        off-shape from the smaller subset that I counted as major blockers.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Directory</th>
+            <th>Files</th>
+            <th>Approx Size</th>
+            <th>Docs</th>
+            <th>Assessment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">src/db</td>
+            <td>68</td>
+            <td>690.9 KB</td>
+            <td>README + DOMAIN</td>
+            <td>Heavy, but at least boundary-documented, so not counted as a top blocker in this pass.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/indexlab</td>
+            <td>62</td>
+            <td>442.9 KB</td>
+            <td>README only</td>
+            <td class="danger">Counted as a blocker because it couples to indexing internals.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/ingest</td>
+            <td>29</td>
+            <td>300.0 KB</td>
+            <td>README only</td>
+            <td>Large and non-canonical, but currently less fragmented than pipeline or API assembly.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/testing</td>
+            <td>10</td>
+            <td>256.6 KB</td>
+            <td>None</td>
+            <td class="warn">Counted as major due to giant harness monoliths.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/field-rules</td>
+            <td>26</td>
+            <td>235.6 KB</td>
+            <td>README only</td>
+            <td>Structurally non-canonical, but not a first-wave blocker compared with categories or pipeline.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/engine</td>
+            <td>48</td>
+            <td>235.5 KB</td>
+            <td>README only</td>
+            <td>Still off-shape, but less directly tied to the top O(1) change-path failures.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/api</td>
+            <td>47</td>
+            <td>223.9 KB</td>
+            <td>README only</td>
+            <td class="danger">Counted as a blocker due to route authority drift and feature-internal imports.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/publish</td>
+            <td>19</td>
+            <td>163.0 KB</td>
+            <td>None</td>
+            <td class="warn">Counted as major because features import it directly without a clear contract.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/pipeline</td>
+            <td>24</td>
+            <td>131.6 KB</td>
+            <td>README only</td>
+            <td class="danger">Counted as a blocker because it duplicates feature-owned orchestration.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/retrieve</td>
+            <td>11</td>
+            <td>87.8 KB</td>
+            <td>None</td>
+            <td class="warn">Counted as major because retrieval policy affects indexing from outside the slice.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Hotspot Files</h2>
+      <p class="section-note">
+        File size is not the same thing as architectural drift, but giant files reliably correlate with hidden branches,
+        cross-cutting responsibility, and expensive reviews.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>LOC</th>
+            <th>Why It Matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">src/testing/testDataProvider.js</td>
+            <td class="danger">2964</td>
+            <td>Test harness monolith and a direct drag on test-surface evolution.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/db/seed.js</td>
+            <td class="warn">1884</td>
+            <td>Large system bootstrap surface; not counted as a top blocker, but still expensive to change safely.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/testing/testRunnerPipeline.js</td>
+            <td class="danger">1628</td>
+            <td>Another test choke point that centralizes too much flow logic.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/features/crawl/crawlSession.js</td>
+            <td class="warn">1084</td>
+            <td>Large feature file inside a valid slice; a hotspot, but not a top-level verticality failure.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/ingest/compileFieldRuleBuilder.js</td>
+            <td class="warn">1083</td>
+            <td>Evidence that non-canonical infrastructure layers still carry a lot of complexity.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/field-rules/compiler.js</td>
+            <td class="warn">1070</td>
+            <td>Shared compiler surface outside canonical boundaries.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/indexlab/runtimeBridgeEventHandlers.js</td>
+            <td class="danger">1019</td>
+            <td>Shows why IndexLab was counted: it is large and tightly coupled to runtime event shapes.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/retrieve/tierAwareRetriever.js</td>
+            <td class="danger">777</td>
+            <td>Large retrieval-policy hotspot outside the indexing slice.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/categories/loader.js</td>
+            <td class="danger">624</td>
+            <td>Central category/source loader that splits indexing authority across top-level layers.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/cli/spec.js</td>
+            <td class="warn">631</td>
+            <td>Large central command surface in the split CLI stack.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="plan">
+      <h2>Recommended Refactor Order</h2>
+      <p class="section-note">
+        The sequence below is optimized for the fastest drop in change cost and the biggest reduction in cross-slice coupling.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Move</th>
+            <th>Expected Payoff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Collapse <code>src/pipeline</code> into feature-owned indexing orchestration.</td>
+            <td>Removes the biggest split-runtime authority and cuts the highest-value non-vertical drift.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Unify <code>src/api</code> and <code>src/app/api</code> around one mounted route SSOT.</td>
+            <td>Route changes become safer, more local, and easier to reason about.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Move category/source authority fully into one indexing-owned registry chain.</td>
+            <td>Tier and source work gets much closer to true one-file change cost.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Delete <code>src/utils</code> as a category by relocating each helper to core, shared, or the owning feature.</td>
+            <td>Restores ownership clarity and removes generic-helper gravity.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Put IndexLab behind a stable exported indexing contract.</td>
+            <td>Indexing internals can change without breaking the run-lab surface.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Merge <code>src/cli</code> and <code>src/app/cli</code> into one command assembly boundary.</td>
+            <td>CLI changes stop crossing two orchestration stacks.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>Then absorb <code>queue</code>, <code>publish</code>, <code>retrieve</code>, and <code>intel</code> into owning slices or clear core contracts.</td>
+            <td>This cleans up the second wave after the highest-friction boundary splits are gone.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>Split the giant testing harness files after runtime boundaries are stabilized.</td>
+            <td>Prevents test-surface refactors from being invalidated by continuing runtime architecture churn.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Bottom Line</h2>
+      <p class="section-note">
+        Strictly speaking, the repo has <strong>28</strong> non-canonical top-level directories. Practically, the number that should
+        drive planning is <strong>13</strong> major offender areas. Of those, the most expensive blockers are the split pipeline,
+        split API assembly, split source authority, <code>src/utils</code>, IndexLab coupling, and the two-headed CLI surface.
+      </p>
+      <p class="foot">
+        Method: live scan of the checked-out repo on April 2, 2026. "Major offender" means the area is both structurally non-vertical
+        and likely to increase normal change cost beyond O(1) by splitting authority, bypassing feature public APIs, or centralizing
+        too much cross-slice logic.
+      </p>
+    </section>
+</body>
+</html>

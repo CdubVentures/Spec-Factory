@@ -4,6 +4,7 @@ import type { LinkedProduct } from '../../types/componentReview.ts';
 interface CatalogEntry {
   productId: string;
   brand: string;
+  base_model: string;
   model: string;
 }
 
@@ -25,7 +26,7 @@ function resolveDisplay(
   catalogMap: Map<string, CatalogEntry>,
 ): { brand: string; model: string } {
   const entry = catalogMap.get(productId);
-  if (entry) return { brand: entry.brand, model: entry.model };
+  if (entry) return { brand: entry.brand, model: entry.base_model };
   return { brand: '', model: productId };
 }
 

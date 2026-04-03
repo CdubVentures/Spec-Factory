@@ -39,6 +39,7 @@ export interface ProductSummary extends ProductSummaryGen {
 export interface NormalizedProduct {
   identity: {
     brand: string;
+    base_model: string;
     model: string;
     variant?: string;
   };

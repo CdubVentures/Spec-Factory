@@ -22,8 +22,8 @@
 | Product catalog and brand registry | SQL `products` table (SSOT), `.workspace/products/{pid}/product.json` (rebuild file), `product_catalog.json` (read-only boot seed) | `products`, `brands`, queue snapshots, review payload identity blocks |
 | Accepted field/component/list values | `item_field_state`, `component_values`, `list_values` | review payloads, normalized output, learning reports |
 | Queue state | `product_queue` plus file-backed queue helpers in `src/queue/queueState.js` | runtime dashboards, review queue, daemon selection |
-| Billing and learning telemetry | `billing_entries`, `learning_profiles`, `category_brain`, `_billing/*`, `_learning/*` | Billing GUI, learning suggestions, reports |
-| Runtime/evidence telemetry | `runtime_events`, `evidence_*`, `source_*`, `source_intel_*` | Runtime Ops, IndexLab analytics, evidence search |
+| Billing telemetry | `billing_entries`, `_billing/*` | Billing GUI, reports |
+| Runtime/evidence telemetry | `runtime_events`, `evidence_*`, `source_corpus` | Runtime Ops, IndexLab analytics, evidence search |
 
 ## Migration Path
 
@@ -37,7 +37,7 @@
 - The schema comment at the bottom of `src/db/specDbSchema.js` explicitly states that the removed `source_strategy` table is no longer used; `sources.json` under category authority is the SSOT for source strategy.
 - `evidence_chunks_fts` is the only verified virtual table in the schema; it indexes `evidence_chunks` text for evidence search.
 - Several columns hold JSON-encoded text payloads (`meta`, `host_stats`, `per_field_helpfulness`, `last_run`, `data`, `fields`, `methods`) even though the underlying SQLite type is `TEXT`.
-- Store modules are composited via `src/db/stores/`: candidateStore, reviewStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore, queueProductStore, llmRouteSourceStore, and fieldHistoryStore.
+- Store modules are composited via `src/db/stores/`: candidateStore, reviewStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore (corpus/cache/events), queueProductStore, llmRouteSourceStore, and fieldHistoryStore.
 
 ## Core review state
 
@@ -645,93 +645,6 @@
 | `response` | `TEXT` | `NOT NULL` |  |
 | `timestamp` | `INTEGER` | `NOT NULL` |  |
 | `ttl` | `INTEGER` | `NOT NULL` |  |
-
-### `learning_profiles`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `profile_id` | `TEXT` | `PRIMARY KEY` |  |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `brand` | `TEXT` | `DEFAULT ''` |  |
-| `model` | `TEXT` | `DEFAULT ''` |  |
-| `variant` | `TEXT` | `DEFAULT ''` |  |
-| `runs_total` | `INTEGER` | `DEFAULT 0` |  |
-| `validated_runs` | `INTEGER` | `DEFAULT 0` |  |
-| `validated` | `INTEGER` | `DEFAULT 0` |  |
-| `unknown_field_rate` | `REAL` | `DEFAULT 0` |  |
-| `unknown_field_rate_avg` | `REAL` | `DEFAULT 0` |  |
-| `parser_health_avg` | `REAL` | `DEFAULT 0` |  |
-| `preferred_urls` | `TEXT` | `DEFAULT '[]'` |  |
-| `feedback_urls` | `TEXT` | `DEFAULT '[]'` |  |
-| `uncertain_fields` | `TEXT` | `DEFAULT '[]'` |  |
-| `host_stats` | `TEXT` | `DEFAULT '[]'` |  |
-| `critical_fields_below` | `TEXT` | `DEFAULT '[]'` |  |
-| `last_run` | `TEXT` | `DEFAULT '{}'` |  |
-| `parser_health` | `TEXT` | `DEFAULT '{}'` |  |
-| `updated_at` | `TEXT` | `NOT NULL` | Timestamp. |
-
-### `category_brain`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `artifact_name` | `TEXT` | `NOT NULL` |  |
-| `payload` | `TEXT` | `NOT NULL` |  |
-| `updated_at` | `TEXT` | `NOT NULL` | Timestamp. |
-
-### `source_intel_domains`
-
-Unified table for domain, brand, and path scope intelligence. Uses `scope` + `scope_key` discriminator.
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `root_domain` | `TEXT` | `NOT NULL` | Part of composite PK. |
-| `category` | `TEXT` | `NOT NULL` | Category slug. Part of composite PK. |
-| `scope` | `TEXT` | `NOT NULL DEFAULT 'domain'` | `'domain'`, `'brand'`, or `'path'`. Part of composite PK. |
-| `scope_key` | `TEXT` | `NOT NULL DEFAULT ''` | Empty for domain scope; brand_key or path for brand/path. Part of composite PK. |
-| `brand` | `TEXT` | `DEFAULT ''` | Brand display name (brand scope only). |
-| `attempts` | `INTEGER` | `DEFAULT 0` |  |
-| `http_ok_count` | `INTEGER` | `DEFAULT 0` |  |
-| `identity_match_count` | `INTEGER` | `DEFAULT 0` |  |
-| `major_anchor_conflict_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_contributed_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_accepted_count` | `INTEGER` | `DEFAULT 0` |  |
-| `accepted_critical_fields_count` | `INTEGER` | `DEFAULT 0` |  |
-| `products_seen` | `INTEGER` | `DEFAULT 0` |  |
-| `approved_attempts` | `INTEGER` | `DEFAULT 0` |  |
-| `candidate_attempts` | `INTEGER` | `DEFAULT 0` |  |
-| `parser_runs` | `INTEGER` | `DEFAULT 0` |  |
-| `parser_success_count` | `INTEGER` | `DEFAULT 0` |  |
-| `parser_health_score_total` | `REAL` | `DEFAULT 0` |  |
-| `endpoint_signal_count` | `INTEGER` | `DEFAULT 0` |  |
-| `endpoint_signal_score_total` | `REAL` | `DEFAULT 0` |  |
-| `planner_score` | `REAL` | `DEFAULT 0` |  |
-| `field_reward_strength` | `REAL` | `DEFAULT 0` |  |
-| `recent_products` | `TEXT` | `DEFAULT '[]'` |  |
-| `per_field_helpfulness` | `TEXT` | `DEFAULT '{}'` |  |
-| `fingerprint_counts` | `TEXT` | `DEFAULT '{}'` |  |
-| `extra_stats` | `TEXT` | `DEFAULT '{}'` |  |
-| `last_seen_at` | `TEXT` |  |  |
-| `updated_at` | `TEXT` |  | Timestamp. |
-
-### `source_intel_field_rewards`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `root_domain` | `TEXT` | `NOT NULL` |  |
-| `scope` | `TEXT` | `NOT NULL DEFAULT 'domain'` |  |
-| `scope_key` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `field` | `TEXT` | `NOT NULL` |  |
-| `method` | `TEXT` | `NOT NULL DEFAULT 'unknown'` |  |
-| `seen_count` | `REAL` | `DEFAULT 0` |  |
-| `success_count` | `REAL` | `DEFAULT 0` |  |
-| `fail_count` | `REAL` | `DEFAULT 0` |  |
-| `contradiction_count` | `REAL` | `DEFAULT 0` |  |
-| `success_rate` | `REAL` | `DEFAULT 0` |  |
-| `contradiction_rate` | `REAL` | `DEFAULT 0` |  |
-| `reward_score` | `REAL` | `DEFAULT 0` |  |
-| `last_seen_at` | `TEXT` |  |  |
-| `last_decay_at` | `TEXT` |  |  |
 
 ### `source_corpus`
 

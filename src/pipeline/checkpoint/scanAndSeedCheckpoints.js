@@ -5,7 +5,7 @@
 import path from 'node:path';
 import { listDirs, safeReadJson } from '../../shared/fileHelpers.js';
 import { seedFromCheckpoint } from './seedFromCheckpoint.js';
-import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { rebuildMediaIndexesFromDisk } from './rebuildMediaIndexes.js';
 
 function categoryMatches(checkpoint, specDb) {
   const cpCat = String(
@@ -26,6 +26,8 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
     sources_seeded: 0,
     artifacts_seeded: 0,
     cooldowns_seeded: 0,
+    screenshots_seeded: 0,
+    videos_seeded: 0,
     errors: [],
   };
 
@@ -75,6 +77,12 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
       stats.runs_seeded += 1;
       stats.sources_seeded += r.sources_seeded;
       stats.artifacts_seeded += r.artifacts_seeded;
+      // WHY: Rebuild screenshot/video SQL indexes from files on disk.
+      // Best-effort — media index failure does not block run reseed.
+      const runDir = path.dirname(filePath);
+      const media = await rebuildMediaIndexesFromDisk({ specDb, runDir, checkpoint: cp });
+      stats.screenshots_seeded += media.screenshots_seeded;
+      stats.videos_seeded += media.videos_seeded;
     } catch (err) {
       stats.errors.push({ file: filePath, error: String(err.message || err) });
     }

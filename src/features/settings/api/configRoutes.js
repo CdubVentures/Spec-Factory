@@ -47,7 +47,7 @@ export function registerConfigRoutes(ctx) {
   });
 
   const llmHandler = createLlmSettingsHandler({
-    jsonRes, readJsonBody, getSpecDb, broadcastWs,
+    jsonRes, readJsonBody, getSpecDb, broadcastWs, HELPER_ROOT,
   });
 
   const uiHandler = createUiSettingsHandler({

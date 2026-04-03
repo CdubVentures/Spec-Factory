@@ -22,7 +22,7 @@ const BASE_OPTS = {
   productId: 'mouse-test-product',
   s3Key: 'specs/inputs/mouse/products/mouse-test-product.json',
   startMs: Date.now() - 5000,
-  fetchPlanStats: { total_queued: 5, seed_count: 2, learning_seed_count: 1, approved_count: 2, blocked_count: 0 },
+  fetchPlanStats: { total_queued: 5, seed_count: 2, approved_count: 2, blocked_count: 0 },
 };
 
 describe('buildCrawlCheckpoint — schema', () => {
@@ -175,7 +175,6 @@ describe('buildCrawlCheckpoint — fetch plan stats', () => {
     const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [] });
     assert.equal(cp.fetch_plan.total_queued, 5);
     assert.equal(cp.fetch_plan.seed_count, 2);
-    assert.equal(cp.fetch_plan.learning_seed_count, 1);
     assert.equal(cp.fetch_plan.approved_count, 2);
     assert.equal(cp.fetch_plan.blocked_count, 0);
   });
@@ -219,6 +218,17 @@ describe('buildCrawlCheckpoint — bridge data (v2 fields)', () => {
   test('runSummary is null when not provided', () => {
     const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [] });
     assert.equal(cp.run_summary, null);
+  });
+
+  test('brandResolution included when provided', () => {
+    const brandResolution = { scope: 'brand', brand: 'Razer', status: 'resolved', confidence: 0.95 };
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [], brandResolution });
+    assert.deepEqual(cp.brand_resolution, brandResolution);
+  });
+
+  test('brandResolution is null when not provided', () => {
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [] });
+    assert.equal(cp.brand_resolution, null);
   });
 
   test('status defaults to completed', () => {

@@ -1,0 +1,534 @@
+[
+  {
+    "model": "gpt-5",
+    "base": {
+      "ok": true,
+      "time": 2.8,
+      "tokens": 5128
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 6.5,
+      "tokens": 5565,
+      "content_len": 585
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 4.4,
+      "tokens": 9611
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 4.2,
+      "tokens": 5178
+    }
+  },
+  {
+    "model": "gpt-5-high",
+    "base": {
+      "ok": true,
+      "time": 3.3,
+      "tokens": 5244
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 6.1,
+      "tokens": 5636,
+      "content_len": 537
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 5.7,
+      "tokens": 9862
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 3.7,
+      "tokens": 5334
+    }
+  },
+  {
+    "model": "gpt-5-medium",
+    "base": {
+      "ok": true,
+      "time": 2.9,
+      "tokens": 5111
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 7.6,
+      "tokens": 5389,
+      "content_len": 993
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 5.0,
+      "tokens": 9659
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 4.2,
+      "tokens": 5299
+    }
+  },
+  {
+    "model": "gpt-5-low",
+    "base": {
+      "ok": true,
+      "time": 4.4,
+      "tokens": 5086
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 4.5,
+      "tokens": 5234,
+      "content_len": 615
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 2.9,
+      "tokens": 9523
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 5.3,
+      "tokens": 5109
+    }
+  },
+  {
+    "model": "gpt-5-minimal",
+    "base": {
+      "ok": true,
+      "time": 1.3,
+      "tokens": 5039
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": false,
+      "correct": true,
+      "time": 1.6,
+      "tokens": 5165,
+      "content_len": 251
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 3.0,
+      "tokens": 5048
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 2.3,
+      "tokens": 5058
+    }
+  },
+  {
+    "model": "gpt-5.1",
+    "base": {
+      "ok": true,
+      "time": 2.7,
+      "tokens": 5043
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 6.5,
+      "tokens": 5343,
+      "content_len": 1081
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 3.1,
+      "tokens": 9509
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 3.7,
+      "tokens": 5070
+    }
+  },
+  {
+    "model": "gpt-5.1-high",
+    "base": {
+      "ok": true,
+      "time": 2.1,
+      "tokens": 5052
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": false,
+      "correct": true,
+      "time": 3.6,
+      "tokens": 5339,
+      "content_len": 237
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 4.4,
+      "tokens": 9535
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 2.5,
+      "tokens": 5068
+    }
+  },
+  {
+    "model": "gpt-5.1-medium",
+    "base": {
+      "ok": true,
+      "time": 4.0,
+      "tokens": 5043
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 5.0,
+      "tokens": 5231,
+      "content_len": 858
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 4.5,
+      "tokens": 9502
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.5,
+      "tokens": 5067
+    }
+  },
+  {
+    "model": "gpt-5.1-low",
+    "base": {
+      "ok": true,
+      "time": 5.4,
+      "tokens": 5039
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": false,
+      "correct": true,
+      "time": 2.4,
+      "tokens": 5193,
+      "content_len": 355
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 3.3,
+      "tokens": 9480
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.9,
+      "tokens": 5056
+    }
+  },
+  {
+    "model": "gpt-5.2",
+    "base": {
+      "ok": true,
+      "time": 3.7,
+      "tokens": 5025
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 4.9,
+      "tokens": 5218,
+      "content_len": 818
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 1.2,
+      "tokens": 9470
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.8,
+      "tokens": 5041
+    }
+  },
+  {
+    "model": "gpt-5.2-xhigh",
+    "base": {
+      "ok": true,
+      "time": 5.5,
+      "tokens": 5072
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 6.5,
+      "tokens": 5300,
+      "content_len": 680
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 1.9,
+      "tokens": 9470
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.2,
+      "tokens": 5041
+    }
+  },
+  {
+    "model": "gpt-5.2-high",
+    "base": {
+      "ok": true,
+      "time": 2.6,
+      "tokens": 5025
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": false,
+      "correct": true,
+      "time": 5.2,
+      "tokens": 5279,
+      "content_len": 281
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 1.9,
+      "tokens": 9470
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.7,
+      "tokens": 5041
+    }
+  },
+  {
+    "model": "gpt-5.2-medium",
+    "base": {
+      "ok": true,
+      "time": 1.7,
+      "tokens": 5025
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 4.4,
+      "tokens": 5207,
+      "content_len": 756
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 1.8,
+      "tokens": 9470
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.8,
+      "tokens": 5041
+    }
+  },
+  {
+    "model": "gpt-5.2-low",
+    "base": {
+      "ok": true,
+      "time": 1.3,
+      "tokens": 5025
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 5.0,
+      "tokens": 5173,
+      "content_len": 660
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 1.9,
+      "tokens": 9470
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.3,
+      "tokens": 5041
+    }
+  },
+  {
+    "model": "gpt-5.4",
+    "base": {
+      "ok": true,
+      "time": 2.3,
+      "tokens": 5035
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 5.1,
+      "tokens": 5188,
+      "content_len": 652
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 9.0,
+      "tokens": 8565
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 3.9,
+      "tokens": 5055
+    }
+  },
+  {
+    "model": "gpt-5.4-xhigh",
+    "base": {
+      "ok": true,
+      "time": 2.6,
+      "tokens": 5041
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": false,
+      "correct": true,
+      "time": 5.9,
+      "tokens": 5248,
+      "content_len": 206
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 14.0,
+      "tokens": 9033
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 4.4,
+      "tokens": 5081
+    }
+  },
+  {
+    "model": "gpt-5.4-high",
+    "base": {
+      "ok": true,
+      "time": 2.6,
+      "tokens": 5038
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 7.4,
+      "tokens": 5252,
+      "content_len": 620
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 17.1,
+      "tokens": 8862
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 4.5,
+      "tokens": 5061
+    }
+  },
+  {
+    "model": "gpt-5.4-medium",
+    "base": {
+      "ok": true,
+      "time": 1.8,
+      "tokens": 5037
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 5.6,
+      "tokens": 5181,
+      "content_len": 647
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 15.2,
+      "tokens": 8545
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 2.3,
+      "tokens": 5055
+    }
+  },
+  {
+    "model": "gpt-5.4-low",
+    "base": {
+      "ok": true,
+      "time": 2.7,
+      "tokens": 5034
+    },
+    "thinking": {
+      "ok": true,
+      "has_think_tags": true,
+      "correct": true,
+      "time": 5.6,
+      "tokens": 5167,
+      "content_len": 625
+    },
+    "web": {
+      "ok": true,
+      "has_date": false,
+      "time": 19.8,
+      "tokens": 8105
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 2.5,
+      "tokens": 5057
+    }
+  }
+]

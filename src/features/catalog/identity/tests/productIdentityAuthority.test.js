@@ -106,6 +106,49 @@ test('resolveAuthoritativeProductIdentity preserves explicit empty catalog varia
   assert.equal(resolved.variant, '');
 });
 
+// --- base_model resolution ---
+
+test('resolveAuthoritativeProductIdentity includes base_model from catalog', () => {
+  const resolved = resolveAuthoritativeProductIdentity({
+    productId: 'mouse-001',
+    category: 'mouse',
+    catalogProduct: {
+      id: 1,
+      identifier: 'cat_1',
+      brand: 'Finalmouse',
+      base_model: 'ULX Prophecy',
+      model: 'ULX Prophecy Scream',
+      variant: 'Scream',
+    },
+  });
+  assert.equal(resolved.base_model, 'ULX Prophecy');
+  assert.equal(resolved.model, 'ULX Prophecy Scream');
+  assert.equal(resolved.variant, 'Scream');
+});
+
+test('resolveAuthoritativeProductIdentity falls back to db base_model when catalog empty', () => {
+  const resolved = resolveAuthoritativeProductIdentity({
+    productId: 'mouse-001',
+    category: 'mouse',
+    catalogProduct: {},
+    dbProduct: {
+      brand: 'Finalmouse',
+      base_model: 'ULX Prophecy',
+      model: 'ULX Prophecy Scream',
+      variant: 'Scream',
+    },
+  });
+  assert.equal(resolved.base_model, 'ULX Prophecy');
+});
+
+test('resolveAuthoritativeProductIdentity base_model is empty when no sources have it', () => {
+  const resolved = resolveAuthoritativeProductIdentity({
+    productId: 'mouse-001',
+    category: 'mouse',
+  });
+  assert.equal(resolved.base_model, '');
+});
+
 test('resolveProductIdentity uses catalog-first identity when loader and specDb are provided', async () => {
   let loadCalls = 0;
   const resolved = await resolveProductIdentity({

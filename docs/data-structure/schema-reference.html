@@ -343,13 +343,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Catalog &amp; Queue</div>
   <details class="table-card" data-table="products">
-  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">12 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">13 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
   <div class="card-body">
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
 <tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
 <tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
 <tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">base_model</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">variant</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'active'</td></tr>
@@ -786,68 +787,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 </details>
 </div>
 <div class="domain-group">
-  <div class="domain-label">Source Intelligence</div>
-  <details class="table-card" data-table="source_intel_domains">
-  <summary><span class="tname">source_intel_domains</span><span class="tags"><span class="tag tag-pk">PK: root_domain, category, scope, scope_key</span><span class="tag tag-cols">28 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr><td class="cn">root_domain</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">scope</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'domain'</td></tr>
-<tr><td class="cn">scope_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
-<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
-<tr><td class="cn">attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">http_ok_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">identity_match_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">major_anchor_conflict_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">fields_contributed_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">fields_accepted_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">accepted_critical_fields_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">products_seen</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">approved_attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">candidate_attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">parser_runs</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">parser_success_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">parser_health_score_total</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">endpoint_signal_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">endpoint_signal_score_total</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">planner_score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">field_reward_strength</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">recent_products</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">per_field_helpfulness</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
-<tr><td class="cn">fingerprint_counts</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
-<tr><td class="cn">extra_stats</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
-<tr><td class="cn">last_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sid_scope (root_domain, scope)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="source_intel_field_rewards">
-  <summary><span class="tname">source_intel_field_rewards</span><span class="tags"><span class="tag tag-pk">PK: root_domain, scope, scope_key, field, method</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr><td class="cn">root_domain</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">scope</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'domain'</td></tr>
-<tr><td class="cn">scope_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
-<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">method</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'unknown'</td></tr>
-<tr><td class="cn">seen_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">success_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">fail_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">contradiction_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">success_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">contradiction_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">reward_score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">last_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">last_decay_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sifr_domain (root_domain)</div></div>
-  </div>
-</details>
-</div>
-<div class="domain-group">
-  <div class="domain-label">Learning &amp; Cache</div>
+  <div class="domain-label">Cache &amp; Telemetry</div>
   <details class="table-card" data-table="llm_cache">
   <summary><span class="tname">llm_cache</span><span class="tags"><span class="tag tag-pk">PK: cache_key</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
   <div class="card-body">
@@ -858,45 +798,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">ttl</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
 </tbody></table>
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_llmc_expiry (timestamp)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="learning_profiles">
-  <summary><span class="tname">learning_profiles</span><span class="tags"><span class="tag tag-pk">PK: profile_id</span><span class="tag tag-cols">19 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr class="pk-row"><td class="cn">profile_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
-<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
-<tr><td class="cn">variant</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
-<tr><td class="cn">runs_total</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">validated_runs</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">validated</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">unknown_field_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">unknown_field_rate_avg</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">parser_health_avg</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">preferred_urls</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">feedback_urls</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">uncertain_fields</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">host_stats</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">critical_fields_below</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
-<tr><td class="cn">last_run</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
-<tr><td class="cn">parser_health</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
-<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_lp_category (category)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="category_brain">
-  <summary><span class="tname">category_brain</span><span class="tags"><span class="tag tag-pk">PK: category, artifact_name</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">artifact_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">payload</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-</tbody></table>
-    
   </div>
 </details>
 <details class="table-card" data-table="source_corpus">

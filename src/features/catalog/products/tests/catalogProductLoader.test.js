@@ -103,11 +103,13 @@ test('loadCatalogProducts: reads identities from product catalog', async () => {
     await writeProductCatalog(root, 'mouse', {
       'mouse-logitech-g502': {
         brand: 'Logitech',
+        base_model: 'G502',
         model: 'G502',
         variant: '',
       },
       'mouse-razer-viper-v3-pro': {
         brand: 'Razer',
+        base_model: 'Viper V3 Pro',
         model: 'Viper V3 Pro',
         variant: '  ',
       },
@@ -122,8 +124,8 @@ test('loadCatalogProducts: reads identities from product catalog', async () => {
       config: { categoryAuthorityRoot: root }
     });
     assert.deepEqual(products, [
-      { productId: 'mouse-logitech-g502', brand: 'Logitech', model: 'G502', variant: '', brand_identifier: '' },
-      { productId: 'mouse-razer-viper-v3-pro', brand: 'Razer', model: 'Viper V3 Pro', variant: '', brand_identifier: '' }
+      { productId: 'mouse-logitech-g502', brand: 'Logitech', base_model: 'G502', model: 'G502', variant: '', brand_identifier: '' },
+      { productId: 'mouse-razer-viper-v3-pro', brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '', brand_identifier: '' }
     ]);
   } finally {
     await cleanup(root);
@@ -154,11 +156,13 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
     await writeProductCatalog(root, 'mouse', {
       'mouse-logitech-g502': {
         brand: 'Logitech',
+        base_model: 'G502',
         model: 'G502',
         variant: '',
       },
       'mouse-razer-viper-v3-pro': {
         brand: 'Razer',
+        base_model: 'Viper V3 Pro',
         model: 'Viper V3 Pro',
         variant: '',
       }
@@ -192,6 +196,7 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
     assert.deepEqual(products[0], {
       productId: 'mouse-logitech-g502',
       brand: 'Logitech',
+      base_model: 'G502',
       model: 'G502',
       variant: '',
       brand_identifier: '',
@@ -203,6 +208,7 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
     assert.deepEqual(products[1], {
       productId: 'mouse-razer-viper-v3-pro',
       brand: 'Razer',
+      base_model: 'Viper V3 Pro',
       model: 'Viper V3 Pro',
       variant: '',
       brand_identifier: '',

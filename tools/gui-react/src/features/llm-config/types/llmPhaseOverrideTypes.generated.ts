@@ -4,6 +4,12 @@
 export interface LlmPhaseOverride {
   baseModel: string;
   reasoningModel: string;
+  fallbackModel: string;
+  fallbackReasoningModel: string;
+  fallbackUseReasoning: boolean;
+  fallbackThinking: boolean;
+  fallbackThinkingEffort: string;
+  fallbackWebSearch: boolean;
   useReasoning: boolean;
   maxOutputTokens: number | null;
   timeoutMs: number | null;
@@ -11,6 +17,7 @@ export interface LlmPhaseOverride {
   webSearch: boolean;
   thinking: boolean;
   thinkingEffort: string;
+  disableLimits: boolean;
 }
 
 export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder';

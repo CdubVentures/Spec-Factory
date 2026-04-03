@@ -1,0 +1,120 @@
+[
+  {
+    "model": "claude-sonnet-4-5",
+    "base": {
+      "ok": true,
+      "time": 9.1
+    },
+    "thinking": {
+      "ok": true,
+      "correct": true,
+      "time": 8.6,
+      "content_len": 767
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 4.3,
+      "content": "Today's date is March 27, 2026."
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 4.0
+    }
+  },
+  {
+    "model": "claude-sonnet-4-6",
+    "base": {
+      "ok": false,
+      "time": 0.0,
+      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
+    },
+    "thinking": null,
+    "web": null,
+    "json": null
+  },
+  {
+    "model": "claude-opus-4-1",
+    "base": {
+      "ok": true,
+      "time": 3.9
+    },
+    "thinking": {
+      "ok": true,
+      "correct": true,
+      "time": 8.2,
+      "content_len": 620
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 3.8,
+      "content": "Today's date is 2026-03-27."
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 3.8
+    }
+  },
+  {
+    "model": "claude-opus-4-5",
+    "base": {
+      "ok": false,
+      "time": 0.0,
+      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
+    },
+    "thinking": null,
+    "web": null,
+    "json": null
+  },
+  {
+    "model": "claude-opus-4-6",
+    "base": {
+      "ok": true,
+      "time": 4.7
+    },
+    "thinking": {
+      "ok": true,
+      "correct": true,
+      "time": 6.6,
+      "content_len": 447
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 4.6,
+      "content": "March 27, 2026."
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 7.0
+    }
+  },
+  {
+    "model": "claude-haiku-4-5",
+    "base": {
+      "ok": true,
+      "time": 2.8
+    },
+    "thinking": {
+      "ok": true,
+      "correct": true,
+      "time": 4.8,
+      "content_len": 538
+    },
+    "web": {
+      "ok": true,
+      "has_date": true,
+      "time": 3.0,
+      "content": "2026-03-27"
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 3.6
+    }
+  }
+]

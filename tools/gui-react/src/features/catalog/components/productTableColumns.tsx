@@ -14,6 +14,15 @@ export const PRODUCT_TABLE_COLUMNS: ColumnDef<CatalogProduct, unknown>[] = [
     size: 200,
   },
   {
+    accessorKey: 'base_model',
+    header: 'Base Model',
+    cell: ({ getValue }) => {
+      const v = getValue() as string;
+      return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
+    },
+    size: 130,
+  },
+  {
     accessorKey: 'variant',
     header: 'Variant',
     cell: ({ getValue }) => {

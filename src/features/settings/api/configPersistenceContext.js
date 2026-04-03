@@ -27,6 +27,12 @@ export function createConfigPersistenceContext({
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
 
+  // WHY: Reconcile live config with SQL-loaded settings. The boot sequence applies
+  // runtime settings up to three times (createBootstrapEnvironment from JSON,
+  // createBootstrapSessionLayer from SQL, and here). applyRuntimeSettingsToConfig is
+  // idempotent for identical inputs — it overwrites keys and rebuilds derived state.
+  // This call is the safety net: if a caller constructs this context without the
+  // session-layer apply having run first, config still gets the SQL truth.
   applyDerivedSettingsArtifacts(initialSettingsArtifacts);
 
   async function persistCanonicalSections({

@@ -240,6 +240,25 @@ export class AppDb {
     return this._deleteColor.run(name).changes;
   }
 
+  // ── Seed Hash Tracking ──
+  // WHY: Hash-gated reconcile stores SHA256 of source files in the settings
+  // table under a reserved '_seed_hashes' section. On startup, if the hash
+  // differs from the stored value, the source is re-imported.
+
+  getSeedHash(sourceKey) {
+    const row = this._getSetting.get('_seed_hashes', sourceKey);
+    return row ? String(row.value || '') : null;
+  }
+
+  setSeedHash(sourceKey, hashValue) {
+    this._upsertSetting.run({
+      section: '_seed_hashes',
+      key: sourceKey,
+      value: String(hashValue || ''),
+      type: 'string',
+    });
+  }
+
   // ── Lifecycle ──
 
   isSeeded() {

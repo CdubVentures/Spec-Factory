@@ -33,13 +33,13 @@ describe('deriveVariantOptions', () => {
     strictEqual(options[1].label, 'r');
   });
 
-  it('falls back to model name when variant is empty', () => {
+  it('shows (base / no variant) when variant is empty', () => {
     const rows = [
       makeCatalogRow({ productId: 'mouse-001', model: 'Cestus 310', base_model: 'Cestus', variant: '', brand: 'Acer' }),
     ];
     const options = deriveVariantOptions(rows, 'Acer', 'Cestus');
     strictEqual(options.length, 1);
-    strictEqual(options[0].label, 'Cestus 310');
+    strictEqual(options[0].label, '(base / no variant)');
     strictEqual(options[0].productId, 'mouse-001');
   });
 

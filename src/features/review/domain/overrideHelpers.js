@@ -213,6 +213,31 @@ export async function readOverrideFile(filePath, { specDb = null, category = '',
             set_at: row.overridden_at || row.updated_at || null
           };
         }
+        // WHY: Join with candidate_reviews to capture AI review state.
+        // Without this, AI review decisions are lost on DB rebuild.
+        if (typeof specDb.getReviewsForContext === 'function') {
+          try {
+            const reviews = specDb.getReviewsForContext('item', productId);
+            const reviewMap = new Map();
+            for (const rev of reviews) {
+              reviewMap.set(rev.candidate_id, rev);
+            }
+            for (const ovr of Object.values(overrides)) {
+              const rev = reviewMap.get(ovr.candidate_id);
+              if (rev && rev.ai_review_status && rev.ai_review_status !== 'not_run') {
+                ovr.ai_review = {
+                  ai_review_status: rev.ai_review_status,
+                  ai_confidence: rev.ai_confidence,
+                  ai_reason: rev.ai_reason,
+                  ai_reviewed_at: rev.ai_reviewed_at,
+                  ai_review_model: rev.ai_review_model,
+                  human_override_ai: Boolean(rev.human_override_ai),
+                  human_override_ai_at: rev.human_override_ai_at || null,
+                };
+              }
+            }
+          } catch { /* best-effort — AI review fields are non-critical */ }
+        }
         return {
           version: 1,
           category: category || reviewState?.category,

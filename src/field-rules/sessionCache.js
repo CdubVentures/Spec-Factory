@@ -139,6 +139,10 @@ export function createSessionCache({
     return path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
   }
 
+  function fieldKeyOrderPath(category) {
+    return path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
+  }
+
   function manifestPath(category) {
     return path.join(helperRoot, category, '_generated', 'manifest.json');
   }
@@ -219,10 +223,24 @@ export function createSessionCache({
     const savedFieldGroups = Array.isArray(savedMap.field_groups) ? savedMap.field_groups : [];
     // WHY: field_key_order table is the fast-path for instant order persistence.
     // When populated, it IS the full mergedFieldOrder (already has __grp:: markers).
+    // Fallback chain: SQL → JSON file → computed from field_groups/compiled order.
     const fieldKeyOrderRow = specDb?.getFieldKeyOrder?.(category) ?? null;
-    const mergedFieldOrder = fieldKeyOrderRow
-      ? JSON.parse(fieldKeyOrderRow.order_json)
-      : buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
+    let mergedFieldOrder;
+    if (fieldKeyOrderRow) {
+      mergedFieldOrder = JSON.parse(fieldKeyOrderRow.order_json);
+    } else {
+      // WHY: JSON fallback for post-rebuild — reads exported order from _control_plane/
+      const fieldKeyOrderJson = await readJsonIfExists(fieldKeyOrderPath(category));
+      if (fieldKeyOrderJson && Array.isArray(fieldKeyOrderJson.order) && fieldKeyOrderJson.order.length > 0) {
+        mergedFieldOrder = fieldKeyOrderJson.order;
+        // WHY: Re-populate SQL from JSON so subsequent reads are fast-path
+        if (specDb?.setFieldKeyOrder) {
+          try { specDb.setFieldKeyOrder(category, JSON.stringify(fieldKeyOrderJson.order)); } catch { /* best-effort */ }
+        }
+      } else {
+        mergedFieldOrder = buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
+      }
+    }
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 

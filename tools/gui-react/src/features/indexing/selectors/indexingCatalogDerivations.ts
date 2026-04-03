@@ -83,9 +83,9 @@ export function useIndexingCatalogDerivations(input: UseIndexingCatalogDerivatio
         if (normalizeToken(entry.brand) !== normalizeToken(singleBrand)) {
           setSingleBrand(entry.brand);
         }
-        // WHY: Model dropdown uses base_model || model, so compare against
-        // the same value to avoid a reset cascade when they differ.
-        const entryModelForDropdown = String(entry.base_model || entry.model || '').trim();
+        // WHY: Model dropdown uses base_model, so compare against it
+        // to avoid a reset cascade when they differ.
+        const entryModelForDropdown = String(entry.base_model || '').trim();
         if (normalizeToken(entryModelForDropdown) !== normalizeToken(singleModel)) {
           setSingleModel(entryModelForDropdown);
         }

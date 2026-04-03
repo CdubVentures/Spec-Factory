@@ -1,10 +1,13 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import path from 'node:path';
+import fsPromises from 'node:fs/promises';
 
 export function createLlmSettingsHandler({
   jsonRes,
   readJsonBody,
   getSpecDb,
   broadcastWs,
+  HELPER_ROOT = '',
 }) {
   return async function handleLlmSettings(parts, params, method, req, res) {
     if (parts[0] !== 'llm-settings' || !parts[1] || parts[2] !== 'routes') return false;
@@ -33,6 +36,11 @@ export function createLlmSettingsHandler({
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       const saved = specDb.saveLlmRouteMatrix(rows);
+      // WHY: Mirror SQL to durable JSON so custom route edits survive spec.sqlite rebuild.
+      if (HELPER_ROOT) {
+        const fkoPath = path.join(HELPER_ROOT, category, '_control_plane', 'llm_route_matrix.json');
+        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: saved }, null, 2)).catch(() => {});
+      }
       emitDataChange({
         broadcastWs,
         event: 'llm-settings-updated',
@@ -47,6 +55,11 @@ export function createLlmSettingsHandler({
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 500, { error: 'specdb_unavailable' });
       const rows = specDb.resetLlmRouteMatrixToDefaults();
+      // WHY: Clear the JSON mirror so reseed generates defaults, not stale custom state.
+      if (HELPER_ROOT) {
+        const fkoPath = path.join(HELPER_ROOT, category, '_control_plane', 'llm_route_matrix.json');
+        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: [] }, null, 2)).catch(() => {});
+      }
       emitDataChange({
         broadcastWs,
         event: 'llm-settings-reset',

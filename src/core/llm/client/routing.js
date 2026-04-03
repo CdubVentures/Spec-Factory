@@ -120,6 +120,26 @@ function baseRouteForRole(config = {}, role = 'extract') {
   };
 }
 
+// WHY: Phase-aware fallback resolution. The fallback panel mirrors the base model
+// panel — it has its own model, reasoning toggle, reasoning model, thinking, and
+// web search. This function resolves the effective fallback model using the
+// fallback's own useReasoning toggle (not the primary's).
+export function resolvePhaseFallbackModel(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return '';
+  const fbUseReasoning = Boolean(config[`_resolved${cap}FallbackUseReasoning`]);
+  const suffix = fbUseReasoning ? 'FallbackReasoningModel' : 'FallbackModel';
+  return normalized(config[`_resolved${cap}${suffix}`]);
+}
+
+// WHY: Phase-level "disable limits" toggle. When true, callLlmWithRouting
+// skips artificial token/timeout caps — only model hardware max applies.
+export function resolvePhaseDisableLimits(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return false;
+  return Boolean(config[`_resolved${cap}DisableLimits`]);
+}
+
 function fallbackRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
   const model = normalized(String(configValue(config, keys.fallbackModel)));
@@ -311,7 +331,37 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
 
 export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', modelOverride = '', phase = '' } = {}) {
   const resolvedRole = role || routeRoleFromReason(reason);
-  const fallback = fallbackRouteForRole(config, resolvedRole);
+
+  // WHY: Phase-specific fallback takes precedence over global role fallback.
+  // If a phase has its own fallback model configured, use it instead of the global.
+  const phaseFallbackModel = phase ? resolvePhaseFallbackModel(config, phase) : '';
+  let fallback;
+  if (phaseFallbackModel) {
+    // Resolve the phase-specific fallback model through registry
+    const resolved = resolveModelFromRegistry(config._registryLookup, phaseFallbackModel);
+    if (resolved) {
+      fallback = {
+        role: resolvedRole,
+        provider: resolved.providerType,
+        model: resolved.modelId,
+        baseUrl: resolved.baseUrl,
+        apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, providerFromModelToken(resolved.modelId)),
+        _registryEntry: resolved,
+      };
+    } else {
+      const inferred = providerFromModelToken(phaseFallbackModel);
+      fallback = {
+        role: resolvedRole,
+        provider: inferred,
+        model: phaseFallbackModel,
+        baseUrl: defaultBaseUrlForProvider(inferred),
+        apiKey: bootstrapApiKeyForProvider(config, inferred),
+      };
+    }
+  } else {
+    fallback = fallbackRouteForRole(config, resolvedRole);
+  }
+
   if (!fallback) {
     return null;
   }
@@ -430,15 +480,21 @@ export async function callLlmWithRouting({
   const primaryReasoningBudget = roleReasoningCap(config, resolvedRole, reason, false);
   const fallbackReasoningBudget = roleReasoningCap(config, resolvedRole, reason, true);
   // WHY: Phase-level token cap from panel takes precedence over role-level cap.
+  // When disableLimits is on, skip all artificial caps — model hardware max applies in llmClient.
+  const phaseDisableLimits = resolvePhaseDisableLimits(config, phase);
   const phaseTokenCap = resolvePhaseTokenCap(config, phase);
-  const resolvedMaxTokens = phaseTokenCap > 0
-    ? Math.min(phaseTokenCap, primaryTokenCap || phaseTokenCap)
-    : primaryTokenCap;
+  const resolvedMaxTokens = phaseDisableLimits
+    ? 0
+    : (phaseTokenCap > 0
+      ? Math.min(phaseTokenCap, primaryTokenCap || phaseTokenCap)
+      : primaryTokenCap);
   const resolvedReasoningBudget = primaryReasoningBudget;
 
   // WHY: Phase-level timeout from panel. Falls back to caller's timeoutMs param.
   const phaseTimeoutMs = resolvePhaseTimeoutMs(config, phase);
-  const resolvedTimeoutMs = phaseTimeoutMs > 0 ? phaseTimeoutMs : timeoutMs;
+  const resolvedTimeoutMs = phaseDisableLimits
+    ? 600000
+    : (phaseTimeoutMs > 0 ? phaseTimeoutMs : timeoutMs);
 
   logger?.info?.('llm_route_selected', {
     reason,
@@ -514,9 +570,27 @@ export async function callLlmWithRouting({
     const fallbackMaxTokens = phaseTokenCap > 0
       ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
       : fallbackTokenCap;
+
+    // WHY: Fallback panel has its own thinking/web/reasoning flags, independent
+    // of the primary panel. Resolve them separately so the fallback call uses
+    // the fallback's configuration, not the primary's.
+    const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
+    const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
+    const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
+    const cap = capitalize(String(phase || '').trim());
+    const fbReasoning = cap ? Boolean(config[`_resolved${cap}FallbackUseReasoning`]) : false;
+    const fbRequestOptions = {
+      ...(baseRequestOptions || {}),
+      ...(fbWebSearch ? { web_search: true } : {}),
+      ...(fbThinking ? { reasoning_effort: fbThinkingEffort || 'medium' } : {}),
+    };
+    const effectiveFbRequestOptions = Object.keys(fbRequestOptions).length > 0 ? fbRequestOptions : baseRequestOptions;
+
     return callLlmProvider({
       ...sharedParams,
       costRates: effectiveFallbackCostRates,
+      requestOptions: effectiveFbRequestOptions,
+      reasoningMode: Boolean(fbReasoning),
       route: {
         model: fallback.model, apiKey: fallback.apiKey, baseUrl: fallback.baseUrl,
         provider: fallback.provider, accessMode: fallback._registryEntry?.accessMode || '',

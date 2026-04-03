@@ -45,7 +45,8 @@ export function buildCanonicalIdentityIndex({
 
   for (const row of Array.isArray(products) ? products : []) {
     const brand = normalizeText(row.brand);
-    const model = normalizeText(row.model);
+    // WHY: base_model is the identity primary key for pair/tuple lookups.
+    const model = normalizeText(row.base_model);
     if (!brand || !model) continue;
     const variant = cleanVariant(row.variant);
 
@@ -74,6 +75,7 @@ export async function loadCanonicalIdentityIndex({ config, category }) {
     const products = catalogEntries.map(([productId, row]) => ({
       productId,
       brand: row.brand,
+      base_model: row.base_model,
       model: row.model,
       variant: row.variant || ''
     }));
@@ -91,6 +93,10 @@ export async function loadCanonicalIdentityIndex({ config, category }) {
   });
 }
 
+/**
+ * @param {{ category: string, brand: string, model: string, variant?: string, canonicalIndex: object }} opts
+ * @param opts.model — base_model (identity primary key), NOT the full derived model
+ */
 export function evaluateIdentityGate({
   category,
   brand,
@@ -186,6 +192,9 @@ export function evaluateIdentityGate({
   };
 }
 
+/**
+ * @param opts.model — base_model (identity primary key), NOT the full derived model
+ */
 export function registerCanonicalIdentity({
   canonicalIndex,
   brand,

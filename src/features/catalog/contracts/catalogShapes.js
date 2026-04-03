@@ -21,6 +21,7 @@ export const CATALOG_PRODUCT_SHAPE = Object.freeze([
   { key: 'brand', coerce: 'string' },
   { key: 'brand_identifier', coerce: 'string', optional: true },
   { key: 'model', coerce: 'string' },
+  { key: 'base_model', coerce: 'string' },
   { key: 'variant', coerce: 'string' },
   { key: 'status', coerce: 'string' },
   { key: 'seed_urls', coerce: 'array', itemType: 'string' },

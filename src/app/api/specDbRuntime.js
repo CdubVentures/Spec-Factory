@@ -1,4 +1,7 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
+import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
+import { seedProductCatalog } from '../../db/seed.js';
+import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteMatrixReseed.js';
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
@@ -22,6 +25,7 @@ export function createSpecDbRuntime({
   logger = console,
   indexLabRoot = '',
   productRoot = '',
+  buildFieldRulesSignature = null,
 } = {}) {
   assertFunction('resolveCategoryAlias', resolveCategoryAlias);
   assertFunction('specDbClass', specDbClass);
@@ -36,30 +40,118 @@ export function createSpecDbRuntime({
 
   const specDbCache = new Map();
   const specDbSeedPromises = new Map();
-  const checkpointReseedPromises = new Map();
   const reviewLayoutByCategory = new Map();
 
-  // WHY: Re-seed run metadata from checkpoint files on disk. Runs
-  // independently of triggerAutoSeed so it fires even when isSeeded()
-  // returns true (partial rebuild: products > 0, runs = 0).
-  function triggerCheckpointReseed(category, db) {
-    if (!indexLabRoot) return;
+  // WHY: O(1) Feature Scaling — adding a new reseed phase = one entry here.
+  // Each phase fires independently after auto-seed and on partial rebuild
+  // (isSeeded = true). The generic engine below handles dedup, logging, and
+  // error isolation so phases never need to be wired individually.
+  const reseedPhases = [
+    {
+      name: 'checkpoint',
+      shouldRun: () => Boolean(indexLabRoot),
+      trigger: (_category, db) => scanAndSeedCheckpoints({ specDb: db, indexLabRoot, productRoot }),
+      formatLog: (category, result) =>
+        result.runs_seeded > 0 ? `${category}: ${result.runs_seeded} runs re-seeded from checkpoints` : '',
+    },
+    {
+      name: 'product-catalog',
+      trigger: (_category, db) => seedProductCatalog(db, config, _category),
+      formatLog: (category, result) =>
+        result.count > 0 ? `${category}: ${result.count} products re-seeded from catalog` : '',
+    },
+    {
+      name: 'color-edition',
+      trigger: (_category, db) => rebuildColorEditionFinderFromJson({ specDb: db, productRoot }),
+      formatLog: (category, result) =>
+        result.seeded > 0 ? `${category}: ${result.seeded} color-edition rows re-seeded from product files` : '',
+    },
+    {
+      name: 'llm-route-matrix',
+      trigger: (_category, db) => rebuildLlmRouteMatrixFromJson({
+        specDb: db,
+        helperRoot: config.categoryAuthorityRoot || 'category_authority',
+      }),
+      formatLog: (category, result) =>
+        result.reseeded > 0 ? `${category}: ${result.reseeded} LLM route matrix rows re-seeded from file` : '',
+    },
+  ];
+
+  // WHY: Single Map keyed by `${category}:${phaseName}` replaces per-phase Maps.
+  const reseedPromises = new Map();
+
+  function triggerReseedPhases(category, db) {
+    const resolved = resolveCategoryAlias(category);
+    if (!resolved) return;
+    for (const phase of reseedPhases) {
+      if (phase.shouldRun && !phase.shouldRun()) continue;
+      const key = `${resolved}:${phase.name}`;
+      if (reseedPromises.has(key)) continue;
+      const promise = (async () => {
+        try {
+          const result = await phase.trigger(resolved, db);
+          const msg = phase.formatLog(resolved, result);
+          if (msg) logger.log(`[auto-seed] ${msg}`);
+        } catch (err) {
+          logger.error(`[auto-seed] ${resolved} ${phase.name} re-seed failed:`, err?.message || err);
+        } finally {
+          reseedPromises.delete(key);
+        }
+      })();
+      reseedPromises.set(key, promise);
+    }
+  }
+
+  // WHY: Hash-gated reconcile for already-seeded DBs. Computes the current
+  // field-rules signature and compares to the stored value. Only runs the
+  // full seedSpecDb path when sources have actually changed. First run after
+  // upgrade (no stored signature) is treated as "changed."
+  function triggerHashGatedReconcile(category, db) {
+    if (typeof buildFieldRulesSignature !== 'function') return;
     const resolvedCategory = resolveCategoryAlias(category);
     if (!resolvedCategory) return;
-    if (checkpointReseedPromises.has(resolvedCategory)) return;
+    const key = `${resolvedCategory}:hash-reconcile`;
+    if (specDbSeedPromises.has(key)) return;
     const promise = (async () => {
       try {
-        const seedResult = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot, productRoot });
-        if (seedResult.runs_seeded > 0) {
-          logger.log(`[auto-seed] ${resolvedCategory}: ${seedResult.runs_seeded} runs re-seeded from checkpoints`);
+        const helperRoot = config.categoryAuthorityRoot || 'category_authority';
+        const currentSignature = await buildFieldRulesSignature(helperRoot, resolvedCategory);
+        const syncState = typeof db.getSpecDbSyncState === 'function'
+          ? db.getSpecDbSyncState(resolvedCategory) : null;
+        const storedMeta = syncState?.last_sync_meta
+          ? (typeof syncState.last_sync_meta === 'string'
+            ? JSON.parse(syncState.last_sync_meta) : syncState.last_sync_meta)
+          : {};
+        const storedSignature = storedMeta.field_rules_signature || null;
+
+        if (currentSignature && currentSignature === storedSignature) {
+          return;
         }
+
+        logger.log(`[hash-reconcile] ${resolvedCategory}: field rules changed, running full reconcile`);
+        const syncResult = await syncSpecDbForCategory({
+          category: resolvedCategory,
+          config,
+          resolveCategoryAlias,
+          getSpecDbReady: async () => db,
+        });
+
+        // Store the new signature in sync meta so next open can skip.
+        if (typeof db.recordSpecDbSync === 'function') {
+          const meta = syncResult && typeof syncResult === 'object' ? { ...syncResult } : {};
+          meta.field_rules_signature = currentSignature;
+          db.recordSpecDbSync({ category: resolvedCategory, status: 'ok', meta });
+        }
+
+        const durationMs = syncResult?.duration_ms || 0;
+        logger.log(`[hash-reconcile] ${resolvedCategory}: reconcile complete (${durationMs}ms)`);
       } catch (err) {
-        logger.error(`[auto-seed] ${resolvedCategory} checkpoint re-seed failed:`, err?.message || err);
+        logger.error(`[hash-reconcile] ${resolvedCategory} failed:`, err?.message || err);
       } finally {
-        checkpointReseedPromises.delete(resolvedCategory);
+        specDbSeedPromises.delete(key);
       }
     })();
-    checkpointReseedPromises.set(resolvedCategory, promise);
+    specDbSeedPromises.set(key, promise);
   }
 
   function getSpecDb(category) {
@@ -75,7 +167,8 @@ export function createSpecDbRuntime({
       const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory });
       if (db.isSeeded()) {
         specDbCache.set(resolvedCategory, db);
-        triggerCheckpointReseed(resolvedCategory, db);
+        triggerHashGatedReconcile(resolvedCategory, db);
+        triggerReseedPhases(resolvedCategory, db);
         return db;
       }
       specDbCache.set(resolvedCategory, db);
@@ -120,7 +213,7 @@ export function createSpecDbRuntime({
       } finally {
         specDbSeedPromises.delete(resolvedCategory);
       }
-      triggerCheckpointReseed(resolvedCategory, db);
+      triggerReseedPhases(resolvedCategory, db);
     })();
     specDbSeedPromises.set(resolvedCategory, promise);
   }
@@ -137,12 +230,26 @@ export function createSpecDbRuntime({
         // keep best available db handle
       }
     }
-    const checkpointPending = checkpointReseedPromises.get(resolvedCategory);
-    if (checkpointPending) {
+    // WHY: Await hash-gated reconcile if running.
+    const reconcileKey = `${resolvedCategory}:hash-reconcile`;
+    const reconcilePending = specDbSeedPromises.get(reconcileKey);
+    if (reconcilePending) {
       try {
-        await checkpointPending;
+        await reconcilePending;
       } catch {
-        // best-effort — db still usable without checkpoint runs
+        // best-effort
+      }
+    }
+    // WHY: Await all registered reseed phases. Generic loop — no per-phase edits needed.
+    for (const phase of reseedPhases) {
+      const key = `${resolvedCategory}:${phase.name}`;
+      const reseedPending = reseedPromises.get(key);
+      if (reseedPending) {
+        try {
+          await reseedPending;
+        } catch {
+          // best-effort — db still usable without reseed data
+        }
       }
     }
     return getSpecDb(resolvedCategory);

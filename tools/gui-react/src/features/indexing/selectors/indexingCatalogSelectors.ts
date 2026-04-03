@@ -35,11 +35,11 @@ function unknownAmbiguityMeter(count = 0): SelectedAmbiguityMeter {
 
 export function deriveCatalogRows(catalog: CatalogRow[]) {
   return [...catalog]
-    .filter((row) => row.brand && row.model)
+    .filter((row) => row.brand && row.base_model)
     .sort((a, b) => {
       const brandCmp = String(a.brand || '').localeCompare(String(b.brand || ''));
       if (brandCmp !== 0) return brandCmp;
-      const modelCmp = String(a.model || '').localeCompare(String(b.model || ''));
+      const modelCmp = String(a.base_model || '').localeCompare(String(b.base_model || ''));
       if (modelCmp !== 0) return modelCmp;
       const variantCmp = cleanVariant(a.variant || '').localeCompare(cleanVariant(b.variant || ''));
       if (variantCmp !== 0) return variantCmp;
@@ -57,7 +57,7 @@ export function deriveModelOptions(catalogRows: CatalogRow[], singleBrand: strin
     ...new Set(
       catalogRows
         .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand))
-        .map((row) => String(row.base_model || row.model || '').trim())
+        .map((row) => String(row.base_model || '').trim())
         .filter(Boolean)
     ),
   ];
@@ -66,7 +66,7 @@ export function deriveModelOptions(catalogRows: CatalogRow[], singleBrand: strin
 export function deriveVariantOptions(catalogRows: CatalogRow[], singleBrand: string, singleModel: string): CatalogVariantOption[] {
   if (!singleBrand || !singleModel) return [];
   return catalogRows
-    .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand) && normalizeToken(row.base_model || row.model) === normalizeToken(singleModel))
+    .filter((row) => normalizeToken(row.brand) === normalizeToken(singleBrand) && normalizeToken(row.base_model) === normalizeToken(singleModel))
     .map((row) => ({
       productId: row.productId,
       label: displayVariant(String(row.variant || '')),
@@ -81,7 +81,7 @@ export function deriveCatalogFamilyCountLookup(catalogRows: CatalogRow[]) {
   const map = new Map<string, number>();
   for (const row of catalogRows) {
     const brand = normalizeToken(row.brand);
-    const baseModel = normalizeToken(row.base_model || row.model);
+    const baseModel = normalizeToken(row.base_model);
     if (!brand || !baseModel) continue;
     const key = `${brand}||${baseModel}`;
     map.set(key, (map.get(key) || 0) + 1);
@@ -96,7 +96,7 @@ export function deriveSelectedAmbiguityMeter({
   singleModel,
 }: SelectedAmbiguityMeterInput): SelectedAmbiguityMeter {
   const activeBrand = String(selectedCatalogProduct?.brand || singleBrand || '').trim();
-  const activeModel = String(selectedCatalogProduct?.base_model || selectedCatalogProduct?.model || singleModel || '').trim();
+  const activeModel = String(selectedCatalogProduct?.base_model || singleModel || '').trim();
   if (!activeBrand || !activeModel) {
     return unknownAmbiguityMeter();
   }

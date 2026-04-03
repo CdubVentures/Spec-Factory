@@ -74,6 +74,12 @@ function generatePhaseOverrideTypes() {
   lines.push('export interface LlmPhaseOverride {');
   lines.push('  baseModel: string;');
   lines.push('  reasoningModel: string;');
+  lines.push('  fallbackModel: string;');
+  lines.push('  fallbackReasoningModel: string;');
+  lines.push('  fallbackUseReasoning: boolean;');
+  lines.push('  fallbackThinking: boolean;');
+  lines.push('  fallbackThinkingEffort: string;');
+  lines.push('  fallbackWebSearch: boolean;');
   lines.push('  useReasoning: boolean;');
   lines.push('  maxOutputTokens: number | null;');
   lines.push('  timeoutMs: number | null;');
@@ -81,6 +87,7 @@ function generatePhaseOverrideTypes() {
   lines.push('  webSearch: boolean;');
   lines.push('  thinking: boolean;');
   lines.push('  thinkingEffort: string;');
+  lines.push('  disableLimits: boolean;');
   lines.push('}\n');
 
   lines.push(`export type LlmOverridePhaseId = ${ids.map(quote).join(' | ')};\n`);
@@ -120,13 +127,20 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
     return (
       (phase.baseModel !== undefined && phase.baseModel !== '') ||
       (phase.reasoningModel !== undefined && phase.reasoningModel !== '') ||
+      (phase.fallbackModel !== undefined && phase.fallbackModel !== '') ||
+      (phase.fallbackReasoningModel !== undefined && phase.fallbackReasoningModel !== '') ||
+      phase.fallbackUseReasoning !== undefined ||
+      phase.fallbackThinking !== undefined ||
+      phase.fallbackThinkingEffort !== undefined ||
+      phase.fallbackWebSearch !== undefined ||
       phase.useReasoning !== undefined ||
       phase.maxOutputTokens !== undefined ||
       phase.timeoutMs !== undefined ||
       phase.maxContextTokens !== undefined ||
       phase.webSearch !== undefined ||
       phase.thinking !== undefined ||
-      phase.thinkingEffort !== undefined
+      phase.thinkingEffort !== undefined ||
+      phase.disableLimits !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -136,6 +150,13 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
 export interface ResolvedPhaseModel {
   baseModel: string;
   reasoningModel: string;
+  fallbackModel: string;
+  fallbackReasoningModel: string;
+  fallbackUseReasoning: boolean;
+  fallbackThinking: boolean;
+  fallbackThinkingEffort: string;
+  fallbackWebSearch: boolean;
+  effectiveFallbackModel: string;
   useReasoning: boolean;
   maxOutputTokens: number | null;
   timeoutMs: number | null;
@@ -143,12 +164,15 @@ export interface ResolvedPhaseModel {
   webSearch: boolean;
   thinking: boolean;
   thinkingEffort: string;
+  disableLimits: boolean;
   effectiveModel: string;
 }
 
 export interface GlobalDraftSlice {
   llmModelPlan: string;
   llmModelReasoning: string;
+  llmPlanFallbackModel: string;
+  llmReasoningFallbackModel: string;
   llmPlanUseReasoning: boolean;
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensTriage: number;
@@ -164,13 +188,15 @@ export interface PhaseOverrideRegistryEntry {
   globalTokens: keyof GlobalDraftSlice;
   globalTimeout: keyof GlobalDraftSlice;
   globalContextTokens: keyof GlobalDraftSlice;
+  globalFallbackModel: keyof GlobalDraftSlice;
+  globalFallbackReasoningModel: keyof GlobalDraftSlice;
 }
 `);
 
   // Generated registry entries
   lines.push('export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [');
   for (const p of LLM_PHASE_DEFS) {
-    lines.push(`  { uiPhaseId: ${quote(p.uiId)}, overrideKey: ${quote(p.id)}, globalModel: ${quote(p.globalModel)}, groupToggle: ${quote(p.groupToggle)}, globalTokens: ${quote(p.globalTokens)}, globalTimeout: ${quote(p.globalTimeout)}, globalContextTokens: ${quote(p.globalContextTokens)} },`);
+    lines.push(`  { uiPhaseId: ${quote(p.uiId)}, overrideKey: ${quote(p.id)}, globalModel: ${quote(p.globalModel)}, groupToggle: ${quote(p.groupToggle)}, globalTokens: ${quote(p.globalTokens)}, globalTimeout: ${quote(p.globalTimeout)}, globalContextTokens: ${quote(p.globalContextTokens)}, globalFallbackModel: ${quote(p.globalFallbackModel)}, globalFallbackReasoningModel: ${quote(p.globalFallbackReasoningModel)} },`);
   }
   lines.push('];\n');
 
@@ -197,6 +223,12 @@ export function resolvePhaseModel(
 
   const baseModel = phaseOverride.baseModel || (globalDraft[mapping.globalModel] as string);
   const reasoningModel = phaseOverride.reasoningModel || globalDraft.llmModelReasoning;
+  const fallbackModel = phaseOverride.fallbackModel || (globalDraft[mapping.globalFallbackModel] as string);
+  const fallbackReasoningModel = phaseOverride.fallbackReasoningModel || (globalDraft[mapping.globalFallbackReasoningModel] as string);
+  const fallbackUseReasoning = phaseOverride.fallbackUseReasoning ?? false;
+  const fallbackThinking = phaseOverride.fallbackThinking ?? false;
+  const fallbackThinkingEffort = phaseOverride.fallbackThinkingEffort ?? '';
+  const fallbackWebSearch = phaseOverride.fallbackWebSearch ?? false;
   const useReasoning = phaseOverride.useReasoning ?? (globalDraft[mapping.groupToggle] as boolean) ?? false;
   const maxOutputTokens = phaseOverride.maxOutputTokens ?? (globalDraft[mapping.globalTokens] as number);
   const timeoutMs = phaseOverride.timeoutMs ?? (globalDraft[mapping.globalTimeout] as number);
@@ -204,10 +236,18 @@ export function resolvePhaseModel(
   const webSearch = phaseOverride.webSearch ?? false;
   const thinking = phaseOverride.thinking ?? false;
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
+  const disableLimits = phaseOverride.disableLimits ?? false;
 
   return {
     baseModel,
     reasoningModel,
+    fallbackModel,
+    fallbackReasoningModel,
+    fallbackUseReasoning,
+    fallbackThinking,
+    fallbackThinkingEffort,
+    fallbackWebSearch,
+    effectiveFallbackModel: fallbackUseReasoning ? fallbackReasoningModel : fallbackModel,
     useReasoning,
     maxOutputTokens,
     timeoutMs,
@@ -215,6 +255,7 @@ export function resolvePhaseModel(
     webSearch,
     thinking,
     thinkingEffort,
+    disableLimits,
     effectiveModel: useReasoning ? reasoningModel : baseModel,
   };
 }

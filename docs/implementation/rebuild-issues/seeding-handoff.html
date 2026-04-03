@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seeding Handoff — Current State, Issues &amp; O(1) Vertical Architecture</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1100px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin:2.5rem 0 .5rem;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.05rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--text)}
+p,li{font-size:0.88rem;color:var(--t2);max-width:800px}
+ul,ol{padding-left:1.5rem;margin:.5rem 0}
+li{margin:.3rem 0}
+table.ref{width:100%;border-collapse:collapse;font-size:0.82rem;margin:.5rem 0 1.5rem}
+table.ref th{text-align:left;padding:8px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:2px solid var(--border);background:var(--s2)}
+table.ref td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ref tr:last-child td{border-bottom:none}
+table.ref tr:hover{background:var(--s2)}
+.fp{font-family:var(--mono);font-weight:500;font-size:0.8rem;letter-spacing:-0.01em}
+.tag{display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-done{background:var(--green-s);color:var(--green)}
+.tag-issue{background:var(--rose-s);color:var(--rose)}
+.tag-todo{background:var(--amber-s);color:var(--amber)}
+.tag-arch{background:var(--violet-s);color:var(--violet)}
+.tag-dead{background:var(--s3);color:var(--t3)}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:1rem 0}
+.card h4{font-size:0.92rem;font-weight:700;margin-bottom:8px}
+code{font-family:var(--mono);font-size:0.82rem;background:var(--s2);padding:1px 6px;border-radius:4px}
+pre{font-family:var(--mono);font-size:0.8rem;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:.5rem 0 1rem;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>Seeding Handoff</h1>
+  <p>Current state of data persistence, known issues, what&rsquo;s missing for full rebuild, and the architectural direction for O(1) vertical seeding.</p>
+  <div class="meta">
+    <span>2026-04-02</span>
+    <span>Post hash-gated reconcile</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n" style="color:var(--green)">35</div><div class="l">Tables Auto-Rebuild</div></div>
+  <div class="stat"><div class="n" style="color:var(--amber)">4</div><div class="l">Upsert-Only (no delete)</div></div>
+  <div class="stat"><div class="n" style="color:var(--rose)">5</div><div class="l">No Rebuild Path</div></div>
+  <div class="stat"><div class="n" style="color:var(--t3)">5</div><div class="l">Dead (remove)</div></div>
+</div>
+
+<!-- ═══════════════════ SECTION 1 ═══════════════════ -->
+
+<h2>1. What Works Today</h2>
+
+<h3>App DB (app.sqlite) &mdash; fully hash-gated <span class="tag tag-done">done</span></h3>
+<p>All 6 tables rebuild from JSON via SHA256 hash comparison. If the file content changed since last import, re-import runs. If unchanged, O(1) skip.</p>
+<table class="ref">
+<thead><tr><th>Source JSON</th><th>Tables</th><th>Full Reconcile?</th></tr></thead>
+<tbody>
+<tr><td class="fp">brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td><span class="tag tag-issue">upsert only</span> brands not deleted if removed from JSON</td></tr>
+<tr><td class="fp">user-settings.json</td><td>settings, studio_maps</td><td><span class="tag tag-issue">upsert only</span> keys not deleted if removed from JSON</td></tr>
+<tr><td class="fp">color_registry.json</td><td>color_registry</td><td><span class="tag tag-done">full reconcile</span> upserts + deletes stale</td></tr>
+</tbody>
+</table>
+
+<h3>Spec DB (spec.sqlite) &mdash; dual-path</h3>
+<p>Two paths exist depending on DB state:</p>
+<ul>
+  <li><strong>Empty DB</strong> (<code>isSeeded() = false</code>): Full <code>seedSpecDb()</code> runs &mdash; imports everything from JSON. All component/enum deletions reconciled.</li>
+  <li><strong>Existing DB</strong> (<code>isSeeded() = true</code>): Hash-gated reconcile checks <code>field_rules_signature</code>. If signature changed &rarr; full <code>seedSpecDb()</code>. If unchanged &rarr; only reseed phases run.</li>
+</ul>
+
+<h3>Reseed phases (O(1) registry) <span class="tag tag-done">done</span></h3>
+<p>Run on every category open regardless of <code>isSeeded()</code>. Registered in <code>specDbRuntime.js</code>.</p>
+<table class="ref">
+<thead><tr><th>Phase</th><th>Source</th><th>Full Reconcile?</th></tr></thead>
+<tbody>
+<tr><td class="fp">checkpoint</td><td>run.json + product.json + media files</td><td><span class="tag tag-issue">upsert only</span></td></tr>
+<tr><td class="fp">product-catalog</td><td>product_catalog.json</td><td><span class="tag tag-issue">upsert only</span></td></tr>
+<tr><td class="fp">color-edition</td><td>color_edition.json</td><td><span class="tag tag-issue">upsert only</span></td></tr>
+<tr><td class="fp">llm-route-matrix</td><td>llm_route_matrix.json</td><td><span class="tag tag-done">full reconcile</span></td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════ SECTION 2 ═══════════════════ -->
+
+<h2>2. Known Issues</h2>
+
+<div class="card">
+  <h4>Issue 1: Upsert-only seeders don&rsquo;t delete stale rows <span class="tag tag-issue">blocking</span></h4>
+  <p>When a JSON source removes an entry, the SQL row persists. This means editing JSON and expecting SQL to match only works for additions and updates, not deletions.</p>
+  <table class="ref">
+  <thead><tr><th>Surface</th><th>Problem</th><th>Fix Pattern</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">brand_registry.json</td><td>Removed brands stay in SQL</td><td>After upsert loop, delete brands NOT in JSON set</td></tr>
+  <tr><td class="fp">user-settings.json</td><td>Removed setting keys stay in SQL</td><td>After upsert loop, delete keys NOT in JSON sections</td></tr>
+  <tr><td class="fp">product_catalog.json</td><td>Removed products stay in SQL</td><td>After upsert, delete products NOT in catalog for category</td></tr>
+  <tr><td class="fp">checkpoint reseed</td><td>Deleted run/product dirs &rarr; stale SQL rows</td><td>After scan, delete rows for run_ids NOT found on disk</td></tr>
+  <tr><td class="fp">color_edition reseed</td><td>Deleted product dirs &rarr; stale color rows</td><td>After scan, delete rows for product_ids NOT found on disk</td></tr>
+  </tbody>
+  </table>
+  <p><strong>Template:</strong> The <code>color_registry</code> reconcile (built today) is the reference implementation. Pattern: build <code>Set</code> of source keys &rarr; upsert all &rarr; delete SQL rows where key NOT IN set.</p>
+</div>
+
+<div class="card">
+  <h4>Issue 2: Override files are stale for pre-T3a products <span class="tag tag-todo">needs backfill</span></h4>
+  <p>The write-back to <code>.overrides.json</code> was added in T3a (today). Products reviewed before today have stale override files without <code>ai_review</code> sub-objects. A one-time backfill is needed: read SQL state for all reviewed products, write refreshed <code>.overrides.json</code> files.</p>
+  <p><strong>Implementation:</strong> Call <code>readOverrideFile()</code> (which reads from SQL including AI review state) for each product with overrides, then write the result to disk. Can be a CLI command or one-time script.</p>
+</div>
+
+<div class="card">
+  <h4>Issue 3: Old run.json files lack brand_resolution <span class="tag tag-todo">can&rsquo;t backfill</span></h4>
+  <p>The <code>brand_resolution</code> field was added to <code>buildCrawlCheckpoint</code> today (T3c). Existing <code>run.json</code> files on disk predate this change and don&rsquo;t contain it. On rebuild, those runs won&rsquo;t have brand_resolution artifacts. Only new runs going forward will capture it.</p>
+  <p><strong>Mitigation:</strong> Could write a backfill that reads <code>brand_resolution</code> from current SQL (if DB still exists) and patches old run.json files. Low priority &mdash; brand_resolution is re-derivable by re-running the brand resolver.</p>
+</div>
+
+<div class="card">
+  <h4>Issue 4: key_review_runs telemetry not checkpointed <span class="tag tag-todo">needs design</span></h4>
+  <p><code>key_review_runs</code>, <code>key_review_run_sources</code>, and <code>key_review_audit</code> are actively read by the review workbench (AI review history, model used, cost, confidence). Base <code>key_review_state</code> rows rebuild from derived data, but the run telemetry (which model ran, token counts, cost) is SQL-only.</p>
+  <p><strong>Options:</strong></p>
+  <ul>
+    <li>Include key_review_run data in <code>.overrides.json</code> per product (alongside ai_review)</li>
+    <li>Write a separate <code>{productId}.review_runs.json</code> checkpoint</li>
+    <li>Accept as re-derivable: next AI review run repopulates the data</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h4>Issue 5: Dead tables still in schema <span class="tag tag-dead">cleanup</span></h4>
+  <p>These tables exist in <code>specDbSchema.js</code> but have no writers, no readers, and no purpose:</p>
+  <ul>
+    <li><code>curation_suggestions</code> &mdash; seed path removed</li>
+    <li><code>component_review_queue</code> &mdash; seed path removed</li>
+    <li><code>source_corpus</code> &mdash; sourceCorpus module removed</li>
+    <li><code>audit_log</code> &mdash; zero readers, write-only dead code</li>
+    <li><code>runtime_events</code> &mdash; replaced by bridge_events, zero readers</li>
+  </ul>
+  <p>Remove from: <code>specDbSchema.js</code>, <code>specDbStatements.js</code>, <code>specDb.js</code>, store modules, and any test fixtures.</p>
+</div>
+
+<!-- ═══════════════════ SECTION 3 ═══════════════════ -->
+
+<h2>3. What&rsquo;s Missing for Full Identical Rebuild</h2>
+
+<p>If you delete all SQLite files today, this is what doesn&rsquo;t come back:</p>
+
+<table class="ref">
+<thead><tr><th>Table</th><th>Status</th><th>User-Facing?</th><th>Fix Needed</th></tr></thead>
+<tbody>
+<tr><td class="fp">billing_entries</td><td>SQL-only, no checkpoint</td><td>Yes &mdash; Billing Page</td><td>Durable JSON ledger (T5 future)</td></tr>
+<tr><td class="fp">key_review_runs</td><td>SQL-only, no checkpoint</td><td>Yes &mdash; Review grid</td><td>Checkpoint in override or separate file</td></tr>
+<tr><td class="fp">key_review_run_sources</td><td>SQL-only, follows key_review_runs</td><td>Yes</td><td>Same as above</td></tr>
+<tr><td class="fp">key_review_audit</td><td>SQL-only, follows key_review_runs</td><td>Yes</td><td>Same as above</td></tr>
+<tr><td class="fp">evidence_documents</td><td>Rebuildable from HTML on disk</td><td>Yes &mdash; DocumentsTab</td><td>Wire disk-walk rebuilder</td></tr>
+<tr><td class="fp">evidence_chunks</td><td>Rebuildable from HTML on disk</td><td>Yes</td><td>Same as above</td></tr>
+<tr><td class="fp">evidence_facts</td><td>Rebuildable from HTML on disk</td><td>Yes</td><td>Same as above</td></tr>
+<tr><td class="fp">bridge_events</td><td>SQL-only, session-scoped</td><td>Yes &mdash; RuntimeOps</td><td>Survives via run_artifacts.run_summary. Acceptable.</td></tr>
+<tr><td class="fp">source_artifacts</td><td>Files on disk, SQL index not rebuilt</td><td>Partial</td><td>Wire disk-walk rebuilder</td></tr>
+<tr><td class="fp">source_pdfs</td><td>Files on disk, SQL index not rebuilt</td><td>Partial</td><td>Wire disk-walk rebuilder</td></tr>
+<tr><td class="fp">field_history</td><td>Ephemeral crash recovery</td><td>No</td><td>None &mdash; acceptable loss</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════ SECTION 4 ═══════════════════ -->
+
+<h2>4. O(1) Vertical Seeding Architecture</h2>
+
+<p>The goal: adding a new JSON-backed data surface should require exactly <strong>one registry entry</strong>. No manual wiring in seed functions, no per-surface if/else chains, no scattered import paths.</p>
+
+<h3>Current Architecture (mixed)</h3>
+<pre>
+App DB:   seedAppDb() &mdash; per-source hash check, hardcoded per surface
+Spec DB:  seedSpecDb() &mdash; 1,875-line function with 10 sequential steps
+          reseedPhases[] &mdash; O(1) registry (4 phases), each independent
+</pre>
+
+<p>The reseed phase registry is already O(1) and vertical. <code>seedSpecDb()</code> is not &mdash; it&rsquo;s a monolith.</p>
+
+<h3>Target Architecture</h3>
+<pre>
+Every JSON &rarr; SQL surface is a registry entry with:
+  {
+    name: 'component-identity',
+    source: (config, category) =&gt; loadComponentDbs(config, category),
+    seed: (db, data) =&gt; reconcileComponents(db, data),
+    hash: (config, category) =&gt; fieldRulesSignature(config, category),
+    scope: 'category',       // 'global' | 'category'
+    runOn: 'seed+reconcile', // 'seed' | 'reseed' | 'seed+reconcile'
+  }
+
+Adding a new surface = one entry in the registry.
+The generic engine handles: hash comparison, seed/skip decision,
+logging, error isolation, and stale-row pruning.
+</pre>
+
+<h3>Migration Path</h3>
+<ol>
+  <li><strong>Phase A:</strong> Convert each <code>seedSpecDb()</code> step into a standalone reconcile function with the same signature: <code>(db, data) &rarr; { seeded, removed }</code></li>
+  <li><strong>Phase B:</strong> Register each as a seed phase entry in a unified registry (merge <code>seedSpecDb</code> steps + <code>reseedPhases</code> into one array)</li>
+  <li><strong>Phase C:</strong> Add full reconcile (delete stale) to each surface that currently only upserts</li>
+  <li><strong>Phase D:</strong> Add hash gating per surface so unchanged sources skip entirely</li>
+  <li><strong>Phase E:</strong> Delete the <code>seedSpecDb()</code> monolith &mdash; the registry IS the seed</li>
+</ol>
+
+<h3>What Each Reconcile Function Must Do</h3>
+<pre>
+1. Read source (JSON file, checkpoint dir, derived data)
+2. Build expected set (all keys/IDs from source)
+3. Upsert all rows from source into SQL
+4. Delete SQL rows where key NOT IN expected set
+5. Return { seeded: N, removed: N }
+</pre>
+
+<p>This is the <code>color_registry</code> pattern from today &mdash; generalized to every surface.</p>
+
+<!-- ═══════════════════ SECTION 5 ═══════════════════ -->
+
+<h2>5. Immediate Action Items (Priority Order)</h2>
+
+<table class="ref">
+<thead><tr><th>#</th><th>Item</th><th>Effort</th><th>Impact</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Override backfill</strong> &mdash; refresh all .overrides.json from SQL so AI review state is on disk</td><td>Small</td><td>AI review survives rebuild for all existing products</td></tr>
+<tr><td>2</td><td><strong>Remove 5 dead tables</strong> &mdash; curation_suggestions, component_review_queue, source_corpus, audit_log, runtime_events from schema + stores + statements</td><td>Medium</td><td>Clean schema, fewer tables to reason about</td></tr>
+<tr><td>3</td><td><strong>Full reconcile for brand_registry</strong> &mdash; delete brands removed from JSON (same pattern as color_registry)</td><td>Small</td><td>Brand JSON edits fully propagate</td></tr>
+<tr><td>4</td><td><strong>Full reconcile for product_catalog reseed</strong> &mdash; delete products removed from catalog JSON</td><td>Small</td><td>Product catalog JSON edits fully propagate</td></tr>
+<tr><td>5</td><td><strong>Full reconcile for user-settings</strong> &mdash; delete setting keys removed from JSON</td><td>Small</td><td>Settings JSON edits fully propagate</td></tr>
+<tr><td>6</td><td><strong>Fix product.json dedup bug</strong> &mdash; scanAndSeedCheckpoints creates duplicate products (Acer Cestus 310 &times;90). Checkpoint scanner needs brand+model+variant dedup, not just product_id.</td><td>Medium</td><td>Prevents duplicate product rows on rebuild</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════ SECTION 6 ═══════════════════ -->
+
+<h2>6. File Reference</h2>
+
+<h3>Core seeding code</h3>
+<table class="ref">
+<thead><tr><th>File</th><th>Role</th></tr></thead>
+<tbody>
+<tr><td class="fp">src/db/appDbSeed.js</td><td>App DB hash-gated reconcile (brands, settings, studio maps)</td></tr>
+<tr><td class="fp">src/features/color-registry/colorRegistrySeed.js</td><td>Color registry full reconcile (reference implementation)</td></tr>
+<tr><td class="fp">src/db/seed.js</td><td>Spec DB monolith seeder (1,875 lines, 10 steps)</td></tr>
+<tr><td class="fp">src/app/api/specDbRuntime.js</td><td>Reseed phase registry + hash-gated reconcile trigger</td></tr>
+<tr><td class="fp">src/pipeline/checkpoint/scanAndSeedCheckpoints.js</td><td>Checkpoint scanner (product.json + run.json)</td></tr>
+<tr><td class="fp">src/pipeline/checkpoint/seedFromCheckpoint.js</td><td>Checkpoint &rarr; SQL restoration</td></tr>
+<tr><td class="fp">src/api/services/specDbSyncService.js</td><td>Explicit sync orchestrator (stores field_rules_signature)</td></tr>
+<tr><td class="fp">src/api/bootstrap/createBootstrapSessionLayer.js</td><td>Bootstrap wiring (passes productRoot + buildFieldRulesSignature)</td></tr>
+<tr><td class="fp">src/shared/contentHash.js</td><td>sha256Hex() utility for hash-gated reconcile</td></tr>
+<tr><td class="fp">src/features/review/domain/overrideHelpers.js</td><td>Override envelope builder (includes AI review state)</td></tr>
+<tr><td class="fp">src/features/review/domain/overrideWorkflow.js</td><td>Override write-back to disk on finalize</td></tr>
+</tbody>
+</table>
+
+<h3>Schema &amp; docs</h3>
+<table class="ref">
+<thead><tr><th>File</th><th>Role</th></tr></thead>
+<tbody>
+<tr><td class="fp">src/db/specDbSchema.js</td><td>All CREATE TABLE statements</td></tr>
+<tr><td class="fp">src/db/specDbStatements.js</td><td>All prepared statements</td></tr>
+<tr><td class="fp">src/db/specDb.js</td><td>SpecDb facade (exposes store methods)</td></tr>
+<tr><td class="fp">docs/data-structure/rebuild-map.html</td><td>JSON &rarr; SQL rebuild map</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════ SECTION 7 ═══════════════════ -->
+
+<h2>7. JSON Data Duplication &amp; SSOT Violations</h2>
+
+<p>Multiple JSON files contain overlapping data for the same entities. When they disagree, behavior is non-deterministic. This section maps every overlap, identifies the intended SSOT, and flags real problems.</p>
+
+<h3>Critical SSOT Violations (must fix)</h3>
+
+<div class="card">
+  <h4>Settings Circular Sync <span class="tag tag-issue">high severity</span></h4>
+  <p><strong>Overlap:</strong> <code>user-settings.json</code> &harr; <code>app.sqlite.settings</code></p>
+  <p><strong>Flow:</strong> Boot: JSON &rarr; SQL (hash-gated). Session: SQL mutates. Save: SQL &rarr; JSON (write-back). Next boot: JSON &rarr; SQL again.</p>
+  <p><strong>Problem:</strong> If a mutation happens but the write-back to JSON doesn&rsquo;t fire (crash, timeout), the change is lost on next boot. Two sessions editing concurrently = last-write-wins with no merge.</p>
+  <p><strong>Fix:</strong> Either drop JSON write-back and keep SQL as sole authority, or implement timestamp-based merge.</p>
+  <p><strong>Files:</strong> <code class="fp">src/db/appDbSeed.js</code>, <code class="fp">src/features/settings-authority/userSettingsService.js</code></p>
+</div>
+
+<div class="card">
+  <h4>Queue State Dual Path <span class="tag tag-issue">medium severity</span></h4>
+  <p><strong>Overlap:</strong> <code>_queue/{cat}/state.json</code> vs <code>spec.sqlite.product_queue</code> vs <code>product.json</code> (runs_completed, latest_run_id)</p>
+  <p><strong>Problem:</strong> Queue storage adapter switches between SQL and JSON modes depending on whether specDb is available. No reconciliation on boot &mdash; whichever path is selected wins. If SQL and JSON diverge, reads are non-deterministic.</p>
+  <p><strong>Fix:</strong> Add hash-gated reconcile for queue state (same pattern as appDbSeed).</p>
+</div>
+
+<div class="card">
+  <h4>Override Data Drift <span class="tag tag-issue">medium severity</span></h4>
+  <p><strong>Overlap:</strong> <code>.overrides.json</code> vs <code>spec.sqlite.item_field_state</code> + <code>candidate_reviews</code></p>
+  <p><strong>Problem:</strong> Overrides written to JSON and SQL separately (not atomic). If JSON write succeeds but SQL fails (or vice versa), state diverges. On next <code>seedSpecDb()</code>, SQL re-seeds from JSON &mdash; if JSON write failed, the override is lost.</p>
+  <p><strong>Fix:</strong> Make override persistence atomic, or designate one as sole authority with the other as derived cache.</p>
+</div>
+
+<h3>Complete Overlap Map</h3>
+
+<table class="ref">
+<thead><tr><th>Data</th><th>Files That Contain It</th><th>SSOT Winner</th><th>Problem?</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Product identity</strong><br>(brand, model, variant)</td>
+  <td class="fp">product_catalog.json<br>product.json<br>normalized.json<br>SQL products</td>
+  <td>SQL is runtime authority. product_catalog.json is boot seed. product.json is immutable checkpoint.</td>
+  <td><span class="tag tag-done">benign</span> JSON is read-only</td>
+</tr>
+<tr>
+  <td><strong>Queue state</strong><br>(status, rounds, last_run_id)</td>
+  <td class="fp">_queue/state.json<br>product.json<br>SQL product_queue</td>
+  <td>SQL primary, JSON fallback. product.json has partial subset.</td>
+  <td><span class="tag tag-issue">problem</span> dual-path, no reconcile</td>
+</tr>
+<tr>
+  <td><strong>Settings</strong><br>(runtime, storage, ui)</td>
+  <td class="fp">user-settings.json<br>SQL settings<br>runtime snapshots</td>
+  <td>Circular: JSON seeds SQL, SQL writes back to JSON.</td>
+  <td><span class="tag tag-issue">problem</span> circular sync</td>
+</tr>
+<tr>
+  <td><strong>Field overrides</strong><br>(override_value, provenance)</td>
+  <td class="fp">.overrides.json<br>normalized.json<br>SQL item_field_state</td>
+  <td>.overrides.json is override authority. normalized.json has applied values.</td>
+  <td><span class="tag tag-issue">problem</span> non-atomic dual write</td>
+</tr>
+<tr>
+  <td><strong>Candidate reviews</strong><br>(human + AI state)</td>
+  <td class="fp">.overrides.json (ai_review block)<br>SQL candidate_reviews</td>
+  <td>SQL is runtime authority. JSON is write-back for rebuild.</td>
+  <td><span class="tag tag-done">benign</span> clear direction (SQL &rarr; JSON)</td>
+</tr>
+<tr>
+  <td><strong>Components</strong><br>(identity, aliases, values)</td>
+  <td class="fp">component_db/*.json<br>_overrides/components/*.json<br>SQL tables</td>
+  <td>Intentional layering: source + mutations. SQL is merged result.</td>
+  <td><span class="tag tag-done">benign</span> intentional two-level</td>
+</tr>
+<tr>
+  <td><strong>Source URLs</strong><br>(strategy, crawl results, history)</td>
+  <td class="fp">sources.json<br>run.json<br>product.json sources<br>SQL crawl_sources</td>
+  <td>Clear separation: strategy vs execution vs accumulation vs index.</td>
+  <td><span class="tag tag-done">benign</span> different scopes</td>
+</tr>
+<tr>
+  <td><strong>Colors</strong><br>(name, hex)</td>
+  <td class="fp">color_registry.json<br>color_edition.json<br>SQL color_registry</td>
+  <td>color_registry.json is global SSOT. color_edition.json is per-product discovery (different data).</td>
+  <td><span class="tag tag-done">benign</span> different scopes</td>
+</tr>
+<tr>
+  <td><strong>Field ordering</strong></td>
+  <td class="fp">field_studio_map.json<br>field_key_order.json<br>SQL field_key_order</td>
+  <td>field_studio_map.json is primary. field_key_order.json is legacy fallback.</td>
+  <td><span class="tag tag-done">benign</span> fallback chain</td>
+</tr>
+<tr>
+  <td><strong>Run sources</strong><br>(per-URL crawl data)</td>
+  <td class="fp">run.json sources[]<br>product.json sources[]</td>
+  <td>run.json is per-run truth. product.json merges across runs (deduped by content_hash).</td>
+  <td><span class="tag tag-done">benign</span> accumulation pattern</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Recommended SSOT Direction</h3>
+
+<p>For every overlap, the system should have <strong>exactly one write target</strong> with all other copies being derived:</p>
+
+<table class="ref">
+<thead><tr><th>Data</th><th>Should Be SSOT</th><th>Derived Copies</th></tr></thead>
+<tbody>
+<tr><td>Settings</td><td>SQL (app.sqlite.settings)</td><td>user-settings.json = export/rebuild seed only, never re-imported while SQL exists</td></tr>
+<tr><td>Queue state</td><td>SQL (product_queue)</td><td>state.json = export for rebuild only. product.json = checkpoint accumulator.</td></tr>
+<tr><td>Overrides</td><td>SQL (item_field_state + candidate_reviews)</td><td>.overrides.json = export for rebuild. Write-back should be atomic with SQL write.</td></tr>
+<tr><td>Product identity</td><td>SQL (products)</td><td>product_catalog.json = boot seed. product.json = checkpoint.</td></tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>

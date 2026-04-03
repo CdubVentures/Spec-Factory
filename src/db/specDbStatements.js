@@ -486,27 +486,6 @@ export function prepareStatements(db) {
       'DELETE FROM llm_cache WHERE (timestamp + ttl) < ?'
     ),
 
-    _upsertLearningProfile: db.prepare(`
-      INSERT OR REPLACE INTO learning_profiles (
-        profile_id, category, brand, model, variant,
-        runs_total, validated_runs, validated,
-        unknown_field_rate, unknown_field_rate_avg, parser_health_avg,
-        preferred_urls, feedback_urls, uncertain_fields,
-        host_stats, critical_fields_below, last_run, parser_health, updated_at
-      ) VALUES (
-        @profile_id, @category, @brand, @model, @variant,
-        @runs_total, @validated_runs, @validated,
-        @unknown_field_rate, @unknown_field_rate_avg, @parser_health_avg,
-        @preferred_urls, @feedback_urls, @uncertain_fields,
-        @host_stats, @critical_fields_below, @last_run, @parser_health, @updated_at
-      )
-    `),
-
-    _upsertCategoryBrain: db.prepare(`
-      INSERT OR REPLACE INTO category_brain (category, artifact_name, payload, updated_at)
-      VALUES (@category, @artifact_name, @payload, @updated_at)
-    `),
-
     _upsertSourceCorpus: db.prepare(`
       INSERT OR REPLACE INTO source_corpus (
         url, category, host, root_domain, path, title, snippet, tier, role,

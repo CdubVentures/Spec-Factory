@@ -513,6 +513,12 @@ export function registerStudioRoutes(ctx) {
         return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
       }
       specDb.setFieldKeyOrder(category, JSON.stringify(order));
+      // WHY: Mirror SQL to durable JSON so field_key_order survives spec.sqlite rebuild.
+      const fkoPath = path.join(
+        config.categoryAuthorityRoot || 'category_authority',
+        category, '_control_plane', 'field_key_order.json'
+      );
+      fs.writeFile(fkoPath, JSON.stringify({ order }, null, 2)).catch(() => {});
       sessionCache.invalidateSessionCache(category);
       return jsonRes(res, 200, { ok: true, category });
     }

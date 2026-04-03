@@ -10,7 +10,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { normalizeProductIdentity } from '../identity/identityDedup.js';
+import { normalizeProductIdentity, deriveFullModel } from '../identity/identityDedup.js';
 import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
 import { generateIdentifier, nextAvailableId } from '../identity/productIdentity.js';
 import { writeProductIdentity } from './writeProductIdentity.js';
@@ -38,16 +38,16 @@ function emptyCatalog() {
 
 // WHY: With decoupled productIds (random hex), duplicate detection must be
 // identity-based, not ID-based. Returns the existing productId or null.
-export function findProductByIdentity(catalog, brand, model, variant) {
+export function findProductByIdentity(catalog, brand, baseModel, variant) {
   const b = String(brand ?? '').trim().toLowerCase();
-  const m = String(model ?? '').trim().toLowerCase();
+  const m = String(baseModel ?? '').trim().toLowerCase();
   const v = String(variant ?? '').trim().toLowerCase();
   for (const [pid, p] of Object.entries(catalog.products || {})) {
-    if (String(p.brand ?? '').trim().toLowerCase() === b &&
-        String(p.model ?? '').trim().toLowerCase() === m &&
-        String(p.variant ?? '').trim().toLowerCase() === v) {
-      return pid;
-    }
+    if (String(p.brand ?? '').trim().toLowerCase() !== b) continue;
+    if (String(p.variant ?? '').trim().toLowerCase() !== v) continue;
+    // WHY: Compare base_model (identity primary key).
+    const pBaseModel = String(p.base_model ?? '').trim().toLowerCase();
+    if (pBaseModel === m) return pid;
   }
   return null;
 }
@@ -85,7 +85,7 @@ export async function addProduct({
   config,
   category,
   brand,
-  model,
+  base_model,
   variant = '',
   seedUrls = [],
   storage = null,
@@ -95,28 +95,30 @@ export async function addProduct({
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const cleanBrand = String(brand ?? '').trim();
-  const cleanModel = String(model ?? '').trim();
+  // WHY: base_model is the primary user-entered field. model is derived by the normalizer.
+  const cleanBaseModel = String(base_model ?? '').trim();
 
   if (!cat) return { ok: false, error: 'category_required' };
   if (!cleanBrand) return { ok: false, error: 'brand_required' };
-  if (!cleanModel) return { ok: false, error: 'model_required' };
+  if (!cleanBaseModel) return { ok: false, error: 'model_required' };
 
-  // Normalize identity (strips fabricated variants)
-  const identity = normalizeProductIdentity(cat, cleanBrand, cleanModel, variant);
+  // Normalize identity (strips fabricated variants against base_model)
+  const identity = normalizeProductIdentity(cat, cleanBrand, cleanBaseModel, variant);
 
-  // WHY: Check SQL first (live SSOT), fall back to catalog JSON (boot seed)
+  // WHY: Check SQL first (live SSOT), fall back to catalog JSON (boot seed).
+  // Compare against base_model + variant (the primary identity), not model.
   let existingPid = null;
   if (specDb) {
     const allProducts = specDb.getAllProducts?.() || [];
     existingPid = allProducts.find((r) =>
       String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
-      String(r.model || '').trim().toLowerCase() === identity.model.toLowerCase() &&
+      String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
       String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
     )?.product_id || null;
   }
   if (!existingPid) {
     const catalog = await loadProductCatalog(config, cat);
-    existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    existingPid = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
   }
   if (existingPid) {
     return { ok: false, error: 'product_already_exists', productId: existingPid };
@@ -129,6 +131,7 @@ export async function addProduct({
     id: nextAvailableId(catalog),
     identifier: generateIdentifier(),
     brand: identity.brand,
+    base_model: identity.base_model,
     model: identity.model,
     variant: identity.variant,
     brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
@@ -143,7 +146,7 @@ export async function addProduct({
     writeProductIdentity({
       productId: pid,
       category: cat,
-      identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
+      identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
       seedUrls,
       identifier: product.identifier,
     });
@@ -205,13 +208,14 @@ export async function addProductsBulk({
   for (let i = 0; i < inputRows.length; i += 1) {
     const row = inputRows[i] && typeof inputRows[i] === 'object' ? inputRows[i] : {};
     const rowBrand = String(row.brand ?? defaultBrand).trim();
-    const rowModel = String(row.model ?? '').trim();
+    const rowBaseModel = String(row.base_model ?? '').trim();
     const rowVariant = String(row.variant ?? '').trim();
     const seedUrls = Array.isArray(row.seedUrls) ? row.seedUrls.filter(Boolean) : [];
     const baseResult = {
       index: i,
       brand: rowBrand,
-      model: rowModel,
+      base_model: rowBaseModel,
+      model: rowBaseModel,
       variant: rowVariant
     };
 
@@ -220,14 +224,14 @@ export async function addProductsBulk({
       results.push({ ...baseResult, status: 'invalid', reason: 'brand_required' });
       continue;
     }
-    if (!rowModel) {
+    if (!rowBaseModel) {
       invalid += 1;
       results.push({ ...baseResult, status: 'invalid', reason: 'model_required' });
       continue;
     }
 
-    const identity = normalizeProductIdentity(cat, rowBrand, rowModel, rowVariant);
-    const identityKey = `${identity.brand.toLowerCase()}||${identity.model.toLowerCase()}||${identity.variant.toLowerCase()}`;
+    const identity = normalizeProductIdentity(cat, rowBrand, rowBaseModel, rowVariant);
+    const identityKey = `${identity.brand.toLowerCase()}||${identity.base_model.toLowerCase()}||${identity.variant.toLowerCase()}`;
     const normalizedResult = {
       ...baseResult,
       brand: identity.brand,
@@ -242,7 +246,7 @@ export async function addProductsBulk({
     }
     seenInRequest.add(identityKey);
 
-    const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    const existingPid = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
     if (existingPid) {
       skippedExisting += 1;
       results.push({ ...normalizedResult, productId: existingPid, status: 'skipped_existing', reason: 'already_exists' });
@@ -256,6 +260,7 @@ export async function addProductsBulk({
       id: nextAvailableId(catalog),
       identifier: generateIdentifier(),
       brand: identity.brand,
+      base_model: identity.base_model,
       model: identity.model,
       variant: identity.variant,
       brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
@@ -272,7 +277,7 @@ export async function addProductsBulk({
         writeProductIdentity({
           productId: pid,
           category: cat,
-          identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
+          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
           seedUrls,
           identifier: product.identifier,
         });
@@ -338,9 +343,14 @@ export async function updateProduct({
     return { ok: false, error: 'product_not_found', productId };
   }
 
-  // Apply patches
+  // Apply patches — base_model is the primary field, model is derived.
+  // Backward compat: if caller sends model but not base_model, treat model as base_model.
   const newBrand = patch.brand !== undefined ? String(patch.brand).trim() : existing.brand;
-  const newModel = patch.model !== undefined ? String(patch.model).trim() : existing.model;
+  const newBaseModel = patch.base_model !== undefined
+    ? String(patch.base_model).trim()
+    : patch.model !== undefined
+      ? String(patch.model).trim()
+      : existing.base_model;
   const newVariant = patch.variant !== undefined ? String(patch.variant).trim() : existing.variant;
 
   if (patch.seed_urls !== undefined) {
@@ -351,7 +361,7 @@ export async function updateProduct({
   }
 
   // WHY: Normalize identity (strip fabricated variants) but productId stays immutable
-  const identity = normalizeProductIdentity(cat, newBrand, newModel, newVariant);
+  const identity = normalizeProductIdentity(cat, newBrand, newBaseModel, newVariant);
 
   // WHY: Resolve brand_identifier when brand changes; preserve existing otherwise
   const newBrandIdentifier = patch.brand !== undefined
@@ -361,6 +371,7 @@ export async function updateProduct({
   const updated = {
     ...existing,
     brand: identity.brand,
+    base_model: identity.base_model,
     model: identity.model,
     variant: identity.variant,
     brand_identifier: newBrandIdentifier,
@@ -442,6 +453,7 @@ export async function seedFromCatalog({
   for (const row of products) {
     const brand = String(row.brand ?? '').trim();
     const model = String(row.model ?? '').trim();
+    const baseModel = String(row.base_model ?? '').trim();
     const rawVariant = String(row.variant ?? '').trim();
 
     if (!brand || !model) continue;
@@ -457,10 +469,10 @@ export async function seedFromCatalog({
       }
     }
 
-    const identity = normalizeProductIdentity(cat, brand, model, rawVariant);
+    const identity = normalizeProductIdentity(cat, brand, baseModel, rawVariant);
     // WHY: Prefer productId from catalog loader (preserves existing ID on re-seed),
     // then identity lookup, then generate new hex ID only for truly new products.
-    const foundByIdentity = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    const foundByIdentity = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
     const pid = row.productId || foundByIdentity || buildProductId(cat);
 
     const isExisting = Boolean(row.productId || foundByIdentity);
@@ -474,6 +486,7 @@ export async function seedFromCatalog({
         id: nextAvailableId(catalog),
         identifier: generateIdentifier(),
         brand: identity.brand,
+        base_model: identity.base_model,
         model: identity.model,
         variant: identity.variant,
         brand_identifier: row.brand_identifier || resolveBrandIdentifier(appDb, identity.brand),
@@ -491,7 +504,7 @@ export async function seedFromCatalog({
         writeProductIdentity({
           productId: pid,
           category: cat,
-          identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: catEntry.brand_identifier },
+          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: catEntry.brand_identifier },
           identifier: catEntry.identifier,
         });
       } catch { /* best-effort */ }
@@ -581,20 +594,29 @@ export async function seedFromCatalog({
 }
 
 /**
- * List products from catalog.
+ * List products from SQL (the live SSOT).
+ * JSON catalog is only read at seed/rebuild time.
  */
-export async function listProducts(config, category) {
-  const cat = String(category ?? '').trim().toLowerCase();
-  if (!cat) return [];
-
-  const catalog = await loadProductCatalog(config, cat);
-
-  return Object.entries(catalog.products)
-    .map(([pid, p]) => ({ productId: pid, ...p }))
-    .sort((a, b) =>
-      a.brand.localeCompare(b.brand) ||
-      a.model.localeCompare(b.model) ||
-      (a.variant || '').localeCompare(b.variant || '')
-    );
+export function listProducts({ specDb }) {
+  if (!specDb) return [];
+  const rows = specDb.getAllProducts() || [];
+  return rows.map((row) => ({
+    productId: row.product_id,
+    id: row.id || 0,
+    identifier: String(row.identifier || '').trim(),
+    brand: String(row.brand || '').trim(),
+    brand_identifier: String(row.brand_identifier || '').trim(),
+    base_model: String(row.base_model || '').trim(),
+    model: String(row.model || '').trim(),
+    variant: String(row.variant || '').trim(),
+    status: row.status || 'active',
+    seed_urls: (() => { try { return JSON.parse(row.seed_urls || '[]'); } catch { return []; } })(),
+    added_at: row.created_at || '',
+    added_by: '',
+  })).sort((a, b) =>
+    a.brand.localeCompare(b.brand) ||
+    a.base_model.localeCompare(b.base_model) ||
+    (a.variant || '').localeCompare(b.variant || '')
+  );
 }
 

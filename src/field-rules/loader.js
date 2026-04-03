@@ -124,7 +124,7 @@ async function dirJsonSignature(dirPath, label) {
   return `${label}:${parts.join(',') || CACHE_MISSING}`;
 }
 
-async function buildFieldRulesSignature(helperRoot, category) {
+export async function buildFieldRulesSignature(helperRoot, category) {
   const generatedRoot = path.join(helperRoot, category, '_generated');
   const componentRoot = path.join(generatedRoot, 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');

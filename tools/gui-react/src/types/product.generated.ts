@@ -18,6 +18,7 @@ export interface CatalogProductGen {
   brand: string;
   brand_identifier?: string;
   model: string;
+  base_model: string;
   variant: string;
   status: string;
   seed_urls: string[];

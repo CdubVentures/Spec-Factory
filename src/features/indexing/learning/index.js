@@ -10,27 +10,4 @@ export {
   buildKnownValuesSuggestions
 } from './learningSuggestionEmitter.js';
 export { rankBatchWithBandit } from './banditScheduler.js';
-export {
-  loadCategoryBrain,
-  updateCategoryBrain,
-  buildLearningReport
-} from './categoryBrain.js';
-export {
-  defaultFieldAvailability,
-  availabilityClassForField,
-  summarizeAvailability,
-  classifyMissingFields,
-  updateFieldAvailability,
-} from './fieldAvailability.js';
-export { defaultFieldConstraints, updateFieldConstraints } from './fieldConstraints.js';
-export { defaultFieldLexicon, updateFieldLexicon } from './fieldLexicon.js';
-export { defaultFieldYield, updateFieldYield } from './fieldYield.js';
-export { nextBestUrlsFromHypotheses } from './hypothesisQueue.js';
-export { defaultIdentityGrammar, updateIdentityGrammar } from './identityGrammar.js';
-export { defaultQueryLearning, updateQueryLearning } from './queryLearning.js';
-export {
-  loadLearningProfile,
-  collectLearningSeeds,
-} from './selfImproveLoop.js';
 export { readLearningHintsFromStores } from './learningReadback.js';
-export * from './sourceIntel.js';

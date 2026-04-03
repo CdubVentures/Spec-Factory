@@ -21,7 +21,7 @@ function makeCrawlCheckpoint(overrides = {}) {
       status: 'completed',
     },
     identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '', sku: '', title: 'Razer Viper V3 Pro' },
-    fetch_plan: { total_queued: 5, seed_count: 2, learning_seed_count: 1, approved_count: 2, blocked_count: 0 },
+    fetch_plan: { total_queued: 5, seed_count: 2, approved_count: 2, blocked_count: 0 },
     counters: { urls_crawled: 3, urls_successful: 2, urls_blocked: 1, urls_failed: 0, urls_timeout_rescued: 0 },
     artifacts: { html_dir: 'html', screenshot_dir: 'screenshots', video_dir: 'video' },
     sources: [
@@ -151,7 +151,8 @@ describe('seedFromCheckpoint: crawl', () => {
     assert.equal(result.type, 'crawl');
     assert.equal(result.runs_seeded, 1);
     assert.equal(result.sources_seeded, 2);
-    assert.equal(result.artifacts_seeded, 3);
+    // 3 original (needset + search_profile + run_summary) + run_checkpoint (reconstructed from counters)
+    assert.equal(result.artifacts_seeded, 4);
     assert.equal(result.product_id, 'mouse-razer-viper');
     assert.equal(result.category, 'mouse');
     assert.equal(result.product_seeded, false);
@@ -166,13 +167,59 @@ describe('seedFromCheckpoint: crawl', () => {
     assert.equal(sources.length, 0);
   });
 
-  test('null run_summary + needset + search_profile → artifacts_seeded=0', () => {
+  test('null run_summary + needset + search_profile → only run_checkpoint artifact', () => {
     const db = createHarness();
     const result = seedFromCheckpoint({
       specDb: db,
       checkpoint: makeCrawlCheckpoint({ needset: null, search_profile: null, run_summary: null }),
     });
-    assert.equal(result.artifacts_seeded, 0);
+    // WHY: run_checkpoint is still reconstructed from counters even when other artifacts are null
+    assert.equal(result.artifacts_seeded, 1);
+  });
+
+  test('seeds brand_resolution artifact from checkpoint', () => {
+    const db = createHarness();
+    const brandResolution = { scope: 'brand', brand: 'Razer', status: 'resolved', confidence: 0.95 };
+    const result = seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({ brand_resolution: brandResolution }),
+    });
+    const art = db.getRunArtifact('run-seed-001', 'brand_resolution');
+    assert.ok(art);
+    assert.equal(art.payload.brand, 'Razer');
+    assert.equal(art.payload.confidence, 0.95);
+    assert.ok(result.artifacts_seeded >= 4);
+  });
+
+  test('skips null brand_resolution gracefully', () => {
+    const db = createHarness();
+    const result = seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({ brand_resolution: null }),
+    });
+    const art = db.getRunArtifact('run-seed-001', 'brand_resolution');
+    assert.equal(art, null);
+  });
+
+  test('reconstructs run_checkpoint artifact from counters', () => {
+    const db = createHarness();
+    seedFromCheckpoint({ specDb: db, checkpoint: makeCrawlCheckpoint() });
+    const art = db.getRunArtifact('run-seed-001', 'run_checkpoint');
+    assert.ok(art);
+    assert.equal(art.payload.urls_crawled, 3);
+    assert.equal(art.payload.urls_successful, 2);
+  });
+
+  test('artifact count includes brand_resolution + run_checkpoint', () => {
+    const db = createHarness();
+    const result = seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({
+        brand_resolution: { scope: 'brand', brand: 'Razer', status: 'resolved' },
+      }),
+    });
+    // 3 original (needset + search_profile + run_summary) + brand_resolution + run_checkpoint = 5
+    assert.equal(result.artifacts_seeded, 5);
   });
 });
 

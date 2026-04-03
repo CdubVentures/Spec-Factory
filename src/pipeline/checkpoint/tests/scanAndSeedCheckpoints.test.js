@@ -35,7 +35,7 @@ function makeCrawlCheckpoint(overrides = {}) {
       status: 'completed',
     },
     identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '', sku: '', title: '' },
-    fetch_plan: { total_queued: 3, seed_count: 1, learning_seed_count: 0, approved_count: 2, blocked_count: 0 },
+    fetch_plan: { total_queued: 3, seed_count: 1, approved_count: 2, blocked_count: 0 },
     counters: { urls_crawled: 2, urls_successful: 2, urls_blocked: 0, urls_failed: 0, urls_timeout_rescued: 0 },
     artifacts: { html_dir: 'html', screenshot_dir: 'screenshots', video_dir: 'video' },
     sources: [
@@ -196,7 +196,7 @@ describe('scanAndSeedCheckpoints: behavior', () => {
     writeCheckpoint(path.join(root, 'run-agg-001'), 'run.json', makeCrawlCheckpoint());
     const result = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot: root });
     assert.equal(result.sources_seeded, 1);
-    assert.equal(result.artifacts_seeded, 2); // needset + run_summary (search_profile is null)
+    assert.equal(result.artifacts_seeded, 3); // needset + run_summary + run_checkpoint (search_profile is null)
   });
 });
 

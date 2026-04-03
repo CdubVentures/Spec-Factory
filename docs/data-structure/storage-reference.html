@@ -574,7 +574,9 @@ code{font-family:var(--mono);font-size:0.85em}
   <span class="key">"product_id"</span>: <span class="str">"mouse-6655dc93"</span>,       <span class="comment">// Unique product identifier</span>
   <span class="key">"category"</span>:   <span class="str">"mouse"</span>,                 <span class="comment">// Category slug</span>
   <span class="key">"brand"</span>:      <span class="str">"Razer"</span>,                 <span class="comment">// Brand name</span>
-  <span class="key">"model"</span>:      <span class="str">"DeathAdder V3"</span>,          <span class="comment">// Model name</span>
+  <span class="key">"base_model"</span>: <span class="str">"DeathAdder V3"</span>,          <span class="comment">// Base model (identity primary key)</span>
+  <span class="key">"model"</span>:      <span class="str">"DeathAdder V3"</span>,          <span class="comment">// Full model (derived: base_model + variant)</span>
+  <span class="key">"variant"</span>:    <span class="str">""</span>,                       <span class="comment">// Variant (empty for non-split)</span>
   <span class="key">"seed_urls"</span>:  [                          <span class="comment">// Initial discovery URLs</span>
     <span class="str">"https://www.razer.com/..."</span>,
     <span class="str">"https://www.rtings.com/..."</span>

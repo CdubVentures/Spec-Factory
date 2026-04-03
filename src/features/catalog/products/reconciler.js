@@ -42,6 +42,7 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
       key: '',
       productId: String(row.product_id || '').trim(),
       brand: String(row.brand || '').trim(),
+      base_model: String(row.base_model || '').trim(),
       model: String(row.model || '').trim(),
       variant: String(row.variant || '').trim(),
       hasSeed: false,
@@ -64,10 +65,10 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
     const untracked = [];
 
     for (const p of products) {
-      const pPairKey = pairKey(p.brand, p.model);
+      const pPairKey = pairKey(p.brand, p.base_model);
       const canonicalVariants = canonicalIndex.pairVariants.get(pPairKey);
       const canonicalProductId = canonicalIndex.tupleToProductId.get(
-        tupleKey(p.brand, p.model, p.variant)
+        tupleKey(p.brand, p.base_model, p.variant)
       ) || '';
 
       if (canonicalProductId) {
@@ -87,8 +88,8 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
       }
 
       if (cleanVariant(p.variant)) {
-        const canonicalPid = canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.model, '')) || '';
-        const reason = isFabricatedVariant(p.model, p.variant)
+        const canonicalPid = canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.base_model, '')) || '';
+        const reason = isFabricatedVariant(p.base_model, p.variant)
           ? 'fabricated_variant_with_canonical'
           : 'variant_not_in_canonical';
         orphans.push({
@@ -125,7 +126,7 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
   const fabricated = [];
 
   for (const p of products) {
-    if (isFabricatedVariant(p.model, p.variant)) {
+    if (isFabricatedVariant(p.base_model, p.variant)) {
       fabricated.push(p);
     } else {
       canonical.push(p);
@@ -134,7 +135,7 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
 
   const canonicalByIdentity = new Map();
   for (const p of canonical) {
-    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.model)}`;
+    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.base_model)}`;
     canonicalByIdentity.set(key, p.productId);
   }
 
@@ -143,7 +144,7 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
   const warnings = [];
 
   for (const p of fabricated) {
-    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.model)}`;
+    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.base_model)}`;
     const matchedPid = canonicalByIdentity.get(key);
     if (matchedPid) {
       orphans.push({

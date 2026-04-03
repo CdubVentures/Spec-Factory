@@ -27,6 +27,7 @@ export interface BulkPreviewRow {
 export interface BulkImportResultRow {
   index: number;
   brand: string;
+  base_model: string;
   model: string;
   variant: string;
   productId?: string;

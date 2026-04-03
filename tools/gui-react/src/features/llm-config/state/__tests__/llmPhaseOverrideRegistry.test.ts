@@ -8,8 +8,8 @@ import {
 import { resolvePhaseModel } from '../llmPhaseOverridesBridge.generated.ts';
 
 describe('PHASE_OVERRIDE_REGISTRY', () => {
-  it('has exactly 5 entries', () => {
-    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 5);
+  it('has exactly 6 entries', () => {
+    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 6);
   });
 
   it('every entry has uiPhaseId, overrideKey, and globalModel', () => {
@@ -26,6 +26,7 @@ describe('PHASE_OVERRIDE_REGISTRY', () => {
     const ids = PHASE_OVERRIDE_REGISTRY.map((e) => e.uiPhaseId).sort();
     deepStrictEqual(ids, [
       'brand-resolver',
+      'color-finder',
       'needset',
       'search-planner',
       'serp-selector',
@@ -64,6 +65,8 @@ describe('resolvePhaseModel — webSearch defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
     llmMaxOutputTokensTriage: 20000,
@@ -98,6 +101,8 @@ describe('resolvePhaseModel — thinking defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
     llmMaxOutputTokensTriage: 20000,
@@ -132,6 +137,8 @@ describe('resolvePhaseModel — thinkingEffort defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
     llmMaxOutputTokensTriage: 20000,
@@ -162,13 +169,109 @@ describe('resolvePhaseModel — thinkingEffort defaults', () => {
   });
 });
 
+describe('resolvePhaseModel — fallback panel defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+  };
+
+  it('fallbackModel defaults to global llmPlanFallbackModel', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.fallbackModel, 'deepseek-chat');
+  });
+
+  it('fallbackReasoningModel defaults to global llmReasoningFallbackModel', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.fallbackReasoningModel, 'gemini-2.5-pro');
+  });
+
+  it('fallbackUseReasoning defaults to false', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.fallbackUseReasoning, false);
+  });
+
+  it('fallbackThinking, fallbackThinkingEffort, fallbackWebSearch default correctly', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.fallbackThinking, false);
+    strictEqual(result?.fallbackThinkingEffort, '');
+    strictEqual(result?.fallbackWebSearch, false);
+  });
+
+  it('fallbackModel resolves to override when set', () => {
+    const overrides = { needset: { fallbackModel: 'custom-fb' } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.fallbackModel, 'custom-fb');
+  });
+
+  it('effectiveFallbackModel uses fallbackModel when fallbackUseReasoning is false', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.effectiveFallbackModel, 'deepseek-chat');
+  });
+
+  it('effectiveFallbackModel uses fallbackReasoningModel when fallbackUseReasoning is true', () => {
+    const overrides = { needset: { fallbackUseReasoning: true } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.effectiveFallbackModel, 'gemini-2.5-pro');
+  });
+
+  it('fallback fields are independent per phase', () => {
+    const overrides = {
+      needset: { fallbackModel: 'needset-fb', fallbackWebSearch: true },
+      brandResolver: { fallbackModel: 'brand-fb' },
+    };
+    const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
+    const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
+    strictEqual(needset?.fallbackModel, 'needset-fb');
+    strictEqual(needset?.fallbackWebSearch, true);
+    strictEqual(brand?.fallbackModel, 'brand-fb');
+    strictEqual(brand?.fallbackWebSearch, false);
+  });
+});
+
+describe('resolvePhaseModel — disableLimits defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+  };
+
+  it('disableLimits defaults to false when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.disableLimits, false);
+  });
+
+  it('disableLimits resolves to true when set', () => {
+    const overrides = { needset: { disableLimits: true } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.disableLimits, true);
+  });
+});
+
 describe('resolvePhaseModel with unmapped phase', () => {
   it('returns null for unmapped phase', () => {
     const result = resolvePhaseModel({}, 'nonexistent' as never, {
       llmModelPlan: 'gpt-4o',
       llmModelReasoning: 'o1',
+      llmPlanFallbackModel: '',
+      llmReasoningFallbackModel: '',
       llmPlanUseReasoning: false,
       llmMaxOutputTokensPlan: 4096,
+      llmMaxOutputTokensTriage: 20000,
+      llmTimeoutMs: 30000,
+      llmMaxTokens: 16384,
     });
     strictEqual(result, null);
   });

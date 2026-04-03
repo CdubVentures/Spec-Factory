@@ -233,7 +233,7 @@ export async function syncQueueFromInputs({ storage, category, specDb = null, co
     if (!productId) continue;
 
     const brand = String(row.brand || '').trim();
-    const model = String(row.model || '').trim();
+    const model = String(row.base_model || '').trim();
     const variant = String(row.variant || '').trim();
     if (brand && model) {
       const gate = evaluateIdentityGate({

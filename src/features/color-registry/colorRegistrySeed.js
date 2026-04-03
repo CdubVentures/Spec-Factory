@@ -1,8 +1,11 @@
-// WHY: Seed + write-back for the global color registry.
-// On bootstrap: seed from JSON if it exists, else from code defaults.
+// WHY: Hash-gated reconcile for the global color registry.
+// On bootstrap: compute SHA256 of color_registry.json, compare to stored hash.
+// If changed (or first run): full reconcile — upsert all + remove stale colors.
+// If unchanged: skip entirely (O(1) startup).
 // On every API mutation: write-back DB state to JSON so data survives DB rebuild.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { sha256Hex } from '../../shared/contentHash.js';
 
 // ── Default seed data — full EG CSS palette ─────────────────────────────────
 // WHY: These map 1:1 to EG CSS variables (--color-{name}: #hex).
@@ -101,9 +104,8 @@ export const EG_DEFAULT_COLORS = Object.freeze([
   { name: 'dark-sky',      hex: '#0369a1' },
 ]);
 
-function parseColorRegistryJson(filePath) {
+function parseColorEntries(raw) {
   try {
-    const raw = readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw);
     if (!data || typeof data.colors !== 'object') return null;
     return Object.entries(data.colors).map(([name, entry]) => ({
@@ -128,16 +130,39 @@ function buildJsonPayload(colors) {
 }
 
 export function seedColorRegistry(appDb, colorRegistryPath) {
-  const fromJson = colorRegistryPath ? parseColorRegistryJson(colorRegistryPath) : null;
+  // ── Hash gate ──
+  let raw = null;
+  try { raw = colorRegistryPath ? readFileSync(colorRegistryPath, 'utf8') : null; } catch { raw = null; }
+  const hash = raw ? sha256Hex(raw) : null;
+  const storedHash = appDb.getSeedHash('color_registry');
+
+  if (hash && hash === storedHash) {
+    return { seeded: 0, removed: 0 };
+  }
+
+  const fromJson = raw ? parseColorEntries(raw) : null;
   const source = fromJson || EG_DEFAULT_COLORS;
   let seeded = 0;
+  let removed = 0;
 
+  // ── Full reconcile: upsert all from source ──
+  const sourceNames = new Set(source.map((c) => c.name));
   for (const { name, hex } of source) {
-    const existing = appDb.getColor(name);
-    if (!existing) {
-      appDb.upsertColor({ name, hex, css_var: `--color-${name}` });
-      seeded++;
+    appDb.upsertColor({ name, hex, css_var: `--color-${name}` });
+    seeded++;
+  }
+
+  // ── Remove stale colors not in source ──
+  const existing = appDb.listColors();
+  for (const row of existing) {
+    if (!sourceNames.has(row.name)) {
+      appDb.deleteColor(row.name);
+      removed++;
     }
+  }
+
+  if (hash) {
+    appDb.setSeedHash('color_registry', hash);
   }
 
   // WHY: If JSON didn't exist, write it from whatever was seeded
@@ -148,7 +173,7 @@ export function seedColorRegistry(appDb, colorRegistryPath) {
     } catch { /* non-critical on first boot */ }
   }
 
-  return { seeded };
+  return { seeded, removed };
 }
 
 export async function writeBackColorRegistry(appDb, colorRegistryPath) {

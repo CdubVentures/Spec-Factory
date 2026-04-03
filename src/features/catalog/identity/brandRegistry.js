@@ -563,6 +563,7 @@ export async function writeBackBrandRegistry(appDb, brandRegistryPath) {
   const brands = {};
   for (const row of rows) {
     const categories = appDb.getCategoriesForBrand(row.identifier);
+    const renameRows = appDb.getRenamesForBrand(row.identifier);
     brands[row.slug] = {
       canonical_name: row.canonical_name,
       identifier: row.identifier,
@@ -571,6 +572,13 @@ export async function writeBackBrandRegistry(appDb, brandRegistryPath) {
       website: row.website || '',
       added_at: row.created_at,
       added_by: row.added_by,
+      renames: renameRows.map((r) => ({
+        old_slug: r.old_slug,
+        new_slug: r.new_slug,
+        old_name: r.old_name,
+        new_name: r.new_name,
+        renamed_at: r.renamed_at,
+      })),
     };
   }
   writeFileSync(brandRegistryPath, JSON.stringify(

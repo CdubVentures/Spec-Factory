@@ -336,17 +336,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <!-- Wave 6 -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 6: Learning + LLM Cache</span>
-      <span class="wave-desc">learning_profiles, category_brain, source_intel, source_corpus, llm_cache</span>
+      <span class="wave-title">Wave 6: Corpus + LLM Cache</span>
+      <span class="wave-desc">source_corpus, llm_cache</span>
       <span class="tags"><span class="badge badge-complete">Complete</span></span>
     </summary>
     <div class="wave-body">
-      <p>Migrated all learning and intelligence modules to SQL. LLM response caching now fully database-backed.</p>
+      <p>Source corpus and LLM cache are database-backed.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>learning_profiles</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>category_brain</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_intel_domains</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_intel_field_rewards</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>source_corpus</code><span class="note">SQL only</span></div>
         <div class="table-item"><span class="dot"></span><code>llm_cache</code><span class="note">SQL only</span></div>
       </div>
@@ -637,13 +633,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <tr><td></td><td><code class="tbl-name">bridge_events</code></td><td class="col-count">8</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <!-- billingStore -->
         <tr><td><code class="store-name">billingStore</code></td><td><code class="tbl-name">billing_entries</code></td><td class="col-count">21</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- learningStore -->
-        <tr><td><code class="store-name">learningStore</code></td><td><code class="tbl-name">learning_profiles</code></td><td class="col-count">19</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">category_brain</code></td><td class="col-count">4</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <!-- sourceIntelStore -->
-        <tr><td><code class="store-name">sourceIntelStore</code></td><td><code class="tbl-name">source_intel_domains</code></td><td class="col-count">28</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_intel_field_rewards</code></td><td class="col-count">14</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_corpus</code></td><td class="col-count">18</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">sourceIntelStore</code></td><td><code class="tbl-name">source_corpus</code></td><td class="col-count">18</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <!-- llmCacheStore -->
         <tr><td><code class="store-name">llmCacheStore</code></td><td><code class="tbl-name">llm_cache</code></td><td class="col-count">4</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <!-- evidenceStore -->

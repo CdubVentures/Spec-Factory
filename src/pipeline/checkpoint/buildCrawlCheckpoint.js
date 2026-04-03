@@ -34,7 +34,7 @@ function mapSource(result) {
  * @param {{ crawlResults: Array, runId: string, category: string, productId: string, s3Key: string, startMs: number, fetchPlanStats?: object, needset?: object, searchProfile?: object, runSummary?: object, status?: string, identityLock?: object }} opts
  * @returns {object} Run checkpoint manifest (run.json)
  */
-export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, status, identityLock, runtimeOpsPanels } = {}) {
+export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, brandResolution, status, identityLock, runtimeOpsPanels } = {}) {
   const results = Array.isArray(crawlResults) ? crawlResults : [];
   const sources = results.map(mapSource);
   const stats = fetchPlanStats || {};
@@ -62,7 +62,6 @@ export function buildCrawlCheckpoint({ crawlResults, runId, category, productId,
     fetch_plan: {
       total_queued: Number(stats.total_queued || 0),
       seed_count: Number(stats.seed_count || 0),
-      learning_seed_count: Number(stats.learning_seed_count || 0),
       approved_count: Number(stats.approved_count || 0),
       blocked_count: Number(stats.blocked_count || 0),
     },
@@ -82,6 +81,7 @@ export function buildCrawlCheckpoint({ crawlResults, runId, category, productId,
     needset: needset || null,
     search_profile: searchProfile || null,
     run_summary: runSummary || null,
+    brand_resolution: brandResolution || null,
     ...(runtimeOpsPanels ? { runtime_ops_panels: runtimeOpsPanels } : {}),
   };
 }

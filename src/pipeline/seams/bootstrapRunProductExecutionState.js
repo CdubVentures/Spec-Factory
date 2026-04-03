@@ -8,8 +8,6 @@ import {
   DomainFieldYieldStore,
   FieldAnchorsStore,
   ComponentLexiconStore,
-  collectLearningSeeds,
-  loadLearningProfile,
 } from '../../features/indexing/learning/index.js';
 import {
   buildIndexlabRuntimeCategoryConfig,
@@ -34,7 +32,6 @@ function createNoOpAdapterManager() {
     runDedicatedAdapters: async () => ({ syntheticSources: [], adapterArtifacts: [] }),
   };
 }
-import { loadSourceIntel } from '../../intel/sourceIntel.js';
 import { readBillingSnapshot } from '../../billing/costLedger.js';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { normalizeCostRates } from '../../billing/costRates.js';
@@ -47,9 +44,6 @@ const DEFAULT_DEPS = {
   buildIndexlabRuntimeCategoryConfigFn: buildIndexlabRuntimeCategoryConfig,
   loadRouteMatrixPolicyForRunFn: loadRouteMatrixPolicyForRun,
   createAdapterManagerFn: createNoOpAdapterManager,
-  loadSourceIntelFn: loadSourceIntel,
-  loadLearningProfileFn: loadLearningProfile,
-  collectLearningSeedsFn: collectLearningSeeds,
   readBillingSnapshotFn: readBillingSnapshot,
   createRunLlmRuntimeFn: createRunLlmRuntime,
   normalizeCostRatesFn: normalizeCostRates,
@@ -133,18 +127,8 @@ export async function bootstrapRunProductExecutionState({
   const blockedHosts = new Set(runtimeOverrides?.blocked_domains || []);
   const seedUrls = job.seedUrls || [];
 
-  const learningProfile = await runtimeDeps.loadLearningProfileFn({
-    storage,
-    config,
-    category,
-    job,
-  });
-  // WHY: Brand/model tokens used by learning seed filter to match URLs
   const brand = String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim();
   const model = String(identityLock.model || job?.identityLock?.model || job?.model || '').trim();
-  const brandTokens = brand ? brand.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean) : [];
-  const modelTokens = model ? model.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean) : [];
-  const learningSeedUrls = runtimeDeps.collectLearningSeedsFn(learningProfile, { brandTokens, modelTokens });
 
   logger.info('bootstrap_step', { step: 'llm', progress: 65 });
   const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({
@@ -253,7 +237,6 @@ export async function bootstrapRunProductExecutionState({
   const { orderedSources, workerIdMap, stats } = runtimeDeps.buildOrderedFetchPlanFn({
     discoveryResult,
     seedUrls,
-    learningSeedUrls,
     blockedHosts,
     config,
     logger,

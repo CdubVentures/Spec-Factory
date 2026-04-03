@@ -33,17 +33,15 @@ describe('buildOrderedFetchPlan', () => {
         candidates,
       }),
       seedUrls: ['https://seed.com/robots.txt'],
-      learningSeedUrls: ['https://learn.com/review'],
       config: {},
       logger: null,
     });
 
     const urls = result.orderedSources.map((s) => s.url);
-    assert.equal(urls.length, 3);
+    assert.equal(urls.length, 2);
     // Approved URL has slot 'a' → sorts first; seeds without slots sort last
     assert.equal(urls[0], 'https://approved.com/page');
     assert.ok(urls.includes('https://seed.com/robots.txt'));
-    assert.ok(urls.includes('https://learn.com/review'));
   });
 
   test('filters out blocked hosts', () => {
@@ -156,14 +154,12 @@ describe('buildOrderedFetchPlan', () => {
         candidates,
       }),
       seedUrls: ['https://seed.com'],
-      learningSeedUrls: ['https://learn.com'],
       config: {},
       logger: null,
     });
 
     const byUrl = Object.fromEntries(result.orderedSources.map((s) => [s.url, s]));
     assert.equal(byUrl['https://seed.com'].discoveredFrom, 'seed');
-    assert.equal(byUrl['https://learn.com'].discoveredFrom, 'learning_seed');
     assert.equal(byUrl['https://approved.com'].discoveredFrom, 'discovery_approved');
   });
 
@@ -183,7 +179,6 @@ describe('buildOrderedFetchPlan', () => {
     assert.ok('total_queued' in result.stats);
     assert.ok('approved_count' in result.stats);
     assert.ok('seed_count' in result.stats);
-    assert.ok('learning_seed_count' in result.stats);
     assert.ok('overflow_count' in result.stats);
     assert.ok('blocked_count' in result.stats);
     assert.ok(Array.isArray(result.stats.blocked_hosts));

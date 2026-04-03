@@ -14,7 +14,8 @@ import {
 } from '../../features/settings-authority/index.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from '../services/specDbSyncService.js';
 import { safeReadJson } from '../helpers/fileHelpers.js';
-import { defaultUserSettingsRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { defaultUserSettingsRoot, defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { buildFieldRulesSignature } from '../../field-rules/loader.js';
 
 export function createBootstrapSessionLayer({
   config, HELPER_ROOT, storage, INDEXLAB_ROOT = '',
@@ -40,6 +41,8 @@ export function createBootstrapSessionLayer({
     config,
     logger: console,
     indexLabRoot: INDEXLAB_ROOT,
+    productRoot: defaultProductRoot(),
+    buildFieldRulesSignature,
   });
 
   const sessionCache = createSessionCache({
@@ -59,6 +62,9 @@ export function createBootstrapSessionLayer({
     brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
     userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
   });
+  // WHY: createBootstrapEnvironment applied settings from user-settings.json before
+  // appDb existed. Now that SQL is open, rehydrate config from the authoritative store
+  // so any settings that were saved to SQL but not mirrored to JSON are restored.
   const persistedSettings = loadUserSettingsSync({ appDb });
   applyRuntimeSettingsToConfig(config, persistedSettings.runtime);
 

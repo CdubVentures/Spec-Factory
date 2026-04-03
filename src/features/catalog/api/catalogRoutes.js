@@ -221,17 +221,17 @@ export function registerCatalogRoutes(ctx) {
 
       // GET /api/v1/catalog/{cat}/products
       if (!parts[3] && method === 'GET') {
-        const products = await listProducts(config, category);
+        const products = listProducts({ specDb: resolveSpecDb(category) });
         return jsonRes(res, 200, products);
       }
 
-      // POST /api/v1/catalog/{cat}/products  { brand, model, variant?, seedUrls? }
+      // POST /api/v1/catalog/{cat}/products  { brand, base_model, variant?, seedUrls? }
       if (!parts[3] && method === 'POST') {
         const body = await readJsonBody(req);
         const result = await catalogAddProduct({
           config, category,
           brand: body.brand,
-          model: body.model,
+          base_model: body.base_model || '',
           variant: body.variant || '',
           seedUrls: body.seedUrls || [],
           storage,

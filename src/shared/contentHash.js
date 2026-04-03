@@ -6,6 +6,19 @@
 import crypto from 'node:crypto';
 
 /**
+ * Compute SHA-256 hex hash of an arbitrary string.
+ * WHY: Generic seed-hash utility for hash-gated reconciliation.
+ * Unlike computePageContentHash, does NOT trim — whitespace is significant
+ * for file-content hashing where trailing newlines change the hash.
+ * @returns {string} 64-char hex string, or '' for empty/null input.
+ */
+export function sha256Hex(value) {
+  const text = String(value ?? '');
+  if (!text) return '';
+  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+/**
  * Compute SHA-256 hex hash of page HTML content (string input).
  * @returns {string} 64-char hex string, or '' for empty/null input.
  */

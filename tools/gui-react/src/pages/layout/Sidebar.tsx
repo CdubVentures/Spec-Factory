@@ -53,7 +53,7 @@ export function Sidebar() {
     if (!selectedBrand) return [];
     const modelSet = new Set<string>();
     for (const r of catalog) {
-      if (r.brand === selectedBrand && r.model) modelSet.add(r.model);
+      if (r.brand === selectedBrand && r.base_model) modelSet.add(r.base_model);
     }
     return [...modelSet].sort();
   }, [catalog, selectedBrand]);
@@ -68,7 +68,7 @@ export function Sidebar() {
     if (!selectedBrand || !selectedModel) return [];
     const varSet = new Set<string>();
     for (const r of catalog) {
-      if (r.brand === selectedBrand && r.model === selectedModel) {
+      if (r.brand === selectedBrand && r.base_model === selectedModel) {
         const v = cleanVariant(r.variant);
         if (v) varSet.add(v);
       }
@@ -96,10 +96,10 @@ export function Sidebar() {
       const entry = catalog.find((r) => r.productId === persistedPid);
       if (entry) {
         if (entry.brand !== selectedBrand) setSelectedBrand(entry.brand);
-        if (entry.model !== selectedModel) setSelectedModel(entry.model);
+        if (entry.base_model !== selectedModel) setSelectedModel(entry.base_model);
         const ev = cleanVariant(entry.variant);
         if (ev && ev !== selectedVariant) setSelectedVariant(ev);
-        setSelectedProduct(entry.productId, entry.brand, entry.model, cleanVariant(entry.variant));
+        setSelectedProduct(entry.productId, entry.brand, entry.base_model, cleanVariant(entry.variant));
         return;
       }
     }
@@ -109,11 +109,11 @@ export function Sidebar() {
     }
     const match = catalog.find((r) =>
       r.brand === selectedBrand &&
-      r.model === selectedModel &&
+      r.base_model === selectedModel &&
       (variants.length === 0 || !selectedVariant || cleanVariant(r.variant) === selectedVariant)
     );
     if (match) {
-      setSelectedProduct(match.productId, match.brand, match.model, cleanVariant(match.variant));
+      setSelectedProduct(match.productId, match.brand, match.base_model, cleanVariant(match.variant));
       setPersistedPid(match.productId);
     } else if (selectedProductId) {
       setSelectedProduct('');
@@ -196,9 +196,9 @@ export function Sidebar() {
               </select>
             </div>
 
-            {/* Model (filtered by brand) */}
+            {/* Base Model (filtered by brand) */}
             <div>
-              <label className={labelCls}>Model</label>
+              <label className={labelCls}>Base Model</label>
               <select
                 value={selectedModel}
                 onChange={(e) => handleModelChange(e.target.value)}

@@ -10,7 +10,8 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 - `checkpoint/buildProductCheckpoint.js` → `buildProductCheckpoint(opts)` — pure builder for product.json (identity + sources + query_cooldowns)
 - `checkpoint/mergeProductSources.js` → `mergeProductSources(opts)` — content-addressed source dedup across runs
 - `checkpoint/seedFromCheckpoint.js` → `seedFromCheckpoint({ specDb, checkpoint })` — rebuild SQL state from run.json or product.json
-- `checkpoint/scanAndSeedCheckpoints.js` → `scanAndSeedCheckpoints({ specDb, indexLabRoot })` — walk disk and seed all checkpoints
+- `checkpoint/scanAndSeedCheckpoints.js` → `scanAndSeedCheckpoints({ specDb, indexLabRoot })` — walk disk and seed all checkpoints (includes media index rebuild)
+- `checkpoint/rebuildMediaIndexes.js` → `rebuildMediaIndexesFromDisk({ specDb, runDir, checkpoint })` — rebuild source_screenshots/source_videos SQL indexes from files on disk
 - `checkpoint/writeProductCheckpoint.js` → `writeProductCheckpoint(opts)` — read-merge-write `{outRoot}/product.json`
 - `seams/bootstrapRunProductExecutionState.js` → prepare execution state (planner, LLM runtime, learning stores)
 - `urlQualityGate.js` → `isLowValueHost`

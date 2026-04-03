@@ -1,7 +1,7 @@
-import { toPosixKey } from '../s3/storage.js';
-import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
-import { normalizeHost } from '../shared/hostParser.js';
+import { toPosixKey } from '../../../../s3/storage.js';
+import { OUTPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
+import { normalizeMissingFieldTargets } from '../../../../utils/fieldKeys.js';
+import { normalizeHost } from '../../../../shared/hostParser.js';
 
 const CORPUS_CACHE = new Map();
 const CORPUS_CACHE_TTL_MS = 15_000;
@@ -34,7 +34,7 @@ function tokenize(value) {
     .filter((token) => token.length >= 2);
 }
 
-import { hasKnownValue } from '../shared/valueNormalizers.js';
+import { hasKnownValue } from '../../../../shared/valueNormalizers.js';
 
 function buildSnippetFromCandidates(candidates = [], limit = 12) {
   const parts = [];

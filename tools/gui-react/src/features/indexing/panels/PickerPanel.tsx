@@ -170,7 +170,7 @@ export function PickerPanel({
         selected product id: <span className="font-mono">{singleProductId || '(none)'}</span>
         {selectedCatalogProduct ? (
           <span>
-            {' '}| {selectedCatalogProduct.brand} {selectedCatalogProduct.model} {displayVariant(selectedCatalogProduct.variant || '')}
+            {' '}| {selectedCatalogProduct.brand} {selectedCatalogProduct.base_model} {displayVariant(selectedCatalogProduct.variant || '')}
           </span>
         ) : null}
       </div>

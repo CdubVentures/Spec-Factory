@@ -58,25 +58,28 @@ describe('seedColorRegistry — no JSON file', () => {
     }
   });
 
-  it('is idempotent (twice = no new rows)', () => {
+  it('is idempotent (twice = same row count)', () => {
     const db = createTestDb();
     try {
       seedColorRegistry(db, null);
-      const result = seedColorRegistry(db, null);
-      assert.equal(result.seeded, 0);
+      // WHY: Second call with no JSON file has no hash to compare, so it
+      // re-runs the full reconcile from defaults. Row count stays the same.
+      seedColorRegistry(db, null);
       assert.equal(db.listColors().length, EG_DEFAULT_COLORS.length);
     } finally {
       db.close();
     }
   });
 
-  it('does not overwrite user-edited hex values', () => {
+  it('overwrites existing colors with source values (full reconcile)', () => {
     const db = createTestDb();
     try {
       db.upsertColor({ name: 'red', hex: '#ff0000', css_var: '--color-red' });
       seedColorRegistry(db, null);
       const row = db.getColor('red');
-      assert.equal(row.hex, '#ff0000');
+      // WHY: Full reconcile means the source (EG_DEFAULT_COLORS) wins.
+      // JSON edits are real — the source file is the truth.
+      assert.equal(row.hex, '#ef4444');
     } finally {
       db.close();
     }

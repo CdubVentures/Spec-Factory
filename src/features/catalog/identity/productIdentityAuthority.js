@@ -100,6 +100,12 @@ export function resolveAuthoritativeProductIdentity({
     normalized.brand,
   );
 
+  const base_model = pickFirstNonEmpty(
+    catalog.base_model,
+    db.base_model,
+    normalized.base_model,
+  );
+
   const model = pickFirstNonEmpty(
     catalog.model,
     db.model,
@@ -112,6 +118,7 @@ export function resolveAuthoritativeProductIdentity({
     id,
     identifier,
     brand,
+    base_model,
     model,
     variant,
   };

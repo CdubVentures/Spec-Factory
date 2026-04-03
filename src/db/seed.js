@@ -1054,14 +1054,22 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
               });
             }
 
+            // WHY: Pass through AI review fields from override file so AI review
+            // state survives DB rebuild. Old files without ai_review default to not_run.
+            const aiReview = ovr.ai_review || {};
             db.upsertReview({
               candidateId,
               contextType: 'item',
               contextId: productId,
               humanAccepted: true,
               humanAcceptedAt: ovr.overridden_at || ovr.set_at || null,
-              aiReviewStatus: 'not_run',
-              humanOverrideAi: false
+              aiReviewStatus: aiReview.ai_review_status || 'not_run',
+              aiConfidence: aiReview.ai_confidence ?? null,
+              aiReason: aiReview.ai_reason ?? null,
+              aiReviewedAt: aiReview.ai_reviewed_at ?? null,
+              aiReviewModel: aiReview.ai_review_model ?? null,
+              humanOverrideAi: Boolean(aiReview.human_override_ai),
+              humanOverrideAiAt: aiReview.human_override_ai_at ?? null,
             });
           }
         }
@@ -1138,7 +1146,7 @@ async function seedQueueState(db, config, category) {
 
 // ── Product catalog seeding ───────────────────────────────────────────────────
 
-async function seedProductCatalog(db, config, category) {
+export async function seedProductCatalog(db, config, category) {
   const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const catalogPath = path.join(helperRoot, category, '_control_plane', 'product_catalog.json');
   const catalog = await readJsonIfExists(catalogPath);
@@ -1149,7 +1157,7 @@ async function seedProductCatalog(db, config, category) {
     for (const [productId, entry] of Object.entries(catalog.products)) {
       if (!isObject(entry)) continue;
       const model = String(entry.model || '').trim();
-      const baseModel = String(entry.base_model || model).trim();
+      const baseModel = String(entry.base_model || '').trim();
       let variant = cleanVariant(entry.variant);
       // WHY: Fabricated variants (tokens already in model) must never reach the DB.
       // Use base_model for the check when available — variant tokens naturally

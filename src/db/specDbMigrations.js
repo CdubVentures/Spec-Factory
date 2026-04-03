@@ -84,6 +84,10 @@ export const MIGRATIONS = [
   // WHY: Tier column on query_index — enables per-query tier display in run history panel.
   `ALTER TABLE query_index ADD COLUMN tier TEXT DEFAULT NULL`,
   `ALTER TABLE runs RENAME COLUMN phase_cursor TO stage_cursor`,
+  // WHY: base_model enables proper model/variant dropdown separation in IndexLab.
+  // model = full product name, base_model = family name, variant = differentiator.
+  // The product-catalog reseed phase populates correct values from product_catalog.json on every startup.
+  `ALTER TABLE products ADD COLUMN base_model TEXT DEFAULT ''`,
 ];
 
 export const SECONDARY_INDEXES = `

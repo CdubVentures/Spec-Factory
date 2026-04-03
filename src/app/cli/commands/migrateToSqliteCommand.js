@@ -134,44 +134,6 @@ export function createMigrateToSqliteCommand({
         results.phase4_learning = { status: 'imported', profiles: imported };
       }
 
-      if (!phase || phase === 5) {
-        let imported = 0;
-        const artifactNames = [
-          'field_lexicon',
-          'constraints',
-          'field_yield',
-          'identity_grammar',
-          'query_templates',
-          'source_promotions',
-          'stats',
-          'field_availability',
-        ];
-        for (const name of artifactNames) {
-          const key = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, `${name}.json`);
-          try {
-            const data = await storage.readJsonOrNull(key);
-            if (data) {
-              specDb.upsertCategoryBrainArtifact(category, name, data);
-              imported += 1;
-            }
-          } catch {
-            // skip
-          }
-        }
-        results.phase5_brain = { status: 'imported', artifacts: imported };
-      }
-
-      if (!phase || phase === 6) {
-        const intelKey = toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'domain_stats.json');
-        const data = await storage.readJsonOrNull(intelKey);
-        if (data && data.domains) {
-          specDb.persistSourceIntelFull(category, data.domains);
-          results.phase6_intel = { status: 'imported', domains: Object.keys(data.domains).length };
-        } else {
-          results.phase6_intel = { status: 'skipped', reason: 'no domain_stats.json found' };
-        }
-      }
-
       if (!phase || phase === 7) {
         const corpusKey = toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'corpus.json');
         const data = await storage.readJsonOrNull(corpusKey);

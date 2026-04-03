@@ -48,48 +48,54 @@ export function registerColorEditionFinderRoutes(ctx) {
 
     // POST /color-edition-finder/:category/:productId — trigger finder
     if (method === 'POST' && category && productId) {
-      const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-      const productRow = specDb.getProduct(productId);
-      if (!productRow) return jsonRes(res, 404, { error: 'product not found' });
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
-      const seedUrls = (() => {
-        try { return JSON.parse(productRow.seed_urls || '[]'); }
-        catch { return []; }
-      })();
+        const seedUrls = (() => {
+          try { return JSON.parse(productRow.seed_urls || '[]'); }
+          catch { return []; }
+        })();
 
-      const result = await runColorEditionFinder({
-        product: {
-          product_id: productId,
+        const result = await runColorEditionFinder({
+          product: {
+            product_id: productId,
+            category,
+            brand: productRow.brand || '',
+            model: productRow.model || '',
+            variant: productRow.variant || '',
+            seed_urls: seedUrls,
+          },
+          appDb,
+          specDb,
+          config,
+          logger: null,
+          colorRegistryPath,
+        });
+
+        emitDataChange({
+          broadcastWs,
+          event: 'color-edition-finder-run',
           category,
-          brand: productRow.brand || '',
-          model: productRow.model || '',
-          variant: productRow.variant || '',
-          seed_urls: seedUrls,
-        },
-        appDb,
-        specDb,
-        config,
-        logger: null,
-        colorRegistryPath,
-      });
+          entities: { productIds: [productId] },
+          meta: { productId, colorsFound: result.colors.length, editionsFound: result.editions.length },
+        });
 
-      emitDataChange({
-        broadcastWs,
-        event: 'color-edition-finder-run',
-        category,
-        entities: { productIds: [productId] },
-        meta: { productId, colorsFound: result.colors.length, editionsFound: result.editions.length },
-      });
-
-      return jsonRes(res, 200, {
-        ok: true,
-        colors: result.colors,
-        editions: result.editions,
-        newColorsRegistered: result.newColorsRegistered,
-        fallbackUsed: result.fallbackUsed,
-      });
+        return jsonRes(res, 200, {
+          ok: true,
+          colors: result.colors,
+          editions: result.editions,
+          newColorsRegistered: result.newColorsRegistered,
+          fallbackUsed: result.fallbackUsed,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[color-edition-finder] POST failed:', message);
+        return jsonRes(res, 500, { error: 'finder failed', message });
+      }
     }
 
     return false;

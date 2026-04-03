@@ -247,7 +247,6 @@ export async function runProduct({
     has_urls: orderedFetchPlan?.length > 0,
     total_queued: fetchPlanStats?.total_queued ?? 0,
     seed_count: fetchPlanStats?.seed_count ?? 0,
-    learning_seed_count: fetchPlanStats?.learning_seed_count ?? 0,
     approved_count: fetchPlanStats?.approved_count ?? 0,
     blocked_count: fetchPlanStats?.blocked_count ?? 0,
   });

@@ -75,12 +75,9 @@ function usage() {
     '  review metrics --category <category> [--window-hours <n>] [--local]',
     '  review suggest --category <category> --type enum|component|alias --field <field> --value <value> --evidence-url <url> --evidence-quote <quote> [--canonical <value>] [--reason <text>] [--reviewer <id>] [--product-id <id>] [--local]',
     '  billing-report [--month YYYY-MM] [--local]',
-    '  learning-report --category <category> [--local]',
     '  explain-unk --category <category> --brand <brand> --model <model> [--variant <variant>] [--product-id <id>] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
     '  test-s3 [--fixture <path>] [--s3key <key>] [--dry-run]',
-    '  sources-plan --category <category> [--local]',
-    '  sources-report --category <category> [--top <n>] [--top-paths <n>] [--local]',
     '  benchmark --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
     '  benchmark-golden --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
     '  rebuild-index --category <category> [--local]',
@@ -224,33 +221,6 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
   });
 });
 
-const loadSourcesReportCommandHandler = createLazyLoader(async () => {
-  const [{ createSourcesReportCommand }, intel] = await Promise.all([
-    import('../app/cli/commands/sourcesReportCommand.js'),
-    import('../intel/sourceIntel.js'),
-  ]);
-  return createSourcesReportCommand({
-    loadSourceIntel: intel.loadSourceIntel,
-    promotionSuggestionsKey: intel.promotionSuggestionsKey,
-  });
-});
-
-const loadSourcesPlanCommandHandler = createLazyLoader(async () => {
-  const [
-    { createSourcesPlanCommand },
-    { loadCategoryConfig },
-    { generateSourceExpansionPlans },
-  ] = await Promise.all([
-    import('../app/cli/commands/sourcesPlanCommand.js'),
-    import('../categories/loader.js'),
-    import('../intel/sourceIntel.js'),
-  ]);
-  return createSourcesPlanCommand({
-    loadCategoryConfig,
-    generateSourceExpansionPlans,
-  });
-});
-
 const loadRebuildIndexCommandHandler = createLazyLoader(async () => {
   const [{ createRebuildIndexCommand }, { rebuildCategoryIndex }] = await Promise.all([
     import('../app/cli/commands/rebuildIndexCommand.js'),
@@ -290,16 +260,6 @@ const loadBillingReportCommandHandler = createLazyLoader(async () => {
   ]);
   return createBillingReportCommand({
     buildBillingReport,
-  });
-});
-
-const loadLearningReportCommandHandler = createLazyLoader(async () => {
-  const [{ createLearningReportCommand }, { buildLearningReport }] = await Promise.all([
-    import('../app/cli/commands/learningReportCommand.js'),
-    import('../features/indexing/learning/index.js'),
-  ]);
-  return createLearningReportCommand({
-    buildLearningReport,
   });
 });
 
@@ -444,19 +404,17 @@ const loadBatchCommandGroup = createLazyLoader(async () => {
   const [
     { createBatchCommand },
     { loadCategoryConfig },
-    { loadSourceIntel },
     { rankBatchWithBandit },
     { runProduct },
   ] = await Promise.all([
     import('../app/cli/commands/batchCommand.js'),
     import('../categories/loader.js'),
-    import('../intel/sourceIntel.js'),
     import('../features/indexing/learning/index.js'),
     import('../pipeline/runProduct.js'),
   ]);
   return createBatchCommand({
     loadCategoryConfig,
-    loadSourceIntel,
+    loadSourceIntel: async () => ({ data: { domains: {} } }),
     rankBatchWithBandit,
     runProduct,
     openSpecDbForCategory,
@@ -563,18 +521,12 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadExportOverridesCommandHandler())(config, storage, args);
     case 'billing-report':
       return (await loadBillingReportCommandHandler())(config, storage, args);
-    case 'learning-report':
-      return (await loadLearningReportCommandHandler())(config, storage, args);
     case 'explain-unk':
       return (await loadExplainUnkCommandHandler())(config, storage, args);
     case 'llm-health':
       return (await loadLlmHealthCommandHandler())(config, storage, args);
     case 'test-s3':
       return (await loadDataUtilityCommands()).commandTestS3();
-    case 'sources-plan':
-      return (await loadSourcesPlanCommandHandler())(config, storage, args);
-    case 'sources-report':
-      return (await loadSourcesReportCommandHandler())(config, storage, args);
     case 'rebuild-index':
       return (await loadRebuildIndexCommandHandler())(config, storage, args);
     case 'benchmark':

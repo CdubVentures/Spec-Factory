@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Rebuild Map: JSON → SQL</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.surface{margin-bottom:56px}
+.surface-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.surface-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.surface-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
+.domain-group{margin-bottom:32px}
+.domain-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding-left:2px}
+table.ref{width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:8px}
+table.ref th{text-align:left;padding:8px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:2px solid var(--border);background:var(--s2)}
+table.ref td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ref tr:last-child td{border-bottom:none}
+table.ref tr:hover{background:var(--s2)}
+.fp{font-family:var(--mono);font-weight:500;font-size:0.8rem;letter-spacing:-0.01em}
+.tag{display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-hash{background:var(--cyan-s);color:var(--cyan)}
+.tag-reseed{background:var(--violet-s);color:var(--violet)}
+.tag-seed{background:var(--amber-s);color:var(--amber)}
+.tag-auto{background:var(--green-s);color:var(--green)}
+.tag-lazy{background:var(--accent-s);color:var(--accent)}
+.tag-none{background:var(--rose-s);color:var(--rose)}
+.tag-dead{background:var(--s3);color:var(--t3)}
+.legend{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:32px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.82rem;color:var(--t2)}
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}.legend{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>Rebuild Map: JSON &rarr; SQL</h1>
+  <p>Every SQL table and its durable JSON rebuild source. Shows which file rebuilds each table, when the file is written, and when it&rsquo;s read back during recovery.</p>
+  <div class="meta">
+    <span>Updated 2026-04-02</span>
+    <span>Live-validated</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">21</div><div class="l">JSON Sources</div></div>
+  <div class="stat"><div class="n">2</div><div class="l">Databases</div></div>
+  <div class="stat"><div class="n">35</div><div class="l">Tables Auto-Rebuild</div></div>
+  <div class="stat"><div class="n">10</div><div class="l">Tables No Source</div></div>
+  <div class="stat"><div class="n">7</div><div class="l">Dead Features</div></div>
+</div>
+
+<div class="legend">
+  <strong>Legend:</strong>
+  <span class="tag tag-hash">hash-gated</span> SHA256 &mdash; re-imports only when content changes
+  <span class="tag tag-reseed">reseed phase</span> Runs every category open (O(1) registry)
+  <span class="tag tag-seed">seedSpecDb</span> First seed or explicit sync only
+  <span class="tag tag-lazy">lazy</span> Rebuilt on next access
+  <span class="tag tag-none">no source</span> SQL-only, lost on rebuild
+  <span class="tag tag-dead">dead</span> Module being removed
+</div>
+
+<!-- ═══════════════════ JSON INVENTORY ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>JSON File Inventory</h2>
+    <span class="tag tag-auto">21 rebuild sources</span>
+  </div>
+  <p class="surface-desc">Every durable file that feeds SQL table recovery. Grouped by location.</p>
+
+  <div class="domain-group">
+  <div class="domain-label">App-Global</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td class="fp">.workspace/global/user-settings.json</td><td>settings, studio_maps</td><td><span class="tag tag-hash">hash-gated</span></td></tr>
+  <tr><td>2</td><td class="fp">category_authority/_global/brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td><span class="tag tag-hash">hash-gated</span></td></tr>
+  <tr><td>3</td><td class="fp">category_authority/_global/color_registry.json</td><td>color_registry</td><td><span class="tag tag-hash">hash-gated</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Per-Category Control Plane</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>4</td><td class="fp">category_authority/{cat}/_control_plane/product_catalog.json</td><td>products</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>5</td><td class="fp">category_authority/{cat}/_control_plane/field_studio_map.json</td><td>list_values (manual enums), field_studio_map</td><td><span class="tag tag-seed">seedSpecDb</span> + <span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td>6</td><td class="fp">category_authority/{cat}/_control_plane/field_key_order.json</td><td>field_key_order</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td>7</td><td class="fp">category_authority/{cat}/_control_plane/llm_route_matrix.json</td><td>llm_route_matrix</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Per-Category Generated (Field Rules Compiler)</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>8</td><td class="fp">category_authority/{cat}/_generated/field_rules.json</td><td>component_identity, component_aliases, component_values, list_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>9</td><td class="fp">category_authority/{cat}/_generated/known_values.json</td><td>list_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>10</td><td class="fp">category_authority/{cat}/_generated/component_db/*.json</td><td>component_identity, component_aliases, component_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Per-Category Overrides &amp; Queue</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>11</td><td class="fp">category_authority/{cat}/_overrides/components/*.json</td><td>component_identity (review_status), component_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>12</td><td class="fp">category_authority/{cat}/_overrides/{pid}.overrides.json</td><td>item_field_state, candidates, candidate_reviews, product_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>13</td><td class="fp">_queue/{category}/state.json</td><td>product_queue</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Pipeline Output (Per-Product Latest)</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>14</td><td class="fp">out/{cat}/{pid}/latest/candidates.json</td><td>candidates</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>15</td><td class="fp">out/{cat}/{pid}/latest/normalized.json</td><td>item_field_state, item_component_links, item_list_links</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>16</td><td class="fp">out/{cat}/{pid}/latest/provenance.json</td><td>item_field_state (confidence/provenance)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Checkpoint Files (.workspace/)</div>
+  <table class="ref">
+  <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td>17</td><td class="fp">.workspace/runs/{runId}/run.json</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>18</td><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>19</td><td class="fp">.workspace/products/{pid}/color_edition.json</td><td>color_edition_finder</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>20</td><td class="fp">.workspace/runs/{runId}/screenshots/*</td><td>source_screenshots</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>21</td><td class="fp">.workspace/runs/{runId}/video/*</td><td>source_videos</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ═══════════════════ APP.SQLITE ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>app.sqlite</h2>
+    <span class="tag tag-hash">Hash-Gated</span>
+    <span class="tag" style="background:var(--s2);color:var(--t2)">6 tables</span>
+  </div>
+  <p class="surface-desc">Global cross-category database. All tables rebuild via SHA256 hash-gated reconcile at bootstrap.</p>
+
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">brands</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
+  <tr><td class="fp">brand_categories</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
+  <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
+  <tr><td class="fp">settings</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
+  <tr><td class="fp">studio_maps</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
+  <tr><td class="fp">color_registry</td><td class="fp">color_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedColorRegistry</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ SPEC.SQLITE — AUTO ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Auto-Rebuild</h2>
+    <span class="tag tag-auto">29 tables</span>
+  </div>
+  <p class="surface-desc">Per-category database. These tables automatically rebuild from durable JSON files on startup seed, reseed phases, or lazy access.</p>
+
+  <div class="domain-group">
+  <div class="domain-label">Product &amp; Review Core</div>
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">products</td><td class="fp">product_catalog.json + product.json + normalized.json</td><td><span class="tag tag-reseed">reseed</span> + <span class="tag tag-seed">seed</span></td></tr>
+  <tr><td class="fp">product_queue</td><td class="fp">state.json + product.json</td><td><span class="tag tag-seed">seed</span> + <span class="tag tag-reseed">checkpoint</span></td></tr>
+  <tr><td class="fp">candidates</td><td class="fp">candidates.json + per-source extracted</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">candidate_reviews</td><td class="fp">{pid}.overrides.json (includes ai_review)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">item_field_state</td><td class="fp">normalized.json + provenance.json + overrides.json</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">item_component_links</td><td class="fp">normalized.json + field rules</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">item_list_links</td><td class="fp">normalized.json + list_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">product_review_state</td><td class="fp">{pid}.overrides.json envelope</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Components &amp; Enums</div>
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">component_identity</td><td class="fp">component_db/*.json + component overrides</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">component_aliases</td><td class="fp">component_db/*.json + component overrides</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">component_values</td><td class="fp">component_db/*.json + component overrides</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">enum_lists</td><td class="fp">field_rules.json + known_values.json</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">list_values</td><td class="fp">known_values.json + field_studio_map.json manual enums</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Runs &amp; Checkpoints</div>
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">runs</td><td class="fp">run.json checkpoints</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">product_runs</td><td class="fp">run.json checkpoints</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">run_artifacts</td><td class="fp">run.json (needset, search_profile, run_summary, brand_resolution, run_checkpoint)</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">crawl_sources</td><td class="fp">run.json sources array</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">url_crawl_ledger</td><td class="fp">run.json sources array</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">query_cooldowns</td><td class="fp">product.json cooldown snapshots</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">source_screenshots</td><td class="fp">screenshots/* files on disk</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">source_videos</td><td class="fp">video/* files on disk</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">color_edition_finder</td><td class="fp">color_edition.json per product</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <div class="domain-group">
+  <div class="domain-label">Derived &amp; Configuration</div>
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json (custom) + defaults</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">source_registry</td><td>Derived from candidates + item state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">source_assertions</td><td>Derived from candidates + item state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">source_evidence_refs</td><td>Derived from candidates + item state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">key_review_state</td><td>Derived from item_field_state + components + lists</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">field_studio_map</td><td class="fp">field_studio_map.json</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td class="fp">field_key_order</td><td class="fp">field_key_order.json</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td class="fp">data_authority_sync</td><td>Self-healing &mdash; repopulates on next sync</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ═══════════════════ SPEC.SQLITE — NO SOURCE ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; No Rebuild Source</h2>
+    <span class="tag tag-none">10 tables</span>
+  </div>
+  <p class="surface-desc">SQL-only operational and telemetry tables. Lost on full rebuild. Accepted losses &mdash; operational data that repopulates during normal use or is not user-facing.</p>
+
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">audit_log</td><td>Mutation audit trail. Operational telemetry.</td></tr>
+  <tr><td class="fp">billing_entries</td><td>Per-LLM-call cost records. Future: durable ledger (T5).</td></tr>
+  <tr><td class="fp">source_artifacts</td><td>Artifact inventory. Files on disk but SQL index not rebuilt.</td></tr>
+  <tr><td class="fp">source_pdfs</td><td>PDF inventory. Files on disk but SQL index not rebuilt.</td></tr>
+  <tr><td class="fp">evidence_documents</td><td>Rebuildable from HTML on disk (not yet wired).</td></tr>
+  <tr><td class="fp">evidence_chunks</td><td>Rebuildable from HTML on disk (not yet wired).</td></tr>
+  <tr><td class="fp">evidence_facts</td><td>Rebuildable from HTML on disk (not yet wired).</td></tr>
+  <tr><td class="fp">field_history</td><td>Crash-recovery state. Ephemeral &mdash; next run restarts fresh.</td></tr>
+  <tr><td class="fp">runtime_events</td><td>Session-only event log. Transient.</td></tr>
+  <tr><td class="fp">bridge_events</td><td>Run summaries survive via run_artifacts.run_summary.</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ DEAD FEATURES ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Dead Features</h2>
+    <span class="tag tag-dead">7 tables</span>
+  </div>
+  <p class="surface-desc">Modules being removed. Computed but never consumed by any downstream reader.</p>
+
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Module</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">curation_suggestions</td><td>Seed path removed</td></tr>
+  <tr><td class="fp">component_review_queue</td><td>Seed path removed</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ SELF-HEALING ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Self-Healing</h2>
+    <span class="tag tag-lazy">4 tables</span>
+  </div>
+  <p class="surface-desc">Cache and telemetry tables that repopulate automatically during normal use.</p>
+
+  <table class="ref">
+  <thead><tr><th>Table</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">llm_cache</td><td>Response cache &mdash; repopulates on use</td></tr>
+  <tr><td class="fp">brand_domains</td><td>Cache &mdash; repopulates when brand resolver runs</td></tr>
+  <tr><td class="fp">knob_snapshots</td><td>Telemetry &mdash; repopulates during runs</td></tr>
+  <tr><td class="fp">query_index / url_index / prompt_index</td><td>Telemetry indexes &mdash; repopulate during runs</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ RESEED REGISTRY ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Reseed Phase Registry</h2>
+    <span class="tag tag-reseed">O(1) Scaling</span>
+  </div>
+  <p class="surface-desc">Registered in <code>src/app/api/specDbRuntime.js</code>. Each phase runs independently on every category open. Adding a new phase = one array entry.</p>
+
+  <table class="ref">
+  <thead><tr><th>Phase</th><th>Source</th><th>Tables</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">checkpoint</td><td class="fp">run.json + product.json + media files</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, products, product_queue, source_screenshots, source_videos</td></tr>
+  <tr><td class="fp">product-catalog</td><td class="fp">product_catalog.json</td><td>products</td></tr>
+  <tr><td class="fp">color-edition</td><td class="fp">color_edition.json</td><td>color_edition_finder</td></tr>
+  <tr><td class="fp">llm-route-matrix</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════ HASH-GATED ═══════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Hash-Gated Reconciliation</h2>
+    <span class="tag tag-hash">SHA256</span>
+  </div>
+  <p class="surface-desc">File content hashed and compared to stored value. Only re-imports when hash differs. Hashes stored in <code>app.sqlite.settings</code> under <code>_seed_hashes</code> section.</p>
+
+  <table class="ref">
+  <thead><tr><th>Source</th><th>Hash Key</th><th>Tables</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">brand_registry.json</td><td class="fp">_seed_hashes.brand_registry</td><td>brands, brand_categories, brand_renames</td></tr>
+  <tr><td class="fp">user-settings.json</td><td class="fp">_seed_hashes.user_settings</td><td>settings, studio_maps</td></tr>
+  <tr><td class="fp">color_registry.json</td><td class="fp">_seed_hashes.color_registry</td><td>color_registry</td></tr>
+  </tbody>
+  </table>
+  <p style="color:var(--t3);font-size:.8rem;margin-top:8px"><em>Spec DB uses field_rules_signature (mtime+size of 7 generated files) stored in data_authority_sync.last_sync_meta</em></p>
+</section>
+
+</div>
+</body>
+</html>

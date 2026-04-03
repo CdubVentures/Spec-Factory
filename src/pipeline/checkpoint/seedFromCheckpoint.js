@@ -58,6 +58,21 @@ function seedCrawlCheckpoint(specDb, cp) {
     specDb.upsertRunArtifact({ run_id: runId, artifact_type: 'run_summary', category, payload: cp.run_summary });
     artifactsSeeded += 1;
   }
+  if (cp.brand_resolution) {
+    specDb.upsertRunArtifact({ run_id: runId, artifact_type: 'brand_resolution', category, payload: cp.brand_resolution });
+    artifactsSeeded += 1;
+  }
+  // WHY: Reconstruct run_checkpoint from counters already in the checkpoint.
+  // The original run_checkpoint artifact is written by writeCrawlCheckpoint after
+  // the checkpoint file is created, so it may not be in the JSON. The counters
+  // (the valuable data) are always present.
+  if (counters.urls_crawled > 0 || counters.urls_successful > 0) {
+    specDb.upsertRunArtifact({
+      run_id: runId, artifact_type: 'run_checkpoint', category,
+      payload: { urls_crawled: counters.urls_crawled || 0, urls_successful: counters.urls_successful || 0, checkpoint_path: '' },
+    });
+    artifactsSeeded += 1;
+  }
 
   const sources = Array.isArray(cp.sources) ? cp.sources : [];
   for (const src of sources) {
@@ -116,7 +131,7 @@ function seedCrawlCheckpoint(specDb, cp) {
 function seedProductCheckpoint(specDb, cp) {
   const identity = cp.identity || {};
   const model = String(identity.model || '').trim();
-  const baseModel = String(identity.base_model || model).trim();
+  const baseModel = String(identity.base_model || '').trim();
   // WHY: Fabricated variants (tokens already in model) must never reach the DB.
   // Use base_model for the check when available — variant tokens naturally
   // appear in the full model name but NOT in the base_model.

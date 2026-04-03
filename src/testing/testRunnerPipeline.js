@@ -654,7 +654,7 @@ function runConsensusEngine({
   fields.id = productId;
   fields.brand = identityLock.brand || 'unk';
   fields.model = identityLock.model || 'unk';
-  fields.base_model = identityLock.model || fields.model;
+  fields.base_model = identityLock.base_model || '';
   fields.category = category;
   fields.sku = identityLock.sku || 'unk';
   const usableSources = sourceResults.filter(
@@ -1020,7 +1020,7 @@ function buildIdentityObject(job, extractedIdentity = {}, options = {}) {
     identifier: lock.identifier || '',
     brand,
     model,
-    base_model: lock.model || extractedIdentity.base_model || model,
+    base_model: lock.base_model || extractedIdentity.base_model || '',
     variant,
     sku,
     mpn: lock.mpn || extractedIdentity.mpn || 'unk',
@@ -1439,7 +1439,6 @@ function compactSummary(summary) {
     publishable: typeof summary.publishable === 'boolean' ? summary.publishable : Boolean(summary.validated),
     publish_blockers: summary.publish_blockers || [],
     identity_report: summary.identity_report || null,
-    hypothesis_queue: summary.hypothesis_queue || [],
     constraint_analysis: summary.constraint_analysis || {},
     runtime_engine: summary.runtime_engine || {},
     field_reasoning: summary.field_reasoning || {},

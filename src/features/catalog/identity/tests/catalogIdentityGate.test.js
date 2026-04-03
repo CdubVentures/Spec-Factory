@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  buildCanonicalIdentityIndex,
   evaluateIdentityGate,
   loadCanonicalIdentityIndex
 } from '../identityGate.js';
@@ -31,7 +32,7 @@ test('identity gate rejects fabricated variant substring', async () => {
   const config = await makeConfig();
   try {
     await writeCatalog(config, 'mouse', {
-      'mouse-acer-cestus-310': { brand: 'Acer', model: 'Cestus 310', variant: '' }
+      'mouse-acer-cestus-310': { brand: 'Acer', base_model: 'Cestus 310', model: 'Cestus 310', variant: '' }
     });
     const canonicalIndex = await loadCanonicalIdentityIndex({ config, category: 'mouse' });
     const gate = evaluateIdentityGate({
@@ -55,6 +56,7 @@ test('identity gate rejects non-empty variant when canonical empty variant exist
     await writeCatalog(config, 'mouse', {
       'mouse-logitech-g-pro-x-superlight-2': {
         brand: 'Logitech',
+        base_model: 'G Pro X Superlight 2',
         model: 'G Pro X Superlight 2',
         variant: ''
       }
@@ -81,6 +83,7 @@ test('identity gate accepts legitimate variant when variant exists in canonical 
     await writeCatalog(config, 'mouse', {
       'mouse-razer-viper-v3-pro-white': {
         brand: 'Razer',
+        base_model: 'Viper V3 Pro',
         model: 'Viper V3 Pro',
         variant: 'White'
       }
@@ -99,6 +102,46 @@ test('identity gate accepts legitimate variant when variant exists in canonical 
   } finally {
     await cleanup(config);
   }
+});
+
+// --- split-identity tests ---
+
+test('identity gate: indexes on base_model for split identities', () => {
+  const index = buildCanonicalIdentityIndex({
+    category: 'mouse',
+    source: 'test',
+    products: [
+      { productId: 'mouse-001', brand: 'Finalmouse', base_model: 'ULX Prophecy', model: 'ULX Prophecy Scream', variant: 'Scream' },
+    ]
+  });
+  const gate = evaluateIdentityGate({
+    category: 'mouse',
+    brand: 'Finalmouse',
+    model: 'ULX Prophecy',
+    variant: 'Scream',
+    canonicalIndex: index
+  });
+  assert.equal(gate.valid, true);
+  assert.equal(gate.canonicalProductId, 'mouse-001');
+});
+
+test('identity gate: full model does NOT match split-identity pair keyed on base_model', () => {
+  const index = buildCanonicalIdentityIndex({
+    category: 'mouse',
+    source: 'test',
+    products: [
+      { productId: 'mouse-001', brand: 'Finalmouse', base_model: 'ULX Prophecy', model: 'ULX Prophecy Scream', variant: 'Scream' },
+    ]
+  });
+  const gate = evaluateIdentityGate({
+    category: 'mouse',
+    brand: 'Finalmouse',
+    model: 'ULX Prophecy Scream',
+    variant: '',
+    canonicalIndex: index
+  });
+  // Full model pair doesn't exist in index → permissive (no canonical set), but no productId match
+  assert.equal(gate.canonicalProductId, '');
 });
 
 test('identity gate returns empty index when product catalog is missing', async () => {

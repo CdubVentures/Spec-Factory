@@ -90,7 +90,7 @@ export function ProductManager() {
 
   // ── Mutations ──────────────────────────────────────────────────
   const addMut = useMutation({
-    mutationFn: (body: { brand: string; model: string; variant: string; seedUrls: string[] }) =>
+    mutationFn: (body: { brand: string; base_model: string; variant: string; seedUrls: string[] }) =>
       api.post<MutationResult>(`/catalog/${category}/products`, body),
     onSuccess: () => { invalidate(); closeDrawer(); },
   });
@@ -114,7 +114,7 @@ export function ProductManager() {
   });
 
   const bulkMut = useMutation({
-    mutationFn: (payload: { brand: string; rows: Array<{ model: string; variant: string }> }) =>
+    mutationFn: (payload: { brand: string; rows: Array<{ base_model: string; variant: string }> }) =>
       api.post<BulkImportResult>(`/catalog/${category}/products/bulk`, payload),
     onSuccess: (data) => {
       invalidate();
@@ -144,12 +144,12 @@ export function ProductManager() {
   function openEdit(product: CatalogProduct) {
     hydratedEditPidRef.current = product.productId;
     setEditPid(product.productId);
-    setSelectedProduct(product.productId, product.brand, product.model, product.variant);
+    setSelectedProduct(product.productId, product.brand, product.base_model, product.variant);
     setFormBrand(product.brand);
-    setFormModel(product.model);
+    setFormModel(product.base_model);
     setFormVariant(product.variant || '');
     setOrigBrand(product.brand);
-    setOrigModel(product.model);
+    setOrigModel(product.base_model);
     setOrigVariant(product.variant || '');
     const urls = (product.seed_urls || []).join('\n');
     setFormSeedUrls(urls);
@@ -187,10 +187,10 @@ export function ProductManager() {
     if (!product) return;
     hydratedEditPidRef.current = editPid;
     setFormBrand(product.brand);
-    setFormModel(product.model);
+    setFormModel(product.base_model);
     setFormVariant(product.variant || '');
     setOrigBrand(product.brand);
-    setOrigModel(product.model);
+    setOrigModel(product.base_model);
     setOrigVariant(product.variant || '');
     const urls = (product.seed_urls || []).join('\n');
     setFormSeedUrls(urls);
@@ -236,13 +236,13 @@ export function ProductManager() {
     // New product — no confirmation needed
     if (!editPid) {
       const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
-      addMut.mutate({ brand: formBrand, model: formModel, variant: formVariant, seedUrls });
+      addMut.mutate({ brand: formBrand, base_model: formModel, variant: formVariant, seedUrls });
       return;
     }
     const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
     updateMut.mutate({
       pid: editPid,
-      patch: { brand: formBrand, model: formModel, variant: formVariant, seed_urls: seedUrls, status: formStatus },
+      patch: { brand: formBrand, base_model: formModel, model: formModel, variant: formVariant, seed_urls: seedUrls, status: formStatus },
     });
   }
 
@@ -282,7 +282,7 @@ export function ProductManager() {
 
   const existingIdentityKeys = useMemo(() => {
     return new Set(products.map((p) =>
-      `${(p.brand || '').toLowerCase()}||${(p.model || '').toLowerCase()}||${(p.variant || '').toLowerCase()}`
+      `${(p.brand || '').toLowerCase()}||${(p.base_model || '').toLowerCase()}||${(p.variant || '').toLowerCase()}`
     ));
   }, [products]);
 
@@ -403,7 +403,7 @@ export function ProductManager() {
   const bulkRowsToSubmit = useMemo(() => {
     return bulkPreviewRows
       .filter((row) => row.status === 'ready')
-      .map((row) => ({ model: row.model, variant: row.variant }));
+      .map((row) => ({ base_model: row.model, variant: row.variant }));
   }, [bulkPreviewRows]);
 
   const openBulkModal = useCallback(() => {
@@ -516,9 +516,9 @@ export function ProductManager() {
             )}
           </div>
 
-          {/* Model */}
+          {/* Base Model */}
           <div>
-            <label className={labelCls}>Model *</label>
+            <label className={labelCls}>Base Model *</label>
             <input
               type="text"
               value={formModel}
@@ -813,7 +813,7 @@ export function ProductManager() {
               <div>
                 <label className={labelCls}>Paste Rows</label>
                 <BulkPasteGrid
-                  col1Header="Model"
+                  col1Header="Base Model"
                   col2Header="Variant"
                   col1Placeholder="e.g. Viper V3 Pro"
                   col2Placeholder="e.g. White"
@@ -883,7 +883,7 @@ export function ProductManager() {
                   <div className="max-h-40 overflow-auto p-2 space-y-1">
                     {bulkMut.data.results.slice(0, 50).map((row, idx) => (
                       <div key={`${idx}-${row.index}-${row.productId || ''}`} className="font-mono text-[11px] sf-text-muted sf-text-subtle">
-                        {`[${row.index + 1}] ${row.model}${row.variant ? ` | ${row.variant}` : ''} -> ${row.status}${row.reason ? ` (${row.reason})` : ''}`}
+                        {`[${row.index + 1}] ${row.base_model || row.model}${row.variant ? ` | ${row.variant}` : ''} -> ${row.status}${row.reason ? ` (${row.reason})` : ''}`}
                       </div>
                     ))}
                     {bulkMut.data.results.length > 50 && (

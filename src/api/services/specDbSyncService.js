@@ -1,4 +1,4 @@
-import { loadFieldRules as loadFieldRulesDefault } from '../../field-rules/loader.js';
+import { loadFieldRules as loadFieldRulesDefault, buildFieldRulesSignature as buildSignatureDefault } from '../../field-rules/loader.js';
 import { seedSpecDb as seedSpecDbDefault } from '../../db/seed.js';
 
 function normalizeCategory(category, resolveCategoryAlias) {
@@ -39,12 +39,21 @@ export async function syncSpecDbForCategory({
       fieldRules,
     });
 
+    // WHY: Store field_rules_signature in sync meta so hash-gated reconcile
+    // can detect when sources changed since last seed.
+    let syncMeta = syncResult && typeof syncResult === 'object' ? { ...syncResult } : {};
+    try {
+      const helperRoot = config.categoryAuthorityRoot || 'category_authority';
+      const signature = await buildSignatureDefault(helperRoot, resolvedCategory);
+      if (signature) syncMeta.field_rules_signature = signature;
+    } catch { /* non-critical — signature is best-effort */ }
+
     let syncState = null;
     if (typeof db.recordSpecDbSync === 'function') {
       syncState = db.recordSpecDbSync({
         category: resolvedCategory,
         status: 'ok',
-        meta: syncResult && typeof syncResult === 'object' ? syncResult : {},
+        meta: syncMeta,
       });
     }
 

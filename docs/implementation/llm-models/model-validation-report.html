@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Model Validation Report - April 2, 2026</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f8f9fa; --border: #dee2e6;
+    --text: #212529; --text-muted: #6c757d; --primary: #0d6efd;
+    --success: #198754; --danger: #dc3545; --warning: #fd7e14; --info: #0dcaf0;
+    --pass-bg: #d1e7dd; --pass-fg: #0f5132;
+    --fail-bg: #f8d7da; --fail-fg: #842029;
+    --warn-bg: #fff3cd; --warn-fg: #664d03;
+    --info-bg: #cff4fc; --info-fg: #055160;
+    --skip-bg: #e2e3e5; --skip-fg: #41464b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 24px; max-width: 1600px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 36px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 17px; font-weight: 600; margin: 24px 0 12px; }
+  .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .summary-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+  .summary-card .value { font-size: 32px; font-weight: 700; margin: 4px 0; }
+  .summary-card .detail { font-size: 12px; color: var(--text-muted); }
+  .summary-card.success { border-left: 4px solid var(--success); }
+  .summary-card.danger { border-left: 4px solid var(--danger); }
+  .summary-card.warning { border-left: 4px solid var(--warning); }
+  .summary-card.info { border-left: 4px solid var(--primary); }
+  .progress-bar { height: 8px; background: #e9ecef; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 4px; }
+  .fill.green { background: var(--success); } .fill.red { background: var(--danger); } .fill.orange { background: var(--warning); }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
+  thead th { background: var(--surface); padding: 10px 8px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  tbody td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:hover { background: #f8f9fa; }
+  .mn { font-family: 'SF Mono', Consolas, monospace; font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .err { font-size: 11px; color: var(--danger); max-width: 250px; }
+  .b { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .b.p { background: var(--pass-bg); color: var(--pass-fg); }
+  .b.f { background: var(--fail-bg); color: var(--fail-fg); }
+  .b.w { background: var(--warn-bg); color: var(--warn-fg); }
+  .b.i { background: var(--info-bg); color: var(--info-fg); }
+  .b.s { background: var(--skip-bg); color: var(--skip-fg); }
+  .b.n { background: #e8daef; color: #6c3483; }
+  .t { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; font-weight: 500; }
+  .t.fast { background: #d1e7dd; color: #0f5132; }
+  .t.med { background: #fff3cd; color: #664d03; }
+  .t.slow { background: #f8d7da; color: #842029; }
+  .t.vslow { background: #dc3545; color: white; }
+  .ph { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .pb { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .pb.oa { background: #10a37f20; color: #10a37f; border: 1px solid #10a37f40; }
+  .pb.cl { background: #d4a57420; color: #a67c52; border: 1px solid #d4a57440; }
+  .pb.gm { background: #4285f420; color: #4285f4; border: 1px solid #4285f440; }
+  .tw { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  .tw table { margin-bottom: 0; }
+  .lg { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; font-size: 12px; }
+  .lg-i { display: flex; align-items: center; gap: 4px; }
+  .mg { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .mc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .mc h4 { font-size: 14px; margin-bottom: 8px; }
+  .mc ul { list-style: none; padding: 0; }
+  .mc li { padding: 4px 0; font-size: 13px; font-family: 'SF Mono', Consolas, monospace; }
+  .mc li::before { content: "\2022 "; color: var(--warning); margin-right: 6px; }
+  .callout { padding: 12px 16px; border-radius: 8px; margin: 16px 0; font-size: 13px; }
+  .callout.warn { background: #fff3cd; border-left: 4px solid var(--warning); }
+  .callout.danger { background: #f8d7da; border-left: 4px solid var(--danger); }
+  .callout.info { background: #cff4fc; border-left: 4px solid var(--info); }
+  .callout strong { display: block; margin-bottom: 4px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; text-align: center; }
+  @media print { body { padding: 12px; } .tw { overflow: visible; } }
+</style>
+</head>
+<body>
+
+<h1>LLM Model Validation Report</h1>
+<p class="subtitle">Generated: 2026-04-02 01:00 &nbsp;|&nbsp; LLM Lab + Spec Factory &nbsp;|&nbsp; All providers tested live</p>
+
+<!-- ===== EXECUTIVE SUMMARY ===== -->
+<div class="summary-grid">
+  <div class="summary-card success">
+    <div class="label">OpenAI Lab</div>
+    <div class="value" style="color:var(--success);">76/76</div>
+    <div class="detail">19 models &middot; 100% pass</div>
+    <div class="progress-bar"><div class="fill green" style="width:100%"></div></div>
+  </div>
+  <div class="summary-card danger">
+    <div class="label">Claude Lab</div>
+    <div class="value" style="color:var(--danger);">0/16</div>
+    <div class="detail">4 models &middot; OAuth expired</div>
+    <div class="progress-bar"><div class="fill red" style="width:0%"></div></div>
+  </div>
+  <div class="summary-card warning">
+    <div class="label">Gemini Lab</div>
+    <div class="value" style="color:var(--warning);">2/3</div>
+    <div class="detail">3 working models &middot; Quota limits</div>
+    <div class="progress-bar"><div class="fill orange" style="width:67%"></div></div>
+  </div>
+  <div class="summary-card info">
+    <div class="label">Avg Response</div>
+    <div class="value" style="color:var(--primary);">5.1s</div>
+    <div class="detail">OpenAI: 1.2s &ndash; 28.0s</div>
+  </div>
+  <div class="summary-card danger">
+    <div class="label">SF Registry Gaps</div>
+    <div class="value" style="color:var(--danger);">5</div>
+    <div class="detail">Lab models missing from SF</div>
+  </div>
+  <div class="summary-card warning">
+    <div class="label">SF Stale Entries</div>
+    <div class="value" style="color:var(--warning);">3</div>
+    <div class="detail">SF references removed Lab models</div>
+  </div>
+</div>
+
+<!-- ===== CAPABILITY REALITY CHECK ===== -->
+<h2>Capability Reality Check</h2>
+<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Not all "capabilities" are equal. This table shows what actually works vs what is cosmetic.</p>
+
+<div class="tw">
+<table>
+  <thead><tr><th>Capability</th><th><span class="pb oa">OpenAI</span> :5001</th><th><span class="pb cl">Claude</span> :5003</th><th><span class="pb gm">Gemini</span> :5002</th></tr></thead>
+  <tbody>
+    <tr><td>Base Chat</td><td><span class="b p">REAL</span></td><td><span class="b p">REAL</span></td><td><span class="b p">REAL</span></td></tr>
+    <tr><td>JSON Mode</td><td><span class="b p">REAL</span></td><td><span class="b p">REAL</span></td><td><span class="b p">REAL</span> (may need fence stripping)</td></tr>
+    <tr>
+      <td>Web Search</td>
+      <td><span class="b p">REAL</span> tool-based, returns live data</td>
+      <td><span class="b w">PROMPT HINT</span> adds hint text, no real tool</td>
+      <td><span class="b f">NOT FUNCTIONAL</span> Code Assist API has no search tool</td>
+    </tr>
+    <tr>
+      <td>Thinking / Reasoning</td>
+      <td><span class="b p">REAL</span> API parameter, 5 effort levels</td>
+      <td><span class="b p">REAL</span> CLI <code>--effort</code> flag, 3 levels</td>
+      <td><span class="b f">COSMETIC</span> prompt hint only, model ignores it</td>
+    </tr>
+    <tr><td>Effort Levels</td>
+      <td><code>minimal</code> <code>low</code> <code>medium</code> <code>high</code> <code>xhigh</code></td>
+      <td><code>low</code> <code>medium</code> <code>high</code></td>
+      <td>N/A (cosmetic)</td>
+    </tr>
+    <tr><td>Rate Limits</td><td>Liberal (Pro plan)</td><td>Moderate (Max plan)</td><td><span class="b f">Very strict</span> (~1 call/10-60s)</td></tr>
+    <tr><td>Streaming</td><td><span class="b p">Full SSE</span></td><td>Non-streaming</td><td>Non-streaming</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <strong>Gemini web search and thinking are NOT real capabilities.</strong>
+  The Code Assist API does not support tool injection. When <code>web_search: true</code> is set, only a prompt hint is added.
+  Live testing confirmed: models returned wrong dates ("It is 2024") or refused ("I cannot tell you what day it is").
+  Thinking/reasoning effort is similarly just a prompt hint the model ignores.
+</div>
+
+<!-- ===== OPENAI ===== -->
+<h2>OpenAI Lab &mdash; Port 5001 (19 models, 76/76 pass)</h2>
+
+<div class="lg">
+  <div class="lg-i"><span class="t fast">fast</span> &lt;3s</div>
+  <div class="lg-i"><span class="t med">medium</span> 3-8s</div>
+  <div class="lg-i"><span class="t slow">slow</span> 8-15s</div>
+  <div class="lg-i"><span class="t vslow">very slow</span> &gt;15s</div>
+</div>
+
+<div class="tw">
+<table>
+  <thead><tr>
+    <th>Model</th><th>Base</th><th>Time</th>
+    <th>Thinking</th><th>Time</th>
+    <th>Web Search</th><th>Date OK?</th><th>Time</th>
+    <th>JSON</th><th>Valid?</th><th>Time</th>
+  </tr></thead>
+  <tbody>
+    <tr><td class="mn">gpt-5</td><td><span class="b p">PASS</span></td><td><span class="t med">4.9s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">6.2s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">4.4s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">3.1s</span></td></tr>
+    <tr><td class="mn">gpt-5-high</td><td><span class="b p">PASS</span></td><td><span class="t slow">10.8s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">10.7s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">7.1s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">4.9s</span></td></tr>
+    <tr><td class="mn">gpt-5-medium</td><td><span class="b p">PASS</span></td><td><span class="t med">5.6s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">8.6s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">4.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b w">Invalid</span></td><td><span class="t med">4.8s</span></td></tr>
+    <tr><td class="mn">gpt-5-low</td><td><span class="b p">PASS</span></td><td><span class="t fast">2.3s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">5.1s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">3.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b w">Invalid</span></td><td><span class="t med">3.7s</span></td></tr>
+    <tr><td class="mn">gpt-5-minimal</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.9s</span></td><td><span class="b p">PASS</span></td><td><span class="t fast">2.3s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">1.8s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">1.9s</span></td></tr>
+    <tr><td class="mn">gpt-5.1</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.7s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">5.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">3.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">3.4s</span></td></tr>
+    <tr><td class="mn">gpt-5.1-high</td><td><span class="b p">PASS</span></td><td><span class="t med">3.3s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.3s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">3.8s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">3.3s</span></td></tr>
+    <tr><td class="mn">gpt-5.1-medium</td><td><span class="b p">PASS</span></td><td><span class="t med">4.0s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">4.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">2.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">1.7s</span></td></tr>
+    <tr><td class="mn">gpt-5.1-low</td><td><span class="b p">PASS</span></td><td><span class="t med">3.7s</span></td><td><span class="b p">PASS</span></td><td><span class="t fast">2.4s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">2.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.7s</span></td></tr>
+    <tr><td class="mn">gpt-5.2</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.1s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">2.1s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.1s</span></td></tr>
+    <tr><td class="mn">gpt-5.2-xhigh</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">7.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">5.1s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">3.1s</span></td></tr>
+    <tr><td class="mn">gpt-5.2-high</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.3s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">6.3s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t med">5.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.3s</span></td></tr>
+    <tr><td class="mn">gpt-5.2-medium</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.3s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.0s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">2.2s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.3s</span></td></tr>
+    <tr><td class="mn">gpt-5.2-low</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.2s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.3s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t fast">1.6s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.1s</span></td></tr>
+    <tr><td class="mn">gpt-5.4</td><td><span class="b p">PASS</span></td><td><span class="t med">5.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">8.2s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t vslow">19.2s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t slow">9.2s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-xhigh</td><td><span class="b p">PASS</span></td><td><span class="t med">4.6s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">5.8s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t vslow">28.0s</span></td><td><span class="b p">PASS</span></td><td><span class="b w">Invalid</span></td><td><span class="t med">7.4s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-high</td><td><span class="b p">PASS</span></td><td><span class="t med">5.1s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">4.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t vslow">17.0s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">5.5s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-medium</td><td><span class="b p">PASS</span></td><td><span class="t slow">11.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">8.5s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">2026</span></td><td><span class="t slow">12.9s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t med">3.3s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-low</td><td><span class="b p">PASS</span></td><td><span class="t med">3.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">5.7s</span></td><td><span class="b p">PASS</span></td><td><span class="b w">No date</span></td><td><span class="t med">6.4s</span></td><td><span class="b p">PASS</span></td><td><span class="b p">Valid</span></td><td><span class="t fast">2.9s</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ===== CLAUDE ===== -->
+<h2>Claude Lab &mdash; Port 5003 (6 verified models, currently down)</h2>
+
+<div class="callout danger">
+  <strong>OAuth token expired.</strong> All Claude Lab requests return 401. The login container needs to re-authenticate.
+  Auth status endpoint says <code>authenticated: true</code> but the underlying CLI token has expired.
+</div>
+
+<h3>Verified Working (from Lab HTML reference, March 27 2026)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th>Base</th><th>Time</th><th>Thinking</th><th>Time</th><th>Web (hint)</th><th>Time</th><th>JSON</th><th>Time</th><th>Effort Levels</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">claude-sonnet-4-6</td><td><span class="b p">PASS</span></td><td><span class="t med">~4s</span></td><td><span class="b p">PASS</span></td><td>-</td><td><span class="b w">PROMPT HINT</span></td><td>-</td><td><span class="b p">PASS</span></td><td>-</td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+    <tr><td class="mn">claude-sonnet-4-5</td><td><span class="b p">PASS</span></td><td><span class="t slow">9.1s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">8.6s</span></td><td><span class="b w">PROMPT HINT</span></td><td><span class="t med">4.3s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">4.0s</span></td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+    <tr><td class="mn">claude-opus-4-6</td><td><span class="b p">PASS</span></td><td><span class="t med">4.7s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">6.6s</span></td><td><span class="b w">PROMPT HINT</span></td><td><span class="t med">4.6s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">7.0s</span></td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+    <tr><td class="mn">claude-opus-4-5</td><td><span class="b p">PASS</span></td><td><span class="t med">~5s</span></td><td><span class="b p">PASS</span></td><td>-</td><td><span class="b w">PROMPT HINT</span></td><td>-</td><td><span class="b p">PASS</span></td><td>-</td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+    <tr><td class="mn">claude-opus-4-1</td><td><span class="b p">PASS</span></td><td><span class="t med">3.9s</span></td><td><span class="b p">PASS</span></td><td><span class="t slow">8.2s</span></td><td><span class="b w">PROMPT HINT</span></td><td><span class="t med">3.8s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.8s</span></td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+    <tr><td class="mn">claude-haiku-4-5</td><td><span class="b p">PASS</span></td><td><span class="t fast">2.8s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">4.8s</span></td><td><span class="b w">PROMPT HINT</span></td><td><span class="t med">3.0s</span></td><td><span class="b p">PASS</span></td><td><span class="t med">3.6s</span></td><td><code>low</code> <code>medium</code> <code>high</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ===== GEMINI ===== -->
+<h2>Gemini Lab &mdash; Port 5002 (3 working models)</h2>
+
+<div class="callout warn">
+  <strong>Gemini has NO real web search or thinking.</strong>
+  The Code Assist API does not support tool injection or reasoning parameters.
+  Both are prompt-hint-only and have been proven non-functional in live testing.
+  Only base chat and JSON mode are real capabilities.
+</div>
+
+<h3>Working Models (base + JSON only)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th>Base Chat</th><th>Time</th><th>JSON Mode</th><th>Time</th><th>Availability</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">gemini-2.5-flash-lite</td><td><span class="b p">PASS</span></td><td><span class="t fast">0.8s</span></td><td><span class="b p">PASS</span></td><td><span class="t fast">0.6s</span></td><td><span class="b p">Reliable</span></td><td>Fastest. Deprecating June 17, 2026.</td></tr>
+    <tr><td class="mn">gemini-2.5-flash</td><td><span class="b p">PASS</span></td><td><span class="t fast">1.9s</span></td><td><span class="b p">PASS</span></td><td>-</td><td><span class="b p">Reliable</span></td><td>Default. Deprecating June 17, 2026.</td></tr>
+    <tr><td class="mn">gemini-3-flash-preview</td><td><span class="b w">INTERMITTENT</span></td><td><span class="t fast">~1.5s</span></td><td><span class="b p">PASS</span></td><td><span class="t fast">1.5s</span></td><td><span class="b w">Rate Limited</span></td><td>~1 call/60s limit. Fails under load.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Removed from Lab (not functional)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th>Status</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">gemini-2.5-pro</td><td><span class="b f">REMOVED</span></td><td>Persistent "No capacity" on Code Assist API</td></tr>
+    <tr><td class="mn">gemini-3.1-flash-lite-preview</td><td><span class="b f">REMOVED</span></td><td>404 on Code Assist API (GitHub #22906)</td></tr>
+    <tr><td class="mn">gemini-3.1-pro-preview</td><td><span class="b f">REMOVED</span></td><td>Persistent "No capacity" on Code Assist API</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ===== LAB vs SF GAP ANALYSIS ===== -->
+<h2>Lab &harr; Spec Factory Gap Analysis</h2>
+
+<h3>Models that work in Lab but are MISSING from Spec Factory registry</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th>Provider</th><th>Lab Status</th><th>In SF lab-* registry?</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">claude-sonnet-4-6</td><td><span class="pb cl">Claude</span></td><td><span class="b p">Verified</span></td><td><span class="b f">NO</span></td><td>Add to lab-claude models in SF registry</td></tr>
+    <tr><td class="mn">claude-opus-4-5</td><td><span class="pb cl">Claude</span></td><td><span class="b p">Verified</span></td><td><span class="b f">NO</span></td><td>Add to lab-claude models in SF registry</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Models in Spec Factory registry but REMOVED/broken in Lab</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th>Provider</th><th>SF Registry</th><th>Lab Reality</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">gemini-2.5-pro</td><td><span class="pb gm">Gemini</span></td><td><span class="b i">In lab-gemini</span></td><td><span class="b f">REMOVED</span> No capacity</td><td>Remove from SF lab-gemini</td></tr>
+    <tr><td class="mn">gemini-3.1-flash-lite-preview</td><td><span class="pb gm">Gemini</span></td><td><span class="b i">In lab-gemini</span></td><td><span class="b f">REMOVED</span> 404</td><td>Remove from SF lab-gemini</td></tr>
+    <tr><td class="mn">gemini-3.1-pro-preview</td><td><span class="pb gm">Gemini</span></td><td><span class="b i">In lab-gemini</span></td><td><span class="b f">REMOVED</span> No capacity</td><td>Remove from SF lab-gemini</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>SF registry capability flags that are wrong</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>Provider</th><th>Flag in SF Registry</th><th>Reality</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pb gm">lab-gemini</span></td><td><code>webSearch: true</code> on all models</td><td>Web search does NOT work on Code Assist API</td><td>Set <code>webSearch: false</code></td></tr>
+    <tr><td><span class="pb gm">lab-gemini</span></td><td>No thinking flags</td><td>Thinking is cosmetic/prompt-only</td><td>No change needed (already absent)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ===== MISSING MODELS ===== -->
+<h2>New Models Not Yet in Either System</h2>
+<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Models available from provider APIs but not in LLM Lab or Spec Factory.</p>
+
+<div class="mg">
+  <div class="mc" style="border-left:4px solid #10a37f;">
+    <h4><span class="pb oa">OpenAI</span> New releases</h4>
+    <ul>
+      <li>gpt-5.3 <span class="b n">NEW</span></li>
+      <li>gpt-5.3-codex <span class="b n">NEW</span> coding specialist</li>
+      <li>gpt-5.4-mini <span class="b n">NEW</span> 400k ctx, $0.75/MTok</li>
+      <li>gpt-5.4-nano <span class="b n">NEW</span> 400k ctx, $0.20/MTok</li>
+      <li>o3 <span class="b n">NEW</span> 200k ctx, reasoning</li>
+      <li>o3-pro extended reasoning</li>
+      <li>o4-mini <span class="b n">NEW</span> 200k ctx, reasoning</li>
+    </ul>
+  </div>
+  <div class="mc" style="border-left:4px solid #4285f4;">
+    <h4><span class="pb gm">Gemini</span> New releases</h4>
+    <ul>
+      <li>gemini-3-flash <span class="b n">GA</span> production ready</li>
+      <li>gemini-3.1-flash-image-preview image gen</li>
+      <li>gemini-3.1-flash-live-preview voice/audio</li>
+    </ul>
+  </div>
+  <div class="mc" style="border-left:4px solid #d4a574;">
+    <h4><span class="pb cl">Claude</span> Note</h4>
+    <ul>
+      <li>claude-sonnet-4-6 is in SF default-anthropic (production) but NOT in lab-claude</li>
+      <li>No other new Claude models identified</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== ISSUES ===== -->
+<h2>Issues &amp; Action Items</h2>
+<div class="tw">
+<table>
+  <thead><tr><th>Priority</th><th>Issue</th><th>Impact</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><span class="b f">CRITICAL</span></td><td>Claude Lab OAuth expired</td><td>All 6 Claude Lab models non-functional</td><td>Re-authenticate via login container</td></tr>
+    <tr><td><span class="b f">HIGH</span></td><td>SF lab-claude missing 2 verified models</td><td>sonnet-4-6 and opus-4-5 work but can't be selected</td><td>Add to lab-claude in SF registry</td></tr>
+    <tr><td><span class="b f">HIGH</span></td><td>SF lab-gemini has 3 removed models</td><td>Routing to dead models causes failures</td><td>Remove gemini-2.5-pro, 3.1-flash-lite, 3.1-pro from SF</td></tr>
+    <tr><td><span class="b w">MEDIUM</span></td><td>SF lab-gemini has webSearch: true</td><td>Gemini web search is non-functional</td><td>Set webSearch: false in registry</td></tr>
+    <tr><td><span class="b w">MEDIUM</span></td><td>GPT-5.4 web search latency 12-28s</td><td>May exceed SF 30s timeout</td><td>Consider raising timeout for 5.4 web phases</td></tr>
+    <tr><td><span class="b w">MEDIUM</span></td><td>Gemini 2.5 flash deprecating June 17</td><td>SF default model will stop working</td><td>Plan migration to gemini-3-flash when stable</td></tr>
+    <tr><td><span class="b i">LOW</span></td><td>7 new OpenAI models not in registries</td><td>Not available for pipeline use</td><td>Evaluate gpt-5.3, 5.4-mini/nano, o3/o4</td></tr>
+    <tr><td><span class="b i">LOW</span></td><td>gpt-4o / gpt-4o-mini retiring</td><td>In SF default-openai but being discontinued</td><td>Remove in next cleanup</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ===== PERFORMANCE HEATMAP ===== -->
+<h2>OpenAI Performance Heatmap</h2>
+<div class="tw">
+<table>
+  <thead><tr><th>Model</th><th style="text-align:center">Base</th><th style="text-align:center">Thinking</th><th style="text-align:center">Web Search</th><th style="text-align:center">JSON</th><th style="text-align:center">Avg</th></tr></thead>
+  <tbody>
+    <tr><td class="mn">gpt-5</td><td style="text-align:center"><span class="t med">4.9s</span></td><td style="text-align:center"><span class="t med">6.2s</span></td><td style="text-align:center"><span class="t med">4.4s</span></td><td style="text-align:center"><span class="t med">3.1s</span></td><td style="text-align:center"><span class="t med">4.7s</span></td></tr>
+    <tr><td class="mn">gpt-5-high</td><td style="text-align:center"><span class="t slow">10.8s</span></td><td style="text-align:center"><span class="t slow">10.7s</span></td><td style="text-align:center"><span class="t med">7.1s</span></td><td style="text-align:center"><span class="t med">4.9s</span></td><td style="text-align:center"><span class="t slow">8.4s</span></td></tr>
+    <tr><td class="mn">gpt-5-medium</td><td style="text-align:center"><span class="t med">5.6s</span></td><td style="text-align:center"><span class="t slow">8.6s</span></td><td style="text-align:center"><span class="t med">4.9s</span></td><td style="text-align:center"><span class="t med">4.8s</span></td><td style="text-align:center"><span class="t med">6.0s</span></td></tr>
+    <tr><td class="mn">gpt-5-low</td><td style="text-align:center"><span class="t fast">2.3s</span></td><td style="text-align:center"><span class="t med">5.1s</span></td><td style="text-align:center"><span class="t med">3.5s</span></td><td style="text-align:center"><span class="t med">3.7s</span></td><td style="text-align:center"><span class="t med">3.7s</span></td></tr>
+    <tr><td class="mn">gpt-5-minimal</td><td style="text-align:center"><span class="t fast">1.9s</span></td><td style="text-align:center"><span class="t fast">2.3s</span></td><td style="text-align:center"><span class="t fast">1.8s</span></td><td style="text-align:center"><span class="t fast">1.9s</span></td><td style="text-align:center"><span class="t fast">2.0s</span></td></tr>
+    <tr><td class="mn">gpt-5.1</td><td style="text-align:center"><span class="t fast">1.7s</span></td><td style="text-align:center"><span class="t med">5.5s</span></td><td style="text-align:center"><span class="t med">3.9s</span></td><td style="text-align:center"><span class="t med">3.4s</span></td><td style="text-align:center"><span class="t med">3.6s</span></td></tr>
+    <tr><td class="mn">gpt-5.2</td><td style="text-align:center"><span class="t fast">1.5s</span></td><td style="text-align:center"><span class="t med">3.1s</span></td><td style="text-align:center"><span class="t fast">2.1s</span></td><td style="text-align:center"><span class="t fast">2.1s</span></td><td style="text-align:center"><span class="t fast">2.2s</span></td></tr>
+    <tr><td class="mn">gpt-5.4</td><td style="text-align:center"><span class="t med">5.5s</span></td><td style="text-align:center"><span class="t slow">8.2s</span></td><td style="text-align:center"><span class="t vslow">19.2s</span></td><td style="text-align:center"><span class="t slow">9.2s</span></td><td style="text-align:center"><span class="t slow">10.5s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-xhigh</td><td style="text-align:center"><span class="t med">4.6s</span></td><td style="text-align:center"><span class="t med">5.8s</span></td><td style="text-align:center"><span class="t vslow">28.0s</span></td><td style="text-align:center"><span class="t med">7.4s</span></td><td style="text-align:center"><span class="t slow">11.5s</span></td></tr>
+    <tr><td class="mn">gpt-5.4-low</td><td style="text-align:center"><span class="t med">3.5s</span></td><td style="text-align:center"><span class="t med">5.7s</span></td><td style="text-align:center"><span class="t med">6.4s</span></td><td style="text-align:center"><span class="t fast">2.9s</span></td><td style="text-align:center"><span class="t med">4.6s</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>
+  <p>LLM Model Validation Report &middot; Spec Factory + LLM Lab &middot; April 2, 2026</p>
+  <p>Live tests run against LLM Lab containers. Capability data from Lab HTML docs (March 27-28, 2026).</p>
+  <p>Sources: <a href="https://developers.openai.com/api/docs/models">OpenAI Models</a> &middot;
+    <a href="https://platform.claude.com/docs/en/about-claude/models/overview">Claude Models</a> &middot;
+    <a href="https://ai.google.dev/gemini-api/docs/models">Gemini Models</a></p>
+</footer>
+</body></html>

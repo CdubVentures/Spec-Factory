@@ -121,11 +121,8 @@ export function ProductPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-semibold">
-          {normalized?.identity?.brand} {normalized?.identity?.model}
+          {normalized?.identity?.base_model}
         </h2>
-        {normalized?.identity?.variant && !['unk', 'unknown', 'na', 'n/a', 'none', 'null'].includes(String(normalized.identity.variant).toLowerCase().trim()) && (
-          <span className="text-sm sf-text-muted">({normalized.identity.variant})</span>
-        )}
         <span className="text-xs font-mono sf-bg-surface-soft-strong sf-dk-surface-700 px-1.5 py-0.5 rounded">
           {(normalized?.identity as Record<string, unknown>)?.id
             ? `#${(normalized.identity as Record<string, unknown>).id}`

@@ -641,6 +641,7 @@ function normalizeCatalogSeedProducts({
   const products = [];
   for (const row of toArray(rows)) {
     const brand = normalizeText(row?.brand);
+    const baseModel = normalizeText(row?.base_model);
     const model = normalizeText(row?.model);
     if (!brand || !model) {
       continue;
@@ -665,6 +666,7 @@ function normalizeCatalogSeedProducts({
     products.push({
       source_column: '',
       brand,
+      base_model: baseModel,
       model,
       variant,
       category: normalizedCategory,
@@ -840,7 +842,7 @@ export async function syncJobsFromCatalogSeed({
     const gate = evaluateIdentityGate({
       category,
       brand: product.brand,
-      model: product.model,
+      model: product.base_model,
       variant: product.variant,
       canonicalIndex
     });

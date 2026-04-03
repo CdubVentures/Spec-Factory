@@ -246,6 +246,54 @@ describe('sessionCache', () => {
     );
   });
 
+  it('falls back to field_key_order.json when SQL is empty and JSON exists', async () => {
+    const savedOrder = ['__grp::Custom', 'weight', '__grp::Sensor', 'dpi_max'];
+    const baseDeps = makeDeps({
+      sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
+      fieldKeyOrderRow: null,
+    });
+    // Override readJsonIfExists to serve the field_key_order.json fallback
+    const readJsonIfExists = async (filePath) => {
+      if (String(filePath).includes('field_key_order.json')) {
+        return { order: savedOrder };
+      }
+      return baseDeps.readJsonIfExists(filePath);
+    };
+    const setFieldKeyOrderCalls = [];
+    const getSpecDb = () => ({
+      getFieldStudioMap: () => baseDeps.getSpecDb().getFieldStudioMap(),
+      upsertFieldStudioMap: () => {},
+      getFieldKeyOrder: () => null,
+      setFieldKeyOrder: (cat, json) => setFieldKeyOrderCalls.push({ cat, json }),
+    });
+    const cache = await createCache({ ...baseDeps, readJsonIfExists, getSpecDb });
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(result.mergedFieldOrder, savedOrder);
+    assert.equal(setFieldKeyOrderCalls.length, 1, 'should re-populate SQL from JSON fallback');
+    assert.deepEqual(JSON.parse(setFieldKeyOrderCalls[0].json), savedOrder);
+  });
+
+  it('falls back to computed order when both SQL and JSON are empty', async () => {
+    const baseDeps = makeDeps({
+      sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
+      fieldKeyOrderRow: null,
+    });
+    // readJsonIfExists returns null for field_key_order.json (default mock behavior)
+    const getSpecDb = () => ({
+      getFieldStudioMap: () => baseDeps.getSpecDb().getFieldStudioMap(),
+      upsertFieldStudioMap: () => {},
+      getFieldKeyOrder: () => null,
+    });
+    const cache = await createCache({ ...baseDeps, getSpecDb });
+    const result = await cache.getSessionRules('mouse');
+
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
+  });
+
   it('labels are derived from merged fields', async () => {
     const deps = makeDeps();
     const cache = await createCache(deps);

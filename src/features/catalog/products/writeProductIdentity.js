@@ -31,6 +31,7 @@ export function writeProductIdentity({
     category: String(category || ''),
     identity: {
       brand: String(identity.brand || ''),
+      base_model: String(identity.base_model || ''),
       model: String(identity.model || ''),
       variant: String(identity.variant || ''),
       brand_identifier: String(identity.brand_identifier || ''),

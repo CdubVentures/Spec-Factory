@@ -1,0 +1,54 @@
+[
+  {
+    "model": "gemini-2.5-flash-lite",
+    "base": {
+      "ok": true,
+      "time": 0.9
+    },
+    "web": {
+      "ok": false,
+      "time": 0.3,
+      "error": "{'message': 'You have exhausted your capacity on this model. Your quota will reset after 4s.'}"
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 0.6
+    }
+  },
+  {
+    "model": "gemini-2.5-flash",
+    "base": {
+      "ok": true,
+      "time": 0.8
+    },
+    "web": {
+      "ok": false,
+      "time": 0.2,
+      "error": "{'message': 'You have exhausted your capacity on this model. Your quota will reset after 36s.'}"
+    },
+    "json": {
+      "ok": false,
+      "time": 0.2,
+      "error": "{'message': 'You have exhausted your capacity on this model. Your quota will reset after 23s.'}"
+    }
+  },
+  {
+    "model": "gemini-3-flash-preview",
+    "base": {
+      "ok": false,
+      "time": 0.2,
+      "error": "{'message': 'You have exhausted your capacity on this model. Your quota will reset after 11s.'}"
+    },
+    "web": {
+      "ok": false,
+      "time": 6.8,
+      "error": "{'message': 'No capacity available for model gemini-3-flash-preview on the server'}"
+    },
+    "json": {
+      "ok": true,
+      "valid_json": true,
+      "time": 1.5
+    }
+  }
+]

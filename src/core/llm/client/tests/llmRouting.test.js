@@ -7,6 +7,8 @@ import {
   llmRoutingSnapshot,
   resolvePhaseModel,
   resolvePhaseReasoning,
+  resolvePhaseFallbackModel,
+  resolvePhaseDisableLimits,
   resolveLlmFallbackRoute,
   resolveLlmRoute
 } from '../routing.js';
@@ -584,4 +586,70 @@ test('llmRoutingSnapshot includes triage role', () => {
   const snapshot = llmRoutingSnapshot(config);
   assert.ok(snapshot.triage, 'snapshot must include triage role');
   assert.equal(snapshot.triage.primary.api_key_present, true);
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhaseFallbackModel — phase-aware fallback resolution
+// ---------------------------------------------------------------------------
+
+test('resolvePhaseFallbackModel returns base fallback when fallbackUseReasoning is false', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetFallbackModel: 'needset-fb',
+    _resolvedNeedsetFallbackReasoningModel: 'needset-reason-fb',
+    _resolvedNeedsetFallbackUseReasoning: false,
+  });
+  assert.equal(resolvePhaseFallbackModel(config, 'needset'), 'needset-fb');
+});
+
+test('resolvePhaseFallbackModel returns reasoning fallback when fallbackUseReasoning is true', () => {
+  const config = phaseConfig({
+    _resolvedNeedsetFallbackModel: 'needset-fb',
+    _resolvedNeedsetFallbackReasoningModel: 'needset-reason-fb',
+    _resolvedNeedsetFallbackUseReasoning: true,
+  });
+  assert.equal(resolvePhaseFallbackModel(config, 'needset'), 'needset-reason-fb');
+});
+
+test('resolvePhaseFallbackModel returns empty string when no fallback configured', () => {
+  const config = phaseConfig();
+  assert.equal(resolvePhaseFallbackModel(config, 'needset'), '');
+});
+
+test('resolvePhaseFallbackModel returns empty string for empty phase', () => {
+  const config = phaseConfig({ _resolvedNeedsetFallbackModel: 'should-not-return' });
+  assert.equal(resolvePhaseFallbackModel(config, ''), '');
+});
+
+test('resolveLlmFallbackRoute uses phase-specific fallback model when configured', () => {
+  const prov = proxyProvider();
+  const config = registryConfig([prov], {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmPlanFallbackModel: 'global-fallback',
+    _resolvedNeedsetBaseModel: 'gemini-2.5-flash',
+    _resolvedNeedsetUseReasoning: false,
+    _resolvedNeedsetFallbackModel: 'gemini-2.5-flash',
+    _resolvedNeedsetFallbackUseReasoning: false,
+  });
+  // WHY: Phase fallback same as primary → dedup returns null
+  const route = resolveLlmFallbackRoute(config, { role: 'plan', phase: 'needset' });
+  assert.equal(route, null, 'same model as primary should dedup to null');
+});
+
+// ---------------------------------------------------------------------------
+// resolvePhaseDisableLimits
+// ---------------------------------------------------------------------------
+
+test('resolvePhaseDisableLimits returns false when not configured', () => {
+  const config = phaseConfig();
+  assert.equal(resolvePhaseDisableLimits(config, 'needset'), false);
+});
+
+test('resolvePhaseDisableLimits returns true when phase has it set', () => {
+  const config = phaseConfig({ _resolvedNeedsetDisableLimits: true });
+  assert.equal(resolvePhaseDisableLimits(config, 'needset'), true);
+});
+
+test('resolvePhaseDisableLimits returns false for empty phase', () => {
+  const config = phaseConfig({ _resolvedNeedsetDisableLimits: true });
+  assert.equal(resolvePhaseDisableLimits(config, ''), false);
 });

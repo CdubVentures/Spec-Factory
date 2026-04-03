@@ -129,6 +129,78 @@ describe('writeBackBrandRegistry', () => {
     }
   });
 
+  it('write-back includes renames array per brand', async () => {
+    const db = createTestDb();
+    jsonPath = tmpJsonPath();
+    try {
+      seedOneBrand(db, { slug: 'razer', name: 'Razer', identifier: 'rz001' });
+      db.insertBrandRename({
+        identifier: 'rz001',
+        old_slug: 'razer-inc',
+        new_slug: 'razer',
+        old_name: 'Razer Inc',
+        new_name: 'Razer',
+      });
+      await writeBackBrandRegistry(db, jsonPath);
+      const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
+      const brand = data.brands.razer;
+      assert.ok(Array.isArray(brand.renames), 'renames should be an array');
+      assert.equal(brand.renames.length, 1);
+      assert.equal(brand.renames[0].old_slug, 'razer-inc');
+      assert.equal(brand.renames[0].new_slug, 'razer');
+      assert.equal(brand.renames[0].old_name, 'Razer Inc');
+      assert.equal(brand.renames[0].new_name, 'Razer');
+      assert.ok(brand.renames[0].renamed_at, 'renamed_at should be present');
+    } finally {
+      db.close();
+    }
+  });
+
+  it('brands without renames get empty renames array', async () => {
+    const db = createTestDb();
+    jsonPath = tmpJsonPath();
+    try {
+      seedOneBrand(db, { slug: 'logitech', name: 'Logitech', identifier: 'lg001' });
+      await writeBackBrandRegistry(db, jsonPath);
+      const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
+      assert.ok(Array.isArray(data.brands.logitech.renames), 'renames should be an array');
+      assert.equal(data.brands.logitech.renames.length, 0);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('rename round-trip: write-back → re-seed → rename history survives', async () => {
+    const db1 = createTestDb();
+    jsonPath = tmpJsonPath();
+    try {
+      seedOneBrand(db1, { slug: 'corsair', name: 'Corsair', identifier: 'cr001' });
+      db1.insertBrandRename({
+        identifier: 'cr001',
+        old_slug: 'corsair-gaming',
+        new_slug: 'corsair',
+        old_name: 'Corsair Gaming',
+        new_name: 'Corsair',
+      });
+      await writeBackBrandRegistry(db1, jsonPath);
+    } finally {
+      db1.close();
+    }
+
+    const db2 = createTestDb();
+    try {
+      seedAppDb({ appDb: db2, brandRegistryPath: jsonPath });
+      const renames = db2.getRenamesForBrand('cr001');
+      assert.equal(renames.length, 1, 'rename should survive DB rebuild');
+      assert.equal(renames[0].old_slug, 'corsair-gaming');
+      assert.equal(renames[0].new_slug, 'corsair');
+      assert.equal(renames[0].old_name, 'Corsair Gaming');
+      assert.equal(renames[0].new_name, 'Corsair');
+    } finally {
+      db2.close();
+    }
+  });
+
   it('overwrites existing file with latest state', async () => {
     const db = createTestDb();
     jsonPath = tmpJsonPath();

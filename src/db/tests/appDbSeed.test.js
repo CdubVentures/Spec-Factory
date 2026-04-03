@@ -80,13 +80,14 @@ describe('seedAppDb', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('skips when already seeded', () => {
-    db.upsertBrand({ identifier: 'pre-existing', canonical_name: 'Pre', slug: 'pre', aliases: '[]', website: '', added_by: 'seed' });
+  it('skips when file hashes unchanged (hash-gated)', () => {
     const brandPath = writeTempJson(tmpDir, 'brands.json', FIXTURE_BRANDS);
     const settingsPath = writeTempJson(tmpDir, 'settings.json', FIXTURE_SETTINGS);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: settingsPath });
     const result = seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: settingsPath });
-    assert.equal(result.skipped, true);
-    assert.equal(db.counts().brands, 1); // only the pre-existing one
+    assert.equal(result.brands_seeded, 0);
+    assert.equal(result.settings_seeded, 0);
+    assert.equal(db.counts().brands, 2);
   });
 
   it('seeds brands from registry JSON', () => {

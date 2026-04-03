@@ -283,7 +283,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">Run Metadata</td><td class="ct">runs</td><td class="cc">runMetaStore</td></tr>
         <tr><td class="cn">Run Artifacts</td><td class="ct">run_artifacts</td><td class="cc">runArtifactStore</td></tr>
         <tr><td class="cn">Billing</td><td class="ct">billing_entries</td><td class="cc">billingStore</td></tr>
-        <tr><td class="cn">Source Intelligence</td><td class="ct">source_intel_domains, source_intel_field_rewards, llm_cache, learning_profiles, category_brain, source_corpus, runtime_events, bridge_events</td><td class="cc">sourceIntelStore</td></tr>
+        <tr><td class="cn">Cache &amp; Telemetry</td><td class="ct">llm_cache, source_corpus, runtime_events, bridge_events</td><td class="cc">sourceIntelStore</td></tr>
         <tr><td class="cn">LLM Route / Source</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">llmRouteSourceStore</td></tr>
         <tr><td class="cn">Evidence Index</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts (virtual)</td><td class="cc">evidenceIndex</td></tr>
         <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">artifactStore</td></tr>
@@ -615,7 +615,7 @@ svg text{font-family:var(--sans)}
       <tr><td class="cn">runMetaStore</td><td class="ct">runs</td><td class="cc">1</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
       <tr><td class="cn">billingStore</td><td class="ct">billing_entries</td><td class="cc">1</td></tr>
-      <tr><td class="cn">sourceIntelStore</td><td class="ct">source_intel_domains, source_intel_field_rewards, llm_cache, learning_profiles, category_brain, source_corpus, runtime_events, bridge_events</td><td class="cc">8</td></tr>
+      <tr><td class="cn">sourceIntelStore</td><td class="ct">llm_cache, source_corpus, runtime_events, bridge_events</td><td class="cc">4</td></tr>
       <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">5</td></tr>
       <tr><td class="cn">evidenceIndex</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts</td><td class="cc">4</td></tr>
       <tr><td class="cn">artifactStore</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">4</td></tr>
@@ -682,7 +682,6 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">/indexlab/run/{id}/field-summary</td><td class="ct">GET</td><td class="cc">SQL item_field_state + candidates</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/component-summary</td><td class="ct">GET</td><td class="cc">SQL component_identity + values</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/crawl-media</td><td class="ct">GET</td><td class="cc">SQL crawl_media (screenshots, videos, PDFs)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/domain-intel</td><td class="ct">GET</td><td class="cc">SQL source_intel_domains</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/billing</td><td class="ct">GET</td><td class="cc">SQL billing_entries for run</td></tr>
       </tbody>
     </table>

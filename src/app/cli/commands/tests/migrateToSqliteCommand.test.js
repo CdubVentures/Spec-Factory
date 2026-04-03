@@ -34,9 +34,6 @@ function createSpecDbStub() {
     setLlmCacheEntry(key, response, timestamp, ttl) {
       llmCacheEntries.push({ key, response, timestamp, ttl });
     },
-    upsertLearningProfile() {},
-    upsertCategoryBrainArtifact() {},
-    persistSourceIntelFull() {},
     upsertSourceCorpusBatch() {},
     counts() {
       return { queue_products: 2, billing_ledger: billingEntries.length };

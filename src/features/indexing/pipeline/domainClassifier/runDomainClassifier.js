@@ -131,7 +131,6 @@ export function runDomainClassifier({
 export function buildOrderedFetchPlan({
   discoveryResult,
   seedUrls = [],
-  learningSeedUrls = [],
   blockedHosts = new Set(),
   config,
   logger,
@@ -148,9 +147,6 @@ export function buildOrderedFetchPlan({
   const sources = [];
   for (const url of seedUrls) {
     sources.push(_buildSourceRow(url, 'seed', triageMetaMap));
-  }
-  for (const url of learningSeedUrls) {
-    sources.push(_buildSourceRow(url, 'learning_seed', triageMetaMap));
   }
   for (const url of approvedUrls) {
     sources.push(_buildSourceRow(url, 'discovery_approved', triageMetaMap));
@@ -199,7 +195,6 @@ export function buildOrderedFetchPlan({
     overflow_count: overflowCount,
     domain_classifier_url_cap: urlCap,
     seed_count: seedUrls.length,
-    learning_seed_count: learningSeedUrls.length,
     blocked_count: blockedCount.count,
     total_fetch_plan: filtered.length,
   });
@@ -211,7 +206,6 @@ export function buildOrderedFetchPlan({
       total_queued: workerSeq,
       approved_count: approvedUrls.length,
       seed_count: seedUrls.length,
-      learning_seed_count: learningSeedUrls.length,
       overflow_count: overflowCount,
       blocked_count: blockedCount.count,
       blocked_hosts: blockedCount.hosts,

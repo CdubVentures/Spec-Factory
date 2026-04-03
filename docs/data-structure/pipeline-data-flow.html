@@ -303,7 +303,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
       <!-- Read indicator -->
       <circle cx="624" cy="432" r="5" fill="#3b82f6"/>
-      <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, component_db/, learning_profiles, crawl_ledger</text>
+      <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, component_db/, crawl_ledger</text>
 
       <!-- Worker pool annotations -->
       <rect x="600" y="460" width="170" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
@@ -416,13 +416,6 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <li>Loads route matrix and learning profile configuration</li>
         </ul>
       </div>
-      <div class="phase-section">
-        <div class="phase-section-label label-sql">SQL Reads</div>
-        <ul class="op-list sql">
-          <li><code>SELECT learning_profiles</code> &mdash; domain-specific learning intelligence</li>
-          <li><code>SELECT source_intel_domains</code> &mdash; historical domain quality data</li>
-        </ul>
-      </div>
     </div>
   </details>
 
@@ -498,7 +491,6 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-read">Reads</div>
         <ul class="op-list read">
           <li>NeedSet (from Phase 02 artifact)</li>
-          <li><code>learning_profiles</code> &mdash; domain-aware search strategies</li>
           <li><code>query_cooldowns</code>, <code>url_crawl_ledger</code> &mdash; previously attempted searches</li>
         </ul>
       </div>
@@ -596,14 +588,12 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-read">Reads</div>
         <ul class="op-list read">
           <li>Search results (from Phase 04)</li>
-          <li><code>source_intel_domains</code> &mdash; historical domain quality scores</li>
           <li><code>source_corpus</code> &mdash; previously crawled source intelligence</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-sql">SQL Writes</div>
         <ul class="op-list sql">
-          <li><code>UPSERT source_intel_domains</code> &mdash; updated domain quality intelligence</li>
           <li><code>UPSERT source_corpus</code> &mdash; new/updated source entries</li>
         </ul>
       </div>
@@ -942,8 +932,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <tr>
           <td class="event-name">domains_classified</td>
           <td>05</td>
-          <td>Persists domain quality scoring</td>
-          <td class="event-writes">source_intel_domains</td>
+          <td>Classifies domains by tier</td>
+          <td class="event-writes">&mdash;</td>
         </tr>
         <tr>
           <td class="event-name">discovery_enqueue_summary</td>

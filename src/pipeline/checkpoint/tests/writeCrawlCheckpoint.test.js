@@ -14,7 +14,7 @@ const SAMPLE_CHECKPOINT = {
   checkpoint_type: 'crawl',
   created_at: '2026-03-29T00:00:00.000Z',
   run: { run_id: 'run-001', category: 'mouse', product_id: 'mouse-test', s3_key: '', duration_ms: 5000 },
-  fetch_plan: { total_queued: 3, seed_count: 1, learning_seed_count: 0, approved_count: 2, blocked_count: 0 },
+  fetch_plan: { total_queued: 3, seed_count: 1, approved_count: 2, blocked_count: 0 },
   counters: { urls_crawled: 2, urls_successful: 2, urls_blocked: 0, urls_failed: 0, urls_timeout_rescued: 0 },
   artifacts: { html_dir: 'html', screenshot_dir: 'screenshots', video_dir: 'video' },
   sources: [{ url: 'https://example.com', success: true, content_hash: 'abc123' }],
