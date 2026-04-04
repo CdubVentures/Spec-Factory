@@ -104,10 +104,10 @@ svg text{font-family:var(--sans)}
 <!-- ================================================================== -->
 <div class="stats">
   <div class="stat"><div class="n" style="color:var(--accent)">2</div><div class="l">Databases</div></div>
-  <div class="stat"><div class="n" style="color:var(--green)">49</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">47</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n" style="color:var(--violet)">136</div><div class="l">Runtime Settings</div></div>
   <div class="stat"><div class="n" style="color:var(--amber)">11</div><div class="l">RuntimeOps Panels</div></div>
-  <div class="stat"><div class="n" style="color:var(--cyan)">21</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">20</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n" style="color:var(--rose)">80&ndash;111</div><div class="l">Field Definitions</div></div>
 </div>
 
@@ -200,8 +200,8 @@ svg text{font-family:var(--sans)}
       <rect x="20" y="250" width="290" height="90" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
       <text x="165" y="276" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700">SPECDB (per-category)</text>
       <text x="165" y="294" text-anchor="middle" fill="#475569" font-size="10">.workspace/db/{category}/spec.sqlite</text>
-      <text x="165" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">43 base tables</text>
-      <text x="165" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Products, candidates, evidence, billing, telemetry, crawl ledger</text>
+      <text x="165" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">41 base tables</text>
+      <text x="165" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Products, components, reviews, evidence, billing, telemetry, crawl ledger</text>
 
       <rect x="340" y="250" width="220" height="90" rx="10" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
       <text x="450" y="276" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">APPDB (global)</text>
@@ -258,24 +258,23 @@ svg text{font-family:var(--sans)}
   <div class="surface-head">
     <h2>Database Surfaces</h2>
     <span class="tag tag-cols">2 databases</span>
-    <span class="tag" style="background:var(--green-s);color:var(--green)">49 base tables</span>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">47 base tables</span>
   </div>
-  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). Runtime total reaches 53 tables when 4 learning stores are created by pipeline runs. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
+  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). Runtime total reaches 51 tables when 4 learning stores are created by pipeline runs. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
 
   <table class="col-table" style="margin-bottom:24px">
     <thead><tr><th>Database</th><th>Scope</th><th>Path</th><th>Tables</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">43 base. Runtime: up to 47 with 4 learning stores</td><td class="cc">All domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, run metadata, crawl ledger, color-edition finder</td></tr>
+      <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">41 base. Runtime: up to 45 with 4 learning stores</td><td class="cc">All domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, run metadata, crawl ledger, color-edition finder</td></tr>
       <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">6</td><td class="cc">Brands, brand categories, brand renames, user settings, studio field maps, color registry</td></tr>
     </tbody>
   </table>
 
   <div class="domain-group">
-    <div class="domain-label">SpecDb &mdash; Tables by Domain (43 base + 4 learning runtime)</div>
+    <div class="domain-label">SpecDb &mdash; Tables by Domain (41 base + 4 learning runtime)</div>
     <table class="col-table">
       <thead><tr><th>Domain</th><th>Tables</th><th>Store Module</th></tr></thead>
       <tbody>
-        <tr><td class="cn">Candidate Pipeline</td><td class="ct">candidates, candidate_reviews</td><td class="cc">candidateStore</td></tr>
         <tr><td class="cn">Components</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">componentStore</td></tr>
         <tr><td class="cn">Enum Lists</td><td class="ct">enum_lists, list_values</td><td class="cc">enumListStore</td></tr>
         <tr><td class="cn">Item State</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">itemStateStore</td></tr>
@@ -340,8 +339,8 @@ svg text{font-family:var(--sans)}
     <details class="card" data-search="product.json cross-run accumulator">
       <summary><span class="tname">product.json</span><span class="tags"><span class="tag tag-path">.workspace/products/{pid}/product.json</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Cross-run accumulator &mdash; grows after each run with field values, evidence, confidence scores. Created at product add time. SQL (products + item_field_state + candidates) is the SSOT; this file is the rebuild safety net.</p>
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/writeProductCheckpoint.js<br><strong>Mutable?</strong> Yes (grows after each run)<br><strong>In SQL?</strong> Yes &mdash; products, item_field_state, candidates</p>
+        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Cross-run accumulator &mdash; grows after each run with field values, evidence, confidence scores. Created at product add time. SQL (products + item_field_state) is the SSOT; this file is the rebuild safety net.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/writeProductCheckpoint.js<br><strong>Mutable?</strong> Yes (grows after each run)<br><strong>In SQL?</strong> Yes &mdash; products, item_field_state</p>
       </div>
     </details>
 
@@ -602,7 +601,7 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="stores" data-search="store module registry sql tables ownership">
   <div class="surface-head">
     <h2>Store Module Registry</h2>
-    <span class="tag tag-store">21 modules</span>
+    <span class="tag tag-store">20 modules</span>
   </div>
   <p class="surface-desc">Each store module owns a set of SQL tables and provides the read/write API for its domain. No other module may directly query another store's tables. Store modules are initialized at database open time and exposed through the SpecDb facade. Operational stores (deletionStore, purgeStore, provenanceStore) work across multiple stores' tables rather than owning dedicated tables. All store files live in <code>src/db/stores/</code>.</p>
 
@@ -611,7 +610,6 @@ svg text{font-family:var(--sans)}
     <tbody>
       <tr><td class="cn">artifactStore</td><td class="ct">crawl_sources, source_screenshots, source_videos</td><td class="cc">3</td></tr>
       <tr><td class="cn">billingStore</td><td class="ct">billing_entries</td><td class="cc">1</td></tr>
-      <tr><td class="cn">candidateStore</td><td class="ct">candidates, candidate_reviews</td><td class="cc">2</td></tr>
       <tr><td class="cn">colorEditionFinderStore</td><td class="ct">color_edition_finder</td><td class="cc">1</td></tr>
       <tr><td class="cn">componentStore</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">3</td></tr>
       <tr><td class="cn">crawlLedgerStore</td><td class="ct">query_cooldowns, url_crawl_ledger</td><td class="cc">2</td></tr>
@@ -623,7 +621,7 @@ svg text{font-family:var(--sans)}
       <tr><td class="cn">itemStateStore</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">4</td></tr>
       <tr><td class="cn">keyReviewStore</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">4</td></tr>
       <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix, source_registry</td><td class="cc">2</td></tr>
-      <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from item_field_state + candidates</td><td class="cc">Operational</td></tr>
+      <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from item_field_state + source_registry</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">purgeStore</td><td class="ct" style="opacity:0.7">Cross-store: bulk category/product cleanup in referential integrity order</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">5</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
@@ -684,7 +682,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">/indexlab/run/{id}/automation-queue</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/source-provenance</td><td class="ct">GET</td><td class="cc">SQL source_registry + assertions</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/key-review-summary</td><td class="ct">GET</td><td class="cc">SQL key_review_state aggregate</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/field-summary</td><td class="ct">GET</td><td class="cc">SQL item_field_state + candidates</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/field-summary</td><td class="ct">GET</td><td class="cc">SQL item_field_state</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/component-summary</td><td class="ct">GET</td><td class="cc">SQL component_identity + values</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/crawl-media</td><td class="ct">GET</td><td class="cc">SQL crawl_sources + source_screenshots + source_videos</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/billing</td><td class="ct">GET</td><td class="cc">SQL billing_entries for run</td></tr>
@@ -796,7 +794,7 @@ svg text{font-family:var(--sans)}
   <span class="dir">db/</span>
     <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps, color registry (6 tables)</span>
     <span class="dir">{category}/</span>
-      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 43 base tables (+ 4 learning runtime)</span>
+      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 41 base tables (+ 4 learning runtime)</span>
   <span class="dir">runs/</span>
     <span class="dir">{runId}/</span>
       <span class="file">run.json</span>                         <span class="comment">-- Crawl checkpoint (rebuild safety net)</span>
@@ -855,7 +853,7 @@ svg text{font-family:var(--sans)}
   <div class="principle-grid">
     <div class="principle-card" style="border-color:var(--green)">
       <h4 style="color:var(--green)">SQL is SSOT for All Mutable State</h4>
-      <p>SQLite owns every piece of mutable domain data. Products, candidates, evidence, run metadata, billing, telemetry, source intelligence &mdash; all in SQL. No JSON file is the authoritative source for mutable state.</p>
+      <p>SQLite owns every piece of mutable domain data. Products, components, reviews, evidence, run metadata, billing, telemetry, source intelligence &mdash; all in SQL. No JSON file is the authoritative source for mutable state.</p>
     </div>
 
     <div class="principle-card" style="border-color:var(--amber)">

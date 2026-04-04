@@ -10,9 +10,6 @@ import {
   createCatalogBuilder,
   createCompiledComponentDbPatcher,
 } from '../../app/api/catalogHelpers.js';
-import {
-  buildComponentReviewSyntheticCandidateId,
-} from '../../utils/candidateIdentifier.js';
 import { normalizePathToken } from '../helpers/valueNormalizers.js';
 import { safeReadJson, listFiles } from '../helpers/fileHelpers.js';
 
@@ -48,7 +45,6 @@ export function createBootstrapDomainRuntimes({
     getSpecDb,
     config,
     normalizePathToken,
-    buildComponentReviewSyntheticCandidateId,
   });
 
   // ── Catalog builder (SQL-first: reads from specDb products + queue tables) ──

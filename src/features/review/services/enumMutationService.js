@@ -1,7 +1,3 @@
-import {
-  resolveCandidateConfidence,
-} from '../api/routeSharedHelpers.js';
-
 export function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -108,11 +104,7 @@ export function applyEnumSharedLaneWithResolvedConfidence({
   confirmStatusOverride = undefined,
   fallbackConfidence = 1.0,
 }) {
-  const { confidence: sharedConfidence } = resolveCandidateConfidence({
-    specDb: runtimeSpecDb,
-    candidateId: selectedCandidateId,
-    fallbackConfidence,
-  });
+  const sharedConfidence = fallbackConfidence;
   return applyEnumSharedLaneState({
     runtimeSpecDb,
     applySharedLaneState,
@@ -154,18 +146,9 @@ export function resolveEnumPreAffectedProductIds(runtimeSpecDb, listValueId) {
   }
 }
 
-export function sanitizeExistingAcceptedCandidateId(runtimeSpecDb, existingLv) {
-  const persistedAcceptedCandidateId = String(existingLv?.accepted_candidate_id || '').trim();
-  if (!persistedAcceptedCandidateId) return null;
-  return runtimeSpecDb.getCandidateById(persistedAcceptedCandidateId)
-    ? persistedAcceptedCandidateId
-    : null;
-}
-
 export function resolveEnumRequiredCandidate({
   action,
   requestedCandidateId,
-  requestedCandidateRow,
 }) {
   const needsCandidateAction = action === 'accept' || action === 'confirm';
   if (!needsCandidateAction) return null;
@@ -175,15 +158,6 @@ export function resolveEnumRequiredCandidate({
       payload: {
         error: 'candidate_id_required',
         message: `candidateId is required for enum ${action}.`,
-      },
-    };
-  }
-  if (!requestedCandidateRow) {
-    return {
-      status: 404,
-      payload: {
-        error: 'candidate_not_found',
-        message: `candidate_id '${requestedCandidateId}' was not found.`,
       },
     };
   }

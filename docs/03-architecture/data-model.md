@@ -40,59 +40,6 @@
 
 ## Core review state
 
-### `candidates`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `candidate_id` | `TEXT` | `PRIMARY KEY` | Canonical candidate row id. |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `product_id` | `TEXT` | `NOT NULL` | Product identifier used across catalog, queue, and review. |
-| `field_key` | `TEXT` | `NOT NULL` | Field under evaluation. |
-| `value` | `TEXT` |  |  |
-| `normalized_value` | `TEXT` |  |  |
-| `score` | `REAL` | `DEFAULT 0` |  |
-| `rank` | `INTEGER` |  |  |
-| `source_url` | `TEXT` |  |  |
-| `source_host` | `TEXT` |  |  |
-| `source_root_domain` | `TEXT` |  |  |
-| `source_tier` | `INTEGER` |  |  |
-| `source_method` | `TEXT` |  |  |
-| `approved_domain` | `INTEGER` | `DEFAULT 0` |  |
-| `snippet_id` | `TEXT` |  | Deterministic snippet identifier from evidence extraction. |
-| `snippet_hash` | `TEXT` |  |  |
-| `snippet_text` | `TEXT` |  |  |
-| `quote` | `TEXT` |  |  |
-| `quote_span_start` | `INTEGER` |  |  |
-| `quote_span_end` | `INTEGER` |  |  |
-| `evidence_url` | `TEXT` |  |  |
-| `evidence_retrieved_at` | `TEXT` |  |  |
-| `is_component_field` | `INTEGER` | `DEFAULT 0` |  |
-| `component_type` | `TEXT` |  |  |
-| `is_list_field` | `INTEGER` | `DEFAULT 0` |  |
-| `llm_extract_model` | `TEXT` |  |  |
-| `extracted_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` |  |
-| `run_id` | `TEXT` |  | IndexLab or pipeline run identifier. |
-
-### `candidate_reviews`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `review_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `candidate_id` | `TEXT` | `NOT NULL REFERENCES candidates(candidate_id)` |  |
-| `context_type` | `TEXT` | `NOT NULL CHECK(context_type IN ('item', 'component', 'list'))` |  |
-| `context_id` | `TEXT` | `NOT NULL` |  |
-| `human_accepted` | `INTEGER` | `DEFAULT 0` |  |
-| `human_accepted_at` | `TEXT` |  |  |
-| `ai_review_status` | `TEXT` | `DEFAULT 'not_run' CHECK(ai_review_status IN ('not_run', 'pending', 'accepted', 'rejected', 'unknown'))` |  |
-| `ai_confidence` | `REAL` |  |  |
-| `ai_reason` | `TEXT` |  |  |
-| `ai_reviewed_at` | `TEXT` |  |  |
-| `ai_review_model` | `TEXT` |  |  |
-| `human_override_ai` | `INTEGER` | `DEFAULT 0` |  |
-| `human_override_ai_at` | `TEXT` |  |  |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
 ### `item_field_state`
 
 | Field | Type | Constraints | Notes |

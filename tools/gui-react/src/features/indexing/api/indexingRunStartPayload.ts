@@ -19,6 +19,7 @@ interface BuildIndexingRunStartPayloadInput {
   category: string;
   productId: string;
   brand?: string;
+  base_model?: string;
   model?: string;
   variant?: string;
   runtimeSettingsPayload: RuntimeSettings;
@@ -80,6 +81,7 @@ export function buildIndexingRunStartPayload(
     category,
     productId,
     brand,
+    base_model,
     model,
     variant,
     runtimeSettingsPayload,
@@ -97,9 +99,10 @@ export function buildIndexingRunStartPayload(
     requestedRunId: String(requestedRunId || '').trim(),
     category,
     productId,
-    // WHY: Send identity so the backend CLI gets --brand/--model/--variant args.
-    // Without these, the pipeline falls back to DB lookup or "unknown" defaults.
+    // WHY: base_model is the canonical family key for product identity.
+    // The backend launch plan translates it to the CLI's legacy --model arg.
     ...(brand ? { brand } : {}),
+    ...(base_model ? { base_model } : {}),
     ...(model ? { model } : {}),
     ...(variant ? { variant } : {}),
     mode: 'indexlab',

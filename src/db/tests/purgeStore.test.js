@@ -78,19 +78,6 @@ describe('purgeStore — purgeCategoryState', () => {
 });
 
 describe('purgeStore — purgeProductReviewState', () => {
-  it('deletes candidates for the target product only', () => {
-    const { specDb, db } = createHarness();
-
-    db.prepare(`INSERT INTO candidates (candidate_id, category, product_id, field_key, value) VALUES ('c-keep', '_test_purge', 'prod-keep', 'weight', '100g')`).run();
-    db.prepare(`INSERT INTO candidates (candidate_id, category, product_id, field_key, value) VALUES ('c-del', '_test_purge', 'prod-del', 'weight', '200g')`).run();
-    db.prepare(`INSERT INTO item_field_state (category, product_id, field_key, value, confidence, source) VALUES ('_test_purge', 'prod-del', 'weight', '200g', 0.9, 'llm')`).run();
-
-    specDb.purgeProductReviewState('_test_purge', 'prod-del');
-
-    strictEqual(count(db, 'candidates', "product_id = 'prod-del'"), 0, 'target product candidates gone');
-    strictEqual(count(db, 'candidates', "product_id = 'prod-keep'"), 1, 'other product candidates kept');
-  });
-
   it('cascades key review for the product', () => {
     const { specDb, db } = createHarness();
     seedKeyReviewChain(db, { targetKind: 'grid_key', itemId: 'prod-target' });

@@ -7,7 +7,6 @@ import {
 
 import {
   resolveGridLaneStateForMutation,
-  resolveGridLaneCandidate,
   resolvePrimaryConfirmItemFieldStateId,
   updateKeyReviewSelectedCandidate,
   resolveItemLaneCandidateMutationRequest,
@@ -24,7 +23,6 @@ import {
 // Re-export for characterization tests and any external consumers
 export {
   resolveGridLaneStateForMutation,
-  resolveGridLaneCandidate,
   resolvePrimaryConfirmItemFieldStateId,
   updateKeyReviewSelectedCandidate,
   resolveItemLaneCandidateMutationRequest,
@@ -179,7 +177,6 @@ async function handleItemKeyReviewDecisionEndpoint({
     jsonRes,
     getSpecDb,
     resolveKeyReviewForLaneMutation,
-    getPendingItemPrimaryCandidateIds,
     markPrimaryLaneReviewedInItemState,
     syncItemFieldStateFromPrimaryLaneAccept,
     isMeaningfulValue,
@@ -238,7 +235,6 @@ async function handleItemKeyReviewDecisionEndpoint({
         persistedCandidateId,
         candidateScore: candidateRow?.score,
         candidateConfidence: body?.candidateConfidence,
-        getPendingItemPrimaryCandidateIds,
         markPrimaryLaneReviewedInItemState,
       });
       return sendDataChangeResponse({

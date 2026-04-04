@@ -50,12 +50,13 @@ async function handleRunContext(state, deps, { ts, row }) {
 }
 
 async function handleSearchProfileGenerated(state, deps, { ts, row }) {
-  setStageCursor(state, 'stage:search-profile');
+  const advanced = setStageCursor(state, 'stage:search-profile');
   const payload = extractRuntimeEventPayload(row);
   const applied = applySearchProfilePlannedPayload(state, payload, ts);
   if (applied) {
     await writeSearchProfile(state, state.searchProfile);
   }
+  if (advanced) await writeRunMeta(state);
 }
 
 async function handleSourceFetchQueued(state, deps, { ts, url, row }) {
@@ -502,7 +503,7 @@ async function handleBrandResolved(state, deps, { ts, row }) {
 
 async function handleSearchPlanGenerated(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'search_plan_generated' });
-  setStageCursor(state, 'stage:search-planner');
+  const advanced = setStageCursor(state, 'stage:search-planner');
   await emit(state, 'search', 'search_plan_generated', {
     scope: 'plan',
     pass_index: asInt(row.pass_index, 0),
@@ -516,10 +517,11 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
     source: String(row.source || '').trim(),
     enhancement_rows: Array.isArray(row.enhancement_rows) ? row.enhancement_rows : [],
   }, ts);
+  if (advanced) await writeRunMeta(state);
 }
 
 async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
-  setStageCursor(state, 'stage:query-journey');
+  const advanced = setStageCursor(state, 'stage:query-journey');
   // WHY: Populate query_journey data in prefetch so the GUI gate allows
   // search_results bouncy ball only after query journey finishes.
   if (!state.prefetchData) state.prefetchData = {};
@@ -537,7 +539,7 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
     search_plan_query_count: asInt(row.search_plan_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
   }, ts);
-
+  if (advanced) await writeRunMeta(state);
 }
 
 async function handleSearchResultsCollected(state, deps, { ts, row }) {
@@ -567,7 +569,7 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
 
 async function handleSerpSelectorCompleted(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'serp_selector_completed' });
-  setStageCursor(state, 'stage:serp-selector');
+  const advanced = setStageCursor(state, 'stage:serp-selector');
   await emit(state, 'search', 'serp_selector_completed', {
     scope: 'triage',
     query: String(row.query || '').trim(),
@@ -607,6 +609,7 @@ async function handleSerpSelectorCompleted(state, deps, { ts, row }) {
       approval_bucket: String(c?.approval_bucket || '').trim(),
     })) : [],
   }, ts);
+  if (advanced) await writeRunMeta(state);
 }
 
 async function handleDomainsClassified(state, deps, { ts, row }) {
@@ -675,7 +678,7 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
   const { searchSlots } = deps;
 
   if (eventName === 'discovery_query_started') {
-    setStageCursor(state, 'stage:search-results');
+    const advanced = setStageCursor(state, 'stage:search-results');
     const query = String(row.query || '').trim();
     const provider = String(row.provider || '').trim();
     const queryKey = searchSlots.searchQueryKey(row);
@@ -689,6 +692,7 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
       tasks_started: slot.tasks_started,
       is_fallback: Boolean(row.is_fallback),
     }, ts);
+    if (advanced) await writeRunMeta(state);
   } else if (eventName === 'discovery_query_completed') {
     const query = String(row.query || '').trim();
     const provider = String(row.provider || '').trim();
@@ -813,7 +817,7 @@ async function handleSearchQueued(state, deps, { ts, row }) {
 }
 
 async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
-  setStageCursor(state, 'stage:domain-classifier');
+  const advanced = setStageCursor(state, 'stage:domain-classifier');
   await emit(state, 'search', 'discovery_enqueue_summary', {
     scope: 'enqueue',
     input_selected_count: asInt(row.input_selected_count, 0),
@@ -821,6 +825,7 @@ async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
     enqueued_count: asInt(row.enqueued_count, 0),
     overflow_count: asInt(row.overflow_count, 0),
   }, ts);
+  if (advanced) await writeRunMeta(state);
 }
 
 // ── Browser pool warm-up handlers ──────────────────────────────────────────

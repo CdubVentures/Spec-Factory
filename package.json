@@ -12,7 +12,7 @@
     "setup:bootstrap": "node tools/setup-deps.mjs",
     "setup:gui": "node tools/specfactory-launcher.mjs",
     "setup:exe": "node tools/build-setup-exe.mjs",
-    "test": "node --test",
+    "test": "node --test --test-force-exit",
     "run:one": "node src/cli/spec.js run-one",
     "run:indexlab": "node src/cli/spec.js indexlab",
     "run:adhoc": "node src/cli/spec.js run-ad-hoc",

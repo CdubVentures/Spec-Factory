@@ -5,7 +5,6 @@ import {
   CATEGORY,
   buildComponentReviewPayloads,
   createComponentRowHarness,
-  insertCandidateRow,
   linkProductToComponent,
   upsertComponentLane,
   writeComponentReviewItems,
@@ -39,79 +38,6 @@ test('component payload aggregates candidates from all linked products for every
       componentMaker,
       matchType: 'exact',
     });
-
-    insertCandidateRow(specDb, {
-      candidate_id: `${productId}::sensor::name_a`,
-      category: CATEGORY,
-      product_id: productId,
-      field_key: 'sensor',
-      value: componentName,
-      normalized_value: componentName.toLowerCase(),
-      score: 0.95,
-    });
-    insertCandidateRow(specDb, {
-      candidate_id: `${productId}::sensor::name_b`,
-      category: CATEGORY,
-      product_id: productId,
-      field_key: 'sensor',
-      value: componentName,
-      normalized_value: componentName.toLowerCase(),
-      score: 0.85,
-      rank: 2,
-      source_host: 'review.test',
-      source_method: 'llm_extract',
-      source_tier: 2,
-    });
-    insertCandidateRow(specDb, {
-      candidate_id: `${productId}::sensor_brand::maker_a`,
-      category: CATEGORY,
-      product_id: productId,
-      field_key: 'sensor_brand',
-      value: componentMaker,
-      normalized_value: componentMaker.toLowerCase(),
-    });
-    insertCandidateRow(specDb, {
-      candidate_id: `${productId}::sensor_brand::maker_b`,
-      category: CATEGORY,
-      product_id: productId,
-      field_key: 'sensor_brand',
-      value: componentMaker,
-      normalized_value: componentMaker.toLowerCase(),
-      score: 0.8,
-      rank: 2,
-      source_host: 'review.test',
-      source_method: 'llm_extract',
-      source_tier: 2,
-    });
-
-    for (const propKey of propertyKeys) {
-      insertCandidateRow(specDb, {
-        candidate_id: `${productId}::${propKey}::prop_a`,
-        category: CATEGORY,
-        product_id: productId,
-        field_key: propKey,
-        value: '1000',
-        normalized_value: '1000',
-        score: 0.88,
-        is_component_field: true,
-        component_type: componentType,
-      });
-      insertCandidateRow(specDb, {
-        candidate_id: `${productId}::${propKey}::prop_b`,
-        category: CATEGORY,
-        product_id: productId,
-        field_key: propKey,
-        value: '1000',
-        normalized_value: '1000',
-        score: 0.75,
-        rank: 2,
-        source_host: 'review.test',
-        source_method: 'llm_extract',
-        source_tier: 2,
-        is_component_field: true,
-        component_type: componentType,
-      });
-    }
   }
 
   writeComponentReviewItems(specDb, []);
@@ -126,15 +52,17 @@ test('component payload aggregates candidates from all linked products for every
 
   assert.ok(row, 'expected component row');
   assert.equal((row.linked_products || []).length, 3);
-  assert.equal(row.name_tracked.candidates.length, 6);
+  // With candidates table removed, tracked slots contain only the
+  // fallback candidate from ensureTrackedStateCandidateInvariant.
+  assert.ok(row.name_tracked.candidates.length >= 1, 'name_tracked has fallback candidate');
   assert.equal(row.name_tracked.candidate_count, row.name_tracked.candidates.length);
-  assert.equal(row.maker_tracked.candidates.length, 6);
+  assert.ok(row.maker_tracked.candidates.length >= 1, 'maker_tracked has fallback candidate');
   assert.equal(row.maker_tracked.candidate_count, row.maker_tracked.candidates.length);
 
   for (const propKey of propertyKeys) {
     const prop = row.properties?.[propKey];
     assert.ok(prop, `property ${propKey} should exist`);
-    assert.equal(prop.candidates.length, 6);
+    assert.ok(prop.candidates.length >= 1, `${propKey} has fallback candidate`);
     assert.equal(prop.candidate_count, prop.candidates.length);
   }
 });

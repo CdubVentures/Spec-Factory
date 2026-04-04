@@ -143,7 +143,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 <!-- ═══════════════════════ STATS ═══════════════════════ -->
 <div class="stats">
   <div class="stat"><div class="n">8</div><div class="l">Pipeline Phases</div></div>
-  <div class="stat"><div class="n">51</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n">42</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
   <div class="stat"><div class="n">3</div><div class="l">Worker Pools</div></div>
@@ -756,14 +756,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <li><code>visual_asset_captured</code> &mdash; screenshot or video captured</li>
           <li><code>parse_finished</code> &mdash; document parsing complete</li>
           <li><code>source_processed</code> &mdash; evidence extraction pass complete</li>
-          <li><code>index_finished</code> &mdash; candidate values produced and reviewed</li>
-        </ul>
-      </div>
-      <div class="phase-section">
-        <div class="phase-section-label label-sql">SQL Writes &mdash; Candidate Pipeline</div>
-        <ul class="op-list sql">
-          <li><code>INSERT candidates</code> &mdash; field value candidates with provenance</li>
-          <li><code>INSERT candidate_reviews</code> &mdash; LLM review verdicts for candidates</li>
+          <li><code>index_finished</code> &mdash; extraction values produced and reviewed</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -780,7 +773,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Worker Pools</div>
         <ul class="op-list">
           <li>Fetch workers &mdash; parallel browser-based crawl pool (Crawlee/Playwright)</li>
-          <li>LLM workers &mdash; parallel extraction review pool (candidate quality assessment)</li>
+          <li>LLM workers &mdash; parallel extraction review pool (value quality assessment)</li>
         </ul>
       </div>
     </div>
@@ -1044,8 +1037,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <tr>
           <td class="event-name">index_finished</td>
           <td>stage:crawl</td>
-          <td>Stores candidates with review verdicts</td>
-          <td class="event-writes">candidates, candidate_reviews</td>
+          <td>Stores extraction results with review verdicts</td>
+          <td class="event-writes">item_field_state, component_values, list_values</td>
         </tr>
         <tr>
           <td class="event-name">run_completed</td>

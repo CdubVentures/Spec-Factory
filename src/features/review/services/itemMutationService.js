@@ -51,48 +51,6 @@ export function resolveGridLaneStateForMutation({
   return { stateCtx, stateRow, error: null };
 }
 
-export function resolveGridLaneCandidate({
-  specDb,
-  candidateId,
-  stateRow,
-}) {
-  const candidateRow = specDb.getCandidateById(candidateId);
-  if (!candidateRow) {
-    return {
-      candidateRow: null,
-      persistedCandidateId: null,
-      error: {
-        status: 404,
-        payload: {
-          error: 'candidate_not_found',
-          message: `candidate_id '${candidateId}' was not found.`,
-        },
-      },
-    };
-  }
-  if (
-    String(candidateRow.product_id || '') !== String(stateRow.item_identifier || '')
-    || String(candidateRow.field_key || '') !== String(stateRow.field_key || '')
-  ) {
-    return {
-      candidateRow: null,
-      persistedCandidateId: null,
-      error: {
-        status: 400,
-        payload: {
-          error: 'candidate_context_mismatch',
-          message: `candidate_id '${candidateId}' does not belong to ${stateRow.item_identifier}/${stateRow.field_key}`,
-        },
-      },
-    };
-  }
-  return {
-    candidateRow,
-    persistedCandidateId: String(candidateRow.candidate_id || candidateId).trim(),
-    error: null,
-  };
-}
-
 export function resolvePrimaryConfirmItemFieldStateId({
   stateRow,
   stateCtx,
@@ -161,14 +119,13 @@ export async function resolveItemLaneCandidateMutationRequest({
       },
     };
   }
-  const candidateResolution = resolveGridLaneCandidate({
-    specDb,
-    candidateId,
-    stateRow,
-  });
-  if (candidateResolution.error) {
-    return { error: candidateResolution.error };
-  }
+  // Candidates table removed — build minimal candidateRow from request body + lane state fallback
+  const candidateRow = {
+    candidate_id: candidateId,
+    value: body.candidateValue || body.candidate_value || stateRow.selected_value || null,
+    score: firstFiniteNumber([body.candidateConfidence, body.candidate_confidence, stateRow.confidence_score], null),
+  };
+  const persistedCandidateId = candidateId;
 
   return {
     error: null,
@@ -178,8 +135,8 @@ export async function resolveItemLaneCandidateMutationRequest({
     specDb,
     stateCtx,
     stateRow,
-    candidateRow: candidateResolution.candidateRow,
-    persistedCandidateId: candidateResolution.persistedCandidateId,
+    candidateRow,
+    persistedCandidateId,
   };
 }
 
@@ -199,33 +156,12 @@ export function applyPrimaryItemConfirmLane({
   persistedCandidateId,
   candidateScore,
   candidateConfidence,
-  getPendingItemPrimaryCandidateIds,
   markPrimaryLaneReviewedInItemState,
 }) {
   const now = new Date().toISOString();
-  specDb.upsertReview({
-    candidateId: persistedCandidateId,
-    contextType: 'item',
-    contextId: String(stateItemFieldStateId),
-    humanAccepted: false,
-    humanAcceptedAt: null,
-    aiReviewStatus: 'accepted',
-    aiConfidence: firstFiniteNumber([
-      candidateConfidence,
-      candidateScore,
-    ], 1.0),
-    aiReason: 'primary_confirm',
-    aiReviewedAt: now,
-    aiReviewModel: null,
-    humanOverrideAi: false,
-    humanOverrideAiAt: null,
-  });
-  const pendingCandidateIds = getPendingItemPrimaryCandidateIds(specDb, {
-    productId: stateProductId,
-    fieldKey: stateFieldKey,
-    itemFieldStateId: stateItemFieldStateId,
-  });
-  const nextPrimaryStatus = pendingCandidateIds.length > 0 ? 'pending' : 'confirmed';
+  // Candidates table removed — no pending candidates, always confirmed
+  const pendingCandidateIds = [];
+  const nextPrimaryStatus = 'confirmed';
   specDb.updateKeyReviewAiConfirm({
     id: stateRow.id,
     lane: 'primary',

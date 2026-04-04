@@ -32,7 +32,6 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     buildProductReviewPayload,
     buildReviewQueue,
     sessionCache,
-    annotateCandidatePrimaryReviews,
     slugify,
     broadcastWs,
     path,
@@ -381,12 +380,6 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     }
     if (hasSelectedValue && !hasSelectedValueCandidate) {
       ensureSelectedCandidate(`selected_${slugify(productId || 'product')}_${slugify(resolvedField || 'field')}`);
-    }
-    if (specDb) {
-      const reviewRows = itemFieldStateId
-        ? (specDb.getReviewsForContext('item', String(itemFieldStateId)) || [])
-        : [];
-      annotateCandidatePrimaryReviews(allCandidates, reviewRows);
     }
     allCandidates.sort((a, b) => {
       const aScore = Number.parseFloat(String(a?.score ?? ''));

@@ -28,7 +28,7 @@ import {
 export function computeIdentityMatchLevel({ url = '', title = '', snippet = '', identityLock = {} } = {}) {
   const haystack = `${String(url || '')} ${String(title || '')} ${String(snippet || '')}`.toLowerCase();
   const brand = String(identityLock.brand || '').trim().toLowerCase();
-  const model = String(identityLock.base_model || identityLock.model || '').trim().toLowerCase();
+  const model = String(identityLock.base_model || '').trim().toLowerCase();
   const variant = String(identityLock.variant || '').trim().toLowerCase();
   const hasBrand = brand ? haystack.includes(brand) : false;
   const hasModel = model ? haystack.includes(model) : false;
@@ -347,9 +347,11 @@ export function detectSiblingManufacturerProductPage({
   if (!anchor) {
     return false;
   }
+  const queryModel = String(variables.base_model || variables.model || '').trim();
+  const queryVariant = String(variables.base_model ? variables.variant : '').trim();
   const targetSignature = buildProductPathTokenSignature([
-    variables.model,
-    variables.variant
+    queryModel,
+    queryVariant
   ].filter(Boolean).join(' '));
   const brandSignature = buildProductPathTokenSignature(variables.brand || '');
   const rowSignature = buildProductPathTokenSignature(anchor);

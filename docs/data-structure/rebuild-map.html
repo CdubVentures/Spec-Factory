@@ -91,9 +91,9 @@ table.ref tr:hover{background:var(--s2)}
 </header>
 
 <div class="stats">
-  <div class="stat"><div class="n">18</div><div class="l">JSON Sources</div></div>
+  <div class="stat"><div class="n">16</div><div class="l">JSON Sources</div></div>
   <div class="stat"><div class="n">2</div><div class="l">Databases</div></div>
-  <div class="stat"><div class="n">31</div><div class="l">Tables Auto-Rebuild</div></div>
+  <div class="stat"><div class="n">29</div><div class="l">Tables Auto-Rebuild</div></div>
   <div class="stat"><div class="n">12</div><div class="l">Round-Trip JSON</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Self-Healing</div></div>
   <div class="stat"><div class="n">4</div><div class="l">Runtime Learning</div></div>
@@ -383,13 +383,6 @@ table.ref tr:hover{background:var(--s2)}
 
     <div class="tree-line">
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
-      <span class="tree-name tree-file">candidates.json</span>
-      <span class="tree-spacer"></span>
-      <span class="tree-flow flow-todb">&rarr; to SQL</span>
-      <span class="tree-note">seedSpecDb &rarr; candidates table | written by pipeline extraction (merged per-field format)</span>
-    </div>
-    <div class="tree-line">
-      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
       <span class="tree-name tree-file">normalized.json</span>
       <span class="tree-spacer"></span>
       <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
@@ -414,13 +407,6 @@ table.ref tr:hover{background:var(--s2)}
 
     <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">output/{cat}/{pid}/runs/{runId}/</span></div>
 
-    <div class="tree-line">
-      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
-      <span class="tree-name tree-file">extracted/{source}/candidates.json</span>
-      <span class="tree-spacer"></span>
-      <span class="tree-flow flow-todb">&rarr; to SQL</span>
-      <span class="tree-note">seedSpecDb fallback &rarr; candidates (if latest/candidates.json absent)</span>
-    </div>
     <div class="tree-line">
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
       <span class="tree-name tree-file">analysis/search_profile.json</span>
@@ -592,16 +578,6 @@ table.ref tr:hover{background:var(--s2)}
           <td><span class="tag tag-seed">seedSpecDb</span></td>
           <td>Human-authored overrides &mdash; read-only at seed</td>
         </tr>
-        <tr>
-          <td class="fp">latest/candidates.json</td>
-          <td><span class="tag tag-seed">seedSpecDb</span></td>
-          <td>Written by pipeline extraction &mdash; not edited post-run</td>
-        </tr>
-        <tr>
-          <td class="fp">extracted/*/candidates.json</td>
-          <td><span class="tag tag-seed">seedSpecDb</span> fallback</td>
-          <td>Per-source extraction artifacts &mdash; used if merged candidates absent</td>
-        </tr>
       </tbody>
     </table>
   </div>
@@ -681,7 +657,7 @@ table.ref tr:hover{background:var(--s2)}
   <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
   <tbody>
   <tr><td>9</td><td class="fp">category_authority/{cat}/_overrides/components/*.json</td><td>component_identity (review_status), component_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
-  <tr><td>10</td><td class="fp">category_authority/{cat}/_overrides/overrides.json</td><td>item_field_state, candidates, candidate_reviews, product_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>10</td><td class="fp">category_authority/{cat}/_overrides/overrides.json</td><td>item_field_state, product_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   </tbody>
   </table>
   </div>
@@ -691,9 +667,8 @@ table.ref tr:hover{background:var(--s2)}
   <table class="ref">
   <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
   <tbody>
-  <tr><td>11</td><td class="fp">out/{cat}/{pid}/latest/candidates.json</td><td>candidates</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
-  <tr><td>12</td><td class="fp">out/{cat}/{pid}/latest/normalized.json</td><td>item_field_state, item_component_links, item_list_links</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
-  <tr><td>13</td><td class="fp">out/{cat}/{pid}/latest/provenance.json</td><td>item_field_state (confidence/provenance)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>11</td><td class="fp">out/{cat}/{pid}/latest/normalized.json</td><td>item_field_state, item_component_links, item_list_links</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td>12</td><td class="fp">out/{cat}/{pid}/latest/provenance.json</td><td>item_field_state (confidence/provenance)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   </tbody>
   </table>
   </div>
@@ -703,11 +678,11 @@ table.ref tr:hover{background:var(--s2)}
   <table class="ref">
   <thead><tr><th>#</th><th>File Path</th><th>Rebuilds</th><th>Trigger</th></tr></thead>
   <tbody>
-  <tr><td>14</td><td class="fp">.workspace/runs/{runId}/run.json</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
-  <tr><td>15</td><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
-  <tr><td>16</td><td class="fp">.workspace/products/{pid}/color_edition.json</td><td>color_edition_finder</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
-  <tr><td>17</td><td class="fp">.workspace/runs/{runId}/screenshots/*</td><td>source_screenshots</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
-  <tr><td>18</td><td class="fp">.workspace/runs/{runId}/video/*</td><td>source_videos</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>13</td><td class="fp">.workspace/runs/{runId}/run.json</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>14</td><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>15</td><td class="fp">.workspace/products/{pid}/color_edition.json</td><td>color_edition_finder</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>16</td><td class="fp">.workspace/runs/{runId}/screenshots/*</td><td>source_screenshots</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
+  <tr><td>17</td><td class="fp">.workspace/runs/{runId}/video/*</td><td>source_videos</td><td><span class="tag tag-reseed">reseed phase</span></td></tr>
   </tbody>
   </table>
   </div>
@@ -741,7 +716,7 @@ table.ref tr:hover{background:var(--s2)}
 <section class="surface">
   <div class="surface-head">
     <h2>spec.sqlite &mdash; Auto-Rebuild</h2>
-    <span class="tag tag-auto">31 tables</span>
+    <span class="tag tag-auto">29 tables</span>
   </div>
   <p class="surface-desc">Per-category database. These tables automatically rebuild from durable JSON files on startup seed, reseed phases, or lazy access.</p>
 
@@ -752,8 +727,6 @@ table.ref tr:hover{background:var(--s2)}
   <tbody>
   <tr><td class="fp">products</td><td class="fp">product.json (per product, .workspace/products/{pid}/)</td><td><span class="tag tag-reseed">checkpoint reseed</span></td></tr>
   <tr><td class="fp">product_queue</td><td class="fp">product.json (checkpoints)</td><td><span class="tag tag-reseed">checkpoint</span></td></tr>
-  <tr><td class="fp">candidates</td><td class="fp">candidates.json + per-source extracted + overrides.json</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
-  <tr><td class="fp">candidate_reviews</td><td class="fp">overrides.json (consolidated, includes ai_review)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">item_field_state</td><td class="fp">normalized.json + provenance.json + overrides.json (consolidated)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">item_component_links</td><td class="fp">normalized.json + field rules (backfill)</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">item_list_links</td><td class="fp">normalized.json + list_values</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
@@ -800,7 +773,7 @@ table.ref tr:hover{background:var(--s2)}
   <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
   <tbody>
   <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json (custom) + defaults from specDbHelpers.buildDefaultLlmRoutes(). If no JSON exists, defaults regenerate but custom edits are lost.</td><td><span class="tag tag-reseed">reseed</span></td></tr>
-  <tr><td class="fp">source_registry</td><td>Derived from candidates + item state during seed</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
+  <tr><td class="fp">source_registry</td><td>Derived from item state during seed</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_state</td><td>Derived from item_field_state + components + lists</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_runs</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_run_sources</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
@@ -928,7 +901,7 @@ table.ref tr:hover{background:var(--s2)}
   <tr><td class="fp">components</td><td>&mdash;</td><td class="fp">reconcileComponentDbRows</td><td>component_identity, component_aliases, component_values</td></tr>
   <tr><td class="fp">component_overrides</td><td class="fp">components</td><td>&mdash;</td><td>component_identity, component_values</td></tr>
   <tr><td class="fp">lists</td><td>&mdash;</td><td class="fp">reconcileListSeedRows</td><td>list_values</td></tr>
-  <tr><td class="fp">products</td><td class="fp">components, lists</td><td>&mdash;</td><td>candidates, item_field_state, item_component_links, item_list_links, candidate_reviews</td></tr>
+  <tr><td class="fp">products</td><td class="fp">components, lists</td><td>&mdash;</td><td>item_field_state, item_component_links, item_list_links</td></tr>
   <tr><td class="fp">backfill_links</td><td class="fp">products</td><td>&mdash;</td><td>item_component_links</td></tr>
   <tr><td class="fp">source_key_review</td><td class="fp">products, backfill_links</td><td class="fp">pruneOrphanCandidateReferences</td><td>source_registry, key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td></tr>
   </tbody>

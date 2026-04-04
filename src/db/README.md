@@ -1,6 +1,6 @@
 ## Purpose
 
-SQLite-backed persistence layer for candidate data, review state, component identity, learning, billing, and queue management. Single `SpecDb` class provides a unified facade over 14 domain-specific store modules. Schema: 48 tables.
+SQLite-backed persistence layer for review state, component identity, learning, billing, and queue management. Single `SpecDb` class provides a unified facade over 13 domain-specific store modules. Schema: 43 tables.
 
 Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, and seed hash tracking. Opened once at bootstrap, shared across all categories.
   - `getSeedHash(sourceKey)` / `setSeedHash(sourceKey, hash)` — hash-gated reconciliation state stored in settings table under `_seed_hashes` section
@@ -8,8 +8,6 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 ## Public API (The Contract)
 
 - `specDb.js` → `class SpecDb({ dbPath, category })` — main facade; instantiated via `serverBootstrap.js` DI
-  - Candidate CRUD: `insertCandidate`, `queryCandidates`, `getCandidate`, `updateCandidate`
-  - Review state: `insertReview`, `getReview`, `getReviews`
   - Component identity: `getComponentIdentity`, `upsertComponentIdentity`
   - Item state: `getItemState`, `setItemState`
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
@@ -40,8 +38,8 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 ## Mutation Boundaries
 
 - SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 45 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs
-- 12 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, provenanceStore
+- 43 tables across domains: component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs
+- 13 store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, provenanceStore
 - Write access is through `SpecDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

@@ -140,7 +140,6 @@ function parseMigrationColumns(src) {
 
 // ── Store ownership map ──
 const storeMap = {
-  candidates: 'candidateStore', candidate_reviews: 'candidateStore',
   component_identity: 'componentStore', component_aliases: 'componentStore', component_values: 'componentStore',
   enum_lists: 'enumListStore', list_values: 'enumListStore',
   item_field_state: 'itemStateStore', item_component_links: 'itemStateStore', item_list_links: 'itemStateStore', product_review_state: 'itemStateStore',
@@ -161,7 +160,6 @@ const storeMap = {
 
 // ── Domain groups ──
 const specDbGroups = [
-  { label: 'Candidate Pipeline', tables: ['candidates', 'candidate_reviews'] },
   { label: 'Component Identity', tables: ['component_identity', 'component_aliases', 'component_values'] },
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
   { label: 'Item State', tables: ['item_field_state', 'item_component_links', 'item_list_links', 'product_review_state'] },
@@ -383,7 +381,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
     <span class="tag tag-cols">${specTables.length + migrationTables.length} tables (${specTables.length} schema + ${migrationTables.length} migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). ${specTables.length + migrationTables.length} tables from DDL (${specTables.length} in specDbSchema.js + ${migrationTables.length} migration-created). ${learningTables.length} additional runtime learning tables created by learningStores.js. Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). ${specTables.length + migrationTables.length} tables from DDL (${specTables.length} in specDbSchema.js + ${migrationTables.length} migration-created). ${learningTables.length} additional runtime learning tables created by learningStores.js. Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   ${renderGroups(specDbGroups)}
 </section>
 

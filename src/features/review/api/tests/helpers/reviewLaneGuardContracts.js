@@ -18,19 +18,6 @@ export async function runReviewLaneGuardContracts(t, harness) {
 
   await t.test('confirm endpoints require candidate ids for pending lanes with zero candidates', async () => {
     db.db.prepare(
-      `DELETE FROM candidate_reviews
-       WHERE candidate_id IN (
-         SELECT candidate_id
-         FROM candidates
-         WHERE category = ? AND product_id = ? AND field_key = ?
-       )`
-    ).run(CATEGORY, PRODUCT_A, 'weight');
-    db.db.prepare('DELETE FROM candidates WHERE category = ? AND product_id = ? AND field_key = ?').run(
-      CATEGORY,
-      PRODUCT_A,
-      'weight',
-    );
-    db.db.prepare(
       `UPDATE key_review_state
        SET selected_candidate_id = NULL,
            ai_confirm_primary_status = 'pending',

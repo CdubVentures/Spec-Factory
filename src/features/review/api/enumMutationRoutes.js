@@ -14,7 +14,6 @@ import {
   applyEnumSharedLaneWithResolvedConfidence,
   upsertEnumListValueAndFetch,
   resolveEnumPreAffectedProductIds,
-  sanitizeExistingAcceptedCandidateId,
   resolveEnumRequiredCandidate,
 } from '../services/enumMutationService.js';
 
@@ -25,7 +24,6 @@ export {
   applyEnumSharedLaneWithResolvedConfidence,
   upsertEnumListValueAndFetch,
   resolveEnumPreAffectedProductIds,
-  sanitizeExistingAcceptedCandidateId,
   resolveEnumRequiredCandidate,
 };
 
@@ -40,13 +38,10 @@ async function handleEnumOverrideEndpoint({
     readJsonBody,
     jsonRes,
     getSpecDbReady,
-    syncSyntheticCandidatesFromComponentReview,
     resolveEnumMutationContext,
     isMeaningfulValue,
     normalizeLower,
-    candidateLooksReference,
     applySharedLaneState,
-    getPendingEnumSharedCandidateIds,
     specDbCache,
     storage,
     outputRoot,
@@ -73,7 +68,6 @@ async function handleEnumOverrideEndpoint({
           requireListValueId: action === 'remove' || action === 'accept' || action === 'confirm',
         }];
       },
-      preSync: ({ category, specDb }) => syncSyntheticCandidatesFromComponentReview({ category, specDb }),
     });
     if (respondIfError(respond, preparedMutation.error)) {
       return true;
@@ -112,9 +106,7 @@ async function handleEnumOverrideEndpoint({
       const normalized = String(value).trim().toLowerCase();
       const nowIso = new Date().toISOString();
       const requestedCandidateId = String(candidateId || '').trim() || null;
-      let requestedCandidateRow = requestedCandidateId
-        ? runtimeSpecDb.getCandidateById(requestedCandidateId)
-        : null;
+      let requestedCandidateRow = null;
       const candidateRequiredError = resolveEnumRequiredCandidate({
         action,
         requestedCandidateId,
@@ -196,11 +188,10 @@ async function handleEnumOverrideEndpoint({
           || priorStateStatus === 'pending'
           || Boolean(existingLv?.needs_review)
           || Boolean(oldLv?.needs_review);
-        const looksReference = candidateLooksReference(requestedCandidateId, sourceToken);
         const selectedSource = String(
           existingLv?.source
           || oldLv?.source
-          || (looksReference ? 'known_values' : 'pipeline')
+          || 'pipeline'
         );
         const resolvedCandidateId = acceptedCandidateId;
         const resolvedLv = upsertEnumListValueAndFetch({
@@ -236,17 +227,19 @@ async function handleEnumOverrideEndpoint({
             message: 'Cannot confirm unknown/empty enum values.',
           });
         }
-        const candidateValidationError = validateEnumCandidate({
-          candidateRow: requestedCandidateRow,
-          candidateId: requestedCandidateId,
-          field,
-          resolvedValue,
-          isMeaningfulValue,
-          normalizeLower,
-          valueMismatchMessage: `candidate_id '${requestedCandidateId}' value does not match enum value '${resolvedValue}'.`,
-        });
-        if (candidateValidationError) {
-          return respond(400, candidateValidationError);
+        if (requestedCandidateRow) {
+          const candidateValidationError = validateEnumCandidate({
+            candidateRow: requestedCandidateRow,
+            candidateId: requestedCandidateId,
+            field,
+            resolvedValue,
+            isMeaningfulValue,
+            normalizeLower,
+            valueMismatchMessage: `candidate_id '${requestedCandidateId}' value does not match enum value '${resolvedValue}'.`,
+          });
+          if (candidateValidationError) {
+            return respond(400, candidateValidationError);
+          }
         }
         let existingLv = runtimeSpecDb.getListValueByFieldAndValue(field, resolvedValue);
         if (!existingLv) {
@@ -265,7 +258,6 @@ async function handleEnumOverrideEndpoint({
             },
           });
         } else {
-          const sanitizedAcceptedCandidateId = sanitizeExistingAcceptedCandidateId(runtimeSpecDb, existingLv);
           existingLv = upsertEnumListValueAndFetch({
             runtimeSpecDb,
             field,
@@ -277,31 +269,12 @@ async function handleEnumOverrideEndpoint({
               overridden: Boolean(existingLv.overridden),
               needsReview: false,
               sourceTimestamp: nowIso,
-              acceptedCandidateId: sanitizedAcceptedCandidateId,
+              acceptedCandidateId: null,
             },
           });
         }
         const resolvedCandidateId = requestedCandidateId;
-        if (existingLv?.id) {
-          runtimeSpecDb.upsertReview({
-            candidateId: requestedCandidateId,
-            contextType: 'list',
-            contextId: String(existingLv.id),
-            humanAccepted: false,
-            humanAcceptedAt: null,
-            aiReviewStatus: 'accepted',
-            aiConfidence: firstFiniteNumber([body?.candidateConfidence], 1.0),
-            aiReason: 'shared_confirm',
-            aiReviewedAt: nowIso,
-            aiReviewModel: null,
-            humanOverrideAi: false,
-            humanOverrideAiAt: null,
-          });
-        }
-        const pendingCandidateIds = getPendingEnumSharedCandidateIds(runtimeSpecDb, {
-          fieldKey: field,
-          listValueId: existingLv?.id ?? null,
-        });
+        const pendingCandidateIds = [];
         const confirmStatusOverride = pendingCandidateIds.length > 0 ? 'pending' : 'confirmed';
         existingLv = upsertEnumListValueAndFetch({
           runtimeSpecDb,

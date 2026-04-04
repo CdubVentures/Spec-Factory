@@ -43,7 +43,6 @@ import {
   dbSourceMethod,
   extractHostFromUrl,
   candidateSourceLabel,
-  toSpecDbCandidateRow,
   urgencyScore,
 } from './reviewGridHelpers.js';
 
@@ -417,14 +416,11 @@ export async function buildProductReviewPayload({
   let dbHasAnyState = false;
   let dbProduct = null;
   let dbFieldRowsByField = new Map();
-  let dbCandidatesByField = {};
-
   if (specDb) {
     try {
       const dbFieldRows = toArray(specDb.getItemFieldState(productId));
       dbHasAnyState = dbFieldRows.length > 0;
       dbFieldRowsByField = new Map(dbFieldRows.map((row) => [normalizeField(row.field_key), row]));
-      dbCandidatesByField = specDb.getCandidatesForProduct(productId) || {};
       dbProduct = specDb.getProduct(productId) || null;
 
       useSpecDb = dbHasAnyState || Boolean(dbProduct);
@@ -459,7 +455,6 @@ export async function buildProductReviewPayload({
       useSpecDb = false;
       dbHasAnyState = false;
       dbFieldRowsByField = new Map();
-      dbCandidatesByField = {};
     }
   }
 
@@ -474,7 +469,7 @@ export async function buildProductReviewPayload({
     const dbFieldRow = useSpecDb ? dbFieldRowsByField.get(field) : null;
 
     if (dbFieldRow) {
-      const dbCandidateRows = toArray(dbCandidatesByField[field]).map(toSpecDbCandidateRow);
+      const dbCandidateRows = [];
       const isOverridden = Boolean(dbFieldRow.overridden);
       const selectedShapeValue = normalizeSlotValueForShape(
         dbFieldRow.value != null && String(dbFieldRow.value).trim() !== '' ? dbFieldRow.value : 'unk',

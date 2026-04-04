@@ -224,10 +224,26 @@ src/
 
 - Test behavior over implementation; test through **public APIs only**.
 - Use factories; avoid `let`/`beforeEach` mutation patterns.
-- Runner is Node built‑in: `node --test` (no Jest/Vitest).
+- Runner is Node built‑in: `node --test --test-force-exit` (no Jest/Vitest).
 - Test placement:
   - Preferred: `src/features/<feature>/tests/` (unit + feature tests)
   - Allowed: root `test/` only for integration / E2E / smoke (not a junk drawer)
+
+### Running the full test suite
+
+**You MUST run the full test suite before considering any task complete.**
+
+```bash
+# Full suite (~12s, 7000+ tests, must be 0 failures)
+npm test
+
+# Single file
+node --test --test-force-exit path/to/file.test.js
+```
+
+- If any test fails, investigate and fix before moving on.
+- If a test is no longer valid due to a contract change you made, update or remove the test — do not leave broken tests behind.
+- Never merge or hand off work with failing tests.
 
 ---
 
@@ -359,11 +375,10 @@ LLMs naturally default to additive coding. You are explicitly commanded to pract
 
 - No magic numbers for behavior (timeouts/retries/pagination/flags).
 - Centralize knobs:
-  - `.env` for deploy settings
+  - GUI / SQL for all runtime settings (API keys, secrets, tuning)
+  - `.env` for deploy-only non-secret vars (PORT, LOG_STDOUT)
   - `src/core/config.*` for global config
-- If adding env vars:
-  - Update `.env.example`
-  - Tell the human exactly what to add
+- Secret keys (`secret: true` in registry) are ignored from env — SQL is sole authority
 
 ---
 ## Domain Contracts (LLM-Optimized Local Architecture)

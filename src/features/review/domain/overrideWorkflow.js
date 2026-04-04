@@ -103,39 +103,6 @@ export async function setOverrideFromCandidate({
     normalizeToken(row.candidate_id) === normalizeToken(targetCandidateId)
     && normalizeField(row.field) === normalizedField
   );
-  if (!candidate && specDb) {
-    const dbCandidate = specDb.getCandidateById(targetCandidateId);
-    if (
-      dbCandidate
-      && String(dbCandidate.product_id || '') === String(productId || '')
-      && normalizeField(dbCandidate.field_key) === normalizedField
-    ) {
-      candidate = {
-        candidate_id: dbCandidate.candidate_id,
-        field: dbCandidate.field_key,
-        value: dbCandidate.value,
-        score: dbCandidate.score ?? 0,
-        candidate_index: null,
-        source_id: dbCandidate.source_host || dbCandidate.source_root_domain || dbCandidate.source_method || '',
-        source: dbCandidate.source_host || 'SpecDb',
-        host: dbCandidate.source_host || '',
-        tier: dbCandidate.source_tier ?? null,
-        method: dbCandidate.source_method || 'specdb_lookup',
-        evidence: {
-          url: dbCandidate.evidence_url || dbCandidate.source_url || '',
-          retrieved_at: dbCandidate.evidence_retrieved_at || dbCandidate.extracted_at || '',
-          snippet_id: dbCandidate.snippet_id || '',
-          snippet_hash: dbCandidate.snippet_hash || '',
-          quote: dbCandidate.quote || '',
-          quote_span: (dbCandidate.quote_span_start != null && dbCandidate.quote_span_end != null)
-            ? [dbCandidate.quote_span_start, dbCandidate.quote_span_end]
-            : null,
-          snippet_text: dbCandidate.snippet_text || '',
-          source_id: dbCandidate.source_host || dbCandidate.source_root_domain || dbCandidate.source_method || '',
-        },
-      };
-    }
-  }
   if (!candidate && candidateValue != null && String(candidateValue).trim()) {
     const now = nowIso();
     const fallbackSource = String(candidateSource || '').trim() || 'pipeline';

@@ -20,22 +20,6 @@ test('component payload isolates same-name lanes by maker for linked-product can
   const productsA = ['mouse-omron-a1', 'mouse-omron-a2'];
   const productsB = ['mouse-huano-b1', 'mouse-huano-b2'];
 
-  const insertFieldCandidate = (productId, fieldKey, value, suffix, score = 0.9) => {
-    specDb.insertCandidate({
-      candidate_id: `${productId}::${fieldKey}::${suffix}`,
-      category: CATEGORY,
-      product_id: productId,
-      field_key: fieldKey,
-      value,
-      normalized_value: String(value).toLowerCase(),
-      score,
-      rank: 1,
-      source_host: 'contract.test',
-      source_method: 'pipeline_extract',
-      source_tier: 1,
-    });
-  };
-
   const seedLane = (maker, forceValue) => {
     upsertComponentLane(specDb, {
       componentType,
@@ -47,7 +31,7 @@ test('component payload isolates same-name lanes by maker for linked-product can
     });
   };
 
-  const linkAndSeedCandidates = (productId, maker, forceValue) => {
+  const linkProductToMaker = (productId, maker) => {
     linkProductToComponent(specDb, {
       productId,
       fieldKey: 'switch',
@@ -55,18 +39,15 @@ test('component payload isolates same-name lanes by maker for linked-product can
       componentName,
       componentMaker: maker,
     });
-    insertFieldCandidate(productId, 'switch', componentName, 'name', 0.95);
-    insertFieldCandidate(productId, 'switch_brand', maker, 'maker');
-    insertFieldCandidate(productId, propertyKey, String(forceValue), 'value', 0.88);
   };
 
   seedLane(makerA, 55);
   seedLane(makerB, 65);
   for (const productId of productsA) {
-    linkAndSeedCandidates(productId, makerA, 55);
+    linkProductToMaker(productId, makerA);
   }
   for (const productId of productsB) {
-    linkAndSeedCandidates(productId, makerB, 65);
+    linkProductToMaker(productId, makerB);
   }
 
   writeComponentReviewItems(specDb, [
@@ -129,8 +110,10 @@ test('component payload isolates same-name lanes by maker for linked-product can
   assert.equal(makerValuesA.has(makerB), false);
   assert.equal(makerValuesB.has(makerB), true);
   assert.equal(makerValuesB.has(makerA), false);
-  assert.equal(propCandidatesA.length, 2);
-  assert.equal(propCandidatesB.length, 2);
+  // With candidates table removed, property candidates come only from
+  // ensureTrackedStateCandidateInvariant (1 fallback per slot).
+  assert.ok(propCandidatesA.length >= 1, 'maker A property has fallback candidate');
+  assert.ok(propCandidatesB.length >= 1, 'maker B property has fallback candidate');
   assert.equal(propCandidatesA.every((candidate) => String(candidate?.value || '') === '55'), true);
   assert.equal(propCandidatesB.every((candidate) => String(candidate?.value || '') === '65'), true);
 });

@@ -40,7 +40,6 @@ const TABLES_WITH_PRODUCT_ID = [
   'item_field_state',
   'item_component_links',
   'item_list_links',
-  'candidates',
   'crawl_sources',
   'source_screenshots',
   'source_videos',

@@ -306,37 +306,6 @@ export function candidateSourceLabel(candidate = {}, evidence = {}) {
   return extractHostFromUrl(evidenceUrl);
 }
 
-export function toSpecDbCandidateRow(row = {}) {
-  const quoteStart = row.quote_span_start;
-  const quoteEnd = row.quote_span_end;
-  const quoteSpan = Number.isFinite(Number(quoteStart)) && Number.isFinite(Number(quoteEnd))
-    ? [Number(quoteStart), Number(quoteEnd)]
-    : null;
-  return {
-    candidate_id: row.candidate_id || '',
-    value: row.value ?? null,
-    score: row.score ?? 0,
-    source_id: row.source_host || row.source_root_domain || row.source_method || '',
-    host: row.source_host || row.source_root_domain || '',
-    tier: row.source_tier ?? null,
-    method: row.source_method || '',
-    evidence: {
-      url: row.evidence_url || row.source_url || '',
-      retrieved_at: row.evidence_retrieved_at || row.extracted_at || '',
-      snippet_id: row.snippet_id || '',
-      snippet_hash: row.snippet_hash || '',
-      quote: row.quote || '',
-      quote_span: quoteSpan,
-      snippet_text: row.snippet_text || '',
-      source_id: row.source_host || row.source_root_domain || row.source_method || '',
-    },
-    llm_extract_model: row.llm_extract_model || null,
-    llm_extract_provider: row.llm_extract_provider || null,
-    llm_validate_model: row.llm_validate_model || null,
-    llm_validate_provider: row.llm_validate_provider || null,
-  };
-}
-
 // ── Queue Scoring ───────────────────────────────────────────────────
 
 // parseDateMs consolidated into reviewNormalization.js — import from there

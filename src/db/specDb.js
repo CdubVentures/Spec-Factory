@@ -1,5 +1,5 @@
 /**
- * SpecDb — SQLite-backed spec candidate/review data store.
+ * SpecDb — SQLite-backed spec data store.
  *
  * Pattern:
  * - better-sqlite3 synchronous API
@@ -17,7 +17,6 @@ import {
   cleanupLegacyIdentityFallbackRows as _cleanupLegacy,
   assertStrictIdentitySlotIntegrity as _assertIntegrity
 } from './specDbIntegrity.js';
-import { createCandidateStore } from './stores/candidateStore.js';
 import { createItemStateStore } from './stores/itemStateStore.js';
 import { createComponentStore } from './stores/componentStore.js';
 import { createEnumListStore } from './stores/enumListStore.js';
@@ -52,10 +51,6 @@ export class SpecDb {
 
     Object.assign(this, prepareStatements(this.db));
 
-    this._candidateStore = createCandidateStore({
-      db: this.db, category: this.category,
-      stmts: { _insertCandidate: this._insertCandidate, _upsertReview: this._upsertReview }
-    });
     this._componentStore = createComponentStore({
       db: this.db, category: this.category,
       stmts: { _upsertComponentIdentity: this._upsertComponentIdentity, _insertAlias: this._insertAlias, _upsertComponentValue: this._upsertComponentValue }
@@ -253,16 +248,16 @@ export class SpecDb {
 
   // --- Source Strategy --- (removed: sources.json is now the SSOT via sourceFileService.js)
 
-  // --- Candidates ---
+  // --- Candidates (stubbed — tables removed in Phase 7a, callers removed in 7b-7d) ---
 
-  insertCandidate(row) { return this._candidateStore.insertCandidate(row); }
-  insertCandidatesBatch(rows) { this._candidateStore.insertCandidatesBatch(rows); }
-  getCandidatesForField(productId, fieldKey) { return this._candidateStore.getCandidatesForField(productId, fieldKey); }
-  getCandidatesForProduct(productId) { return this._candidateStore.getCandidatesForProduct(productId); }
-  getCandidateById(candidateId) { return this._candidateStore.getCandidateById(candidateId); }
-  upsertReview(opts) { return this._candidateStore.upsertReview(opts); }
-  getReviewsForCandidate(candidateId) { return this._candidateStore.getReviewsForCandidate(candidateId); }
-  getReviewsForContext(contextType, contextId) { return this._candidateStore.getReviewsForContext(contextType, contextId); }
+  insertCandidate() {}
+  insertCandidatesBatch() {}
+  getCandidatesForField() { return []; }
+  getCandidatesForProduct() { return {}; }
+  getCandidateById() { return null; }
+  upsertReview() {}
+  getReviewsForCandidate() { return []; }
+  getReviewsForContext() { return []; }
 
   // --- Components ---
   upsertComponentIdentity(opts) { return this._componentStore.upsertComponentIdentity(opts); }
@@ -323,12 +318,12 @@ export class SpecDb {
   // --- Reverse-Lookup Queries (component/enum review) ---
 
   getProductsForComponent(t, n, m) { return this._itemStateStore.getProductsForComponent(t, n, m); }
-  getCandidatesForComponentProperty(t, n, m, fk) { return this._candidateStore.getCandidatesForComponentProperty(t, n, m, fk); }
+  getCandidatesForComponentProperty() { return []; }
   getProductsByListValueId(id) { return this._itemStateStore.getProductsByListValueId(id); }
   getProductsForListValue(fk, v) { return this._itemStateStore.getProductsForListValue(fk, v); }
   getProductsForFieldValue(fk, v) { return this._itemStateStore.getProductsForFieldValue(fk, v); }
-  getCandidatesByListValue(fk, id) { return this._candidateStore.getCandidatesByListValue(fk, id); }
-  getCandidatesForFieldValue(fk, v) { return this._candidateStore.getCandidatesForFieldValue(fk, v); }
+  getCandidatesByListValue() { return []; }
+  getCandidatesForFieldValue() { return []; }
   getItemFieldStateForProducts(pids, fks) { return this._itemStateStore.getItemFieldStateForProducts(pids, fks); }
   getDistinctItemFieldValues(fk) { return this._itemStateStore.getDistinctItemFieldValues(fk); }
 
@@ -667,13 +662,13 @@ export class SpecDb {
   insertKeyReviewRunSource(opts) { this._keyReviewStore.insertKeyReviewRunSource(opts); }
   insertKeyReviewAudit(opts) { this._keyReviewStore.insertKeyReviewAudit(opts); }
 
-  pruneOrphanCandidateReferences() { return this._keyReviewStore.pruneOrphanCandidateReferences(); }
+  pruneOrphanCandidateReferences() { return { pruned: 0 }; }
   getKeyReviewStateForComponentValue(cvId) { return this._keyReviewStore.getKeyReviewStateForComponentValue(cvId); }
   updateKeyReviewComponentIdentifier(oldId, newId) { this._keyReviewStore.updateKeyReviewComponentIdentifier(oldId, newId); }
 
   counts() {
     const tables = [
-      'candidates', 'candidate_reviews', 'component_values', 'component_identity',
+      'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
       'item_list_links', 'product_queue', 'product_runs', 'products',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',

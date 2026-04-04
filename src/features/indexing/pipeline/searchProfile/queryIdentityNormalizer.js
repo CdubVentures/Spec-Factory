@@ -4,6 +4,7 @@ export function clean(value) {
     .trim();
 }
 
+import { deriveFullModel } from '../../../catalog/identity/identityDedup.js';
 import { toArray, isObject } from '../../../../shared/primitives.js';
 export { toArray, isObject };
 
@@ -36,11 +37,15 @@ export function hasPathValue(target, segments = []) {
 
 export function resolveJobIdentity(job = {}) {
   const identityLock = isObject(job?.identityLock) ? job.identityLock : {};
+  const brand = clean(identityLock.brand || job?.brand || '');
+  const base_model = clean(identityLock.base_model || job?.base_model || '');
+  const variant = clean(identityLock.variant || job?.variant || '');
+  const rawModel = clean(identityLock.model || job?.model || '');
   return {
-    brand: clean(identityLock.brand || job?.brand || ''),
-    base_model: clean(identityLock.base_model || job?.base_model || ''),
-    model: clean(identityLock.model || job?.model || ''),
-    variant: clean(identityLock.variant || job?.variant || '')
+    brand,
+    base_model,
+    model: base_model ? clean(deriveFullModel(base_model, variant)) : rawModel,
+    variant
   };
 }
 
@@ -146,10 +151,12 @@ export function extractDigitGroups(value) {
 
 export function buildVariantGuardTerms(identity = {}) {
   const brand = clean(identity.brand || '').toLowerCase();
-  const model = clean(identity.base_model || identity.model || '').toLowerCase();
+  const baseModel = clean(identity.base_model || '').toLowerCase();
   const variant = clean(identity.variant || '').toLowerCase();
-  const product = clean([brand, model, variant].filter(Boolean).join(' '));
-  const modelVariant = clean([model, variant].filter(Boolean).join(' '));
+  const model = clean(baseModel || identity.model || '').toLowerCase();
+  const variantToken = baseModel ? variant : '';
+  const product = clean([brand, model, variantToken].filter(Boolean).join(' '));
+  const modelVariant = clean([model, variantToken].filter(Boolean).join(' '));
   const productCompact = compactToken(product);
   const brandCompact = compactToken(brand);
   const modelCompact = compactToken(modelVariant || model);
@@ -175,9 +182,10 @@ export function buildVariantGuardTerms(identity = {}) {
 }
 
 export function buildModelAliasCandidates(identity = {}) {
-  const model = clean(identity.model || '');
+  const baseModel = clean(identity.base_model || '');
+  const model = clean(baseModel || identity.model || '');
   const variant = clean(identity.variant || '');
-  const base = clean([model, variant].filter(Boolean).join(' '));
+  const base = clean([model, baseModel ? variant : ''].filter(Boolean).join(' '));
   if (!base) {
     return [];
   }

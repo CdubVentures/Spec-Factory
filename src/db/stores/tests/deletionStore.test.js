@@ -144,26 +144,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     last_executed_at: now, cooldown_until: '2026-05-01T00:00:00.000Z',
   });
 
-  // candidates
-  specDb.insertCandidate({
-    candidate_id: `cand_${runId}_weight`, category: cat, product_id: productId,
-    field_key: 'weight', value: '80g', normalized_value: '80',
-    score: 0.95, rank: 1, source_url: url, source_host: new URL(url).hostname,
-    source_root_domain: new URL(url).hostname, source_tier: 1,
-    source_method: 'llm_extract', approved_domain: true,
-    snippet_id: `sn_${contentHash.slice(0, 8)}`, snippet_hash: contentHash.slice(0, 16),
-    snippet_text: 'Weight: 80g', quote: 'Weight: 80g',
-    evidence_url: url, run_id: runId,
-  });
-
-  // candidate_reviews
-  specDb.upsertReview({
-    candidateId: `cand_${runId}_weight`,
-    contextType: 'item', contextId: productId,
-    aiReviewStatus: 'accepted', aiConfidence: 0.95,
-    aiReason: 'consistent', aiReviewModel: 'gemini-2.5-pro',
-  });
-
   // curation_suggestions (use run+url combo for uniqueness)
   specDb.db.prepare(`INSERT OR IGNORE INTO curation_suggestions (suggestion_id, category, suggestion_type, field_key, value, normalized_value, status, source, product_id, run_id, first_seen_at, last_seen_at)
     VALUES (?, ?, 'field', 'weight', '80g', '80', 'pending', 'pipeline', ?, ?, ?, ?)`).run(`sug_${runId}_${contentHash.slice(0, 6)}`, cat, productId, runId, now, now);
@@ -217,7 +197,7 @@ function seedRunFilesystem(fsRoots, { runId, productId, category, contentHash, u
   // Extracted sources (re-seed path via seed.js)
   const extractedDir = path.join(fsRoots.output, category, productId, 'runs', runId, 'extracted', `${new URL(url).hostname}__0000`);
   fs.mkdirSync(extractedDir, { recursive: true });
-  fs.writeFileSync(path.join(extractedDir, 'candidates.json'), '[{"field":"weight","value":"80g"}]');
+  fs.writeFileSync(path.join(extractedDir, 'extraction.json'), '[{"field":"weight","value":"80g"}]');
 }
 
 /** Create product.json checkpoint. */
@@ -271,8 +251,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
     assert.equal(countRows(h.specDb.db, 'query_index', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'url_index', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'prompt_index', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'candidate_reviews'), 0);
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'component_review_queue', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', "product_id = ?", [PID_A]), 0);
@@ -358,7 +336,6 @@ test('deleteRun — preserves other run data when two runs exist', () => {
     assert.equal(countRows(h.specDb.db, 'runs', 'run_id = ?', [RUN_2]), 1);
     assert.equal(countRows(h.specDb.db, 'product_runs', 'run_id = ?', [RUN_2]), 1);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_2]), 1);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'run_id = ?', [RUN_2]), 1);
     // RUN_2 filesystem intact
     assert.equal(fs.existsSync(path.join(h.fsRoots.runs, RUN_2)), true);
   } finally {
@@ -435,11 +412,9 @@ test('deleteUrl — removes URL-scoped SQL rows across all runs', () => {
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'canonical_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     // URL_2 rows intact
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'source_url = ? AND product_id = ?', [URL_2, PID_A]), 1);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'source_url = ? AND product_id = ?', [URL_2, PID_A]), 1);
   } finally {
     cleanup(h);
   }
@@ -565,8 +540,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'billing_entries', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'candidate_reviews'), 0);
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'component_review_queue', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
@@ -648,7 +621,6 @@ test('deleteProductHistory — does not affect other products', () => {
     assert.equal(countRows(h.specDb.db, 'runs', 'product_id = ?', [PID_B]), 1);
     assert.equal(countRows(h.specDb.db, 'product_runs', 'product_id = ?', [PID_B]), 1);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'product_id = ?', [PID_B]), 1);
-    assert.equal(countRows(h.specDb.db, 'candidates', 'product_id = ?', [PID_B]), 1);
     assert.equal(fs.existsSync(path.join(h.fsRoots.runs, RUN_2)), true);
   } finally {
     cleanup(h);

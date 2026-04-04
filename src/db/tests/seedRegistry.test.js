@@ -43,7 +43,7 @@ function makeStubReseedDeps() {
 
 function makeFakeCtx(overrides = {}) {
   return {
-    db: { pruneOrphanCandidateReferences: () => ({ pruned: 0 }) },
+    db: {},
     config: { categoryAuthorityRoot: 'category_authority' },
     category: 'mouse',
     fieldRules: { componentDBs: {} },
@@ -216,28 +216,8 @@ describe('buildCategorySurfaces', () => {
     });
   }
 
-  it('source_key_review.before calls ctx.db.pruneOrphanCandidateReferences', () => {
-    const { steps } = makeStubSteps();
-    const surfaces = buildCategorySurfaces(steps);
-    const entry = surfaces.find(s => s.key === 'source_key_review');
-    let called = false;
-    const ctx = makeFakeCtx({ db: { pruneOrphanCandidateReferences: () => { called = true; return { pruned: 0 }; } } });
-    entry.before(ctx);
-    assert.ok(called, 'pruneOrphanCandidateReferences was not called');
-  });
-
-  it('source_key_review.after calls ctx.db.pruneOrphanCandidateReferences', () => {
-    const { steps } = makeStubSteps();
-    const surfaces = buildCategorySurfaces(steps);
-    const entry = surfaces.find(s => s.key === 'source_key_review');
-    let called = false;
-    const ctx = makeFakeCtx({ db: { pruneOrphanCandidateReferences: () => { called = true; return { pruned: 0 }; } } });
-    entry.after(ctx);
-    assert.ok(called, 'pruneOrphanCandidateReferences was not called');
-  });
-
   // Table-driven: null hooks
-  const nullBeforeKeys = ['component_overrides', 'products', 'backfill_links'];
+  const nullBeforeKeys = ['component_overrides', 'products', 'backfill_links', 'source_key_review'];
   for (const key of nullBeforeKeys) {
     it(`${key}.before is null`, () => {
       const { steps } = makeStubSteps();
@@ -247,7 +227,7 @@ describe('buildCategorySurfaces', () => {
     });
   }
 
-  const nullAfterKeys = ['components', 'component_overrides', 'lists', 'products', 'backfill_links'];
+  const nullAfterKeys = ['components', 'component_overrides', 'lists', 'products', 'backfill_links', 'source_key_review'];
   for (const key of nullAfterKeys) {
     it(`${key}.after is null`, () => {
       const { steps } = makeStubSteps();

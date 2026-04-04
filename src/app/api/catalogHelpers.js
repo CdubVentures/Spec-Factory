@@ -34,9 +34,10 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
   for (const row of allProducts) {
     const pid = row.product_id;
     const brand = String(row.brand || '').trim();
-    const model = String(row.model || '').trim();
+    const base_model = String(row.base_model || '').trim();
     const variant = cleanVariant(row.variant);
-    if (!brand || !model) continue;
+    const model = String(row.model || '').trim() || [base_model, variant].filter(Boolean).join(' ').trim();
+    if (!brand || !base_model) continue;
     if (seen.has(pid)) continue;
 
     const summary = specDb.getSummaryForProduct?.(pid) || null;
@@ -50,7 +51,7 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
       brand,
       brand_identifier: String(row.brand_identifier || '').trim(),
       model,
-      base_model: String(row.base_model || '').trim(),
+      base_model,
       variant,
       status: qp.status || (summary ? 'complete' : 'pending'),
       hasFinal,
@@ -67,7 +68,7 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
   const rows = [...seen.values()];
   rows.sort((a, b) =>
     a.brand.localeCompare(b.brand) ||
-    a.model.localeCompare(b.model) ||
+    a.base_model.localeCompare(b.base_model) ||
     a.variant.localeCompare(b.variant)
   );
   return rows;

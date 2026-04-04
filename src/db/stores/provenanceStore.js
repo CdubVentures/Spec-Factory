@@ -1,4 +1,4 @@
-// WHY: Reconstructs the flat provenance shape from SQL (item_field_state + candidates),
+// WHY: Reconstructs the flat provenance shape from SQL (item_field_state),
 // replacing latest/provenance.json file reads. Shape builder is a pure function.
 
 /**

@@ -1,6 +1,3 @@
-import {
-  resolveCandidateConfidence,
-} from '../api/routeSharedHelpers.js';
 import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../contracts/componentReviewShapes.js';
 
 export function validateComponentPropertyCandidate({
@@ -46,12 +43,7 @@ export function applyComponentSharedAcceptLane({
   nowIso,
   candidateRow = null,
 }) {
-  const { confidence: sharedConfidence } = resolveCandidateConfidence({
-    specDb: runtimeSpecDb,
-    candidateId: selectedCandidateId,
-    candidateRow,
-    fallbackConfidence: 1.0,
-  });
+  const sharedConfidence = 1.0;
   return applySharedLaneState({
     specDb: runtimeSpecDb,
     category,

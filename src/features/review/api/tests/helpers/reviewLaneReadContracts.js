@@ -23,23 +23,7 @@ export async function runReviewLaneReadContracts(t, harness) {
       product_attributes: { sku: 'unk', dpi_max: '35500' },
     });
 
-    const syntheticBefore = db.db.prepare(
-      `SELECT COUNT(*) AS c
-       FROM candidates
-       WHERE category = ? AND candidate_id LIKE 'pl-cr_%'`
-    ).get(CATEGORY)?.c || 0;
     await apiJson(baseUrl, 'GET', `/review-components/${CATEGORY}/components?type=sensor`);
-
-    const syntheticRowsAfter = db.db.prepare(
-      `SELECT candidate_id, value
-       FROM candidates
-       WHERE category = ? AND candidate_id LIKE 'pl-cr_%'`
-    ).all(CATEGORY);
-    assert.equal(syntheticRowsAfter.length, syntheticBefore);
-    assert.equal(
-      syntheticRowsAfter.some((row) => String(row.value || '').trim().toLowerCase() === 'unk'),
-      false,
-    );
 
   });
 

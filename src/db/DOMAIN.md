@@ -8,7 +8,7 @@ SQLite persistence layer for all spec candidate, review, product, queue, billing
 
 Single entry point: `export class SpecDb` from `specDb.js`.
 
-All ~150 methods are callable on the `SpecDb` instance. The class is a **composition root** — it owns the database connection, compiles prepared statements once, and delegates to 9 domain stores.
+All ~140 methods are callable on the `SpecDb` instance. The class is a **composition root** — it owns the database connection, compiles prepared statements once, and delegates to domain stores.
 
 ## Architecture
 
@@ -21,7 +21,6 @@ specDbMigrations.js    — applyMigrations(db): ALTER TABLE migrations
 specDbIntegrity.js     — cleanupLegacyIdentityFallbackRows(db), assertStrictIdentitySlotIntegrity(db)
 
 stores/
-  candidateStore.js        — 11 methods: candidates + candidate_reviews tables
   itemStateStore.js        — 19 methods: item_field_state + item_component_links + item_list_links
   componentStore.js        — 17 methods: component_identity + component_aliases + component_values
   enumListStore.js         — 15 methods: enum_lists + list_values (cross-dep: key review store)

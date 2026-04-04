@@ -58,41 +58,28 @@ function simpleHash(text) {
 }
 
 export function sourceResultsToArtifacts(sourceResults, product, contractAnalysis) {
-  const candidatesByField = {};
+  const valuesByField = {};
 
   for (let sourceIndex = 0; sourceIndex < sourceResults.length; sourceIndex += 1) {
     const source = sourceResults[sourceIndex];
-    for (const candidate of source.fieldCandidates) {
-      if (!candidatesByField[candidate.field]) candidatesByField[candidate.field] = [];
+    for (const fieldCandidate of source.fieldCandidates) {
+      if (!valuesByField[fieldCandidate.field]) valuesByField[fieldCandidate.field] = [];
       const baseScore = source.tier === 1 ? 0.85 : source.tier === 2 ? 0.65 : 0.45;
-      const hashInput = `${product.productId}::${candidate.field}::s${sourceIndex}`;
+      const hashInput = `${product.productId}::${fieldCandidate.field}::s${sourceIndex}`;
       const hashOffset = (simpleHash(hashInput) % 15) / 100;
       const score = Math.round((baseScore + hashOffset) * 100) / 100;
-      candidatesByField[candidate.field].push({
-        candidate_id: `${product.productId}::${candidate.field}::s${sourceIndex}`,
-        value: candidate.value,
+      valuesByField[fieldCandidate.field].push({
+        value: fieldCandidate.value,
         score,
-        rank: candidatesByField[candidate.field].length,
-        source_url: source.url,
-        source_host: source.host,
-        source_root_domain: source.rootDomain,
         source_tier: source.tier,
-        source_method: candidate.method || 'html_table',
-        approved_domain: source.approvedDomain || false,
-        snippet_id: candidate.snippetId || null,
-        snippet_hash: candidate.snippetHash || null,
-        snippet_text: candidate.quote || null,
-        quote: candidate.quote || null,
-        evidence_url: source.url,
-        llm_extract_model: candidate.llm_extract_model || 'deterministic',
       });
     }
   }
 
   const fields = {};
   const provenance = {};
-  for (const [fieldKey, candidates] of Object.entries(candidatesByField)) {
-    const winner = [...candidates].sort((left, right) => {
+  for (const [fieldKey, entries] of Object.entries(valuesByField)) {
+    const winner = [...entries].sort((left, right) => {
       if (left.source_tier !== right.source_tier) return left.source_tier - right.source_tier;
       return right.score - left.score;
     })[0];
@@ -171,7 +158,7 @@ export function sourceResultsToArtifacts(sourceResults, product, contractAnalysi
       : {},
   };
 
-  return { candidates: candidatesByField, normalized, provenance, summary };
+  return { normalized, provenance, summary };
 }
 
 export function buildFieldRulesForSeed(contractAnalysis, seedComponentDBs) {
@@ -368,7 +355,6 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
           'latest',
         );
         await Promise.all([
-          writeJson(path.join(latestDir, 'candidates.json'), artifacts.candidates),
           writeJson(path.join(latestDir, 'normalized.json'), artifacts.normalized),
           writeJson(path.join(latestDir, 'provenance.json'), artifacts.provenance),
           writeJson(path.join(latestDir, 'summary.json'), artifacts.summary),
@@ -397,10 +383,6 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
     logger: null,
   });
 
-  const candidateGroupsByProduct = new Map(products.map((product) => [
-    product.productId,
-    db.getCandidatesForProduct(product.productId),
-  ]));
   const itemFieldStatesByProduct = new Map(products.map((product) => [
     product.productId,
     db.getItemFieldState(product.productId),
@@ -444,13 +426,9 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
     db,
     seedResult,
     reviewLayout,
-    candidateGroupsByProduct,
     itemFieldStatesByProduct,
     itemFieldStateByProductAndField,
     componentIdentityRowsByType,
-    getCandidateRowsForField(productId, fieldKey) {
-      return candidateGroupsByProduct.get(productId)?.[fieldKey] || [];
-    },
     getProductByScenarioId(scenarioId) {
       return productByScenarioId.get(scenarioId);
     },

@@ -13,7 +13,6 @@ const RETAINED_REVIEW_SCENARIOS = [
   'new_switch',
   'cross_validation',
   'min_evidence_refs',
-  'preserve_all_candidates',
 ];
 
 test('contract-driven seeded review contracts survive DB materialization and review payload building', async (t) => {
@@ -24,7 +23,6 @@ test('contract-driven seeded review contracts survive DB materialization and rev
     contractAnalysis,
     db,
     componentIdentityRowsByType,
-    candidateGroupsByProduct,
     getProductByScenarioName,
     getReviewPayload,
     getComponentReviewPayload,
@@ -86,15 +84,8 @@ test('contract-driven seeded review contracts survive DB materialization and rev
     );
   });
 
-  await t.test('candidate evidence and key-review rows are materialized into the seeded database', () => {
+  await t.test('key-review rows are materialized into the seeded database', () => {
     const counts = db.counts();
-    const happyPathProduct = getProductByScenarioName('happy_path');
-    const allCandidates = Object.values(candidateGroupsByProduct.get(happyPathProduct.productId) || {}).flat();
-    const candidateWithEvidence = allCandidates.find(
-      (candidate) => candidate.source_host && candidate.snippet_id && candidate.quote,
-    );
-
-    assert.ok(candidateWithEvidence, 'expected at least one candidate with source_host, snippet_id, and quote');
 
     const expectedKeyReviewCounts = [
       {
@@ -216,7 +207,6 @@ test('contract-driven seeded review contracts survive DB materialization and rev
     const metricProducts = [
       getProductByScenarioName('happy_path'),
       getProductByScenarioName('min_evidence_refs'),
-      getProductByScenarioName('preserve_all_candidates'),
     ].filter(Boolean);
     const payloadsByScenario = new Map(
       await Promise.all(
@@ -247,15 +237,12 @@ test('contract-driven seeded review contracts survive DB materialization and rev
 
   await t.test('scenario-specific review payload flags survive the seeded end-to-end flow', async () => {
     const minEvidenceProduct = getProductByScenarioName('min_evidence_refs');
-    const preserveProduct = getProductByScenarioName('preserve_all_candidates');
     const crossValidationProduct = getProductByScenarioName('cross_validation');
     const [
       minEvidencePayload,
-      preservePayload,
       crossValidationPayload,
     ] = await Promise.all([
       getReviewPayload(minEvidenceProduct.productId, { withSpecDb: true }),
-      getReviewPayload(preserveProduct.productId, { withSpecDb: true }),
       getReviewPayload(crossValidationProduct.productId),
     ]);
 
@@ -264,13 +251,6 @@ test('contract-driven seeded review contracts survive DB materialization and rev
     assert.ok(
       minEvidenceFlags.includes('below_min_evidence'),
       'min_evidence_refs should surface below_min_evidence',
-    );
-
-    const preserveFlags = Object.values(preservePayload.fields)
-      .flatMap((fieldState) => fieldState.reason_codes || []);
-    assert.ok(
-      preserveFlags.includes('conflict_policy_hold'),
-      'preserve_all_candidates should surface conflict_policy_hold',
     );
 
     const crossValidationReasonCodes = Object.fromEntries(

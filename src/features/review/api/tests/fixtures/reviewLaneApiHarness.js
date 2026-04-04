@@ -17,7 +17,6 @@ import {
   seedWorkbookMap,
   seedLatestArtifacts,
   buildFieldRulesForSeed,
-  replaceCandidateRow,
   findFreePort,
   waitForServerReady,
   apiJson,
@@ -58,35 +57,6 @@ const PRODUCTS = {
       sensor: { value: 'PAW3950', confidence: 0.98 },
       connection: { value: '2.4GHz', confidence: 0.98 },
     },
-    candidates: {
-      weight: [
-        { candidate_id: 'p1-weight-1', value: '49', score: 0.95, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
-        { candidate_id: 'shared-candidate', value: '49', score: 0.8, host: 'mirror.example', source_host: 'mirror.example', source_method: 'scrape', method: 'scrape', source_tier: 2, tier: 2 },
-        { candidate_id: 'same-field-dup', value: '49', score: 0.74, host: 'source-a.example', source_host: 'source-a.example', source_method: 'scrape', method: 'scrape', source_tier: 3, tier: 3 },
-        { candidate_id: 'same-field-dup', value: '49', score: 0.7, host: 'source-b.example', source_host: 'source-b.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-        { candidate_id: 'collision_primary_candidate', value: '49', score: 0.71, host: 'collision.example', source_host: 'collision.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-        { candidate_id: 'weight-unk-candidate', value: 'unk', score: 0.1, host: 'unknown.example', source_host: 'unknown.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-      ],
-      dpi: [
-        { candidate_id: 'p1-dpi-1', value: '35000', score: 0.97, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
-        { candidate_id: 'shared-candidate', value: '35000', score: 0.75, host: 'mirror.example', source_host: 'mirror.example', source_method: 'scrape', method: 'scrape', source_tier: 2, tier: 2 },
-      ],
-      sensor: [
-        { candidate_id: 'p1-sensor-1', value: 'PAW3950', score: 0.98, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
-        { candidate_id: 'global_sensor_candidate', value: 'PAW3950', score: 0.92, host: 'aggregate.example', source_host: 'aggregate.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
-      ],
-      connection: [
-        { candidate_id: 'p1-conn-1', value: '2.4GHz', score: 0.98, host: 'razer.com', source_host: 'razer.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
-        { candidate_id: 'p1-conn-2', value: 'Wireless', score: 0.65, host: 'forum.example', source_host: 'forum.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-        { candidate_id: 'global_connection_candidate', value: '2.4GHz', score: 0.9, host: 'aggregate.example', source_host: 'aggregate.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
-      ],
-      dpi_max: [
-        { candidate_id: 'cmp_dpi_35000', value: '35000', score: 0.9, host: 'pixart.com', source_host: 'pixart.com', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 },
-        { candidate_id: 'cmp_dpi_25000', value: '25000', score: 0.82, host: 'mirror.example', source_host: 'mirror.example', source_method: 'llm', method: 'llm', source_tier: 2, tier: 2 },
-        { candidate_id: 'collision_shared_candidate', value: '35000', score: 0.79, host: 'collision.example', source_host: 'collision.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-        { candidate_id: 'cmp_dpi_unknown', value: 'unk', score: 0.1, host: 'unknown.example', source_host: 'unknown.example', source_method: 'llm', method: 'llm', source_tier: 3, tier: 3 },
-      ],
-    },
   },
   [PRODUCT_B]: {
     identity: { brand: 'Pulsar', model: 'X2 V3' },
@@ -96,12 +66,6 @@ const PRODUCTS = {
       dpi: { value: '26000', confidence: 0.95 },
       sensor: { value: 'PAW3950', confidence: 0.96 },
       connection: { value: '2.4GHz', confidence: 0.96 },
-    },
-    candidates: {
-      weight: [{ candidate_id: 'p2-weight-1', value: '52', score: 0.93, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      dpi: [{ candidate_id: 'p2-dpi-1', value: '26000', score: 0.95, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      sensor: [{ candidate_id: 'p2-sensor-1', value: 'PAW3950', score: 0.96, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
-      connection: [{ candidate_id: 'p2-conn-1', value: '2.4GHz', score: 0.96, host: 'pulsar.gg', source_host: 'pulsar.gg', source_method: 'dom', method: 'dom', source_tier: 1, tier: 1 }],
     },
   },
 };
@@ -168,82 +132,6 @@ function seedComponentReviewSuggestions(db, category) {
   for (const item of items) {
     db.upsertComponentReviewItem(item);
   }
-}
-
-function seedStrictLaneCandidates(db, category) {
-  replaceCandidateRow(db, {
-    candidateId: 'collision_primary_candidate',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'weight',
-    value: '49',
-    score: 0.71,
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'weight-unk-candidate',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'weight',
-    value: 'unk',
-    score: 0.1,
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'global_sensor_candidate',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'sensor',
-    value: 'PAW3950',
-    score: 0.92,
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'global_connection_candidate',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'connection',
-    value: '2.4GHz',
-    score: 0.9,
-    isListField: true,
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'cmp_dpi_35000',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'dpi_max',
-    value: '35000',
-    score: 0.9,
-    isComponentField: true,
-    componentType: 'sensor',
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'cmp_dpi_25000',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'dpi_max',
-    value: '25000',
-    score: 0.82,
-    isComponentField: true,
-    componentType: 'sensor',
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'collision_shared_candidate',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'dpi_max',
-    value: '35000',
-    score: 0.79,
-    isComponentField: true,
-    componentType: 'sensor',
-  });
-  replaceCandidateRow(db, {
-    candidateId: 'cmp_dpi_unknown',
-    category,
-    productId: PRODUCT_A,
-    fieldKey: 'dpi_max',
-    value: 'unk',
-    score: 0.1,
-    isComponentField: true,
-    componentType: 'sensor',
-  });
 }
 
 function seedKeyReviewState(db, componentIdentifier) {
@@ -367,8 +255,11 @@ async function seedReviewLaneApiWorkspace(workspaceRoot) {
       fieldRules: buildFieldRulesForSeed(),
       logger: null,
     });
+    // WHY: fieldReviewHandlers checks products table for product existence
+    for (const productId of Object.keys(PRODUCTS)) {
+      db.upsertProduct({ category: CATEGORY, product_id: productId, brand: '', model: productId });
+    }
     seedComponentReviewSuggestions(db, CATEGORY);
-    seedStrictLaneCandidates(db, CATEGORY);
     seedKeyReviewState(db, componentIdentifier);
   } finally {
     db.close();

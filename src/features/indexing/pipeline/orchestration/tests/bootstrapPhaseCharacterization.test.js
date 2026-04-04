@@ -138,12 +138,14 @@ describe('bootstrapPhase.execute return contract', () => {
     assert.equal(result.categoryConfig.approvedRootDomains.has('razer.com'), true);
     assert.deepEqual(result.variables, {
       brand: 'Razer',
+      base_model: 'Viper V3',
       model: 'Viper V3',
       variant: 'Pro',
       category: 'mouse',
     });
     assert.deepEqual(result.identityLock, {
       brand: 'Razer',
+      base_model: 'Viper V3',
       model: 'Viper V3',
       variant: 'Pro',
       brand_identifier: '',
@@ -215,6 +217,7 @@ describe('bootstrapPhase.execute return contract', () => {
     assert.deepEqual(result.categoryConfig.sourceHosts, []);
     assert.deepEqual(result.variables, {
       brand: 'Razer',
+      base_model: 'Viper V3',
       model: 'Viper V3',
       variant: '',
       category: 'mouse',

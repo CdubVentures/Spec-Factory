@@ -103,7 +103,7 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
         category,
         productId: singleProductId,
         brand: selectedBrand,
-        model: selectedModel,
+        base_model: selectedModel,
         variant: selectedVariant,
         runtimeSettingsPayload: currentSettings,
         parsedValues,

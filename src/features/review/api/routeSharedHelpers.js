@@ -11,26 +11,6 @@ export function firstFiniteNumber(values, fallback = null) {
   return fallback;
 }
 
-export function resolveCandidateConfidence({
-  specDb,
-  candidateId = null,
-  candidateRow = null,
-  fallbackConfidence = 1.0,
-} = {}) {
-  const normalizedCandidateId = String(candidateId || '').trim() || null;
-  const resolvedCandidateRow = candidateRow
-    || ((normalizedCandidateId && specDb) ? specDb.getCandidateById(normalizedCandidateId) : null);
-  const confidence = firstFiniteNumber([
-    resolvedCandidateRow?.score,
-    fallbackConfidence,
-  ], 1.0);
-  return {
-    candidateId: normalizedCandidateId,
-    candidateRow: resolvedCandidateRow,
-    confidence,
-  };
-}
-
 export function createRouteResponder(jsonRes, res) {
   return (status, payload) => {
     const response = jsonRes(res, status, payload);

@@ -29,7 +29,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     category,
     productId,
     brand,
-    model: modelName,
+    base_model: baseModelName,
     variant,
     sku,
     seedUrls,
@@ -84,7 +84,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     cliArgs.push('--seed', String(seed).trim());
   }
   if (brand) cliArgs.push('--brand', String(brand).trim());
-  if (modelName) cliArgs.push('--model', String(modelName).trim());
+  if (baseModelName) cliArgs.push('--model', String(baseModelName).trim());
   if (variant) cliArgs.push('--variant', String(variant).trim());
   if (sku) cliArgs.push('--sku', String(sku).trim());
 

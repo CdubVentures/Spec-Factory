@@ -4,57 +4,6 @@
  */
 
 export const SCHEMA = `
-CREATE TABLE IF NOT EXISTS candidates (
-  candidate_id TEXT PRIMARY KEY,
-  category TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  field_key TEXT NOT NULL,
-  value TEXT,
-  normalized_value TEXT,
-  score REAL DEFAULT 0,
-  rank INTEGER,
-  source_url TEXT,
-  source_host TEXT,
-  source_root_domain TEXT,
-  source_tier INTEGER,
-  source_method TEXT,
-  approved_domain INTEGER DEFAULT 0,
-  snippet_id TEXT,
-  snippet_hash TEXT,
-  snippet_text TEXT,
-  quote TEXT,
-  quote_span_start INTEGER,
-  quote_span_end INTEGER,
-  evidence_url TEXT,
-  evidence_retrieved_at TEXT,
-  is_component_field INTEGER DEFAULT 0,
-  component_type TEXT,
-  is_list_field INTEGER DEFAULT 0,
-  llm_extract_model TEXT,
-  extracted_at TEXT NOT NULL DEFAULT (datetime('now')),
-  run_id TEXT
-);
-
-CREATE TABLE IF NOT EXISTS candidate_reviews (
-  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  candidate_id TEXT NOT NULL REFERENCES candidates(candidate_id),
-  context_type TEXT NOT NULL CHECK(context_type IN ('item', 'component', 'list')),
-  context_id TEXT NOT NULL,
-  human_accepted INTEGER DEFAULT 0,
-  human_accepted_at TEXT,
-  ai_review_status TEXT DEFAULT 'not_run'
-    CHECK(ai_review_status IN ('not_run', 'pending', 'accepted', 'rejected', 'unknown')),
-  ai_confidence REAL,
-  ai_reason TEXT,
-  ai_reviewed_at TEXT,
-  ai_review_model TEXT,
-  human_override_ai INTEGER DEFAULT 0,
-  human_override_ai_at TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(candidate_id, context_type, context_id)
-);
-
 CREATE TABLE IF NOT EXISTS component_values (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -183,11 +132,6 @@ CREATE TABLE IF NOT EXISTS item_list_links (
   UNIQUE(category, product_id, field_key, list_value_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_cand_product_field ON candidates(product_id, field_key);
-CREATE INDEX IF NOT EXISTS idx_cand_field_value ON candidates(field_key, normalized_value);
-CREATE INDEX IF NOT EXISTS idx_cand_component ON candidates(component_type) WHERE component_type IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_rev_context ON candidate_reviews(context_type, context_id);
-CREATE INDEX IF NOT EXISTS idx_rev_candidate ON candidate_reviews(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_cv_type_name ON component_values(component_type, component_name);
 CREATE INDEX IF NOT EXISTS idx_ca_alias ON component_aliases(alias);
 CREATE INDEX IF NOT EXISTS idx_el_field ON enum_lists(category, field_key);
@@ -787,8 +731,6 @@ export const LLM_ROUTE_BOOLEAN_KEYS = LLM_ROUTE_COLUMN_REGISTRY
 
 // WHY: Per-table boolean key lists — SSOT for which columns are boolean.
 // Used by hydrateRow/hydrateRows in specDbHelpers.js to convert 0/1 → true/false on read.
-export const CANDIDATE_BOOLEAN_KEYS = Object.freeze(['approved_domain', 'is_component_field', 'is_list_field']);
-export const CANDIDATE_REVIEW_BOOLEAN_KEYS = Object.freeze(['human_accepted', 'human_override_ai']);
 export const COMPONENT_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
 export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
 export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs_ai_review', 'ai_review_complete']);

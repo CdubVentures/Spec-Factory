@@ -41,21 +41,13 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     return db.prepare(`DELETE FROM key_review_state WHERE id IN (${placeholders})`).run(...ids).changes;
   }
 
-  function deleteCandidatesByProduct(category, productId) {
-    const cat = String(category || '').trim();
-    const pid = String(productId || '').trim();
-    if (!cat || !pid) return 0;
-    db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE category = ? AND product_id = ?)`).run(cat, pid);
-    return db.prepare('DELETE FROM candidates WHERE category = ? AND product_id = ?').run(cat, pid).changes;
-  }
-
   function purgeCategoryState(category) {
     const cat = String(category || '').trim();
     if (!cat || !cat.startsWith('_test_')) {
       return { clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0, clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0, clearedCatalogState: 0, clearedArtifacts: 0 };
     }
 
-    let clearedKeyReview = 0, clearedSources = 0, clearedCandidates = 0, clearedFieldState = 0;
+    let clearedKeyReview = 0, clearedSources = 0, clearedFieldState = 0;
     let clearedComponentData = 0, clearedEnumData = 0, clearedCatalogState = 0, clearedArtifacts = 0;
 
     const tx = db.transaction(() => {
@@ -69,11 +61,9 @@ export function createPurgeStore({ db, category: defaultCategory }) {
         clearedKeyReview = db.prepare(`DELETE FROM key_review_state WHERE id IN (${ph})`).run(...keyReviewIds).changes;
       }
 
-      // Candidates
-      db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE category = ?)`).run(cat);
+      // Field state
       db.prepare('DELETE FROM item_list_links WHERE category = ?').run(cat);
       db.prepare('DELETE FROM item_component_links WHERE category = ?').run(cat);
-      clearedCandidates = db.prepare('DELETE FROM candidates WHERE category = ?').run(cat).changes;
       clearedFieldState = db.prepare('DELETE FROM item_field_state WHERE category = ?').run(cat).changes;
 
       // Components
@@ -100,7 +90,7 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     });
     tx();
 
-    return { clearedKeyReview, clearedSources, clearedCandidates, clearedFieldState, clearedComponentData, clearedEnumData, clearedCatalogState, clearedArtifacts };
+    return { clearedKeyReview, clearedSources, clearedCandidates: 0, clearedFieldState, clearedComponentData, clearedEnumData, clearedCatalogState, clearedArtifacts };
   }
 
   function purgeProductReviewState(category, productId) {
@@ -111,19 +101,16 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     }
 
     const clearedKeyReview = deleteKeyReviewStatesByProductAndKind(cat, pid, 'grid_key');
-    let deletedCandidates = 0, deletedFieldState = 0, deletedLinks = 0, deletedSources = 0;
+    let deletedFieldState = 0, deletedLinks = 0, deletedSources = 0;
 
     const tx = db.transaction(() => {
-      const itemFieldStateIds = db.prepare('SELECT id FROM item_field_state WHERE category = ? AND product_id = ?').all(cat, pid).map((r) => r.id);
-      deletedCandidates = deleteCandidatesByProduct(cat, pid);
-
       deletedLinks = db.prepare('DELETE FROM item_list_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;
       deletedLinks += db.prepare('DELETE FROM item_component_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;
       deletedFieldState = db.prepare('DELETE FROM item_field_state WHERE category = ? AND product_id = ?').run(cat, pid).changes;
     });
     tx();
 
-    return { clearedCandidates: deletedCandidates, clearedKeyReview, clearedFieldState: deletedFieldState, clearedLinks: deletedLinks, clearedSources: deletedSources };
+    return { clearedCandidates: 0, clearedKeyReview, clearedFieldState: deletedFieldState, clearedLinks: deletedLinks, clearedSources: deletedSources };
   }
 
   return {

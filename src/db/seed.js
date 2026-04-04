@@ -7,17 +7,15 @@
  * Seed order respects FK dependencies:
  *   1. component_identity + component_aliases + component_values
  *   2. list_values
- *   3-7. Per-product: candidates, item_field_state, item_component_links, item_list_links, candidate_reviews
+ *   3-6. Per-product: item_field_state, item_component_links, item_list_links
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildComponentIdentifier } from '../utils/componentIdentifier.js';
-import { buildScopedItemCandidateId } from '../utils/candidateIdentifier.js';
 import {
   isKnownSlotValue,
   normalizeSlotValueForShape,
-  slotValueComparableToken,
   slotValueToText,
 } from '../utils/slotValueShape.js';
 import { projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
@@ -349,42 +347,6 @@ async function reconcileListSeedRows(db, fieldRules, config, category) {
   return { removed_list_value_rows: stale.length };
 }
 
-function toScopedCandidateId({
-  productId,
-  rawCandidateId,
-  fieldKey,
-  value = '',
-  sourceHost = '',
-  sourceMethod = '',
-  index = 0,
-  runId = '',
-}) {
-  return buildScopedItemCandidateId({
-    productId,
-    fieldKey,
-    rawCandidateId,
-    value,
-    sourceHost,
-    sourceMethod,
-    index,
-    runId,
-  });
-}
-
-function reserveCandidateId(usedIds, candidateIdBase) {
-  let next = String(candidateIdBase || '').trim();
-  if (!next) return next;
-  if (!usedIds.has(next)) {
-    usedIds.add(next);
-    return next;
-  }
-  let ordinal = 1;
-  while (usedIds.has(`${next}::dup_${ordinal}`)) ordinal += 1;
-  next = `${next}::dup_${ordinal}`;
-  usedIds.add(next);
-  return next;
-}
-
 // ── Field metadata lookup ────────────────────────────────────────────────────
 
 function buildFieldMeta(fieldRules) {
@@ -617,45 +579,6 @@ export function reEvaluateEnumPolicy(db, fieldKey, newPolicy, knownNormalizedVal
   }
 }
 
-// ── Per-source candidate collector ───────────────────────────────────────────
-
-/**
- * Reads candidate arrays from runs/{runId}/extracted/{source}/candidates.json.
- * Returns a flat array of candidates with _source_host, _source_url metadata.
- */
-async function collectPerSourceCandidates(outputRoot, productId, runId) {
-  if (!runId) return [];
-  const extractedDir = path.join(outputRoot, productId, 'runs', runId, 'extracted');
-  let sourceDirs;
-  try {
-    sourceDirs = await fs.readdir(extractedDir, { withFileTypes: true });
-  } catch { return []; }
-
-  const all = [];
-  for (const sd of sourceDirs) {
-    if (!sd.isDirectory()) continue;
-    const candPath = path.join(extractedDir, sd.name, 'candidates.json');
-    const data = await readJsonIfExists(candPath);
-    if (!Array.isArray(data) || data.length === 0) continue;
-
-    // Extract source host from directory name (e.g. "razer.com__0000" → "razer.com")
-    const sourceHost = sd.name.replace(/__\d+$/, '');
-    const sourceUrl = `https://${sourceHost}`;
-
-    for (let i = 0; i < data.length; i++) {
-      const c = data[i];
-      if (!isObject(c) || !c.field || c.value == null) continue;
-      all.push({
-        ...c,
-        _source_host: sourceHost,
-        _source_url: sourceUrl,
-        _rank: i
-      });
-    }
-  }
-  return all;
-}
-
 // ── Steps 3-7: Per-product seeding ───────────────────────────────────────────
 
 async function seedProducts(db, config, category, fieldRules, fieldMeta) {
@@ -697,8 +620,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
     try {
       // WHY: Overlap 0d — per-product-level fallback: consolidated first, then per-product file
       const overridesFromConsolidated = consolidatedProducts[productId] || null;
-      const [candidates, normalized, provenance, overrides] = await Promise.all([
-        readJsonIfExists(path.join(latestDir, 'candidates.json')),
+      const [normalized, provenance, overrides] = await Promise.all([
         readJsonIfExists(path.join(latestDir, 'normalized.json')),
         readJsonIfExists(path.join(latestDir, 'provenance.json')),
         overridesFromConsolidated
@@ -708,171 +630,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
 
       if (!normalized) continue;
 
-      // Per-source fallback is only needed when merged latest/candidates.json is absent/empty.
-      // Inserting both merged + per-source rows inflates candidate counts for review slots.
-      const hasMergedCandidates = isObject(candidates)
-        && Object.values(candidates).some((fieldCandidates) => (
-          Array.isArray(fieldCandidates) && fieldCandidates.length > 0
-        ));
-      const perSourceCandidates = hasMergedCandidates
-        ? []
-        : await collectPerSourceCandidates(outputRoot, productId, normalized.runId);
-      const usedCandidateIds = new Set();
-      const bestCandidateByField = new Map();
-      const bestCandidateByFieldValue = new Map();
-      const candidateCountByField = new Map();
-
-      const registerCandidateSelection = ({ fieldKey, candidateId, value, score }) => {
-        const key = String(fieldKey || '').trim();
-        const id = String(candidateId || '').trim();
-        if (!key || !id) return;
-        const scoreNum = Number(score);
-        const normalizedScore = Number.isFinite(scoreNum) ? scoreNum : 0;
-        candidateCountByField.set(key, Number(candidateCountByField.get(key) || 0) + 1);
-
-        const priorField = bestCandidateByField.get(key);
-        if (!priorField || normalizedScore > priorField.score) {
-          bestCandidateByField.set(key, { candidateId: id, score: normalizedScore });
-        }
-
-        const shape = fieldMeta[key]?.shape || 'scalar';
-        const valueToken = slotValueComparableToken(value, shape);
-        if (!valueToken || valueToken === 'unk' || valueToken === 'unknown' || valueToken === 'n/a' || valueToken === 'null') return;
-        const valueMapKey = `${key}::${valueToken}`;
-        const priorValue = bestCandidateByFieldValue.get(valueMapKey);
-        if (!priorValue || normalizedScore > priorValue.score) {
-          bestCandidateByFieldValue.set(valueMapKey, { candidateId: id, score: normalizedScore });
-        }
-      };
-
       const tx = db.db.transaction(() => {
-        // Step 3a: Insert candidates from latest/candidates.json (merged format: {fieldKey: [...]})
-        if (isObject(candidates)) {
-          for (const [fieldKey, fieldCandidates] of Object.entries(candidates)) {
-            if (!Array.isArray(fieldCandidates)) continue;
-            const fm = fieldMeta[fieldKey] || {};
-            const shape = fm.shape || 'scalar';
-            for (let i = 0; i < fieldCandidates.length; i++) {
-              const c = fieldCandidates[i];
-              if (!isObject(c)) continue;
-              const normalizedCandidateValue = normalizeSlotValueForShape(c.value ?? null, shape).value;
-              if (!isKnownSlotValue(normalizedCandidateValue, shape)) continue;
-              const candidateTextValue = slotValueToText(normalizedCandidateValue, shape);
-              if (!candidateTextValue || !isKnownToken(candidateTextValue)) continue;
-              const baseCandidateId = toScopedCandidateId({
-                productId,
-                rawCandidateId: c.candidate_id || c.id,
-                fieldKey,
-                value: candidateTextValue,
-                sourceHost: c.source_host ?? c.host ?? c.evidence?.host ?? '',
-                sourceMethod: c.source_method ?? c.method ?? c.evidence?.method ?? '',
-                index: i,
-                runId: c.run_id ?? normalized.runId ?? '',
-              });
-              const candidateId = reserveCandidateId(usedCandidateIds, baseCandidateId);
-              db.insertCandidate({
-                candidate_id: candidateId,
-                category,
-                product_id: productId,
-                field_key: fieldKey,
-                value: candidateTextValue,
-                normalized_value: isKnownToken(c.normalized_value)
-                  ? String(c.normalized_value).trim()
-                  : normalizeToken(candidateTextValue),
-                score: c.score ?? c.confidence ?? 0,
-                rank: c.rank ?? i,
-                source_url: c.source_url ?? c.url ?? c.evidence?.url ?? null,
-                source_host: c.source_host ?? c.host ?? c.evidence?.host ?? null,
-                source_root_domain: c.source_root_domain ?? c.rootDomain ?? c.evidence?.rootDomain ?? null,
-                source_tier: c.source_tier ?? c.tier ?? c.evidence?.tier ?? null,
-                source_method: c.source_method ?? c.method ?? c.evidence?.method ?? null,
-                approved_domain: c.approved_domain ?? c.approvedDomain ?? c.evidence?.approvedDomain ?? false,
-                snippet_id: c.snippet_id ?? null,
-                snippet_hash: c.snippet_hash ?? null,
-                snippet_text: c.snippet_text ?? null,
-                quote: c.quote ?? c.evidence?.quote ?? null,
-                quote_span_start: c.quote_span?.[0] ?? null,
-                quote_span_end: c.quote_span?.[1] ?? null,
-                evidence_url: c.evidence_url ?? c.evidence?.url ?? null,
-                evidence_retrieved_at: c.evidence_retrieved_at ?? c.evidence?.retrieved_at ?? null,
-                is_component_field: fm.is_component_field || false,
-                component_type: fm.component_type ?? null,
-                is_list_field: fm.is_list_field || false,
-                llm_extract_model: c.llm_extract_model ?? c.model ?? null,
-                extracted_at: c.extracted_at || new Date().toISOString(),
-                run_id: c.run_id ?? normalized.runId ?? null
-              });
-              registerCandidateSelection({
-                fieldKey,
-                candidateId,
-                value: candidateTextValue,
-                score: c.score ?? c.confidence ?? 0,
-              });
-            }
-          }
-        }
-
-        // Step 3b: Insert per-source candidates from runs/*/extracted/*/candidates.json
-        // These are flat arrays: [{field, value, method, keyPath, ...}, ...]
-        for (const psc of perSourceCandidates) {
-          const fieldKey = normalizeToken(psc.field);
-          if (!fieldKey) continue;
-          const fm = fieldMeta[fieldKey] || {};
-          const shape = fm.shape || 'scalar';
-          const normalizedCandidateValue = normalizeSlotValueForShape(psc.value ?? null, shape).value;
-          if (!isKnownSlotValue(normalizedCandidateValue, shape)) continue;
-          const candidateTextValue = slotValueToText(normalizedCandidateValue, shape);
-          if (!candidateTextValue || !isKnownToken(candidateTextValue)) continue;
-          const sourceHost = psc._source_host || '';
-          const baseCandidateId = toScopedCandidateId({
-            productId,
-            rawCandidateId: psc.candidate_id || psc.id || '',
-            fieldKey,
-            value: candidateTextValue,
-            sourceHost,
-            sourceMethod: psc.method || 'unk',
-            index: psc._rank ?? 0,
-            runId: normalized.runId ?? '',
-          });
-          const candidateId = reserveCandidateId(usedCandidateIds, baseCandidateId);
-          db.insertCandidate({
-            candidate_id: candidateId,
-            category,
-            product_id: productId,
-            field_key: fieldKey,
-            value: candidateTextValue,
-            normalized_value: normalizeToken(candidateTextValue),
-            score: psc.score ?? psc.confidence ?? 0.5,
-            rank: psc._rank ?? 0,
-            source_url: psc._source_url || null,
-            source_host: sourceHost,
-            source_root_domain: sourceHost.split('.').slice(-2).join('.') || null,
-            source_tier: psc.tier ?? null,
-            source_method: psc.method || null,
-            approved_domain: false,
-            snippet_id: null,
-            snippet_hash: null,
-            snippet_text: null,
-            quote: psc.keyPath ? `Extracted from ${psc.method}:${psc.keyPath}` : null,
-            quote_span_start: null,
-            quote_span_end: null,
-            evidence_url: psc._source_url || null,
-            evidence_retrieved_at: null,
-            is_component_field: fm.is_component_field || false,
-            component_type: fm.component_type ?? null,
-            is_list_field: fm.is_list_field || false,
-            llm_extract_model: psc.model ?? null,
-            extracted_at: new Date().toISOString(),
-            run_id: normalized.runId ?? null
-          });
-          registerCandidateSelection({
-            fieldKey,
-            candidateId,
-            value: candidateTextValue,
-            score: psc.score ?? psc.confidence ?? 0.5,
-          });
-        }
-
         // Step 4: Insert item_field_state from normalized + provenance + overrides
         const fields = isObject(normalized.fields) ? normalized.fields : {};
         const overrideMap = isObject(overrides?.overrides) ? overrides.overrides : {};
@@ -889,28 +647,6 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
           const hasKnownSlot = isKnownSlotValue(normalizedSlotValue, shape);
           const confidence = isOverridden ? 1.0 : (prov?.confidence ?? 0);
           const source = isOverridden ? 'override' : 'pipeline';
-          let candidateId = isOverridden
-            ? toScopedCandidateId({
-              productId,
-              rawCandidateId: ovr.candidate_id ?? null,
-              fieldKey,
-              value: valueText ?? '',
-              sourceHost: ovr.source?.host ?? '',
-              sourceMethod: ovr.source?.method ?? ovr.override_source ?? '',
-              index: 0,
-            })
-            : null;
-          if (!isOverridden && hasKnownSlot && valueText) {
-            const valueToken = slotValueComparableToken(valueText, shape);
-            const exactMatch = valueToken
-              ? bestCandidateByFieldValue.get(`${fieldKey}::${valueToken}`)
-              : null;
-            if (exactMatch?.candidateId) {
-              candidateId = exactMatch.candidateId;
-            } else if (Number(candidateCountByField.get(fieldKey) || 0) === 1) {
-              candidateId = bestCandidateByField.get(fieldKey)?.candidateId || null;
-            }
-          }
 
           const knownValue = hasKnownSlot;
           db.upsertItemFieldState({
@@ -919,7 +655,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
             value: valueText ?? null,
             confidence,
             source,
-            acceptedCandidateId: candidateId,
+            acceptedCandidateId: null,
             overridden: isOverridden,
             needsAiReview: !isOverridden && knownValue && confidence < 0.8,
             aiReviewComplete: false,
@@ -1009,79 +745,6 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
           }
         }
 
-        // Step 7: Insert candidate_reviews from override files
-        if (isObject(overrideMap)) {
-          for (const [fieldKey, ovr] of Object.entries(overrideMap)) {
-            if (!isObject(ovr)) continue;
-            if (!ovr.candidate_id) continue;
-            const shape = fieldMeta[fieldKey]?.shape || 'scalar';
-            const normalizedOverrideValue = normalizeSlotValueForShape(
-              ovr.value ?? ovr.override_value ?? null,
-              shape
-            ).value;
-            const overrideValueText = slotValueToText(normalizedOverrideValue, shape);
-            const candidateId = toScopedCandidateId({
-              productId,
-              rawCandidateId: ovr.candidate_id,
-              fieldKey,
-              value: overrideValueText ?? '',
-              sourceHost: ovr.source?.host ?? '',
-              sourceMethod: ovr.source?.method ?? ovr.override_source ?? '',
-              index: 0,
-            });
-
-            // Ensure a candidate row exists for this override
-            const existingCandidate = db.getCandidateById(candidateId);
-            if (!existingCandidate) {
-              const fm = fieldMeta[fieldKey] || {};
-              db.insertCandidate({
-                candidate_id: candidateId,
-                category,
-                product_id: productId,
-                field_key: fieldKey,
-                value: overrideValueText ?? null,
-                normalized_value: isKnownToken(overrideValueText)
-                  ? normalizeToken(overrideValueText)
-                  : null,
-                score: 1.0,
-                rank: 0,
-                source_url: ovr.override_provenance?.url ?? ovr.source?.evidence_key ?? null,
-                source_host: ovr.source?.host ?? null,
-                source_method: ovr.source?.method ?? ovr.override_source ?? null,
-                source_tier: ovr.source?.tier ?? null,
-                approved_domain: false,
-                snippet_id: ovr.override_provenance?.snippet_id ?? null,
-                snippet_hash: ovr.override_provenance?.snippet_hash ?? null,
-                quote: ovr.override_provenance?.quote ?? null,
-                evidence_url: ovr.override_provenance?.url ?? null,
-                evidence_retrieved_at: ovr.override_provenance?.retrieved_at ?? null,
-                is_component_field: fm.is_component_field || false,
-                component_type: fm.component_type ?? null,
-                is_list_field: fm.is_list_field || false,
-                extracted_at: ovr.set_at || ovr.overridden_at || new Date().toISOString(),
-                run_id: null
-              });
-            }
-
-            // WHY: Pass through AI review fields from override file so AI review
-            // state survives DB rebuild. Old files without ai_review default to not_run.
-            const aiReview = ovr.ai_review || {};
-            db.upsertReview({
-              candidateId,
-              contextType: 'item',
-              contextId: productId,
-              humanAccepted: true,
-              humanAcceptedAt: ovr.overridden_at || ovr.set_at || null,
-              aiReviewStatus: aiReview.ai_review_status || 'not_run',
-              aiConfidence: aiReview.ai_confidence ?? null,
-              aiReason: aiReview.ai_reason ?? null,
-              aiReviewedAt: aiReview.ai_reviewed_at ?? null,
-              aiReviewModel: aiReview.ai_review_model ?? null,
-              humanOverrideAi: Boolean(aiReview.human_override_ai),
-              humanOverrideAiAt: aiReview.human_override_ai_at ?? null,
-            });
-          }
-        }
       });
       tx();
 
@@ -1231,16 +894,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
       'SELECT * FROM item_field_state WHERE category = ?'
     ).all(db.category);
 
-    // Pre-load candidate_reviews for shared lane mapping
-    const allReviews = db.db.prepare(
-      'SELECT * FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE category = ?)'
-    ).all(db.category);
-    const reviewByCandidate = new Map();
-    for (const r of allReviews) {
-      if (!reviewByCandidate.has(r.candidate_id)) reviewByCandidate.set(r.candidate_id, []);
-      reviewByCandidate.get(r.candidate_id).push(r);
-    }
-
     // Pre-load llm_route_matrix for contract snapshots
     const routes = db.db.prepare(
       'SELECT * FROM llm_route_matrix WHERE category = ?'
@@ -1261,28 +914,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
 
       let userAcceptPrimaryStatus = null;
       if (ifs.overridden) userAcceptPrimaryStatus = 'accepted';
-
-      // Check candidate_reviews for shared lane
-      let aiConfirmSharedStatus = null;
-      let aiConfirmSharedConfidence = null;
-      let aiConfirmSharedAt = null;
-      let userAcceptSharedStatus = null;
-      let userOverrideAiShared = 0;
-
-      if (ifs.accepted_candidate_id) {
-        const reviews = reviewByCandidate.get(ifs.accepted_candidate_id) || [];
-        for (const rev of reviews) {
-          if (rev.context_type === 'component' || rev.context_type === 'list') {
-            if (rev.ai_review_status === 'accepted') aiConfirmSharedStatus = 'confirmed';
-            else if (rev.ai_review_status === 'rejected') aiConfirmSharedStatus = 'rejected';
-            else if (rev.ai_review_status === 'pending') aiConfirmSharedStatus = 'pending';
-            aiConfirmSharedConfidence = rev.ai_confidence;
-            aiConfirmSharedAt = rev.ai_reviewed_at;
-            if (rev.human_accepted) userAcceptSharedStatus = 'accepted';
-            if (rev.human_override_ai) userOverrideAiShared = 1;
-          }
-        }
-      }
 
       // Contract snapshot from route matrix
       const route = findRoute(fieldRoutes);
@@ -1305,12 +936,7 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
         selectedCandidateId: ifs.accepted_candidate_id,
         confidenceScore: ifs.confidence || 0,
         aiConfirmPrimaryStatus,
-        aiConfirmSharedStatus,
-        aiConfirmSharedConfidence,
-        aiConfirmSharedAt,
         userAcceptPrimaryStatus,
-        userAcceptSharedStatus,
-        userOverrideAiShared,
       });
       keyReviewStateCount++;
     }
@@ -1415,127 +1041,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
       keyReviewStateCount++;
     }
 
-    // 9e: candidate_reviews → key_review_audit + key_review_runs
-    // Idempotent: track which (review_id, event_type) combinations we've already seeded
-    const existingAuditCheck = db.db.prepare(
-      'SELECT 1 FROM key_review_audit WHERE key_review_state_id = ? AND event_type = ? AND COALESCE(actor_id, \'\') = ? LIMIT 1'
-    );
-    const existingRunCheck = db.db.prepare(
-      'SELECT 1 FROM key_review_runs WHERE key_review_state_id = ? AND model_used = ? AND stage = ? LIMIT 1'
-    );
-
-    for (const rev of allReviews) {
-      if (rev.ai_review_status === 'not_run' && !rev.human_accepted) continue;
-
-      // Find the key_review_state this review maps to
-      const cand = db.db.prepare('SELECT * FROM candidates WHERE candidate_id = ?').get(rev.candidate_id);
-      if (!cand) continue;
-
-      let stateRow = null;
-      if (rev.context_type === 'item') {
-        const ifsRow = db.db.prepare(
-          'SELECT id FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
-        ).get(db.category, cand.product_id, cand.field_key);
-        if (ifsRow?.id) {
-          stateRow = db.db.prepare(
-            "SELECT id FROM key_review_state WHERE category = ? AND target_kind = 'grid_key' AND item_field_state_id = ?"
-          ).get(db.category, ifsRow.id);
-        }
-      } else if (rev.context_type === 'component') {
-        const link = db.db.prepare(
-          'SELECT * FROM item_component_links WHERE category = ? AND product_id = ? AND field_key = ?'
-        ).get(db.category, cand.product_id, cand.field_key);
-        if (link) {
-          const cvRow = db.db.prepare(
-            `SELECT id
-             FROM component_values
-             WHERE category = ?
-               AND component_type = ?
-               AND component_name = ?
-               AND component_maker = ?
-               AND property_key = ?
-             LIMIT 1`
-          ).get(
-            db.category,
-            link.component_type,
-            link.component_name,
-            link.component_maker || '',
-            cand.field_key
-          );
-          if (cvRow?.id) {
-            stateRow = db.db.prepare(
-              "SELECT id FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_value_id = ?"
-            ).get(db.category, cvRow.id);
-          }
-        }
-      } else if (rev.context_type === 'list') {
-        const norm = String(cand.value || '').trim().toLowerCase();
-        const lvRow = db.db.prepare(
-          'SELECT id FROM list_values WHERE category = ? AND field_key = ? AND normalized_value = ? LIMIT 1'
-        ).get(db.category, cand.field_key, norm);
-        if (lvRow?.id) {
-          stateRow = db.db.prepare(
-            "SELECT id FROM key_review_state WHERE category = ? AND target_kind = 'enum_key' AND list_value_id = ?"
-          ).get(db.category, lvRow.id);
-        }
-      }
-
-      if (!stateRow) continue;
-
-      // Audit entries (idempotent: skip if already exists)
-      if (rev.ai_review_status && rev.ai_review_status !== 'not_run') {
-        if (!existingAuditCheck.get(stateRow.id, 'ai_review', rev.ai_review_model || '')) {
-          db.insertKeyReviewAudit({
-            keyReviewStateId: stateRow.id,
-            eventType: 'ai_review',
-            actorType: 'ai',
-            actorId: rev.ai_review_model || null,
-            newValue: rev.ai_review_status,
-            reason: rev.ai_reason || null,
-          });
-          keyReviewAuditCount++;
-        }
-      }
-
-      if (rev.human_accepted) {
-        if (!existingAuditCheck.get(stateRow.id, 'user_accept', '')) {
-          db.insertKeyReviewAudit({
-            keyReviewStateId: stateRow.id,
-            eventType: 'user_accept',
-            actorType: 'user',
-            newValue: 'accepted',
-          });
-          keyReviewAuditCount++;
-        }
-      }
-
-      if (rev.human_override_ai) {
-        if (!existingAuditCheck.get(stateRow.id, 'user_override_ai', '')) {
-          db.insertKeyReviewAudit({
-            keyReviewStateId: stateRow.id,
-            eventType: 'user_override_ai',
-            actorType: 'user',
-            newValue: 'override',
-          });
-          keyReviewAuditCount++;
-        }
-      }
-
-      // key_review_runs when ai_review_model present (idempotent)
-      if (rev.ai_review_model && rev.ai_review_status !== 'not_run') {
-        if (!existingRunCheck.get(stateRow.id, rev.ai_review_model, rev.context_type)) {
-          const runStatus = (rev.ai_review_status === 'accepted' || rev.ai_review_status === 'rejected') ? 'success' : 'failed';
-          const runId = db.insertKeyReviewRun({
-            keyReviewStateId: stateRow.id,
-            stage: rev.context_type,
-            status: runStatus,
-            modelUsed: rev.ai_review_model,
-            finishedAt: rev.ai_reviewed_at || null,
-          });
-          keyReviewRunCount++;
-        }
-      }
-    }
   });
   tx();
 

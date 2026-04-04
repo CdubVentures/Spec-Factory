@@ -377,45 +377,6 @@ export function isSharedLanePending(state, basePending = false) {
   return Boolean(basePending);
 }
 
-// ── SpecDb Conversion ───────────────────────────────────────────────
-
-export function toSpecDbCandidate(row, fallbackId) {
-  const candidateId = String(row?.candidate_id || fallbackId || '').trim()
-    || `${fallbackId || 'specdb_candidate'}`;
-  const productId = String(row?.product_id || '').trim();
-  return {
-    candidate_id: candidateId,
-    value: row?.value ?? null,
-    score: row?.score ?? 0,
-    source_id: 'specdb',
-    source: row?.source_host
-      ? `${row.source_host}${productId ? ` (${productId})` : ''}`
-      : `SpecDb${productId ? ` (${productId})` : ''}`,
-    tier: row?.source_tier ?? null,
-    method: row?.source_method || 'specdb_lookup',
-    evidence: {
-      url: row?.evidence_url || row?.source_url || '',
-      snippet_id: row?.snippet_id || '',
-      snippet_hash: row?.snippet_hash || '',
-      quote: row?.quote || '',
-      snippet_text: row?.snippet_text || '',
-      source_id: 'specdb',
-    },
-  };
-}
-
-export function appendAllSpecDbCandidates(target, rows, fallbackPrefix) {
-  const existingIds = new Set(target.map((c) => String(c?.candidate_id || '')));
-  for (let i = 0; i < rows.length; i += 1) {
-    const row = rows[i];
-    const candidate = toSpecDbCandidate(row, `${fallbackPrefix}_${i}`);
-    if (candidate.value == null || candidate.value === '') continue;
-    if (existingIds.has(candidate.candidate_id)) continue;
-    existingIds.add(candidate.candidate_id);
-    target.push(candidate);
-  }
-}
-
 export function hasActionableCandidate(candidates) {
   return toArray(candidates).some((candidate) => (
     !candidate?.is_synthetic_selected
@@ -432,67 +393,6 @@ export function shouldIncludeEnumValueEntry(entry, { requireLinkedPendingPipelin
   if (!isPipeline || !isPending) return true;
   const linkedCount = Array.isArray(entry.linked_products) ? entry.linked_products.length : 0;
   return linkedCount > 0;
-}
-
-// ── Review Lookups ──────────────────────────────────────────────────
-
-export function buildCandidateReviewLookup(reviewRows) {
-  const exact = new Map();
-  for (const row of toArray(reviewRows)) {
-    const candidateId = String(row?.candidate_id || '').trim();
-    if (!candidateId) continue;
-    exact.set(candidateId, row);
-  }
-  return { exact };
-}
-
-export function getCandidateReviewRow(lookup, candidateId) {
-  if (!lookup) return null;
-  const cid = String(candidateId || '').trim();
-  if (!cid) return null;
-  if (lookup.exact.has(cid)) return lookup.exact.get(cid) || null;
-  return null;
-}
-
-export function normalizeCandidateSharedReviewStatus(candidate, reviewRow = null) {
-  if (candidate?.is_synthetic_selected) return 'accepted';
-  if (reviewRow) {
-    const aiStatus = normalizeToken(reviewRow.ai_review_status);
-    const aiReason = normalizeToken(reviewRow.ai_reason);
-    // Shared-lane accept is independent from AI confirm.
-    // Legacy rows with ai_reason=shared_accept (or human_accepted) must remain pending
-    // so AI confirm buttons stay candidate-scoped and independent.
-    if (
-      (Number(reviewRow.human_accepted) === 1 || aiReason === 'shared_accept')
-      && aiStatus === 'accepted'
-    ) {
-      return 'pending';
-    }
-    if (aiStatus === 'accepted') return 'accepted';
-    if (aiStatus === 'rejected') return 'rejected';
-    return 'pending';
-  }
-  const sourceToken = candidateSourceToken(candidate, '');
-  if (
-    sourceToken === 'reference'
-    || sourceToken === 'known_values'
-    || sourceToken === 'component_db'
-    || sourceToken === 'manual'
-    || sourceToken === 'user'
-  ) {
-    return 'accepted';
-  }
-  return 'pending';
-}
-
-export function annotateCandidateSharedReviews(candidates, reviewRows = []) {
-  const lookup = buildCandidateReviewLookup(reviewRows);
-  for (const candidate of toArray(candidates)) {
-    const candidateId = String(candidate?.candidate_id || '').trim();
-    const reviewRow = candidateId ? getCandidateReviewRow(lookup, candidateId) : null;
-    candidate.shared_review_status = normalizeCandidateSharedReviewStatus(candidate, reviewRow);
-    candidate.human_accepted = Number(reviewRow?.human_accepted || 0) === 1;
-  }
 }
 
 export function reviewStatusToken(reviewItem) {

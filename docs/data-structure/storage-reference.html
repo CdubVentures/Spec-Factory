@@ -267,7 +267,7 @@ code{font-family:var(--mono);font-size:0.85em}
   <span class="dir">db/</span>                                <span class="comment"># SQLite databases</span>
     <span class="sql">app.sqlite</span>                       <span class="comment"># Global: brands, settings, studio_maps, color_registry (6 tables)</span>
     <span class="dir">{category}/</span>                      <span class="comment"># Per-category</span>
-      <span class="sql">spec.sqlite</span>                    <span class="comment"># Domain data (43 base + 1 migration = 44 tables)</span>
+      <span class="sql">spec.sqlite</span>                    <span class="comment"># Domain data (36 base tables)</span>
   <span class="dir">runs/</span>                              <span class="comment"># IndexLab run output</span>
     <span class="dir">{runId}/</span>                         <span class="comment"># Per-run directory</span>
       <span class="json">run.json</span>                       <span class="comment"># Crawl checkpoint (~50-200KB)</span>
@@ -303,13 +303,13 @@ code{font-family:var(--mono);font-size:0.85em}
     </details>
 
     <details class="card">
-      <summary><span class="card-name">db/{category}/spec.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">44 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
+      <summary><span class="card-name">db/{category}/spec.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">36 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Core domain database per category. Products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, crawl metadata, field overrides, and all pipeline state.</td></tr>
-          <tr><td class="pk">Table breakdown</td><td class="pv">43 tables in <code>specDbSchema.js</code> + 1 migration table (<code>source_intel_domains</code>) = <strong>44 base tables</strong>. Runtime learning adds 4 additional tables: <code>component_lexicon</code>, <code>field_anchors</code>, <code>url_memory</code>, <code>domain_field_yield</code>.</td></tr>
+          <tr><td class="pk">Purpose</td><td class="pv">Core domain database per category. Products, components, reviews, evidence, billing, telemetry, source intelligence, crawl metadata, field overrides, and all pipeline state.</td></tr>
+          <tr><td class="pk">Table breakdown</td><td class="pv">36 tables in <code>specDbSchema.js</code> = <strong>36 base tables</strong>. Runtime learning adds 4 additional tables: <code>component_lexicon</code>, <code>field_anchors</code>, <code>url_memory</code>, <code>domain_field_yield</code>.</td></tr>
           <tr><td class="pk">Size range</td><td class="pv">500 KB &ndash; 100 MB+ (scales with products and crawl history)</td></tr>
-          <tr><td class="pk">Written by</td><td class="pv">21 store modules across the indexing and pipeline features</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">20 store modules across the indexing and pipeline features</td></tr>
           <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable from product seeds + category authority. Accumulated data requires re-running indexing pipeline.</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; primary data store. Back up before destructive operations.</td></tr>
         </table>
@@ -410,7 +410,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <table class="prop-table">
           <tr><td class="pk">Purpose</td><td class="pv">Product rebuild checkpoint. Contains identity + sources + empty fields/provenance structure. <code>writeProductCheckpoint</code> merges sources and run metadata only. Does NOT populate field values, evidence, or review state &mdash; those live exclusively in spec.sqlite.</td></tr>
           <tr><td class="pk">Written by</td><td class="pv"><code>writeProductCheckpoint</code> (pipeline checkpoint system)</td></tr>
-          <tr><td class="pk">Rebuild strategy</td><td class="pv">Rebuildable from spec.sqlite by querying all accepted candidates and reviews for the product</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Rebuildable from spec.sqlite by querying accepted field state and reviews for the product</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; primary checkpoint for incremental pipeline runs</td></tr>
         </table>
       </div>
@@ -521,7 +521,7 @@ code{font-family:var(--mono);font-size:0.85em}
           <tr><td class="pk">File layout</td><td class="pv"><code>overrides.json</code> (v2 consolidated, one per category &mdash; all product overrides) + <code>components/*.json</code> (~14 component override files).</td></tr>
           <tr><td class="pk">Written by</td><td class="pv">Override workflow (setOverrideFromCandidate, setManualOverride, approveGreenOverrides, finalizeOverrides) writes JSON first. SQL is derived cache.</td></tr>
           <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; JSON SSOT. Editing overrides.json and rebuilding SQL updates all override tables.</td></tr>
-          <tr><td class="pk">In SQL?</td><td class="pv"><code>item_field_state</code>, <code>candidate_reviews</code>, <code>product_review_state</code> are derived cache, rebuilt from overrides.json on seed.</td></tr>
+          <tr><td class="pk">In SQL?</td><td class="pv"><code>item_field_state</code>, <code>product_review_state</code> are derived cache, rebuilt from overrides.json on seed.</td></tr>
         </table>
       </div>
     </details>
@@ -604,12 +604,12 @@ code{font-family:var(--mono);font-size:0.85em}
       <h3><span class="dot" style="background:var(--accent)"></span>spec.sqlite</h3>
       <div class="db-path">.workspace/db/{category}/spec.sqlite</div>
       <div class="db-meta">
-        <strong>Tables:</strong> 44 base (43 in specDbSchema.js + 1 migration: source_intel_domains)<br>
+        <strong>Tables:</strong> 36 base (36 in specDbSchema.js)<br>
         <strong>Runtime learning:</strong> +4 additional tables (component_lexicon, field_anchors, url_memory, domain_field_yield)<br>
         <strong>Size:</strong> 500 KB &ndash; 100 MB+<br>
         <strong>Scope:</strong> Per-category (one per active category)<br>
-        <strong>Purpose:</strong> All domain data &mdash; products, candidates, components, reviews, evidence, billing, telemetry, sources, crawl metadata, field overrides, pipeline state, and learning indexes.<br>
-        <strong>Store modules:</strong> 21 dedicated stores
+        <strong>Purpose:</strong> All domain data &mdash; products, components, reviews, evidence, billing, telemetry, sources, crawl metadata, field overrides, pipeline state, and learning indexes.<br>
+        <strong>Store modules:</strong> 20 dedicated stores
       </div>
     </div>
 
@@ -664,7 +664,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <span class="tag tag-json">JSON</span>
     <span class="tag tag-count">6 per product + 5 category-level</span>
   </div>
-  <p class="section-desc">The <code>publish</code> command generates the final deliverables for each product. These files are the end output of the entire pipeline &mdash; from crawl through extraction, review, and publication. The <code>publishStorageAdapter.js</code> dual-writes to both modern (<code>output/{category}/published/{pid}/...</code>) and legacy (<code>specs/outputs/output/{category}/{pid}/...</code>) key patterns. Intermediate pipeline artifacts (normalized.json, candidates.json, provenance.json, summary.json) are written per-run under <code>output/{category}/{pid}/latest/</code>.</p>
+  <p class="section-desc">The <code>publish</code> command generates the final deliverables for each product. These files are the end output of the entire pipeline &mdash; from crawl through extraction, review, and publication. The <code>publishStorageAdapter.js</code> dual-writes to both modern (<code>output/{category}/published/{pid}/...</code>) and legacy (<code>specs/outputs/output/{category}/{pid}/...</code>) key patterns. Intermediate pipeline artifacts (normalized.json, provenance.json, summary.json) are written per-run under <code>output/{category}/{pid}/latest/</code>.</p>
 
   <div class="tree"><span class="dir">.workspace/output/</span>
   <span class="dir">{category}/</span>
@@ -688,8 +688,8 @@ code{font-family:var(--mono);font-size:0.85em}
     <div class="card-body">
       <table class="prop-table">
         <tr><td class="pk">Written by</td><td class="pv"><code>publish</code> CLI command / pipeline publish phase (<code>publishProductWriter.js</code>)</td></tr>
-        <tr><td class="pk">When written</td><td class="pv">On publish &mdash; only after human review and approval of candidate data</td></tr>
-        <tr><td class="pk">Rebuild strategy</td><td class="pv">Fully rebuildable from spec.sqlite accepted candidates + review state</td></tr>
+        <tr><td class="pk">When written</td><td class="pv">On publish &mdash; only after human review and approval</td></tr>
+        <tr><td class="pk">Rebuild strategy</td><td class="pv">Fully rebuildable from spec.sqlite accepted field state + review state</td></tr>
         <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; versioned snapshots kept indefinitely</td></tr>
         <tr><td class="pk">current.json</td><td class="pv">The canonical published specification. Complete field values with metadata.</td></tr>
         <tr><td class="pk">compact.json</td><td class="pv">Stripped-down format: field keys and values only, no metadata overhead.</td></tr>
@@ -752,7 +752,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td class="fname">SQLite databases</td>
         <td>.sqlite (WAL mode)</td>
         <td><code>db/app.sqlite</code>, <code>db/{category}/spec.sqlite</code></td>
-        <td>Primary persistent stores. app.sqlite (global, 6 tables) + spec.sqlite (per-category, 44 base + 4 runtime learning).</td>
+        <td>Primary persistent stores. app.sqlite (global, 6 tables) + spec.sqlite (per-category, 36 base + 4 runtime learning).</td>
       </tr>
       <tr>
         <td class="fname">Crawl checkpoints</td>
@@ -861,7 +861,7 @@ code{font-family:var(--mono);font-size:0.85em}
       </tr>
       <tr>
         <td class="fname">spec.sqlite</td>
-        <td>21 store modules</td>
+        <td>20 store modules</td>
         <td>At boot + per-run + on review</td>
         <td>Permanent</td>
         <td>Re-crawl + re-index from seeds</td>

@@ -11,11 +11,9 @@ import { normalizeFieldKey, slugify } from './reviewNormalization.js';
 import {
   hasKnownValue,
   hasActionableCandidate,
-  appendAllSpecDbCandidates,
   ensureEnumValueCandidateInvariant,
   isSharedLanePending,
   shouldIncludeEnumValueEntry,
-  annotateCandidateSharedReviews,
 } from './candidateInfrastructure.js';
 
 export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb, enabledEnumFields = null }) {
@@ -114,14 +112,6 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
           }));
         }
 
-        const candRows = specDb.getCandidatesByListValue(field, row.id);
-        if (candRows.length > 0) {
-          appendAllSpecDbCandidates(
-            entry.candidates,
-            candRows,
-            `specdb_enum_${slugify(field)}_${slugify(row.value)}`
-          );
-        }
       } catch (_) {
         // Best-effort enrichment
       }
@@ -130,11 +120,6 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
         fieldKey: field,
         fallbackQuote: `Selected ${field} enum value retained for authoritative review`,
       });
-      const listValueSlotId = Number(row?.id);
-      const reviewRows = Number.isFinite(listValueSlotId) && listValueSlotId > 0
-        ? (specDb.getReviewsForContext('list', String(listValueSlotId)) || [])
-        : [];
-      annotateCandidateSharedReviews(entry.candidates, reviewRows);
 
       valueMap.set(normalized, entry);
     }

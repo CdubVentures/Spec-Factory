@@ -177,6 +177,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'color-add': ['color-registry'],
   'color-update': ['color-registry'],
   'color-delete': ['color-registry'],
+  'color-edition-finder-run': ['color-edition-finder'],
   'llm-settings-updated': ['settings', 'indexing'],
   'llm-settings-reset': ['settings', 'indexing'],
   'runtime-settings-updated': ['settings', 'indexing'],

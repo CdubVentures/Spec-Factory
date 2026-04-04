@@ -24,8 +24,6 @@ import {
   ensureTrackedStateCandidateInvariant,
   hasActionableCandidate,
   isReviewItemCandidateVisible,
-  annotateCandidateSharedReviews,
-  appendAllSpecDbCandidates,
   isSharedLanePending,
 } from './candidateInfrastructure.js';
 import {
@@ -458,43 +456,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         const linkFieldKey = linkRows[0]?.field_key || componentType;
         const brandFieldKey = `${componentType}_brand`;
 
-        // Name candidates from SpecDb
-        const nameCandRows = specDb.getCandidatesForComponentProperty(componentType, itemName, itemMaker, linkFieldKey);
-        if (nameCandRows.length > 0) {
-          appendAllSpecDbCandidates(
-            name_tracked.candidates,
-            nameCandRows,
-            `specdb_${componentType}_${laneSlug}_name`
-          );
-          name_tracked.candidate_count = name_tracked.candidates.length;
-        }
-
-        // Maker candidates from SpecDb
-        const makerCandRows = specDb.getCandidatesForComponentProperty(componentType, itemName, itemMaker, brandFieldKey);
-        if (makerCandRows.length > 0) {
-          appendAllSpecDbCandidates(
-            maker_tracked.candidates,
-            makerCandRows,
-            `specdb_${componentType}_${laneSlug}_maker`
-          );
-          maker_tracked.candidate_count = maker_tracked.candidates.length;
-        }
-
-        // Property candidates from SpecDb
-        for (const key of propertyColumns) {
-          const prop = properties[key];
-          if (!prop) continue;
-          const propCandRows = specDb.getCandidatesForComponentProperty(componentType, itemName, itemMaker, key);
-          if (propCandRows.length > 0) {
-            appendAllSpecDbCandidates(
-              prop.candidates,
-              propCandRows,
-              `specdb_${componentType}_${laneSlug}_${key}`
-            );
-            prop.candidate_count = prop.candidates.length;
-          }
-        }
-
         // Variance evaluation
         for (const key of propertyColumns) {
           const prop = properties[key];
@@ -638,12 +599,10 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       fallbackCandidateId: `component_${slugify(componentType)}_${laneSlug}_name`,
       fallbackQuote: `Selected ${componentType} name retained for authoritative review`,
     });
-    annotateCandidateSharedReviews(name_tracked.candidates, []);
     ensureTrackedStateCandidateInvariant(maker_tracked, {
       fallbackCandidateId: `component_${slugify(componentType)}_${laneSlug}_maker`,
       fallbackQuote: `Selected ${componentType} maker retained for authoritative review`,
     });
-    annotateCandidateSharedReviews(maker_tracked.candidates, []);
     for (const key of propertyColumns) {
       const prop = properties[key];
       if (!prop) continue;
@@ -651,11 +610,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         fallbackCandidateId: `component_${slugify(componentType)}_${laneSlug}_${slugify(key)}`,
         fallbackQuote: `Selected ${key} retained for authoritative review`,
       });
-      const slotId = Number(prop?.slot_id);
-      const reviewRows = Number.isFinite(slotId) && slotId > 0
-        ? (specDb.getReviewsForContext('component', String(slotId)) || [])
-        : [];
-      annotateCandidateSharedReviews(prop.candidates, reviewRows);
     }
 
     const confidenceValues = propertyColumns

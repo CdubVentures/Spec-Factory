@@ -42,6 +42,13 @@ function extractCliArgValue(cliArgs = [], argName = '') {
   return '';
 }
 
+function deriveProcessModel(baseModel = '', variant = '') {
+  const base = String(baseModel || '').trim();
+  const variantToken = String(variant || '').trim();
+  if (!base) return '';
+  return variantToken ? `${base} ${variantToken}` : base;
+}
+
 export function createProcessRuntime({
   resolveProjectPath,
   path,
@@ -138,6 +145,11 @@ export function createProcessRuntime({
     const command = `${childNodeCommand} ${cmd} ${cliArgs.join(' ')}`;
     const resolvedOutputRoot = resolveProjectPath(envOverrides.LOCAL_OUTPUT_ROOT || outputRoot || '.');
     const resolvedIndexLabRoot = resolveProjectPath(extractCliArgValue(cliArgs, '--out') || indexLabRoot || '.');
+    const category = extractCliArgValue(cliArgs, '--category') || null;
+    const productId = extractCliArgValue(cliArgs, '--product-id') || null;
+    const brand = extractCliArgValue(cliArgs, '--brand') || null;
+    const baseModel = extractCliArgValue(cliArgs, '--model') || null;
+    const variant = extractCliArgValue(cliArgs, '--variant') || null;
 
     dispatch({
       type: 'PROCESS_STARTED',
@@ -146,12 +158,12 @@ export function createProcessRuntime({
         command,
         startedAt,
         runId: runId || null,
-        category: extractCliArgValue(cliArgs, '--category') || null,
-        productId: extractCliArgValue(cliArgs, '--product-id') || null,
-        brand: extractCliArgValue(cliArgs, '--brand') || null,
-        base_model: extractCliArgValue(cliArgs, '--model') || null,
-        model: extractCliArgValue(cliArgs, '--model') || null,
-        variant: extractCliArgValue(cliArgs, '--variant') || null,
+        category,
+        productId,
+        brand,
+        base_model: baseModel,
+        model: deriveProcessModel(baseModel, variant),
+        variant,
         storageDestination: 'local',
       },
     });

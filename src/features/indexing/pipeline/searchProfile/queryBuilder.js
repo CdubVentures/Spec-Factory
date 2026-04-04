@@ -20,10 +20,10 @@ import {
 
 export function buildDeterministicAliases(identity = {}, maxAliases = 12, rejectLog = null) {
   const brand = clean(identity.brand || '');
-  // WHY: Use base_model for composable parts to avoid duplicating variant in product text.
-  const baseModel = clean(identity.base_model || identity.model || '');
-  const model = baseModel;
+  const baseModel = clean(identity.base_model || '');
+  const model = clean(baseModel || identity.model || '');
   const variant = clean(identity.variant || '');
+  const variantToken = baseModel ? variant : '';
   const cap = Math.max(1, Number(maxAliases) || 12);
 
   const out = [];
@@ -70,7 +70,7 @@ export function buildDeterministicAliases(identity = {}, maxAliases = 12, reject
   if (brand) {
     push(brand, 'deterministic', 0.8);
   }
-  const productFull = clean([brand, model, variant].filter(Boolean).join(' '));
+  const productFull = clean([brand, model, variantToken].filter(Boolean).join(' '));
   if (productFull) {
     push(productFull, 'deterministic', 1);
   }
@@ -78,7 +78,7 @@ export function buildDeterministicAliases(identity = {}, maxAliases = 12, reject
   if (brandModel) {
     push(brandModel, 'deterministic', 0.95);
   }
-  for (const modelAlias of buildModelAliasCandidates({ model, variant })) {
+  for (const modelAlias of buildModelAliasCandidates({ base_model: baseModel, model, variant: variantToken })) {
     push(modelAlias, 'deterministic', 0.9);
     if (brand) {
       push(`${brand} ${modelAlias}`, 'deterministic', 1);
@@ -158,17 +158,26 @@ export function buildSearchProfile({
 }) {
   const resolvedIdentity = resolveJobIdentity(job);
   const brand = resolvedIdentity.brand;
-  const model = resolvedIdentity.base_model || resolvedIdentity.model;
+  const baseModel = resolvedIdentity.base_model;
+  const model = resolvedIdentity.model;
   const variant = resolvedIdentity.variant;
+  const queryModel = baseModel || model;
+  const queryVariant = baseModel ? variant : '';
   const category = clean(job?.category || categoryConfig?.category || 'mouse');
-  const identity = { brand, base_model: resolvedIdentity.base_model, model, variant, category };
+  const identity = { brand, base_model: baseModel, model, variant, category };
   const aliasRejectLog = [];
   const queryRejectLog = [];
   const identityAliases = buildDeterministicAliases(identity, aliasValidationCap, aliasRejectLog);
   const variantGuardTerms = buildVariantGuardTerms(identity);
 
   const baseTemplates = toArray(categoryConfig?.searchTemplates)
-    .map((template) => fillTemplate(template, { brand, model, variant, category }))
+    .map((template) => fillTemplate(template, {
+      brand,
+      model: queryModel,
+      variant: queryVariant,
+      category,
+      product: clean([brand, queryModel, queryVariant].filter(Boolean).join(' '))
+    }))
     .filter(Boolean);
   const focusFields = normalizeFieldList(toArray(missingFields), {
     fieldOrder: categoryConfig?.fieldOrder || []
@@ -263,9 +272,9 @@ export function buildSearchProfile({
   for (const row of queryRows) {
     addQuery(row.query, row.hint_source || 'query_row');
   }
-  if (!selectedQueries.length && brand && model) {
-    addQuery(`${brand} ${model} ${variant} specifications`, 'fallback');
-    addQuery(`${brand} ${model} datasheet pdf`, 'fallback');
+  if (!selectedQueries.length && brand && queryModel) {
+    addQuery(`${brand} ${queryModel} ${queryVariant} specifications`, 'fallback');
+    addQuery(`${brand} ${queryModel} datasheet pdf`, 'fallback');
   }
 
   const boundedQueries = selectedQueries.slice(0, maxQueryCap);
@@ -389,11 +398,13 @@ function emitSpecSeedQueries(rows, product, seedStatus, specSeeds, identity) {
   const templates = Array.isArray(specSeeds) && specSeeds.length > 0
     ? specSeeds
     : ['{product} specifications'];
+  const queryModel = identity.base_model || identity.model;
+  const queryVariant = identity.base_model ? identity.variant : '';
   const values = {
     product,
     brand: identity.brand,
-    model: identity.model,
-    variant: identity.variant,
+    model: queryModel,
+    variant: queryVariant,
     category: identity.category,
   };
   for (const template of templates) {
@@ -447,7 +458,9 @@ export function buildTier1Queries(job, seedStatus, brandResolution, options = {}
   const { tierOrder = DEFAULT_TIER_ORDER, specSeeds = null } = options;
   const resolved = resolveJobIdentity(job);
   const identity = { ...resolved, category: clean(job?.category || '') };
-  const product = clean([identity.brand, identity.base_model || identity.model, identity.variant].filter(Boolean).join(' '));
+  const queryModel = identity.base_model || identity.model;
+  const queryVariant = identity.base_model ? identity.variant : '';
+  const product = clean([identity.brand, queryModel, queryVariant].filter(Boolean).join(' '));
   const rows = [];
   const emittedSources = new Set();
 
@@ -472,7 +485,7 @@ export function buildTier2Queries(job, focusGroups) {
   const identity = resolveJobIdentity(job);
   const brand = identity.brand;
   const model = identity.base_model || identity.model;
-  const variant = identity.variant;
+  const variant = identity.base_model ? identity.variant : '';
   const product = clean([brand, model, variant].filter(Boolean).join(' '));
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
 
@@ -550,7 +563,7 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
   const identity = resolveJobIdentity(job);
   const brand = identity.brand;
   const model = identity.base_model || identity.model;
-  const variant = identity.variant;
+  const variant = identity.base_model ? identity.variant : '';
   const product = clean([brand, model, variant].filter(Boolean).join(' '));
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
   const rows = [];

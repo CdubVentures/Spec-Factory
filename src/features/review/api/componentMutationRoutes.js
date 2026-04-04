@@ -58,7 +58,6 @@ async function handleComponentOverrideEndpoint({
     getSpecDbReady,
     resolveComponentMutationContext,
     isMeaningfulValue,
-    candidateLooksReference,
     normalizeLower,
     buildComponentIdentifier,
     applySharedLaneState,
@@ -110,16 +109,11 @@ async function handleComponentOverrideEndpoint({
     try {
       const nowIso = new Date().toISOString();
       const requestedCandidateId = String(candidateId || '').trim() || null;
-      let acceptedCandidateRow = requestedCandidateId
-        ? runtimeSpecDb.getCandidateById(requestedCandidateId)
-        : null;
-      let acceptedCandidateId = acceptedCandidateRow ? requestedCandidateId : null;
+      let acceptedCandidateId = requestedCandidateId;
       const sourceToken = String(candidateSource || '').trim().toLowerCase();
       const resolveSelectionSource = () => {
         if (!requestedCandidateId) return 'user';
-        const isReferenceCandidate = candidateLooksReference(requestedCandidateId, sourceToken);
         const candidateLooksUser = sourceToken.includes('manual') || sourceToken.includes('user');
-        if (isReferenceCandidate) return 'component_db';
         if (candidateLooksUser) return 'user';
         return 'pipeline';
       };
@@ -142,26 +136,6 @@ async function handleComponentOverrideEndpoint({
             error: 'unknown_value_not_actionable',
             message: 'Candidate accept cannot persist unknown/empty values.',
           });
-        }
-        if (!isIdentity && requestedCandidateId && !acceptedCandidateRow) {
-          return respond(404, {
-            error: 'candidate_not_found',
-            message: `candidate_id '${requestedCandidateId}' was not found.`,
-          });
-        }
-        if (acceptedCandidateId && acceptedCandidateRow && !isIdentity) {
-          const candidateValidationError = validateComponentPropertyCandidate({
-            candidateRow: acceptedCandidateRow,
-            candidateId: acceptedCandidateId,
-            property,
-            resolvedValue: valueToken,
-            isMeaningfulValue,
-            normalizeLower,
-            valueMismatchMessage: `candidate_id '${acceptedCandidateId}' value does not match requested property value.`,
-          });
-          if (candidateValidationError) {
-            return respond(400, candidateValidationError);
-          }
         }
 
         if (!isIdentity) {
@@ -217,7 +191,7 @@ async function handleComponentOverrideEndpoint({
             selectedCandidateId: acceptedCandidateId,
             selectedValue: String(value),
             nowIso,
-            candidateRow: acceptedCandidateRow,
+            candidateRow: null,
           });
 
           if (!acceptedCandidateId) {
@@ -355,7 +329,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
     readJsonBody,
     jsonRes,
     getSpecDbReady,
-    syncSyntheticCandidatesFromComponentReview,
     resolveComponentMutationContext,
     isMeaningfulValue,
     normalizeLower,
@@ -363,7 +336,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
     applySharedLaneState,
     specDbCache,
     broadcastWs,
-    getPendingComponentSharedCandidateIdsAsync,
   } = context || {};
   const respond = createRouteResponder(jsonRes, res);
 
@@ -376,7 +348,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
       getSpecDbReady,
       resolveContext: resolveComponentMutationContext,
       resolveContextArgs: buildComponentMutationContextArgs,
-      preSync: ({ category, specDb }) => syncSyntheticCandidatesFromComponentReview({ category, specDb }),
     });
     if (respondIfError(respond, preparedMutation.error)) {
       return true;
@@ -436,67 +407,22 @@ async function handleComponentKeyReviewConfirmEndpoint({
           message: 'candidateId is required for component AI confirm.',
         });
       }
-      const requestedCandidateRow = runtimeSpecDb.getCandidateById(requestedCandidateId);
-      if (!requestedCandidateRow) {
-        return respond(404, {
-          error: 'candidate_not_found',
-          message: `candidate_id '${requestedCandidateId}' was not found.`,
-        });
-      }
-      const stateValue = resolvedValue || String(requestedCandidateRow.value ?? '').trim();
+      const stateValue = resolvedValue;
       if (!isMeaningfulValue(stateValue)) {
         return respond(400, {
           error: 'confirm_value_required',
           message: 'No resolved value to confirm for this component property',
         });
       }
-      if (property !== '__name' && property !== '__maker') {
-        const candidateValidationError = validateComponentPropertyCandidate({
-          candidateRow: requestedCandidateRow,
-          candidateId: requestedCandidateId,
-          property,
-          resolvedValue: stateValue,
-          isMeaningfulValue,
-          normalizeLower,
-          valueMismatchMessage: `candidate_id '${requestedCandidateId}' value does not match component property '${property}'.`,
-        });
-        if (candidateValidationError) {
-          return respond(400, candidateValidationError);
-        }
-      }
       const resolvedCandidateId = requestedCandidateId;
       const resolvedConfidence = firstFiniteNumber([
         existingState?.confidence_score,
         propertyRow?.confidence,
-        requestedCandidateRow?.score,
         body?.candidateConfidence,
       ], 1.0);
       const nowIso = new Date().toISOString();
       const componentSlotId = componentCtx?.componentValueId ?? propertyRow?.id ?? null;
-      if (componentSlotId) {
-        runtimeSpecDb.upsertReview({
-          candidateId: requestedCandidateId,
-          contextType: 'component',
-          contextId: String(componentSlotId),
-          humanAccepted: false,
-          humanAcceptedAt: null,
-          aiReviewStatus: 'accepted',
-          aiConfidence: firstFiniteNumber([body?.candidateConfidence], 1.0),
-          aiReason: 'shared_confirm',
-          aiReviewedAt: nowIso,
-          aiReviewModel: null,
-          humanOverrideAi: false,
-          humanOverrideAiAt: null,
-        });
-      }
-      const pendingCandidateIds = await getPendingComponentSharedCandidateIdsAsync(runtimeSpecDb, {
-        category,
-        componentType,
-        componentName: name,
-        componentMaker,
-        propertyKey: property,
-        componentValueId: componentSlotId,
-      });
+      const pendingCandidateIds = [];
       const confirmStatusOverride = pendingCandidateIds.length > 0 ? 'pending' : 'confirmed';
       const state = applySharedLaneState({
         specDb: runtimeSpecDb,

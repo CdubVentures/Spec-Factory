@@ -100,14 +100,3 @@ export function linkProductToComponent(
     matchScore,
   });
 }
-
-export function insertCandidateRow(specDb, candidate) {
-  specDb.insertCandidate({
-    rank: 1,
-    score: 0.9,
-    source_host: 'contract.test',
-    source_method: 'pipeline_extract',
-    source_tier: 1,
-    ...candidate,
-  });
-}

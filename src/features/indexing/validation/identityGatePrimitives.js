@@ -149,7 +149,7 @@ export function unique(values = []) {
 export function expectedRequiredTokens(identityLock = {}) {
   return unique([
     ...tokenize(identityLock.brand),
-    ...tokenize(identityLock.base_model || identityLock.model)
+    ...tokenize(identityLock.base_model)
   ]);
 }
 

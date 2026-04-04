@@ -242,7 +242,7 @@ export function ProductManager() {
     const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
     updateMut.mutate({
       pid: editPid,
-      patch: { brand: formBrand, base_model: formModel, model: formModel, variant: formVariant, seed_urls: seedUrls, status: formStatus },
+      patch: { brand: formBrand, base_model: formModel, variant: formVariant, seed_urls: seedUrls, status: formStatus },
     });
   }
 

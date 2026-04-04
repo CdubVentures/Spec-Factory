@@ -137,20 +137,15 @@ export function createReviewGridStateRuntime({
 
     const current = specDb.getItemFieldStateByProductAndField(productId, fieldKey) || null;
     const selectedCandidateId = String(keyReviewState.selected_candidate_id || '').trim() || null;
-    const candidateRow = selectedCandidateId ? specDb.getCandidateById(selectedCandidateId) : null;
-    const selectedValue = candidateRow?.value ?? keyReviewState.selected_value ?? current?.value ?? null;
+    const selectedValue = keyReviewState.selected_value ?? current?.value ?? null;
     if (!isMeaningfulValue(selectedValue) && !current) return;
 
-    const confidenceScore = Number.isFinite(Number(candidateRow?.score))
-      ? Number(candidateRow.score)
-      : (Number.isFinite(Number(keyReviewState.confidence_score))
-        ? Number(keyReviewState.confidence_score)
-        : Number(current?.confidence || 0));
+    const confidenceScore = Number.isFinite(Number(keyReviewState.confidence_score))
+      ? Number(keyReviewState.confidence_score)
+      : Number(current?.confidence || 0);
     const aiStatus = String(keyReviewState?.ai_confirm_primary_status || '').trim().toLowerCase();
     const aiConfirmed = aiStatus === 'confirmed';
-    const source = candidateRow
-      ? 'pipeline'
-      : (String(current?.source || '').trim() || 'pipeline');
+    const source = String(current?.source || '').trim() || 'pipeline';
 
     specDb.upsertItemFieldState({
       productId,

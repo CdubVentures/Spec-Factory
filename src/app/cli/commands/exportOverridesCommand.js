@@ -17,37 +17,6 @@ function buildProductOverridesFromSql(specDb, category, productId) {
       try { provenance = JSON.parse(row.override_provenance); } catch { /* keep null */ }
     }
 
-    // WHY: Dual-lookup for AI review — runtime writes contextId = itemFieldStateId,
-    // seed writes contextId = productId. Check both to find the most recent review.
-    let rev = null;
-    const fieldStateRow = typeof specDb.getItemFieldStateByProductAndField === 'function'
-      ? specDb.getItemFieldStateByProductAndField(productId, row.field_key)
-      : null;
-    if (fieldStateRow?.id) {
-      const reviewsByStateId = typeof specDb.getReviewsForContext === 'function'
-        ? specDb.getReviewsForContext('item', String(fieldStateRow.id))
-        : [];
-      rev = reviewsByStateId.find(r => r.candidate_id === (row.accepted_candidate_id || ''));
-    }
-    if (!rev) {
-      const reviewsByProduct = typeof specDb.getReviewsForContext === 'function'
-        ? specDb.getReviewsForContext('item', productId)
-        : [];
-      rev = reviewsByProduct.find(r => r.candidate_id === (row.accepted_candidate_id || ''));
-    }
-
-    const aiReview = rev && rev.ai_review_status && rev.ai_review_status !== 'not_run'
-      ? {
-        ai_review_status: rev.ai_review_status,
-        ai_confidence: rev.ai_confidence,
-        ai_reason: rev.ai_reason,
-        ai_reviewed_at: rev.ai_reviewed_at,
-        ai_review_model: rev.ai_review_model,
-        human_override_ai: Boolean(rev.human_override_ai),
-        human_override_ai_at: rev.human_override_ai_at || null,
-      }
-      : undefined;
-
     overrides[row.field_key] = {
       field: row.field_key,
       override_source: row.override_source || 'candidate_selection',
@@ -59,7 +28,6 @@ function buildProductOverridesFromSql(specDb, category, productId) {
       candidate_id: row.accepted_candidate_id || '',
       value: row.override_value || row.value || '',
       set_at: row.overridden_at || row.updated_at || null,
-      ...(aiReview ? { ai_review: aiReview } : {}),
     };
   }
 

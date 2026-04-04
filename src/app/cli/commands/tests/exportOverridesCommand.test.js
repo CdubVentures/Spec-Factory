@@ -153,16 +153,12 @@ function createMigrationMockSpecDb({
   productIdsWithOverrides = [],
   reviewStates = {},
   overriddenFields = {},
-  itemFieldStateIds = {},
-  reviewsByContext = {},
 } = {}) {
   return {
     listProductIdsWithOverrides() { return productIdsWithOverrides; },
     listApprovedProductIds() { return productIdsWithOverrides.filter(pid => reviewStates[pid]?.review_status === 'approved'); },
     getProductReviewState(pid) { return reviewStates[pid] || null; },
     getOverriddenFieldsForProduct(pid) { return overriddenFields[pid] || []; },
-    getItemFieldStateByProductAndField(pid, fieldKey) { return itemFieldStateIds[`${pid}::${fieldKey}`] || null; },
-    getReviewsForContext(contextType, contextId) { return reviewsByContext[`${contextType}::${contextId}`] || []; },
     close() {},
   };
 }
@@ -212,55 +208,6 @@ test('migrate-overrides includes in_progress products', async () => {
     assert.equal(envelope.products['mouse-draft'].review_status, 'draft');
     assert.equal(envelope.products['mouse-wip'].review_status, 'in_progress');
     assert.equal(envelope.products['mouse-wip'].overrides.sensor.override_value, 'HERO');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('migrate-overrides captures AI reviews written with itemFieldStateId', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrate-test-'));
-  try {
-    const cmd = createMigrationHarness({
-      productIdsWithOverrides: ['mouse-reviewed'],
-      reviewStates: {
-        'mouse-reviewed': { review_status: 'approved', reviewed_by: 'user', reviewed_at: '2026-04-01T00:00:00Z' },
-      },
-      overriddenFields: {
-        'mouse-reviewed': [{
-          field_key: 'weight',
-          value: '63g',
-          override_value: '63g',
-          override_source: 'candidate_selection',
-          accepted_candidate_id: 'cand-weight-001',
-        }],
-      },
-      // itemFieldState row has id=42 for weight field
-      itemFieldStateIds: {
-        'mouse-reviewed::weight': { id: 42 },
-      },
-      // AI review was written with contextId = '42' (itemFieldStateId), not 'mouse-reviewed'
-      reviewsByContext: {
-        'item::42': [{
-          candidate_id: 'cand-weight-001',
-          ai_review_status: 'accepted',
-          ai_confidence: 0.95,
-          ai_reason: 'primary_confirm',
-          ai_reviewed_at: '2026-04-01T00:00:00Z',
-          ai_review_model: 'gpt-4',
-        }],
-      },
-    });
-    const config = { categoryAuthorityRoot: tmpDir };
-    const result = await cmd(config, {}, { category: 'mouse', _: [] });
-
-    const filePath = path.join(tmpDir, 'mouse', '_overrides', 'overrides.json');
-    const raw = await fs.readFile(filePath, 'utf8');
-    const envelope = JSON.parse(raw);
-
-    const weightOverride = envelope.products['mouse-reviewed'].overrides.weight;
-    assert.ok(weightOverride.ai_review, 'AI review should be present');
-    assert.equal(weightOverride.ai_review.ai_review_status, 'accepted');
-    assert.equal(weightOverride.ai_review.ai_confidence, 0.95);
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

@@ -81,15 +81,12 @@ export function registerReviewRoutes(ctx) {
     setManualOverride,
     syncPrimaryLaneAcceptFromItemSelection,
     resolveKeyReviewForLaneMutation,
-    getPendingItemPrimaryCandidateIds,
     markPrimaryLaneReviewedInItemState,
     syncItemFieldStateFromPrimaryLaneAccept,
     isMeaningfulValue,
     propagateSharedLaneDecision,
     // Component mutation helpers
-    syncSyntheticCandidatesFromComponentReview,
     resolveComponentMutationContext,
-    candidateLooksReference,
     normalizeLower,
     buildComponentIdentifier,
     applySharedLaneState,
@@ -97,14 +94,10 @@ export function registerReviewRoutes(ctx) {
     loadQueueState,
     saveQueueState,
     remapPendingComponentReviewItemsForNameChange,
-    getPendingComponentSharedCandidateIdsAsync,
     // Enum mutation helpers
     resolveEnumMutationContext,
-    getPendingEnumSharedCandidateIds,
     cascadeEnumChange,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
-    // Candidate enrichment helpers
-    annotateCandidatePrimaryReviews,
     ensureGridKeyReviewState,
     patchCompiledComponentDb,
   } = ctx;
@@ -123,7 +116,7 @@ export function registerReviewRoutes(ctx) {
   const fieldReviewContext = {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage,
     getSpecDb, buildReviewLayout, buildProductReviewPayload, buildReviewQueue,
-    sessionCache, annotateCandidatePrimaryReviews, slugify,
+    sessionCache, slugify,
     broadcastWs, path, spawn,
   };
 
@@ -166,7 +159,6 @@ export function registerReviewRoutes(ctx) {
         setManualOverride,
         syncPrimaryLaneAcceptFromItemSelection,
         resolveKeyReviewForLaneMutation,
-        getPendingItemPrimaryCandidateIds,
         markPrimaryLaneReviewedInItemState,
         syncItemFieldStateFromPrimaryLaneAccept,
         isMeaningfulValue,
@@ -193,10 +185,8 @@ export function registerReviewRoutes(ctx) {
         readJsonBody,
         jsonRes,
         getSpecDbReady,
-        syncSyntheticCandidatesFromComponentReview,
         resolveComponentMutationContext,
         isMeaningfulValue,
-        candidateLooksReference,
         normalizeLower,
         buildComponentIdentifier,
         applySharedLaneState,
@@ -208,7 +198,6 @@ export function registerReviewRoutes(ctx) {
         remapPendingComponentReviewItemsForNameChange,
         specDbCache,
         broadcastWs,
-        getPendingComponentSharedCandidateIdsAsync,
       },
     });
     if (handledReviewComponentMutation !== false) return handledReviewComponentMutation;
@@ -223,13 +212,10 @@ export function registerReviewRoutes(ctx) {
         readJsonBody,
         jsonRes,
         getSpecDbReady,
-        syncSyntheticCandidatesFromComponentReview,
         resolveEnumMutationContext,
         isMeaningfulValue,
         normalizeLower,
-        candidateLooksReference,
         applySharedLaneState,
-        getPendingEnumSharedCandidateIds,
         specDbCache,
         storage,
         outputRoot: OUTPUT_ROOT,

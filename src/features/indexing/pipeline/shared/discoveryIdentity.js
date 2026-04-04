@@ -5,6 +5,8 @@
  * All functions are pure — zero module state, zero side effects.
  */
 
+import { deriveFullModel } from '../../../catalog/identity/identityDedup.js';
+
 // WHY: Shared constant for query→slot mapping. 26 letters = max 26 parallel
 // search worker slots. Used by orchestrator (search_queued events) and
 // result processing (search_slot enrichment).
@@ -73,17 +75,23 @@ export function resolveJobIdentity(job = {}) {
   const identityLock = job?.identityLock && typeof job.identityLock === 'object'
     ? job.identityLock
     : {};
+  const brand = String(identityLock.brand || job?.brand || '').trim();
+  const base_model = String(identityLock.base_model || job?.base_model || '').trim();
+  const variant = String(identityLock.variant || job?.variant || '').trim();
+  const rawModel = String(identityLock.model || job?.model || '').trim();
   return {
-    brand: String(identityLock.brand || job?.brand || '').trim(),
-    base_model: String(identityLock.base_model || job?.base_model || '').trim(),
-    model: String(identityLock.model || job?.model || '').trim(),
-    variant: String(identityLock.variant || job?.variant || '').trim()
+    brand,
+    base_model,
+    model: base_model ? deriveFullModel(base_model, variant) : rawModel,
+    variant
   };
 }
 
 export function productText(variables = {}) {
-  // WHY: Use base_model + variant to avoid duplication when model is the full derived name.
-  return [variables.brand, variables.base_model || variables.model, variables.variant]
+  const baseModel = String(variables.base_model || '').trim();
+  const model = String(baseModel || variables.model || '').trim();
+  const variant = String(baseModel ? variables.variant : '').trim();
+  return [variables.brand, model, variant]
     .map((value) => String(value || '').trim())
     .filter(Boolean)
     .join(' ')
@@ -110,9 +118,12 @@ export const GENERIC_MODEL_TOKENS = new Set([
 
 export function normalizeIdentityTokens(variables = {}) {
   const brandTokens = [...new Set(tokenize(variables.brand))];
+  const baseModel = String(variables.base_model || '').trim();
+  const modelText = baseModel
+    ? [baseModel, variables.variant].filter(Boolean).join(' ')
+    : String(variables.model || '').trim();
   const modelTokens = [...new Set([
-    ...tokenize(variables.model),
-    ...tokenize(variables.variant)
+    ...tokenize(modelText)
   ])].filter((token) => !brandTokens.includes(token) && !GENERIC_MODEL_TOKENS.has(token));
   return {
     brandTokens,
@@ -127,11 +138,13 @@ export function normalizeIdentityTokens(variables = {}) {
 export function buildModelSlugCandidates(variables = {}, cap = 6) {
   const entries = [];
   const brandSlug = slug(variables.brand || '');
-  const baseModel = variables.base_model || variables.model || '';
-  const modelSlug = slug(baseModel);
-  const variantSlug = slug(variables.variant || '');
-  const combinedModel = slug([baseModel, variables.variant].filter(Boolean).join(' '));
-  const brandModel = slug([variables.brand, baseModel, variables.variant].filter(Boolean).join(' '));
+  const baseModel = String(variables.base_model || '').trim();
+  const modelValue = String(baseModel || variables.model || '').trim();
+  const variantValue = String(baseModel ? variables.variant : '').trim();
+  const modelSlug = slug(modelValue);
+  const variantSlug = slug(variantValue);
+  const combinedModel = slug([modelValue, variantValue].filter(Boolean).join(' '));
+  const brandModel = slug([variables.brand, modelValue, variantValue].filter(Boolean).join(' '));
 
   for (const value of [combinedModel, modelSlug, brandModel]) {
     if (value) {

@@ -13,9 +13,9 @@ test('DB SEED - SpecDb table verification', async (t) => {
   await withSeededSpecDbFixture(async ({ db, config, seedResult }) => {
     const fieldRules = buildFieldRulesForSeed();
 
-    await t.test('DB-01: all 9 tables have non-zero counts', () => {
+    await t.test('DB-01: all 7 tables have non-zero counts', () => {
       const counts = seedResult.counts;
-      for (const table of ['candidates', 'candidate_reviews', 'component_values', 'component_identity', 'component_aliases', 'list_values', 'item_field_state', 'item_component_links', 'item_list_links']) {
+      for (const table of ['component_values', 'component_identity', 'component_aliases', 'list_values', 'item_field_state', 'item_component_links', 'item_list_links']) {
         assert.ok(counts[table] > 0, `${table} should have rows, got ${counts[table]}`);
       }
     });
@@ -70,17 +70,6 @@ test('DB SEED - SpecDb table verification', async (t) => {
       assert.ok(softTouchValue, 'coating should include manual value "Soft-touch"');
     });
 
-    await t.test('DB-06: candidates table has entries from all 5 products', () => {
-      const productIds = new Set();
-      for (const productId of Object.keys(PRODUCTS)) {
-        const grouped = db.getCandidatesForProduct(productId);
-        const fieldKeys = Object.keys(grouped);
-        assert.ok(fieldKeys.length > 0, `${productId} should have candidates`);
-        productIds.add(productId);
-      }
-      assert.equal(productIds.size, 5);
-    });
-
     await t.test('DB-07: item_field_state covers all product x field combinations', () => {
       const fieldCount = Object.keys(FIELD_RULES_FIELDS).length;
       for (const productId of Object.keys(PRODUCTS)) {
@@ -125,21 +114,6 @@ test('DB SEED - SpecDb table verification', async (t) => {
       assert.ok(seedResult.counts.item_list_links >= 4, `Should have >= 4 list links, got ${seedResult.counts.item_list_links}`);
     });
 
-    await t.test('DB-10: candidate_reviews created from override files with candidate_id', () => {
-      const logitechReviews = db.getReviewsForCandidate('mouse-logitech-g502-x::dpi::logi-d1');
-      assert.ok(logitechReviews.length > 0, 'Should have review for logi-d1');
-      assert.equal(logitechReviews[0].context_type, 'item');
-      assert.equal(Boolean(logitechReviews[0].human_accepted), true);
-
-      const zowieReviews = db.getReviewsForCandidate('mouse-zowie-ec2-c::sensor::zowie-s1');
-      assert.ok(zowieReviews.length > 0, 'Should have review for zowie-s1');
-
-      const endgameReviews = db.getReviewsForCandidate('mouse-endgame-gear-op1we::switch_type::eg-sw1');
-      assert.ok(endgameReviews.length > 0, 'Should have review for eg-sw1');
-
-      assert.ok(seedResult.counts.candidate_reviews >= 3, `Should have >= 3 reviews, got ${seedResult.counts.candidate_reviews}`);
-    });
-
     await t.test('DB-11: idempotent re-seed produces same counts', async () => {
       const countsBefore = db.counts();
       const { seedSpecDb } = await import('../../../db/seed.js');
@@ -148,11 +122,5 @@ test('DB SEED - SpecDb table verification', async (t) => {
       assert.deepEqual(countsAfter, countsBefore);
     });
 
-    await t.test('DB-12: shared component PAW3950 has candidates from both razer and pulsar', () => {
-      const razerCandidates = db.getCandidatesForField('mouse-razer-viper-v3-pro', 'sensor');
-      const pulsarCandidates = db.getCandidatesForField('mouse-pulsar-x2-v3', 'sensor');
-      assert.ok(razerCandidates.some((candidate) => candidate.value === 'PAW3950'), 'Razer should have PAW3950 candidate');
-      assert.ok(pulsarCandidates.some((candidate) => candidate.value === 'PAW3950'), 'Pulsar should have PAW3950 candidate');
-    });
   });
 });

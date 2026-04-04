@@ -35,7 +35,7 @@ export { queryEnhancerResponseZodSchema } from './queryPlannerLlmAdapter.js';
 function passesIdentityLock(query, identityLock) {
   const q = String(query || '').toLowerCase();
   const brand = String(identityLock?.brand || '').toLowerCase().trim();
-  const model = String(identityLock?.model || '').toLowerCase().trim();
+  const model = String(identityLock?.base_model || '').toLowerCase().trim();
   if (!brand || !model) return true;
   return q.includes(brand) && q.includes(model);
 }
@@ -71,7 +71,7 @@ export async function enhanceQueryRows({
     identity_lock: {
       brand: String(identityLock.brand || ''),
       base_model: String(identityLock.base_model || ''),
-      model: String(identityLock.base_model || identityLock.model || ''),
+      model: String(identityLock.model || ''),
       variant: String(identityLock.variant || ''),
     },
     query_history: toArray(queryHistory),
@@ -154,4 +154,3 @@ export async function enhanceQueryRows({
 
   return buildDeterministicFallback(rows);
 }
-

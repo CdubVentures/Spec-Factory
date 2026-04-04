@@ -114,11 +114,6 @@ export async function seedLatestArtifacts(storage, category, productId, product)
       }), 'utf8'),
       { contentType: 'application/json' },
     ),
-    storage.writeObject(
-      `${latestBase}/candidates.json`,
-      Buffer.from(JSON.stringify(product.candidates), 'utf8'),
-      { contentType: 'application/json' },
-    ),
   ]);
 }
 
@@ -139,44 +134,6 @@ export function buildFieldRulesForSeed() {
     componentDBs: { sensor: { entries, __index: index } },
     knownValues: { enums: KNOWN_VALUE_ENUMS },
   };
-}
-
-export function replaceCandidateRow(db, {
-  candidateId,
-  category,
-  productId,
-  fieldKey,
-  value,
-  score = 0.9,
-  isComponentField = false,
-  isListField = false,
-  componentType = null,
-}) {
-  db.db.prepare('DELETE FROM candidate_reviews WHERE candidate_id = ?').run(candidateId);
-  db.db.prepare('DELETE FROM candidates WHERE candidate_id = ?').run(candidateId);
-  db.insertCandidate({
-    candidate_id: candidateId,
-    category,
-    product_id: productId,
-    field_key: fieldKey,
-    value,
-    normalized_value: String(value ?? '').trim().toLowerCase(),
-    score,
-    rank: 1,
-    source_host: 'contract.test',
-    source_root_domain: 'contract.test',
-    source_method: 'llm',
-    source_tier: 2,
-    approved_domain: false,
-    snippet_text: 'contract lane test candidate',
-    quote: 'contract lane test candidate',
-    evidence_url: 'https://contract.test',
-    evidence_retrieved_at: new Date().toISOString(),
-    is_component_field: isComponentField,
-    component_type: componentType,
-    is_list_field: isListField,
-    extracted_at: new Date().toISOString(),
-  });
 }
 
 export function findFreePort() {

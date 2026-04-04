@@ -8,7 +8,7 @@ import { toFloat } from './typeHelpers.js';
 
 export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null } = {}) {
   const brandToken = normalizeIdentityToken(identityLock?.brand);
-  const modelToken = normalizeIdentityToken(identityLock?.model);
+  const modelToken = normalizeIdentityToken(identityLock?.base_model);
   if (!brandToken || !modelToken) {
     return {
       family_model_count: 0,
@@ -41,7 +41,7 @@ export async function resolveIdentityAmbiguitySnapshot({ config, category = '', 
 
 export function buildRunIdentityFingerprint({ category = '', productId = '', identityLock = {} } = {}) {
   const lockBrand = normalizeIdentityToken(identityLock?.brand);
-  const lockModel = normalizeIdentityToken(identityLock?.model);
+  const lockModel = normalizeIdentityToken(identityLock?.base_model);
   const lockVariant = normalizeIdentityToken(identityLock?.variant);
   const lockSku = normalizeIdentityToken(identityLock?.sku);
   const seed = [
@@ -108,13 +108,13 @@ export function helperSupportsProvisionalFill(helperContext, identityLock = {}) 
   }
 
   const expectedBrand = normalizeIdentityToken(identityLock?.brand);
-  const expectedModel = normalizeIdentityToken(identityLock?.model);
+  const expectedModel = normalizeIdentityToken(identityLock?.base_model);
   if (!expectedBrand || !expectedModel) {
     return false;
   }
 
   const matchBrand = normalizeIdentityToken(topMatch.brand);
-  const matchModel = normalizeIdentityToken(topMatch.model);
+  const matchModel = normalizeIdentityToken(topMatch.base_model || topMatch.model);
   if (matchBrand !== expectedBrand || matchModel !== expectedModel) {
     return false;
   }
@@ -186,7 +186,7 @@ export function resolveExtractionGateOpen({
   if (ambiguityLevel === 'hard' || ambiguityLevel === 'very_hard' || ambiguityLevel === 'extra_hard') {
     return false;
   }
-  return Boolean(normalizeIdentityToken(identityLock?.brand) && normalizeIdentityToken(identityLock?.model));
+  return Boolean(normalizeIdentityToken(identityLock?.brand) && normalizeIdentityToken(identityLock?.base_model));
 }
 
 export function buildNeedSetIdentityAuditRows(identityReport = {}, limit = 24) {

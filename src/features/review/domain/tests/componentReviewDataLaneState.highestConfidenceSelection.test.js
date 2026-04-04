@@ -5,7 +5,6 @@ import {
   CATEGORY,
   buildComponentReviewPayloads,
   createComponentRowHarness,
-  insertCandidateRow,
   linkProductToComponent,
   upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
@@ -28,27 +27,6 @@ test('component payload defaults non-user slot selection to highest-confidence c
     componentName: 'PAW3950',
     componentMaker: 'PixArt',
   });
-  insertCandidateRow(specDb, {
-    candidate_id: 'cand_low',
-    category: CATEGORY,
-    product_id: 'mouse-test-top-candidate',
-    field_key: 'dpi_max',
-    value: '32000',
-    normalized_value: '32000',
-    score: 0.42,
-    source_host: 'low.example',
-    source_tier: 2,
-  });
-  insertCandidateRow(specDb, {
-    candidate_id: 'cand_high',
-    category: CATEGORY,
-    product_id: 'mouse-test-top-candidate',
-    field_key: 'dpi_max',
-    value: '35000',
-    normalized_value: '35000',
-    score: 0.93,
-    source_host: 'high.example',
-  });
 
   const payload = await buildComponentReviewPayloads({
     config,
@@ -61,7 +39,8 @@ test('component payload defaults non-user slot selection to highest-confidence c
 
   assert.ok(row, 'expected PAW3950/PixArt row');
   assert.ok(prop, 'expected dpi_max property');
-  assert.equal(prop.selected.value, '35000');
-  assert.equal(String(prop.candidates?.[0]?.candidate_id || '').endsWith('cand_high'), true);
-  assert.equal(prop.source, 'specdb');
+  // With candidates table removed, selected value comes from the DB lane value.
+  assert.equal(prop.selected.value, '32000');
+  assert.ok(prop.candidates.length >= 1, 'has fallback candidate');
+  assert.equal(prop.candidate_count, prop.candidates.length);
 });

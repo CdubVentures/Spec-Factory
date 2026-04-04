@@ -5,6 +5,8 @@ import { hasExplicitSettingEnv } from '../settingsClassification.js';
 import { assembleConfigFromRegistry } from '../configAssembly.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../../../shared/settingsRegistry.js';
 import { createManifestApplicator, buildRawConfig } from '../configBuilder.js';
+import { applyRuntimeSettingsToConfig } from '../../../features/settings-authority/userSettingsService.js';
+import { loadConfig } from '../configOrchestrator.js';
 
 // ── Step 1: DEEPSEEK_API_KEY must not trigger provider inference ─────────────
 
@@ -96,5 +98,36 @@ test('buildRawConfig produces empty string for API keys even when env is set', (
     assert.equal(cfg.deepseekApiKey, '', 'deepseek key should not come from env');
     assert.equal(cfg.openaiApiKey, '', 'openai key should not come from env');
     assert.equal(cfg.serperApiKey, '', 'serper key should not come from env');
+  });
+});
+
+// ── Proxy keys flow from SQL overlay, not env ────────────────────────────────
+
+test('proxy URLs flow through SQL overlay, not from env', () => {
+  const envKeys = ['GOOGLE_SEARCH_PROXY_URLS_JSON', 'CRAWLEE_PROXY_URLS_JSON'];
+
+  return withSavedEnv(envKeys, () => {
+    // Env has proxy values — but they should NOT flow into config
+    process.env.GOOGLE_SEARCH_PROXY_URLS_JSON = '["http://env-proxy:1111"]';
+    process.env.CRAWLEE_PROXY_URLS_JSON = '["http://env-proxy:2222"]';
+
+    const config = loadConfig({});
+
+    // Config starts at registry default (empty) because env is ignored for secrets
+    assert.equal(config.googleSearchProxyUrlsJson, '',
+      'google proxy starts empty before SQL overlay');
+    assert.equal(config.crawleeProxyUrlsJson, '',
+      'crawlee proxy starts empty before SQL overlay');
+
+    // SQL overlay applies the persisted values
+    applyRuntimeSettingsToConfig(config, {
+      googleSearchProxyUrlsJson: '["http://sql-proxy:3333"]',
+      crawleeProxyUrlsJson: '["http://sql-proxy:4444"]',
+    });
+
+    assert.equal(config.googleSearchProxyUrlsJson, '["http://sql-proxy:3333"]',
+      'google proxy should come from SQL overlay');
+    assert.equal(config.crawleeProxyUrlsJson, '["http://sql-proxy:4444"]',
+      'crawlee proxy should come from SQL overlay');
   });
 });

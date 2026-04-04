@@ -186,7 +186,6 @@ test('component key review confirm failures surface component_key_review_confirm
     readJsonBody: async () => ({ property: 'dpi', candidateId: 'ref_c1', componentValueId: 1 }),
     getSpecDbReady: async () => makeSeededRuntimeSpecDb({
       getKeyReviewState: () => null,
-      getCandidateById: () => ({ candidate_id: 'ref_c1', field_key: 'dpi', value: '16000', score: 0.9 }),
       upsertReview: () => { throw new Error('db crash'); },
     }),
   });

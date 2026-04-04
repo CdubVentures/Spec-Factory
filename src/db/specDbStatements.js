@@ -7,47 +7,6 @@
  */
 export function prepareStatements(db) {
   return {
-    _insertCandidate: db.prepare(`
-      INSERT OR REPLACE INTO candidates (
-        candidate_id, category, product_id, field_key, value, normalized_value,
-        score, rank, source_url, source_host, source_root_domain, source_tier,
-        source_method, approved_domain, snippet_id, snippet_hash, snippet_text,
-        quote, quote_span_start, quote_span_end, evidence_url, evidence_retrieved_at,
-        is_component_field, component_type, is_list_field, llm_extract_model,
-        extracted_at, run_id
-      ) VALUES (
-        @candidate_id, @category, @product_id, @field_key, @value, @normalized_value,
-        @score, @rank, @source_url, @source_host, @source_root_domain, @source_tier,
-        @source_method, @approved_domain, @snippet_id, @snippet_hash, @snippet_text,
-        @quote, @quote_span_start, @quote_span_end, @evidence_url, @evidence_retrieved_at,
-        @is_component_field, @component_type, @is_list_field, @llm_extract_model,
-        @extracted_at, @run_id
-      )
-    `),
-
-    _upsertReview: db.prepare(`
-      INSERT INTO candidate_reviews (
-        candidate_id, context_type, context_id, human_accepted, human_accepted_at,
-        ai_review_status, ai_confidence, ai_reason, ai_reviewed_at, ai_review_model,
-        human_override_ai, human_override_ai_at
-      ) VALUES (
-        @candidate_id, @context_type, @context_id, @human_accepted, @human_accepted_at,
-        @ai_review_status, @ai_confidence, @ai_reason, @ai_reviewed_at, @ai_review_model,
-        @human_override_ai, @human_override_ai_at
-      )
-      ON CONFLICT(candidate_id, context_type, context_id) DO UPDATE SET
-        human_accepted = excluded.human_accepted,
-        human_accepted_at = COALESCE(excluded.human_accepted_at, human_accepted_at),
-        ai_review_status = excluded.ai_review_status,
-        ai_confidence = COALESCE(excluded.ai_confidence, ai_confidence),
-        ai_reason = COALESCE(excluded.ai_reason, ai_reason),
-        ai_reviewed_at = COALESCE(excluded.ai_reviewed_at, ai_reviewed_at),
-        ai_review_model = COALESCE(excluded.ai_review_model, ai_review_model),
-        human_override_ai = excluded.human_override_ai,
-        human_override_ai_at = COALESCE(excluded.human_override_ai_at, human_override_ai_at),
-        updated_at = datetime('now')
-    `),
-
     _upsertComponentIdentity: db.prepare(`
       INSERT INTO component_identity (category, component_type, canonical_name, maker, links, source)
       VALUES (@category, @component_type, @canonical_name, @maker, @links, @source)
@@ -588,14 +547,8 @@ export function prepareStatements(db) {
     `),
     _getProvenanceForProduct: db.prepare(`
       SELECT
-        ifs.field_key, ifs.value, ifs.confidence, ifs.source, ifs.accepted_candidate_id,
-        c.source_url, c.source_host, c.source_root_domain,
-        c.source_tier, c.source_method, c.approved_domain,
-        c.snippet_id, c.snippet_hash, c.snippet_text,
-        c.quote, c.quote_span_start, c.quote_span_end,
-        c.evidence_url, c.evidence_retrieved_at
+        ifs.field_key, ifs.value, ifs.confidence, ifs.source, ifs.accepted_candidate_id
       FROM item_field_state ifs
-      LEFT JOIN candidates c ON c.candidate_id = ifs.accepted_candidate_id
       WHERE ifs.category = ? AND ifs.product_id = ?
       ORDER BY ifs.field_key
     `),

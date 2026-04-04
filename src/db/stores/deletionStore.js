@@ -48,16 +48,6 @@ function placeholders(ids) {
  */
 export function createDeletionStore({ db, category: defaultCategory }) {
 
-  // ── Shared cascade helpers ──────────────────────────────────────────────
-
-  function deleteCandidatesByFilter(where, params) {
-    const candIds = db.prepare(`SELECT candidate_id FROM candidates WHERE ${where}`).all(...params).map((r) => r.candidate_id);
-    if (!candIds.length) return 0;
-    const ph = placeholders(candIds);
-    db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (${ph})`).run(...candIds);
-    return db.prepare(`DELETE FROM candidates WHERE candidate_id IN (${ph})`).run(...candIds).changes;
-  }
-
   // ── deleteRun ───────────────────────────────────────────────────────────
 
   function deleteRun({ runId, productId, category = defaultCategory, fsRoots }) {
@@ -86,8 +76,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM prompt_index WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE run_id = ?').run(rid).changes;
-      // Phase 2 — Candidates
-      totalDeleted += deleteCandidatesByFilter('run_id = ?', [rid]);
 
       // Phase 4 — Artifact tables
       const contentHashes = db.prepare('SELECT content_hash FROM crawl_sources WHERE run_id = ?').all(rid).map((r) => r.content_hash).filter(Boolean);
@@ -164,8 +152,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
     // Step 1: Resolve scope — find all content_hashes and run_ids for this URL
     const crawlRows = db.prepare('SELECT content_hash, run_id FROM crawl_sources WHERE source_url = ? AND product_id = ?').all(u, pid);
-    const candidateExists = db.prepare('SELECT 1 FROM candidates WHERE source_url = ? AND product_id = ?').get(u, pid);
-    if (!crawlRows.length && !candidateExists) {
+    if (!crawlRows.length) {
       return { ok: false, url: u, product_id: pid, reason: 'url_not_found' };
     }
 
@@ -176,9 +163,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
     // Step 2: SQL transaction
     const tx = db.transaction(() => {
-      // Candidates from this URL
-      totalDeleted += deleteCandidatesByFilter('source_url = ? AND product_id = ?', [u, pid]);
-
       // Artifact tables
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
@@ -311,8 +295,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
         totalDeleted += db.prepare(`DELETE FROM key_review_state WHERE id IN (${ph})`).run(...krsIds).changes;
       }
 
-      // Phase 4 — Candidates & field state
-      totalDeleted += deleteCandidatesByFilter('product_id = ? AND category = ?', [pid, cat]);
+      // Phase 4 — Field state
       totalDeleted += db.prepare('DELETE FROM item_list_links WHERE product_id = ? AND category = ?').run(pid, cat).changes;
       totalDeleted += db.prepare('DELETE FROM item_component_links WHERE product_id = ? AND category = ?').run(pid, cat).changes;
       totalDeleted += db.prepare('DELETE FROM item_field_state WHERE product_id = ? AND category = ?').run(pid, cat).changes;
