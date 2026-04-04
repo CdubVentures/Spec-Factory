@@ -58,7 +58,7 @@ test('appendCostLedgerEntry writes to SQL when specDb is provided', async () => 
 
   await appendCostLedgerEntry({
     storage,
-    config: { s3OutputPrefix: 'specs/outputs' },
+    config: {},
     entry: makeEntry(),
     specDb,
   });
@@ -88,7 +88,7 @@ test('appendCostLedgerEntry skips NDJSON when specDb is provided', async () => {
 
   const result = await appendCostLedgerEntry({
     storage,
-    config: { s3OutputPrefix: 'specs/outputs' },
+    config: {},
     entry: makeEntry(),
     specDb,
   });
@@ -102,7 +102,7 @@ test('appendCostLedgerEntry is a no-op when specDb is null (no NDJSON fallback)'
 
   const result = await appendCostLedgerEntry({
     storage,
-    config: { s3OutputPrefix: 'specs/outputs' },
+    config: {},
     entry: makeEntry(),
     specDb: null,
   });

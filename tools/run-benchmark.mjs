@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadConfig, loadDotEnvFile, applyRunProfile } from '../../src/config.js';
+import { loadConfigWithUserSettings, loadDotEnvFile, applyRunProfile } from '../../src/config.js';
 import { createStorage } from '../../src/core/storage/storage.js';
 import { runProduct } from '../../src/pipeline/runProduct.js';
 
@@ -136,7 +136,7 @@ async function main() {
   const productFilterArg = process.argv.find((arg) => arg.startsWith('--product='));
   const productFilter = productFilterArg ? productFilterArg.split('=')[1] : null;
 
-  const baseConfig = loadConfig({ localMode: true, discoveryEnabled: true, fetchCandidateSources: true });
+  const baseConfig = loadConfigWithUserSettings({ localMode: true, discoveryEnabled: true, fetchCandidateSources: true });
   const config = applyRunProfile(baseConfig, profileName);
 
   const storage = createStorage(config);

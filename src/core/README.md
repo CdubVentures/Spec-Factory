@@ -9,7 +9,6 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/client/routing.js`: `resolveLlmRoute()`, `resolveLlmFallbackRoute()`, `hasLlmRouteApiKey()`, `hasAnyLlmApiKey()`, `llmRoutingSnapshot()`, `callLlmWithRouting()`.
 - `src/core/llm/client/llmClient.js`: `getProviderHealth()`, `redactOpenAiError()`, `callLlmProvider()`.
 - `src/core/llm/client/healthCheck.js`: `runLlmHealthCheck()`.
-- `src/core/llm/client/llmCache.js`: `LLMCache`.
 - `src/core/llm/client/providerHealth.js`: `LlmProviderHealth`, `normalizeProviderBaseUrl()`.
 - `src/core/llm/providers/index.js`: `selectLlmProvider()`.
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.

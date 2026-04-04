@@ -19,11 +19,9 @@ function createStorageStub({ keys = [], textByKey = {}, jsonByKey = {} } = {}) {
 
 function createSpecDbStub() {
   const billingEntries = [];
-  const llmCacheEntries = [];
   let closed = false;
   return {
     billingEntries,
-    llmCacheEntries,
     wasClosed: () => closed,
     getAllQueueProducts() {
       return [{ product_id: 'a' }, { product_id: 'b' }];
@@ -31,10 +29,6 @@ function createSpecDbStub() {
     insertBillingEntry(entry) {
       billingEntries.push(entry);
     },
-    setLlmCacheEntry(key, response, timestamp, ttl) {
-      llmCacheEntries.push({ key, response, timestamp, ttl });
-    },
-    upsertSourceCorpusBatch() {},
     counts() {
       return { queue_products: 2, billing_ledger: billingEntries.length };
     },
@@ -129,7 +123,7 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
     now: () => 0,
   });
 
-  const result = await command({ s3OutputPrefix: 'output' }, storage, { category: 'mouse', phase: '2' });
+  const result = await command({}, storage, { category: 'mouse', phase: '2' });
 
   assert.equal(result.results.phase2_billing.status, 'imported');
   assert.equal(result.results.phase2_billing.files, 1);
@@ -138,53 +132,4 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
   assert.equal(specDb.wasClosed(), true);
 });
 
-test('migrate-to-sqlite phase 3 imports only fresh llm cache entries and skips expired or malformed files', async () => {
-  const specDb = createSpecDbStub();
-  const command = createMigrateToSqliteCommand({
-    openSpecDbForCategory: async () => specDb,
-    toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    fsNode: {
-      readdir: async () => ['fresh.json', 'expired.json', 'bad.json', 'missing-response.json'],
-      readFile: async (filePath) => {
-        if (filePath.endsWith('fresh.json')) {
-          return JSON.stringify({
-            response: { ok: true },
-            timestamp: 10_000,
-            ttl: 5_000,
-          });
-        }
-        if (filePath.endsWith('expired.json')) {
-          return JSON.stringify({
-            response: { ok: false },
-            timestamp: 1_000,
-            ttl: 500,
-          });
-        }
-        if (filePath.endsWith('missing-response.json')) {
-          return JSON.stringify({
-            timestamp: 10_000,
-            ttl: 5_000,
-          });
-        }
-        return '{bad-json';
-      },
-    },
-    pathNode: { join: (...parts) => parts.join('/') },
-    now: () => 12_000,
-  });
-
-  const result = await command({}, createStorageStub(), { category: 'mouse', phase: '3' });
-
-  assert.deepEqual(result.results.phase3_cache, {
-    status: 'imported',
-    entries: 1,
-  });
-  assert.deepEqual(specDb.llmCacheEntries, [{
-    key: 'fresh',
-    response: JSON.stringify({ ok: true }),
-    timestamp: 10_000,
-    ttl: 5_000,
-  }]);
-  assert.equal(specDb.wasClosed(), true);
-});
 

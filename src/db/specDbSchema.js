@@ -312,25 +312,6 @@ CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, i
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
--- Source capture tables (evidence lineage, model-agnostic)
-
-CREATE TABLE IF NOT EXISTS source_registry (
-  source_id TEXT PRIMARY KEY,
-  category TEXT NOT NULL,
-  item_identifier TEXT NOT NULL,
-  product_id TEXT,
-  run_id TEXT,
-  source_url TEXT NOT NULL,
-  source_host TEXT,
-  source_root_domain TEXT,
-  source_tier INTEGER,
-  source_method TEXT,
-  crawl_status TEXT DEFAULT 'fetched',
-  http_status INTEGER,
-  fetched_at TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
 
 -- Key review tables (AI decisions, user overrides, contract snapshots)
 
@@ -451,7 +432,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_component
   ON key_review_state(category, component_identifier, property_key)
   WHERE target_kind = 'component_key';
 
-CREATE INDEX IF NOT EXISTS idx_sr_item ON source_registry(category, item_identifier);
 CREATE INDEX IF NOT EXISTS idx_krs_kind ON key_review_state(category, target_kind, field_key);
 CREATE INDEX IF NOT EXISTS idx_krs_selected_candidate ON key_review_state(category, selected_candidate_id);
 CREATE INDEX IF NOT EXISTS idx_krr_state ON key_review_runs(key_review_state_id, stage, status);
@@ -492,39 +472,6 @@ CREATE TABLE IF NOT EXISTS data_authority_sync (
   last_sync_at TEXT,
   last_sync_meta TEXT DEFAULT '{}'
 );
-
--- Migration Phase 3: LLM cache
-CREATE TABLE IF NOT EXISTS llm_cache (
-  cache_key TEXT PRIMARY KEY,
-  response TEXT NOT NULL,
-  timestamp INTEGER NOT NULL,
-  ttl INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_llmc_expiry ON llm_cache(timestamp);
-
--- Migration Phase 7: Source corpus
-CREATE TABLE IF NOT EXISTS source_corpus (
-  url TEXT PRIMARY KEY,
-  category TEXT NOT NULL,
-  host TEXT DEFAULT '',
-  root_domain TEXT DEFAULT '',
-  path TEXT DEFAULT '',
-  title TEXT DEFAULT '',
-  snippet TEXT DEFAULT '',
-  tier INTEGER DEFAULT 99,
-  role TEXT DEFAULT '',
-  fields TEXT DEFAULT '[]',
-  methods TEXT DEFAULT '[]',
-  identity_match INTEGER DEFAULT 0,
-  approved_domain INTEGER DEFAULT 0,
-  brand TEXT DEFAULT '',
-  model_name TEXT DEFAULT '',
-  variant TEXT DEFAULT '',
-  first_seen_at TEXT,
-  last_seen_at TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_sc_category ON source_corpus(category);
-CREATE INDEX IF NOT EXISTS idx_sc_domain ON source_corpus(root_domain);
 
 -- Bridge events: transformed runtime events for GUI readers (mirrors run_events.ndjson shape)
 CREATE TABLE IF NOT EXISTS bridge_events (
@@ -582,34 +529,7 @@ CREATE TABLE IF NOT EXISTS run_artifacts (
 CREATE INDEX IF NOT EXISTS idx_rart_run_id ON run_artifacts(run_id);
 CREATE INDEX IF NOT EXISTS idx_rart_category ON run_artifacts(category);
 
--- Sprint 4: LLM-Guided Discovery tables
-
-CREATE TABLE IF NOT EXISTS brand_domains (
-  brand TEXT NOT NULL,
-  category TEXT NOT NULL,
-  official_domain TEXT,
-  aliases TEXT,
-  support_domain TEXT,
-  confidence REAL DEFAULT 0.8,
-  resolved_at TEXT DEFAULT (datetime('now')),
-  PRIMARY KEY (brand, category)
-);
-
 -- source_strategy table removed: sources.json is now the SSOT (see sourceFileService.js)
-
-CREATE TABLE IF NOT EXISTS field_history (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  field_key TEXT NOT NULL,
-  round INTEGER NOT NULL,
-  run_id TEXT NOT NULL,
-  history_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(category, product_id, field_key)
-);
-CREATE INDEX IF NOT EXISTS idx_fh_product ON field_history(category, product_id);
 
 -- Artifact storage: content-addressed binary index (HTML, screenshots, PDFs on disk; SQL points to them)
 
@@ -874,7 +794,6 @@ export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridde
 export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs_ai_review', 'ai_review_complete']);
 export const KEY_REVIEW_STATE_BOOLEAN_KEYS = Object.freeze(['ai_confirm_primary_interrupted', 'ai_confirm_shared_interrupted', 'user_override_ai_primary', 'user_override_ai_shared']);
 export const PRODUCT_RUN_BOOLEAN_KEYS = Object.freeze(['is_latest', 'validated']);
-export const SOURCE_CORPUS_BOOLEAN_KEYS = Object.freeze(['identity_match', 'approved_domain']);
 export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
 
 // WHY: SSOT for component identity property keys (synthetic __-prefixed keys).

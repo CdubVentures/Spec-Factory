@@ -87,7 +87,7 @@ function makeMockSpecDb() {
 
 test('cost ledger appends entries via SQL and rolls up month totals', async () => {
   const storage = makeMemoryStorage();
-  const config = { s3OutputPrefix: 'specs/outputs' };
+  const config = {};
   const specDb = makeMockSpecDb();
 
   const usage1 = normalizeUsage({

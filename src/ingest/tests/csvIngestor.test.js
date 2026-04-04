@@ -30,8 +30,6 @@ test('ingestCsvFile parses rows, creates product jobs, and updates queue state',
     localMode: true,
     localInputRoot,
     localOutputRoot,
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs',
     importsRoot
   };
   const storage = createStorage(config);

@@ -41,12 +41,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     return db.prepare(`DELETE FROM key_review_state WHERE id IN (${placeholders})`).run(...ids).changes;
   }
 
-  function deleteSourcesByCategory(cat, sourceIds) {
-    if (!sourceIds?.length) return 0;
-    const placeholders = sourceIds.map(() => '?').join(',');
-    return db.prepare(`DELETE FROM source_registry WHERE source_id IN (${placeholders})`).run(...sourceIds).changes;
-  }
-
   function deleteCandidatesByProduct(category, productId) {
     const cat = String(category || '').trim();
     const pid = String(productId || '').trim();
@@ -75,12 +69,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
         clearedKeyReview = db.prepare(`DELETE FROM key_review_state WHERE id IN (${ph})`).run(...keyReviewIds).changes;
       }
 
-      // Sources
-      const sourceIds = db.prepare('SELECT source_id FROM source_registry WHERE category = ?').all(cat).map((r) => String(r.source_id || '').trim()).filter(Boolean);
-      if (sourceIds.length > 0) {
-        clearedSources = deleteSourcesByCategory(cat, sourceIds);
-      }
-
       // Candidates
       db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE category = ?)`).run(cat);
       db.prepare('DELETE FROM item_list_links WHERE category = ?').run(cat);
@@ -106,7 +94,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       clearedCatalogState += db.prepare('DELETE FROM llm_route_matrix WHERE category = ?').run(cat).changes;
 
       // Optional tables
-      try { clearedArtifacts += db.prepare('DELETE FROM source_corpus WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM bridge_events WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM runs WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM run_artifacts WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
@@ -128,11 +115,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
     const tx = db.transaction(() => {
       const itemFieldStateIds = db.prepare('SELECT id FROM item_field_state WHERE category = ? AND product_id = ?').all(cat, pid).map((r) => r.id);
-      const sourceIds = db.prepare('SELECT source_id FROM source_registry WHERE category = ? AND product_id = ?').all(cat, pid).map((r) => r.source_id);
-
-      if (sourceIds.length > 0) {
-        deletedSources += deleteSourcesByCategory(cat, sourceIds);
-      }
       deletedCandidates = deleteCandidatesByProduct(cat, pid);
 
       deletedLinks = db.prepare('DELETE FROM item_list_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;

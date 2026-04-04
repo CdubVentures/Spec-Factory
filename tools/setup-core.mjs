@@ -361,10 +361,16 @@ function inferEvalBenchHostPortFromCompose(composePath) {
   return Number.isFinite(hostPort) ? hostPort : null;
 }
 
-export function buildServiceTargets(envVars = {}) {
+// WHY: config param allows callers with SQL-backed config to supply API key
+// presence from the GUI/SQL authority, not just raw env vars.
+export function buildServiceTargets(envVars = {}, config = {}) {
   const targets = [];
 
-  if (Boolean(envVars.GEMINI_API_KEY || envVars.OPENAI_API_KEY || envVars.DEEPSEEK_API_KEY || envVars.ANTHROPIC_API_KEY || envVars.LLM_BASE_URL)) {
+  const hasLlmKey = Boolean(
+    envVars.GEMINI_API_KEY || envVars.OPENAI_API_KEY || envVars.DEEPSEEK_API_KEY || envVars.ANTHROPIC_API_KEY || envVars.LLM_BASE_URL
+    || config.geminiApiKey || config.openaiApiKey || config.deepseekApiKey || config.anthropicApiKey || config.llmBaseUrl
+  );
+  if (hasLlmKey) {
     targets.push({
       id: 'svc_llm_sync',
       category: 'services',

@@ -37,46 +37,6 @@ export const MIGRATIONS = [
   `ALTER TABLE llm_route_matrix ADD COLUMN scope TEXT DEFAULT 'field'`,
   // WHY: Phase F — stable brand FK on products, enables O(1) rename cascade
   `ALTER TABLE products ADD COLUMN brand_identifier TEXT DEFAULT ''`,
-  // WHY: source_intel consolidation — brands/paths folded into source_intel_domains
-  // with scope/scope_key columns. PK change requires DROP + recreate. Data is
-  // rebuilt on next pipeline run via persistSourceIntelFull().
-  `DROP TABLE IF EXISTS source_intel_domains`,
-  `DROP TABLE IF EXISTS source_intel_brands`,
-  `DROP TABLE IF EXISTS source_intel_paths`,
-  // WHY: Recreate source_intel_domains with composite PK after DROP above.
-  // Schema's CREATE TABLE IF NOT EXISTS was a no-op for existing DBs, so
-  // the migration must explicitly create the new table.
-  `CREATE TABLE IF NOT EXISTS source_intel_domains (
-    root_domain TEXT NOT NULL,
-    category TEXT NOT NULL,
-    scope TEXT NOT NULL DEFAULT 'domain',
-    scope_key TEXT NOT NULL DEFAULT '',
-    brand TEXT DEFAULT '',
-    attempts INTEGER DEFAULT 0,
-    http_ok_count INTEGER DEFAULT 0,
-    identity_match_count INTEGER DEFAULT 0,
-    major_anchor_conflict_count INTEGER DEFAULT 0,
-    fields_contributed_count INTEGER DEFAULT 0,
-    fields_accepted_count INTEGER DEFAULT 0,
-    accepted_critical_fields_count INTEGER DEFAULT 0,
-    products_seen INTEGER DEFAULT 0,
-    approved_attempts INTEGER DEFAULT 0,
-    candidate_attempts INTEGER DEFAULT 0,
-    parser_runs INTEGER DEFAULT 0,
-    parser_success_count INTEGER DEFAULT 0,
-    parser_health_score_total REAL DEFAULT 0,
-    endpoint_signal_count INTEGER DEFAULT 0,
-    endpoint_signal_score_total REAL DEFAULT 0,
-    planner_score REAL DEFAULT 0,
-    field_reward_strength REAL DEFAULT 0,
-    recent_products TEXT DEFAULT '[]',
-    per_field_helpfulness TEXT DEFAULT '{}',
-    fingerprint_counts TEXT DEFAULT '{}',
-    extra_stats TEXT DEFAULT '{}',
-    last_seen_at TEXT,
-    updated_at TEXT,
-    PRIMARY KEY (root_domain, category, scope, scope_key)
-  )`,
   // WHY: Tier column on query_index — enables per-query tier display in run history panel.
   `ALTER TABLE query_index ADD COLUMN tier TEXT DEFAULT NULL`,
   `ALTER TABLE runs RENAME COLUMN phase_cursor TO stage_cursor`,
@@ -88,7 +48,6 @@ export const MIGRATIONS = [
 
 export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_lrm_cat_scope ON llm_route_matrix(category, scope);
-  CREATE INDEX IF NOT EXISTS idx_sid_scope ON source_intel_domains(root_domain, scope);
   CREATE INDEX IF NOT EXISTS idx_cv_identity_id ON component_values(component_identity_id);
   CREATE INDEX IF NOT EXISTS idx_lv_list_id ON list_values(list_id);
   CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_grid_slot ON key_review_state(category, item_field_state_id)

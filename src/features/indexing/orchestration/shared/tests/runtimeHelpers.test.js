@@ -231,7 +231,6 @@ test('resolveRuntimeControlKey passes through fully qualified s3 prefix path', (
   const storage = { resolveOutputKey: (...args) => args.join('/') };
   const result = resolveRuntimeControlKey(storage, {
     runtimeControlFile: 'specs/outputs/control.json',
-    s3OutputPrefix: 'specs/outputs'
   });
   assert.equal(result, 'specs/outputs/control.json');
 });

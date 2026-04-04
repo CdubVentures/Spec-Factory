@@ -1173,16 +1173,11 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
 // ── Step 9: Source + Key Review backfill ──────────────────────────────────────
 
 function seedSourceAndKeyReview(db, category, fieldMeta) {
-  let sourceRegistryCount = 0;
   let keyReviewStateCount = 0;
   let keyReviewAuditCount = 0;
   let keyReviewRunCount = 0;
 
   const tx = db.db.transaction(() => {
-    // 9a: candidates → source_registry
-    const allCandidates = db.db.prepare(
-      'SELECT * FROM candidates WHERE category = ?'
-    ).all(db.category);
     const itemFieldStateRows = db.db.prepare(
       'SELECT id, product_id, field_key FROM item_field_state WHERE category = ?'
     ).all(db.category);
@@ -1229,69 +1224,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
         `${row.component_type}::${row.component_name}::${row.component_maker || ''}::${row.property_key}`,
         row.id
       );
-    }
-
-    // Group candidates by (product_id, source_host, run_id) → one source_registry row
-    const sourceMap = new Map();
-    for (const c of allCandidates) {
-      const host = c.source_host || 'unknown';
-      const runId = c.run_id || 'seed';
-      const groupKey = `${c.product_id}::${host}::${runId}`;
-      if (!sourceMap.has(groupKey)) {
-        sourceMap.set(groupKey, {
-          sourceId: `${category}::${c.product_id}::${host}::${runId}`,
-          productId: c.product_id,
-          host,
-          runId,
-          candidates: [],
-          sourceUrl: c.source_url || `https://${host}`,
-          sourceRootDomain: c.source_root_domain || host,
-          sourceTier: c.source_tier,
-          sourceMethod: c.source_method,
-        });
-      }
-      sourceMap.get(groupKey).candidates.push(c);
-    }
-
-    for (const [, src] of sourceMap) {
-      db.upsertSourceRegistry({
-        sourceId: src.sourceId,
-        category,
-        itemIdentifier: src.productId,
-        productId: src.productId,
-        runId: src.runId === 'seed' ? null : src.runId,
-        sourceUrl: src.sourceUrl,
-        sourceHost: src.host,
-        sourceRootDomain: src.sourceRootDomain,
-        sourceTier: src.sourceTier,
-        sourceMethod: src.sourceMethod,
-        crawlStatus: 'fetched',
-      });
-      sourceRegistryCount++;
-
-      for (const c of src.candidates) {
-        const fm = fieldMeta[c.field_key] || {};
-        const contextKind = fm.is_component_field ? 'component' : fm.is_list_field ? 'list' : 'scalar';
-        const assertionId = c.candidate_id;
-        const itemFieldStateId = itemFieldStateIdBySlot.get(`${c.product_id}::${c.field_key}`) || null;
-        const enumListId = contextKind === 'list'
-          ? (enumListIdByField.get(String(c.field_key || '')) || null)
-          : null;
-        const listValueId = contextKind === 'list'
-          ? (listValueIdByFieldValue.get(`${c.field_key}::${normalizeToken(c.value)}`) || null)
-          : null;
-
-        let componentValueId = null;
-        const componentType = String(c.component_type || fm.component_type || '').trim();
-        if (componentType) {
-          const linkRow = componentLinkByProductType.get(`${c.product_id}::${componentType}`);
-          if (linkRow) {
-            componentValueId = componentValueIdBySlot.get(
-              `${componentType}::${linkRow.component_name}::${linkRow.component_maker || ''}::${c.field_key}`
-            ) || null;
-          }
-        }
-      }
     }
 
     // 9b: item_field_state → key_review_state (grid_key)
@@ -1608,7 +1540,6 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
   tx();
 
   return {
-    sourceRegistryCount,
     keyReviewStateCount,
     keyReviewAuditCount,
     keyReviewRunCount,

@@ -23,7 +23,7 @@
 | Accepted field/component/list values | `item_field_state`, `component_values`, `list_values` | review payloads, normalized output, learning reports |
 | Queue state | `product_queue` plus file-backed queue helpers in `src/queue/queueState.js` | runtime dashboards, review queue, daemon selection |
 | Billing telemetry | `billing_entries`, `_billing/*` | Billing GUI, reports |
-| Runtime/evidence telemetry | `bridge_events`, `evidence_*`, `source_corpus` | Runtime Ops, IndexLab analytics, evidence search |
+| Runtime/evidence telemetry | `bridge_events`, `evidence_*` | Runtime Ops, IndexLab analytics, evidence search |
 
 ## Migration Path
 
@@ -36,7 +36,7 @@
 
 - The schema comment at the bottom of `src/db/specDbSchema.js` explicitly states that the removed `source_strategy` table is no longer used; `sources.json` under category authority is the SSOT for source strategy.
 - Several columns hold JSON-encoded text payloads (`meta`, `host_stats`, `per_field_helpfulness`, `last_run`, `data`, `fields`, `methods`) even though the underlying SQLite type is `TEXT`.
-- Store modules are composited via `src/db/stores/`: candidateStore, reviewStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore (corpus/cache/events), queueProductStore, llmRouteSourceStore, and fieldHistoryStore.
+- Store modules are composited via `src/db/stores/`: candidateStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore (bridge_events), queueProductStore, llmRouteSourceStore.
 
 ## Core review state
 
@@ -400,26 +400,6 @@
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
 | `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
 
-### `source_registry`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `source_id` | `TEXT` | `PRIMARY KEY` | Canonical source record id. |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `item_identifier` | `TEXT` | `NOT NULL` |  |
-| `product_id` | `TEXT` |  | Product identifier used across catalog, queue, and review. |
-| `run_id` | `TEXT` |  | IndexLab or pipeline run identifier. |
-| `source_url` | `TEXT` | `NOT NULL` |  |
-| `source_host` | `TEXT` |  |  |
-| `source_root_domain` | `TEXT` |  |  |
-| `source_tier` | `INTEGER` |  |  |
-| `source_method` | `TEXT` |  |  |
-| `crawl_status` | `TEXT` | `DEFAULT 'fetched'` |  |
-| `http_status` | `INTEGER` |  |  |
-| `fetched_at` | `TEXT` |  | Timestamp. |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
 ## Key review workflow
 
 ### `key_review_state`
@@ -574,63 +554,6 @@
 | `response` | `TEXT` | `NOT NULL` |  |
 | `timestamp` | `INTEGER` | `NOT NULL` |  |
 | `ttl` | `INTEGER` | `NOT NULL` |  |
-
-### `source_corpus`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `url` | `TEXT` | `PRIMARY KEY` |  |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `host` | `TEXT` | `DEFAULT ''` |  |
-| `root_domain` | `TEXT` | `DEFAULT ''` |  |
-| `path` | `TEXT` | `DEFAULT ''` |  |
-| `title` | `TEXT` | `DEFAULT ''` |  |
-| `snippet` | `TEXT` | `DEFAULT ''` |  |
-| `tier` | `INTEGER` | `DEFAULT 99` |  |
-| `role` | `TEXT` | `DEFAULT ''` |  |
-| `fields` | `TEXT` | `DEFAULT '[]'` |  |
-| `methods` | `TEXT` | `DEFAULT '[]'` |  |
-| `identity_match` | `INTEGER` | `DEFAULT 0` |  |
-| `approved_domain` | `INTEGER` | `DEFAULT 0` |  |
-| `brand` | `TEXT` | `DEFAULT ''` |  |
-| `model_name` | `TEXT` | `DEFAULT ''` |  |
-| `variant` | `TEXT` | `DEFAULT ''` |  |
-| `first_seen_at` | `TEXT` |  |  |
-| `last_seen_at` | `TEXT` |  |  |
-
-## Discovery support
-
-### `brand_domains`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `brand` | `TEXT` | `NOT NULL` |  |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `official_domain` | `TEXT` |  | Brand resolver output. |
-| `aliases` | `TEXT` |  |  |
-| `support_domain` | `TEXT` |  |  |
-| `confidence` | `REAL` | `DEFAULT 0.8` |  |
-| `resolved_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
-## Field history (learning persistence)
-
-### `field_history`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
-| `product_id` | `TEXT` | `NOT NULL` | Product identifier. |
-| `field_key` | `TEXT` | `NOT NULL` | Field under tracking. |
-| `round` | `INTEGER` | `NOT NULL` | Pipeline round number. |
-| `run_id` | `TEXT` | `NOT NULL` | IndexLab run identifier. |
-| `history_json` | `TEXT` | `NOT NULL DEFAULT '{}'` | JSON-encoded field history payload. |
-| `created_at` | `TEXT` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Timestamp. |
-| `updated_at` | `TEXT` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Timestamp. |
-
-Unique constraint: `(category, product_id, field_key)`. Index: `idx_fh_product ON field_history(category, product_id)`.
-
-Store module: `src/db/stores/fieldHistoryStore.js`. Wired into SpecDb class. Portable SQL for PostgreSQL migration path.
 
 ## Validated Against
 

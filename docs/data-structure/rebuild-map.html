@@ -53,7 +53,29 @@ table.ref tr:hover{background:var(--s2)}
 .tag-dead{background:var(--s3);color:var(--t3)}
 .tag-learn{background:var(--teal-s);color:var(--teal)}
 .legend{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:32px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.82rem;color:var(--t2)}
-@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}.legend{flex-direction:column;align-items:flex-start}}
+
+/* ── Tree diagram styles ── */
+.tree{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:32px;font-family:var(--mono);font-size:0.78rem;line-height:1.9}
+.tree-root{font-weight:700;font-size:0.88rem;color:var(--text);margin-bottom:4px}
+.tree-dir{color:var(--t2);font-weight:600}
+.tree-file{color:var(--text)}
+.tree-line{display:flex;align-items:center;gap:0;white-space:nowrap}
+.tree-indent{color:var(--t3);user-select:none;flex-shrink:0}
+.tree-name{flex-shrink:0}
+.tree-spacer{flex:1;min-width:16px;border-bottom:1px dotted var(--s3);margin:0 8px;align-self:center;height:0;position:relative;top:-3px}
+.tree-flow{flex-shrink:0;font-weight:700;font-size:0.72rem;letter-spacing:0.04em;padding:1px 7px;border-radius:99px;text-transform:uppercase}
+.flow-roundtrip{background:var(--green-s);color:var(--green)}
+.flow-todb{background:var(--cyan-s);color:var(--cyan)}
+.flow-tojson{background:var(--amber-s);color:var(--amber)}
+.flow-none{background:var(--s2);color:var(--t3)}
+.flow-gap{background:var(--rose-s);color:var(--rose)}
+.flow-deprecated{background:var(--s3);color:var(--t3);text-decoration:line-through}
+.tree-note{color:var(--t3);font-weight:400;font-size:0.72rem;margin-left:6px;font-family:var(--sans)}
+.tree-divider{border-top:1px dashed var(--s3);margin:10px 0}
+.tree-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;font-family:var(--sans);font-size:0.78rem;color:var(--t2)}
+.tree-legend .tree-flow{font-size:0.68rem}
+
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}.legend{flex-direction:column;align-items:flex-start}.tree{padding:16px;font-size:0.72rem;overflow-x:auto}}
 </style>
 </head>
 <body>
@@ -61,7 +83,7 @@ table.ref tr:hover{background:var(--s2)}
 
 <header class="header">
   <h1>Rebuild Map: JSON &rarr; SQL</h1>
-  <p>Every SQL table and its durable rebuild source. Shows which file rebuilds each table, when the file is written, and when it&rsquo;s read back during recovery.</p>
+  <p>Every SQL table and its durable rebuild source. Shows which file rebuilds each table, when the file is written, and when it&rsquo;s read back during recovery. Includes bidirectional flow diagram showing which JSON files have full round-trip persistence.</p>
   <div class="meta">
     <span>Updated 2026-04-03</span>
     <span>Post O(1) Seed Registry</span>
@@ -72,10 +94,10 @@ table.ref tr:hover{background:var(--s2)}
   <div class="stat"><div class="n">18</div><div class="l">JSON Sources</div></div>
   <div class="stat"><div class="n">2</div><div class="l">Databases</div></div>
   <div class="stat"><div class="n">31</div><div class="l">Tables Auto-Rebuild</div></div>
-  <div class="stat"><div class="n">5</div><div class="l">Tables No Source</div></div>
+  <div class="stat"><div class="n">12</div><div class="l">Round-Trip JSON</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Self-Healing</div></div>
   <div class="stat"><div class="n">4</div><div class="l">Runtime Learning</div></div>
-  <div class="stat"><div class="n">2</div><div class="l">Dead Features</div></div>
+  <div class="stat"><div class="n">5</div><div class="l">No Source</div></div>
 </div>
 
 <div class="legend">
@@ -89,7 +111,527 @@ table.ref tr:hover{background:var(--s2)}
   <span class="tag tag-dead">dead</span> Seed path removed
 </div>
 
-<!-- JSON INVENTORY -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- BIDIRECTIONAL FLOW DIAGRAM                                               -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Bidirectional Flow Diagram</h2>
+    <span class="tag tag-auto">every JSON we create</span>
+  </div>
+  <p class="surface-desc">
+    Full file-hierarchy view of every JSON file Spec Factory creates or consumes as data.
+    Each file shows its flow direction: whether it feeds SQL on rebuild, whether SQL writes back to it, or both.
+    <strong>Round-trip</strong> files can be hand-edited and will propagate to SQL on next rebuild,
+    and GUI/pipeline mutations write back to the JSON so it stays in sync.
+  </p>
+
+  <div class="tree-legend">
+    <span><span class="tree-flow flow-roundtrip">&harr; round-trip</span> JSON &harr; SQL both directions</span>
+    <span><span class="tree-flow flow-todb">&rarr; to SQL</span> JSON feeds SQL, no write-back</span>
+    <span><span class="tree-flow flow-tojson">&larr; to JSON</span> SQL writes JSON only (append log)</span>
+    <span><span class="tree-flow flow-none">no SQL</span> not connected to any database</span>
+    <span><span class="tree-flow flow-deprecated">deprecated</span> dead / retired</span>
+  </div>
+
+  <!-- ── category_authority/ ── -->
+  <div class="tree">
+    <div class="tree-root">category_authority/</div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">_global/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">brand_registry.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated seed &rarr; SQL | writeBackBrandRegistry() &larr; SQL on every brand CRUD</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">color_registry.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated seed &rarr; SQL | writeBackColorRegistry() &larr; SQL on every color CRUD</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">_shared/*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">schema definitions &mdash; compile input only</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">_runtime/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">user-settings.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated seed &rarr; SQL | persistUserSettingsSections() &larr; SQL on every settings save</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">snapshots/*-settings.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">immutable archives &mdash; per-run snapshot, capped at 10</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">{category}/ <span style="color:var(--t3);font-weight:400">(mouse, keyboard, monitor)</span></span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">schema.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile input &mdash; human-authored category definition</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">sources.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile input &mdash; crawl source definitions</span>
+    </div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span><span class="tree-name tree-dir">_generated/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_rules.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb &rarr; component + list tables | in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">known_values.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb &rarr; enum_lists, list_values | in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">parse_templates.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">in hash signature &mdash; triggers reconcile but not seeded to SQL</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">cross_validation_rules.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">in hash signature &mdash; triggers reconcile but not seeded to SQL</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">ui_field_catalog.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">in hash signature &mdash; triggers reconcile but not seeded to SQL</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">component_db/*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb &rarr; component_identity, aliases, values | in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_groups.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile output &mdash; consumed by UI directly</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">key_migrations.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile output &mdash; field rename history, consumed at runtime</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">manifest.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile metadata &mdash; generated_at timestamp</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">_compile_report.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile diagnostics &mdash; ephemeral</span>
+    </div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span><span class="tree-name tree-dir">_control_plane/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_studio_map.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">lazy seed &rarr; SQL | saveFieldStudioMap() &larr; SQL on every edit | NOT in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">llm_route_matrix.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">reseed &rarr; SQL | configLlmSettingsHandler &larr; SQL on every GUI save | async fire-and-forget</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_key_order.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">fallback &rarr; SQL when empty | studioRoutes &larr; SQL on drag-drop | NOT in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">product_catalog.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-deprecated">deprecated</span>
+      <span class="tree-note">retired &mdash; product.json is SSOT now</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">rename_log.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-tojson">&larr; to JSON</span>
+      <span class="tree-note">appendRenameLog() &larr; SQL on product rename | append-only audit log</span>
+    </div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span><span class="tree-name tree-dir">_overrides/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">overrides.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">seedSpecDb &rarr; SQL | upsertProductInConsolidated() &larr; SQL on every GUI override (JSON is SSOT)</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">components/*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb &rarr; component_identity, component_values | in hash signature</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">{pid}.overrides.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">legacy per-product fallback &rarr; SQL if consolidated absent</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">_source/field_catalog.seed.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">compile input &mdash; component DB seed source</span>
+    </div>
+  </div>
+
+  <!-- ── .workspace/ ── -->
+  <div class="tree">
+    <div class="tree-root">.workspace/</div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">global/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">user-settings.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated seed &rarr; SQL | writeUserSettingsFile() &larr; SQL on every settings save</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">products/{pid}/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">product.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">checkpoint reseed &rarr; SQL | writeProductCheckpoint() &larr; pipeline after every run</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">color_edition.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">reseed &rarr; SQL | mergeColorEditionDiscovery() &larr; pipeline on color discovery</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">output/{cat}/{pid}/latest/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">candidates.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb &rarr; candidates table | written by pipeline extraction (merged per-field format)</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">normalized.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">seedSpecDb &rarr; item_field_state | finalizeOverrides() + componentImpact() &larr; on review finalize</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">provenance.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">seedSpecDb &rarr; item_field_state confidence | finalizeOverrides() &larr; on review finalize</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">summary.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">read by publish | finalizeOverrides() &larr; on review finalize</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">output/{cat}/{pid}/runs/{runId}/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">extracted/{source}/candidates.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seedSpecDb fallback &rarr; candidates (if latest/candidates.json absent)</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">analysis/search_profile.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">telemetry artifact &mdash; per-run search analysis</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">runs/{runId}/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">run.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">checkpoint reseed &rarr; runs, product_runs, artifacts, crawl_sources | writeCrawlCheckpoint() &larr; pipeline</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">runtime/snapshots/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">*-settings.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">immutable per-run snapshot &mdash; capped at 10, no DB link</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">crawlee/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">Crawlee internal bookkeeping &mdash; ephemeral, safe to delete</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">db/</span></div>
+
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">app.sqlite</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">6 tables &mdash; all hash-gated rebuild from JSON</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">{category}/spec.sqlite</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">48 tables &mdash; 31 auto-rebuild, 6 self-healing, 5 no-source, 4 learning, 2 dead</span>
+    </div>
+  </div>
+
+  <!-- ── Round-trip summary table ── -->
+  <div class="domain-group">
+    <div class="domain-label">Round-Trip Summary &mdash; Files That Go Both Ways</div>
+    <table class="ref">
+      <thead><tr><th>JSON File</th><th>JSON &rarr; SQL</th><th>SQL &rarr; JSON</th><th>Write-Back Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="fp">brand_registry.json</td>
+          <td><span class="tag tag-hash">hash-gated</span> on boot</td>
+          <td><span class="tag tag-auto">auto</span> on every CRUD</td>
+          <td class="fp">writeBackBrandRegistry()</td>
+        </tr>
+        <tr>
+          <td class="fp">color_registry.json</td>
+          <td><span class="tag tag-hash">hash-gated</span> on boot</td>
+          <td><span class="tag tag-auto">auto</span> on every CRUD</td>
+          <td class="fp">writeBackColorRegistry()</td>
+        </tr>
+        <tr>
+          <td class="fp">user-settings.json</td>
+          <td><span class="tag tag-hash">hash-gated</span> on boot</td>
+          <td><span class="tag tag-auto">auto</span> on every save</td>
+          <td class="fp">persistUserSettingsSections()</td>
+        </tr>
+        <tr>
+          <td class="fp">overrides.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td><span class="tag tag-auto">auto</span> on every GUI override</td>
+          <td class="fp">upsertProductInConsolidated()</td>
+        </tr>
+        <tr>
+          <td class="fp">product.json</td>
+          <td><span class="tag tag-reseed">checkpoint</span></td>
+          <td><span class="tag tag-auto">auto</span> after every run</td>
+          <td class="fp">writeProductCheckpoint()</td>
+        </tr>
+        <tr>
+          <td class="fp">color_edition.json</td>
+          <td><span class="tag tag-reseed">reseed</span></td>
+          <td><span class="tag tag-auto">auto</span> on discovery</td>
+          <td class="fp">mergeColorEditionDiscovery()</td>
+        </tr>
+        <tr>
+          <td class="fp">run.json</td>
+          <td><span class="tag tag-reseed">checkpoint</span></td>
+          <td><span class="tag tag-auto">auto</span> pipeline write</td>
+          <td class="fp">writeCrawlCheckpoint()</td>
+        </tr>
+        <tr>
+          <td class="fp">field_studio_map.json</td>
+          <td><span class="tag tag-lazy">lazy</span> on access</td>
+          <td><span class="tag tag-auto">auto</span> on every edit</td>
+          <td class="fp">saveFieldStudioMap()</td>
+        </tr>
+        <tr>
+          <td class="fp">llm_route_matrix.json</td>
+          <td><span class="tag tag-reseed">reseed</span></td>
+          <td><span class="tag tag-auto">auto</span> on GUI save</td>
+          <td class="fp">configLlmSettingsHandler &rarr; writeFile</td>
+        </tr>
+        <tr>
+          <td class="fp">field_key_order.json</td>
+          <td><span class="tag tag-lazy">lazy</span> fallback</td>
+          <td><span class="tag tag-auto">auto</span> on drag-drop</td>
+          <td class="fp">studioRoutes &rarr; writeFile</td>
+        </tr>
+        <tr>
+          <td class="fp">latest/normalized.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td><span class="tag tag-auto">auto</span> on finalize</td>
+          <td class="fp">finalizeOverrides() + componentImpact()</td>
+        </tr>
+        <tr>
+          <td class="fp">latest/provenance.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td><span class="tag tag-auto">auto</span> on finalize</td>
+          <td class="fp">finalizeOverrides()</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">One-Way Only &mdash; JSON &rarr; SQL (no write-back needed)</div>
+    <table class="ref">
+      <thead><tr><th>JSON File</th><th>JSON &rarr; SQL</th><th>Why No Write-Back</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="fp">field_rules.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td>Generated by compile &mdash; source is schema.json</td>
+        </tr>
+        <tr>
+          <td class="fp">known_values.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td>Generated by compile &mdash; source is schema.json</td>
+        </tr>
+        <tr>
+          <td class="fp">component_db/*.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td>Generated by compile &mdash; source is field_catalog.seed.json</td>
+        </tr>
+        <tr>
+          <td class="fp">_overrides/components/*.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td>Human-authored overrides &mdash; read-only at seed</td>
+        </tr>
+        <tr>
+          <td class="fp">latest/candidates.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span></td>
+          <td>Written by pipeline extraction &mdash; not edited post-run</td>
+        </tr>
+        <tr>
+          <td class="fp">extracted/*/candidates.json</td>
+          <td><span class="tag tag-seed">seedSpecDb</span> fallback</td>
+          <td>Per-source extraction artifacts &mdash; used if merged candidates absent</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">No SQL Connection &mdash; Compile Inputs, Archives, Ephemeral</div>
+    <table class="ref">
+      <thead><tr><th>JSON File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">_shared/*.json (8 files)</td><td>JSON Schema definitions for compile validation</td></tr>
+        <tr><td class="fp">schema.json (per-category)</td><td>Human-authored category field definitions</td></tr>
+        <tr><td class="fp">sources.json (per-category)</td><td>Crawl source + tier definitions</td></tr>
+        <tr><td class="fp">parse_templates.json</td><td>LLM extraction templates (in hash signature, triggers reconcile)</td></tr>
+        <tr><td class="fp">cross_validation_rules.json</td><td>Field validation constraints (in hash signature)</td></tr>
+        <tr><td class="fp">ui_field_catalog.json</td><td>UI-ready field metadata (in hash signature)</td></tr>
+        <tr><td class="fp">field_groups.json</td><td>Field grouping definitions (compile output)</td></tr>
+        <tr><td class="fp">key_migrations.json</td><td>Field rename history (compile output)</td></tr>
+        <tr><td class="fp">manifest.json</td><td>Compile timestamp metadata</td></tr>
+        <tr><td class="fp">_compile_report.json</td><td>Compile diagnostics</td></tr>
+        <tr><td class="fp">snapshots/*-settings.json</td><td>Immutable per-run settings archives (capped)</td></tr>
+        <tr><td class="fp">search_profile.json</td><td>Per-run telemetry artifacts</td></tr>
+        <tr><td class="fp">.workspace/crawlee/*.json</td><td>Crawlee internal bookkeeping (ephemeral)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- JSON INVENTORY (original section, preserved)                             -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
 
 <section class="surface">
   <div class="surface-head">
@@ -189,7 +731,7 @@ table.ref tr:hover{background:var(--s2)}
   <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
   <tr><td class="fp">settings</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
   <tr><td class="fp">studio_maps</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
-  <tr><td class="fp">color_registry</td><td class="fp">color_registry.json (may be stale &mdash; see Caveats)</td><td><span class="tag tag-hash">hash-gated</span> seedColorRegistry</td></tr>
+  <tr><td class="fp">color_registry</td><td class="fp">color_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedColorRegistry</td></tr>
   </tbody>
   </table>
 </section>
@@ -264,7 +806,7 @@ table.ref tr:hover{background:var(--s2)}
   <tr><td class="fp">key_review_run_sources</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_audit</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">field_studio_map</td><td class="fp">field_studio_map.json</td><td><span class="tag tag-lazy">lazy</span></td></tr>
-  <tr><td class="fp">field_key_order</td><td>SQL-persisted (drag-drop order). Mirror path exists (studioRoutes.js:516) and fallback reader exists (sessionCache.js:143), but JSON mirror is not consistently written. Lost on full DB delete unless JSON was manually synced.</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td class="fp">field_key_order</td><td class="fp">field_key_order.json (fallback when SQL empty). JSON mirror written on every drag-drop via studioRoutes. Not in hash signature &mdash; editing JSON directly only works on first seed.</td><td><span class="tag tag-lazy">lazy</span></td></tr>
   <tr><td class="fp">data_authority_sync</td><td>Self-healing &mdash; repopulates on next sync</td><td><span class="tag tag-lazy">lazy</span></td></tr>
   </tbody>
   </table>
@@ -420,28 +962,23 @@ table.ref tr:hover{background:var(--s2)}
     <h2>Data Integrity Caveats</h2>
     <span class="tag tag-none">known gaps</span>
   </div>
-  <p class="surface-desc">The rebuild system is optimized for recovering major caches, not guaranteed lossless deletion of all SQL. These are the known gaps as of 2026-04-03.</p>
+  <p class="surface-desc">Known edge cases as of 2026-04-03. Most JSON files have verified write-back. These are the remaining weak spots.</p>
 
   <table class="ref">
   <thead><tr><th>Issue</th><th>Impact</th><th>Blocker For</th></tr></thead>
   <tbody>
   <tr>
-    <td><strong>color_registry.json drift.</strong> Write-back code exists (<code>colorRegistrySeed.js:179</code>) but may not have run. JSON can be stale vs SQL.</td>
-    <td>Deleting app.sqlite rebuilds from stale JSON, losing colors added via GUI since last write-back.</td>
-    <td>Safe app.sqlite deletion</td>
+    <td><strong>field_key_order and field_studio_map not in hash signature.</strong> Both have JSON write-back and SQL fallback, but editing JSON directly won&rsquo;t trigger the category reconcile (<code>buildFieldRulesSignature</code> doesn&rsquo;t include them). Only works on first seed or when SQL is empty.</td>
+    <td>Direct JSON edits to these two files require deleting spec.sqlite or forcing a full reconcile to propagate.</td>
+    <td>JSON-edit propagation</td>
   </tr>
   <tr>
-    <td><strong>field_key_order has no durable mirror.</strong> Mirror path exists (<code>studioRoutes.js:516</code>, fallback <code>sessionCache.js:143</code>) but JSON is not consistently written.</td>
-    <td>Drag-drop field ordering lost on full spec.sqlite delete.</td>
-    <td>Lossless spec.sqlite rebuild</td>
+    <td><strong>key_review_state AI confirmation columns have no JSON backing.</strong> AI review progress (<code>ai_confirm_primary_status</code>, <code>user_accept_*</code>) is runtime-only, not captured in overrides.json.</td>
+    <td>On rebuild, key_review_state structure recreates but AI confirmation progress resets. Must re-run AI confirmation.</td>
+    <td>Lossless AI review rebuild</td>
   </tr>
   <tr>
-    <td><strong>llm_route_matrix.json may not exist.</strong> Categories without custom LLM routes have no JSON mirror. Defaults regenerate from <code>specDbHelpers.buildDefaultLlmRoutes()</code>, but custom edits would not survive.</td>
-    <td>Custom LLM route edits lost on spec.sqlite delete if no JSON mirror was written.</td>
-    <td>Lossless spec.sqlite rebuild (custom routes only)</td>
-  </tr>
-  <tr>
-    <td><strong>Checkpoint persistence is best-effort.</strong> product.json and run.json are written during pipeline runs (<code>pipelineCommands.js:323</code>), but crashes or aborts may leave incomplete checkpoints.</td>
+    <td><strong>Checkpoint persistence is best-effort.</strong> product.json and run.json are written during pipeline runs (<code>pipelineCommands.js</code>), but crashes or aborts may leave incomplete checkpoints.</td>
     <td>Runs or products from incomplete pipeline executions may not be recoverable.</td>
     <td>Full run history rebuild</td>
   </tr>
@@ -449,6 +986,11 @@ table.ref tr:hover{background:var(--s2)}
     <td><strong>5 tables have no rebuild path.</strong> billing_entries, field_history, bridge_events, source_corpus, source_intel_domains are SQL-only. Documented in the &ldquo;No Rebuild Source&rdquo; section above.</td>
     <td>Data in these tables is lost on full rebuild. Accepted &mdash; operational data that repopulates during use.</td>
     <td>N/A (accepted loss)</td>
+  </tr>
+  <tr>
+    <td><strong>Async fire-and-forget write-backs.</strong> llm_route_matrix.json, field_key_order.json, and field_studio_map.json use <code>fs.writeFile(...).catch(() => {})</code>. Silent failure on write error (disk full, permissions).</td>
+    <td>If write-back silently fails, JSON drifts from SQL. Next rebuild uses stale JSON.</td>
+    <td>Write-back reliability</td>
   </tr>
   </tbody>
   </table>

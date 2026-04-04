@@ -13,7 +13,7 @@ import {
   applySearchProfilePlannedPayload, extractRuntimeEventPayload,
   emit, finishFetchUrl
 } from './runtimeBridgeArtifacts.js';
-import { setStageCursor, recordStartupMs, startStage, finishStage } from './runtimeBridgeStageLifecycle.js';
+import { setStageCursor, recordStartupMs, startStage, finishStage, advanceCrawlCursorIfReady } from './runtimeBridgeStageLifecycle.js';
 
 // ── Individual event handlers ──────────────────────────────────────────────
 
@@ -25,7 +25,8 @@ async function handleRunStarted(state, deps, { ts, row }) {
   });
   setStageCursor(state, 'stage:bootstrap');
   await ensureBaselineArtifacts(state, ts);
-  await startStage(state, 'search', ts, { trigger: 'run_started' });
+  // WHY: search timing deferred to brand_resolved / search_plan_generated.
+  // Starting it here jumped cursor to stage:search, blocking Discover sub-cursors.
 }
 
 async function handleRunContext(state, deps, { ts, row }) {
@@ -74,6 +75,12 @@ async function handleSourceFetchQueued(state, deps, { ts, url, row }) {
 
 async function handleSourceFetchStarted(state, deps, { ts, url, row }) {
   await startStage(state, 'fetch', ts, { trigger: 'source_fetch_started' });
+  // WHY: startStage('fetch') is idempotent — once fetch timing starts during
+  // search, crawl fetches can't re-enter it. This standalone check ensures the
+  // cursor advances to stage:crawl when discovery is complete.
+  if (advanceCrawlCursorIfReady(state)) {
+    await writeRunMeta(state);
+  }
   if (state.stageState.search.started_at && !state.stageState.search.ended_at) {
     await finishStage(state, 'search', ts, { reason: 'first_fetch_started' });
   }
@@ -384,7 +391,8 @@ async function handleBlockedDomainCooldownApplied(state, deps, { ts, row }) {
 }
 
 async function handleNeedsetComputed(state, deps, { ts, row }) {
-  await startStage(state, 'index', ts, { trigger: 'needset_computed' });
+  // WHY: startStage('index') was here but jumped cursor to stage:index (pos 10),
+  // blocking all intermediate phases. Index timing starts from source_processed.
   setStageCursor(state, 'stage:needset');
   const payload = toNeedSetSnapshot(row, ts);
   payload.status = 'executed';
@@ -435,8 +443,10 @@ async function handleNeedsetComputed(state, deps, { ts, row }) {
 }
 
 async function handleBrandResolved(state, deps, { ts, row }) {
-  await startStage(state, 'search', ts, { trigger: 'brand_resolved' });
+  // WHY: cursor must advance to brand-resolver BEFORE startStage('search')
+  // sets stage:search, otherwise backward guard rejects brand-resolver.
   setStageCursor(state, 'stage:brand-resolver');
+  await startStage(state, 'search', ts, { trigger: 'brand_resolved' });
   const brandPayload = {
     scope: 'brand',
     brand: String(row.brand || '').trim(),

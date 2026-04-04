@@ -82,6 +82,12 @@ export function assembleConfigFromRegistry(registry) {
     if (!entry.envKey) continue;
 
     const cfgKey = entry.configKey || entry.key;
+    // WHY: Secret keys (API keys, proxy URLs) are owned by SQL, not env.
+    // They start at registry default ("") and get overlaid by SQL values.
+    if (entry.secret) {
+      cfg[cfgKey] = entry.default;
+      continue;
+    }
     const parse = PARSE_BY_TYPE[entry.type] || PARSE_BY_TYPE.string;
     cfg[cfgKey] = parse(entry.envKey, entry.default);
   }

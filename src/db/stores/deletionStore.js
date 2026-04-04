@@ -50,12 +50,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
   // ── Shared cascade helpers ──────────────────────────────────────────────
 
-  function deleteSourceLineage(sourceIds) {
-    if (!sourceIds.length) return 0;
-    const ph = placeholders(sourceIds);
-    return db.prepare(`DELETE FROM source_registry WHERE source_id IN (${ph})`).run(...sourceIds).changes;
-  }
-
   function deleteCandidatesByFilter(where, params) {
     const candIds = db.prepare(`SELECT candidate_id FROM candidates WHERE ${where}`).all(...params).map((r) => r.candidate_id);
     if (!candIds.length) return 0;
@@ -92,13 +86,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM prompt_index WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM field_history WHERE run_id = ?').run(rid).changes;
-
-      // Phase 2 — Source lineage
-      const sourceIds = db.prepare('SELECT source_id FROM source_registry WHERE run_id = ?').all(rid).map((r) => String(r.source_id));
-      if (sourceIds.length) totalDeleted += deleteSourceLineage(sourceIds);
-
-      // Phase 3 — Candidates
+      // Phase 2 — Candidates
       totalDeleted += deleteCandidatesByFilter('run_id = ?', [rid]);
 
       // Phase 4 — Artifact tables
@@ -176,23 +164,18 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
     // Step 1: Resolve scope — find all content_hashes and run_ids for this URL
     const crawlRows = db.prepare('SELECT content_hash, run_id FROM crawl_sources WHERE source_url = ? AND product_id = ?').all(u, pid);
-    const sourceRegRows = db.prepare('SELECT source_id, run_id FROM source_registry WHERE source_url = ? AND product_id = ?').all(u, pid);
     const candidateExists = db.prepare('SELECT 1 FROM candidates WHERE source_url = ? AND product_id = ?').get(u, pid);
-    if (!crawlRows.length && !sourceRegRows.length && !candidateExists) {
+    if (!crawlRows.length && !candidateExists) {
       return { ok: false, url: u, product_id: pid, reason: 'url_not_found' };
     }
 
     const contentHashes = crawlRows.map((r) => r.content_hash).filter(Boolean);
-    const affectedRunIds = [...new Set([...crawlRows, ...sourceRegRows].map((r) => r.run_id).filter(Boolean))];
+    const affectedRunIds = [...new Set(crawlRows.map((r) => r.run_id).filter(Boolean))];
     let totalDeleted = 0;
     let filesDeleted = 0;
 
     // Step 2: SQL transaction
     const tx = db.transaction(() => {
-      // Source lineage
-      const sourceIds = sourceRegRows.map((r) => String(r.source_id));
-      if (sourceIds.length) totalDeleted += deleteSourceLineage(sourceIds);
-
       // Candidates from this URL
       totalDeleted += deleteCandidatesByFilter('source_url = ? AND product_id = ?', [u, pid]);
 
@@ -203,7 +186,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
       // Accumulated tables
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE canonical_url = ? AND product_id = ?').run(u, pid).changes;
-      try { totalDeleted += db.prepare('DELETE FROM source_corpus WHERE url = ? AND category = ?').run(u, cat).changes; } catch { /* best-effort */ }
       totalDeleted += db.prepare('DELETE FROM url_index WHERE url = ? AND category = ?').run(u, cat).changes;
     });
     tx();
@@ -308,7 +290,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM query_index WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE product_id = ?').run(pid).changes;
-      totalDeleted += db.prepare('DELETE FROM field_history WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_cooldowns WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE product_id = ?').run(pid).changes;
 
@@ -320,11 +301,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
         totalDeleted += db.prepare(`DELETE FROM prompt_index WHERE run_id IN (${ph})`).run(...allRunIds).changes;
       }
 
-      // Phase 2 — Source lineage
-      const sourceIds = db.prepare('SELECT source_id FROM source_registry WHERE product_id = ? AND category = ?').all(pid, cat).map((r) => String(r.source_id));
-      if (sourceIds.length) totalDeleted += deleteSourceLineage(sourceIds);
-
-      // Phase 3 — Key review cascade
+      // Phase 2 — Key review cascade
       const krsIds = db.prepare('SELECT id FROM key_review_state WHERE item_identifier = ? AND category = ?').all(pid, cat).map((r) => r.id);
       if (krsIds.length) {
         const ph = placeholders(krsIds);

@@ -67,6 +67,18 @@ export async function startStage(state, stage, ts = '', payload = {}) {
   }
 }
 
+// WHY: startStage is idempotent — once fetch timing starts during search,
+// crawl fetches can't re-trigger startStage. This standalone check advances
+// to stage:crawl when the cursor is at or past domain-classifier.
+export function advanceCrawlCursorIfReady(state) {
+  const crawlIdx = PHASE_ORDER.indexOf('stage:crawl');
+  const currentIdx = PHASE_ORDER.indexOf(state.stageCursor);
+  if (currentIdx >= 0 && crawlIdx >= 0 && currentIdx >= crawlIdx - 1) {
+    return setStageCursor(state, 'stage:crawl');
+  }
+  return false;
+}
+
 export async function finishStage(state, stage, ts = '', payload = {}) {
   const stageState = state.stageState[stage];
   if (!stageState || !stageState.started_at || stageState.ended_at) return;

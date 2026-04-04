@@ -24,7 +24,6 @@ function createHarness(options = {}) {
     },
     config: {
       searxngBaseUrl: '',
-      s3OutputPrefix: 'specs/outputs',
     },
     spawn: (command, args, spawnOptions) => {
       spawnCalls.push({ command, args, options: spawnOptions });

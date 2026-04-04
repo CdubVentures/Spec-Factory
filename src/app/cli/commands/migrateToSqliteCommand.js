@@ -67,34 +67,6 @@ export function createMigrateToSqliteCommand({
         results.phase2_billing = { status: 'imported', entries: imported, files: ledgerKeys.length };
       }
 
-      if (!phase || phase === 3) {
-        let imported = 0;
-        const cacheDir = '.specfactory_tmp/llm_cache';
-        try {
-          const files = await fsNode.readdir(cacheDir);
-          for (const file of files) {
-            if (!file.endsWith('.json')) continue;
-            const key = file.replace(/\.json$/, '');
-            try {
-              const raw = await fsNode.readFile(pathNode.join(cacheDir, file), 'utf8');
-              const parsed = JSON.parse(raw);
-              if (parsed.response !== undefined && parsed.timestamp > 0) {
-                const ttl = parsed.ttl || 7 * 24 * 60 * 60 * 1000;
-                if ((now() - parsed.timestamp) <= ttl) {
-                  specDb.setLlmCacheEntry(key, JSON.stringify(parsed.response), parsed.timestamp, ttl);
-                  imported += 1;
-                }
-              }
-            } catch {
-              // skip bad files
-            }
-          }
-        } catch {
-          // cache dir may not exist
-        }
-        results.phase3_cache = { status: 'imported', entries: imported };
-      }
-
       if (!phase || phase === 4) {
         let imported = 0;
         const learningPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, 'profiles');
@@ -132,33 +104,6 @@ export function createMigrateToSqliteCommand({
           }
         }
         results.phase4_learning = { status: 'imported', profiles: imported };
-      }
-
-      if (!phase || phase === 7) {
-        const corpusKey = toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'corpus.json');
-        const data = await storage.readJsonOrNull(corpusKey);
-        if (data && Array.isArray(data.documents || data)) {
-          const docs = data.documents || data;
-          specDb.upsertSourceCorpusBatch(docs.map((doc) => ({
-            url: doc.url || '',
-            category,
-            host: doc.host || '',
-            root_domain: doc.rootDomain || doc.root_domain || '',
-            path: doc.path || '',
-            title: doc.title || '',
-            snippet: doc.snippet || '',
-            tier: doc.tier ?? 99,
-            role: doc.role || '',
-            fields: JSON.stringify(doc.fields || []),
-            methods: JSON.stringify(doc.methods || []),
-            identity_match: doc.identity_match ? 1 : 0,
-            first_seen_at: doc.first_seen_at || null,
-            last_seen_at: doc.last_seen_at || null,
-          })));
-          results.phase7_corpus = { status: 'imported', documents: docs.length };
-        } else {
-          results.phase7_corpus = { status: 'skipped', reason: 'no corpus.json found' };
-        }
       }
 
       if (!phase || phase === 8) {

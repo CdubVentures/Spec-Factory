@@ -39,7 +39,7 @@ export function createStorageStub() {
   };
 }
 
-export function createArchivedS3StorageStub(files = {}) {
+export function createInMemoryStorageStub(files = {}) {
   const normalized = new Map(
     Object.entries(files).map(([key, value]) => [
       String(key),

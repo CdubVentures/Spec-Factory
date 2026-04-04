@@ -378,7 +378,6 @@ export function createReviewCandidateRuntime({
     if (!items.length) return { upserted: 0 };
 
     let upserted = 0;
-    const sourceIds = new Set();
     const nowIso = new Date().toISOString();
     const categoryToken = String(specDb.category || category || '').trim();
     const lookupItemFieldSlotId = (pid, fk) => specDb.getItemFieldStateIdByProductAndField(pid, fk);
@@ -388,27 +387,6 @@ export function createReviewCandidateRuntime({
       const productId = String(item?.product_id || '').trim();
       const fieldKey = String(item?.field_key || '').trim();
       if (!productId || !fieldKey) continue;
-      const runToken = normalizePathToken(item?.run_id || 'component-review', 'component-review');
-      const reviewToken = normalizePathToken(item?.review_id || 'pending', 'pending');
-      const sourceId = `${categoryToken}::${productId}::pipeline::${runToken}::${reviewToken}`;
-      const sourceUrl = `pipeline://component-review/${reviewToken}`;
-      specDb.upsertSourceRegistry({
-        sourceId,
-        category: categoryToken,
-        itemIdentifier: productId,
-        productId,
-        runId: item?.run_id || null,
-        sourceUrl,
-        sourceHost: 'pipeline',
-        sourceRootDomain: 'pipeline',
-        sourceTier: null,
-        sourceMethod: item?.match_type || 'component_review',
-        crawlStatus: 'fetched',
-        httpStatus: null,
-        fetchedAt: item?.created_at || nowIso,
-      });
-      sourceIds.add(sourceId);
-
       const pushCandidate = (candidateId, value, score, method, quote, snippetText, candidateFieldKey = fieldKey) => {
         const text = String(value ?? '').trim();
         if (!text || !isMeaningfulValue(text)) return;
@@ -492,7 +470,7 @@ export function createReviewCandidateRuntime({
         }
       }
     }
-    return { upserted, assertionsUpserted, sourcesUpserted: sourceIds.size };
+    return { upserted, assertionsUpserted };
   }
 
   async function remapPendingComponentReviewItemsForNameChange({

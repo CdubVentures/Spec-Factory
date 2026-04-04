@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import path from 'node:path';
-import { loadDotEnvFile, loadConfig } from '../src/config.js';
+import { loadDotEnvFile, loadConfigWithUserSettings } from '../src/config.js';
 import { createStorage } from '../src/core/storage/storage.js';
 import { runUntilComplete } from '../src/runner/runUntilComplete.js';
 
@@ -143,9 +143,8 @@ async function main() {
   const mode = String(args.mode || 'aggressive').trim().toLowerCase();
   const concurrency = Math.max(1, toInt(args.concurrency, 2));
   const maxRunSeconds = Math.max(120, toInt(args['max-run-seconds'], 900));
-  const config = loadConfig({
+  const config = loadConfigWithUserSettings({
     localMode: true,
-    outputMode: 'local',
     maxRunSeconds,
     concurrency
   });
@@ -175,7 +174,7 @@ async function main() {
       });
       const runId = String(completed.final_run_id || '').trim();
       const summaryKey = runId
-        ? path.posix.join(config.s3OutputPrefix, category, job.productId, 'runs', runId, 'logs', 'summary.json')
+        ? storage.resolveOutputKey(category, job.productId, 'runs', runId, 'logs', 'summary.json')
         : null;
       const summary = summaryKey ? (await storage.readJsonOrNull(summaryKey)) : null;
       const llm = summary?.llm || {};
@@ -253,7 +252,7 @@ async function main() {
   };
 
   const reportTs = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-  const reportKey = path.posix.join(config.s3OutputPrefix, '_reports', 'benchmarks', `aggressive_${category}_${reportTs}.json`);
+  const reportKey = storage.resolveOutputKey('_reports', 'benchmarks', `aggressive_${category}_${reportTs}.json`);
   await storage.writeObject(
     reportKey,
     Buffer.from(JSON.stringify(report, null, 2), 'utf8'),

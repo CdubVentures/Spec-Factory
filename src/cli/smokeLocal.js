@@ -32,7 +32,6 @@ export async function main() {
     import('./args.js'),
   ]);
   const args = parseArgs(process.argv.slice(2));
-  const runLlmMode = asBool(args.llm, Boolean(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.ANTHROPIC_API_KEY));
   const { outputRoot, normalizedOutPath, summaryOutPath } = resolveSmokeLocalOutputPaths();
 
   const config = loadConfigWithUserSettings({
@@ -41,6 +40,8 @@ export async function main() {
     localOutputRoot: outputRoot,
     discoveryEnabled: false
   });
+  // WHY: Derive LLM mode from config (SQL-backed), not process.env.
+  const runLlmMode = asBool(args.llm, Boolean(config.geminiApiKey || config.openaiApiKey || config.deepseekApiKey || config.anthropicApiKey));
 
   const storage = createStorage(config);
   const s3Key = 'specs/inputs/mouse/products/mouse-smoke-validation.json';
@@ -60,7 +61,7 @@ export async function main() {
     enabled: false
   };
   if (runLlmMode) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!config.openaiApiKey) {
       llmRun = {
         enabled: false,
         skipped: true,

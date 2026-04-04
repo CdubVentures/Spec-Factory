@@ -40,8 +40,8 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 ## Mutation Boundaries
 
 - SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 48 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route/source, telemetry indexes, crawl artifacts, brand/domain, runs, field_history, source_corpus
-- 13 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, fieldHistoryStore, telemetryIndexStore, purgeStore, provenanceStore
+- 45 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs
+- 12 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, provenanceStore
 - Write access is through `SpecDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

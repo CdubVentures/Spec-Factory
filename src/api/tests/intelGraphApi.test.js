@@ -18,13 +18,13 @@ function makeMemoryStorage(config) {
       map.set(key, toBuffer(body));
     },
     resolveOutputKey(...parts) {
-      return [config.s3OutputPrefix, ...parts].filter(Boolean).join('/');
+      return ['specs/outputs', ...parts].filter(Boolean).join('/');
     }
   };
 }
 
 test('intel graph API serves product snapshot, missing critical fields, and best evidence', async () => {
-  const config = { s3OutputPrefix: 'specs/outputs' };
+  const config = {};
   const storage = makeMemoryStorage(config);
   const latestBase = storage.resolveOutputKey('mouse', 'mouse-acme-m100', 'latest');
 

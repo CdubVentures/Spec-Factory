@@ -21,7 +21,7 @@ export function registerSpecSeedsRoutes(ctx) {
   }
 
   return async function handleSpecSeedsRoutes(parts, params, method, req, res) {
-    if (parts[0] !== 'spec-seeds') return;
+    if (parts[0] !== 'spec-seeds') return false;
 
     const category = resolveScopedCategory(params);
     if (!category) return jsonRes(res, 400, { error: 'category_required' });

@@ -14,7 +14,7 @@ import { SpecDb } from '../../../../db/specDb.js';
 
 async function tmpConfig() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'prod-cat-'));
-  return { categoryAuthorityRoot: dir, _tmpDir: dir, s3InputPrefix: 'specs/inputs' };
+  return { categoryAuthorityRoot: dir, _tmpDir: dir };
 }
 
 async function cleanup(config) {

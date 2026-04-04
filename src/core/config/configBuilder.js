@@ -135,11 +135,11 @@ export function buildRawConfig({ manifestApplicator }) {
     searchEngines: process.env.SEARCH_ENGINES || runtimeSettingDefault('searchEngines'),
     searchEnginesFallback: process.env.SEARCH_ENGINES_FALLBACK || runtimeSettingDefault('searchEnginesFallback'),
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),
-    // --- API keys (direct env read) ---
-    serperApiKey: process.env.SERPER_API_KEY || runtimeSettingDefault('serperApiKey'),
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
-    geminiApiKey: process.env.GEMINI_API_KEY || '',
-    deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+    // --- API keys (SQL is sole authority; registry default seeds config) ---
+    serperApiKey: runtimeSettingDefault('serperApiKey'),
+    anthropicApiKey: runtimeSettingDefault('anthropicApiKey'),
+    geminiApiKey: runtimeSettingDefault('geminiApiKey'),
+    deepseekApiKey: runtimeSettingDefault('deepseekApiKey'),
 
     // --- LLM model / provider resolution chain ---
     llmForceRoleModelProvider: parseBoolEnv('LLM_FORCE_ROLE_MODEL_PROVIDER', false),
@@ -166,7 +166,7 @@ export function buildRawConfig({ manifestApplicator }) {
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
 
     // --- OpenAI aliases (computed from LLM chain) ---
-    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    openaiApiKey: runtimeSettingDefault('openaiApiKey'),
     openaiBaseUrl: resolvedBaseUrl,
     openaiModelExtract: explicitLlmModelExtract || defaultModel,
     openaiModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,

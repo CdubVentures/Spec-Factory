@@ -333,27 +333,6 @@ export function prepareStatements(db) {
         updated_at = datetime('now')
     `),
 
-    _upsertSourceRegistry: db.prepare(`
-      INSERT INTO source_registry (
-        source_id, category, item_identifier, product_id, run_id, source_url,
-        source_host, source_root_domain, source_tier, source_method,
-        crawl_status, http_status, fetched_at
-      ) VALUES (
-        @source_id, @category, @item_identifier, @product_id, @run_id, @source_url,
-        @source_host, @source_root_domain, @source_tier, @source_method,
-        @crawl_status, @http_status, @fetched_at
-      )
-      ON CONFLICT(source_id) DO UPDATE SET
-        source_url = excluded.source_url,
-        source_host = COALESCE(excluded.source_host, source_host),
-        source_root_domain = COALESCE(excluded.source_root_domain, source_root_domain),
-        source_tier = COALESCE(excluded.source_tier, source_tier),
-        source_method = COALESCE(excluded.source_method, source_method),
-        crawl_status = COALESCE(excluded.crawl_status, crawl_status),
-        http_status = COALESCE(excluded.http_status, http_status),
-        fetched_at = COALESCE(excluded.fetched_at, fetched_at),
-        updated_at = datetime('now')
-    `),
 
     _insertKeyReviewState: db.prepare(`
       INSERT INTO key_review_state (
@@ -432,31 +411,6 @@ export function prepareStatements(db) {
         @ts, @month, @day, @provider, @model, @category, @product_id, @run_id, @round,
         @prompt_tokens, @completion_tokens, @cached_prompt_tokens, @total_tokens,
         @cost_usd, @reason, @host, @url_count, @evidence_chars, @estimated_usage, @meta
-      )
-    `),
-
-    _upsertLlmCache: db.prepare(`
-      INSERT OR REPLACE INTO llm_cache (cache_key, response, timestamp, ttl)
-      VALUES (@cache_key, @response, @timestamp, @ttl)
-    `),
-
-    _getLlmCache: db.prepare(
-      'SELECT response, timestamp, ttl FROM llm_cache WHERE cache_key = ?'
-    ),
-
-    _evictExpiredCache: db.prepare(
-      'DELETE FROM llm_cache WHERE (timestamp + ttl) < ?'
-    ),
-
-    _upsertSourceCorpus: db.prepare(`
-      INSERT OR REPLACE INTO source_corpus (
-        url, category, host, root_domain, path, title, snippet, tier, role,
-        fields, methods, identity_match, approved_domain, brand, model_name, variant,
-        first_seen_at, last_seen_at
-      ) VALUES (
-        @url, @category, @host, @root_domain, @path, @title, @snippet, @tier, @role,
-        @fields, @methods, @identity_match, @approved_domain, @brand, @model_name, @variant,
-        @first_seen_at, @last_seen_at
       )
     `),
 
@@ -547,21 +501,6 @@ export function prepareStatements(db) {
 
     _getRunArtifactsByRunId: db.prepare(`
       SELECT * FROM run_artifacts WHERE run_id = ? ORDER BY artifact_type
-    `),
-
-    _upsertFieldHistory: db.prepare(`
-      INSERT INTO field_history (category, product_id, field_key, round, run_id, history_json, updated_at)
-      VALUES (@category, @product_id, @field_key, @round, @run_id, @history_json, CURRENT_TIMESTAMP)
-      ON CONFLICT(category, product_id, field_key)
-      DO UPDATE SET round = excluded.round, run_id = excluded.run_id, history_json = excluded.history_json, updated_at = CURRENT_TIMESTAMP
-    `),
-
-    _getFieldHistories: db.prepare(`
-      SELECT field_key, history_json FROM field_history WHERE category = @category AND product_id = @product_id
-    `),
-
-    _deleteFieldHistories: db.prepare(`
-      DELETE FROM field_history WHERE category = @category AND product_id = @product_id
     `),
 
     // --- Artifact store (crawl_sources, source_screenshots, source_videos) ---

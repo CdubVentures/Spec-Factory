@@ -26,17 +26,18 @@ test('loadConfig derives default model from registry SSOT, not API key presence'
     assert.equal(cfg.llmModelPlan, 'gemini-2.5-flash');
     assert.equal(cfg.llmProvider, 'gemini');
     assert.equal(cfg.llmReasoningMode, true);
-    assert.equal(cfg.deepseekApiKey, 'ds-test-key');
+    // WHY: API keys are no longer read from env — SQL is sole authority.
+    assert.equal(cfg.deepseekApiKey, '');
   });
 });
 
-test('loadConfig reads OPENAI_API_KEY into openaiApiKey', () => {
+test('loadConfig does not read OPENAI_API_KEY from env (SQL is sole authority)', () => {
   const keys = ['OPENAI_API_KEY'];
 
   return withSavedEnv(keys, () => {
     process.env.OPENAI_API_KEY = 'openai-test-key';
 
     const cfg = loadConfig({});
-    assert.equal(cfg.openaiApiKey, 'openai-test-key');
+    assert.equal(cfg.openaiApiKey, '');
   });
 });

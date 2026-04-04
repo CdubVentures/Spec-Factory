@@ -124,3 +124,26 @@ test('persistCanonicalSections updates getUserSettingsState and returns artifact
   assert.equal(updatedState.runtime.domainClassifierUrlCap, 8);
   appDb.close();
 });
+
+test('mergeRuntimePatch does not heal blank secrets from config into SQL', async () => {
+  const appDb = makeInMemoryAppDb();
+  // Seed SQL with a blank geminiApiKey
+  appDb.upsertSetting({ section: 'runtime', key: 'geminiApiKey', value: '', type: 'string' });
+
+  // Config has a value (as if from env in the old world)
+  const config = { geminiApiKey: 'from-env' };
+  const ctx = createConfigPersistenceContext({
+    config,
+    initialUserSettings: { runtime: { geminiApiKey: '' } },
+    appDb,
+  });
+
+  await ctx.mergeRuntimePatch({ llmTimeoutMs: 45000 });
+
+  // Verify SQL still has blank geminiApiKey — no healing
+  const rows = appDb.getSection('runtime');
+  const geminiRow = rows.find((r) => r.key === 'geminiApiKey');
+  assert.equal(geminiRow?.value, '',
+    'SQL geminiApiKey must remain blank (no env→SQL healing)');
+  appDb.close();
+});

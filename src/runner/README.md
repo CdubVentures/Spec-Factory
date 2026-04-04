@@ -6,7 +6,6 @@ Single-pass product run orchestrator — executes one discovery + crawl cycle fo
 
 **`runUntilComplete.js`** — async orchestrator:
 - `runUntilComplete({ storage, config, s3key, mode, specDb })` — main entry point
-- `buildPreviousFieldHistories(roundResult)` — extract per-field history for crash recovery
 
 ## Dependencies
 

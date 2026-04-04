@@ -8,18 +8,6 @@ import {
   upsertQueueProduct
 } from '../queue/queueState.js';
 
-// WHY: Extract per-field history objects for crash recovery continuity.
-export function buildPreviousFieldHistories(roundResult) {
-  const fields = roundResult?.needSet?.fields;
-  if (!Array.isArray(fields) || fields.length === 0) return {};
-  const result = {};
-  for (const f of fields) {
-    if (f.field_key && f.history) result[f.field_key] = f.history;
-  }
-  return result;
-}
-
-
 export async function runUntilComplete({
   storage,
   config,

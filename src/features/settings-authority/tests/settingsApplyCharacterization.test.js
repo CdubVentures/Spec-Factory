@@ -79,14 +79,14 @@ test('applyRuntimeSettingsToConfig rebuilds registry lookup when provider regist
   assert.equal(route.apiKey, 'test-key-123');
 });
 
-test('applyRuntimeSettingsToConfig bootstrap mode preserves env-backed secret keys when persisted values are blank', () => {
+test('applyRuntimeSettingsToConfig bootstrap mode applies blank secrets from SQL (SQL is sole authority)', () => {
   const config = loadConfig({ geminiApiKey: 'gem-env-key' });
 
   applyRuntimeSettingsToConfig(config, {
     geminiApiKey: '',
   }, { mode: 'bootstrap' });
 
-  assert.equal(config.geminiApiKey, 'gem-env-key');
+  assert.equal(config.geminiApiKey, '');
 });
 
 test('applyRuntimeSettingsToConfig bootstrap mode preserves the default provider registry when persisted registry is empty', () => {

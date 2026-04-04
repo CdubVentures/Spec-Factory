@@ -42,24 +42,14 @@ import { resolveAllPlugins } from '../src/features/crawl/plugins/pluginRegistry.
 import { resolveAllExtractionPlugins, createExtractionRunner } from '../src/features/extraction/index.js';
 import { searchSerper } from '../src/features/indexing/pipeline/searchExecution/searchSerper.js';
 import { writeReports } from './crawl-probe-report.mjs';
+import { loadConfigWithUserSettings, loadDotEnvFile } from '../src/config.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// WHY: Load .env from project root so SERPER_API_KEY is available.
-// No dotenv dependency — parse manually.
-try {
-  const envPath = path.resolve(import.meta.dirname, '..', '.env');
-  const envContent = fs.readFileSync(envPath, 'utf-8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx < 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
-    if (key && !process.env[key]) process.env[key] = val;
-  }
-} catch { /* .env not found — rely on existing env vars */ }
+// WHY: Load .env for non-secret vars, then load config with SQL-backed settings.
+// API keys come from SQL/GUI, not .env.
+loadDotEnvFile();
+const _probeConfig = loadConfigWithUserSettings({});
 
 // ── Arg parsing ──────────────────────────────────────────────────────────────
 
@@ -171,9 +161,9 @@ function buildProbeQueries(product, category) {
 }
 
 async function runSerperSearch(queries, { verbose, maxUrls }) {
-  const apiKey = process.env.SERPER_API_KEY;
+  const apiKey = _probeConfig.serperApiKey || process.env.SERPER_API_KEY;
   if (!apiKey) {
-    console.error('  ERROR: SERPER_API_KEY not set in .env');
+    console.error('  ERROR: SERPER_API_KEY not set (configure via GUI or .env)');
     process.exit(1);
   }
 

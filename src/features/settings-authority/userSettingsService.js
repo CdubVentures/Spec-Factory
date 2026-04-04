@@ -19,7 +19,6 @@ import {
   recordSettingsWriteOutcome,
 } from '../../observability/settingsPersistenceCounters.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
-import { SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS } from '../../core/config/settingsClassification.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
@@ -600,31 +599,21 @@ export async function mergeAndPersistRuntimePatch({
   const sanitizedIncomingPatch = sanitizeRuntimeSettings(patch);
   const sanitizedPatch = { ...sanitizedIncomingPatch };
 
-  // WHY: Preserve effective env-backed secrets and the default provider registry
-  // when SQL still contains stale blank bootstrap rows and the incoming patch
-  // does not explicitly touch those keys. The patch-based path no longer
-  // rewrites the whole runtime section, so this healing must happen explicitly.
+  // WHY: Preserve the default provider registry when SQL still contains a
+  // stale empty-array bootstrap row and the incoming patch does not touch it.
+  // Secret keys are no longer healed here — SQL is sole authority for secrets.
   if (config && typeof config === 'object') {
     const effectiveRuntime = snapshotRuntimeSettings(config);
-    const repairKeys = new Set([
-      ...SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS,
-      'llmProviderRegistryJson',
-    ]);
+    const repairKeys = new Set(['llmProviderRegistryJson']);
 
     for (const key of repairKeys) {
       if (Object.hasOwn(sanitizedIncomingPatch, key)) continue;
 
       const persistedValue = existing.runtime?.[key];
-      const persistedIsStale = SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
-        ? String(persistedValue ?? '').trim() === ''
-        : shouldSkipBootstrapRuntimeOverride(key, persistedValue);
-      if (!persistedIsStale) continue;
+      if (!shouldSkipBootstrapRuntimeOverride(key, persistedValue)) continue;
 
       const effectiveValue = effectiveRuntime[key];
-      const effectiveIsEmpty = SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
-        ? String(effectiveValue ?? '').trim() === ''
-        : shouldSkipBootstrapRuntimeOverride(key, effectiveValue);
-      if (effectiveIsEmpty) continue;
+      if (shouldSkipBootstrapRuntimeOverride(key, effectiveValue)) continue;
 
       sanitizedPatch[key] = effectiveValue;
     }
@@ -699,14 +688,10 @@ function rebuildDerivedConfigState(config, appliedKeys) {
   }
 }
 
+// WHY: SQL is sole authority for secrets. Empty-string secrets are intentional
+// (user hasn't set a key yet). Only skip the llmProviderRegistryJson
+// empty-array edge case to preserve registry defaults during bootstrap.
 function shouldSkipBootstrapRuntimeOverride(key, value) {
-  if (
-    typeof value === 'string'
-    && value === ''
-    && SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
-  ) {
-    return true;
-  }
   if (key !== 'llmProviderRegistryJson') {
     return false;
   }
@@ -714,8 +699,6 @@ function shouldSkipBootstrapRuntimeOverride(key, value) {
     const parsed = JSON.parse(value || '[]');
     return Array.isArray(parsed) && parsed.length === 0;
   } catch {
-    // Invalid persisted JSON should still flow through; the live config
-    // will preserve the bad payload for debugging instead of silently masking it.
     return false;
   }
 }

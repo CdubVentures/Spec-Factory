@@ -74,7 +74,11 @@ test('runtime settings bootstrap and save paths prefer effective config over sta
     readJsonBody: async () => ({ domainClassifierUrlCap: 25 }),
   }));
 
-  assert.equal(config.geminiApiKey, 'gem-env-key');
+  // WHY: Bootstrap mode now applies SQL values (including blank secrets).
+  // The persistence context constructor ran applyDerivedSettingsArtifacts with
+  // bootstrap mode, which applied the blank geminiApiKey from SQL over the
+  // config value. This is correct — SQL is sole authority.
+  assert.equal(config.geminiApiKey, '');
   assert.notEqual(config.llmProviderRegistryJson, '[]');
 
   const result = await handler(['runtime-settings'], new URLSearchParams(), 'PUT', {}, {});
@@ -84,6 +88,8 @@ test('runtime settings bootstrap and save paths prefer effective config over sta
   const persistedRuntime = Object.fromEntries(
     appDb.getSection('runtime').map((row) => [row.key, row.value]),
   );
-  assert.equal(persistedRuntime.geminiApiKey, 'gem-env-key');
+  // WHY: SQL is sole authority — blank secrets are NOT healed from config/env.
+  assert.equal(persistedRuntime.geminiApiKey, '',
+    'blank secret must not be healed from config');
   assert.notEqual(persistedRuntime.llmProviderRegistryJson, '[]');
 });

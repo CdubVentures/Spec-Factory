@@ -3,7 +3,7 @@ import { toBoolInt, toBand, makeRouteKey, baseLlmRoute, buildDefaultLlmRoutes } 
 
 /**
  * LLM Route Matrix + Source Capture store — extracted from SpecDb.
- * Owns: llm_route_matrix, source_registry tables.
+ * Owns: llm_route_matrix table.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
@@ -107,38 +107,10 @@ export function createLlmRouteSourceStore({ db, category, stmts }) {
     return getLlmRouteMatrix();
   }
 
-  // --- Source Capture ---
-
-  function upsertSourceRegistry({ sourceId, category: cat, itemIdentifier, productId, runId, sourceUrl, sourceHost, sourceRootDomain, sourceTier, sourceMethod, crawlStatus, httpStatus, fetchedAt }) {
-    stmts._upsertSourceRegistry.run({
-      source_id: sourceId,
-      category: cat || category,
-      item_identifier: itemIdentifier || '',
-      product_id: productId ?? null,
-      run_id: runId ?? null,
-      source_url: sourceUrl || '',
-      source_host: sourceHost ?? null,
-      source_root_domain: sourceRootDomain ?? null,
-      source_tier: sourceTier ?? null,
-      source_method: sourceMethod ?? null,
-      crawl_status: crawlStatus || 'fetched',
-      http_status: httpStatus ?? null,
-      fetched_at: fetchedAt ?? null
-    });
-  }
-
-  function getSourcesForItem(itemIdentifier) {
-    return db
-      .prepare('SELECT * FROM source_registry WHERE category = ? AND item_identifier = ? ORDER BY source_tier ASC, source_host')
-      .all(category, itemIdentifier);
-  }
-
   return {
     ensureDefaultLlmRouteMatrix,
     getLlmRouteMatrix,
     saveLlmRouteMatrix,
     resetLlmRouteMatrixToDefaults,
-    upsertSourceRegistry,
-    getSourcesForItem,
   };
 }

@@ -164,16 +164,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     aiReason: 'consistent', aiReviewModel: 'gemini-2.5-pro',
   });
 
-  // source_registry (camelCase API via llmRouteSourceStore)
-  specDb.upsertSourceRegistry({
-    sourceId: `src_${runId}_${contentHash.slice(0, 8)}`,
-    category: cat, itemIdentifier: productId, productId,
-    runId, sourceUrl: url, sourceHost: new URL(url).hostname,
-    sourceRootDomain: new URL(url).hostname, sourceTier: 1,
-    sourceMethod: 'crawl',
-  });
-
-
   // curation_suggestions (use run+url combo for uniqueness)
   specDb.db.prepare(`INSERT OR IGNORE INTO curation_suggestions (suggestion_id, category, suggestion_type, field_key, value, normalized_value, status, source, product_id, run_id, first_seen_at, last_seen_at)
     VALUES (?, ?, 'field', 'weight', '80g', '80', 'pending', 'pipeline', ?, ?, ?, ?)`).run(`sug_${runId}_${contentHash.slice(0, 6)}`, cat, productId, runId, now, now);
@@ -181,24 +171,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
   // component_review_queue
   specDb.db.prepare(`INSERT OR IGNORE INTO component_review_queue (review_id, category, component_type, field_key, raw_query, matched_component, match_type, name_score, property_score, combined_score, product_id, run_id, status)
     VALUES (?, ?, 'sensor', 'sensor', 'PAW3950', 'PAW3950', 'exact', 1.0, 1.0, 1.0, ?, ?, 'pending')`).run(`crq_${runId}_${contentHash.slice(0, 6)}`, cat, productId, runId);
-
-  // field_history
-  specDb.upsertFieldHistory({
-    category: cat, product_id: productId, field_key: 'weight',
-    round: 1, run_id: runId,
-    history_json: JSON.stringify([{ run_id: runId, value: '80g' }]),
-  });
-
-  // source_corpus (camelCase API via sourceIntelStore)
-  specDb.upsertSourceCorpusDoc({
-    url, category: cat, host: new URL(url).hostname,
-    rootDomain: new URL(url).hostname, path: new URL(url).pathname,
-    title: 'Mouse A', snippet: 'Weight: 80g', tier: 1, role: 'product_page',
-    fields: '["weight"]', methods: '["llm_extract"]',
-    identityMatch: true, approvedDomain: true,
-    brand: 'TestBrand', modelName: 'TestModel', variant: '',
-  });
-
 
 }
 
@@ -303,12 +275,8 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
     assert.equal(countRows(h.specDb.db, 'candidate_reviews'), 0);
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'component_review_queue', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'field_history', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', "product_id = ?", [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', "product_id = ?", [PID_A]), 0);
-
-    // Source lineage cascade
-    assert.equal(countRows(h.specDb.db, 'source_registry', 'run_id = ?', [RUN_1]), 0);
 
     // Product identity must survive
     assert.equal(countRows(h.specDb.db, 'products', 'product_id = ?', [PID_A]), 1);
@@ -391,7 +359,6 @@ test('deleteRun — preserves other run data when two runs exist', () => {
     assert.equal(countRows(h.specDb.db, 'product_runs', 'run_id = ?', [RUN_2]), 1);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_2]), 1);
     assert.equal(countRows(h.specDb.db, 'candidates', 'run_id = ?', [RUN_2]), 1);
-    assert.equal(countRows(h.specDb.db, 'source_registry', 'run_id = ?', [RUN_2]), 1);
     // RUN_2 filesystem intact
     assert.equal(fs.existsSync(path.join(h.fsRoots.runs, RUN_2)), true);
   } finally {
@@ -469,10 +436,7 @@ test('deleteUrl — removes URL-scoped SQL rows across all runs', () => {
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'candidates', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_registry', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'canonical_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_corpus', "url = ?", [URL_1]), 0);
-
     // URL_2 rows intact
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'source_url = ? AND product_id = ?', [URL_2, PID_A]), 1);
     assert.equal(countRows(h.specDb.db, 'candidates', 'source_url = ? AND product_id = ?', [URL_2, PID_A]), 1);
@@ -605,8 +569,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'candidate_reviews'), 0);
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'component_review_queue', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_registry', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'field_history', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);

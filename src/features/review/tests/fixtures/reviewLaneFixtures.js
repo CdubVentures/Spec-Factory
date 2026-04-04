@@ -36,8 +36,6 @@ export function makeStorage(tempRoot) {
     localMode: true,
     localInputRoot: path.join(tempRoot, 'fixtures'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs',
   });
 }
 

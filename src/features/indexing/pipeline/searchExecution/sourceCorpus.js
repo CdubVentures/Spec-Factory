@@ -237,53 +237,9 @@ export async function loadSourceCorpus({
   storage,
   config,
   category,
-  specDb = null
 }) {
   const key = sourceCorpusKey(config, category);
 
-  // When specDb is available, use SQLite as primary (skip in-memory cache)
-  if (specDb) {
-    try {
-      const rows = specDb.getSourceCorpusByCategory(category);
-      if (rows && rows.length > 0) {
-        // Map SQLite rows to the corpus doc format expected by the rest of the code
-        const docs = rows.map((row) => ({
-          url: row.url || '',
-          host: row.host || '',
-          rootDomain: row.rootDomain || row.root_domain || '',
-          path: row.path || '',
-          title: row.title || '',
-          snippet: row.snippet || '',
-          tier: row.tier ?? 0,
-          role: row.role || '',
-          approved_domain: Boolean(row.approved_domain),
-          identity_match: Boolean(row.identity_match),
-          fields: Array.isArray(row.fields) ? row.fields : [],
-          methods: Array.isArray(row.methods) ? row.methods : [],
-          category: row.category || category,
-          brand: row.brand || '',
-          model: row.model_name || row.model || '',
-          variant: row.variant || '',
-          updated_at: row.last_seen_at || row.updated_at || '',
-          first_seen_at: row.first_seen_at || '',
-          last_seen_at: row.last_seen_at || ''
-        }));
-        return {
-          key,
-          data: {
-            category,
-            updated_at: docs[0]?.updated_at || null,
-            doc_count: docs.length,
-            docs
-          }
-        };
-      }
-    } catch {
-      // Fall through to JSON path on error
-    }
-  }
-
-  // Fallback: JSON path with in-memory cache
   const cacheKey = sourceCorpusCacheKey(storage, key);
   const cached = CORPUS_CACHE.get(cacheKey);
   if (cached && (Date.now() - cached.ts) <= CORPUS_CACHE_TTL_MS) {
@@ -319,14 +275,12 @@ export async function persistSourceCorpus({
   category,
   sourceResults,
   identity = {},
-  specDb = null
 }) {
   const maxDocs = Math.max(200, Number.parseInt(String(config.sourceCorpusMaxDocs || 20_000), 10) || 20_000);
   const loaded = await loadSourceCorpus({
     storage,
     config,
     category,
-    specDb
   });
   const incomingDocs = [];
   for (const source of sourceResults || []) {
@@ -348,50 +302,17 @@ export async function persistSourceCorpus({
     ...incomingDocs
   ], maxDocs);
 
-  // When specDb is available, persist to SQLite
-  if (specDb) {
-    try {
-      const now = new Date().toISOString();
-      const dbDocs = docs.map((doc) => ({
-        url: doc.url || '',
-        category: doc.category || category,
-        host: doc.host || '',
-        rootDomain: doc.rootDomain || doc.root_domain || '',
-        path: doc.path || '',
-        title: doc.title || '',
-        snippet: doc.snippet || '',
-        tier: doc.tier ?? 0,
-        role: doc.role || '',
-        fields: doc.fields || [],
-        methods: doc.methods || [],
-        identity_match: doc.identity_match ? 1 : 0,
-        approved_domain: doc.approved_domain ? 1 : 0,
-        brand: doc.brand || '',
-        model: doc.model || '',
-        variant: doc.variant || '',
-        first_seen_at: doc.first_seen_at || doc.updated_at || now,
-        last_seen_at: doc.last_seen_at || doc.updated_at || now
-      }));
-      specDb.upsertSourceCorpusBatch(dbDocs);
-    } catch {
-      // SQLite write failed — fall through to JSON write as safety net
-    }
-  }
-
-  // Write JSON blob only when specDb is not available (fallback)
-  if (!specDb) {
-    const payload = {
-      category,
-      updated_at: new Date().toISOString(),
-      doc_count: docs.length,
-      docs
-    };
-    await storage.writeObject(
-      loaded.key,
-      Buffer.from(JSON.stringify(payload, null, 2), 'utf8'),
-      { contentType: 'application/json' }
-    );
-  }
+  const payload = {
+    category,
+    updated_at: new Date().toISOString(),
+    doc_count: docs.length,
+    docs
+  };
+  await storage.writeObject(
+    loaded.key,
+    Buffer.from(JSON.stringify(payload, null, 2), 'utf8'),
+    { contentType: 'application/json' }
+  );
 
   invalidateSourceCorpusCache(storage, loaded.key);
   return {
@@ -410,7 +331,6 @@ export async function searchSourceCorpus({
   missingFields = [],
   fieldOrder = [],
   logger,
-  specDb = null
 }) {
   const normalizedQuery = String(query || '').trim();
   if (!normalizedQuery) {
@@ -420,7 +340,6 @@ export async function searchSourceCorpus({
     storage,
     config,
     category,
-    specDb
   });
   const docs = Array.isArray(loaded.data?.docs) ? loaded.data.docs : [];
   if (!docs.length) {

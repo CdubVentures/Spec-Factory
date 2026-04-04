@@ -132,12 +132,11 @@ export function buildCategorySurfaces(steps) {
       label: 'Source & Key Review',
       scope: 'category',
       dependsOn: ['products', 'backfill_links'],
-      tables: ['source_registry', 'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'],
+      tables: ['key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'],
       before: (ctx) => ctx.db.pruneOrphanCandidateReferences(),
       execute: (ctx) => steps.seedSourceAndKeyReview(ctx.db, ctx.category, ctx.fieldMeta),
       after: (ctx) => ctx.db.pruneOrphanCandidateReferences(),
       summarize: (result) => ({
-        source_registry_seeded: result.sourceRegistryCount,
         key_review_states_seeded: result.keyReviewStateCount,
         key_review_audit_seeded: result.keyReviewAuditCount,
         key_review_runs_seeded: result.keyReviewRunCount,

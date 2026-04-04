@@ -28,12 +28,6 @@ export async function runReviewLaneReadContracts(t, harness) {
        FROM candidates
        WHERE category = ? AND candidate_id LIKE 'pl-cr_%'`
     ).get(CATEGORY)?.c || 0;
-    const pipelineSourcesBefore = db.db.prepare(
-      `SELECT COUNT(*) AS c
-       FROM source_registry
-       WHERE category = ? AND source_host = 'pipeline'`
-    ).get(CATEGORY)?.c || 0;
-
     await apiJson(baseUrl, 'GET', `/review-components/${CATEGORY}/components?type=sensor`);
 
     const syntheticRowsAfter = db.db.prepare(
@@ -47,12 +41,6 @@ export async function runReviewLaneReadContracts(t, harness) {
       false,
     );
 
-    const pipelineSourcesAfter = db.db.prepare(
-      `SELECT COUNT(*) AS c
-       FROM source_registry
-       WHERE category = ? AND source_host = 'pipeline'`
-    ).get(CATEGORY)?.c || 0;
-    assert.equal(pipelineSourcesAfter, pipelineSourcesBefore);
   });
 
   await t.test('grid candidates endpoint synthesizes selected candidate id when lane points to missing candidate row', async () => {

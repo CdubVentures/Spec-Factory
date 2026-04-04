@@ -27,9 +27,9 @@ stores/
   enumListStore.js         — 15 methods: enum_lists + list_values (cross-dep: key review store)
   keyReviewStore.js        — 15 methods: key_review_state + key_review_runs + key_review_run_sources + key_review_audit
   billingStore.js          —  5 methods: billing_entries
-  sourceIntelStore.js      — 10 methods: llm_cache + source_corpus + bridge_events
+  sourceIntelStore.js      —  3 methods: bridge_events
   queueProductStore.js     — 23 methods: product_queue + product_runs + products + curation_suggestions + component_review_queue
-  llmRouteSourceStore.js   —  6 methods: llm_route_matrix + source_registry
+  llmRouteSourceStore.js   —  4 methods: llm_route_matrix
 ```
 
 ## Pattern

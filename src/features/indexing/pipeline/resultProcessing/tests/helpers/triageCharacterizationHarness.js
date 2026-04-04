@@ -23,7 +23,6 @@ export function makeConfig(overrides = {}) {
   return {
     searchProvider: 'dual',
     llmModelPlan: 'test-model',
-    s3InputPrefix: '_test',
     ...overrides,
   };
 }

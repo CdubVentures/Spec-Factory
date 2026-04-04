@@ -26,7 +26,6 @@ import { createBillingStore } from './stores/billingStore.js';
 import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
 import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
-import { createFieldHistoryStore } from './stores/fieldHistoryStore.js';
 import { createPurgeStore } from './stores/purgeStore.js';
 import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
@@ -83,8 +82,6 @@ export class SpecDb {
     this._sourceIntelStore = createSourceIntelStore({
       db: this.db, category: this.category,
       stmts: {
-        _getLlmCache: this._getLlmCache, _upsertLlmCache: this._upsertLlmCache, _evictExpiredCache: this._evictExpiredCache,
-        _upsertSourceCorpus: this._upsertSourceCorpus,
         _insertBridgeEvent: this._insertBridgeEvent, _getBridgeEventsByRunId: this._getBridgeEventsByRunId,
       }
     });
@@ -104,12 +101,7 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _upsertLlmRoute: this._upsertLlmRoute,
-        _upsertSourceRegistry: this._upsertSourceRegistry
       }
-    });
-    this._fieldHistoryStore = createFieldHistoryStore({
-      category: this.category,
-      stmts: { _upsertFieldHistory: this._upsertFieldHistory, _getFieldHistories: this._getFieldHistories, _deleteFieldHistories: this._deleteFieldHistories }
     });
     this._purgeStore = createPurgeStore({ db: this.db, category: this.category });
     this._runMetaStore = createRunMetaStore({
@@ -257,28 +249,6 @@ export class SpecDb {
     });
 
     return this.getSpecDbSyncState(normalizedCategory);
-  }
-
-  // --- Brand Domains ---
-
-  getBrandDomain(brand, category) {
-    return this.db.prepare(
-      'SELECT * FROM brand_domains WHERE brand = ? AND category = ?'
-    ).get(brand, category) || null;
-  }
-
-  upsertBrandDomain(row) {
-    this.db.prepare(`
-      INSERT OR REPLACE INTO brand_domains (brand, category, official_domain, aliases, support_domain, confidence)
-      VALUES (@brand, @category, @official_domain, @aliases, @support_domain, @confidence)
-    `).run({
-      brand: row.brand,
-      category: row.category,
-      official_domain: row.official_domain || null,
-      aliases: row.aliases || '[]',
-      support_domain: row.support_domain || null,
-      confidence: row.confidence ?? 0.8
-    });
   }
 
   // --- Source Strategy --- (removed: sources.json is now the SSOT via sourceFileService.js)
@@ -680,11 +650,6 @@ export class SpecDb {
   saveLlmRouteMatrix(rows) { return this._llmRouteSourceStore.saveLlmRouteMatrix(rows); }
   resetLlmRouteMatrixToDefaults() { return this._llmRouteSourceStore.resetLlmRouteMatrixToDefaults(); }
 
-  // --- Source Capture ---
-
-  upsertSourceRegistry(opts) { this._llmRouteSourceStore.upsertSourceRegistry(opts); }
-  getSourcesForItem(id) { return this._llmRouteSourceStore.getSourcesForItem(id); }
-
   // --- Key Review Methods ---
 
   upsertKeyReviewState(row) { return this._keyReviewStore.upsertKeyReviewState(row); }
@@ -712,10 +677,8 @@ export class SpecDb {
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
       'item_list_links', 'product_queue', 'product_runs', 'products',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
-      'source_registry',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
-      'billing_entries', 'llm_cache',
-      'source_corpus',
+      'billing_entries',
       'color_edition_finder'
     ];
     const result = {};
@@ -778,19 +741,6 @@ export class SpecDb {
   listColorEditionFinderByCategory(cat) { return this._colorEditionFinderStore.listByCategory(cat); }
   getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
 
-  // --- LLM Cache ---
-
-  getLlmCacheEntry(k) { return this._sourceIntelStore.getLlmCacheEntry(k); }
-  setLlmCacheEntry(k, r, ts, ttl) { this._sourceIntelStore.setLlmCacheEntry(k, r, ts, ttl); }
-  evictExpiredCache(ms) { return this._sourceIntelStore.evictExpiredCache(ms); }
-
-  // --- Source Corpus ---
-
-  upsertSourceCorpusDoc(d) { this._sourceIntelStore.upsertSourceCorpusDoc(d); }
-  upsertSourceCorpusBatch(ds) { this._sourceIntelStore.upsertSourceCorpusBatch(ds); }
-  getSourceCorpusByCategory(c) { return this._sourceIntelStore.getSourceCorpusByCategory(c); }
-  getSourceCorpusCount(c) { return this._sourceIntelStore.getSourceCorpusCount(c); }
-
   // --- Runtime Events ---
 
   // --- Bridge Events (transformed runtime events for GUI readers) ---
@@ -820,12 +770,6 @@ export class SpecDb {
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
   getVideosByProduct(pid) { return this._artifactStore.getVideosByProduct(pid); }
   getCrawlSourceByHash(hash, pid) { return this._artifactStore.getCrawlSourceByHash(hash, pid); }
-
-  // --- Field History (crash-recovery persistence for search progression) ---
-
-  upsertFieldHistory(opts) { this._fieldHistoryStore.upsertFieldHistory(opts); }
-  getFieldHistories(productId) { return this._fieldHistoryStore.getFieldHistories(productId); }
-  deleteFieldHistories(productId) { this._fieldHistoryStore.deleteFieldHistories(productId); }
 
   // --- Field Studio Map (per-category control-plane config) ---
 

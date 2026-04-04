@@ -14,8 +14,6 @@ export async function createReviewOverrideHarness(
     localMode: true,
     localInputRoot: path.join(tempRoot, 'fixtures'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs',
   });
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
