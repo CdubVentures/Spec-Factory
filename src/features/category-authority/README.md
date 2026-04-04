@@ -7,7 +7,7 @@ This boundary is intentionally narrow: it exposes authority snapshot data withou
 - `src/features/category-authority/index.js`: no current exports; it remains a marker that runtime authority modules were removed.
 
 ## Dependencies
-- Allowed: internal files in this feature, `src/observability/dataPropagationCounters.js`, and `src/observability/settingsPersistenceCounters.js`.
+- Allowed: internal files in this feature, `src/core/events/dataPropagationCounters.js`, and `src/core/events/settingsPersistenceCounters.js`.
 - Forbidden: new compiled-contract/runtime modules inside this feature and deep imports from other feature internals.
 
 ## Domain Invariants

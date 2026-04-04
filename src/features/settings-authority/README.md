@@ -9,7 +9,7 @@ This boundary is the single source of truth for settings defaults, typed route c
 - `runtimeSettingsRouteContract.js`: canonical runtime route-contract constants.
 
 ## Dependencies
-- Allowed: `src/shared/settingsDefaults.js`, `src/observability/settingsPersistenceCounters.js`, Node `fs/path`, and `ajv`.
+- Allowed: `src/shared/settingsDefaults.js`, `src/core/events/settingsPersistenceCounters.js`, Node `fs/path`, and `ajv`.
 - Forbidden: feature-specific settings schemas or persistence formats that diverge from this contract.
 
 ## Domain Invariants

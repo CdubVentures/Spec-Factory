@@ -151,16 +151,6 @@
       "consumer": "src/runner/runUntilComplete.js:inferRuleEffort",
       "description": "Weighted effort score for search budget allocation"
     },
-    "priority.publish_gate": {
-      "status": "live",
-      "consumer": "src/publish/publishingPipeline.js",
-      "description": "Whether this field gates publication"
-    },
-    "priority.block_publish_when_unk": {
-      "status": "live",
-      "consumer": "src/publish/publishingPipeline.js",
-      "description": "Block publication when this field is unknown"
-    },
     "parse.template": {
       "status": "live",
       "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",

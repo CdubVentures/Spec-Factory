@@ -1,6 +1,5 @@
 // WHY: Canonical home for data-change broadcast and queue cleanup counters.
 // Part of the core event infrastructure (alongside dataChangeContract.js).
-// Moved from src/observability/ to eliminate core→observability upward dependency.
 
 function normalizedToken(value, { lowercase = false } = {}) {
   const token = String(value || '').trim();

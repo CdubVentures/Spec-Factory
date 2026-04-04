@@ -5,7 +5,7 @@ import { createConfigPersistenceContext } from '../configPersistenceContext.js';
 import {
   getSettingsPersistenceCountersSnapshot,
   resetSettingsPersistenceCounters,
-} from '../../../../observability/settingsPersistenceCounters.js';
+} from '../../../../core/events/settingsPersistenceCounters.js';
 import { AppDb } from '../../../../db/appDb.js';
 
 function makeInMemoryAppDb() {

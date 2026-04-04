@@ -8,7 +8,7 @@ This feature is the stable source for catalog-backed product identity and catalo
 - `src/features/catalog/api/brandRoutes.js`: `registerBrandRoutes(ctx)`.
 
 ## Dependencies
-- Allowed: internal modules under `src/features/catalog/**`, `src/core/events/dataChangeContract.js`, `src/observability/dataPropagationCounters.js`, `src/queue/queueState.js`, and existing low-level helpers in `src/utils/**`.
+- Allowed: internal modules under `src/features/catalog/**`, `src/core/events/dataChangeContract.js`, `src/core/events/dataPropagationCounters.js`, `src/queue/queueState.js`, and existing low-level helpers in `src/utils/**`.
 - Forbidden: cross-feature deep imports from other feature internals; other domains should consume catalog via `src/features/catalog/index.js`.
 
 ## Domain Invariants

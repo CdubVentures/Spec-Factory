@@ -65,7 +65,7 @@
 | `src/db/` | SQLite boundaries | `appDb.js`, `appDbSchema.js`, `specDb.js`, `specDbSchema.js`, `stores/` |
 | `src/features/` | feature-first backend boundaries | `catalog/`, `crawl/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/` |
 | `src/indexlab/` | run-artifact readers and runtime bridge helpers | `runtimeBridgeEventHandlers.js`, `runtimeBridgePayloads.js` |
-| `src/observability/` | local counters and telemetry helpers | `dataPropagationCounters.js`, `settingsPersistenceCounters.js` |
+| `src/core/events/` | data-change contract, broadcast counters, and settings persistence counters | `dataChangeContract.js`, `dataPropagationCounters.js`, `settingsPersistenceCounters.js` |
 | `src/pipeline/` | crawl-first run orchestration and seams | `runProduct.js`, `seams/` |
 | `src/shared/` | shared registry/defaults/accessors and generic helpers | `settingsRegistry.js` exports `143` live entries: `136` runtime, `3` bootstrap env, `4` UI |
 | `src/core/storage/` | local filesystem storage adapter | `storage.js` provides key-based artifact I/O over the local filesystem |

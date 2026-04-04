@@ -14,6 +14,6 @@ Policy:
 
 ## Proof
 
-- Targeted cluster: `node --test src/core/llm/tests/llmPolicySchema.test.js src/features/settings-authority/tests/runtimeSettingsSerializerContract.test.js src/features/settings-authority/tests/llmPolicyRouteHandler.test.js src/publish/tests/publishAnalytics.test.js tools/gui-react/src/features/pipeline-settings/state/__tests__/runtimeSettingsPayloadClamping.test.ts tools/gui-react/src/features/indexing/api/__tests__/indexingRunPayloadContracts.test.js`
+- Targeted cluster: `node --test src/core/llm/tests/llmPolicySchema.test.js src/features/settings-authority/tests/runtimeSettingsSerializerContract.test.js src/features/settings-authority/tests/llmPolicyRouteHandler.test.js tools/gui-react/src/features/pipeline-settings/state/__tests__/runtimeSettingsPayloadClamping.test.ts tools/gui-react/src/features/indexing/api/__tests__/indexingRunPayloadContracts.test.js`
 - Surrounding GUI payload/runtime tests: `node --test tools/gui-react/src/features/indexing/api/__tests__/*.test.js tools/gui-react/src/features/pipeline-settings/state/__tests__/*.test.ts tools/gui-react/src/features/pipeline-settings/state/__tests__/*.test.js`
 - Full suite: `npm test`

@@ -1,6 +1,6 @@
 import { resolveProductIdentity } from '../index.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { recordQueueCleanupOutcome } from '../../../observability/dataPropagationCounters.js';
+import { recordQueueCleanupOutcome } from '../../../core/events/dataPropagationCounters.js';
 import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
 
 export function registerCatalogRoutes(ctx) {

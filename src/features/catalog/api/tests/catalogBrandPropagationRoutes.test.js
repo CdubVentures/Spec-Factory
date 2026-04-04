@@ -5,7 +5,7 @@ import { registerBrandRoutes } from '../brandRoutes.js';
 import {
   getDataPropagationCountersSnapshot,
   resetDataPropagationCounters,
-} from '../../../../observability/dataPropagationCounters.js';
+} from '../../../../core/events/dataPropagationCounters.js';
 
 function noop() {}
 

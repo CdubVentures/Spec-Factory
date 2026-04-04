@@ -16,8 +16,8 @@
 ## Dependencies
 
 - `src/features/category-authority/api/dataAuthorityRoutes.js`
-- `src/observability/dataPropagationCounters.js`
-- `src/observability/settingsPersistenceCounters.js`
+- `src/core/events/dataPropagationCounters.js`
+- `src/core/events/settingsPersistenceCounters.js`
 - `src/features/settings-authority/index.js`
 - `src/db/specDb.js`
 

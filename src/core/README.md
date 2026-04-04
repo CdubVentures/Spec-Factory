@@ -14,6 +14,8 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
 - `src/core/llm/prompts/{planner,extractor,validator}.js`: prompt builders.
 - `src/core/events/dataChangeContract.js`: `createDataChangePayload`, `emitDataChange`, `isDataChangePayload`, `dataChangeMatchesCategory`, `DATA_CHANGE_EVENT_DOMAIN_MAP`, `DATA_CHANGE_EVENT_NAMES`.
+- `src/core/events/dataPropagationCounters.js`: `resetDataPropagationCounters`, `recordDataChangeBroadcast`, `recordQueueCleanupOutcome`, `getDataPropagationCountersSnapshot`.
+- `src/core/events/settingsPersistenceCounters.js`: `resetSettingsPersistenceCounters`, `recordSettingsWriteAttempt`, `recordSettingsWriteOutcome`, `recordSettingsStaleRead`, `recordSettingsMigration`, `getSettingsPersistenceCountersSnapshot`.
 - `src/core/storage/storage.js`: `createStorage(config)`, `toPosixKey(...parts)`.
 
 ## Dependencies

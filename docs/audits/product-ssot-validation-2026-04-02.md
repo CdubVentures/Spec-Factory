@@ -41,7 +41,7 @@ Validate the SSOT migration for Overlaps 0a (product identity) and 0b (queue sta
 | Item | Status | Detail |
 | --- | --- | --- |
 | JSON adapter removed | **Validated** | `createJsonAdapter`, `loadJsonState`, `saveJsonState` deleted from `queueStorageAdapter.js`. Factory throws if `specDb` is null. |
-| All call sites pass `specDb` | **Validated** | `queueCommand.js`, `reconciler.js`, `expansionHardening.js` fixed. Zero `loadQueueState({` calls without `specDb` in non-test source. |
+| All call sites pass `specDb` | **Validated** | `queueCommand.js`, `reconciler.js` fixed. Zero `loadQueueState({` calls without `specDb` in non-test source. |
 | `seedQueueState` removed | **Validated** | Removed from `seed.js`. `product_queue` rebuilt via `seedFromCheckpoint`. |
 | JSON adapter tests removed | **Validated** | `queueStateStorageRecoveryContracts.test.js` emptied. JSON tests deleted from `queueStorageAdapter.test.js`. |
 

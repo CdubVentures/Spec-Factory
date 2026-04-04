@@ -11,7 +11,7 @@ import {
 import {
   getSettingsPersistenceCountersSnapshot,
   resetSettingsPersistenceCounters,
-} from '../../../observability/settingsPersistenceCounters.js';
+} from '../../../core/events/settingsPersistenceCounters.js';
 import { AppDb } from '../../../db/appDb.js';
 import { seedAppDb } from '../../../db/appDbSeed.js';
 

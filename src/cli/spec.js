@@ -35,16 +35,6 @@ function usage() {
     '  field-report --category <category> [--format md|json] [--local]',
     '  field-rules-verify --category <category> [--fixture <path>] [--strict-bytes] [--local]',
     '  generate-types --category <category> [--out-dir <path>] [--local]',
-    '  publish --category <category> [--product-id <id>] [--all-approved] [--format all|csv|sqlite] [--local]',
-    '  provenance --category <category> --product-id <id> [--field <field>|--full] [--local]',
-    '  changelog --category <category> --product-id <id> [--local]',
-    '  source-health --category <category> [--source <host_or_source_id>] [--period <n>d|week|month] [--local]',
-    '  llm-metrics [--period <n>d|week|month] [--model <model>] [--local]',
-    '  expansion-bootstrap [--categories monitor,keyboard] [--template electronics] [--helper-root <path>] [--categories-root <path>] [--golden-root <path>] [--local]',
-    '  hardening-harness --category <category> [--products <n>] [--cycles <n>] [--fuzz-iterations <n>] [--seed <n>] [--failure-attempts <n>] [--local]',
-    '  hardening-report [--root-dir <path>] [--local]',
-    '  drift-scan --category <category> [--max-products <n>] [--enqueue true|false] [--local]',
-    '  drift-reconcile --category <category> --product-id <id> [--auto-republish true|false] [--local]',
     '  discover --category <category> [--brand <brand>] [--local]',
     '  ingest-csv --category <category> --path <csv> [--imports-root <path>] [--local]',
     '  review layout --category <category> [--local]',
@@ -60,8 +50,6 @@ function usage() {
     '  review suggest --category <category> --type enum|component|alias --field <field> --value <value> --evidence-url <url> --evidence-quote <quote> [--canonical <value>] [--reason <text>] [--reviewer <id>] [--product-id <id>] [--local]',
     '  billing-report [--month YYYY-MM] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
-    '  benchmark --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
-    '  benchmark-golden --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
 
     '  intel-graph-api --category <category> [--host <host>] [--port <port>] [--local]',
     '  product-reconcile --category <category> [--dry-run] [--local]',
@@ -189,17 +177,6 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
 });
 
 
-const loadBenchmarkCommandHandler = createLazyLoader(async () => {
-  const [{ createBenchmarkCommand }, { runGoldenBenchmark }] = await Promise.all([
-    import('../app/cli/commands/benchmarkCommand.js'),
-    import('../benchmark/goldenBenchmark.js'),
-  ]);
-  return createBenchmarkCommand({
-    runGoldenBenchmark,
-    openSpecDbForCategory,
-  });
-});
-
 const loadIntelGraphApiCommandHandler = createLazyLoader(async () => {
   const [{ createIntelGraphApiCommand }, { startIntelGraphApi }] = await Promise.all([
     import('../app/cli/commands/intelGraphApiCommand.js'),
@@ -272,30 +249,13 @@ const loadFieldRulesCommands = createLazyLoader(async () => {
 const loadPublishingCommands = createLazyLoader(async () => {
   const [
     { createPublishingCommands },
-    publishingPipeline,
-    expansionHardening,
-    driftScheduler,
     { reconcileOrphans },
   ] = await Promise.all([
     import('../app/cli/commands/publishingCommands.js'),
-    import('../publish/publishingPipeline.js'),
-    import('../features/expansion-hardening/index.js'),
-    import('../publish/driftScheduler.js'),
     import('../features/catalog/products/reconciler.js'),
   ]);
   return createPublishingCommands({
     asBool,
-    publishProducts: publishingPipeline.publishProducts,
-    readPublishedProvenance: publishingPipeline.readPublishedProvenance,
-    readPublishedChangelog: publishingPipeline.readPublishedChangelog,
-    buildSourceHealth: publishingPipeline.buildSourceHealth,
-    buildLlmMetrics: publishingPipeline.buildLlmMetrics,
-    parseExpansionCategories: expansionHardening.parseExpansionCategories,
-    bootstrapExpansionCategories: expansionHardening.bootstrapExpansionCategories,
-    runFuzzSourceHealthHarness: expansionHardening.runFuzzSourceHealthHarness,
-    runProductionHardeningReport: expansionHardening.runProductionHardeningReport,
-    scanAndEnqueueDriftedProducts: driftScheduler.scanAndEnqueueDriftedProducts,
-    reconcileDriftedProduct: driftScheduler.reconcileDriftedProduct,
     reconcileOrphans,
     openSpecDbForCategory,
   });
@@ -395,26 +355,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadFieldRulesCommands()).commandFieldRulesVerify(config, storage, args);
     case 'generate-types':
       return (await loadDataUtilityCommands()).commandGenerateTypes(config, storage, args);
-    case 'publish':
-      return (await loadPublishingCommands()).commandPublish(config, storage, args);
-    case 'provenance':
-      return (await loadPublishingCommands()).commandProvenance(config, storage, args);
-    case 'changelog':
-      return (await loadPublishingCommands()).commandChangelog(config, storage, args);
-    case 'source-health':
-      return (await loadPublishingCommands()).commandSourceHealth(config, storage, args);
-    case 'llm-metrics':
-      return (await loadPublishingCommands()).commandLlmMetrics(config, storage, args);
-    case 'expansion-bootstrap':
-      return (await loadPublishingCommands()).commandExpansionBootstrap(config, storage, args, 'expansion-bootstrap');
-    case 'hardening-harness':
-      return (await loadPublishingCommands()).commandHardeningHarness(config, storage, args);
-    case 'hardening-report':
-      return (await loadPublishingCommands()).commandHardeningReport(config, storage, args);
-    case 'drift-scan':
-      return (await loadPublishingCommands()).commandDriftScan(config, storage, args);
-    case 'drift-reconcile':
-      return (await loadPublishingCommands()).commandDriftReconcile(config, storage, args);
     case 'run-batch':
       return (await loadBatchCommandGroup()).commandRunBatch(config, storage, args);
     case 'discover':
@@ -429,10 +369,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadBillingReportCommandHandler())(config, storage, args);
     case 'llm-health':
       return (await loadLlmHealthCommandHandler())(config, storage, args);
-    case 'benchmark':
-      return (await loadBenchmarkCommandHandler())(config, storage, args, 'benchmark');
-    case 'benchmark-golden':
-      return (await loadBenchmarkCommandHandler())(config, storage, args, 'benchmark-golden');
     case 'intel-graph-api':
       return (await loadIntelGraphApiCommandHandler())(config, storage, args);
     case 'product-reconcile':

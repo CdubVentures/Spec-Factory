@@ -1,4 +1,4 @@
-import { nowIso } from '../shared/primitives.js';
+import { nowIso, normalizeToken } from '../shared/primitives.js';
 
 function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -458,5 +458,192 @@ export async function buildBillingReport({
     by_reason: monthly.by_reason,
     digest_key: digest.digestKey,
     latest_digest_key: digest.latestDigestKey
+  };
+}
+
+function parsePeriodDays(period, fallback = 30) {
+  const token = normalizeToken(period);
+  if (!token) return fallback;
+  if (token === 'week' || token === 'weekly' || token === '7d') return 7;
+  if (token === 'month' || token === 'monthly' || token === '30d') return 30;
+  const match = token.match(/^(\d+)d$/);
+  if (match) return Math.max(1, Number.parseInt(match[1], 10) || fallback);
+  const asInt = Number.parseInt(token, 10);
+  if (Number.isFinite(asInt) && asInt > 0) return asInt;
+  return fallback;
+}
+
+function monthsInRange(cutoffMs) {
+  const months = [];
+  const now = new Date();
+  const cutoff = new Date(cutoffMs);
+  let year = cutoff.getFullYear();
+  let month = cutoff.getMonth();
+  while (year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth())) {
+    months.push(`${year}-${String(month + 1).padStart(2, '0')}`);
+    month += 1;
+    if (month > 11) { month = 0; year += 1; }
+  }
+  return months;
+}
+
+export async function buildLlmMetrics({
+  storage,
+  config = {},
+  period = 'week',
+  model = '',
+  category = '',
+  runLimit = 120,
+  specDb = null,
+}) {
+  const days = parsePeriodDays(period, 7);
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+  const normalizedCategory = normalizeToken(category);
+  const months = monthsInRange(cutoff);
+
+  const allRows = [];
+  for (const month of months) {
+    const monthRows = await readLedgerMonth({ storage, month, specDb });
+    allRows.push(...monthRows);
+  }
+
+  const rows = allRows
+    .filter((row) => parseIsoMs(row.ts) >= cutoff)
+    .filter((row) => !normalizedCategory || normalizeToken(row.category || '') === normalizedCategory)
+    .filter((row) => !model || normalizeToken(row.model || '') === normalizeToken(model));
+
+  const byModelMap = new Map();
+  const byProviderMap = new Map();
+  const byRunMap = new Map();
+  const products = new Set();
+  let totalCost = 0;
+  let totalCalls = 0;
+  let promptTokens = 0;
+  let completionTokens = 0;
+
+  for (const row of rows) {
+    const provider = String(row.provider || 'unknown').trim();
+    const modelName = String(row.model || 'unknown').trim();
+    const rowRunId = String(row.runId || row.run_id || '').trim();
+    const rowProductId = String(row.productId || row.product_id || '').trim();
+    const rowCategory = String(row.category || '').trim();
+    const rowReason = String(row.reason || 'extract').trim();
+    const rowTs = String(row.ts || '').trim();
+    const rowDay = rowTs.slice(0, 10) || 'unknown_day';
+    const runKey = rowRunId || `${rowDay}::${rowProductId || 'unknown_product'}`;
+    const key = `${provider}:${modelName}`;
+    if (!byModelMap.has(key)) {
+      byModelMap.set(key, {
+        provider, model: modelName, calls: 0, cost_usd: 0,
+        prompt_tokens: 0, completion_tokens: 0, products: new Set()
+      });
+    }
+    const bucket = byModelMap.get(key);
+    if (!byProviderMap.has(provider)) {
+      byProviderMap.set(provider, {
+        provider, calls: 0, cost_usd: 0,
+        prompt_tokens: 0, completion_tokens: 0, products: new Set()
+      });
+    }
+    const providerBucket = byProviderMap.get(provider);
+    if (!byRunMap.has(runKey)) {
+      byRunMap.set(runKey, {
+        session_id: runKey, run_id: rowRunId || null,
+        is_session_fallback: !rowRunId,
+        started_at: rowTs || null, last_call_at: rowTs || null,
+        category: rowCategory || null, product_id: rowProductId || null,
+        calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0,
+        providers: new Set(), models: new Set(), reasons: new Set(), products: new Set()
+      });
+    }
+    const runBucket = byRunMap.get(runKey);
+    const cost = safeNumber(row.cost_usd, 0);
+    const prompt = safeInt(row.prompt_tokens, 0);
+    const completion = safeInt(row.completion_tokens, 0);
+
+    bucket.calls += 1;
+    bucket.cost_usd += cost;
+    bucket.prompt_tokens += prompt;
+    bucket.completion_tokens += completion;
+    if (rowProductId) { bucket.products.add(rowProductId); products.add(rowProductId); }
+    providerBucket.calls += 1;
+    providerBucket.cost_usd += cost;
+    providerBucket.prompt_tokens += prompt;
+    providerBucket.completion_tokens += completion;
+    if (rowProductId) providerBucket.products.add(rowProductId);
+
+    runBucket.calls += 1;
+    runBucket.cost_usd += cost;
+    runBucket.prompt_tokens += prompt;
+    runBucket.completion_tokens += completion;
+    if (rowTs) {
+      const startedMs = parseIsoMs(runBucket.started_at);
+      const lastMs = parseIsoMs(runBucket.last_call_at);
+      const currentMs = parseIsoMs(rowTs);
+      if (!startedMs || (currentMs && currentMs < startedMs)) runBucket.started_at = rowTs;
+      if (!lastMs || (currentMs && currentMs > lastMs)) runBucket.last_call_at = rowTs;
+    }
+    if (!runBucket.product_id && rowProductId) runBucket.product_id = rowProductId;
+    if (!runBucket.category && rowCategory) runBucket.category = rowCategory;
+    if (provider) runBucket.providers.add(provider);
+    if (modelName) runBucket.models.add(modelName);
+    if (rowReason) runBucket.reasons.add(rowReason);
+    if (rowProductId) runBucket.products.add(rowProductId);
+
+    totalCost += cost;
+    totalCalls += 1;
+    promptTokens += prompt;
+    completionTokens += completion;
+  }
+
+  const byModel = [...byModelMap.values()]
+    .map((row) => ({
+      provider: row.provider, model: row.model, calls: row.calls,
+      cost_usd: round(row.cost_usd, 8),
+      avg_cost_per_call: row.calls > 0 ? round(row.cost_usd / row.calls, 8) : 0,
+      prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens,
+      products: row.products.size
+    }))
+    .sort((a, b) => b.cost_usd - a.cost_usd || a.model.localeCompare(b.model));
+  const byProvider = [...byProviderMap.values()]
+    .map((row) => ({
+      provider: row.provider, calls: row.calls,
+      cost_usd: round(row.cost_usd, 8),
+      avg_cost_per_call: row.calls > 0 ? round(row.cost_usd / row.calls, 8) : 0,
+      prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens,
+      products: row.products.size
+    }))
+    .sort((a, b) => b.cost_usd - a.cost_usd || a.provider.localeCompare(b.provider));
+  const byRun = [...byRunMap.values()]
+    .map((row) => {
+      const startedMs = parseIsoMs(row.started_at);
+      const lastMs = parseIsoMs(row.last_call_at);
+      const spanSeconds = startedMs && lastMs && lastMs >= startedMs
+        ? Math.floor((lastMs - startedMs) / 1000) : 0;
+      return {
+        session_id: row.session_id, run_id: row.run_id,
+        is_session_fallback: row.is_session_fallback,
+        started_at: row.started_at, last_call_at: row.last_call_at,
+        span_seconds: spanSeconds, category: row.category,
+        product_id: row.product_id, calls: row.calls,
+        cost_usd: round(row.cost_usd, 8),
+        avg_cost_per_call: row.calls > 0 ? round(row.cost_usd / row.calls, 8) : 0,
+        prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens,
+        providers: [...row.providers].sort(), models: [...row.models].sort(),
+        reasons: [...row.reasons].sort(), unique_products: row.products.size
+      };
+    })
+    .sort((a, b) => parseIsoMs(b.last_call_at) - parseIsoMs(a.last_call_at))
+    .slice(0, Math.max(10, safeInt(runLimit, 120)));
+
+  return {
+    period_days: days, period: normalizeToken(period),
+    category: category || null, model_filter: model || null,
+    generated_at: nowIso(),
+    total_calls: totalCalls, total_cost_usd: round(totalCost, 8),
+    total_prompt_tokens: promptTokens, total_completion_tokens: completionTokens,
+    unique_products: products.size,
+    avg_cost_per_product: products.size > 0 ? round(totalCost / products.size, 8) : 0,
+    by_provider: byProvider, by_model: byModel, by_run: byRun,
   };
 }

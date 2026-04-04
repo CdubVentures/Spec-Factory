@@ -3,7 +3,7 @@ import {
   resolvePricingForModel, resolveTokenProfileForModel, collectLlmModels,
 } from '../../../api/helpers/llmHelpers.js';
 import { llmRoutingSnapshot } from '../../../core/llm/client/routing.js';
-import { buildLlmMetrics } from '../../../publish/publishingPipeline.js';
+import { buildLlmMetrics } from '../../../billing/costLedger.js';
 import { buildIndexingDomainChecklist } from '../../indexing/api/index.js';
 import { buildReviewMetrics } from '../../review-curation/index.js';
 

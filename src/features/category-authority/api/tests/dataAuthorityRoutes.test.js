@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerDataAuthorityRoutes } from '../dataAuthorityRoutes.js';
-import { resetDataPropagationCounters } from '../../../../observability/dataPropagationCounters.js';
-import { resetSettingsPersistenceCounters } from '../../../../observability/settingsPersistenceCounters.js';
+import { resetDataPropagationCounters } from '../../../../core/events/dataPropagationCounters.js';
+import { resetSettingsPersistenceCounters } from '../../../../core/events/settingsPersistenceCounters.js';
 import { emitDataChange } from '../../../../core/events/dataChangeContract.js';
 
 function makeCtx(overrides = {}) {

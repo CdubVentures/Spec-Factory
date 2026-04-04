@@ -17,7 +17,7 @@ import {
   recordSettingsStaleRead,
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
-} from '../../observability/settingsPersistenceCounters.js';
+} from '../../core/events/settingsPersistenceCounters.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 

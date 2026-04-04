@@ -8,9 +8,8 @@ import {
   resolveConsolidatedOverridePath,
 } from '../../../shared/consolidatedOverrides.js';
 import { buildProductReviewPayload } from './reviewGridData.js';
-import { isObject, toArray, normalizeToken } from './reviewNormalization.js';
+import { isObject, toArray, normalizeToken, parseDateMs } from './reviewNormalization.js';
 import { toFloat } from '../../../shared/valueNormalizers.js';
-import { parseDateMs } from '../../../publish/publishPrimitives.js';
 import {
   normalizeField,
   hasKnownValue,

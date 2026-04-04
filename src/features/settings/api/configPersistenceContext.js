@@ -9,7 +9,7 @@ import {
 import {
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
-} from '../../../observability/settingsPersistenceCounters.js';
+} from '../../../core/events/settingsPersistenceCounters.js';
 
 
 export function createConfigPersistenceContext({

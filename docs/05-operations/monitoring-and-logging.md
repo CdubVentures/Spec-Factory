@@ -53,8 +53,8 @@ The domain map in that file is the live source of truth for event-to-domain fan-
 
 | Counter group | File | What it tracks | Exposed through |
 |---------------|------|----------------|-----------------|
-| Data propagation | `src/observability/dataPropagationCounters.js` | `data-change` broadcasts and queue cleanup outcomes | `src/features/category-authority/api/dataAuthorityRoutes.js` |
-| Settings persistence | `src/observability/settingsPersistenceCounters.js` | settings write attempts, failures, stale reads, migrations | `src/features/category-authority/api/dataAuthorityRoutes.js` |
+| Data propagation | `src/core/events/dataPropagationCounters.js` | `data-change` broadcasts and queue cleanup outcomes | `src/features/category-authority/api/dataAuthorityRoutes.js` |
+| Settings persistence | `src/core/events/settingsPersistenceCounters.js` | settings write attempts, failures, stale reads, migrations | `src/features/category-authority/api/dataAuthorityRoutes.js` |
 
 ## Alerting Reality
 
@@ -77,8 +77,8 @@ The domain map in that file is the live source of truth for event-to-domain fan-
 | source | `src/app/api/routes/testModeRoutes.js` | `test-import-progress` WebSocket broadcasts during test-mode setup |
 | source | `src/logger.js` | NDJSON + SQLite event logging |
 | source | `src/core/events/dataChangeContract.js` | normalized data-change payload shape |
-| source | `src/observability/dataPropagationCounters.js` | data-change and queue cleanup counters |
-| source | `src/observability/settingsPersistenceCounters.js` | settings persistence counters |
+| source | `src/core/events/dataPropagationCounters.js` | data-change and queue cleanup counters |
+| source | `src/core/events/settingsPersistenceCounters.js` | settings persistence counters |
 | source | `tools/specfactory-launcher.mjs` | launcher-only `/api/install/state` setup-state surface |
 | runtime | `http://127.0.0.1:8788/api/v1/process/status` | idle process-status shape retains last-run metadata |
 

@@ -110,7 +110,6 @@ test('non-indexlab knobs remain authorable in capabilities registry', async () =
   const retainedKnobs = [
     'contract.rounding.decimals',
     'contract.rounding.mode',
-    'priority.publish_gate',
     'parse.unit',
   ];
 

@@ -1,5 +1,5 @@
-import { getDataPropagationCountersSnapshot } from '../../../observability/dataPropagationCounters.js';
-import { getSettingsPersistenceCountersSnapshot } from '../../../observability/settingsPersistenceCounters.js';
+import { getDataPropagationCountersSnapshot } from '../../../core/events/dataPropagationCounters.js';
+import { getSettingsPersistenceCountersSnapshot } from '../../../core/events/settingsPersistenceCounters.js';
 
 function normalizedToken(value) {
   return String(value || '').trim();

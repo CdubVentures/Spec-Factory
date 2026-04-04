@@ -95,3 +95,19 @@
 [auto-seed] mouse: 15 runs re-seeded from checkpoints
 [auto-seed] keyboard field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
 [auto-seed] monitor field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\Spec Factory\.workspace\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\Spec Factory\.workspace\runs
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DxQsE5UE.js, BrandManager-aFM9lBDu.js, buttonClasses-DdWdVcJt.js, CatalogPage-BioqsZTg.js, CategoryManager-BP_wOcTf.js, ColorRegistryPage-BHqwHvbr.js, colors-DrFtcRO7.js, ComponentReviewPage-DIl0M-RR.js, DataTable-25ctIxis.js, DrawerShell-cdjePsYH.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-BDi-DkjY.js, FlagsSection-C4GPaja7.js, formatting-B6A_RRxb.js, index-BoTWxksV.js, index-BtyhNuN8.css, IndexingPage-CGZG4bn1.js, invalidateFieldRulesQueries-Cqiju0-t.js, LlmConfigPage-CtJeeJS0.js, LlmGlobalSection-DijPb5NM.js, llmPhaseOverridesBridge.generated-Bzc7yVUQ.js, LlmPhaseSection-Ci48-PdQ.js, LlmProviderRegistrySection-BF_ZnkBi.js, LlmSettingsPage-Dg4VwIMG.js, MetricRow-D_hTP0AY.js, ModelAccessBadges-qyT9pHFE.js, ModelSelectDropdown-DZprqGzs.js, OverviewPage-BJSRjMNE.js, PipelineDeterministicStrategySection-DmsM05cK.js, PipelineSettingsPage-B5dndxBe.js, PipelineSourceStrategySection-CA4MYwRK.js, ProductPage-fkhmd6rL.js, ReviewPage-DxT4W_xZ.js, RuntimeFlowDraftPayload-CmkVXAh5.js, RuntimeOpsPage-DAUPVTGm.js, settingsStatus-AVm2qVB3.js, SidebarShell-BuJj0fIa.js, sortable.esm-DHLR6drX.js, Sparkline-DpfYBocK.js, StoragePage-Ciasb_Ov.js, studioConstants-nqhBdjjj.js, StudioPage-DafK7ruB.js, TabStrip-r04xn31b.js, TestModePage-DKR7untm.js, TierHierarchyPanel-tsYdj7p-.js, TierPicker-CFXkdEv5.js, TrafficLight-DioLRezk.js, useFieldLabels-DgzJJEjh.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-C3F9BWoW.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-CIcYV8L3.js
+[auto-seed] mouse field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
+[auto-seed] mouse: 2 color editions re-seeded
+[auto-seed] mouse: 15 runs re-seeded from checkpoints
+[auto-seed] keyboard field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
+[auto-seed] monitor field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id

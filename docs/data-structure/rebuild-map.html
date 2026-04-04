@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Rebuild Map: JSON -&gt; SQL</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --teal: #0d9488; --teal-s: rgba(13,148,136,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:860px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.surface{margin-bottom:56px}
+.surface-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.surface-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.surface-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:900px}
+.domain-group{margin-bottom:32px}
+.domain-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding-left:2px}
+table.ref{width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:8px}
+table.ref th{text-align:left;padding:8px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:2px solid var(--border);background:var(--s2)}
+table.ref td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ref tr:last-child td{border-bottom:none}
+table.ref tr:hover{background:var(--s2)}
+.fp{font-family:var(--mono);font-weight:500;font-size:0.8rem;letter-spacing:-0.01em}
+.tag{display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-hash{background:var(--cyan-s);color:var(--cyan)}
+.tag-reseed{background:var(--violet-s);color:var(--violet)}
+.tag-seed{background:var(--amber-s);color:var(--amber)}
+.tag-auto{background:var(--green-s);color:var(--green)}
+.tag-lazy{background:var(--accent-s);color:var(--accent)}
+.tag-none{background:var(--rose-s);color:var(--rose)}
+.tag-dead{background:var(--s3);color:var(--t3)}
+.tag-system{background:var(--teal-s);color:var(--teal)}
+.tag-gap{background:var(--amber-s);color:var(--amber)}
+.legend{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:32px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.82rem;color:var(--t2)}
+.note{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-top:18px;font-size:0.82rem;color:var(--t2)}
+.tree{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:32px;font-family:var(--mono);font-size:0.78rem;line-height:1.9}
+.tree-root{font-weight:700;font-size:0.88rem;color:var(--text);margin-bottom:4px}
+.tree-dir{color:var(--t2);font-weight:600}
+.tree-file{color:var(--text)}
+.tree-line{display:flex;align-items:center;gap:0;white-space:nowrap}
+.tree-indent{color:var(--t3);user-select:none;flex-shrink:0}
+.tree-name{flex-shrink:0}
+.tree-spacer{flex:1;min-width:16px;border-bottom:1px dotted var(--s3);margin:0 8px;align-self:center;height:0;position:relative;top:-3px}
+.tree-flow{flex-shrink:0;font-weight:700;font-size:0.72rem;letter-spacing:0.04em;padding:1px 7px;border-radius:99px;text-transform:uppercase}
+.flow-roundtrip{background:var(--green-s);color:var(--green)}
+.flow-todb{background:var(--cyan-s);color:var(--cyan)}
+.flow-gap{background:var(--amber-s);color:var(--amber)}
+.flow-none{background:var(--s2);color:var(--t3)}
+.flow-deprecated{background:var(--s3);color:var(--t3);text-decoration:line-through}
+.tree-note{color:var(--t3);font-weight:400;font-size:0.72rem;margin-left:6px;font-family:var(--sans)}
+.tree-divider{border-top:1px dashed var(--s3);margin:10px 0}
+.tree-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;font-family:var(--sans);font-size:0.78rem;color:var(--t2)}
+.tree-legend .tree-flow{font-size:0.68rem}
+@media(max-width:768px){
+  .page{padding:24px 16px 64px}
+  .header h1{font-size:1.5rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .legend{flex-direction:column;align-items:flex-start}
+  .tree{padding:16px;font-size:0.72rem;overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>Rebuild Map: JSON -&gt; SQL</h1>
+  <p>Same reference layout as before, but corrected against the live code. This page maps every durable JSON or checkpoint surface that can rebuild SQLite, and it calls out the places where a deleted-DB rebuild or direct JSON edit is still only partial.</p>
+  <div class="meta">
+    <span>Updated 2026-04-04</span>
+    <span>Actual Runtime Census: 42 Tables</span>
+    <span>AppDb: 6</span>
+    <span>SpecDb: 36</span>
+    <span>Earlier 46 / 54 Counts Removed</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">15</div><div class="l">Durable File Surfaces</div></div>
+  <div class="stat"><div class="n">2</div><div class="l">Databases</div></div>
+  <div class="stat"><div class="n">42</div><div class="l">Runtime Tables</div></div>
+  <div class="stat"><div class="n">24</div><div class="l">Spec Tables With File-Backed Rebuild Paths</div></div>
+  <div class="stat"><div class="n">11</div><div class="l">Spec Tables With No Durable Rebuild Source</div></div>
+  <div class="stat"><div class="n">7</div><div class="l">Confirmed Gap Classes</div></div>
+</div>
+
+<div class="legend">
+  <strong>Legend:</strong>
+  <span class="tag tag-hash">hash-gated</span> Re-imports when stored file hash changes
+  <span class="tag tag-reseed">reseed phase</span> Explicit runtime reseed surface
+  <span class="tag tag-seed">full sync</span> Rebuilt by category sync / seedSpecDb
+  <span class="tag tag-auto">round-trip</span> JSON is durable and runtime writes back to it
+  <span class="tag tag-gap">partial</span> Rebuild works, but not losslessly or not for existing DB edits
+  <span class="tag tag-none">no source</span> SQL-only state today
+  <span class="tag tag-system">system</span> Operational metadata, not user durable state
+</div>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Bidirectional Flow Diagram</h2>
+    <span class="tag tag-auto">restored layout</span>
+  </div>
+  <p class="surface-desc">
+    Flow direction for the JSON surfaces that matter to rebuilds. The important distinction is no longer just
+    "can JSON feed SQL", but also whether runtime edits are mirrored back and whether direct JSON edits are picked up
+    on a normal boot versus only by a full category sync.
+  </p>
+
+  <div class="tree-legend">
+    <span><span class="tree-flow flow-roundtrip">&harr; round-trip</span> Runtime writes JSON and JSON rebuilds SQL</span>
+    <span><span class="tree-flow flow-gap">partial</span> File is durable, but rebuild or propagation has a known gap</span>
+    <span><span class="tree-flow flow-todb">&rarr; to SQL</span> File seeds SQL but runtime does not write back</span>
+    <span><span class="tree-flow flow-none">no SQL</span> Not part of DB rebuild</span>
+    <span><span class="tree-flow flow-deprecated">deprecated</span> Earlier map bucket, not current live surface</span>
+  </div>
+
+  <div class="tree">
+    <div class="tree-root">category_authority/ + .workspace/</div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">_global/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">brand_registry.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">hash-gated boot seed -&gt; brands / brand_categories / brand_renames | brand CRUD writes JSON, but existing-DB rename-row prune is not lossless</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">color_registry.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated boot seed -&gt; color_registry | color CRUD writes JSON</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">.workspace/global/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">user-settings.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated boot seed -&gt; settings / studio_maps | settings saves write JSON mirror</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">{category}/_control_plane/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">llm_route_matrix.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated reseed -&gt; llm_route_matrix | runtime saves write JSON</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_key_order.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated reseed -&gt; field_key_order | runtime saves write JSON</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_studio_map.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">hash-gated reseed -&gt; field_studio_map + manual enum list_values | runtime saves write JSON, but some direct edits still require compile for generated artifacts</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">{category}/_overrides/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">overrides.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">durable SSOT for consolidated field overrides / product review state | reseed path is indirect and invalidates full category sync</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">components/*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">seeds component review status, aliases, and override properties into SQL | current runtime component edits do not write back here</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">{category}/_generated/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">component_db/*.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">full sync -&gt; component_identity / component_aliases / component_values</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">known_values.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">full sync -&gt; enum_lists / list_values | current runtime enum review edits do not write back here</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_rules.json, parse_templates.json, cross_validation_rules.json, ui_field_catalog.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">participate in field_rules_signature and can trigger full sync, but are not imported as table rows</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">field_groups.json, key_migrations.json, manifest.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-none">no SQL</span>
+      <span class="tree-note">not part of the current field_rules_signature rebuild trigger</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">out/{cat}/{pid}/latest/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">normalized.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">full sync -&gt; item_field_state / item_component_links / item_list_links | not an explicit boot hash-gated surface</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">provenance.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">full sync -&gt; item_field_state confidence/provenance fields | not an explicit boot hash-gated surface</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">.workspace/runs/{runId}/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">run.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-todb">&rarr; to SQL</span>
+      <span class="tree-note">checkpoint reseed -&gt; runs / product_runs / run_artifacts / crawl_sources / url_crawl_ledger + media index recovery</span>
+    </div>
+
+    <div class="tree-divider"></div>
+
+    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">.workspace/products/{pid}/</span></div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">product.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-gap">partial</span>
+      <span class="tree-note">checkpoint reseed -&gt; products / product_queue / query_cooldowns | product.json.sources is currently ignored on rebuild</span>
+    </div>
+    <div class="tree-line">
+      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
+      <span class="tree-name tree-file">color_edition.json</span>
+      <span class="tree-spacer"></span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">runtime writes JSON and boot reseed restores color_edition_finder</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Bottom line:</strong> a deleted-DB rebuild is stronger than existing-DB JSON propagation. The main losses today are SQL-first component review edits, SQL-first enum/list review edits, key-review history tables, and the ignored <code>product.json.sources</code> path.
+  </div>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>JSON File Inventory</h2>
+    <span class="tag tag-hash">15 audited surfaces</span>
+  </div>
+  <p class="surface-desc">Durable files that matter to rebuilds, grouped the same way as the older page, but with the current recovery behavior and caveats.</p>
+
+  <div class="domain-group">
+    <div class="domain-label">App-Global</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">category_authority/_global/brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Brand CRUD writes JSON, but existing-DB rename removal does not fully prune old SQL rows.</td></tr>
+        <tr><td class="fp">category_authority/_global/color_registry.json</td><td>color_registry</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Color CRUD writes JSON. Missing file falls back to default palette.</td></tr>
+        <tr><td class="fp">.workspace/global/user-settings.json</td><td>settings, studio_maps</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Runtime settings saves write JSON mirror.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Per-Category Control Plane</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">category_authority/{cat}/_control_plane/llm_route_matrix.json</td><td>llm_route_matrix</td><td><span class="tag tag-reseed">reseed phase</span></td><td>Round-trip. Empty <code>rows</code> resets custom rows to defaults.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_control_plane/field_key_order.json</td><td>field_key_order</td><td><span class="tag tag-reseed">reseed phase</span></td><td>Round-trip.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_control_plane/field_studio_map.json</td><td>field_studio_map, manual enum list_values</td><td><span class="tag tag-reseed">reseed phase</span></td><td>Round-trip for stored map, but some edits still need compile to refresh generated artifacts.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Per-Category Generated</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">category_authority/{cat}/_generated/component_db/*.json</td><td>component_identity, component_aliases, component_values</td><td><span class="tag tag-seed">full sync</span></td><td>Base component catalog only. User component review edits are SQL-first today.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_generated/known_values.json</td><td>enum_lists, list_values</td><td><span class="tag tag-seed">full sync</span></td><td>Base enum values only. Accepted/manual runtime enum edits are SQL-first today.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_generated/field_rules.json</td><td>no direct table import</td><td><span class="tag tag-seed">signature input</span></td><td>Can trigger full sync. Not seeded as rows.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_generated/parse_templates.json</td><td>no direct table import</td><td><span class="tag tag-seed">signature input</span></td><td>Can trigger full sync. Not seeded as rows.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_generated/cross_validation_rules.json</td><td>no direct table import</td><td><span class="tag tag-seed">signature input</span></td><td>Can trigger full sync. Not seeded as rows.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_generated/ui_field_catalog.json</td><td>no direct table import</td><td><span class="tag tag-seed">signature input</span></td><td>Can trigger full sync. Not seeded as rows.</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>Signature scope correction:</strong> <code>buildFieldRulesSignature()</code> includes <code>field_rules.json</code>, <code>known_values.json</code>, <code>parse_templates.json</code>, <code>cross_validation_rules.json</code>, <code>ui_field_catalog.json</code>, <code>component_db/*.json</code>, and <code>_overrides/components/*.json</code>. It does <strong>not</strong> include <code>field_groups.json</code>, <code>key_migrations.json</code>, or <code>manifest.json</code>.
+    </div>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Per-Category Overrides</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">category_authority/{cat}/_overrides/overrides.json</td><td>product_review_state + override-derived item_field_state</td><td><span class="tag tag-reseed">reseed phase</span> + <span class="tag tag-seed">full sync</span></td><td>Durable SSOT for field overrides. Existing-DB path is indirect and invalidates full sync.</td></tr>
+        <tr><td class="fp">category_authority/{cat}/_overrides/components/*.json</td><td>component_identity, component_aliases, component_values</td><td><span class="tag tag-seed">full sync</span></td><td>JSON seeds into SQL, but runtime component review mutations do not auto-export back here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Pipeline Output (Per-Product Latest)</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">out/{cat}/{pid}/latest/normalized.json</td><td>item_field_state, item_component_links, item_list_links</td><td><span class="tag tag-seed">full sync</span></td><td>Fresh rebuild / sync only. Not its own boot hash-gated surface.</td></tr>
+        <tr><td class="fp">out/{cat}/{pid}/latest/provenance.json</td><td>item_field_state confidence / provenance fields</td><td><span class="tag tag-seed">full sync</span></td><td>Fresh rebuild / sync only. Not its own boot hash-gated surface.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Checkpoint Files (.workspace/)</div>
+    <table class="ref">
+      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">.workspace/runs/{runId}/run.json</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, source_screenshots, source_videos</td><td><span class="tag tag-reseed">checkpoint reseed</span></td><td>Source rows come from <code>run.json.sources</code>. Media index rows are rebuilt by disk scan.</td></tr>
+        <tr><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns</td><td><span class="tag tag-reseed">checkpoint reseed</span></td><td><code>sources</code> is stored in JSON but currently ignored by <code>seedFromCheckpoint()</code>.</td></tr>
+        <tr><td class="fp">.workspace/products/{pid}/color_edition.json</td><td>color_edition_finder</td><td><span class="tag tag-reseed">reseed phase</span></td><td>Round-trip. Rebuild path is verified.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>app.sqlite</h2>
+    <span class="tag tag-auto">6 tables</span>
+  </div>
+  <p class="surface-desc">Global cross-category database. All six tables rebuild from durable files, but <code>brand_renames</code> has an existing-DB reconcile gap.</p>
+  <table class="ref">
+    <thead><tr><th>Table</th><th>Durable Source</th><th>Recovery</th><th>Current Caveat</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">brands</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Fresh rebuild and existing-DB JSON edit both reconcile correctly.</td></tr>
+      <tr><td class="fp">brand_categories</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Fresh rebuild and existing-DB JSON edit both reconcile correctly.</td></tr>
+      <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td><span class="tag tag-gap">partial</span> Rebuild from scratch is correct, but existing-DB reseed inserts new rename rows without pruning removed ones.</td></tr>
+      <tr><td class="fp">settings</td><td class="fp">.workspace/global/user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Delete reconcile is implemented.</td></tr>
+      <tr><td class="fp">studio_maps</td><td class="fp">.workspace/global/user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Delete reconcile is implemented.</td></tr>
+      <tr><td class="fp">color_registry</td><td class="fp">color_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Missing file falls back to default palette; CRUD writes JSON mirror.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Auto-Rebuild</h2>
+    <span class="tag tag-auto">24 tables</span>
+  </div>
+  <p class="surface-desc">Tables with a durable file-backed rebuild surface. "Auto-rebuild" here means a deleted DB can be repopulated from files; several rows remain only partial because runtime edits are SQL-first or because existing-DB JSON propagation is narrower than a full sync.</p>
+
+  <div class="domain-group">
+    <div class="domain-label">Product &amp; Review Core</div>
+    <table class="ref">
+      <thead><tr><th>Table</th><th>Durable Source</th><th>Deleted DB Rebuild</th><th>Existing DB JSON Edit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">item_field_state</td><td class="fp">latest/normalized.json + latest/provenance.json + overrides.json</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>No explicit boot hash gate for latest outputs.</td></tr>
+        <tr><td class="fp">product_review_state</td><td class="fp">_overrides/overrides.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-gap">partial</span></td><td>Existing-DB path clears SQL and relies on follow-up category sync.</td></tr>
+        <tr><td class="fp">item_component_links</td><td class="fp">latest/normalized.json + component tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from normalized fields plus component catalog.</td></tr>
+        <tr><td class="fp">item_list_links</td><td class="fp">latest/normalized.json + list tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from normalized fields plus enum/list data.</td></tr>
+        <tr><td class="fp">key_review_state</td><td class="fp">derived from current item / component / list state</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Only the state shell is rebuilt; detailed AI run and audit history is not.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Components &amp; Enums</div>
+    <table class="ref">
+      <thead><tr><th>Table</th><th>Durable Source</th><th>Deleted DB Rebuild</th><th>Existing DB JSON Edit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">component_identity</td><td class="fp">component_db/*.json + _overrides/components/*.json</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-gap">partial</span></td><td>Base catalog rebuilds, but runtime component review edits are SQL-first and override-file deletions do not fully prune all user rows from an existing DB.</td></tr>
+        <tr><td class="fp">component_aliases</td><td class="fp">component_db/*.json + _overrides/components/*.json</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-gap">partial</span></td><td>Base aliases rebuild. Runtime alias edits are SQL-first.</td></tr>
+        <tr><td class="fp">component_values</td><td class="fp">component_db/*.json + _overrides/components/*.json</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-gap">partial</span></td><td>Base property values rebuild. Runtime property overrides are SQL-first.</td></tr>
+        <tr><td class="fp">enum_lists</td><td class="fp">known_values.json + field_studio_map.json.manual_enum_values</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-gap">partial</span></td><td>Runtime enum review edits are SQL-first.</td></tr>
+        <tr><td class="fp">list_values</td><td class="fp">known_values.json + field_studio_map.json.manual_enum_values</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-gap">partial</span></td><td>Accepted/manual enum review changes do not automatically become durable JSON.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Runs &amp; Checkpoints</div>
+    <table class="ref">
+      <thead><tr><th>Table</th><th>Durable Source</th><th>Deleted DB Rebuild</th><th>Existing DB JSON Edit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">products</td><td class="fp">.workspace/products/{pid}/product.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Checkpoint-backed recovery is verified.</td></tr>
+        <tr><td class="fp">product_queue</td><td class="fp">product.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Recovered as queue row with completed status.</td></tr>
+        <tr><td class="fp">query_cooldowns</td><td class="fp">product.json.query_cooldowns</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Cooldown snapshots survive rebuild.</td></tr>
+        <tr><td class="fp">runs</td><td class="fp">.workspace/runs/{runId}/run.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Checkpoint-backed recovery is verified.</td></tr>
+        <tr><td class="fp">product_runs</td><td class="fp">run.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Recovered with <code>is_latest</code> and summary data.</td></tr>
+        <tr><td class="fp">run_artifacts</td><td class="fp">run.json artifacts</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Needset, search profile, run summary, brand resolution, runtime ops panels, and synthetic run_checkpoint are restored.</td></tr>
+        <tr><td class="fp">crawl_sources</td><td class="fp">run.json.sources</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Only sources with content hashes are seeded.</td></tr>
+        <tr><td class="fp">url_crawl_ledger</td><td class="fp">run.json.sources</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td><code>product.json.sources</code> is ignored today.</td></tr>
+        <tr><td class="fp">source_screenshots</td><td class="fp">run checkpoints + media files on disk</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Recovered by media index rebuild.</td></tr>
+        <tr><td class="fp">source_videos</td><td class="fp">run checkpoints + media files on disk</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Recovered by media index rebuild.</td></tr>
+        <tr><td class="fp">color_edition_finder</td><td class="fp">.workspace/products/{pid}/color_edition.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Round-trip and rebuild path are verified.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Derived, Configuration &amp; Review</div>
+    <table class="ref">
+      <thead><tr><th>Table</th><th>Durable Source</th><th>Deleted DB Rebuild</th><th>Existing DB JSON Edit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="fp">llm_route_matrix</td><td class="fp">_control_plane/llm_route_matrix.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Round-trip. Empty <code>rows</code> clears custom rows and falls back to defaults.</td></tr>
+        <tr><td class="fp">field_key_order</td><td class="fp">_control_plane/field_key_order.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Round-trip.</td></tr>
+        <tr><td class="fp">field_studio_map</td><td class="fp">_control_plane/field_studio_map.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Stored map round-trips, but compile may still be needed to refresh generated artifacts.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; No Rebuild Source</h2>
+    <span class="tag tag-none">11 tables</span>
+  </div>
+  <p class="surface-desc">These tables are SQL-only today. If the category DB is deleted, the rows are lost even though some related information may survive in other artifacts.</p>
+  <table class="ref">
+    <thead><tr><th>Table</th><th>Why It Is Not Losslessly Rebuildable</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">curation_suggestions</td><td>Runtime queue state only.</td></tr>
+      <tr><td class="fp">component_review_queue</td><td>Runtime queue state only.</td></tr>
+      <tr><td class="fp">key_review_runs</td><td>AI run history is SQL-only.</td></tr>
+      <tr><td class="fp">key_review_run_sources</td><td>AI source-packet history is SQL-only.</td></tr>
+      <tr><td class="fp">key_review_audit</td><td>Audit trail is SQL-only.</td></tr>
+      <tr><td class="fp">billing_entries</td><td>Billing history is SQL-only.</td></tr>
+      <tr><td class="fp">bridge_events</td><td>Bridge-event table itself is not rebuilt; only completed-run summary equivalents survive in <code>run_artifacts.run_summary</code>.</td></tr>
+      <tr><td class="fp">knob_snapshots</td><td>Telemetry / snapshot rows are SQL-only.</td></tr>
+      <tr><td class="fp">query_index</td><td>Telemetry / search-index rows are SQL-only.</td></tr>
+      <tr><td class="fp">url_index</td><td>Telemetry / crawl-index rows are SQL-only.</td></tr>
+      <tr><td class="fp">prompt_index</td><td>Telemetry / prompt-index rows are SQL-only.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Self-Healing</h2>
+    <span class="tag tag-system">system metadata</span>
+  </div>
+  <p class="surface-desc">The earlier page used a larger "self-healing" bucket. In the live code, the only clear remaining system-only table is sync metadata.</p>
+  <table class="ref">
+    <thead><tr><th>Table</th><th>Current Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">data_authority_sync</td><td>Version / hash / status metadata used by sync and reseed workflows. Recreated as the system runs; not a user durability surface.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Runtime Learning</h2>
+    <span class="tag tag-dead">bucket removed</span>
+  </div>
+  <p class="surface-desc">The earlier map claimed a separate runtime-learning bucket. That is not part of the current 36-table live schema audited here.</p>
+  <div class="note">No current runtime-learning tables are included in the live table census for this page.</div>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>spec.sqlite &mdash; Dead Features</h2>
+    <span class="tag tag-dead">not counted</span>
+  </div>
+  <p class="surface-desc">Earlier versions of this page mixed retired or removed surfaces into the rebuild story. This corrected version excludes them from the 42-table runtime census.</p>
+  <div class="note">If a feature is retired, it should not inflate the rebuildability count. This page now reports only the live runtime tables created by the current schemas.</div>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Reseed Phase Registry</h2>
+  </div>
+  <p class="surface-desc">Runtime-dispatched reseed surfaces from <code>seedRegistry.js</code>. These are the explicit surfaces that can repair or repopulate parts of <code>spec.sqlite</code> on boot without running a full category sync.</p>
+  <table class="ref">
+    <thead><tr><th>Surface</th><th>Durable Source</th><th>Tables</th><th>Important Caveat</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">checkpoint</td><td class="fp">run.json + product.json + media files</td><td>products, product_queue, runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, source_screenshots, source_videos</td><td><code>product.json.sources</code> is not consumed by <code>seedFromCheckpoint()</code>.</td></tr>
+      <tr><td class="fp">color_edition</td><td class="fp">color_edition.json</td><td>color_edition_finder</td><td>Verified rebuild path.</td></tr>
+      <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td><td>Empty <code>rows</code> means reset to defaults, not "leave SQL untouched".</td></tr>
+      <tr><td class="fp">overrides</td><td class="fp">overrides.json</td><td>override-derived review / field state</td><td>Indirect path: clears override-derived SQL and invalidates full sync rather than directly reimporting every derived row.</td></tr>
+      <tr><td class="fp">field_key_order</td><td class="fp">field_key_order.json</td><td>field_key_order</td><td>Round-trip.</td></tr>
+      <tr><td class="fp">field_studio_map</td><td class="fp">field_studio_map.json</td><td>field_studio_map, manual enum list_values</td><td>Generated artifacts may still require compile after direct edits.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Category Seed Registry</h2>
+  </div>
+  <p class="surface-desc">Full category sync surfaces from <code>seedRegistry.js</code>. These drive a deleted-DB rebuild and the larger category resync path.</p>
+  <table class="ref">
+    <thead><tr><th>Surface</th><th>Source</th><th>Tables</th><th>Current Limitation</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">components</td><td class="fp">component_db/*.json</td><td>component_identity, component_aliases, component_values</td><td>Base component catalog rebuilds, but runtime component review edits are not mirrored back out.</td></tr>
+      <tr><td class="fp">component_overrides</td><td class="fp">_overrides/components/*.json</td><td>component_identity, component_values</td><td>Upsert-only JSON import; removed override-file content does not fully prune all previously-seeded user rows from an existing DB.</td></tr>
+      <tr><td class="fp">lists</td><td class="fp">known_values.json + field_studio_map.json.manual_enum_values</td><td>enum_lists, list_values</td><td>Runtime enum review edits are SQL-first and not auto-exported.</td></tr>
+      <tr><td class="fp">products</td><td class="fp">latest/normalized.json + latest/provenance.json + overrides.json</td><td>item_field_state, item_component_links, item_list_links</td><td>These files are not independent boot hash-gated surfaces.</td></tr>
+      <tr><td class="fp">backfill_links</td><td class="fp">derived from current SQL rows</td><td>item_component_links</td><td>Repair step, not a durable source on its own.</td></tr>
+      <tr><td class="fp">source_key_review</td><td class="fp">derived from current SQL rows</td><td>key_review_state</td><td>Only <code>key_review_state</code> is rebuilt; run/source/audit history is not.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Hash-Gated Reconciliation</h2>
+  </div>
+  <p class="surface-desc">What is actually watched by stored hashes or signature metadata today.</p>
+  <table class="ref">
+    <thead><tr><th>Surface</th><th>Stored Meta</th><th>What Changes Trigger</th><th>Current Caveat</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">brand_registry.json</td><td class="fp">app._seed_hashes.brand_registry</td><td>brands, brand_categories, brand_renames</td><td>Rename-row prune is partial on existing DBs.</td></tr>
+      <tr><td class="fp">user-settings.json</td><td class="fp">app._seed_hashes.user_settings</td><td>settings, studio_maps</td><td>Delete reconcile is implemented.</td></tr>
+      <tr><td class="fp">color_registry.json</td><td class="fp">app._seed_hashes.color_registry</td><td>color_registry</td><td>Fallback palette exists if file is missing.</td></tr>
+      <tr><td class="fp">run.json</td><td class="fp">spec.file_seed_hash(run:{runId})</td><td>checkpoint-backed run rows</td><td>Only run checkpoint sources feed crawl tables.</td></tr>
+      <tr><td class="fp">product.json</td><td class="fp">spec.file_seed_hash(product:{pid})</td><td>products, product_queue, query_cooldowns</td><td><code>sources</code> payload is stored but ignored on rebuild.</td></tr>
+      <tr><td class="fp">llm_route_matrix.json</td><td class="fp">spec.file_seed_hash(llm_route_matrix)</td><td>llm_route_matrix</td><td>Round-trip is verified.</td></tr>
+      <tr><td class="fp">field_key_order.json</td><td class="fp">spec.file_seed_hash(field_key_order)</td><td>field_key_order</td><td>Round-trip is verified.</td></tr>
+      <tr><td class="fp">field_studio_map.json</td><td class="fp">spec.file_seed_hash(field_studio_map)</td><td>field_studio_map, manual enum list_values</td><td>Compile may still be needed after some direct edits.</td></tr>
+      <tr><td class="fp">overrides.json</td><td class="fp">spec.file_seed_hash(overrides)</td><td>override reseed + full-sync invalidation</td><td>Indirect, concurrency-sensitive path rather than direct full row import.</td></tr>
+      <tr><td class="fp">field_rules_signature</td><td class="fp">data_authority_sync.meta.field_rules_signature</td><td>full category sync</td><td>Includes selected generated files only; does not include <code>field_groups.json</code>, <code>key_migrations.json</code>, or <code>manifest.json</code>.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Data Integrity Caveats</h2>
+  </div>
+  <p class="surface-desc">Confirmed gaps from the source audit and spot validations.</p>
+  <table class="ref">
+    <thead><tr><th>Gap</th><th>Current Result</th></tr></thead>
+    <tbody>
+      <tr><td>Component review mutations are SQL-first runtime edits.</td><td>Deleting <code>spec.sqlite</code> can lose reviewed component aliases, review status, links, and user property overrides unless they were separately mirrored into <code>_overrides/components/*.json</code>.</td></tr>
+      <tr><td>Enum/list review mutations are SQL-first runtime edits.</td><td>Accepted enum promotions and manual enum additions can be lost unless they were separately encoded in durable JSON such as <code>field_studio_map.json</code>.</td></tr>
+      <tr><td><code>key_review_runs</code>, <code>key_review_run_sources</code>, and <code>key_review_audit</code> are SQL-only.</td><td><code>key_review_state</code> can be reconstructed, but run/source/audit history cannot.</td></tr>
+      <tr><td><code>latest/normalized.json</code> and <code>latest/provenance.json</code> are not explicit boot hash-gated surfaces.</td><td>They participate through full category sync, not through narrow boot reseed the way control-plane files do.</td></tr>
+      <tr><td><code>product.json.sources</code> is ignored during product-checkpoint rebuild.</td><td>Source rows in product checkpoints do not currently restore crawl-source tables.</td></tr>
+      <tr><td>Direct <code>field_studio_map.json</code> edits can require compile.</td><td>The stored map reseeds SQL, but generated artifacts may be stale until compile runs.</td></tr>
+      <tr><td>Existing-DB reconcile is weaker than deleted-DB rebuild.</td><td><code>brand_renames</code> is insert-only on existing-DB reseed, and component-override JSON deletions do not fully prune all previously-seeded user rows.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Table Census</h2>
+  </div>
+  <p class="surface-desc">Corrected live runtime counts from the active schema files.</p>
+  <table class="ref">
+    <thead><tr><th>Database</th><th>Source</th><th>Count</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="fp">app.sqlite</td><td class="fp">src/db/appDbSchema.js</td><td>6</td><td>brands, brand_categories, brand_renames, settings, studio_maps, color_registry</td></tr>
+      <tr><td class="fp">spec.sqlite</td><td class="fp">src/db/specDbSchema.js</td><td>36</td><td>24 file-backed rebuild surfaces, 11 no-source tables, 1 system metadata table</td></tr>
+      <tr><td class="fp">total</td><td class="fp">live runtime schemas</td><td>42</td><td>This replaces the earlier 46-table and 54-table claims.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div>
+</body>
+</html>
