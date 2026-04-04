@@ -73,8 +73,12 @@ test('readIndexLabRunSourceIndexingPackets: local live run reads packet collecti
 
   try {
     const result = await readIndexLabRunSourceIndexingPackets(requestedRunId);
-    // SQL is SSOT — no output-root file fallback
-    assert.equal(result, null);
+    // WHY: Disk fallback resolves output-root artifacts via run_base when SQL is unavailable.
+    assert.ok(result && typeof result === 'object', 'expected non-null packet collection');
+    assert.equal(result.record_kind, 'source_indexing_extraction_packet_collection');
+    assert.equal(result.run_id, requestedRunId);
+    assert.ok(Array.isArray(result.packets), 'packets should be an array');
+    assert.equal(result.packets.length, 1);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

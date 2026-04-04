@@ -10,7 +10,6 @@ export function buildDiscoverySeedPlanContext({
   requiredFields,
   llmContext,
   frontierDb,
-  learningStoreHints,
   planner,
   normalizeFieldList,
 } = {}) {
@@ -26,7 +25,6 @@ export function buildDiscoverySeedPlanContext({
     requiredFields,
     llmContext,
     frontierDb,
-    learningStoreHints,
     planner,
     normalizeFieldListFn: normalizeFieldList,
   };

@@ -221,6 +221,30 @@ describe('seedFromCheckpoint: crawl', () => {
     // 3 original (needset + search_profile + run_summary) + brand_resolution + run_checkpoint = 5
     assert.equal(result.artifacts_seeded, 5);
   });
+
+  test('seeds runtime_ops_panels artifact from v3 checkpoint', () => {
+    const db = createHarness();
+    const panels = { prefetch: { brand_resolver: { status: 'resolved' } } };
+    const result = seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({ runtime_ops_panels: panels }),
+    });
+    const art = db.getRunArtifact('run-seed-001', 'runtime_ops_panels');
+    assert.ok(art);
+    assert.deepEqual(art.payload, panels);
+    // needset + search_profile + run_summary + runtime_ops_panels + run_checkpoint = 5
+    assert.equal(result.artifacts_seeded, 5);
+  });
+
+  test('skips null runtime_ops_panels gracefully', () => {
+    const db = createHarness();
+    seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({ runtime_ops_panels: null }),
+    });
+    const art = db.getRunArtifact('run-seed-001', 'runtime_ops_panels');
+    assert.equal(art, null);
+  });
 });
 
 // ── Product checkpoint tests ────────────────────────────────────────────────
@@ -240,7 +264,8 @@ describe('seedFromCheckpoint: product', () => {
   test('seeds product_queue with status=complete', () => {
     const db = createHarness();
     seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
-    const q = db.getQueueProduct('mouse-razer-viper');
+    // WHY: getQueueProduct removed from SpecDb — query raw SQL directly.
+    const q = db.db.prepare('SELECT * FROM product_queue WHERE product_id = ?').get('mouse-razer-viper');
     assert.ok(q);
     assert.equal(q.status, 'complete');
     assert.equal(q.last_run_id, 'run-seed-001');

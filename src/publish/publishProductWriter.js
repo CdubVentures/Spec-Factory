@@ -13,12 +13,11 @@ import {
   csvEscape
 } from './publishPrimitives.js';
 import {
-  outputModernKey,
-  outputLegacyKey,
-  readJsonDual,
-  writeJsonDual,
-  writeTextDual,
-  writeBufferDual,
+  outputKey,
+  readJson,
+  writeJson,
+  writeText,
+  writeBuffer,
   listOutputKeys
 } from './publishStorageAdapter.js';
 import {
@@ -29,36 +28,24 @@ import {
 } from './publishSpecBuilders.js';
 
 export async function readLatestArtifacts(storage, category, productId, specDb = null) {
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const [normalized, provenance, summary] = await Promise.all([
-    specDb
-      ? Promise.resolve(specDb.getNormalizedForProduct(productId))
-      : storage.readJsonOrNull(`${latestBase}/normalized.json`),
-    specDb
-      ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
-      : storage.readJsonOrNull(`${latestBase}/provenance.json`),
-    specDb
-      ? Promise.resolve(specDb.getSummaryForProduct(productId))
-      : storage.readJsonOrNull(`${latestBase}/summary.json`)
-  ]);
-
-  if (!isObject(normalized) || !isObject(normalized.fields)) {
-    throw new Error(`missing_latest_normalized:${category}:${productId}`);
-  }
-
+  // WHY: SQL is sole source. File reads to latest/{normalized,provenance,summary}.json removed —
+  // no field values are produced by the pipeline yet. Will return data once validation stage exists.
+  const normalized = specDb ? specDb.getNormalizedForProduct(productId) : null;
+  const provenance = specDb ? (specDb.getProvenanceForProduct(category, productId) ?? {}) : {};
+  const summary = specDb ? specDb.getSummaryForProduct(productId) : null;
   return {
-    normalized,
+    normalized: isObject(normalized) && isObject(normalized.fields) ? normalized : null,
     provenance: isObject(provenance) ? provenance : {},
     summary: isObject(summary) ? summary : {}
   };
 }
 
 export async function readPublishedCurrent(storage, category, productId) {
-  return await readJsonDual(storage, [category, 'published', productId, 'current.json']);
+  return await readJson(storage, [category, 'published', productId, 'current.json']);
 }
 
 export async function readPublishedProductChangelog(storage, category, productId) {
-  const parsed = await readJsonDual(storage, [category, 'published', productId, 'changelog.json']);
+  const parsed = await readJson(storage, [category, 'published', productId, 'changelog.json']);
   if (!isObject(parsed) || !Array.isArray(parsed.entries)) {
     return {
       version: 1,
@@ -104,7 +91,7 @@ export async function writePublishedProductFiles({
   };
 
   if (previousRecord && previousVersion) {
-    await writeJsonDual(
+    await writeJson(
       storage,
       [category, 'published', productId, 'versions', `v${previousVersion}.json`],
       previousRecord
@@ -112,17 +99,17 @@ export async function writePublishedProductFiles({
   }
 
   await Promise.all([
-    writeJsonDual(storage, [category, 'published', productId, 'current.json'], nextRecord),
-    writeJsonDual(storage, [category, 'published', productId, 'compact.json'], normalizeSpecForCompact(nextRecord)),
-    writeJsonDual(storage, [category, 'published', productId, 'provenance.json'], {
+    writeJson(storage, [category, 'published', productId, 'current.json'], nextRecord),
+    writeJson(storage, [category, 'published', productId, 'compact.json'], normalizeSpecForCompact(nextRecord)),
+    writeJson(storage, [category, 'published', productId, 'provenance.json'], {
       product_id: productId,
       category,
       generated_at: nowIso(),
       fields: fullRecord.provenance,
       warnings
     }),
-    writeJsonDual(storage, [category, 'published', productId, 'schema_product.jsonld'], toJsonLdProduct(nextRecord)),
-    writeTextDual(storage, [category, 'published', productId, 'current.md'], toMarkdownRecord(nextRecord), 'text/markdown; charset=utf-8')
+    writeJson(storage, [category, 'published', productId, 'schema_product.jsonld'], toJsonLdProduct(nextRecord)),
+    writeText(storage, [category, 'published', productId, 'current.md'], toMarkdownRecord(nextRecord), 'text/markdown; charset=utf-8')
   ]);
 
   const changelog = await readPublishedProductChangelog(storage, category, productId);
@@ -134,7 +121,7 @@ export async function writePublishedProductFiles({
   };
   changelog.generated_at = nowIso();
   changelog.entries = [entry, ...changelog.entries.filter((row) => row?.version !== nextVersion)].slice(0, 200);
-  await writeJsonDual(storage, [category, 'published', productId, 'changelog.json'], changelog);
+  await writeJson(storage, [category, 'published', productId, 'changelog.json'], changelog);
 
   return {
     changed: true,
@@ -222,9 +209,9 @@ export async function writeCategoryIndexAndChangelog(storage, category) {
   };
 
   await Promise.all([
-    writeJsonDual(storage, [category, '_index.json'], indexPayload),
-    writeJsonDual(storage, [category, '_changelog.json'], categoryChangelog),
-    writeJsonDual(storage, [category, 'exports', 'feed.json'], {
+    writeJson(storage, [category, '_index.json'], indexPayload),
+    writeJson(storage, [category, '_changelog.json'], categoryChangelog),
+    writeJson(storage, [category, 'exports', 'feed.json'], {
       version: 1,
       category,
       generated_at: nowIso(),
@@ -243,8 +230,8 @@ export async function writeCategoryIndexAndChangelog(storage, category) {
 
   return {
     records,
-    index_key: outputModernKey([category, '_index.json']),
-    changelog_key: outputModernKey([category, '_changelog.json'])
+    index_key: outputKey([category, '_index.json']),
+    changelog_key: outputKey([category, '_changelog.json'])
   };
 }
 
@@ -282,14 +269,13 @@ export async function writeCsvExport(storage, category, records) {
     lines.push(line.map(csvEscape).join(','));
   }
 
-  await writeTextDual(storage, [category, 'exports', 'all_products.csv'], `${lines.join('\n')}\n`, 'text/csv; charset=utf-8');
-  return outputModernKey([category, 'exports', 'all_products.csv']);
+  await writeText(storage, [category, 'exports', 'all_products.csv'], `${lines.join('\n')}\n`, 'text/csv; charset=utf-8');
+  return outputKey([category, 'exports', 'all_products.csv']);
 }
 
 export async function writeSqliteExport(storage, category, records) {
   const fileParts = [category, 'exports', 'all_products.sqlite'];
-  const modern = outputModernKey(fileParts);
-  const legacy = outputLegacyKey(storage, fileParts);
+  const modern = outputKey(fileParts);
 
   const script = [
     'import json, sqlite3, sys',
@@ -319,11 +305,10 @@ export async function writeSqliteExport(storage, category, records) {
   }
 
   const bytes = await fs.readFile(dbPath);
-  await writeBufferDual(storage, fileParts, bytes, 'application/vnd.sqlite3');
+  await writeBuffer(storage, fileParts, bytes, 'application/vnd.sqlite3');
   return {
     ok: true,
     key: modern,
-    legacy_key: legacy
   };
 }
 
@@ -344,7 +329,7 @@ export async function writeBulkExports(storage, category, format = 'all') {
     written.sqlite = sqlite;
   }
 
-  await writeJsonDual(storage, [category, 'exports', 'feed.json'], {
+  await writeJson(storage, [category, 'exports', 'feed.json'], {
     version: 1,
     category,
     generated_at: nowIso(),

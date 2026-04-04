@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nowIso } from '../../../shared/primitives.js';
 import { loadCategoryConfig } from '../../../categories/loader.js';
-import { loadQueueState } from '../../../queue/queueState.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { confidenceColor } from './confidenceColor.js';
@@ -192,21 +191,17 @@ export async function buildReviewLayout({
 }
 
 export async function readLatestArtifacts(storage, category, productId, specDb = null) {
+  // WHY: specDb is primary, file fallback for test harness + review pre-wire.
+  // Production has no latest/ files (no validation stage yet).
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const normalized = specDb
-    ? specDb.getNormalizedForProduct(productId)
-    : (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
-  const provenance = specDb
-    ? (specDb.getProvenanceForProduct(category, productId) ?? {})
-    : (await storage.readJsonOrNull(`${latestBase}/provenance.json`) || {});
-  const summary = specDb
-    ? specDb.getSummaryForProduct(productId)
-    : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
-  let candidates = await storage.readJsonOrNull(`${latestBase}/candidates.json`);
-  if (!candidates && summary?.runId) {
-    const runBase = storage.resolveOutputKey(category, productId, 'runs', summary.runId);
-    candidates = await storage.readJsonOrNull(`${runBase}/provenance/fields.candidates.json`);
-  }
+  const normalized = (specDb ? specDb.getNormalizedForProduct(productId) : null)
+    ?? (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
+  const provenance = (specDb ? (specDb.getProvenanceForProduct(category, productId) ?? null) : null)
+    ?? (await storage.readJsonOrNull(`${latestBase}/provenance.json`))
+    ?? {};
+  const summary = (specDb ? specDb.getSummaryForProduct(productId) : null)
+    ?? (await storage.readJsonOrNull(`${latestBase}/summary.json`));
+  const candidates = await storage.readJsonOrNull(`${latestBase}/candidates.json`);
   return {
     latestBase,
     normalized: normalized || { identity: {}, fields: {} },
@@ -604,12 +599,19 @@ export async function buildProductReviewPayload({
       }
     }
 
+    // WHY: In specDb mode, summary field_reasoning preserves the original source count
+    // from the pipeline run. Pass it to inferFlags so below_min_evidence can trigger
+    // even when only synthetic candidates exist.
+    const fieldReasoning = isObject(latest.summary?.field_reasoning?.[field])
+      ? latest.summary.field_reasoning[field]
+      : null;
     const fieldFlags = inferFlags({
       reasonCodes: rows[field].reason_codes || [],
       fieldRule: row.field_rule || {},
       candidates: rows[field].candidates || [],
       acceptedCandidateId: rows[field].accepted_candidate_id || null,
       overridden: Boolean(rows[field].overridden),
+      evidenceSourceCount: fieldReasoning?.sources ?? null,
     });
     for (const flag of fieldFlags) {
       if (!(rows[field].reason_codes || []).includes(flag)) {
@@ -787,8 +789,8 @@ export async function buildReviewQueue({
   specDb = null,
   catalogProducts = null,
 }) {
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const products = Object.values(loaded.state.products || {});
+  // WHY: Queue module retired — product enumeration is no longer queue-driven.
+  const products = [];
   const rows = [];
 
   for (const product of products) {
@@ -819,6 +821,7 @@ export async function buildReviewQueue({
       id: authoritativeIdentity.id,
       identifier: authoritativeIdentity.identifier,
       brand: authoritativeIdentity.brand,
+      base_model: authoritativeIdentity.base_model,
       model: authoritativeIdentity.model,
       variant: authoritativeIdentity.variant,
       coverage,

@@ -111,16 +111,18 @@ test('resolveJobIdentity: extracts from identityLock first', () => {
   const result = resolveJobIdentity({
     brand: 'FallbackBrand',
     model: 'FallbackModel',
-    identityLock: { brand: 'Razer', model: 'Viper V3', variant: 'Pro' },
+    identityLock: { brand: 'Razer', base_model: 'Viper V3', model: 'Viper V3 Pro', variant: 'Pro' },
   });
   assert.equal(result.brand, 'Razer');
-  assert.equal(result.model, 'Viper V3');
+  assert.equal(result.base_model, 'Viper V3');
+  assert.equal(result.model, 'Viper V3 Pro');
   assert.equal(result.variant, 'Pro');
 });
 
 test('resolveJobIdentity: falls back to job fields', () => {
-  const result = resolveJobIdentity({ brand: 'Razer', model: 'Viper' });
+  const result = resolveJobIdentity({ brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '' });
   assert.equal(result.brand, 'Razer');
+  assert.equal(result.base_model, 'Viper');
   assert.equal(result.model, 'Viper');
   assert.equal(result.variant, '');
 });
@@ -128,6 +130,7 @@ test('resolveJobIdentity: falls back to job fields', () => {
 test('resolveJobIdentity: handles empty/undefined', () => {
   const result = resolveJobIdentity();
   assert.equal(result.brand, '');
+  assert.equal(result.base_model, '');
   assert.equal(result.model, '');
   assert.equal(result.variant, '');
 });
@@ -137,7 +140,7 @@ test('resolveJobIdentity: handles empty/undefined', () => {
 // ---------------------------------------------------------------------------
 
 test('productText: joins brand+model+variant', () => {
-  assert.equal(productText({ brand: 'Razer', model: 'Viper V3', variant: 'Pro' }), 'Razer Viper V3 Pro');
+  assert.equal(productText({ brand: 'Razer', base_model: 'Viper V3', variant: 'Pro' }), 'Razer Viper V3 Pro');
   assert.equal(productText({ brand: 'Razer' }), 'Razer');
   assert.equal(productText({}), '');
   assert.equal(productText(), '');
@@ -148,7 +151,7 @@ test('productText: joins brand+model+variant', () => {
 // ---------------------------------------------------------------------------
 
 test('normalizeIdentityTokens: separates brand from model tokens, excludes generic', () => {
-  const result = normalizeIdentityTokens({ brand: 'Razer', model: 'Viper V3', variant: 'Pro' });
+  const result = normalizeIdentityTokens({ brand: 'Razer', base_model: 'Viper V3', variant: 'Pro' });
   assert.deepStrictEqual(result.brandTokens, ['razer']);
   // "pro" is in GENERIC_MODEL_TOKENS, "viper" is model
   assert.ok(result.modelTokens.includes('viper'));
@@ -161,7 +164,7 @@ test('normalizeIdentityTokens: separates brand from model tokens, excludes gener
 // ---------------------------------------------------------------------------
 
 test('buildModelSlugCandidates: produces unique slug variations', () => {
-  const result = buildModelSlugCandidates({ brand: 'Razer', model: 'Viper V3', variant: 'Pro' });
+  const result = buildModelSlugCandidates({ brand: 'Razer', base_model: 'Viper V3', variant: 'Pro' });
   assert.ok(result.length > 0);
   assert.ok(result.length <= 6);
   // All slugs should be lowercase with hyphens
@@ -173,7 +176,7 @@ test('buildModelSlugCandidates: produces unique slug variations', () => {
 });
 
 test('buildModelSlugCandidates: respects cap', () => {
-  const result = buildModelSlugCandidates({ brand: 'A', model: 'B', variant: 'C' }, 2);
+  const result = buildModelSlugCandidates({ brand: 'A', base_model: 'B', variant: 'C' }, 2);
   assert.ok(result.length <= 2);
 });
 

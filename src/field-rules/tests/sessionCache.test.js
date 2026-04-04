@@ -270,8 +270,9 @@ describe('sessionCache', () => {
     const result = await cache.getSessionRules('mouse');
 
     assert.deepEqual(result.mergedFieldOrder, savedOrder);
-    assert.equal(setFieldKeyOrderCalls.length, 1, 'should re-populate SQL from JSON fallback');
-    assert.deepEqual(JSON.parse(setFieldKeyOrderCalls[0].json), savedOrder);
+    // WHY: sessionCache no longer auto-persists to SQL — the field_key_order reseed
+    // surface in seedRegistry.js handles JSON→SQL migration. sessionCache is read-only.
+    assert.equal(setFieldKeyOrderCalls.length, 0, 'sessionCache should not persist to SQL (reseed surface handles it)');
   });
 
   it('falls back to computed order when both SQL and JSON are empty', async () => {

@@ -32,7 +32,7 @@ test('deterministic test-mode sources keep distinct root domains', () => {
 
   const product = {
     productId: '_test_mouse-testco-scenario-01',
-    identityLock: { brand: 'TestCo', model: 'Scenario 1', variant: 'happy_path' },
+    identityLock: { brand: 'TestCo', base_model: 'Scenario 1', model: 'Scenario 1 happy_path', variant: 'happy_path' },
     _testCase: { id: 1, name: 'happy_path' }
   };
 

@@ -125,39 +125,6 @@ export function prepareStatements(db) {
       ON CONFLICT(category, product_id, field_key, list_value_id) DO NOTHING
     `),
 
-    _upsertQueueProduct: db.prepare(`
-      INSERT INTO product_queue (
-        category, product_id, s3key, status, priority,
-        attempts_total, retry_count, max_attempts, next_retry_at, last_run_id,
-        cost_usd_total, rounds_completed, next_action_hint, last_urls_attempted,
-        last_error, last_started_at, last_completed_at, dirty_flags, last_summary
-      ) VALUES (
-        @category, @product_id, @s3key, @status, @priority,
-        @attempts_total, @retry_count, @max_attempts, @next_retry_at, @last_run_id,
-        @cost_usd_total, @rounds_completed, @next_action_hint, @last_urls_attempted,
-        @last_error, @last_started_at, @last_completed_at, @dirty_flags, @last_summary
-      )
-      ON CONFLICT(category, product_id) DO UPDATE SET
-        s3key = COALESCE(excluded.s3key, s3key),
-        status = excluded.status,
-        priority = excluded.priority,
-        attempts_total = excluded.attempts_total,
-        retry_count = excluded.retry_count,
-        max_attempts = excluded.max_attempts,
-        next_retry_at = excluded.next_retry_at,
-        last_run_id = COALESCE(excluded.last_run_id, last_run_id),
-        cost_usd_total = excluded.cost_usd_total,
-        rounds_completed = excluded.rounds_completed,
-        next_action_hint = excluded.next_action_hint,
-        last_urls_attempted = excluded.last_urls_attempted,
-        last_error = excluded.last_error,
-        last_started_at = excluded.last_started_at,
-        last_completed_at = excluded.last_completed_at,
-        dirty_flags = excluded.dirty_flags,
-        last_summary = excluded.last_summary,
-        updated_at = datetime('now')
-    `),
-
     _upsertProductRun: db.prepare(`
       INSERT INTO product_runs (
         category, product_id, run_id, is_latest, summary_json,
@@ -702,6 +669,9 @@ export function prepareStatements(db) {
     ),
     _getColorEditionFinderOnCooldown: db.prepare(
       'SELECT * FROM color_edition_finder WHERE category = ? AND product_id = ? AND cooldown_until > ?'
+    ),
+    _deleteColorEditionFinder: db.prepare(
+      'DELETE FROM color_edition_finder WHERE category = ? AND product_id = ?'
     ),
   };
 }

@@ -18,7 +18,7 @@ test('evaluateSourceIdentity can match brand+model when variant is not provided'
     },
     {
       brand: 'Logitech',
-      model: 'G Pro X Superlight 2',
+      base_model: 'G Pro X Superlight 2',
       variant: '',
       sku: '',
       mpn: '',
@@ -159,7 +159,7 @@ test('evaluateSourceIdentity hard ID match forces CONFIRMED decision and confide
     },
     {
       brand: 'Razer',
-      model: 'Viper V3 Pro',
+      base_model: 'Viper V3 Pro',
       variant: '',
       sku: 'RZ01-05120100-R3U1',
       mpn: '',
@@ -186,7 +186,7 @@ test('evaluateSourceIdentity rejects unexpected variant suffix when no variant i
     },
     {
       brand: 'Logitech',
-      model: 'G Pro X Superlight 2',
+      base_model: 'G Pro X Superlight 2',
       variant: '',
       sku: '',
       mpn: '',
@@ -212,7 +212,7 @@ test('evaluateSourceIdentity does not treat localized manufacturer title adjecti
     },
     {
       brand: 'Razer',
-      model: 'Viper V3 Pro',
+      base_model: 'Viper V3 Pro',
       variant: '',
       sku: '',
       mpn: '',
@@ -236,7 +236,7 @@ test('evaluateSourceIdentity can confirm review pages from title and url when st
     },
     {
       brand: 'Razer',
-      model: 'Viper V3 Pro',
+      base_model: 'Viper V3 Pro',
       variant: '',
       sku: '',
       mpn: '',
@@ -263,7 +263,7 @@ test('evaluateSourceIdentity rejects product-specific sources that miss required
     },
     {
       brand: 'Logitech',
-      model: 'G Pro X Superlight 2',
+      base_model: 'G Pro X Superlight 2',
       variant: '',
       sku: '',
       mpn: '',
@@ -290,7 +290,7 @@ test('evaluateSourceIdentity rejects mismatched hard IDs with reason codes', () 
     },
     {
       brand: 'Razer',
-      model: 'Viper V3 Pro',
+      base_model: 'Viper V3 Pro',
       variant: '',
       sku: 'RZ01-05120100-R3U1',
       mpn: '',

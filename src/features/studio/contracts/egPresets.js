@@ -113,7 +113,7 @@ function buildColorReasoningNote(colorNames, colors) {
     `Registered colors with hex values: ${colorListStr}`,
     '',
     'Match product colors to registered colors by visual similarity using the hex values above. If a registered color\'s hex is close to the product\'s actual color, use the registered name.',
-    'Only add a new color to new_colors as an absolute last resort — when NO registered color is a reasonable visual match. New colors must be basic, common names (e.g. "seafoam", "burgundy", "coral") — never marketing names. New colors require a hex code.',
+    'If no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names.',
   ].join('\n');
 }
 
@@ -248,7 +248,7 @@ export function buildEgEditionFieldRule(ctx) {
         'Formatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.',
         'Examples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.',
         'Do not return display names or title case.',
-        'If an edition has a unique color not in the registered list, add it to new_colors with its hex.',
+        'If an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity.',
       ].join('\n'),
     },
     ui: {

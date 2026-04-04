@@ -26,7 +26,6 @@ export const resultProcessingPhase = {
       searchProfileBase: ctx.searchProfileBase,
       llmQueries: [],
       queries: ctx.queries, searchProfilePlanned: ctx.searchProfilePlanned,
-      searchProfileKeys: ctx.searchProfileKeys,
       providerState: ctx.providerState, discoveryCap: ctx.discoveryCap,
     });
     return { discoveryResult };

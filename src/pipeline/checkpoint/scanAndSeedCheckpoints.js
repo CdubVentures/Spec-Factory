@@ -3,9 +3,16 @@
 // when the SQLite database is lost or needs rebuilding from durable artifacts.
 
 import path from 'node:path';
-import { listDirs, safeReadJson } from '../../shared/fileHelpers.js';
+import fs from 'node:fs/promises';
+import { listDirs } from '../../shared/fileHelpers.js';
 import { seedFromCheckpoint } from './seedFromCheckpoint.js';
 import { rebuildMediaIndexesFromDisk } from './rebuildMediaIndexes.js';
+
+async function readCheckpointFile(filePath) {
+  let raw;
+  try { raw = await fs.readFile(filePath, 'utf8'); } catch { return null; }
+  try { return { raw, parsed: JSON.parse(raw) }; } catch { return null; }
+}
 
 function categoryMatches(checkpoint, specDb) {
   const cpCat = String(
@@ -42,12 +49,12 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
   }
   for (const { dir, base } of scanDirs) {
     const filePath = path.join(base, dir, 'product.json');
-    const cp = await safeReadJson(filePath);
-    if (!cp || cp.checkpoint_type !== 'product') continue;
+    const result = await readCheckpointFile(filePath);
+    if (!result || result.parsed.checkpoint_type !== 'product') continue;
     stats.products_found += 1;
-    if (!categoryMatches(cp, specDb)) continue;
+    if (!categoryMatches(result.parsed, specDb)) continue;
     try {
-      const r = seedFromCheckpoint({ specDb, checkpoint: cp });
+      const r = seedFromCheckpoint({ specDb, checkpoint: result.parsed, rawJson: result.raw });
       if (r.product_seeded) stats.products_seeded += 1;
       stats.cooldowns_seeded += r.cooldowns_seeded || 0;
     } catch (err) {
@@ -61,19 +68,19 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
   for (const dir of topDirs) {
     if (dir === 'products') continue;
     const filePath = path.join(indexLabRoot, dir, 'run.json');
-    const cp = await safeReadJson(filePath);
-    if (!cp || cp.checkpoint_type !== 'crawl') continue;
+    const result = await readCheckpointFile(filePath);
+    if (!result || result.parsed.checkpoint_type !== 'crawl') continue;
     stats.runs_found += 1;
-    if (!categoryMatches(cp, specDb)) continue;
-    runEntries.push({ filePath, cp, createdAt: cp.created_at || '' });
+    if (!categoryMatches(result.parsed, specDb)) continue;
+    runEntries.push({ filePath, cp: result.parsed, raw: result.raw, createdAt: result.parsed.created_at || '' });
   }
 
   // Sort oldest first → newest processed last → gets is_latest=true
   runEntries.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  for (const { filePath, cp } of runEntries) {
+  for (const { filePath, cp, raw } of runEntries) {
     try {
-      const r = seedFromCheckpoint({ specDb, checkpoint: cp });
+      const r = seedFromCheckpoint({ specDb, checkpoint: cp, rawJson: raw });
       stats.runs_seeded += 1;
       stats.sources_seeded += r.sources_seeded;
       stats.artifacts_seeded += r.artifacts_seeded;

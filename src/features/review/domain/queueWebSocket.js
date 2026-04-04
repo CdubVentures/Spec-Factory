@@ -23,6 +23,10 @@ function stableQueueFingerprint(items = []) {
   const normalized = (Array.isArray(items) ? items : [])
     .map((row) => ({
       product_id: String(row?.product_id || '').trim(),
+      brand: String(row?.brand || '').trim(),
+      base_model: String(row?.base_model || '').trim(),
+      model: String(row?.model || '').trim(),
+      variant: String(row?.variant || '').trim(),
       status: String(row?.status || '').trim(),
       flags: toInt(row?.flags, 0),
       confidence: Number.parseFloat(String(row?.confidence ?? 0)) || 0,

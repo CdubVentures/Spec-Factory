@@ -14,7 +14,6 @@ const root = path.resolve(__dirname, '..');
 const specSchema = fs.readFileSync(path.join(root, 'src/db/specDbSchema.js'), 'utf8');
 const appSchema = fs.readFileSync(path.join(root, 'src/db/appDbSchema.js'), 'utf8');
 const migrationsSrc = fs.readFileSync(path.join(root, 'src/db/specDbMigrations.js'), 'utf8');
-const learningSrc = fs.readFileSync(path.join(root, 'src/features/indexing/learning/learningStores.js'), 'utf8');
 
 // ── Parse CREATE TABLE blocks ──
 function parseTables(ddl) {
@@ -155,7 +154,6 @@ const storeMap = {
   field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore',
   brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
-  component_lexicon: 'learningStores', field_anchors: 'learningStores', url_memory: 'learningStores', domain_field_yield: 'learningStores',
 };
 
 // ── Domain groups ──
@@ -184,11 +182,8 @@ const appDbGroups = [
 // ── Parse everything ──
 const specTables = parseTables(specSchema);
 const migrationTables = parseTables(migrationsSrc);
-const learningTables = parseTables(learningSrc);
 const appTables = parseTables(appSchema);
-// Mark learning tables
-for (const t of learningTables) t.isLearning = true;
-const allTables = [...specTables, ...migrationTables, ...learningTables, ...appTables];
+const allTables = [...specTables, ...migrationTables, ...appTables];
 const tableMap = Object.fromEntries(allTables.map(t => [t.name, t]));
 
 // Merge indexes by combining arrays per table, not overwriting
@@ -365,7 +360,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
 <div class="stats">
   <div class="stat"><div class="n">${specTables.length + migrationTables.length}</div><div class="l">SpecDb Tables</div></div>
-  <div class="stat"><div class="n">${learningTables.length}</div><div class="l">Runtime Learning</div></div>
   <div class="stat"><div class="n">${appTables.length}</div><div class="l">AppDb Tables</div></div>
   <div class="stat"><div class="n">${new Set(Object.values(storeMap)).size}</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n">${allTables.length}</div><div class="l">Total Tables</div></div>
@@ -381,18 +375,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
     <span class="tag tag-cols">${specTables.length + migrationTables.length} tables (${specTables.length} schema + ${migrationTables.length} migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). ${specTables.length + migrationTables.length} tables from DDL (${specTables.length} in specDbSchema.js + ${migrationTables.length} migration-created). ${learningTables.length} additional runtime learning tables created by learningStores.js. Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). ${specTables.length + migrationTables.length} tables from DDL (${specTables.length} in specDbSchema.js + ${migrationTables.length} migration-created). Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   ${renderGroups(specDbGroups)}
-</section>
-
-<section class="surface">
-  <div class="surface-head">
-    <h2>Runtime Learning (SpecDb)</h2>
-    <span class="tag" style="background:var(--amber-s);color:var(--amber)">Runtime-Created</span>
-    <span class="tag tag-cols">${learningTables.length} tables</span>
-  </div>
-  <p class="surface-desc">Runtime-created tables in each category's spec.sqlite. Managed by <code>src/features/indexing/learning/learningStores.js</code>. Created on first pipeline run; accumulate cross-run learning signals (component lexicon, field anchors, URL memory, domain yield).</p>
-  ${renderGroups([{ label: 'Learning Stores', tables: learningTables.map(t => t.name) }])}
 </section>
 
 <section class="surface">
@@ -429,4 +413,4 @@ filter?.addEventListener('input', () => {
 const outPath = path.join(root, 'docs/data-structure/schema-reference.html');
 fs.writeFileSync(outPath, html, 'utf8');
 console.log(`Written ${(html.length / 1024).toFixed(1)}KB to ${path.relative(root, outPath)}`);
-console.log(`Tables: ${specTables.length} spec + ${migrationTables.length} migration + ${learningTables.length} learning + ${appTables.length} app = ${allTables.length} total`);
+console.log(`Tables: ${specTables.length} spec + ${migrationTables.length} migration + ${appTables.length} app = ${allTables.length} total`);

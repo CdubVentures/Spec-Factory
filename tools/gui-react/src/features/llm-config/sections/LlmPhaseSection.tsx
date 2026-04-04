@@ -334,7 +334,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           {phaseSchema.system_prompt && (
             <div>
               <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed opacity-70 select-none">
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
                 {String(phaseSchema.system_prompt)}
               </pre>
             </div>
@@ -342,7 +342,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           {phaseSchema.response_schema && (
             <div>
               <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed opacity-70 select-none">
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
                 {JSON.stringify(phaseSchema.response_schema, null, 2)}
               </pre>
             </div>

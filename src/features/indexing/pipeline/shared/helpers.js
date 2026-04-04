@@ -36,29 +36,6 @@ export async function runWithConcurrency(items = [], concurrency = 1, worker) {
 }
 
 // ---------------------------------------------------------------------------
-// mergeLearningStoreHintsIntoLexicon — merges learning anchors into lexicon
-// ---------------------------------------------------------------------------
-
-export function mergeLearningStoreHintsIntoLexicon(lexicon = {}, storeHints = null) {
-  if (!storeHints || !storeHints.anchorsByField) return lexicon;
-  const merged = { ...lexicon, fields: { ...(lexicon.fields || {}) } };
-  for (const [field, anchors] of Object.entries(storeHints.anchorsByField)) {
-    if (!Array.isArray(anchors) || anchors.length === 0) continue;
-    const existing = merged.fields[field] || {};
-    const synonyms = { ...(existing.synonyms || {}) };
-    for (const anchor of anchors) {
-      if (anchor.decayStatus === 'expired') continue;
-      const phrase = String(anchor.phrase || '').trim().toLowerCase();
-      if (!phrase || phrase.length < 3) continue;
-      const weight = anchor.decayStatus === 'decayed' ? 1 : 3;
-      synonyms[phrase] = { count: (synonyms[phrase]?.count || 0) + weight };
-    }
-    merged.fields[field] = { ...existing, synonyms };
-  }
-  return merged;
-}
-
-// ---------------------------------------------------------------------------
 // loadLearningArtifacts — async storage reads for learning data
 // ---------------------------------------------------------------------------
 
@@ -77,43 +54,6 @@ export async function loadLearningArtifacts({
     queryTemplates: queryTemplates || {},
     fieldYield: fieldYield || {}
   };
-}
-
-// ---------------------------------------------------------------------------
-// buildSearchProfileKeys — resolves storage keys for search profile artifacts
-// ---------------------------------------------------------------------------
-
-export function buildSearchProfileKeys({
-  storage,
-  config,
-  category,
-  productId,
-  runId
-}) {
-  const runKey = category && productId && runId
-    ? storage.resolveOutputKey(category, productId, 'runs', runId, 'analysis', 'search_profile.json')
-    : null;
-  return {
-    runKey,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// writeSearchProfileArtifacts — writes search profile to storage
-// ---------------------------------------------------------------------------
-
-export async function writeSearchProfileArtifacts({
-  storage,
-  payload,
-  keys = {}
-}) {
-  const body = Buffer.from(JSON.stringify(payload, null, 2), 'utf8');
-  const uniqueKeys = [...new Set([keys.inputKey, keys.runKey].filter(Boolean))];
-  await Promise.all(
-    uniqueKeys.map((key) =>
-      storage.writeObject(key, body, { contentType: 'application/json' })
-    )
-  );
 }
 
 // ---------------------------------------------------------------------------

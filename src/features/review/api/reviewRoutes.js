@@ -91,8 +91,7 @@ export function registerReviewRoutes(ctx) {
     buildComponentIdentifier,
     applySharedLaneState,
     cascadeComponentChange,
-    loadQueueState,
-    saveQueueState,
+
     remapPendingComponentReviewItemsForNameChange,
     // Enum mutation helpers
     resolveEnumMutationContext,
@@ -130,7 +129,6 @@ export function registerReviewRoutes(ctx) {
     HELPER_ROOT, OUTPUT_ROOT,
     applySharedLaneState, cascadeEnumChange,
     specDbCache, broadcastWs,
-    loadQueueState, saveQueueState,
     runEnumConsistencyReview,
   };
 
@@ -193,8 +191,6 @@ export function registerReviewRoutes(ctx) {
         cascadeComponentChange,
         outputRoot: OUTPUT_ROOT,
         storage,
-        loadQueueState,
-        saveQueueState,
         remapPendingComponentReviewItemsForNameChange,
         specDbCache,
         broadcastWs,
@@ -220,8 +216,6 @@ export function registerReviewRoutes(ctx) {
         storage,
         outputRoot: OUTPUT_ROOT,
         cascadeEnumChange,
-        loadQueueState,
-        saveQueueState,
         isReviewFieldPathEnabled: isReviewFieldPathEnabledForCategory,
         broadcastWs,
       },

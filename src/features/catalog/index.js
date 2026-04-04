@@ -44,11 +44,6 @@ export {
   loadCatalogProductsWithFields,
   discoverCategoriesLocal,
 } from './products/catalogProductLoader.js';
-export {
-  migrateProductArtifacts,
-  appendRenameLog,
-} from './migrations/artifactMigration.js';
-
 async function loadCatalogReconciler() {
   return import('./products/reconciler.js');
 }

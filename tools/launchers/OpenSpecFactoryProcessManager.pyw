@@ -803,31 +803,41 @@ class ProcessManagerApp:
         )
 
     def _on_full_reload(self) -> None:
-        def after_state(payload: dict) -> None:
-            self._apply_state(payload)
+        def after_kill_all(payload: dict) -> None:
+            killed = payload.get('killed', [])
+            skipped = payload.get('skipped', [])
             self._append_log('\n--- Full Reload ---\n', 'info')
-            self._kill_all_then(after_kills)
-
-        def after_kills(_success: bool) -> None:
+            self._append_log(f'Kill-all: {len(killed)} killed, {len(skipped)} skipped.\n', 'info')
+            for entry in killed:
+                self._append_log(f'  Killed PID {entry.get("pid")} ({entry.get("name", "?")})\n')
+            for entry in skipped:
+                self._append_log(f'  Skipped PID {entry.get("pid")} ({entry.get("reason", "?")})\n')
             self._run_streaming_chain([
-                ('Rebuild native modules', ['npm', 'rebuild', 'better-sqlite3']),
+                ('Check native modules', ['node', str(ROOT / 'tools' / 'nativeModulePreflight.js')]),
                 ('Build GUI', ['npm', 'run', 'gui:build']),
                 ('Start Server', ['node', str(DEV_STACK_PATH), 'start-api']),
             ], final_done=lambda s: self.refresh_state())
 
-        self._run_task('Refreshing state...', lambda: run_backend('state'), after_state)
+        self._run_task('Killing all processes...', lambda: run_backend('kill-all'), after_kill_all)
 
     def _on_kill_all(self) -> None:
-        def after_state(payload: dict) -> None:
-            self._apply_state(payload)
-            killable = [r for r in self.rows_by_pid.values() if r.get('can_kill')]
-            if not killable:
+        def after_kill_all(payload: dict) -> None:
+            killed = payload.get('killed', [])
+            skipped = payload.get('skipped', [])
+            errors = payload.get('errors', [])
+            if not killed and not errors:
                 self._append_log('No killable processes found.\n', 'info')
-                return
-            self._append_log(f'Killing {len(killable)} process(es)...\n', 'info')
-            self._kill_all_then(lambda _ok: self.refresh_state())
+            else:
+                self._append_log(f'Kill-all: {len(killed)} killed, {len(skipped)} skipped, {len(errors)} errors.\n', 'info')
+                for entry in killed:
+                    self._append_log(f'  Killed PID {entry.get("pid")} ({entry.get("name", "?")})\n')
+                for entry in skipped:
+                    self._append_log(f'  Skipped PID {entry.get("pid")} ({entry.get("reason", "?")})\n')
+                for entry in errors:
+                    self._append_log(f'  Error PID {entry.get("pid")}: {entry.get("error", "?")}\n', 'error')
+            self.refresh_state()
 
-        self._run_task('Refreshing state...', lambda: run_backend('state'), after_state)
+        self._run_task('Killing all processes...', lambda: run_backend('kill-all'), after_kill_all)
 
     def _kill_all_then(self, callback) -> None:
         killable = [r for r in self.rows_by_pid.values() if r.get('can_kill')]
@@ -887,7 +897,7 @@ class ProcessManagerApp:
 
     def _on_build_gui(self) -> None:
         self._run_streaming_chain([
-            ('Rebuild native modules', ['npm', 'rebuild', 'better-sqlite3']),
+            ('Check native modules', ['node', str(ROOT / 'tools' / 'nativeModulePreflight.js')]),
             ('Build GUI', ['npm', 'run', 'gui:build']),
         ])
 

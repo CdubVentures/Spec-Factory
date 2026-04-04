@@ -110,7 +110,9 @@ function buildRunPickerLabel({
   runId?: string;
 }): string {
   const categoryLabel = titleCaseWords(category);
-  const identityLabel = [brand, base_model || model, variant].map(toToken).filter(Boolean).join(' ')
+  const queryModel = toToken(base_model || model);
+  const queryVariant = toToken(base_model ? variant : '');
+  const identityLabel = [brand, queryModel, queryVariant].map(toToken).filter(Boolean).join(' ')
     || humanizeProductId({ category, productId });
   const dedupedIdentityLabel = identityLabel.toLowerCase() === categoryLabel.toLowerCase()
     ? ''

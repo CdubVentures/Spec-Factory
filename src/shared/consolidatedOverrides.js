@@ -5,7 +5,7 @@
 // This is the JSON SSOT for override state. SQL tables are derived cache.
 //
 // WHY src/shared/: consumed by seed.js, catalogProductLoader, publishSpecBuilders,
-// overrideWorkflow, and artifactMigration — crosses feature boundaries.
+// and overrideWorkflow — crosses feature boundaries.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';

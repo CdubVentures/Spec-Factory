@@ -246,6 +246,26 @@ export class SpecDb {
     return this.getSpecDbSyncState(normalizedCategory);
   }
 
+  // WHY: Per-file hash storage for targeted rebuild. Each JSON source file gets
+  // its own hash so the seed pipeline can detect which specific file changed and
+  // wipe + re-import only that file's tables. Stored in data_authority_sync.last_sync_meta.file_hashes.
+  getFileSeedHash(fileKey, category = this.category) {
+    const state = this.getSpecDbSyncState(category);
+    return state.last_sync_meta?.file_hashes?.[fileKey] || null;
+  }
+
+  setFileSeedHash(fileKey, hash, category = this.category) {
+    const state = this.getSpecDbSyncState(category);
+    const meta = { ...state.last_sync_meta };
+    meta.file_hashes = { ...(meta.file_hashes || {}), [fileKey]: hash };
+    this.recordSpecDbSync({
+      category,
+      status: state.last_sync_status || 'ok',
+      meta,
+      version: state.specdb_sync_version,
+    });
+  }
+
   // --- Source Strategy --- (removed: sources.json is now the SSOT via sourceFileService.js)
 
   // --- Candidates (stubbed — tables removed in Phase 7a, callers removed in 7b-7d) ---
@@ -599,17 +619,7 @@ export class SpecDb {
     return null;
   }
 
-  // --- Queue / Product / Run / Audit / Stale / Curation / Component Review ---
-
-  upsertQueueProduct(row) { this._queueProductStore.upsertQueueProduct(row); }
-  getQueueProduct(pid) { return this._queueProductStore.getQueueProduct(pid); }
-  getAllQueueProducts(sf) { return this._queueProductStore.getAllQueueProducts(sf); }
-  updateQueueStatus(pid, s, e) { this._queueProductStore.updateQueueStatus(pid, s, e); }
-  clearQueueByStatus(s) { return this._queueProductStore.clearQueueByStatus(s); }
-  deleteQueueProduct(pid) { return this._queueProductStore.deleteQueueProduct(pid); }
-  getQueueStats() { return this._queueProductStore.getQueueStats(); }
-  updateQueueProductPatch(pid, p) { return this._queueProductStore.updateQueueProductPatch(pid, p); }
-  selectNextQueueProductSql() { return this._queueProductStore.selectNextQueueProductSql(); }
+  // --- Product / Run / Audit / Stale / Curation / Component Review ---
 
   upsertProductRun(row) { this._queueProductStore.upsertProductRun(row); }
   getLatestProductRun(pid) { return this._queueProductStore.getLatestProductRun(pid); }
@@ -623,9 +633,6 @@ export class SpecDb {
   getProduct(pid) { return this._queueProductStore.getProduct(pid); }
   getAllProducts(sf) { return this._queueProductStore.getAllProducts(sf); }
   deleteProduct(pid) { return this._queueProductStore.deleteProduct(pid); }
-
-  markProductsStale(pids, df) { this._queueProductStore.markProductsStale(pids, df); }
-  markProductsStaleDetailed(pids, dfo) { this._queueProductStore.markProductsStaleDetailed(pids, dfo); }
 
   upsertCurationSuggestion(row) { this._queueProductStore.upsertCurationSuggestion(row); }
   getCurationSuggestions(st, sf) { return this._queueProductStore.getCurationSuggestions(st, sf); }
@@ -735,6 +742,7 @@ export class SpecDb {
   getColorEditionFinder(pid) { return this._colorEditionFinderStore.get(pid); }
   listColorEditionFinderByCategory(cat) { return this._colorEditionFinderStore.listByCategory(cat); }
   getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
+  deleteColorEditionFinder(pid) { return this._colorEditionFinderStore.remove(pid); }
 
   // --- Runtime Events ---
 

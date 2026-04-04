@@ -51,7 +51,7 @@ describe('brandResolver', () => {
     const { buildSearchProfile } = await import('../../searchProfile/index.js');
     const profile = buildSearchProfile({
       job: {
-        identityLock: { brand: 'Cougar', model: 'AirBlader Tournament', variant: '' },
+        identityLock: { brand: 'Cougar', base_model: 'AirBlader Tournament', model: 'AirBlader Tournament', variant: '' },
         category: 'mouse'
       },
       categoryConfig: {

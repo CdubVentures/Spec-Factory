@@ -48,9 +48,11 @@ export function createRunListBuilder({
 
   const buildPickerLabel = ({ category = '', productId = '', brand = '', base_model = '', model = '', variant = '', runId = '' } = {}) => {
     const categoryLabel = titleCaseWords(category);
+    const queryModel = toToken(base_model || model);
+    const queryVariant = toToken(base_model ? variant : '');
     // WHY: Prefer brand+model+variant from catalog/identity for display. Hex IDs are opaque.
-    const productLabel = (brand || model)
-      ? [brand, base_model || model, variant].filter(Boolean).join(' ')
+    const productLabel = (brand || queryModel)
+      ? [brand, queryModel, queryVariant].filter(Boolean).join(' ')
       : humanizeProductId({ category, productId });
     const runToken = toRunDisplayToken(runId);
     const lead = [categoryLabel, productLabel].filter(Boolean).join(' • ');
@@ -163,7 +165,7 @@ export function createRunListBuilder({
   }
 
   async function listIndexLabRuns({ limit = 50, category = '', catalogProducts = null } = {}) {
-    // WHY: catalogProducts is an optional Map<productId, {brand, model, variant}> for label resolution.
+    // WHY: catalogProducts is an optional Map<productId, {brand, base_model, model, variant}> for label resolution.
     // With hex-based product IDs, parsing the ID as a slug produces garbage labels.
     const resolveBrandModel = (pid) => {
       if (!catalogProducts) return {};

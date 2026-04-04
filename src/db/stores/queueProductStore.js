@@ -2,127 +2,12 @@ import { PRODUCT_RUN_BOOLEAN_KEYS } from '../specDbSchema.js';
 import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
 
 /**
- * Queue, Product, Run, Audit, Curation, Component Review, Stale-marking store.
+ * Product, Run, Curation, Component Review store.
  * Extracted from SpecDb.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
 export function createQueueProductStore({ db, category, stmts }) {
-  // --- Queue ---
-
-  function upsertQueueProduct(row) {
-    stmts._upsertQueueProduct.run({
-      category: row.category || category,
-      product_id: row.product_id || '',
-      s3key: row.s3key ?? '',
-      status: row.status || 'pending',
-      priority: row.priority ?? 3,
-      attempts_total: row.attempts_total ?? 0,
-      retry_count: row.retry_count ?? 0,
-      max_attempts: row.max_attempts ?? 3,
-      next_retry_at: row.next_retry_at ?? null,
-      last_run_id: row.last_run_id ?? null,
-      cost_usd_total: row.cost_usd_total ?? 0,
-      rounds_completed: row.rounds_completed ?? 0,
-      next_action_hint: row.next_action_hint ?? null,
-      last_urls_attempted: row.last_urls_attempted ? JSON.stringify(row.last_urls_attempted) : null,
-      last_error: row.last_error ?? null,
-      last_started_at: row.last_started_at ?? null,
-      last_completed_at: row.last_completed_at ?? null,
-      dirty_flags: row.dirty_flags ? JSON.stringify(row.dirty_flags) : null,
-      last_summary: row.last_summary ? JSON.stringify(row.last_summary) : null
-    });
-  }
-
-  function getQueueProduct(productId) {
-    const row = db
-      .prepare('SELECT * FROM product_queue WHERE category = ? AND product_id = ?')
-      .get(category, productId);
-    if (!row) return null;
-    if (row.last_urls_attempted) try { row.last_urls_attempted = JSON.parse(row.last_urls_attempted); } catch { /* leave as string */ }
-    if (row.dirty_flags) try { row.dirty_flags = JSON.parse(row.dirty_flags); } catch { /* leave as string */ }
-    if (row.last_summary) try { row.last_summary = JSON.parse(row.last_summary); } catch { /* leave as string */ }
-    return row;
-  }
-
-  function getAllQueueProducts(statusFilter) {
-    const sql = statusFilter
-      ? 'SELECT * FROM product_queue WHERE category = ? AND status = ? ORDER BY priority ASC, updated_at ASC'
-      : 'SELECT * FROM product_queue WHERE category = ? ORDER BY priority ASC, updated_at ASC';
-    const rows = statusFilter
-      ? db.prepare(sql).all(category, statusFilter)
-      : db.prepare(sql).all(category);
-    for (const row of rows) {
-      if (row.last_urls_attempted) try { row.last_urls_attempted = JSON.parse(row.last_urls_attempted); } catch { /* */ }
-      if (row.dirty_flags) try { row.dirty_flags = JSON.parse(row.dirty_flags); } catch { /* */ }
-      if (row.last_summary) try { row.last_summary = JSON.parse(row.last_summary); } catch { /* */ }
-    }
-    return rows;
-  }
-
-  function updateQueueStatus(productId, status, extra = {}) {
-    const sets = ['status = ?', "updated_at = datetime('now')"];
-    const params = [status];
-    for (const [key, val] of Object.entries(extra)) {
-      sets.push(`${key} = ?`);
-      params.push(typeof val === 'object' ? JSON.stringify(val) : val);
-    }
-    params.push(category, productId);
-    db.prepare(`UPDATE product_queue SET ${sets.join(', ')} WHERE category = ? AND product_id = ?`).run(...params);
-  }
-
-  function clearQueueByStatus(status) {
-    return db
-      .prepare('DELETE FROM product_queue WHERE category = ? AND status = ?')
-      .run(category, status);
-  }
-
-  function deleteQueueProduct(productId) {
-    return db
-      .prepare('DELETE FROM product_queue WHERE category = ? AND product_id = ?')
-      .run(category, productId);
-  }
-
-  function getQueueStats() {
-    return db.prepare(`
-      SELECT status, COUNT(*) as count, SUM(cost_usd_total) as total_cost
-      FROM product_queue WHERE category = ?
-      GROUP BY status
-    `).all(category);
-  }
-
-  function updateQueueProductPatch(productId, patch) {
-    const existing = getQueueProduct(productId);
-    if (!existing) return null;
-    const merged = { ...existing, ...patch };
-    upsertQueueProduct({
-      ...merged,
-      category,
-      last_urls_attempted: Array.isArray(merged.last_urls_attempted) ? merged.last_urls_attempted : [],
-      last_summary: merged.last_summary || null,
-      dirty_flags: merged.dirty_flags || null
-    });
-    return merged;
-  }
-
-  function selectNextQueueProductSql() {
-    const rows = db.prepare(`
-      SELECT * FROM product_queue
-      WHERE category = ?
-        AND status NOT IN ('complete', 'blocked', 'paused', 'skipped', 'in_progress', 'needs_manual', 'exhausted', 'failed')
-        AND (next_retry_at IS NULL OR next_retry_at = '' OR next_retry_at <= datetime('now'))
-      ORDER BY priority ASC, attempts_total ASC, updated_at ASC
-      LIMIT 50
-    `).all(category);
-
-    for (const row of rows) {
-      if (row.last_urls_attempted) try { row.last_urls_attempted = JSON.parse(row.last_urls_attempted); } catch { row.last_urls_attempted = []; }
-      if (row.dirty_flags) try { row.dirty_flags = JSON.parse(row.dirty_flags); } catch { row.dirty_flags = null; }
-      if (row.last_summary) try { row.last_summary = JSON.parse(row.last_summary); } catch { row.last_summary = null; }
-    }
-    return rows.length > 0 ? rows[0] : null;
-  }
-
   // --- Product Runs ---
 
   function upsertProductRun(row) {
@@ -222,52 +107,6 @@ export function createQueueProductStore({ db, category, stmts }) {
     return db
       .prepare('DELETE FROM products WHERE category = ? AND product_id = ?')
       .run(category, productId);
-  }
-
-  // --- Staleness marking ---
-
-  function markProductsStale(productIds, dirtyFlag) {
-    if (!productIds.length) return;
-    const tx = db.transaction(() => {
-      for (const pid of productIds) {
-        const existing = db.prepare(
-          'SELECT dirty_flags FROM product_queue WHERE category = ? AND product_id = ?'
-        ).get(category, pid);
-        let flags = [];
-        if (existing?.dirty_flags) {
-          try { flags = JSON.parse(existing.dirty_flags); } catch { flags = []; }
-        }
-        if (!flags.includes(dirtyFlag)) flags.push(dirtyFlag);
-        if (existing) {
-          db.prepare(
-            `UPDATE product_queue SET dirty_flags = ?, status = CASE WHEN status IN ('complete','exhausted') THEN 'queued' ELSE status END, updated_at = datetime('now') WHERE category = ? AND product_id = ?`
-          ).run(JSON.stringify(flags), category, pid);
-        }
-      }
-    });
-    tx();
-  }
-
-  function markProductsStaleDetailed(productIds, dirtyFlagObj) {
-    if (!productIds.length) return;
-    const tx = db.transaction(() => {
-      for (const pid of productIds) {
-        const existing = db.prepare(
-          'SELECT dirty_flags, status, priority FROM product_queue WHERE category = ? AND product_id = ?'
-        ).get(category, pid);
-        if (!existing) continue;
-        let flags = [];
-        if (existing.dirty_flags) {
-          try { flags = JSON.parse(existing.dirty_flags); } catch { flags = []; }
-        }
-        flags.push(dirtyFlagObj);
-        const newPriority = Math.min(existing.priority || 99, dirtyFlagObj.priority || 3);
-        db.prepare(
-          `UPDATE product_queue SET dirty_flags = ?, status = 'stale', priority = ?, updated_at = datetime('now') WHERE category = ? AND product_id = ? AND status IN ('complete','stale','pending','exhausted')`
-        ).run(JSON.stringify(flags), newPriority, category, pid);
-      }
-    });
-    tx();
   }
 
   // --- Curation Suggestions ---
@@ -401,15 +240,6 @@ export function createQueueProductStore({ db, category, stmts }) {
   }
 
   return {
-    upsertQueueProduct,
-    getQueueProduct,
-    getAllQueueProducts,
-    updateQueueStatus,
-    clearQueueByStatus,
-    deleteQueueProduct,
-    getQueueStats,
-    updateQueueProductPatch,
-    selectNextQueueProductSql,
     upsertProductRun,
     getLatestProductRun,
     getProductRuns,
@@ -421,8 +251,6 @@ export function createQueueProductStore({ db, category, stmts }) {
     getProduct,
     getAllProducts,
     deleteProduct,
-    markProductsStale,
-    markProductsStaleDetailed,
     upsertCurationSuggestion,
     getCurationSuggestions,
     updateCurationSuggestionStatus,

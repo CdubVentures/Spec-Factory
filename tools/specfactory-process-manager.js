@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +21,7 @@ const SPEC_FACTORY_MARKERS = Object.freeze([
   'tools\\dev-stack-control.js',
   'tools\\gui-launcher.mjs',
 ]);
-const CLI_ACTIONS = Object.freeze(['state', 'kill', 'restart', 'preflight']);
+const CLI_ACTIONS = Object.freeze(['state', 'kill', 'kill-all', 'restart', 'preflight']);
 
 function normalizeText(value) {
   return String(value || '').trim();
@@ -450,6 +450,54 @@ $details = @(Get-CimInstance Win32_Process | Where-Object {
   };
 }
 
+async function queryNativeModuleLockHolders(root) {
+  const nodePath = path.join(
+    root, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node',
+  );
+  if (!existsSync(nodePath)) {
+    return { pids: [], method: 'none' };
+  }
+
+  // Primary: inspect loaded modules for node.exe processes
+  const modulesScript = `
+$ErrorActionPreference = 'SilentlyContinue'
+$targetPath = ${toPowerShellString(nodePath)}.ToLowerInvariant()
+$pids = @()
+$method = 'modules'
+try {
+  $nodeProcs = @(Get-Process -Name node -ErrorAction SilentlyContinue)
+  foreach ($p in $nodeProcs) {
+    try {
+      $loaded = $p.Modules | Where-Object { $_.FileName -and $_.FileName.ToLowerInvariant() -eq $targetPath }
+      if ($loaded) { $pids += $p.Id }
+    } catch { }
+  }
+} catch { }
+if ($pids.Count -eq 0) {
+  $method = 'heuristic'
+  $pids = @(Get-CimInstance Win32_Process | Where-Object {
+    $_.Name -ieq 'node.exe' -and $_.CommandLine -and (
+      ($_.CommandLine -match '--test') -or
+      ($_.CommandLine -match 'npm-cli.*test') -or
+      ($_.CommandLine -match 'npm\\s+test')
+    )
+  } | Select-Object -ExpandProperty ProcessId)
+}
+if ($pids.Count -eq 0) { $method = 'none' }
+[PSCustomObject]@{ pids = @($pids | Select-Object -Unique); method = $method } | ConvertTo-Json -Compress
+`;
+
+  try {
+    const result = await runPowerShellJson(modulesScript);
+    return {
+      pids: toArray(result?.pids).map(normalizePid).filter(Boolean),
+      method: result?.method || 'none',
+    };
+  } catch {
+    return { pids: [], method: 'none' };
+  }
+}
+
 function isPidRunning(pid) {
   if (!normalizePid(pid)) {
     return false;
@@ -611,6 +659,133 @@ export async function restartManagedProcess({
   };
 }
 
+export async function killAllManagedProcesses({
+  root = process.cwd(),
+  targetPort = TARGET_PORT,
+} = {}) {
+  const killed = [];
+  const skipped = [];
+  const errors = [];
+
+  // Phase 1: known SF processes from snapshot
+  const tracked = getTrackedState(root);
+  let snapshot;
+  try {
+    snapshot = await queryProcessSnapshot(root, targetPort);
+  } catch {
+    snapshot = { portOwnerPids: [], details: [] };
+  }
+
+  const rows = buildProcessRows({
+    root,
+    tracked,
+    portOwnerPids: snapshot.portOwnerPids,
+    details: snapshot.details,
+  });
+
+  // Phase 2: native module lock holders (test runners, orphans)
+  let lockHolders;
+  try {
+    lockHolders = await queryNativeModuleLockHolders(root);
+  } catch {
+    lockHolders = { pids: [], method: 'none' };
+  }
+
+  // Build unified kill set: snapshot rows + lock holder PIDs
+  const allPids = new Map();
+
+  for (const row of rows) {
+    allPids.set(row.pid, {
+      pid: row.pid,
+      name: row.name,
+      commandLine: row.commandLine,
+      source: 'snapshot',
+      protectedProcess: row.protected_process,
+      specFactoryProcess: row.spec_factory_process,
+      running: row.running,
+    });
+  }
+
+  for (const lockPid of lockHolders.pids) {
+    if (!allPids.has(lockPid)) {
+      // Lock holder not already in snapshot — build minimal detail
+      const detail = snapshot.details.find(
+        (d) => normalizePid(d?.pid) === lockPid,
+      );
+      const name = normalizeText(detail?.name) || 'node.exe';
+      const commandLine = normalizeText(detail?.commandLine) || '';
+      allPids.set(lockPid, {
+        pid: lockPid,
+        name,
+        commandLine,
+        source: `lock_holder_${lockHolders.method}`,
+        protectedProcess: isProtectedAgentProcess(detail || {}),
+        specFactoryProcess: false,
+        running: true,
+      });
+    } else {
+      // Already in snapshot — mark as also a lock holder
+      const entry = allPids.get(lockPid);
+      entry.source = `${entry.source}+lock_holder`;
+    }
+  }
+
+  // Kill each qualifying process
+  for (const [pid, entry] of allPids) {
+    if (!entry.running) {
+      continue;
+    }
+
+    if (entry.protectedProcess) {
+      skipped.push({ pid, name: entry.name, reason: 'protected_agent_runtime' });
+      continue;
+    }
+
+    // For snapshot-only PIDs, require spec_factory_process classification.
+    // For lock holders, allow kill regardless (they loaded this repo's native module).
+    if (entry.source === 'snapshot' && !entry.specFactoryProcess) {
+      skipped.push({ pid, name: entry.name, reason: 'not_spec_factory_process' });
+      continue;
+    }
+
+    const result = await runProcess('taskkill.exe', ['/PID', String(pid), '/T', '/F'], {
+      timeoutMs: ACTION_TIMEOUT_MS,
+    });
+
+    const exited = await waitForProcessExit(pid, 5_000);
+    if (result.ok || exited) {
+      killed.push({ pid, name: entry.name, source: entry.source });
+    } else {
+      const stderr = normalizeText(result.stderr);
+      // "not found" is success — process already exited
+      if (stderr.toLowerCase().includes('not found')) {
+        killed.push({ pid, name: entry.name, source: entry.source });
+      } else {
+        errors.push({ pid, name: entry.name, error: result.error || stderr || 'taskkill_failed' });
+      }
+    }
+  }
+
+  // Clean up tracked PID files
+  const stateDir = path.join(root, STATE_DIRNAME);
+  const trackedApiPid = normalizePid(tracked.api);
+  const trackedGuiPid = normalizePid(tracked.gui);
+  const killedPids = new Set(killed.map((k) => k.pid));
+  if (trackedApiPid && killedPids.has(trackedApiPid)) {
+    try { rmSync(path.join(stateDir, 'spec-factory-api.pid'), { force: true }); } catch { /* */ }
+  }
+  if (trackedGuiPid && killedPids.has(trackedGuiPid)) {
+    try { rmSync(path.join(stateDir, 'spec-factory-gui.pid'), { force: true }); } catch { /* */ }
+  }
+
+  return {
+    ok: errors.length === 0,
+    killed,
+    skipped,
+    errors,
+  };
+}
+
 function createCliError(code) {
   const error = new Error(code);
   error.code = code;
@@ -647,13 +822,14 @@ export function parseCliRequest(argv = process.argv.slice(2)) {
     throw createCliError('unknown_argument');
   }
 
-  if (action !== 'state' && action !== 'preflight' && !pid) {
+  const pidOptionalActions = ['state', 'preflight', 'kill-all'];
+  if (!pidOptionalActions.includes(action) && !pid) {
     throw createCliError('missing_pid');
   }
 
   return {
     action,
-    pid: (action === 'state' || action === 'preflight') ? null : pid,
+    pid: pidOptionalActions.includes(action) ? null : pid,
     json: true,
   };
 }
@@ -671,6 +847,9 @@ export async function runCliRequest({
   }
   if (request.action === 'kill') {
     return killManagedProcess({ root, targetPort, pid: request.pid });
+  }
+  if (request.action === 'kill-all') {
+    return killAllManagedProcesses({ root, targetPort });
   }
   if (request.action === 'restart') {
     return restartManagedProcess({ root, targetPort, pid: request.pid });

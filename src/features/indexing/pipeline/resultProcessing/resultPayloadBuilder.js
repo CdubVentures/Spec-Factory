@@ -116,12 +116,3 @@ export function buildSerpExplorer({
   };
 }
 
-/**
- * No-op stub — discovery/candidates diagnostic dumps are no longer written.
- * Kept as a function signature for backward compat with callers.
- *
- * @returns {{}}
- */
-export async function writeDiscoveryPayloads() {
-  return {};
-}

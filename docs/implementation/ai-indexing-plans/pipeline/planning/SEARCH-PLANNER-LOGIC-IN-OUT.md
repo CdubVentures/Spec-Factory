@@ -19,7 +19,7 @@ Primary owners:
 - `queryExecutionHistory` — optional, defaults to `null`. Per-query completion state from frontierDb.
 - `config` — runtime config (LLM routing, timeouts)
 - `logger`
-- `identityLock` — `{ brand, model, variant, productId }`
+- `identityLock` — `{ brand, base_model, model, variant, productId }`
 - `missingFields` — flat missing field list
 
 Note: `variables` and `job` are NOT parameters of `runSearchPlanner()`. They are consumed by other phases.

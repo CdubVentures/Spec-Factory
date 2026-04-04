@@ -33,21 +33,22 @@ function makeMockStorage(data = {}) {
   };
 }
 
-test('readLatestArtifacts throws on missing normalized', async () => {
+test('readLatestArtifacts returns null normalized when specDb has no data', async () => {
   const storage = makeMockStorage();
-  await assert.rejects(
-    () => readLatestArtifacts(storage, 'mouse', 'p1'),
-    (err) => err.message.includes('missing_latest_normalized')
-  );
+  const result = await readLatestArtifacts(storage, 'mouse', 'p1');
+  assert.equal(result.normalized, null);
+  assert.deepEqual(result.provenance, {});
+  assert.deepEqual(result.summary, {});
 });
 
-test('readLatestArtifacts returns normalized/provenance/summary', async () => {
-  const storage = makeMockStorage({
-    'legacy/mouse/p1/latest/normalized.json': { fields: { weight: '100g' } },
-    'legacy/mouse/p1/latest/provenance.json': { weight: { confidence: 0.9 } },
-    'legacy/mouse/p1/latest/summary.json': { generated_at: '2024-01-01' }
-  });
-  const result = await readLatestArtifacts(storage, 'mouse', 'p1');
+test('readLatestArtifacts returns data from specDb when populated', async () => {
+  const storage = makeMockStorage();
+  const specDb = {
+    getNormalizedForProduct: () => ({ identity: {}, fields: { weight: '100g' } }),
+    getProvenanceForProduct: () => ({ weight: { confidence: 0.9 } }),
+    getSummaryForProduct: () => ({ generated_at: '2024-01-01' }),
+  };
+  const result = await readLatestArtifacts(storage, 'mouse', 'p1', specDb);
   assert.deepEqual(result.normalized.fields, { weight: '100g' });
   assert.ok(result.provenance.weight);
   assert.ok(result.summary.generated_at);

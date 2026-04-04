@@ -59,24 +59,6 @@ function defaultSearchTemplates(category) {
   ];
 }
 
-function defaultSourceSeed(category, templateName) {
-  const preset = TEMPLATE_PRESETS[templateName] || TEMPLATE_PRESETS.electronics;
-  return {
-    category,
-    template: templateName,
-    groups: {
-      identity: preset.common_identity,
-      physical: preset.common_physical,
-      connectivity: preset.common_connectivity,
-      performance: [],
-      features: [],
-      editorial: preset.common_editorial,
-      commerce: preset.common_commerce,
-      media: preset.common_media
-    }
-  };
-}
-
 function starterFieldDefinition({ group, fieldKey }) {
   const normalizedGroup = normalizeFieldKey(group);
   const key = normalizeFieldKey(fieldKey);
@@ -180,21 +162,16 @@ export async function initCategory({
 
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const helperCategoryRoot = path.join(helperRoot, normalizedCategory);
-  const sourceRoot = path.join(helperCategoryRoot, '_source');
   const generatedRoot = path.join(helperCategoryRoot, '_generated');
   const overridesRoot = path.join(helperCategoryRoot, '_overrides');
   const categoryConfigRoot = helperCategoryRoot;
 
-  await fs.mkdir(sourceRoot, { recursive: true });
   await fs.mkdir(generatedRoot, { recursive: true });
   await fs.mkdir(overridesRoot, { recursive: true });
-  await fs.mkdir(path.join(sourceRoot, 'component_db'), { recursive: true });
-  await fs.mkdir(path.join(sourceRoot, 'overrides'), { recursive: true });
   const schemaProvision = await ensureSharedSchemaPack(helperRoot);
 
   const createdFiles = [];
   const maybeCreated = [
-    [path.join(sourceRoot, 'field_catalog.seed.json'), defaultSourceSeed(normalizedCategory, templateName)],
     [path.join(categoryConfigRoot, 'schema.json'), defaultCategorySchema(normalizedCategory, templateName)],
     [path.join(categoryConfigRoot, 'sources.json'), defaultSources()]
   ];
@@ -213,7 +190,6 @@ export async function initCategory({
     shared_schema_copied: schemaProvision.copied,
     paths: {
       helper_category_root: helperCategoryRoot,
-      source_root: sourceRoot,
       generated_root: generatedRoot,
       overrides_root: overridesRoot,
       category_root: categoryConfigRoot
@@ -222,7 +198,7 @@ export async function initCategory({
 }
 
 /**
- * Scaffold a new category end-to-end: init seed files + compile field rules.
+ * Scaffold a new category end-to-end: init config files + compile field rules.
  * After success, loadCategoryConfig(category) will NOT throw.
  */
 export async function scaffoldCategory({ category, template = 'electronics', config = {} }) {

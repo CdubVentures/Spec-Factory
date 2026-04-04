@@ -128,8 +128,6 @@ export async function cascadeComponentMutation({
   storage,
   outputRoot,
   category,
-  loadQueueState,
-  saveQueueState,
   runtimeSpecDb,
   componentType,
   componentName,
@@ -150,8 +148,6 @@ export async function cascadeComponentMutation({
     newValue,
     variancePolicy,
     constraints,
-    loadQueueState,
-    saveQueueState,
     specDb: runtimeSpecDb,
   });
 }

@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { loadDotEnvFile, loadConfigWithUserSettings } from '../src/config.js';
 import { createStorage } from '../src/core/storage/storage.js';
-import { runUntilComplete } from '../src/runner/runUntilComplete.js';
+import { runUntilComplete } from '../src/pipeline/runUntilComplete.js';
 
 function parseArgs(argv = []) {
   const out = {};

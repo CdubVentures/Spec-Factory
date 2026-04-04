@@ -8,6 +8,7 @@ export function createDataUtilityCommands({
   ingestCsvFile,
   EventLogger,
   generateTypesForCategory,
+  openSpecDbForCategory = null,
 }) {
   async function commandIngestCsv(config, storage, args) {
     const category = String(args.category || '').trim();
@@ -19,12 +20,16 @@ export function createDataUtilityCommands({
       throw new Error('ingest-csv requires --path <csv>');
     }
     await assertCategorySchemaReady({ category, storage, config });
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
     const result = await ingestCsvFile({
       storage,
       config,
       category,
       csvPath,
-      importsRoot: args['imports-root'] || config.importsRoot
+      importsRoot: args['imports-root'] || config.importsRoot,
+      specDb,
     });
     return {
       command: 'ingest-csv',
@@ -96,59 +101,10 @@ export function createDataUtilityCommands({
     }
   }
 
-  async function commandMigrateProductIds(config, storage, args) {
-    const category = String(args.category || '').trim();
-    if (!category) throw new Error('migrate-product-ids requires --category');
-
-    const { SpecDb } = await import('../../../db/specDb.js');
-    const { migrateProductIds } = await import('../../../features/catalog/migrations/idFormatMigration.js');
-
-    const dryRun = asBool(args['dry-run']);
-    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
-    await fsNode.mkdir(dbDir, { recursive: true });
-    const dbPath = pathNode.join(dbDir, 'spec.sqlite');
-    const db = new SpecDb({ dbPath, category });
-
-    try {
-      const result = await migrateProductIds({ config, category, storage, specDb: db, dryRun });
-      return { command: 'migrate-product-ids', db_path: dbPath, ...result };
-    } finally {
-      db.close();
-    }
-  }
-
-  async function commandBackfillBrandIdentifiers(config, storage, args) {
-    const category = String(args.category || '').trim();
-    if (!category) throw new Error('backfill-brand-identifiers requires --category');
-
-    const { SpecDb } = await import('../../../db/specDb.js');
-    const { AppDb } = await import('../../../db/appDb.js');
-    const { backfillBrandIdentifier } = await import('../../../features/catalog/migrations/brandIdentifierBackfill.js');
-
-    const dryRun = asBool(args['dry-run']);
-    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
-    await fsNode.mkdir(dbDir, { recursive: true });
-    const specDbPath = pathNode.join(dbDir, 'spec.sqlite');
-    const appDbPath = pathNode.join(config.specDbDir || '.workspace/db', 'app.sqlite');
-
-    const specDb = new SpecDb({ dbPath: specDbPath, category });
-    const appDb = new AppDb({ dbPath: appDbPath });
-
-    try {
-      const result = await backfillBrandIdentifier({ config, category, appDb, specDb, dryRun });
-      return { command: 'backfill-brand-identifiers', spec_db_path: specDbPath, ...result };
-    } finally {
-      specDb.close();
-      appDb.close();
-    }
-  }
-
   return {
     commandIngestCsv,
     commandSeedDb,
     commandSeedCheckpoint,
-    commandMigrateProductIds,
-    commandBackfillBrandIdentifiers,
     commandGenerateTypes,
   };
 }

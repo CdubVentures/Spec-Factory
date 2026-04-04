@@ -78,7 +78,8 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
   const complianceRoot = path.join(tempRoot, 'compliance_repo');
 
   try {
-    const env = { CATEGORY_AUTHORITY_ROOT: tempRoot };
+    const specDbDir = path.join(tempRoot, 'db');
+    const env = { CATEGORY_AUTHORITY_ROOT: tempRoot, SPEC_DB_DIR: specDbDir };
 
     const bootstrap = await runCli([
       'expansion-bootstrap',
@@ -104,8 +105,6 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
     ], { env });
     assert.equal(harness.command, 'hardening-harness');
     assert.equal(harness.passed, true);
-    assert.equal(harness.queue_load.select_cycles_completed > 0, true);
-    assert.equal(harness.failure_injection.passed, true);
     assert.equal(harness.fuzz_source_health.passed, true);
 
     await ensureFile(path.join(complianceRoot, 'README.md'), '# hardening report\n');

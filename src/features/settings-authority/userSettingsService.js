@@ -213,7 +213,6 @@ function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
   };
 }
 
-// WHY: Settings JSON lives under .workspace/global/ (not category_authority/_runtime/).
 // Callers may pass an explicit settingsRoot for tests; production uses default.
 function resolveSettingsRoot(options = {}) {
   const source = asRecord(options);

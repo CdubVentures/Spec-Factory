@@ -560,7 +560,7 @@
       <li>For each enabled feature, check its <strong>cooldown/completion state</strong></li>
       <li>Skip features that are satisfied (checked off) unless user forces re-run</li>
       <li>Spawn remaining features as <strong>parallel async tasks</strong></li>
-      <li>Each receives the identity anchor: <code>{ brand, model, variant, category, product_id }</code></li>
+      <li>Each receives the identity anchor: <code>{ brand, base_model, model, variant, category, product_id }</code></li>
       <li>Features run independently &mdash; no dependencies between them</li>
       <li>Results stream back to GUI via existing WebSocket/event system</li>
       <li>If URL Validation is enabled, it waits for pipeline + Visual Verification to complete first</li>
@@ -948,7 +948,7 @@
       <h2>Hex Color Mapping</h2>
     </div>
 
-    <p>Hex codes are now stored in the <code>color_registry</code> table and served dynamically via the CRUD API &mdash; no hardcoded palette. The registry contains 77 colors (36 base + 23 light + 18 dark variants) seeded from the EG CSS palette. The LLM must map discovered product colors to registered canonical names. If a product color doesn&rsquo;t match a known name, the model returns the nearest canonical name + the actual hex. New colors are added to the registry, not to code.</p>
+    <p>Hex codes are now stored in the <code>color_registry</code> table and served dynamically via the CRUD API &mdash; no hardcoded palette. The registry contains 77 colors (36 base + 23 light + 18 dark variants) seeded from the EG CSS palette. The LLM must map discovered product colors to registered canonical names. If a product color doesn&rsquo;t match a known name, the model returns the nearest registered color by hex similarity. New colors are added to the registry only via the GUI or API &mdash; the LLM cannot create new color atoms.</p>
 
     <h3>EG Site Canonical Color Palette</h3>
     <div class="tbl-wrap">
@@ -1216,7 +1216,7 @@
         <tbody>
           <tr>
             <td><strong>Identity Anchor</strong></td>
-            <td><code>{ brand, model, variant, sku }</code></td>
+            <td><code>{ brand, base_model, model, variant, sku }</code></td>
             <td>~50</td>
             <td>Text-level product identity</td>
           </tr>

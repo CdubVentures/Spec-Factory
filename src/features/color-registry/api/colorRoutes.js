@@ -7,7 +7,9 @@ export function registerColorRoutes(ctx) {
   const { jsonRes, readJsonBody, appDb, broadcastWs, colorRegistryPath, writeBackColorRegistry } = ctx;
 
   function afterMutation() {
-    writeBackColorRegistry(appDb, colorRegistryPath).catch(() => {});
+    writeBackColorRegistry(appDb, colorRegistryPath).catch((err) => {
+      console.warn('[mirror-write] color_registry.json write-back failed:', err?.message || err);
+    });
   }
 
   return async function handleColorRoutes(parts, params, method, req, res) {

@@ -73,7 +73,7 @@ test('commandIndexLab characterization: existing fixture file is read via s3Key'
   const existingJob = {
     productId: 'mouse-abc12345',
     category: 'mouse',
-    identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
+    identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
     seedUrls: [],
   };
   const storage = createMockStorage();
@@ -112,6 +112,7 @@ test('commandIndexLab characterization: --brand/--model creates fixture with tho
   assert.equal(storage.written.length, 1, 'one fixture written');
   const written = storage.written[0];
   assert.equal(written.parsed.identityLock.brand, 'Logitech');
+  assert.equal(written.parsed.identityLock.base_model, 'G502 X Plus');
   assert.equal(written.parsed.identityLock.model, 'G502 X Plus');
   assert.ok(written.key.startsWith('specs/inputs/mouse/products/'));
 });
@@ -129,6 +130,7 @@ test('commandIndexLab characterization: no args creates fixture with unknown def
   assert.equal(storage.written.length, 1, 'one fixture written');
   const written = storage.written[0];
   assert.equal(written.parsed.identityLock.brand, 'unknown');
+  assert.equal(written.parsed.identityLock.base_model, 'unknown-model');
   assert.equal(written.parsed.identityLock.model, 'unknown-model');
 });
 
@@ -146,6 +148,7 @@ test('commandIndexLab characterization: --seed "Razer Viper V3 Pro" parses brand
   assert.equal(storage.written.length, 1, 'one fixture written');
   const written = storage.written[0];
   assert.equal(written.parsed.identityLock.brand, 'Razer');
+  assert.equal(written.parsed.identityLock.base_model, 'Viper V3 Pro');
   assert.equal(written.parsed.identityLock.model, 'Viper V3 Pro');
 });
 
@@ -207,7 +210,8 @@ test('commandIndexLab: --brand/--model builds jobOverride directly (no DB needed
   const call = mockRun.calls[0];
   assert.ok(call.jobOverride, 'jobOverride should be set from CLI args');
   assert.equal(call.jobOverride.identityLock.brand, 'Corsair');
-  assert.equal(call.jobOverride.identityLock.model, 'M75 Air');
+  assert.equal(call.jobOverride.identityLock.base_model, 'M75 Air');
+  assert.equal(call.jobOverride.identityLock.model, 'M75 Air White');
   assert.equal(call.jobOverride.identityLock.variant, 'White');
   assert.equal(call.jobOverride.productId, 'mouse-test999');
 });

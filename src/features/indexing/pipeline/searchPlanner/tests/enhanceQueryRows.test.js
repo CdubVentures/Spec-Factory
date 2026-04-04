@@ -5,7 +5,7 @@ import { enhanceQueryRows } from '../queryPlanner.js';
 // --- Factories ---
 
 function makeIdentityLock(overrides = {}) {
-  return { brand: 'Logitech', model: 'G Pro X Superlight 2', variant: '', ...overrides };
+  return { brand: 'Logitech', base_model: 'G Pro X Superlight 2', variant: '', ...overrides };
 }
 
 function makeTier1Row(overrides = {}) {

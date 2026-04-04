@@ -106,8 +106,11 @@ test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local liv
     await handler(['indexlab', 'run', canonicalRunId, 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
     const body = parseResBody(res);
 
-    // SQL is SSOT — disk-only fixtures with getSpecDbReady: () => false produce no meta
-    assert.equal(res.statusCode, 404);
+    // WHY: Disk fallback resolves canonical run_id by scanning run directories
+    // and matching run.json metadata. Returns 200 with summary data.
+    assert.equal(res.statusCode, 200);
+    assert.ok(body, 'response body should be parseable JSON');
+    assert.equal(body.run_id, canonicalRunId);
   } finally {
     await cleanupTempRoot(tempRoot);
   }

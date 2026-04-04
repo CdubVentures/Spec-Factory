@@ -45,7 +45,6 @@ export function createDiscoverCommand({
           key,
           productId: job.productId,
           runId,
-          candidates_key: result.candidatesKey,
           candidate_count: result.candidates.length,
         });
       }

@@ -334,7 +334,7 @@ export function ProductManager() {
           model: '',
           variant,
           status: 'invalid',
-          reason: 'Model is required',
+          reason: 'Base model is required',
           productId: ''
         });
         continue;
@@ -642,7 +642,7 @@ export function ProductManager() {
                 {hasAnyChange && (
                   <div className="space-y-0.5 sf-status-text-warning sf-status-text-warning text-[11px]">
                     {hasIdentityChange && (
-                      <p>Identity metadata updated (brand/model/variant). Slug and artifact paths are unchanged.</p>
+                  <p>Identity metadata updated (brand/base model/variant). Slug and artifact paths are unchanged.</p>
                     )}
                     {isStatusChange && (
                       <div>
@@ -672,7 +672,7 @@ export function ProductManager() {
 
                 {/* Hint when no changes */}
                 {!hasAnyChange && (
-                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run. Identity changes (brand/model/variant) update metadata only — the product ID is immutable.</p>
+                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run. Identity changes (brand/base model/variant) update metadata only — the product ID is immutable.</p>
                 )}
               </div>
             </div>
@@ -776,8 +776,8 @@ export function ProductManager() {
           <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden bg-white sf-bg-surface-soft rounded border sf-border-default sf-border-default shadow-2xl flex flex-col">
             <div className="px-4 py-3 border-b sf-border-default sf-border-default flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-semibold">Bulk Paste Models + Variants</h4>
-                <p className="text-xs sf-text-muted mt-0.5">Type or paste <strong>Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from your spreadsheet tool).</p>
+                <h4 className="text-sm font-semibold">Bulk Paste Base Models + Variants</h4>
+                <p className="text-xs sf-text-muted mt-0.5">Type or paste <strong>Base Model</strong> and <strong>Variant</strong> columns (supports tab-separated paste from your spreadsheet tool).</p>
               </div>
               <button
                 onClick={closeBulkModal}
@@ -837,7 +837,7 @@ export function ProductManager() {
                   <thead className="sticky top-0 sf-bg-surface-soft sf-dk-surface-900a70 border-b sf-border-default sf-border-default">
                     <tr>
                       <th className="text-left px-2 py-1.5 w-12">#</th>
-                      <th className="text-left px-2 py-1.5">Model</th>
+                      <th className="text-left px-2 py-1.5">Base Model</th>
                       <th className="text-left px-2 py-1.5">Variant</th>
                       <th className="text-left px-2 py-1.5">Product ID</th>
                       <th className="text-left px-2 py-1.5 w-36">Status</th>

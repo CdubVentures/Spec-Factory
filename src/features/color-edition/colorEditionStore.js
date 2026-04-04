@@ -5,10 +5,12 @@
  * This is the durable SSOT — the SQL table is rebuilt from these files.
  *
  * Invariants:
- * - First-discovery-wins: existing color/edition attributions are never overwritten
+ * - Latest-wins: top-level `selected` always reflects the latest run's output
  * - Colors use modifier-first naming (light-blue, not blue-light)
  * - Multi-color combos use + separator, dominant-first (black+red)
- * - run_count increments on every merge
+ * - colors[0] IS the default color
+ * - Each run stores full prompt + response for auditability
+ * - Deleting a run recalculates selected from the new latest run
  */
 
 import fs from 'node:fs';
@@ -26,12 +28,11 @@ function emptyTemplate(productId, category) {
   return {
     product_id: productId || '',
     category: category || '',
+    selected: { colors: [], editions: {}, default_color: '' },
     cooldown_until: '',
-    default_color: '',
-    run_count: 0,
     last_ran_at: '',
-    colors: {},
-    editions: {},
+    run_count: 0,
+    runs: [],
   };
 }
 
@@ -58,46 +59,75 @@ export function writeColorEdition({ productId, productRoot, data }) {
 }
 
 /**
- * Merge new discovery results into existing file. Read-merge-write.
+ * Recalculate all derived state from a runs array.
+ * Pure function — selected = latest run's selected values.
  *
- * First-discovery-wins: existing color/edition keys are never overwritten.
- * run_count increments. Timestamps update to latest.
+ * @param {object[]} runs — array of run entries (must have run_number, selected, cooldown_until, ran_at)
+ * @param {string} productId
+ * @param {string} category
+ * @returns {object} { product_id, category, selected, cooldown_until, last_ran_at, run_count, runs }
+ */
+export function recalculateCumulativeFromRuns(runs, productId, category) {
+  if (!runs || runs.length === 0) {
+    return {
+      ...emptyTemplate(productId, category),
+      runs: [],
+    };
+  }
+
+  // Latest run = highest run_number
+  const sorted = [...runs].sort((a, b) => a.run_number - b.run_number);
+  const latest = sorted[sorted.length - 1];
+
+  return {
+    product_id: productId || '',
+    category: category || '',
+    selected: latest.selected || { colors: [], editions: {}, default_color: '' },
+    cooldown_until: latest.cooldown_until || '',
+    last_ran_at: latest.ran_at || '',
+    run_count: runs.length,
+    runs: sorted,
+  };
+}
+
+/**
+ * Merge new discovery results into existing file. Appends run + sets selected.
+ *
+ * Latest-wins: top-level `selected` is always the latest run's output.
  *
  * @param {object} opts
  * @param {string} opts.productId
  * @param {string} [opts.productRoot]
- * @param {object} opts.newDiscovery — { category, colors, editions, default_color?, cooldown_until, last_ran_at }
+ * @param {object} opts.newDiscovery — { category, cooldown_until, last_ran_at }
+ * @param {object} opts.run — { model, fallback_used, selected, prompt, response }
  * @returns {object} The merged document (also written to disk)
  */
-export function mergeColorEditionDiscovery({ productId, productRoot, newDiscovery }) {
+export function mergeColorEditionDiscovery({ productId, productRoot, newDiscovery, run }) {
   const existing = readColorEdition({ productId, productRoot })
     || emptyTemplate(productId, newDiscovery.category);
 
-  // Merge colors — first-discovery-wins
-  const mergedColors = { ...existing.colors };
-  for (const [name, meta] of Object.entries(newDiscovery.colors || {})) {
-    if (!mergedColors[name]) {
-      mergedColors[name] = meta;
-    }
-  }
+  const existingRuns = Array.isArray(existing.runs) ? existing.runs : [];
+  const runNumber = (existing.run_count || existingRuns.length || 0) + 1;
 
-  // Merge editions — first-discovery-wins
-  const mergedEditions = { ...existing.editions };
-  for (const [name, meta] of Object.entries(newDiscovery.editions || {})) {
-    if (!mergedEditions[name]) {
-      mergedEditions[name] = meta;
-    }
-  }
+  const runEntry = {
+    run_number: runNumber,
+    ran_at: newDiscovery.last_ran_at || new Date().toISOString(),
+    model: run.model || 'unknown',
+    fallback_used: Boolean(run.fallback_used),
+    cooldown_until: newDiscovery.cooldown_until || '',
+    selected: run.selected || { colors: [], editions: {}, default_color: '' },
+    prompt: run.prompt || { system: '', user: '' },
+    response: run.response || { colors: [], editions: {}, default_color: '' },
+  };
 
   const merged = {
-    ...existing,
+    product_id: existing.product_id || productId || '',
     category: existing.category || newDiscovery.category || '',
+    selected: runEntry.selected,
     cooldown_until: newDiscovery.cooldown_until || existing.cooldown_until || '',
-    default_color: newDiscovery.default_color || existing.default_color || '',
-    run_count: (existing.run_count || 0) + 1,
     last_ran_at: newDiscovery.last_ran_at || existing.last_ran_at || '',
-    colors: mergedColors,
-    editions: mergedEditions,
+    run_count: runNumber,
+    runs: [...existingRuns, runEntry],
   };
 
   writeColorEdition({ productId, productRoot, data: merged });
@@ -105,9 +135,57 @@ export function mergeColorEditionDiscovery({ productId, productRoot, newDiscover
 }
 
 /**
+ * Delete a single run by run_number. Recalculates selected from remaining runs.
+ * If no runs remain, deletes the file and returns null.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} [opts.productRoot]
+ * @param {number} opts.runNumber
+ * @returns {object|null} Updated doc, or null if file deleted
+ */
+export function deleteColorEditionFinderRun({ productId, productRoot, runNumber }) {
+  const existing = readColorEdition({ productId, productRoot });
+  if (!existing) return null;
+
+  const existingRuns = Array.isArray(existing.runs) ? existing.runs : [];
+  const remaining = existingRuns.filter(r => r.run_number !== runNumber);
+
+  // Nothing was removed — return as-is
+  if (remaining.length === existingRuns.length) {
+    return existing;
+  }
+
+  // No runs left — delete file
+  if (remaining.length === 0) {
+    const filePath = resolvePath(productId, productRoot);
+    try { fs.unlinkSync(filePath); } catch { /* */ }
+    return null;
+  }
+
+  // Recalculate from remaining runs
+  const recalculated = recalculateCumulativeFromRuns(remaining, existing.product_id || productId, existing.category);
+  writeColorEdition({ productId, productRoot, data: recalculated });
+  return recalculated;
+}
+
+/**
+ * Delete all color edition data for a product. Removes the JSON file.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} [opts.productRoot]
+ * @returns {{ deleted: true }}
+ */
+export function deleteColorEditionFinderAll({ productId, productRoot }) {
+  const filePath = resolvePath(productId, productRoot);
+  try { fs.unlinkSync(filePath); } catch { /* */ }
+  return { deleted: true };
+}
+
+/**
  * Rebuild the color_edition_finder SQL table from per-product JSON files.
- * Scans all product directories for color_edition.json and upserts into specDb.
- * Only seeds rows matching specDb.category.
+ * Handles both new format (selected.colors) and legacy format (colors as object keys).
  *
  * @param {object} opts
  * @param {object} opts.specDb — SpecDb instance with upsertColorEditionFinder
@@ -136,12 +214,25 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       continue;
     }
 
+    // Handle new format (selected.colors) and legacy format (colors as object keys)
+    const colors = data.selected?.colors
+      ? data.selected.colors
+      : (data.colors ? Object.keys(data.colors) : []);
+
+    const editions = data.selected?.editions
+      ? Object.keys(data.selected.editions)
+      : (data.editions ? Object.keys(data.editions) : []);
+
+    const defaultColor = data.selected?.default_color
+      || data.default_color
+      || '';
+
     specDb.upsertColorEditionFinder({
       category: data.category,
       product_id: data.product_id || entry.name,
-      colors: Object.keys(data.colors || {}),
-      editions: Object.keys(data.editions || {}),
-      default_color: data.default_color || '',
+      colors,
+      editions,
+      default_color: defaultColor,
       cooldown_until: data.cooldown_until || '',
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,

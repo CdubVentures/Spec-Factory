@@ -39,7 +39,9 @@ export function createLlmSettingsHandler({
       // WHY: Mirror SQL to durable JSON so custom route edits survive spec.sqlite rebuild.
       if (HELPER_ROOT) {
         const fkoPath = path.join(HELPER_ROOT, category, '_control_plane', 'llm_route_matrix.json');
-        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: saved }, null, 2)).catch(() => {});
+        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: saved }, null, 2)).catch((err) => {
+          console.warn('[mirror-write] llm_route_matrix.json write-back failed:', err?.message || err);
+        });
       }
       emitDataChange({
         broadcastWs,
@@ -58,7 +60,9 @@ export function createLlmSettingsHandler({
       // WHY: Clear the JSON mirror so reseed generates defaults, not stale custom state.
       if (HELPER_ROOT) {
         const fkoPath = path.join(HELPER_ROOT, category, '_control_plane', 'llm_route_matrix.json');
-        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: [] }, null, 2)).catch(() => {});
+        fsPromises.writeFile(fkoPath, JSON.stringify({ rows: [] }, null, 2)).catch((err) => {
+          console.warn('[mirror-write] llm_route_matrix.json reset write-back failed:', err?.message || err);
+        });
       }
       emitDataChange({
         broadcastWs,

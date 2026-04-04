@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { nowIso, buildProductId } from '../shared/primitives.js';
-import { upsertQueueProduct } from '../queue/queueState.js';
 
 
 function safeJsonParse(value, fallback = null) {
@@ -144,11 +143,14 @@ async function writeImportState(filePath, state) {
 }
 
 function normalizeIdentityLock(row) {
+  const base_model = String(row.base_model || '').trim();
+  const variant = String(row.variant || '').trim();
+  const model = [base_model, variant].filter(Boolean).join(' ').trim();
   return {
     brand: String(row.brand || '').trim(),
-    base_model: String(row.base_model || '').trim(),
-    model: String(row.model || '').trim(),
-    variant: String(row.variant || '').trim(),
+    base_model,
+    model,
+    variant,
     sku: String(row.sku || '').trim(),
     mpn: String(row.mpn || '').trim(),
     gtin: String(row.gtin || '').trim()
@@ -195,7 +197,8 @@ export async function ingestCsvFile({
   config,
   category,
   csvPath,
-  importsRoot = config.importsRoot || 'imports'
+  importsRoot = config.importsRoot || 'imports',
+  specDb = null,
 }) {
   const paths = categoryImportPaths(importsRoot, category);
   await ensureDir(paths.root);
@@ -226,7 +229,7 @@ export async function ingestCsvFile({
     if (!job) {
       invalidRows.push({
         row: row.__row,
-        reason: 'missing_brand_or_model'
+        reason: 'missing_brand_or_base_model'
       });
       continue;
     }
@@ -234,17 +237,6 @@ export async function ingestCsvFile({
   }
 
   for (const job of jobs) {
-    await upsertQueueProduct({
-      storage,
-      category,
-      productId: job.productId,
-      s3key: '',
-      patch: {
-        status: 'pending',
-        next_action_hint: 'fast_pass'
-      }
-    });
-
     state.products[job.productId] = {
       last_seen_at: nowIso(),
       source_file: path.basename(csvPath)
@@ -298,7 +290,8 @@ export async function ingestIncomingCsvs({
   storage,
   config,
   category,
-  importsRoot = config.importsRoot || 'imports'
+  importsRoot = config.importsRoot || 'imports',
+  specDb = null,
 }) {
   const files = await discoverIncomingCsvFiles({ category, importsRoot });
   const runs = [];
@@ -309,7 +302,8 @@ export async function ingestIncomingCsvs({
         config,
         category,
         csvPath,
-        importsRoot
+        importsRoot,
+        specDb,
       });
       runs.push({
         ok: true,

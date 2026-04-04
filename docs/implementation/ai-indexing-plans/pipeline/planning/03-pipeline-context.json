@@ -31,7 +31,7 @@
       "learnedQueries": "object -- query templates from loadLearningArtifacts()",
       "fieldYieldByDomain": "object -- from loadLearningArtifacts()"
     },
-    "enrichedLexicon": "object -- mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints)",
+    "enrichedLexicon": "object -- built from learning.lexicon (JSON learning artifacts)",
     "searchProfileCaps": "object -- from resolveSearchProfileCaps() (no config param, returns hardcoded defaults)",
     "identityLock": {
       "brand": "string",
@@ -128,8 +128,8 @@
       "Apply brand promotions to categoryConfig (sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry)",
       "resolveJobIdentity(job) -> resolvedIdentity, variables",
       "Normalize missingFields from planningHints + job.requirements",
-      "loadLearningArtifacts() -> learning",
-      "mergeLearningStoreHintsIntoLexicon() -> enrichedLexicon",
+      "loadLearningArtifacts() -> learning (JSON files)",
+      "Build enrichedLexicon from learning.lexicon",
       "resolveSearchProfileCaps() -> searchProfileCaps (hardcoded defaults, no config param)",
       "Build identityLock from job fields"
     ],

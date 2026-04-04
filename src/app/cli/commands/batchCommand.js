@@ -56,10 +56,7 @@ export function createBatchCommand({
       };
     }
 
-    const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-    const summary = specDb
-      ? specDb.getSummaryForProduct(productId)
-      : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
+    const summary = specDb ? specDb.getSummaryForProduct(productId) : null;
     return {
       key,
       productId,

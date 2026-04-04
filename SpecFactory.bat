@@ -130,34 +130,24 @@ echo     Full Reload
 echo   ============================================
 echo.
 
-echo   [1/4] Killing tracked Spec Factory processes...
-set "STATE_DIR=%ROOT%\.server-state"
-for %%f in ("%STATE_DIR%\*.pid") do (
-  set /p PID=<"%%f"
-  if defined PID (
-    tasklist /FI "PID eq !PID!" 2>nul | find "!PID!" >nul 2>nul
-    if !ERRORLEVEL! EQU 0 (
-      echo         Killing tracked PID !PID! ^(%%~nxf^)
-      taskkill /F /PID !PID! >nul 2>nul
-    ) else (
-      echo         Tracked PID !PID! already gone ^(%%~nxf^)
-    )
-    del "%%f" >nul 2>nul
-  )
-  set "PID="
-)
-for /f "tokens=5" %%p in ('netstat -aon ^| findstr ":8788 " ^| findstr "LISTENING"') do (
-  if "%%p" NEQ "0" (
-    echo         Killing leftover process on port 8788 ^(PID %%p^)
-    taskkill /F /PID %%p >nul 2>nul
-  )
+echo   [1/4] Killing all Spec Factory processes (including lock holders)...
+call node tools\specfactory-process-manager.js kill-all
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [WARNING] Some processes may not have been killed. Continuing...
 )
 timeout /t 2 /nobreak >nul
 echo         Done.
 echo.
 
-echo   [2/4] Rebuilding native modules...
-call npm rebuild better-sqlite3 2>nul
+echo   [2/4] Checking native modules...
+call node tools\nativeModulePreflight.js
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Native module check failed. Cannot proceed.
+  echo   Try closing all Node processes and run: npm rebuild better-sqlite3
+  goto :done
+)
 echo         Done.
 echo.
 
@@ -172,12 +162,21 @@ echo         Done.
 echo.
 
 echo   [4/4] Starting server and opening browser...
+del "%ROOT%\.server-state\spec-factory-api.log" >nul 2>nul
 call node tools\dev-stack-control.js start-api
 if %ERRORLEVEL% NEQ 0 (
   echo.
-  echo   [ERROR] Server failed to start. Check .server-state\spec-factory-api.log
+  echo   [ERROR] Server failed to start.
+  echo.
+  echo   --- Server startup log ---
+  powershell -NoProfile -Command "if (Test-Path '.server-state\spec-factory-api.log') { Get-Content '.server-state\spec-factory-api.log' -Tail 30 } else { Write-Host '  (no log file found)' }"
+  echo   ---
   goto :done
 )
+echo.
+echo   --- Server startup log ---
+powershell -NoProfile -Command "if (Test-Path '.server-state\spec-factory-api.log') { Get-Content '.server-state\spec-factory-api.log' -Tail 20 } else { Write-Host '  (no log file found)' }"
+echo   ---
 echo.
 echo   ============================================
 echo     Reload complete!  http://localhost:8788
@@ -234,28 +233,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo         Done.
 echo.
 echo   [2/3] Stopping API server...
-set "STATE_DIR=%ROOT%\.server-state"
-set "API_PID_FILE=%STATE_DIR%\spec-factory-api.pid"
-if exist "%API_PID_FILE%" (
-  set /p PID=<"%API_PID_FILE%"
-  if defined PID (
-    tasklist /FI "PID eq !PID!" 2>nul | find "!PID!" >nul 2>nul
-    if !ERRORLEVEL! EQU 0 (
-      echo         Killing API PID !PID!
-      taskkill /F /PID !PID! >nul 2>nul
-    ) else (
-      echo         API PID !PID! already gone.
-    )
-    del "%API_PID_FILE%" >nul 2>nul
-  )
-  set "PID="
-)
-for /f "tokens=5" %%p in ('netstat -aon ^| findstr ":8788 " ^| findstr "LISTENING"') do (
-  if "%%p" NEQ "0" (
-    echo         Killing leftover process on port 8788 ^(PID %%p^)
-    taskkill /F /PID %%p >nul 2>nul
-  )
-)
+call node tools\specfactory-process-manager.js kill-all
 timeout /t 2 /nobreak >nul
 echo         Done.
 echo.
@@ -279,8 +257,13 @@ if /I "%~2"=="--quick" set "QUICK_MODE=1"
 call :check_node
 if %ERRORLEVEL% NEQ 0 goto :done
 echo.
-echo   Rebuilding native modules...
-call npm rebuild better-sqlite3 2>nul
+echo   Checking native modules...
+call node tools\nativeModulePreflight.js
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Native module check failed.
+  goto :done
+)
 echo   Building GUI...
 call npm run gui:build
 if %ERRORLEVEL% NEQ 0 (
@@ -298,8 +281,13 @@ set "QUICK_MODE=1"
 call :check_node
 if %ERRORLEVEL% NEQ 0 goto :done
 echo.
-echo   Rebuilding native modules...
-call npm rebuild better-sqlite3 2>nul
+echo   Checking native modules...
+call node tools\nativeModulePreflight.js
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Native module check failed.
+  goto :done
+)
 echo   Building GUI...
 call npm run gui:build
 if %ERRORLEVEL% NEQ 0 (
@@ -376,39 +364,17 @@ goto :done
 
 :: ── Kill Processes ────────────────────────────────────────────────────
 :action_kill
+call :check_node
+if %ERRORLEVEL% NEQ 0 goto :done
 echo.
-echo   Killing tracked Spec Factory processes...
-set "STATE_DIR=%ROOT%\.server-state"
-set "KILLED=0"
-
-for %%f in ("%STATE_DIR%\*.pid") do (
-  set /p PID=<"%%f"
-  if defined PID (
-    tasklist /FI "PID eq !PID!" 2>nul | find "!PID!" >nul 2>nul
-    if !ERRORLEVEL! EQU 0 (
-      echo     Killing tracked PID !PID! ^(%%~nxf^)
-      taskkill /F /PID !PID! >nul 2>nul
-      set /a KILLED+=1
-    ) else (
-      echo     Tracked PID !PID! already gone ^(%%~nxf^)
-    )
-    del "%%f" >nul 2>nul
-  )
-  set "PID="
-)
-
-for /f "tokens=5" %%p in ('netstat -aon ^| findstr ":8788 " ^| findstr "LISTENING"') do (
-  if "%%p" NEQ "0" (
-    echo     Killing port 8788 owner ^(PID %%p^)
-    taskkill /F /PID %%p >nul 2>nul
-    set /a KILLED+=1
-  )
-)
-
-if "!KILLED!"=="0" (
-  echo     No Spec Factory processes found.
+echo   Killing all Spec Factory processes (including lock holders)...
+call node tools\specfactory-process-manager.js kill-all
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [WARNING] Some processes may not have been killed.
 ) else (
-  echo     Killed !KILLED! process^(es^).
+  echo.
+  echo   All Spec Factory processes killed.
 )
 goto :done
 

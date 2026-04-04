@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { SpecDb } from '../../../db/specDb.js';
 import { runColorEditionFinder } from '../colorEditionFinder.js';
+import { readColorEdition } from '../colorEditionStore.js';
 
 const TMP_ROOT = path.join(os.tmpdir(), `cef-finder-test-${Date.now()}`);
 const DB_DIR = path.join(TMP_ROOT, '_db');
@@ -15,19 +16,14 @@ function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
 }
 
-// Stub appDb with in-memory color registry
 function makeAppDbStub(colors = []) {
   const registry = new Map(colors.map(c => [c.name, c]));
   return {
     listColors: () => [...registry.values()],
-    upsertColor: ({ name, hex, css_var }) => {
-      registry.set(name, { name, hex, css_var });
-    },
     _registry: registry,
   };
 }
 
-// Stub LLM caller that returns a canned response
 function makeLlmStub(response) {
   let callCount = 0;
   const stub = async () => {
@@ -62,7 +58,7 @@ describe('runColorEditionFinder', () => {
     cleanup(TMP_ROOT);
   });
 
-  it('happy path: known colors returned, merged to JSON + SQL', async () => {
+  it('happy path: returns colors + editions with paired structure', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
       { name: 'white', hex: '#ffffff', css_var: '--color-white' },
@@ -74,88 +70,95 @@ describe('runColorEditionFinder', () => {
       specDb,
       config: {},
       logger: null,
-      colorRegistryPath: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: ['black', 'white'],
-        editions: ['cyberpunk-2077-edition'],
-        new_colors: [],
+        editions: { 'cyberpunk-2077-edition': { colors: ['black'] } },
+        default_color: 'black',
       }),
     });
 
     assert.deepEqual(result.colors, ['black', 'white']);
-    assert.deepEqual(result.editions, ['cyberpunk-2077-edition']);
-    assert.equal(result.newColorsRegistered.length, 0);
-
-    // Verify SQL
-    const row = specDb.getColorEditionFinder('mouse-001');
-    assert.ok(row);
-    assert.deepEqual(row.colors, ['black', 'white']);
-    assert.deepEqual(row.editions, ['cyberpunk-2077-edition']);
-
-    // Verify JSON
-    const json = JSON.parse(fs.readFileSync(
-      path.join(PRODUCT_ROOT, 'mouse-001', 'color_edition.json'), 'utf8'
-    ));
-    assert.ok(json.colors.black);
-    assert.ok(json.colors.white);
-    assert.ok(json.editions['cyberpunk-2077-edition']);
+    assert.deepEqual(result.editions, { 'cyberpunk-2077-edition': { colors: ['black'] } });
+    assert.equal(result.default_color, 'black');
   });
 
-  it('new color auto-registered in appDb', async () => {
+  it('stores run with prompt and response in JSON', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
     ]);
 
-    const result = await runColorEditionFinder({
-      product: { ...PRODUCT, product_id: 'mouse-new-color' },
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-prompt' },
       appDb,
       specDb,
-      config: {},
+      config: { llmModelPlan: 'gpt-5.4' },
       logger: null,
-      colorRegistryPath: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'seafoam'],
-        editions: [],
-        new_colors: [{ name: 'seafoam', hex: '#20b2aa' }],
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
       }),
     });
 
-    assert.equal(result.newColorsRegistered.length, 1);
-    assert.equal(result.newColorsRegistered[0].name, 'seafoam');
-    assert.ok(appDb._registry.has('seafoam'), 'seafoam registered in appDb');
-    assert.equal(appDb._registry.get('seafoam').hex, '#20b2aa');
-    assert.equal(appDb._registry.get('seafoam').css_var, '--color-seafoam');
+    const json = readColorEdition({ productId: 'mouse-prompt', productRoot: PRODUCT_ROOT });
+    assert.ok(json.runs);
+    assert.equal(json.runs.length, 1);
+    assert.ok(json.runs[0].prompt.system.length > 0, 'system prompt captured');
+    assert.ok(json.runs[0].prompt.user.length > 0, 'user message captured');
+    assert.deepEqual(json.runs[0].response.colors, ['black']);
+    assert.equal(json.runs[0].model, 'gpt-5.4');
   });
 
-  it('default_color derived from colors[0]', async () => {
+  it('selected at top level matches latest run output', async () => {
     const appDb = makeAppDbStub([
-      { name: 'red', hex: '#ff0000', css_var: '--color-red' },
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
     ]);
 
     await runColorEditionFinder({
-      product: { ...PRODUCT, product_id: 'mouse-default' },
+      product: { ...PRODUCT, product_id: 'mouse-selected' },
       appDb,
       specDb,
       config: {},
       logger: null,
-      colorRegistryPath: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['red'],
-        editions: [],
-        new_colors: [],
+        colors: ['black'],
+        editions: { 'launch': { colors: ['black'] } },
+        default_color: 'black',
       }),
     });
 
-    const row = specDb.getColorEditionFinder('mouse-default');
-    assert.equal(row.default_color, 'red');
+    const json = readColorEdition({ productId: 'mouse-selected', productRoot: PRODUCT_ROOT });
+    assert.deepEqual(json.selected.colors, ['black']);
+    assert.deepEqual(json.selected.editions, { 'launch': { colors: ['black'] } });
+    assert.equal(json.selected.default_color, 'black');
+  });
 
-    const json = JSON.parse(fs.readFileSync(
-      path.join(PRODUCT_ROOT, 'mouse-default', 'color_edition.json'), 'utf8'
-    ));
-    assert.equal(json.default_color, 'red');
+  it('SQL summary updated with new editions format', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-sql' },
+      appDb,
+      specDb,
+      config: {},
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: { 'launch': { colors: ['black'] } },
+        default_color: 'black',
+      }),
+    });
+
+    const row = specDb.getColorEditionFinder('mouse-sql');
+    assert.ok(row);
+    assert.deepEqual(row.colors, ['black']);
+    assert.equal(row.default_color, 'black');
   });
 
   it('empty colors/editions handled gracefully', async () => {
@@ -167,24 +170,24 @@ describe('runColorEditionFinder', () => {
       specDb,
       config: {},
       logger: null,
-      colorRegistryPath: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [],
-        editions: [],
-        new_colors: [],
+        editions: {},
+        default_color: '',
       }),
     });
 
     assert.deepEqual(result.colors, []);
-    assert.deepEqual(result.editions, []);
+    assert.deepEqual(result.editions, {});
+    assert.equal(result.default_color, '');
   });
 
   it('cooldown set to 30 days from now', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
     ]);
-    const before = Date.now();
+    const beforeMs = Date.now();
 
     await runColorEditionFinder({
       product: { ...PRODUCT, product_id: 'mouse-cooldown' },
@@ -192,21 +195,63 @@ describe('runColorEditionFinder', () => {
       specDb,
       config: {},
       logger: null,
-      colorRegistryPath: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: ['black'],
-        editions: [],
-        new_colors: [],
+        editions: {},
+        default_color: 'black',
       }),
     });
 
     const row = specDb.getColorEditionFinder('mouse-cooldown');
     const cooldownDate = new Date(row.cooldown_until).getTime();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    const expectedMin = before + thirtyDaysMs - 5000;
+    const expectedMin = beforeMs + thirtyDaysMs - 5000;
     const expectedMax = Date.now() + thirtyDaysMs + 5000;
     assert.ok(cooldownDate >= expectedMin, 'cooldown at least ~30 days out');
     assert.ok(cooldownDate <= expectedMax, 'cooldown not more than ~30 days out');
+  });
+
+  it('second run receives previousRuns in prompt context', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+    ]);
+
+    // First run
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-history' },
+      appDb,
+      specDb,
+      config: { llmModelPlan: 'gpt-5.4' },
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    // Second run — prompt should include history
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-history' },
+      appDb,
+      specDb,
+      config: { llmModelPlan: 'gpt-6' },
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'red'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-history', productRoot: PRODUCT_ROOT });
+    assert.equal(json.runs.length, 2);
+    // Second run's prompt should reference current selected state
+    assert.ok(json.runs[1].prompt.system.includes('Currently selected'), 'prompt includes selected state');
+    assert.deepEqual(json.selected.colors, ['black', 'red']);
   });
 });

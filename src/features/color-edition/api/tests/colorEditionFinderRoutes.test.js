@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { registerColorEditionFinderRoutes } from '../colorEditionFinderRoutes.js';
 
-// Capture helper for jsonRes
 function makeJsonCapture() {
   const calls = [];
   const jsonRes = (res, status, body) => {
@@ -12,24 +11,23 @@ function makeJsonCapture() {
   return { jsonRes, calls };
 }
 
-// Stub specDb
 function makeSpecDbStub(finderRow = null, listRows = [], productRow = null) {
   return {
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
     getColorEditionFinderIfOnCooldown: () => null,
     getProduct: () => productRow ?? { product_id: 'mouse-001', category: 'mouse', brand: 'Corsair', model: 'M75 Air Wireless', variant: '', seed_urls: '[]' },
+    upsertColorEditionFinder: () => {},
+    deleteColorEditionFinder: () => {},
     category: 'mouse',
   };
 }
 
-// Stub appDb
 function makeAppDbStub() {
   return {
     listColors: () => [
       { name: 'black', hex: '#000000', css_var: '--color-black' },
     ],
-    upsertColor: () => {},
   };
 }
 
@@ -43,12 +41,13 @@ function makeCtx(overrides = {}) {
       appDb: makeAppDbStub(),
       getSpecDb: () => makeSpecDbStub(overrides.finderRow, overrides.listRows),
       broadcastWs: () => {},
-      colorRegistryPath: null,
       logger: { info: () => {}, warn: () => {}, error: () => {} },
       runColorEditionFinder: overrides.runFn || (async () => ({
-        colors: ['black'], editions: [], newColorsRegistered: [], fallbackUsed: false,
+        colors: ['black'], editions: {}, default_color: 'black', fallbackUsed: false,
       })),
       readColorEdition: overrides.readFn || (() => null),
+      deleteColorEditionFinderRun: overrides.deleteRunFn || (() => null),
+      deleteColorEditionFinderAll: overrides.deleteAllFn || (() => ({ deleted: true })),
     },
     calls,
   };
@@ -73,38 +72,28 @@ describe('colorEditionFinderRoutes', () => {
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
       assert.ok(Array.isArray(calls[0].body));
-      assert.equal(calls[0].body.length, 1);
-    });
-
-    it('returns empty array for category with no results', async () => {
-      const { ctx, calls } = makeCtx({ listRows: [] });
-      const handler = registerColorEditionFinderRoutes(ctx);
-      const result = await handler(['color-edition-finder', 'keyboard'], new Map(), 'GET', {}, {});
-      assert.equal(result, true);
-      assert.equal(calls[0].status, 200);
-      assert.deepEqual(calls[0].body, []);
     });
   });
 
   describe('GET /color-edition-finder/:category/:productId', () => {
-    it('returns finder result for product', async () => {
+    it('returns finder result with runs array', async () => {
       const finderRow = {
         category: 'mouse', product_id: 'mouse-001',
         colors: ['black', 'white'], editions: ['launch-edition'],
         default_color: 'black', cooldown_until: '', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 2,
       };
       const jsonData = {
-        colors: { black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: { 'launch-edition': { found_run: 2, found_at: '2026-05-01T00:00:00Z', model: 'gpt-5.4' } },
+        selected: { colors: ['black', 'white'], editions: { 'launch-edition': { colors: ['black'] } }, default_color: 'black' },
+        runs: [{ run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' }],
       };
       const { ctx, calls } = makeCtx({ finderRow, readFn: () => jsonData });
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
-      assert.deepEqual(calls[0].body.colors, ['black', 'white']);
-      assert.ok(calls[0].body.color_details);
-      assert.equal(calls[0].body.on_cooldown, false);
+      assert.ok(calls[0].body.selected);
+      assert.ok(Array.isArray(calls[0].body.runs));
+      assert.equal(calls[0].body.runs.length, 1);
     });
 
     it('returns 404 for unknown product', async () => {
@@ -117,11 +106,11 @@ describe('colorEditionFinderRoutes', () => {
   });
 
   describe('POST /color-edition-finder/:category/:productId', () => {
-    it('triggers finder and returns result', async () => {
+    it('triggers finder and returns result with editions object', async () => {
       let runCalled = false;
       const runFn = async () => {
         runCalled = true;
-        return { colors: ['black', 'white'], editions: [], newColorsRegistered: [], fallbackUsed: false };
+        return { colors: ['black', 'white'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black', fallbackUsed: false };
       };
       const { ctx, calls } = makeCtx({ runFn });
       const handler = registerColorEditionFinderRoutes(ctx);
@@ -131,6 +120,48 @@ describe('colorEditionFinderRoutes', () => {
       assert.equal(calls[0].status, 200);
       assert.equal(calls[0].body.ok, true);
       assert.deepEqual(calls[0].body.colors, ['black', 'white']);
+      assert.ok(calls[0].body.editions);
+      assert.equal(calls[0].body.default_color, 'black');
+    });
+  });
+
+  describe('DELETE /color-edition-finder/:category/:productId/runs/:runNumber', () => {
+    it('deletes a run and returns remaining count', async () => {
+      let deletedRun = null;
+      const deleteRunFn = ({ runNumber }) => {
+        deletedRun = runNumber;
+        return { run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '', last_ran_at: '' };
+      };
+      const { ctx, calls } = makeCtx({ deleteRunFn });
+      const handler = registerColorEditionFinderRoutes(ctx);
+      const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', '2'], new Map(), 'DELETE', {}, {});
+      assert.equal(result, true);
+      assert.equal(calls[0].status, 200);
+      assert.equal(calls[0].body.ok, true);
+      assert.equal(calls[0].body.remaining_runs, 1);
+      assert.equal(deletedRun, 2);
+    });
+
+    it('rejects invalid run number', async () => {
+      const { ctx, calls } = makeCtx();
+      const handler = registerColorEditionFinderRoutes(ctx);
+      const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', 'abc'], new Map(), 'DELETE', {}, {});
+      assert.equal(result, true);
+      assert.equal(calls[0].status, 400);
+    });
+  });
+
+  describe('DELETE /color-edition-finder/:category/:productId', () => {
+    it('deletes all data and returns ok', async () => {
+      let allDeleted = false;
+      const deleteAllFn = () => { allDeleted = true; return { deleted: true }; };
+      const { ctx, calls } = makeCtx({ deleteAllFn });
+      const handler = registerColorEditionFinderRoutes(ctx);
+      const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
+      assert.equal(result, true);
+      assert.equal(calls[0].status, 200);
+      assert.equal(calls[0].body.ok, true);
+      assert.ok(allDeleted);
     });
   });
 });

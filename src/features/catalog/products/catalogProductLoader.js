@@ -139,8 +139,8 @@ async function loadCanonicalFieldsByProduct({ category, config = {} }) {
 }
 
 /**
- * Load product identities (brand, model, variant) from app-owned catalog docs.
- * Returns [{ brand, model, variant }] or [] if no category catalog is present.
+ * Load product identities (brand, base_model, model, variant) from app-owned catalog docs.
+ * Returns [{ brand, base_model, model, variant }] or [] if no category catalog is present.
  */
 export async function loadCatalogProducts({ category, config = {} }) {
   const cat = String(category ?? '').trim().toLowerCase();

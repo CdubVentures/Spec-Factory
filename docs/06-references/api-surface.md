@@ -118,7 +118,7 @@
 |--------|------|---------|------|--------------|----------------|
 | POST | `/api/v1/catalog/:category/reconcile` | reconcile orphaned catalog state | none | `{ dryRun? }` | reconciliation result |
 | GET | `/api/v1/catalog/:category/products` | list products in category catalog | none | none | product rows |
-| POST | `/api/v1/catalog/:category/products` | add a product | none | `{ brand, model, variant?, seedUrls? }` | product add result |
+| POST | `/api/v1/catalog/:category/products` | add a product | none | `{ brand, base_model, variant?, seedUrls? }` | product add result |
 | POST | `/api/v1/catalog/:category/products/seed` | seed queue/catalog from catalog entries | none | `{ mode? }` | seed result |
 | POST | `/api/v1/catalog/:category/products/bulk` | bulk add products | none | `{ brand, rows }` | bulk add result |
 | PUT | `/api/v1/catalog/:category/products/:productId` | update product | none | patch body | update result |

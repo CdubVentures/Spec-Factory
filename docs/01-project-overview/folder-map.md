@@ -41,7 +41,7 @@
 | Path | Purpose | Key files / notes |
 |------|---------|-------------------|
 | `.workspace/` | default runtime workspace root | `src/core/config/runtimeArtifactRoots.js` resolves `.workspace/output`, `.workspace/runs`, `.workspace/products`, `.workspace/db`, `.workspace/global`, and `.workspace/runtime/snapshots` as the live defaults |
-| `category_authority/` | canonical control-plane content | live directories on disk include `keyboard/`, `monitor/`, `mouse/`, `_global/`, `_runtime/`, `_test_mouse/`, and `tests/`; the default categories API returns only `keyboard`, `monitor`, and `mouse` |
+| `category_authority/` | canonical control-plane content | live directories on disk include `keyboard/`, `monitor/`, `mouse/`, `_global/`, `_test_mouse/`, and `tests/`; the default categories API returns only `keyboard`, `monitor`, and `mouse` |
 | `data/` | checked-in support data | currently includes learning/support payloads consumed by runtime helpers |
 | `debug/` | ad hoc debug captures | not a canonical runtime or config source |
 | `docs/` | maintained documentation tree | `docs/README.md` is the entrypoint; `docs/implementation/` and `docs/data-structure/` are excluded from this pass |

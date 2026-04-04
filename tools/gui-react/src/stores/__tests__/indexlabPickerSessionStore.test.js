@@ -11,7 +11,7 @@ function loadIndexlabStoreModule() {
   });
 }
 
-test('indexlab picker brand/model/variant/run state persists in localStorage', async () => {
+test('indexlab picker brand/base-model/product/run state persists in localStorage', async () => {
   const localStorage = createStorage({}, { trackCalls: false });
   const sessionStorage = createStorage({}, { trackCalls: false });
 

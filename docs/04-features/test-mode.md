@@ -17,7 +17,6 @@
 
 - `category_authority/{category}/_generated/*`
 - `category_authority/_test_{sourceCategory}/`
-- `fixtures/s3/specs/inputs/_test_{sourceCategory}/products/*.json`
 - output-root `specs/outputs/_test_{sourceCategory}`
 - `src/api/services/specDbSyncService.js`
 
@@ -68,7 +67,7 @@ sequenceDiagram
     participant Runner as runTestProduct<br/>(src/testing/testRunner.js)
   end
   box Filesystem
-    participant TestCat as _test category folders<br/>(category_authority/, fixtures/s3/specs/inputs/, output root)
+    participant TestCat as _test category folders<br/>(category_authority/, output root)
   end
   TestPage->>TestRoutes: POST /api/v1/test-mode/create
   TestRoutes->>TestCat: create _test_* authority + fixture roots

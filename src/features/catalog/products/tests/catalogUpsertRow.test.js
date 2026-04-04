@@ -100,26 +100,26 @@ describe('upsertCatalogProductRow — fabricated variant stripping', () => {
     };
   }
 
-  it('strips fabricated variant: model="OP1 8k", variant="8k" → variant=""', () => {
+  it('strips fabricated variant: base_model="OP1 8k", variant="8k" → variant=""', () => {
     const { specDb, getCaptured } = capturingSpecDb();
     upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
-      brand: 'Endgame Gear', model: 'OP1 8k', variant: '8k',
+      brand: 'Endgame Gear', base_model: 'OP1 8k', variant: '8k',
     });
     strictEqual(getCaptured().variant, '');
   });
 
-  it('strips fabricated variant: model="Cestus 310", variant="310" → variant=""', () => {
+  it('strips fabricated variant: base_model="Cestus 310", variant="310" → variant=""', () => {
     const { specDb, getCaptured } = capturingSpecDb();
     upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
-      brand: 'Acer', model: 'Cestus 310', variant: '310',
+      brand: 'Acer', base_model: 'Cestus 310', variant: '310',
     });
     strictEqual(getCaptured().variant, '');
   });
 
-  it('preserves real variant: model="Viper V3 Pro", variant="Wireless"', () => {
+  it('preserves real variant: base_model="Viper V3 Pro", variant="Wireless"', () => {
     const { specDb, getCaptured } = capturingSpecDb();
     upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
-      brand: 'Razer', model: 'Viper V3 Pro', variant: 'Wireless',
+      brand: 'Razer', base_model: 'Viper V3 Pro', variant: 'Wireless',
     });
     strictEqual(getCaptured().variant, 'Wireless');
   });
@@ -127,7 +127,7 @@ describe('upsertCatalogProductRow — fabricated variant stripping', () => {
   it('preserves empty variant', () => {
     const { specDb, getCaptured } = capturingSpecDb();
     upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
-      brand: 'Razer', model: 'DeathAdder V3', variant: '',
+      brand: 'Razer', base_model: 'DeathAdder V3', variant: '',
     });
     strictEqual(getCaptured().variant, '');
   });

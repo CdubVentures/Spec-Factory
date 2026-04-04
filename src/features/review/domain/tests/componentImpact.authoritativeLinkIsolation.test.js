@@ -5,9 +5,6 @@ import {
   cascadeComponentChange,
   cleanupHarness,
   createHarness,
-  loadQueueState,
-  saveQueueState,
-  upsertQueueRow,
 } from './helpers/componentImpactHarness.js';
 
 test('cascadeComponentChange authoritative updates linked items only and ignores unlinked value matches', async () => {
@@ -57,9 +54,6 @@ test('cascadeComponentChange authoritative updates linked items only and ignores
       aiReviewComplete: false,
     });
 
-    upsertQueueRow(harness.specDb, 'mouse-linked-only', 'complete');
-    upsertQueueRow(harness.specDb, 'mouse-unlinked-only', 'complete');
-
     await cascadeComponentChange({
       storage: harness.storage,
       outputRoot: harness.outputRoot,
@@ -71,8 +65,6 @@ test('cascadeComponentChange authoritative updates linked items only and ignores
       newValue: '35000',
       variancePolicy: 'authoritative',
       constraints: [],
-      loadQueueState,
-      saveQueueState,
       specDb: harness.specDb,
     });
 
@@ -80,11 +72,6 @@ test('cascadeComponentChange authoritative updates linked items only and ignores
     const unlinked = harness.specDb.getItemFieldState('mouse-unlinked-only').find((row) => row.field_key === 'max_dpi');
     assert.equal(linked?.value, '35000');
     assert.equal(unlinked?.value, '27000');
-
-    const linkedQueue = harness.specDb.getQueueProduct('mouse-linked-only');
-    const unlinkedQueue = harness.specDb.getQueueProduct('mouse-unlinked-only');
-    assert.equal(linkedQueue?.status, 'stale');
-    assert.equal(unlinkedQueue?.status, 'complete');
   } finally {
     await cleanupHarness(harness);
   }

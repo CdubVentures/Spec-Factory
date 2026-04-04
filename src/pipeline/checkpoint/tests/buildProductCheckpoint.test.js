@@ -61,10 +61,10 @@ describe('buildProductCheckpoint — product fields', () => {
     assert.equal(cp.runs_completed, 1);
   });
 
-  test('fields and provenance are empty objects', () => {
+  test('checkpoint does not include fields or provenance keys', () => {
     const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [] });
-    assert.deepEqual(cp.fields, {});
-    assert.deepEqual(cp.provenance, {});
+    assert.equal('fields' in cp, false, 'fields key should not exist');
+    assert.equal('provenance' in cp, false, 'provenance key should not exist');
   });
 });
 

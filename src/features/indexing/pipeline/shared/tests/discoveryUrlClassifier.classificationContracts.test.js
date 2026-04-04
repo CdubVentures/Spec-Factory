@@ -14,7 +14,7 @@ test('classifyUrlCandidate returns the expected classified shape for valid URLs'
       snippet: 'Review',
     },
     categoryConfig,
-    { identityLock: { brand: 'Razer', model: 'Viper V3', variant: 'Pro' } },
+    { identityLock: { brand: 'Razer', base_model: 'Viper V3', model: 'Viper V3 Pro', variant: 'Pro' } },
   );
 
   assert.equal(typeof result.url, 'string');

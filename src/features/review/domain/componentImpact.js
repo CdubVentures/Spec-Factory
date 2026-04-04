@@ -189,8 +189,6 @@ export async function cascadeComponentChange({
   newValue,
   variancePolicy,
   constraints = [],
-  loadQueueState,
-  saveQueueState,
   specDb = null,
 }) {
   const affected = await findProductsReferencingComponent({
@@ -292,65 +290,7 @@ export async function cascadeComponentChange({
     }
   }
 
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const products = loaded.state.products || {};
-  let cascaded = 0;
-
-  const priorityMap = { authoritative: 1, upper_bound: 2, lower_bound: 2, range: 2, override_allowed: 3 };
-  let priority = priorityMap[effectivePolicy] || 3;
-  if (hasConstraints && priority > 1) {
-    priority = Math.max(1, priority - 1);
-  }
-
-  for (const productId of targetProductIds) {
-    const existing = products[productId];
-    if (!existing) continue;
-    const currentStatus = existing.status || '';
-    if (currentStatus === 'complete' || currentStatus === 'stale' || currentStatus === 'pending') {
-      existing.status = 'stale';
-      existing.priority = Math.min(existing.priority || 99, priority);
-      if (!Array.isArray(existing.dirty_flags)) existing.dirty_flags = [];
-      existing.dirty_flags.push({
-        reason: 'component_change',
-        componentType,
-        componentName,
-        componentMaker: componentMaker || '',
-        property: changedProperty,
-        newValue: newValue !== undefined ? String(newValue) : undefined,
-        variance_policy: effectivePolicy || null,
-        propagation_action: propagation.action,
-        constraints: hasConstraints ? constraints : [],
-        at: new Date().toISOString(),
-      });
-      cascaded += 1;
-    }
-  }
-
-  if (cascaded > 0) {
-    await saveQueueState({ storage, category, state: loaded.state, specDb });
-  }
-
-  if (specDb && targetProductIds.length > 0) {
-    try {
-      specDb.markProductsStaleDetailed(targetProductIds, {
-        reason: 'component_change',
-        componentType,
-        componentName,
-        componentMaker: componentMaker || '',
-        property: changedProperty,
-        newValue: newValue !== undefined ? String(newValue) : undefined,
-        variance_policy: effectivePolicy || null,
-        propagation_action: propagation.action,
-        constraints: hasConstraints ? constraints : [],
-        priority,
-        at: new Date().toISOString(),
-      });
-    } catch {
-      // Best effort.
-    }
-  }
-
-  return { affected, cascaded, propagation };
+  return { affected, propagation };
 }
 
 /**
@@ -366,11 +306,9 @@ export async function cascadeEnumChange({
   value,
   newValue,
   preAffectedProductIds = [],
-  loadQueueState,
-  saveQueueState,
   specDb = null,
 }) {
-  if (action !== 'remove' && action !== 'rename') return { affected: [], cascaded: 0 };
+  if (action !== 'remove' && action !== 'rename') return { affected: [] };
 
   const targetValue = String(value).trim();
   const affectedMap = new Map();
@@ -483,49 +421,5 @@ export async function cascadeEnumChange({
     }
   }
 
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const products = loaded.state.products || {};
-  let cascaded = 0;
-
-  const priority = 1;
-  const reason = action === 'rename' ? 'enum_renamed' : 'enum_removed';
-
-  for (const productId of affectedProductIds) {
-    const existing = products[productId];
-    if (!existing) continue;
-    existing.status = 'stale';
-    existing.priority = Math.min(existing.priority || 99, priority);
-    if (!Array.isArray(existing.dirty_flags)) existing.dirty_flags = [];
-    existing.dirty_flags.push({
-      reason,
-      field,
-      value: targetValue,
-      ...(action === 'rename' ? { newValue: trimmedNew } : {}),
-      variance_policy: 'authoritative',
-      at: new Date().toISOString(),
-    });
-    cascaded += 1;
-  }
-
-  if (cascaded > 0) {
-    await saveQueueState({ storage, category, state: loaded.state, specDb });
-  }
-
-  if (specDb && affectedProductIds.length > 0) {
-    try {
-      specDb.markProductsStaleDetailed(affectedProductIds, {
-        reason,
-        field,
-        value: targetValue,
-        ...(action === 'rename' ? { newValue: trimmedNew } : {}),
-        variance_policy: 'authoritative',
-        priority: 1,
-        at: new Date().toISOString(),
-      });
-    } catch {
-      // Best effort.
-    }
-  }
-
-  return { affected, cascaded };
+  return { affected };
 }

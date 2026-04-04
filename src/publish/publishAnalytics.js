@@ -15,8 +15,8 @@ import {
   parseJsonLines
 } from './publishPrimitives.js';
 import {
-  readJsonDual,
-  writeJsonDual,
+  readJson,
+  writeJson,
   listOutputKeys
 } from './publishStorageAdapter.js';
 import { hostnameFromUrl } from './publishSpecBuilders.js';
@@ -38,7 +38,7 @@ export async function runAccuracyBenchmarkReport({
     maxCases
   });
 
-  const previous = await readJsonDual(storage, [normalizedCategory, '_accuracy_report.json']);
+  const previous = await readJson(storage, [normalizedCategory, '_accuracy_report.json']);
   const previousByField = isObject(previous?.raw?.by_field)
     ? previous.raw.by_field
     : (isObject(previous?.by_field) ? previous.by_field : {});
@@ -135,8 +135,8 @@ export async function runAccuracyBenchmarkReport({
 
   const dateKey = report.generated_at.slice(0, 10);
   await Promise.all([
-    writeJsonDual(storage, [normalizedCategory, '_accuracy_report.json'], report),
-    writeJsonDual(storage, [normalizedCategory, 'reports', `accuracy_${dateKey}.json`], report)
+    writeJson(storage, [normalizedCategory, '_accuracy_report.json'], report),
+    writeJson(storage, [normalizedCategory, 'reports', `accuracy_${dateKey}.json`], report)
   ]);
 
   return report;
@@ -342,7 +342,7 @@ export async function buildLlmMetrics({
   const days = parsePeriodDays(period, 7);
   const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
   const normalizedCategory = normalizeToken(category);
-  const text = await storage.readTextOrNull('_billing/ledger.jsonl') || await storage.readTextOrNull(storage.resolveOutputKey('_billing', 'ledger.jsonl')) || '';
+  const text = await storage.readTextOrNull('_billing/ledger.jsonl') || '';
   const rows = parseJsonLines(text)
     .filter((row) => parseDateMs(row.ts) >= cutoff)
     .filter((row) => !normalizedCategory || normalizeToken(row.category || '') === normalizedCategory)

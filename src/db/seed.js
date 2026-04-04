@@ -618,7 +618,9 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
     const latestDir = path.join(outputRoot, productId, 'latest');
 
     try {
-      // WHY: Overlap 0d — per-product-level fallback: consolidated first, then per-product file
+      // WHY: reads latest/normalized.json + provenance.json if they exist. In production
+      // these files are not produced (no validation stage yet), so this block is skipped.
+      // Test harnesses write these files to seed the review grid with fixture data.
       const overridesFromConsolidated = consolidatedProducts[productId] || null;
       const [normalized, provenance, overrides] = await Promise.all([
         readJsonIfExists(path.join(latestDir, 'normalized.json')),

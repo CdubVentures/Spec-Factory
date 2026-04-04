@@ -9,19 +9,22 @@ export function createPublishingCommands({
   buildLlmMetrics,
   parseExpansionCategories,
   bootstrapExpansionCategories,
-  runQueueLoadHarness,
-  runFailureInjectionHarness,
   runFuzzSourceHealthHarness,
   runProductionHardeningReport,
   scanAndEnqueueDriftedProducts,
   reconcileDriftedProduct,
   reconcileOrphans,
+  openSpecDbForCategory = null,
 }) {
   async function commandPublish(config, storage, args) {
     const category = String(args.category || '').trim();
     if (!category) {
       throw new Error('publish requires --category <category>');
     }
+    // WHY: SQL is the sole SSOT for overrides and provenance. Ensure specDb is available for publish ops.
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
     const productIds = [];
     const singleProductId = String(args['product-id'] || '').trim();
     if (singleProductId) {
@@ -30,18 +33,23 @@ export function createPublishingCommands({
     for (const productId of parseCsvList(args['product-ids'])) {
       productIds.push(productId);
     }
-    const result = await publishProducts({
-      storage,
-      config,
-      category,
-      productIds,
-      allApproved: asBool(args['all-approved'], false),
-      format: String(args.format || 'all').trim().toLowerCase()
-    });
-    return {
-      command: 'publish',
-      ...result
-    };
+    try {
+      const result = await publishProducts({
+        storage,
+        config,
+        category,
+        productIds,
+        allApproved: asBool(args['all-approved'], false),
+        format: String(args.format || 'all').trim().toLowerCase(),
+        specDb,
+      });
+      return {
+        command: 'publish',
+        ...result
+      };
+    } finally {
+      if (specDb && typeof specDb.close === 'function') specDb.close();
+    }
   }
 
   async function commandProvenance(_config, storage, args) {
@@ -143,32 +151,27 @@ export function createPublishingCommands({
     const fuzzIterations = Math.max(1, Number.parseInt(String(args['fuzz-iterations'] || '200'), 10) || 200);
     const seed = Math.max(1, Number.parseInt(String(args.seed || '1337'), 10) || 1337);
     const failureAttempts = Math.max(1, Number.parseInt(String(args['failure-attempts'] || '3'), 10) || 3);
+    // WHY: SQL is the sole SSOT for queue state. Ensure specDb is available for harness queue ops.
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
 
-    const queueLoad = await runQueueLoadHarness({
-      storage,
-      category,
-      productCount: products,
-      selectCycles: cycles
-    });
-    const failureInjection = await runFailureInjectionHarness({
-      storage,
-      category,
-      maxAttempts: failureAttempts
-    });
-    const fuzzSourceHealth = await runFuzzSourceHealthHarness({
-      storage,
-      category,
-      iterations: fuzzIterations,
-      seed
-    });
-    return {
-      command: 'hardening-harness',
-      category,
-      queue_load: queueLoad,
-      failure_injection: failureInjection,
-      fuzz_source_health: fuzzSourceHealth,
-      passed: Boolean(queueLoad.select_cycles_completed > 0 && failureInjection.passed && fuzzSourceHealth.passed)
-    };
+    try {
+      const fuzzSourceHealth = await runFuzzSourceHealthHarness({
+        storage,
+        category,
+        iterations: fuzzIterations,
+        seed
+      });
+      return {
+        command: 'hardening-harness',
+        category,
+        fuzz_source_health: fuzzSourceHealth,
+        passed: Boolean(fuzzSourceHealth.passed)
+      };
+    } finally {
+      if (specDb && typeof specDb.close === 'function') specDb.close();
+    }
   }
 
   async function commandHardeningReport(_config, _storage, args) {
@@ -187,18 +190,26 @@ export function createPublishingCommands({
     if (!category) {
       throw new Error('drift-scan requires --category <category>');
     }
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
     const maxProducts = Math.max(1, Number.parseInt(String(args['max-products'] || '250'), 10) || 250);
-    const result = await scanAndEnqueueDriftedProducts({
-      storage,
-      config,
-      category,
-      maxProducts,
-      queueOnChange: asBool(args.enqueue, true)
-    });
-    return {
-      command: 'drift-scan',
-      ...result
-    };
+    try {
+      const result = await scanAndEnqueueDriftedProducts({
+        storage,
+        config,
+        category,
+        maxProducts,
+        queueOnChange: asBool(args.enqueue, true),
+        specDb,
+      });
+      return {
+        command: 'drift-scan',
+        ...result
+      };
+    } finally {
+      if (specDb && typeof specDb.close === 'function') specDb.close();
+    }
   }
 
   async function commandDriftReconcile(config, storage, args) {
@@ -207,17 +218,25 @@ export function createPublishingCommands({
     if (!category || !productId) {
       throw new Error('drift-reconcile requires --category <category> and --product-id <id>');
     }
-    const result = await reconcileDriftedProduct({
-      storage,
-      config,
-      category,
-      productId,
-      autoRepublish: asBool(args['auto-republish'], true)
-    });
-    return {
-      command: 'drift-reconcile',
-      ...result
-    };
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
+    try {
+      const result = await reconcileDriftedProduct({
+        storage,
+        config,
+        category,
+        productId,
+        autoRepublish: asBool(args['auto-republish'], true),
+        specDb,
+      });
+      return {
+        command: 'drift-reconcile',
+        ...result
+      };
+    } finally {
+      if (specDb && typeof specDb.close === 'function') specDb.close();
+    }
   }
 
   async function commandProductReconcile(config, storage, args) {

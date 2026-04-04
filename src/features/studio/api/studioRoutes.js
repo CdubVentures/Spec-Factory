@@ -518,7 +518,9 @@ export function registerStudioRoutes(ctx) {
         config.categoryAuthorityRoot || 'category_authority',
         category, '_control_plane', 'field_key_order.json'
       );
-      fs.writeFile(fkoPath, JSON.stringify({ order }, null, 2)).catch(() => {});
+      fs.writeFile(fkoPath, JSON.stringify({ order }, null, 2)).catch((err) => {
+        console.warn('[mirror-write] field_key_order.json write-back failed:', err?.message || err);
+      });
       sessionCache.invalidateSessionCache(category);
       return jsonRes(res, 200, { ok: true, category });
     }

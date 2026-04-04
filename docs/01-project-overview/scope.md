@@ -44,7 +44,7 @@ Spec Factory is a local-first indexing and review workbench for product-spec dis
   - `npm test` succeeded across the current worktree.
   - `npm run env:check` still failed with `Missing keys in config manifest: PORT`.
   - Runtime validation confirmed `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/runtime-settings`, `/api/v1/llm-policy`, and `/api/v1/storage/overview`.
-  - `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]` even though `category_authority/` also contains `_global/`, `_runtime/`, `_test_mouse/`, and `tests/`.
+  - `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]` even though `category_authority/` also contains `_global/`, `_test_mouse/`, and `tests/`.
   - `Dockerfile` still points at `src/cli/run-batch.js`, which does not exist in the current repo.
 
 ## Validated Against

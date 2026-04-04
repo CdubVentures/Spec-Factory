@@ -484,6 +484,40 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
             itemFlags++;
           }
         }
+
+        // WHY: Linked products are specDb evidence that this component name is confirmed
+        // across multiple products. Surface them as specdb candidates for name review.
+        const existingNameCandidateIds = new Set(name_tracked.candidates.map((c) => String(c?.candidate_id || '').trim()));
+        for (const linkRow of linkRows) {
+          const candidateId = buildComponentReviewSyntheticCandidateId({
+            productId: linkRow.product_id,
+            fieldKey: '__name',
+            reviewId: `specdb-link-${linkRow.product_id}`,
+            value: itemName,
+          });
+          if (existingNameCandidateIds.has(candidateId)) continue;
+          existingNameCandidateIds.add(candidateId);
+          name_tracked.candidates.push({
+            candidate_id: candidateId,
+            value: itemName,
+            score: linkRow.match_score ?? 0.9,
+            source_id: 'specdb',
+            source: `SpecDb (${linkRow.product_id})`,
+            tier: null,
+            method: linkRow.match_type || 'exact',
+            evidence: {
+              url: '',
+              retrieved_at: '',
+              snippet_id: '',
+              snippet_hash: '',
+              quote: `Linked from product ${linkRow.product_id}`,
+              quote_span: null,
+              snippet_text: `Component ${componentType} linked via item_component_links`,
+              source_id: 'specdb',
+            },
+          });
+        }
+        name_tracked.candidate_count = name_tracked.candidates.length;
       }
     } catch (_specDbErr) {
       // SpecDb enrichment is best-effort

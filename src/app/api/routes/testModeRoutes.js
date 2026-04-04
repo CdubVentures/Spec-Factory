@@ -252,12 +252,15 @@ export function registerTestModeRoutes(ctx) {
       for (const product of testProducts) {
         const il = product.identityLock || {};
         const brandName = il.brand || 'TestCo';
+        const baseModel = String(il.base_model || '').trim();
+        const model = String(il.model || '').trim();
         testBrands.add(brandName);
         catalogProducts[product.productId] = {
           id: il.id || 0,
           identifier: il.identifier || '',
           brand: brandName,
-          model: il.model || '',
+          base_model: baseModel,
+          model,
           variant: il.variant || '',
           status: 'active',
           seed_urls: [],

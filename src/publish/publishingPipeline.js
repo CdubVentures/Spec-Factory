@@ -11,7 +11,7 @@ import {
   hasKnownValue,
   coerceOutputValue
 } from './publishPrimitives.js';
-import { readJsonDual } from './publishStorageAdapter.js';
+import { readJson } from './publishStorageAdapter.js';
 import {
   slug,
   stableSpecFieldOrder,
@@ -398,7 +398,7 @@ export async function readPublishedProvenance({
   full = false
 }) {
   const normalizedCategory = normalizeCategory(category);
-  const payload = await readJsonDual(storage, [normalizedCategory, 'published', productId, 'provenance.json']);
+  const payload = await readJson(storage, [normalizedCategory, 'published', productId, 'provenance.json']);
   if (!isObject(payload)) {
     throw new Error(`published_provenance_not_found:${normalizedCategory}:${productId}`);
   }

@@ -10,10 +10,10 @@ function makeJob(overrides = {}) {
   return {
     productId: 'test-product-001',
     brand: 'TestBrand',
+    base_model: 'TestModel',
     model: 'TestModel',
-    baseModel: '',
     aliases: [],
-    identityLock: { brand: 'TestBrand', model: 'TestModel', base_model: '' },
+    identityLock: { brand: 'TestBrand', base_model: 'TestModel', model: 'TestModel' },
     ...overrides,
   };
 }

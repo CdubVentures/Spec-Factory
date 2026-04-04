@@ -9,6 +9,7 @@ import {
 test('inferIdentityFromProductId returns empty for hex-based ids', () => {
   const identity = inferIdentityFromProductId('mouse-a1b2c3d4', 'mouse');
   assert.equal(identity.brand, '');
+  assert.equal(identity.base_model, '');
   assert.equal(identity.model, '');
   assert.equal(identity.variant, '');
 });
@@ -21,21 +22,24 @@ test('resolveAuthoritativeProductIdentity prioritizes catalog identity', () => {
       id: 21,
       identifier: 'cat_21',
       brand: 'Razer Catalog',
-      model: 'Viper Catalog',
+      base_model: 'Viper Catalog',
+      model: 'Viper Catalog SE',
       variant: 'SE',
     },
     dbProduct: {
       id: 33,
       identifier: 'db_33',
       brand: 'Razer Db',
-      model: 'Viper Db',
+      base_model: 'Viper Db',
+      model: 'Viper Db DB',
       variant: 'DB',
     },
     normalizedIdentity: {
       id: 44,
       identifier: 'norm_44',
       brand: 'Razer Norm',
-      model: 'Viper Norm',
+      base_model: 'Viper Norm',
+      model: 'Viper Norm NRM',
       variant: 'NRM',
     },
   });
@@ -43,7 +47,8 @@ test('resolveAuthoritativeProductIdentity prioritizes catalog identity', () => {
   assert.equal(resolved.id, 21);
   assert.equal(resolved.identifier, 'cat_21');
   assert.equal(resolved.brand, 'Razer Catalog');
-  assert.equal(resolved.model, 'Viper Catalog');
+  assert.equal(resolved.base_model, 'Viper Catalog');
+  assert.equal(resolved.model, 'Viper Catalog SE');
   assert.equal(resolved.variant, 'SE');
 });
 
@@ -56,6 +61,7 @@ test('resolveAuthoritativeProductIdentity falls back to db then normalized then 
       id: 7,
       identifier: 'db_7',
       brand: 'Acer Db',
+      base_model: 'Cestus Db',
       model: 'Cestus Db',
       variant: '',
     },
@@ -63,7 +69,8 @@ test('resolveAuthoritativeProductIdentity falls back to db then normalized then 
       id: 0,
       identifier: 'norm_1',
       brand: 'Acer Norm',
-      model: 'Cestus Norm',
+      base_model: 'Cestus Norm',
+      model: 'Cestus Norm N',
       variant: 'N',
     },
   });
@@ -71,6 +78,7 @@ test('resolveAuthoritativeProductIdentity falls back to db then normalized then 
   assert.equal(resolved.id, 7);
   assert.equal(resolved.identifier, 'db_7');
   assert.equal(resolved.brand, 'Acer Db');
+  assert.equal(resolved.base_model, 'Cestus Db');
   assert.equal(resolved.model, 'Cestus Db');
   assert.equal(resolved.variant, '');
 });
@@ -84,6 +92,7 @@ test('resolveAuthoritativeProductIdentity returns empty when no sources exist', 
   assert.equal(resolved.id, 0);
   assert.equal(resolved.identifier, '');
   assert.equal(resolved.brand, '');
+  assert.equal(resolved.base_model, '');
   assert.equal(resolved.model, '');
   assert.equal(resolved.variant, '');
 });
@@ -160,7 +169,8 @@ test('resolveProductIdentity uses specDb identity as primary authority', async (
         id: 33,
         identifier: 'db_33',
         brand: 'Razer Db',
-        model: 'Viper Db',
+        base_model: 'Viper Db',
+        model: 'Viper Db DB',
         variant: 'DB',
       }),
     },
@@ -168,7 +178,8 @@ test('resolveProductIdentity uses specDb identity as primary authority', async (
       id: 44,
       identifier: 'norm_44',
       brand: 'Razer Norm',
-      model: 'Viper Norm',
+      base_model: 'Viper Norm',
+      model: 'Viper Norm NRM',
       variant: 'NRM',
     },
   });
@@ -176,7 +187,8 @@ test('resolveProductIdentity uses specDb identity as primary authority', async (
   assert.equal(resolved.id, 33);
   assert.equal(resolved.identifier, 'db_33');
   assert.equal(resolved.brand, 'Razer Db');
-  assert.equal(resolved.model, 'Viper Db');
+  assert.equal(resolved.base_model, 'Viper Db');
+  assert.equal(resolved.model, 'Viper Db DB');
   assert.equal(resolved.variant, 'DB');
 });
 
@@ -192,6 +204,7 @@ test('resolveProductIdentity falls back to normalizedIdentity when specDb has no
       id: 7,
       identifier: 'norm_7',
       brand: 'HyperX Norm',
+      base_model: 'Pulsefire Haste',
       model: 'Pulsefire Haste Norm',
       variant: '',
     },
@@ -200,6 +213,7 @@ test('resolveProductIdentity falls back to normalizedIdentity when specDb has no
   assert.equal(resolved.id, 7);
   assert.equal(resolved.identifier, 'norm_7');
   assert.equal(resolved.brand, 'HyperX Norm');
+  assert.equal(resolved.base_model, 'Pulsefire Haste');
   assert.equal(resolved.model, 'Pulsefire Haste Norm');
   assert.equal(resolved.variant, '');
 });

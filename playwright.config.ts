@@ -13,7 +13,6 @@ export default defineConfig({
   timeout: 30_000,
   use: {
     baseURL: API_BASE,
-    trace: 'on-first-retry',
   },
   projects: [
     {

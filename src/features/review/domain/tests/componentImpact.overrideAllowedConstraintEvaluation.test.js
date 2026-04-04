@@ -4,9 +4,6 @@ import {
   cascadeComponentChange,
   cleanupHarness,
   createHarness,
-  loadQueueState,
-  saveQueueState,
-  upsertQueueRow,
 } from './helpers/componentImpactHarness.js';
 
 test('cascadeComponentChange override_allowed still evaluates constraints', async () => {
@@ -21,8 +18,6 @@ test('cascadeComponentChange override_allowed still evaluates constraints', asyn
       matchType: 'exact',
       matchScore: 1,
     });
-
-    upsertQueueRow(harness.specDb, 'mouse-oc', 'complete');
 
     harness.specDb.upsertComponentValue({
       componentType: 'sensor',
@@ -62,8 +57,6 @@ test('cascadeComponentChange override_allowed still evaluates constraints', asyn
       newValue: '35000',
       variancePolicy: 'override_allowed',
       constraints: ['dpi <= max_dpi'],
-      loadQueueState,
-      saveQueueState,
       specDb: harness.specDb,
     });
 

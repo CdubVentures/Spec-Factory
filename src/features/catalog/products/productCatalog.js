@@ -13,7 +13,6 @@ import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogPro
 import { generateIdentifier } from '../identity/productIdentity.js';
 import { writeProductIdentity } from './writeProductIdentity.js';
 import { buildProductId } from '../../../shared/primitives.js';
-import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveBrandIdentifier } from '../identity/resolveBrandIdentifier.js';
 
@@ -258,7 +257,7 @@ export async function addProductsBulk({
 
 /**
  * Update a product. Patches provided fields.
- * ProductId is immutable — identity changes (brand/model/variant) update metadata only.
+ * ProductId is immutable — identity changes (brand/base_model/variant) update metadata only.
  */
 export async function updateProduct({
   config,
@@ -355,7 +354,7 @@ export async function removeProduct({
  * per-product overrides. Imports products that do not yet exist in catalog.
  *
  * @param {object} opts
- * @param {string} opts.mode - 'identity' (default): brand/model/variant only.
+ * @param {string} opts.mode - 'identity' (default): brand/base_model/variant only.
  *                             'full': also imports field values as overrides with confidence 0.99.
  */
 export async function seedFromCatalog({

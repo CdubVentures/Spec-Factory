@@ -133,6 +133,7 @@ describe('buildSearchProfile contract', () => {
     assert.equal(profile.category, 'mouse');
     assert.deepEqual(profile.identity, {
       brand: 'Razer',
+      base_model: '',
       model: 'Viper V3 Pro',
       variant: '',
       category: 'mouse',

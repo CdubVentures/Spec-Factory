@@ -23,86 +23,149 @@ describe('buildColorEditionFinderPrompt', () => {
     { name: 'dark-green', hex: '#15803d', css_var: '--color-dark-green' },
   ];
 
-  it('includes product identity in prompt', () => {
+  // ── Content: what MUST be in the prompt ──
+
+  it('includes brand + model (product identity)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.ok(prompt.includes('Corsair'), 'brand');
     assert.ok(prompt.includes('M75 Air Wireless'), 'model');
-    assert.ok(prompt.includes('mouse'), 'category');
   });
 
-  it('includes registered colors as preferred enum', () => {
+  it('does NOT include category, URLs, or web-browsing instructions', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('black'));
-    assert.ok(prompt.includes('white'));
-    assert.ok(prompt.includes('light-blue'));
+    assert.equal(prompt.includes('Category:'), false, 'no category label');
+    assert.equal(prompt.includes('corsair.com'), false, 'no URLs');
+    assert.equal(prompt.includes('Check the manufacturer'), false, 'no web-browsing instructions');
+    assert.equal(prompt.includes('Amazon'), false, 'no retailer names');
   });
 
-  it('includes color extraction guidance (reasoning note)', () => {
+  it('includes registered color palette with hex values', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    // The reasoning note includes modifier-first naming guidance
-    assert.ok(prompt.includes('modifier-first') || prompt.includes('light-') || prompt.includes('Modifier'));
-  });
-
-  it('includes edition extraction guidance', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('kebab-case') || prompt.includes('editions'));
-  });
-
-  it('includes new_colors instruction', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('new_colors') || prompt.includes('hex'));
-  });
-
-  it('includes seed URLs when available', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('corsair.com'));
-  });
-
-  it('includes hex values for registered colors', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('black'), 'color name');
     assert.ok(prompt.includes('#000000'), 'black hex');
     assert.ok(prompt.includes('#ffffff'), 'white hex');
     assert.ok(prompt.includes('#ef4444'), 'red hex');
+    assert.ok(prompt.includes('light-blue'), 'compound color name');
   });
 
-  it('reads extraction guidance from field rules SSOT (not hardcoded)', () => {
+  it('includes formatting rules (modifier-first, grey→gray, marketing→atom)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    // Color guidance from buildColorReasoningNote via getEgPresetForKey
-    assert.ok(prompt.includes('Discover every color variant'), 'color discovery instruction');
-    assert.ok(prompt.includes('dominant visual order'), 'dominant-first explanation');
-    // Edition guidance from buildEgEditionFieldRule via getEgPresetForKey
-    assert.ok(prompt.includes('special, limited, or collaboration edition'), 'edition discovery instruction');
-    assert.ok(prompt.includes('kebab-case'), 'edition formatting');
+    assert.ok(prompt.includes('modifier-first') || prompt.includes('Modifier-first') || prompt.includes('light-blue'), 'modifier naming');
+    assert.ok(prompt.includes('grey') || prompt.includes('gray'), 'grey normalization');
   });
+
+  it('includes edition formatting rules (kebab-case)', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('kebab-case') || prompt.includes('kebab'), 'edition format');
+  });
+
+  it('includes response contract with colors, editions, default_color', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('colors'), 'colors in contract');
+    assert.ok(prompt.includes('editions'), 'editions in contract');
+    assert.ok(prompt.includes('default_color'), 'default_color in contract');
+  });
+
+  // ── First run: discovery mode ──
+
+  it('first run: focuses on discovery, no selected state', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns: [] });
+    assert.equal(prompt.includes('Currently selected'), false, 'no selected state on first run');
+    assert.equal(prompt.includes('Validate'), false, 'no validation directive on first run');
+  });
+
+  // ── Subsequent runs: validate + select mode ──
+
+  it('subsequent run: shows currently selected colors + editions', () => {
+    const prompt = buildColorEditionFinderPrompt({
+      colorNames, colors, product,
+      previousRuns: [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+        selected: {
+          colors: ['black', 'white'],
+          editions: { 'launch-edition': { colors: ['black'] } },
+          default_color: 'black',
+        },
+      }],
+    });
+    assert.ok(prompt.includes('Currently selected'), 'has selected section');
+    assert.ok(prompt.includes('black'), 'selected color listed');
+    assert.ok(prompt.includes('white'), 'selected color listed');
+    assert.ok(prompt.includes('launch-edition'), 'selected edition listed');
+  });
+
+  it('subsequent run: directs LLM to validate, discover, select, omit-to-reject', () => {
+    const prompt = buildColorEditionFinderPrompt({
+      colorNames, colors, product,
+      previousRuns: [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+      }],
+    });
+    assert.ok(prompt.includes('replaces') || prompt.includes('definitive'), 'response is authoritative');
+    assert.ok(prompt.includes('omit') || prompt.includes('Omit'), 'omit = reject');
+  });
+
+  // ── Field studio SSOT wiring ──
+
+  it('sources color guidance from field studio (hex visual similarity matching)', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('visual similarity'), 'hex visual similarity from field studio');
+    assert.ok(prompt.includes('nearest registered color by hex similarity'), 'hex fallback from field studio');
+    assert.ok(prompt.includes('Dominant means the color with the most surface area'), 'dominant color explanation from field studio');
+  });
+
+  it('sources edition guidance from field studio (examples + display name rule)', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('halo-infinite-edition'), 'edition example slug from field studio');
+    assert.ok(prompt.includes('Do not return display names or title case'), 'display name rule from field studio');
+  });
+
+  it('includes field studio dynamic prefix group analysis', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(
+      prompt.includes('Other colors') || prompt.includes('Additional variants'),
+      'field studio dynamic prefix analysis',
+    );
+  });
+
+  it('strips web-browsing instructions from field studio guidance', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.equal(prompt.includes('manufacturer product page'), false, 'no manufacturer page reference');
+    assert.equal(prompt.includes('Best Buy'), false, 'no retailer reference');
+    assert.equal(prompt.includes('Newegg'), false, 'no retailer reference');
+    assert.equal(prompt.includes('community forums'), false, 'no forums reference');
+  });
+
+  // ── Edge cases ──
 
   it('handles empty colorNames gracefully', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames: [], colors: [], product });
+    const prompt = buildColorEditionFinderPrompt({ colorNames: [], colors: [], product, previousRuns: [] });
     assert.ok(typeof prompt === 'string');
     assert.ok(prompt.length > 0);
+  });
+
+  it('does not duplicate variant when only full model is present', () => {
+    const prompt = buildColorEditionFinderPrompt({
+      colorNames, colors,
+      product: { ...product, base_model: '', model: 'M75 Air Wireless White', variant: 'White' },
+    });
+    assert.ok(prompt.includes('Corsair M75 Air Wireless White'));
+    assert.equal(prompt.includes('Corsair M75 Air Wireless White White'), false);
   });
 });
 
 describe('COLOR_EDITION_FINDER_SPEC', () => {
-  it('has correct phase', () => {
+  it('has correct phase/reason/role', () => {
     assert.equal(COLOR_EDITION_FINDER_SPEC.phase, 'colorFinder');
-  });
-
-  it('has correct reason', () => {
     assert.equal(COLOR_EDITION_FINDER_SPEC.reason, 'color_edition_finding');
-  });
-
-  it('has correct role', () => {
     assert.equal(COLOR_EDITION_FINDER_SPEC.role, 'triage');
   });
 
-  it('system is a function (dynamic prompt)', () => {
+  it('system is a function and jsonSchema has expected properties', () => {
     assert.equal(typeof COLOR_EDITION_FINDER_SPEC.system, 'function');
-  });
-
-  it('jsonSchema is an object', () => {
-    assert.equal(typeof COLOR_EDITION_FINDER_SPEC.jsonSchema, 'object');
-    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.colors);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.editions);
+    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.default_color);
   });
 });

@@ -58,9 +58,9 @@ test('serpExplorerSchema requires the queries array', () => {
 });
 
 test('discoveryResultSchema enforces required top-level keys and nested candidate shape', () => {
-  const missingDiscoveryKey = makeDiscoveryResult();
-  delete missingDiscoveryKey.discoveryKey;
-  assert.equal(discoveryResultSchema.safeParse(missingDiscoveryKey).success, false);
+  const missingEnabled = makeDiscoveryResult();
+  delete missingEnabled.enabled;
+  assert.equal(discoveryResultSchema.safeParse(missingEnabled).success, false);
 
   const missingSerpExplorer = makeDiscoveryResult();
   delete missingSerpExplorer.serp_explorer;

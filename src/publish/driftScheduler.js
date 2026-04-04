@@ -1,9 +1,9 @@
 import { nowIso } from '../shared/primitives.js';
-import { upsertQueueProduct } from '../queue/queueState.js';
 import { publishProducts } from './publishingPipeline.js';
 import { hasKnownValue } from '../shared/valueNormalizers.js';
 import { normalizeToken } from '../shared/primitives.js';
 import { parseDateMs } from './publishPrimitives.js';
+import { outputKey, readJson, writeJson, writeText, listOutputKeys } from './publishStorageAdapter.js';
 
 function normalizeCategory(value) {
   return String(value || '')
@@ -34,40 +34,12 @@ function parseJsonLines(text = '') {
   return rows;
 }
 
-function outputModernKey(parts = []) {
-  return toPosix('output', ...parts);
-}
-
-function outputLegacyKey(storage, parts = []) {
-  return storage.resolveOutputKey('output', ...parts);
-}
-
 function finalModernKey(parts = []) {
   return toPosix('final', ...parts);
 }
 
 function finalLegacyKey(storage, parts = []) {
   return storage.resolveOutputKey('final', ...parts);
-}
-
-async function readJsonDual(storage, parts = []) {
-  const modern = await storage.readJsonOrNull(outputModernKey(parts));
-  if (modern) {
-    return modern;
-  }
-  return await storage.readJsonOrNull(outputLegacyKey(storage, parts));
-}
-
-async function writeJsonDual(storage, parts = [], payload = {}) {
-  const body = Buffer.from(JSON.stringify(payload, null, 2), 'utf8');
-  await storage.writeObject(outputModernKey(parts), body, { contentType: 'application/json' });
-  await storage.writeObject(outputLegacyKey(storage, parts), body, { contentType: 'application/json' });
-}
-
-async function writeTextDual(storage, parts = [], text = '') {
-  const body = Buffer.from(String(text || ''), 'utf8');
-  await storage.writeObject(outputModernKey(parts), body, { contentType: 'text/plain; charset=utf-8' });
-  await storage.writeObject(outputLegacyKey(storage, parts), body, { contentType: 'text/plain; charset=utf-8' });
 }
 
 function inferProductIdFromPublishedKey(key = '') {
@@ -77,27 +49,8 @@ function inferProductIdFromPublishedKey(key = '') {
 }
 
 async function listPublishedCurrentKeys(storage, category) {
-  const prefixes = [
-    outputModernKey([category, 'published']),
-    outputLegacyKey(storage, [category, 'published'])
-  ];
-  const seen = new Set();
-  const keys = [];
-  for (const prefix of prefixes) {
-    const listed = await storage.listKeys(prefix);
-    for (const key of listed) {
-      const normalized = String(key || '').replace(/\\/g, '/');
-      if (!normalized.endsWith('/current.json')) {
-        continue;
-      }
-      if (seen.has(normalized)) {
-        continue;
-      }
-      seen.add(normalized);
-      keys.push(normalized);
-    }
-  }
-  return keys.sort();
+  const keys = await listOutputKeys(storage, [category, 'published']);
+  return keys.filter((key) => String(key || '').replace(/\\/g, '/').endsWith('/current.json')).sort();
 }
 
 function hostFromUrl(url = '') {
@@ -275,28 +228,16 @@ function reportDateKey() {
 
 async function persistDriftReport(storage, category, report = {}) {
   const dateKey = reportDateKey();
-  await writeJsonDual(storage, [category, '_drift_report.json'], report);
-  await writeJsonDual(storage, [category, 'reports', `drift_${dateKey}.json`], report);
+  await writeJson(storage, [category, '_drift_report.json'], report);
+  await writeJson(storage, [category, 'reports', `drift_${dateKey}.json`], report);
 }
 
 async function readLatestArtifacts(storage, category, productId, specDb = null) {
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const [normalized, provenance, summary] = await Promise.all([
-    specDb
-      ? Promise.resolve(specDb.getNormalizedForProduct(productId))
-      : storage.readJsonOrNull(`${latestBase}/normalized.json`),
-    specDb
-      ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
-      : storage.readJsonOrNull(`${latestBase}/provenance.json`),
-    specDb
-      ? Promise.resolve(specDb.getSummaryForProduct(productId))
-      : storage.readJsonOrNull(`${latestBase}/summary.json`)
-  ]);
-  return {
-    normalized: normalized || null,
-    provenance: provenance || {},
-    summary: summary || {}
-  };
+  // WHY: SQL is sole source. File reads removed — validation stage will populate specDb.
+  const normalized = specDb?.getNormalizedForProduct?.(productId) || null;
+  const provenance = specDb?.getProvenanceForProduct?.(category, productId) || {};
+  const summary = specDb?.getSummaryForProduct?.(productId) || null;
+  return { normalized, provenance, summary };
 }
 
 export async function scanAndEnqueueDriftedProducts({
@@ -304,7 +245,8 @@ export async function scanAndEnqueueDriftedProducts({
   config = {},
   category,
   maxProducts = 250,
-  queueOnChange = true
+  queueOnChange = true,
+  specDb = null,
 }) {
   const normalizedCategory = normalizeCategory(category || '');
   if (!normalizedCategory) {
@@ -341,14 +283,14 @@ export async function scanAndEnqueueDriftedProducts({
     }
 
     const stateParts = [normalizedCategory, 'published', productId, 'drift_state.json'];
-    const previousState = await readJsonDual(storage, stateParts);
+    const previousState = await readJson(storage, stateParts);
     const previousSnapshot = (previousState && typeof previousState.source_hashes === 'object')
       ? previousState.source_hashes
       : null;
 
     if (!previousSnapshot) {
       seededCount += 1;
-      await writeJsonDual(storage, stateParts, {
+      await writeJson(storage, stateParts, {
         version: 1,
         category: normalizedCategory,
         product_id: productId,
@@ -367,7 +309,7 @@ export async function scanAndEnqueueDriftedProducts({
 
     const changes = diffSourceHashes(previousSnapshot, snapshot);
     if (changes.length === 0) {
-      await writeJsonDual(storage, stateParts, {
+      await writeJson(storage, stateParts, {
         ...(previousState || {}),
         checked_at: nowIso(),
         source_hashes: snapshot
@@ -381,24 +323,8 @@ export async function scanAndEnqueueDriftedProducts({
     }
 
     driftDetectedCount += 1;
-    let status = 'drift_detected';
-    if (queueOnChange) {
-      await upsertQueueProduct({
-        storage,
-        category: normalizedCategory,
-        productId,
-        patch: {
-          status: 'pending',
-          priority: 2,
-          retry_count: 0,
-          next_retry_at: '',
-          next_action_hint: 'drift_reextract'
-        }
-      });
-      queuedCount += 1;
-      status = 'drift_detected_enqueued';
-    }
-    await writeJsonDual(storage, stateParts, {
+    const status = 'drift_detected';
+    await writeJson(storage, stateParts, {
       ...(previousState || {}),
       checked_at: nowIso(),
       source_hashes: snapshot,
@@ -441,7 +367,7 @@ export async function reconcileDriftedProduct({
     throw new Error('drift reconcile requires category and productId');
   }
 
-  const published = await readJsonDual(storage, [normalizedCategory, 'published', normalizedProductId, 'current.json']);
+  const published = await readJson(storage, [normalizedCategory, 'published', normalizedProductId, 'current.json']);
   if (!published || typeof published !== 'object') {
     return {
       category: normalizedCategory,
@@ -471,26 +397,8 @@ export async function reconcileDriftedProduct({
 
   if (evidenceFailures.length > 0) {
     action = 'quarantined';
-    await upsertQueueProduct({
-      storage,
-      category: normalizedCategory,
-      productId: normalizedProductId,
-      patch: {
-        status: 'blocked',
-        next_action_hint: 'drift_quarantine'
-      }
-    });
   } else if (changedFields.length > 0) {
-    action = 'queued_for_review';
-    await upsertQueueProduct({
-      storage,
-      category: normalizedCategory,
-      productId: normalizedProductId,
-      patch: {
-        status: 'needs_manual',
-        next_action_hint: 'drift_review_required'
-      }
-    });
+    action = 'needs_review';
   } else if (autoRepublish) {
     action = 'auto_republished';
     publishResult = await publishFn({
@@ -500,15 +408,6 @@ export async function reconcileDriftedProduct({
       productIds: [normalizedProductId],
       allApproved: false,
       format: 'all'
-    });
-    await upsertQueueProduct({
-      storage,
-      category: normalizedCategory,
-      productId: normalizedProductId,
-      patch: {
-        status: 'complete',
-        next_action_hint: 'none'
-      }
     });
   }
 
@@ -522,8 +421,8 @@ export async function reconcileDriftedProduct({
     evidence_failures: evidenceFailures,
     publish_result: publishResult
   };
-  await writeJsonDual(storage, [normalizedCategory, 'published', normalizedProductId, 'drift_reconcile.json'], outcome);
-  await writeTextDual(
+  await writeJson(storage, [normalizedCategory, 'published', normalizedProductId, 'drift_reconcile.json'], outcome);
+  await writeText(
     storage,
     [normalizedCategory, 'published', normalizedProductId, 'drift_reconcile.log'],
     `${JSON.stringify({ ts: nowIso(), action, changed_fields: changedFields.length, evidence_failures: evidenceFailures.length })}\n`

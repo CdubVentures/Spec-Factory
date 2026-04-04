@@ -13,15 +13,20 @@ import { resolvePhaseModel } from '../../llm-config/state/llmPhaseOverridesBridg
 import type { GlobalDraftSlice } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
 import type { LlmPhaseOverrides } from '../../llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { assembleLlmPolicyFromFlat } from '../../llm-config/state/llmPolicyAdapter.generated.ts';
-import { useColorEditionFinderQuery, useColorEditionFinderRunMutation } from '../api/colorEditionFinderQueries.ts';
+import {
+  useColorEditionFinderQuery,
+  useColorEditionFinderRunMutation,
+  useDeleteColorEditionFinderRunMutation,
+  useDeleteColorEditionFinderAllMutation,
+} from '../api/colorEditionFinderQueries.ts';
 import {
   deriveFinderKpiCards,
   deriveCooldownState,
-  deriveColorTableRows,
-  deriveEditionTableRows,
+  deriveSelectedStateDisplay,
+  deriveRunHistoryRows,
   deriveFinderStatusChip,
 } from '../selectors/colorEditionFinderSelectors.ts';
-import type { KpiCard, ColorTableRow, EditionTableRow } from '../selectors/colorEditionFinderSelectors.ts';
+import type { KpiCard, SelectedStateDisplay, RunHistoryRow, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -38,6 +43,7 @@ function toneToValueClass(tone: string): string {
   if (tone === 'warning') return 'sf-status-text-warning';
   if (tone === 'danger') return 'sf-status-text-danger';
   if (tone === 'info') return 'sf-status-text-info';
+  if (tone === 'teal') return 'sf-status-text-success';
   return 'text-[var(--sf-token-accent-strong)]';
 }
 
@@ -56,78 +62,222 @@ function FinderKpiCard({ value, label, tone }: KpiCard) {
   );
 }
 
-/* ── Column defs ──────────────────────────────────────────────────── */
+function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-mono font-semibold sf-text-primary">
+      {pill.hex && (
+        <span
+          className="inline-block w-3.5 h-3.5 rounded-sm border border-white/10 shrink-0"
+          style={{ backgroundColor: pill.hex }}
+        />
+      )}
+      {pill.name}
+      {pill.isDefault && (
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--sf-token-accent-strong)] shrink-0" />
+      )}
+    </span>
+  );
+}
 
-const colorColumns: ColumnDef<ColorTableRow, unknown>[] = [
-  {
-    accessorKey: 'name',
-    header: 'Color',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        {row.original.hex && (
-          <span
-            className="inline-block w-4 h-4 rounded-sm border border-white/10 shrink-0"
-            style={{ backgroundColor: row.original.hex }}
-          />
+function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay }) {
+  if (display.colors.length === 0 && display.editions.length === 0) return null;
+
+  return (
+    <div className="sf-surface-elevated border sf-border-soft rounded-lg p-5 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-[0.08em] sf-text-muted">
+          Selected State
+        </span>
+        {display.ssotRunNumber > 0 && (
+          <Chip label={`SSOT \u00B7 Run #${display.ssotRunNumber}`} className="sf-chip-teal-strong" />
         )}
-        <span className="font-semibold sf-text-primary text-[12px]">{row.original.name}</span>
-        {row.original.isDefault && <Chip label="Default" className="sf-chip-accent" />}
       </div>
-    ),
-    size: 200,
-  },
-  {
-    accessorKey: 'hex',
-    header: 'Hex',
-    cell: ({ row }) => <span className="font-mono text-[10px] sf-text-muted">{row.original.hex}</span>,
-    size: 90,
-  },
-  {
-    accessorKey: 'foundRun',
-    header: 'Run',
-    cell: ({ row }) => <span className="font-mono text-[10px] font-semibold text-[var(--sf-token-accent-strong)]">{row.original.foundRun}</span>,
-    size: 60,
-  },
-  {
-    accessorKey: 'foundAt',
-    header: 'Discovered',
-    cell: ({ row }) => <span className="font-mono text-[10px] sf-text-muted">{row.original.foundAt}</span>,
-    size: 100,
-  },
-  {
-    accessorKey: 'model',
-    header: 'Model',
-    cell: ({ row }) => row.original.model ? <Chip label={row.original.model} className="sf-chip-purple" /> : <span className="sf-text-muted">-</span>,
-    size: 120,
-  },
-];
 
-const editionColumns: ColumnDef<EditionTableRow, unknown>[] = [
-  {
-    accessorKey: 'slug',
-    header: 'Edition',
-    cell: ({ row }) => <span className="font-mono font-semibold sf-text-primary text-[12px]">{row.original.slug}</span>,
-    size: 200,
-  },
-  {
-    accessorKey: 'foundRun',
-    header: 'Run',
-    cell: ({ row }) => <span className="font-mono text-[10px] font-semibold text-[var(--sf-token-accent-strong)]">{row.original.foundRun}</span>,
-    size: 60,
-  },
-  {
-    accessorKey: 'foundAt',
-    header: 'Discovered',
-    cell: ({ row }) => <span className="font-mono text-[10px] sf-text-muted">{row.original.foundAt}</span>,
-    size: 100,
-  },
-  {
-    accessorKey: 'model',
-    header: 'Model',
-    cell: ({ row }) => row.original.model ? <Chip label={row.original.model} className="sf-chip-purple" /> : <span className="sf-text-muted">-</span>,
-    size: 120,
-  },
-];
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Colors */}
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">
+            Colors ({display.colors.length})
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {display.colors.map(pill => (
+              <ColorPillInline key={pill.name} pill={pill} />
+            ))}
+          </div>
+        </div>
+
+        {/* Editions with paired colors */}
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">
+            Editions ({display.editions.length})
+          </div>
+          {display.editions.length === 0 ? (
+            <span className="text-[11px] sf-text-muted">None</span>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {display.editions.map(ed => (
+                <div key={ed.slug} className="sf-surface-panel border sf-border-soft rounded-md px-3 py-2">
+                  <div className="text-[12px] font-mono font-bold sf-chip-purple mb-1.5 inline-block px-1.5 py-0.5 rounded">
+                    {ed.slug}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {ed.pairedColors.map(pc => (
+                      <span key={pc.name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-elevated rounded text-[10px] font-mono sf-text-muted">
+                        {pc.hex && (
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-sm border border-white/10"
+                            style={{ backgroundColor: pc.hex }}
+                          />
+                        )}
+                        {pc.name}
+                      </span>
+                    ))}
+                    {ed.pairedColors.length === 0 && (
+                      <span className="text-[10px] sf-text-muted">no colors</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHistoryRow; readonly colorRegistry: ColorRegistryEntry[] }) {
+  const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
+  const selColors = row.selected?.colors ?? [];
+  const selEditions = row.selected?.editions ?? {};
+
+  return (
+    <div className="px-3 py-3 flex flex-col gap-3">
+      {/* Selected output summary */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Selected Output</div>
+        <div className="flex flex-wrap gap-1 mb-1">
+          {selColors.map(name => {
+            const firstAtom = name.split('+')[0] || name;
+            const hex = hexMap.get(firstAtom) || hexMap.get(name) || '';
+            return (
+              <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-panel rounded text-[10px] font-mono sf-text-primary">
+                {hex && <span className="inline-block w-2.5 h-2.5 rounded-sm border border-white/10" style={{ backgroundColor: hex }} />}
+                {name}
+              </span>
+            );
+          })}
+        </div>
+        {Object.keys(selEditions).length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {Object.keys(selEditions).map(slug => (
+              <span key={slug} className="text-[10px] font-mono font-semibold sf-chip-purple px-1.5 py-0.5 rounded">
+                {slug}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* System Prompt */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">System Prompt</div>
+        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-60">
+          {row.systemPrompt}
+        </pre>
+      </div>
+
+      {/* User Message */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">User Message</div>
+        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-20">
+          {row.userMessage}
+        </pre>
+      </div>
+
+      {/* LLM Response */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">LLM Response</div>
+        <pre className="sf-pre-block sf-text-label font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-60">
+          {row.responseJson}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+/* ── Run history column defs ──────────────────────────────────────── */
+
+function buildRunHistoryColumns(
+  deleteRunMut: { mutate: (n: number) => void; isPending: boolean },
+): ColumnDef<RunHistoryRow, unknown>[] {
+  return [
+    {
+      accessorKey: 'runNumber',
+      header: 'Run',
+      cell: ({ row }) => (
+        <span className="font-mono text-[13px] font-bold text-[var(--sf-token-accent-strong)]">
+          #{row.original.runNumber}
+        </span>
+      ),
+      size: 60,
+    },
+    {
+      accessorKey: 'ranAt',
+      header: 'Date',
+      cell: ({ row }) => (
+        <span className="font-mono text-[10px] sf-text-muted">
+          {row.original.ranAt?.split('T')[0] ?? ''}
+        </span>
+      ),
+      size: 100,
+    },
+    {
+      accessorKey: 'model',
+      header: 'Model',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Chip label={row.original.model || '?'} className="sf-chip-purple" />
+          {row.original.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
+        </div>
+      ),
+      size: 150,
+    },
+    {
+      id: 'counts',
+      header: 'Results',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Chip label={`${row.original.colorCount} colors`} className="sf-chip-accent" />
+          <Chip label={`${row.original.editionCount} editions`} className="sf-chip-purple" />
+        </div>
+      ),
+      size: 180,
+    },
+    {
+      id: 'status',
+      header: '',
+      cell: ({ row }) => row.original.isLatest
+        ? <Chip label="LATEST \u00B7 SSOT" className="sf-chip-teal-strong" />
+        : null,
+      size: 100,
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); deleteRunMut.mutate(row.original.runNumber); }}
+          disabled={deleteRunMut.isPending}
+          className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Delete
+        </button>
+      ),
+      size: 70,
+    },
+  ];
+}
 
 /* ── LLM model resolver ───────────────────────────────────────────── */
 
@@ -164,6 +314,8 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
   const { data: result = null, isLoading } = useColorEditionFinderQuery(category, productId);
   const runMut = useColorEditionFinderRunMutation(category, productId);
+  const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
+  const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
   const resolvedModel = useResolvedFinderModel();
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -171,13 +323,18 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     queryFn: () => api.get<ColorRegistryEntry[]>('/colors'),
   });
 
+  const runHistoryColumns = useMemo(
+    () => buildRunHistoryColumns(deleteRunMut),
+    [deleteRunMut],
+  );
+
   if (!productId || !category) return null;
 
   const statusChip = deriveFinderStatusChip(result);
   const kpiCards = deriveFinderKpiCards(result);
   const cooldown = deriveCooldownState(result);
-  const colorRows = deriveColorTableRows(result, colorRegistry);
-  const editionRows = deriveEditionTableRows(result);
+  const selectedState = deriveSelectedStateDisplay(result, colorRegistry);
+  const runHistoryRows = deriveRunHistoryRows(result);
 
   const modelDisplay = resolvedModel?.effectiveModel || 'not configured';
   const webSearchEnabled = resolvedModel?.webSearch ?? false;
@@ -275,23 +432,34 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
             </div>
           )}
 
-          {/* Colors Table */}
-          {colorRows.length > 0 && (
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-2">
-                Colors <span className="font-mono sf-text-subtle">{colorRows.length} variants</span>
-              </div>
-              <DataTable data={colorRows} columns={colorColumns} persistKey="cef-colors" maxHeight="max-h-[400px]" />
-            </div>
-          )}
+          {/* Selected State */}
+          <SelectedStateCard display={selectedState} />
 
-          {/* Editions Table */}
-          {editionRows.length > 0 && (
+          {/* Run History */}
+          {runHistoryRows.length > 0 && (
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-2">
-                Editions <span className="font-mono sf-text-subtle">{editionRows.length} edition{editionRows.length !== 1 ? 's' : ''}</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
+                  Run History <span className="font-mono sf-text-subtle">{runHistoryRows.length} run{runHistoryRows.length !== 1 ? 's' : ''}</span>
+                </div>
+                <button
+                  onClick={() => deleteAllMut.mutate()}
+                  disabled={deleteAllMut.isPending}
+                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {deleteAllMut.isPending ? 'Deleting...' : 'Delete All'}
+                </button>
               </div>
-              <DataTable data={editionRows} columns={editionColumns} persistKey="cef-editions" maxHeight="max-h-[400px]" />
+              <DataTable
+                data={runHistoryRows}
+                columns={runHistoryColumns}
+                persistKey="cef-runs"
+                maxHeight="max-h-[600px]"
+                renderExpandedRow={(row) => (
+                  <RunHistoryExpandedDetail row={row} colorRegistry={colorRegistry} />
+                )}
+                getRowClassName={(row) => row.isLatest ? 'border-l-2 border-[var(--sf-token-accent-strong)]' : ''}
+              />
             </div>
           )}
 
@@ -311,6 +479,12 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
             </span>
             <span>&middot;</span>
             <span>Runs: <strong className="sf-text-subtle">{result.run_count}</strong></span>
+            {selectedState.ssotRunNumber > 0 && (
+              <>
+                <span>&middot;</span>
+                <span>SSOT source: <strong className="sf-text-subtle">Run #{selectedState.ssotRunNumber}</strong></span>
+              </>
+            )}
           </div>
         </div>
       )}

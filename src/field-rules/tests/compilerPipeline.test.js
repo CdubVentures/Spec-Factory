@@ -44,7 +44,7 @@ test('compileRulesAll discovers and compiles initialized categories', async () =
   }
 });
 
-test('discoverCompileCategories discovers scaffolded categories', async () => {
+test('discoverCompileCategories ignores init-only categories until a control-plane map or compiled rules exist', async () => {
   const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-compile-starter-');
   try {
     await initCategory({
@@ -56,7 +56,7 @@ test('discoverCompileCategories discovers scaffolded categories', async () => {
     const discovered = await discoverCompileCategories({
       config: { categoryAuthorityRoot: helperRoot, categoriesRoot }
     });
-    assert.equal(discovered.categories.includes('monitor'), true);
+    assert.equal(discovered.categories.includes('monitor'), false);
   } finally {
     await removeRoot(root);
   }

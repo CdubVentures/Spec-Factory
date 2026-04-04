@@ -1,12 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { initCategory } from '../../field-rules/compiler.js';
-import {
-  loadQueueState,
-  recordQueueFailure,
-  selectNextQueueProduct,
-  upsertQueueProduct
-} from '../../queue/queueState.js';
 import { buildSourceHealth } from '../../publish/publishingPipeline.js';
 import { normalizeToken } from '../../shared/primitives.js';
 
@@ -127,7 +121,6 @@ export async function bootstrapExpansionCategories({
       template: normalizedTemplate,
       helper_category_root: initResult.paths.helper_category_root,
       category_root: initResult.paths.category_root,
-      starter_field_studio_source: path.join(initResult.paths.source_root, 'field_catalog.seed.json'),
       golden_manifest: manifestPath,
       golden_manifest_created: manifestCreated,
       created_files_count: Array.isArray(initResult.created_files) ? initResult.created_files.length : 0
@@ -142,117 +135,6 @@ export async function bootstrapExpansionCategories({
     categories: normalizedTargets,
     categories_count: rows.length,
     rows
-  };
-}
-
-export async function runQueueLoadHarness({
-  storage,
-  category = 'mouse',
-  productCount = 200,
-  selectCycles = 100,
-  specDb = null,
-}) {
-  const normalizedCategory = normalizeCategory(category) || 'mouse';
-  const count = Math.max(1, toInt(productCount, 200));
-  const cycles = Math.max(1, toInt(selectCycles, 100));
-  const start = Date.now();
-  for (let idx = 0; idx < count; idx += 1) {
-    const productId = `${normalizedCategory}-load-${String(idx + 1).padStart(4, '0')}`;
-    await upsertQueueProduct({
-      storage,
-      category: normalizedCategory,
-      productId,
-      s3key: `specs/inputs/${normalizedCategory}/products/${productId}.json`,
-      patch: {
-        status: 'pending',
-        priority: (idx % 5) + 1,
-        next_action_hint: 'fast_pass'
-      }
-    });
-  }
-
-  let selected = 0;
-  for (let idx = 0; idx < cycles; idx += 1) {
-    const loaded = await loadQueueState({ storage, category: normalizedCategory, specDb });
-    const next = selectNextQueueProduct(loaded.state);
-    if (!next || !next.productId) {
-      break;
-    }
-    selected += 1;
-    await upsertQueueProduct({
-      storage,
-      category: normalizedCategory,
-      productId: next.productId,
-      s3key: next.s3key || `specs/inputs/${normalizedCategory}/products/${next.productId}.json`,
-      patch: {
-        status: 'complete',
-        next_action_hint: 'none'
-      }
-    });
-  }
-
-  const durationMs = Date.now() - start;
-  return {
-    category: normalizedCategory,
-    seeded_products: count,
-    select_cycles_requested: cycles,
-    select_cycles_completed: selected,
-    duration_ms: durationMs,
-    selects_per_second: Number.parseFloat((selected / Math.max(0.001, durationMs / 1000)).toFixed(4)),
-    status: selected > 0 ? 'ok' : 'no_selectable_products'
-  };
-}
-
-export async function runFailureInjectionHarness({
-  storage,
-  category = 'mouse',
-  productId = '',
-  maxAttempts = 3,
-  specDb = null,
-}) {
-  const normalizedCategory = normalizeCategory(category) || 'mouse';
-  const targetProductId = normalizeCategory(productId) || `${normalizedCategory}-failure-injection`;
-  const attempts = Math.max(1, toInt(maxAttempts, 3));
-  const s3key = `specs/inputs/${normalizedCategory}/products/${targetProductId}.json`;
-
-  await upsertQueueProduct({
-    storage,
-    category: normalizedCategory,
-    productId: targetProductId,
-    s3key,
-    patch: {
-      status: 'pending',
-      max_attempts: attempts
-    }
-  });
-
-  const events = [];
-  for (let idx = 0; idx < attempts; idx += 1) {
-    const result = await recordQueueFailure({
-      storage,
-      category: normalizedCategory,
-      productId: targetProductId,
-      s3key,
-      error: new Error(`injected_failure_${idx + 1}`)
-    });
-    events.push({
-      attempt: idx + 1,
-      status: result.product.status,
-      retry_count: result.product.retry_count,
-      next_retry_at: result.product.next_retry_at || null
-    });
-  }
-
-  const loaded = await loadQueueState({ storage, category: normalizedCategory, specDb });
-  const final = loaded.state.products[targetProductId] || {};
-  return {
-    category: normalizedCategory,
-    product_id: targetProductId,
-    max_attempts: attempts,
-    final_status: String(final.status || 'unknown'),
-    final_retry_count: toInt(final.retry_count, 0),
-    passed: String(final.status || '') === 'failed' && toInt(final.retry_count, 0) >= attempts,
-    events
   };
 }
 
@@ -290,11 +172,9 @@ export async function runFuzzSourceHealthHarness({
   }
 
   const relPath = toPosix('final', normalizedCategory, 'fuzz-brand', 'fuzz-model', 'evidence', 'sources.jsonl');
-  const legacyPath = storage.resolveOutputKey('final', normalizedCategory, 'fuzz-brand', 'fuzz-model', 'evidence', 'sources.jsonl');
   const text = `${lines.join('\n')}\n`;
   const body = Buffer.from(text, 'utf8');
   await storage.writeObject(relPath, body, { contentType: 'application/x-ndjson' });
-  await storage.writeObject(legacyPath, body, { contentType: 'application/x-ndjson' });
 
   const health = await buildSourceHealth({
     storage,
@@ -445,5 +325,4 @@ export function parseExpansionCategories(value, fallback = ['monitor', 'keyboard
   const parsed = parseCsvList(value);
   return parsed.length > 0 ? parsed : [...fallback];
 }
-
 

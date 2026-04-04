@@ -209,7 +209,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
       dedupedResults: [makeResult('https://logitech.com/mice/g-pro-x-superlight')],
       categoryConfig: makeCategoryConfig(),
 
-      identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
+      identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro' },
     });
 
     assert.equal(survivors.length, 1);

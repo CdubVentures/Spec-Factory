@@ -10,7 +10,7 @@ import {
 describe('Phase 02 - BRAND_HOST_HINTS Sync', () => {
   it('includes alienware and dell manufacturer domains in soft host-biased queries', () => {
     const profile = buildSearchProfile({
-      job: makeJob({ identityLock: { brand: 'Alienware', model: 'AW610M', variant: '' } }),
+      job: makeJob({ identityLock: { brand: 'Alienware', base_model: 'AW610M', model: 'AW610M', variant: '' } }),
       categoryConfig: {
         ...makeCategoryConfig(),
         sourceHosts: [

@@ -330,6 +330,7 @@ UI drift and one-off styling are forbidden.
 - `.server-state/` — server PID + log (git-ignored)
 - Do not create other runtime directories. Use OS tmpdir for throwaway work.
 - The root `tmp/` directory is banned and gitignored.
+- **No root-level artifact directories.** Tools that produce output (Playwright, bundlers, etc.) must write into `.workspace/`, not the project root. If a tool defaults to a root-level folder, override its config to target `.workspace/`.
 
 ---
 

@@ -15,9 +15,10 @@ function makeJob() {
   return {
     productId: 'test-prod',
     brand: 'TestBrand',
+    base_model: 'TestModel',
     model: 'TestModel',
     category: 'mouse',
-    identityLock: { brand: 'TestBrand', model: 'TestModel' },
+    identityLock: { brand: 'TestBrand', base_model: 'TestModel', model: 'TestModel' },
   };
 }
 
@@ -41,7 +42,7 @@ function makeBaseArgs(overrides = {}) {
     learning: { lexicon: {}, queryTemplates: [], fieldYield: null },
     brandResolution: null,
     config: { searchProfileQueryCap: 1, searchEngines: 'bing,google' },
-    variables: { brand: 'TestBrand', model: 'TestModel', variant: '', category: 'mouse' },
+    variables: { brand: 'TestBrand', base_model: 'TestModel', model: 'TestModel', variant: '', category: 'mouse' },
     focusGroups: null,
     seedStatus: null,
     logger: createMockLogger(),

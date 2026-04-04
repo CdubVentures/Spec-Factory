@@ -91,10 +91,39 @@ test('picker labels use catalog brand+model+variant when provided', async () => 
       ended_at: '2026-03-18T06:30:00Z',
     }));
     const catalogProducts = new Map([
-      ['mouse-f1e2d3c4', { brand: 'Razer', model: 'Viper V3 Pro', variant: 'White' }],
+      ['mouse-f1e2d3c4', { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro White', variant: 'White' }],
     ]);
     const builder = makeBuilder(tmpDir, specDb);
     const rows = await builder.listIndexLabRuns({ category: 'mouse', catalogProducts });
+    assert.equal(rows[0]?.picker_label, 'Mouse • Razer Viper V3 Pro White - 6a0b3');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('picker labels do not duplicate variant when only full model is available', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-picker-dedupe-${Date.now()}`);
+  const runId = '20260318061504-16a0b3';
+  const runDir = path.join(tmpDir, runId);
+  await fs.mkdir(runDir, { recursive: true });
+  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify({
+    schema_version: 2,
+    run: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-razer-viper-v3-pro-white',
+      status: 'completed',
+    },
+    identity: {
+      brand: 'Razer',
+      model: 'Viper V3 Pro White',
+      variant: 'White',
+    },
+    counters: {},
+  }));
+  try {
+    const builder = makeBuilder(tmpDir, null);
+    const rows = await builder.listIndexLabRuns();
     assert.equal(rows[0]?.picker_label, 'Mouse • Razer Viper V3 Pro White - 6a0b3');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });

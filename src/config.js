@@ -59,5 +59,12 @@ export function loadConfigWithUserSettings(overrides = {}) {
     const userSettings = loadUserSettingsSync();
     applyRuntimeSettingsToConfig(config, userSettings.runtime, { mode: 'bootstrap' });
   } catch { /* best-effort — CLI may run without persisted settings */ }
+
+  // WHY: Explicit overrides (CLI args) must win over user-settings.json values.
+  // applyRuntimeSettingsToConfig can overwrite keys that were set by the caller,
+  // so we re-apply non-undefined overrides to restore the intended precedence.
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value !== undefined) config[key] = value;
+  }
   return config;
 }

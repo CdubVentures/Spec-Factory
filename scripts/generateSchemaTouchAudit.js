@@ -27,13 +27,6 @@ const SURFACES = [
     description: 'Global cross-category SQLite surface for brands, settings, and studio maps.',
   },
   {
-    key: 'learning',
-    label: 'Learning Stores',
-    group: 'Auxiliary',
-    schemaFiles: ['src/features/indexing/learning/learningStores.js'],
-    description: 'Small auxiliary stores for lexicon, anchor, URL memory, and yield tracking.',
-  },
-  {
     key: 'enumstrict',
     label: 'Strict Enum Temp',
     group: 'Auxiliary',
@@ -65,10 +58,6 @@ const GENERIC_METHOD_STOPLIST = new Set([
 ]);
 
 const CLASS_REFERENCE_TABLES = new Map([
-  ['ComponentLexiconStore', ['learning:component_lexicon']],
-  ['FieldAnchorsStore', ['learning:field_anchors']],
-  ['UrlMemoryStore', ['learning:url_memory']],
-  ['DomainFieldYieldStore', ['learning:domain_field_yield']],
 ]);
 
 const CONSOLIDATION_NOTES = new Map([
@@ -476,18 +465,6 @@ function preferTableForFile(candidates, relPath, text) {
   }
 
 
-  if (
-    text.includes('ComponentLexiconStore') ||
-    text.includes('FieldAnchorsStore') ||
-    text.includes('UrlMemoryStore') ||
-    text.includes('DomainFieldYieldStore')
-  ) {
-    const learning = candidates.find((entry) => entry.surfaceKey === 'learning');
-    if (learning) {
-      return learning;
-    }
-  }
-
   return candidates[0];
 }
 
@@ -509,7 +486,6 @@ function buildAliasMap(textByFile, tableEntries) {
 function buildDefinitions(textByFile, tableEntries, aliasMap) {
   const relevantPrefixes = [
     'src/db/',
-    'src/features/indexing/learning/learningStores.js',
   ];
 
   const definitions = [];
@@ -652,9 +628,6 @@ function addIndirectTouchData(tableEntries, definitions, textByFile) {
   for (const [className, tableKeys] of CLASS_REFERENCE_TABLES.entries()) {
     const pattern = new RegExp(`\\b${escapeRegex(className)}\\b`);
     for (const [relPath, text] of textByFile.entries()) {
-      if (relPath === 'src/features/indexing/learning/learningStores.js') {
-        continue;
-      }
       if (!pattern.test(text)) {
         continue;
       }

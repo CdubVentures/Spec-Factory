@@ -80,28 +80,36 @@ async function seedLatest(outputRoot, productId, weight = '59') {
 }
 
 async function seedApprovedOverride(helperRoot, productId, overrideValue) {
-  await writeJson(path.join(helperRoot, 'mouse', '_overrides', `${productId}.overrides.json`), {
-    version: 1,
+  // WHY: readOverrideDoc reads the consolidated overrides.json file (not per-product files).
+  await writeJson(path.join(helperRoot, 'mouse', '_overrides', 'overrides.json'), {
+    version: 2,
     category: 'mouse',
-    product_id: productId,
-    review_status: 'approved',
-    reviewed_by: 'reviewer_cli',
-    reviewed_at: '2026-02-13T01:00:00.000Z',
-    review_time_seconds: 30,
-    overrides: {
-      weight: {
-        field: 'weight',
-        override_source: 'candidate_selection',
-        override_value: overrideValue,
-        override_reason: 'human approved',
-        override_provenance: {
-          url: 'https://manufacturer.example/spec',
-          source_id: 'manufacturer_example',
-          retrieved_at: '2026-02-13T00:00:00.000Z',
-          snippet_id: 'snp_weight_1',
-          snippet_hash: 'sha256:aaa',
-          quote: `Weight: ${overrideValue} g`,
-          quote_span: [0, 12]
+    updated_at: '2026-02-13T01:00:00.000Z',
+    products: {
+      [productId]: {
+        version: 1,
+        category: 'mouse',
+        product_id: productId,
+        review_status: 'approved',
+        reviewed_by: 'reviewer_cli',
+        reviewed_at: '2026-02-13T01:00:00.000Z',
+        review_time_seconds: 30,
+        overrides: {
+          weight: {
+            field: 'weight',
+            override_source: 'candidate_selection',
+            override_value: overrideValue,
+            override_reason: 'human approved',
+            override_provenance: {
+              url: 'https://manufacturer.example/spec',
+              source_id: 'manufacturer_example',
+              retrieved_at: '2026-02-13T00:00:00.000Z',
+              snippet_id: 'snp_weight_1',
+              snippet_hash: 'sha256:aaa',
+              quote: `Weight: ${overrideValue} g`,
+              quote_span: [0, 12]
+            }
+          }
         }
       }
     }
@@ -119,7 +127,7 @@ test('publish CLI publishes approved overrides and exposes provenance/changelog 
   await seedHelperArtifacts(helperRoot);
   await seedLatest(outputRoot, productId, '59');
   await seedApprovedOverride(helperRoot, productId, '58');
-  const env = { CATEGORY_AUTHORITY_ROOT: helperRoot };
+  const env = { CATEGORY_AUTHORITY_ROOT: helperRoot, SPEC_DB_DIR: workspace.specDbDir };
 
   const published = await runCli([
     'publish',

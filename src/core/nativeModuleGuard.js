@@ -1,7 +1,12 @@
 import { createRequire } from 'node:module';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
-const require = createRequire(import.meta.url);
+const MODULE_FILENAME = typeof __filename === 'string'
+  ? __filename
+  : fileURLToPath(import.meta.url);
+
+const require = createRequire(MODULE_FILENAME);
 
 /**
  * Synchronous belt-and-suspenders check that better-sqlite3 can load

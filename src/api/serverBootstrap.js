@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
-import { defaultSnapshotRoot, defaultUserSettingsRoot } from '../core/config/runtimeArtifactRoots.js';
+import { defaultSnapshotRoot } from '../core/config/runtimeArtifactRoots.js';
 import { spawn, exec as execCb } from 'node:child_process';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { invalidateFieldRulesCache } from '../field-rules/loader.js';
@@ -73,31 +73,6 @@ export function bootstrapServer({ projectRoot }) {
     throw new Error(
       `[FATAL] ${nativeHealth.error}\nFix: npm rebuild better-sqlite3\nNode: ${process.version} (${process.execPath})`,
     );
-  }
-
-  // ── Migrate legacy settings from category_authority/_runtime/ to .workspace/ ──
-  try {
-    const legacySettingsPath = path.join(HELPER_ROOT, '_runtime', 'user-settings.json');
-    const newSettingsPath = path.join(defaultUserSettingsRoot(), 'user-settings.json');
-    if (!fsSync.existsSync(newSettingsPath) && fsSync.existsSync(legacySettingsPath)) {
-      fsSync.mkdirSync(path.dirname(newSettingsPath), { recursive: true });
-      fsSync.copyFileSync(legacySettingsPath, newSettingsPath);
-      console.log(`[settings-migration] Copied ${legacySettingsPath} → ${newSettingsPath}`);
-    }
-    const legacySnapshotsDir = path.join(HELPER_ROOT, '_runtime', 'snapshots');
-    const newSnapshotsDir = defaultSnapshotRoot();
-    if (fsSync.existsSync(legacySnapshotsDir)) {
-      const entries = fsSync.readdirSync(legacySnapshotsDir).filter((f) => f.endsWith('.json'));
-      if (entries.length > 0 && !fsSync.existsSync(newSnapshotsDir)) {
-        fsSync.mkdirSync(newSnapshotsDir, { recursive: true });
-        for (const entry of entries) {
-          fsSync.copyFileSync(path.join(legacySnapshotsDir, entry), path.join(newSnapshotsDir, entry));
-        }
-        console.log(`[settings-migration] Copied ${entries.length} snapshot(s) to ${newSnapshotsDir}`);
-      }
-    }
-  } catch (err) {
-    console.warn('[settings-migration] Non-critical migration warning:', err?.message || err);
   }
 
   // ── Phase 2: Session + DB ──

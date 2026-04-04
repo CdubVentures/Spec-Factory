@@ -3,20 +3,12 @@ import path from 'node:path';
 
 import { loadCategoryConfig } from '../../categories/loader.js';
 import {
-  readLearningHintsFromStores,
-  UrlMemoryStore,
-  DomainFieldYieldStore,
-  FieldAnchorsStore,
-  ComponentLexiconStore,
-} from '../../features/indexing/learning/index.js';
-import {
   buildIndexlabRuntimeCategoryConfig,
   loadRouteMatrixPolicyForRun,
   stableHash,
 } from '../../features/indexing/orchestration/shared/index.js';
 import {
   createRunLlmRuntime,
-  loadLearningStoreHintsForRun,
 } from '../../features/indexing/orchestration/bootstrap/index.js';
 import {
   buildDiscoverySeedPlanContext,
@@ -52,13 +44,7 @@ const DEFAULT_DEPS = {
   defaultIndexLabRootFn: defaultIndexLabRoot,
   joinPathFn: path.join,
   mkdirSyncFn: fs.mkdirSync,
-  loadLearningStoreHintsForRunFn: loadLearningStoreHintsForRun,
-  UrlMemoryStoreClass: UrlMemoryStore,
-  DomainFieldYieldStoreClass: DomainFieldYieldStore,
-  FieldAnchorsStoreClass: FieldAnchorsStore,
-  ComponentLexiconStoreClass: ComponentLexiconStore,
   normalizeFieldListFn: normalizeFieldList,
-  readLearningHintsFromStoresFn: readLearningHintsFromStores,
   computeNeedSetFn: computeNeedSet,
   buildDiscoverySeedPlanContextFn: buildDiscoverySeedPlanContext,
   runDiscoverySeedPlanFn: runDiscoverySeedPlan,
@@ -159,21 +145,6 @@ export async function bootstrapRunProductExecutionState({
   });
   const llmContext = llmRuntime.llmContext;
 
-  const learningStoreHints = await runtimeDeps.loadLearningStoreHintsForRunFn({
-    config,
-    category,
-    roundContext,
-    requiredFields,
-    categoryConfig,
-    importSpecDbFn: async () => import('../../db/specDb.js'),
-    createUrlMemoryStoreFn: (db) => new runtimeDeps.UrlMemoryStoreClass(db),
-    createDomainFieldYieldStoreFn: (db) => new runtimeDeps.DomainFieldYieldStoreClass(db),
-    createFieldAnchorsStoreFn: (db) => new runtimeDeps.FieldAnchorsStoreClass(db),
-    createComponentLexiconStoreFn: (db) => new runtimeDeps.ComponentLexiconStoreClass(db),
-    normalizeFieldListFn: runtimeDeps.normalizeFieldListFn,
-    readLearningHintsFromStoresFn: runtimeDeps.readLearningHintsFromStoresFn,
-  });
-
   logger.info('bootstrap_step', { step: 'needset', progress: 85 });
   const initialNeedSet = runtimeDeps.computeNeedSetFn({
     runId,
@@ -228,7 +199,6 @@ export async function bootstrapRunProductExecutionState({
       requiredFields,
       llmContext,
       frontierDb,
-      learningStoreHints,
       planner: null,
       normalizeFieldList: runtimeDeps.normalizeFieldListFn,
     }),

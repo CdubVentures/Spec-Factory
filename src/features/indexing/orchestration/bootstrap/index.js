@@ -21,6 +21,5 @@ export { buildRunBootstrapLogPayloadPhaseCallsiteContext } from './buildRunBoots
 export { buildRunBootstrapLogPayloadContext } from './buildRunBootstrapLogPayloadContext.js';
 
 export { createRunLlmRuntime } from './createRunLlmRuntime.js';
-export { loadLearningStoreHintsForRun } from './loadLearningStoreHintsForRun.js';
 export { bootstrapRunEventIndexing } from './bootstrapRunEventIndexing.js';
 export { buildJobFromDb } from './buildJobFromDb.js';

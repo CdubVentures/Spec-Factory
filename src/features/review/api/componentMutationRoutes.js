@@ -64,8 +64,6 @@ async function handleComponentOverrideEndpoint({
     cascadeComponentChange,
     outputRoot,
     storage,
-    loadQueueState,
-    saveQueueState,
     remapPendingComponentReviewItemsForNameChange,
     specDbCache,
     broadcastWs,
@@ -123,8 +121,6 @@ async function handleComponentOverrideEndpoint({
         storage,
         outputRoot,
         category,
-        loadQueueState,
-        saveQueueState,
         runtimeSpecDb,
       };
 

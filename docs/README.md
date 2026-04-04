@@ -100,7 +100,7 @@ Spec Factory is a local-first Node.js plus React workbench for crawl-first produ
 - `npm test` succeeded on 2026-03-31.
 - `npm run env:check` failed on 2026-03-31 with `Missing keys in config manifest: PORT`.
 - Runtime validation on 2026-03-31 confirmed live responses from `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/runtime-settings`, `/api/v1/llm-policy`, and `/api/v1/storage/overview`.
-- `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]`; `category_authority/tests/`, `_global/`, `_runtime/`, and `_test_mouse/` are present on disk but filtered from the default categories API.
+- `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]`; `category_authority/tests/`, `_global/`, and `_test_mouse/` are present on disk but filtered from the default categories API.
 - `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` remain unauthenticated and can expose secret-bearing fields when configured.
 
 ## Validated Against

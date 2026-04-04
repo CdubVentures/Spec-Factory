@@ -7,10 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   runWithConcurrency,
-  mergeLearningStoreHintsIntoLexicon,
   loadLearningArtifacts,
-  buildSearchProfileKeys,
-  writeSearchProfileArtifacts,
   buildQueryAttemptStats,
 } from '../helpers.js';
 
@@ -48,48 +45,6 @@ test('runWithConcurrency: worker receives index', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// 2. mergeLearningStoreHintsIntoLexicon
-// ---------------------------------------------------------------------------
-
-test('mergeLearningStoreHintsIntoLexicon: null hints returns lexicon unchanged', () => {
-  const lexicon = { fields: { weight: { synonyms: { grams: { count: 1 } } } } };
-  const result = mergeLearningStoreHintsIntoLexicon(lexicon, null);
-  assert.deepStrictEqual(result, lexicon);
-});
-
-test('mergeLearningStoreHintsIntoLexicon: merges active anchors with weight 3', () => {
-  const result = mergeLearningStoreHintsIntoLexicon(
-    { fields: {} },
-    { anchorsByField: { sensor: [{ phrase: 'optical sensor', decayStatus: 'active' }] } }
-  );
-  assert.equal(result.fields.sensor.synonyms['optical sensor'].count, 3);
-});
-
-test('mergeLearningStoreHintsIntoLexicon: decayed anchors get weight 1', () => {
-  const result = mergeLearningStoreHintsIntoLexicon(
-    { fields: {} },
-    { anchorsByField: { dpi: [{ phrase: 'dots per inch', decayStatus: 'decayed' }] } }
-  );
-  assert.equal(result.fields.dpi.synonyms['dots per inch'].count, 1);
-});
-
-test('mergeLearningStoreHintsIntoLexicon: skips expired anchors', () => {
-  const result = mergeLearningStoreHintsIntoLexicon(
-    { fields: {} },
-    { anchorsByField: { dpi: [{ phrase: 'old phrase', decayStatus: 'expired' }] } }
-  );
-  assert.deepStrictEqual(result.fields.dpi?.synonyms || {}, {});
-});
-
-test('mergeLearningStoreHintsIntoLexicon: skips short phrases', () => {
-  const result = mergeLearningStoreHintsIntoLexicon(
-    { fields: {} },
-    { anchorsByField: { dpi: [{ phrase: 'ab', decayStatus: 'active' }] } }
-  );
-  assert.deepStrictEqual(result.fields.dpi?.synonyms || {}, {});
-});
-
-// ---------------------------------------------------------------------------
 // 3. loadLearningArtifacts
 // ---------------------------------------------------------------------------
 
@@ -119,72 +74,7 @@ test('loadLearningArtifacts: returns parsed data', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. buildSearchProfileKeys
-// ---------------------------------------------------------------------------
-
-test('buildSearchProfileKeys: builds runKey from output path', () => {
-  const storage = {
-    resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
-  };
-  const result = buildSearchProfileKeys({
-    storage,
-    config: {},
-    category: 'mouse',
-    productId: 'mouse-razer-viper',
-    runId: 'run-001',
-  });
-  // WHY: inputKey removed (discovery diagnostic dumps eliminated).
-  assert.ok(result.runKey);
-  assert.ok(result.runKey.includes('run-001'));
-});
-
-test('buildSearchProfileKeys: null runKey when missing params', () => {
-  const storage = {
-    resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
-  };
-  const result = buildSearchProfileKeys({
-    storage,
-    config: {},
-    category: '',
-    productId: '',
-    runId: 'run-001',
-  });
-  assert.equal(result.runKey, null);
-});
-
-// ---------------------------------------------------------------------------
-// 5. writeSearchProfileArtifacts
-// ---------------------------------------------------------------------------
-
-test('writeSearchProfileArtifacts: writes to all unique keys', async () => {
-  const written = new Map();
-  const storage = {
-    writeObject: async (key, body) => { written.set(key, JSON.parse(body.toString('utf8'))); },
-  };
-  await writeSearchProfileArtifacts({
-    storage,
-    payload: { status: 'test' },
-    keys: { inputKey: 'a', runKey: 'b' },
-  });
-  assert.equal(written.size, 2);
-  assert.deepStrictEqual(written.get('a'), { status: 'test' });
-});
-
-test('writeSearchProfileArtifacts: deduplicates keys', async () => {
-  const written = new Map();
-  const storage = {
-    writeObject: async (key, body) => { written.set(key, JSON.parse(body.toString('utf8'))); },
-  };
-  await writeSearchProfileArtifacts({
-    storage,
-    payload: { status: 'test' },
-    keys: { inputKey: 'same', runKey: 'same' },
-  });
-  assert.equal(written.size, 1);
-});
-
-// ---------------------------------------------------------------------------
-// 6. buildQueryAttemptStats
+// 4. buildQueryAttemptStats
 // ---------------------------------------------------------------------------
 
 test('buildQueryAttemptStats: empty rows returns empty', () => {

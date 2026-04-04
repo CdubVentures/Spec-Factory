@@ -53,7 +53,7 @@ export function buildRunId(date = new Date()) {
 /**
  * Generate a stable product ID: {category}-{8-char-hex}.
  * Category provides human context; the hex suffix is crypto-random and immutable.
- * Identity fields (brand, model, variant) are NOT encoded in the ID.
+ * Identity fields (brand, base_model, model, variant) are NOT encoded in the ID.
  */
 export function buildProductId(category) {
   const cat = String(category ?? '').trim().toLowerCase()

@@ -123,7 +123,7 @@ test('process runtime start publishes run metadata and preserves the completed s
     productId: 'mouse-razer-viper-v3-pro-white',
     brand: 'Razer',
     base_model: 'Viper V3 Pro',
-    model: 'Viper V3 Pro',
+    model: 'Viper V3 Pro White',
     variant: 'White',
     storage_destination: 'local',
     storageDestination: 'local',
@@ -146,7 +146,7 @@ test('process runtime start publishes run metadata and preserves the completed s
   assert.equal(after.category, 'mouse');
   assert.equal(after.product_id, 'mouse-razer-viper-v3-pro-white');
   assert.equal(after.brand, 'Razer');
-  assert.equal(after.model, 'Viper V3 Pro');
+  assert.equal(after.model, 'Viper V3 Pro White');
   assert.equal(after.variant, 'White');
   assert.equal(after.storage_destination, 'local');
   assert.equal(h.compileCalls.length, 1);

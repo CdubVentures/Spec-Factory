@@ -83,7 +83,11 @@ export async function openSpecDbForCategory(config, category) {
   if (!normalizedCategory) return null;
   try {
     const { SpecDb } = await import('../../db/specDb.js');
-    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', normalizedCategory);
+    // WHY: SPEC_DB_DIR env var is the runtime override for specDbDir. Env var
+    // takes precedence because configBuilder doesn't read it and user-settings.json
+    // may overwrite the config.specDbDir value during applyRuntimeSettingsToConfig.
+    const specDbRoot = process.env.SPEC_DB_DIR || config.specDbDir || '.workspace/db';
+    const dbDir = pathNode.join(specDbRoot, normalizedCategory);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
     return new SpecDb({ dbPath, category: normalizedCategory });

@@ -36,6 +36,7 @@ test('review payload returns empty identity when catalog and db have no identity
       includeCandidates: false,
     });
     assert.equal(payload.identity.brand, '');
+    assert.equal(payload.identity.base_model, '');
     assert.equal(payload.identity.model, '');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -52,7 +53,7 @@ test('review payload uses catalog identity when available', async () => {
   try {
     await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId, {
-      identity: { brand: 'Acer', model: 'Cestus 310' },
+      identity: { brand: 'Acer', base_model: 'Cestus', model: 'Cestus 310', variant: '310' },
     });
 
     const payload = await buildProductReviewPayload({
@@ -63,7 +64,9 @@ test('review payload uses catalog identity when available', async () => {
       includeCandidates: false,
     });
     assert.equal(payload.identity.brand, 'Acer');
+    assert.equal(payload.identity.base_model, 'Cestus');
     assert.equal(payload.identity.model, 'Cestus 310');
+    assert.equal(payload.identity.variant, '310');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

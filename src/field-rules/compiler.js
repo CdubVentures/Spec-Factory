@@ -733,9 +733,7 @@ export async function discoverCompileCategories({
     const categoryRoot = path.join(helperRoot, category);
     const hasFieldStudioMap = await fileExists(path.join(categoryRoot, '_control_plane', 'field_studio_map.json'));
     const hasGeneratedRules = await fileExists(path.join(categoryRoot, '_generated', 'field_rules.json'));
-    const sourceRoot = path.join(categoryRoot, '_source');
-    const hasSourceSeed = await fileExists(path.join(sourceRoot, 'field_catalog.seed.json'));
-    if (hasFieldStudioMap || hasGeneratedRules || hasSourceSeed) {
+    if (hasFieldStudioMap || hasGeneratedRules) {
       categories.push(category);
     }
   }

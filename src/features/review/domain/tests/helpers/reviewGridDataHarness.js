@@ -93,7 +93,12 @@ export async function seedCategoryArtifacts(helperRoot, category) {
 
 export async function seedLatestArtifacts(storage, category, productId, options = {}) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const identity = options.identity ?? { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Wireless' };
+  const identity = options.identity ?? {
+    brand: 'Razer',
+    base_model: 'Viper V3 Pro',
+    model: 'Viper V3 Pro Wireless',
+    variant: 'Wireless',
+  };
   const fields = options.fields ?? { weight: 59, dpi: 'unk', connection: 'wireless' };
   const summary = {
     productId,

@@ -44,6 +44,7 @@ export interface PlannerPromptInput {
   product?: {
     category?: string;
     brand?: string;
+    base_model?: string;
     model?: string;
     variant?: string;
   };
@@ -135,8 +136,9 @@ export function buildPlannerInputSummary(callPayloads: Array<PlannerPromptInput 
       const product = (payload.product || {}) as Record<string, unknown>;
       const category = normalizeToken(String(product.category || '').trim());
       const brand = String(product.brand || '').trim();
-      const model = String(product.base_model || product.model || '').trim();
-      const variant = String(product.variant || '').trim();
+      const baseModel = String(product.base_model || '').trim();
+      const model = String(baseModel || product.model || '').trim();
+      const variant = String(baseModel ? product.variant || '' : '').trim();
       const identityLabel = [brand, model, variant].filter(Boolean).join(' ').trim();
       if (identityLabel) products.push(identityLabel);
     }

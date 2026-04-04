@@ -11,7 +11,6 @@ import {
   resolveEnumMutationContext,
 } from './mutationResolvers.js';
 import { buildComponentIdentifier } from '../../../utils/componentIdentifier.js';
-import { loadQueueState, saveQueueState } from '../../../queue/queueState.js';
 import { slugify } from '../../catalog/index.js';
 import { runEnumConsistencyReview } from '../../indexing/index.js';
 
@@ -51,7 +50,6 @@ export function createReviewRouteContext(options = {}) {
     propagateSharedLaneDecision,
     resolveComponentMutationContext, normalizeLower,
     buildComponentIdentifier, applySharedLaneState, cascadeComponentChange,
-    loadQueueState, saveQueueState,
     remapPendingComponentReviewItemsForNameChange,
     resolveEnumMutationContext,
     cascadeEnumChange,

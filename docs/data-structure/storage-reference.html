@@ -154,7 +154,7 @@ code{font-family:var(--mono);font-size:0.85em}
 <!-- ─────────────────────── STATS ─────────────────────── -->
 <div class="stats">
   <div class="stat sql"><div class="n">2</div><div class="l">SQLite Databases</div></div>
-  <div class="stat json"><div class="n">~107</div><div class="l">Category Authority Files</div></div>
+  <div class="stat json"><div class="n">~93</div><div class="l">Category Authority Files</div></div>
   <div class="stat bin"><div class="n">6</div><div class="l">Runtime File Types</div></div>
   <div class="stat eph"><div class="n">3</div><div class="l">Checkpoint Types</div></div>
 </div>
@@ -205,9 +205,7 @@ code{font-family:var(--mono);font-size:0.85em}
       <text x="340" y="217" fill="#3b82f6" font-size="9" text-anchor="middle">_control_plane/</text>
       <rect x="260" y="236" width="160" height="30" rx="5" fill="rgba(139,92,246,0.12)"/>
       <text x="340" y="255" fill="#8b5cf6" font-size="9" text-anchor="middle">_overrides/</text>
-      <rect x="260" y="274" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
-      <text x="340" y="293" fill="#94a3b8" font-size="9" text-anchor="middle">_runtime/  (legacy migration)</text>
-      <text x="340" y="335" fill="#475569" font-size="8" text-anchor="middle">Category config + generated</text>
+      <text x="340" y="310" fill="#475569" font-size="8" text-anchor="middle">Category config + generated</text>
       <text x="340" y="350" fill="#475569" font-size="8" text-anchor="middle">field rules, component DB,</text>
       <text x="340" y="365" fill="#475569" font-size="8" text-anchor="middle">overrides, schemas</text>
 
@@ -307,7 +305,7 @@ code{font-family:var(--mono);font-size:0.85em}
       <div class="card-body">
         <table class="prop-table">
           <tr><td class="pk">Purpose</td><td class="pv">Core domain database per category. Products, components, reviews, evidence, billing, telemetry, source intelligence, crawl metadata, field overrides, and all pipeline state.</td></tr>
-          <tr><td class="pk">Table breakdown</td><td class="pv">36 tables in <code>specDbSchema.js</code> = <strong>36 base tables</strong>. Runtime learning adds 4 additional tables: <code>component_lexicon</code>, <code>field_anchors</code>, <code>url_memory</code>, <code>domain_field_yield</code>.</td></tr>
+          <tr><td class="pk">Table breakdown</td><td class="pv">36 tables in <code>specDbSchema.js</code> = <strong>36 tables</strong>.</td></tr>
           <tr><td class="pk">Size range</td><td class="pv">500 KB &ndash; 100 MB+ (scales with products and crawl history)</td></tr>
           <tr><td class="pk">Written by</td><td class="pv">20 store modules across the indexing and pipeline features</td></tr>
           <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable from product seeds + category authority. Accumulated data requires re-running indexing pipeline.</td></tr>
@@ -440,7 +438,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <h2>Category Authority Structure</h2>
     <span class="tag tag-git">Committed</span>
   </div>
-  <p class="section-desc">The <code>category_authority/</code> directory holds all category-specific configuration, compiled metadata, and overrides. All subdirectories are committed to git. The <code>_runtime/</code> subdirectory is a legacy migration source (NOT the active write path and NOT git-ignored). Active settings write path: <code>.workspace/global/user-settings.json</code>; active snapshots path: <code>.workspace/runtime/snapshots/</code>.</p>
+  <p class="section-desc">The <code>category_authority/</code> directory holds all category-specific configuration, compiled metadata, and overrides. All subdirectories are committed to git.</p>
 
   <div class="tree"><span class="dir">category_authority/</span>
   <span class="dir">{category}/</span>                          <span class="comment"># Per-category (mouse, keyboard, monitor)</span>
@@ -472,11 +470,6 @@ code{font-family:var(--mono);font-size:0.85em}
       <span class="json">base_field_schema.json</span>         <span class="comment"># Field definition schema</span>
       <span class="json">base_component_schema.json</span>     <span class="comment"># Component schema</span>
       <span class="json">...</span>                             <span class="comment"># + 6 more validation schemas</span>
-  <span class="dir">_runtime/</span>                          <span class="comment"># Legacy migration source (NOT git-ignored, NOT active write path)</span>
-    <span class="json">user-settings.json</span>               <span class="comment"># Legacy location &mdash; active write: .workspace/global/user-settings.json</span>
-    <span class="dir">snapshots/</span>                       <span class="comment"># Legacy &mdash; active: .workspace/runtime/snapshots/ (capped at 10)</span>
-      <span class="eph">{timestamp}-{hash}-settings.json</span></div>
-
   <div class="domain-group">
     <div class="domain-label">Generated Files (_generated/)</div>
 
@@ -564,18 +557,6 @@ code{font-family:var(--mono);font-size:0.85em}
       </div>
     </details>
 
-    <details class="card">
-      <summary><span class="card-name">_runtime/</span><span class="tags"><span class="tag tag-json">Legacy</span><span class="tag tag-count">migration source</span></span></summary>
-      <div class="card-body">
-        <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Legacy migration source for settings and snapshots. NOT the active write path.</td></tr>
-          <tr><td class="pk">Active settings path</td><td class="pv"><code>.workspace/global/user-settings.json</code> (primary JSON path). <code>app.sqlite</code> settings table is the primary SQL store.</td></tr>
-          <tr><td class="pk">Active snapshots path</td><td class="pv"><code>.workspace/runtime/snapshots/</code> (capped at 10 files, oldest auto-pruned).</td></tr>
-          <tr><td class="pk">Legacy path</td><td class="pv"><code>category_authority/_runtime/</code> is a legacy migration source only &mdash; not git-ignored, not actively written to.</td></tr>
-          <tr><td class="pk">Written by</td><td class="pv">Settings persistence layer (writes to .workspace/ paths, reads from _runtime/ for migration only)</td></tr>
-        </table>
-      </div>
-    </details>
   </div>
 </section>
 
@@ -604,12 +585,11 @@ code{font-family:var(--mono);font-size:0.85em}
       <h3><span class="dot" style="background:var(--accent)"></span>spec.sqlite</h3>
       <div class="db-path">.workspace/db/{category}/spec.sqlite</div>
       <div class="db-meta">
-        <strong>Tables:</strong> 36 base (36 in specDbSchema.js)<br>
-        <strong>Runtime learning:</strong> +4 additional tables (component_lexicon, field_anchors, url_memory, domain_field_yield)<br>
+        <strong>Tables:</strong> 36 (36 in specDbSchema.js)<br>
         <strong>Size:</strong> 500 KB &ndash; 100 MB+<br>
         <strong>Scope:</strong> Per-category (one per active category)<br>
-        <strong>Purpose:</strong> All domain data &mdash; products, components, reviews, evidence, billing, telemetry, sources, crawl metadata, field overrides, pipeline state, and learning indexes.<br>
-        <strong>Store modules:</strong> 20 dedicated stores
+        <strong>Purpose:</strong> All domain data &mdash; products, components, reviews, evidence, billing, telemetry, sources, crawl metadata, field overrides, and pipeline state.<br>
+        <strong>Store modules:</strong> 19 dedicated stores
       </div>
     </div>
 
@@ -625,7 +605,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <span class="tag tag-bin">Runtime</span>
     <span class="tag tag-sql">SQL SSOT</span>
   </div>
-  <p class="section-desc">Product identity lives in the SQL <code>products</code> table (live SSOT) and <code>.workspace/products/{pid}/product.json</code> (sole rebuild source via checkpoint reseed). The <code>product_catalog.json</code> in <code>category_authority/</code> is <strong>RETIRED</strong> &mdash; it is no longer read by the seed path. Note: <code>fixtures/s3/</code> still exists as test fixture data for the _test_mouse test harness.</p>
+  <p class="section-desc">Product identity lives in the SQL <code>products</code> table (live SSOT) and <code>.workspace/products/{pid}/product.json</code> (sole rebuild source via checkpoint reseed). The <code>product_catalog.json</code> in <code>category_authority/</code> is <strong>RETIRED</strong> &mdash; it is no longer read by the seed path.</p>
 
   <div class="tree"><span class="dir">.workspace/</span>
   <span class="dir">products/</span>
@@ -664,7 +644,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <span class="tag tag-json">JSON</span>
     <span class="tag tag-count">6 per product + 5 category-level</span>
   </div>
-  <p class="section-desc">The <code>publish</code> command generates the final deliverables for each product. These files are the end output of the entire pipeline &mdash; from crawl through extraction, review, and publication. The <code>publishStorageAdapter.js</code> dual-writes to both modern (<code>output/{category}/published/{pid}/...</code>) and legacy (<code>specs/outputs/output/{category}/{pid}/...</code>) key patterns. Intermediate pipeline artifacts (normalized.json, provenance.json, summary.json) are written per-run under <code>output/{category}/{pid}/latest/</code>.</p>
+  <p class="section-desc">The <code>publish</code> command generates the final deliverables for each product. These files are the end output of the entire pipeline &mdash; from crawl through extraction, review, and publication. The <code>publishStorageAdapter.js</code> writes to the modern key pattern (<code>output/{category}/published/{pid}/...</code>). The <code>listOutputKeys()</code> function reads from both modern and legacy paths for backward compatibility with older data. Intermediate pipeline artifacts (normalized.json, provenance.json, summary.json) are written per-run under <code>output/{category}/{pid}/latest/</code>.</p>
 
   <div class="tree"><span class="dir">.workspace/output/</span>
   <span class="dir">{category}/</span>
@@ -752,7 +732,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td class="fname">SQLite databases</td>
         <td>.sqlite (WAL mode)</td>
         <td><code>db/app.sqlite</code>, <code>db/{category}/spec.sqlite</code></td>
-        <td>Primary persistent stores. app.sqlite (global, 6 tables) + spec.sqlite (per-category, 36 base + 4 runtime learning).</td>
+        <td>Primary persistent stores. app.sqlite (global, 6 tables) + spec.sqlite (per-category, 36 tables).</td>
       </tr>
       <tr>
         <td class="fname">Crawl checkpoints</td>
@@ -1017,7 +997,6 @@ code{font-family:var(--mono);font-size:0.85em}
   <ul class="rule-list">
     <li><code>.workspace/</code> is the <strong>sole runtime data directory</strong> (CLAUDE.md mandate). Subdirectories: <code>global/</code> (user-settings.json), <code>runtime/snapshots/</code> (per-run settings snapshots, capped at 10), <code>db/{category}/</code> (per-category spec.sqlite), <code>db/app.sqlite</code> (global), <code>runs/</code> (IndexLab run output), <code>products/</code> (one product.json per product), <code>output/</code> (pipeline output artifacts), <code>crawlee/</code> (ephemeral).</li>
     <li><code>.server-state/</code> is <strong>git-ignored</strong>. Server PID and log files (stdout + stderr) are ephemeral.</li>
-    <li><code>category_authority/_runtime/</code> is a <strong>legacy migration source</strong> (NOT git-ignored). Active settings write to <code>.workspace/global/user-settings.json</code>; active snapshots write to <code>.workspace/runtime/snapshots/</code>.</li>
     <li class="warn">No other runtime directories are permitted. Do not create ad-hoc data directories outside the established paths.</li>
     <li class="warn">The root <code>tmp/</code> directory is <strong>banned and gitignored</strong>. Use OS tmpdir (<code>os.tmpdir()</code>) for throwaway work.</li>
     <li>JSON files in <code>category_authority/</code> are <strong>configuration only</strong> (immutable at runtime, unless explicitly documented as mutable: <code>brand_registry.json</code>, <code>color_registry.json</code>).</li>

@@ -53,7 +53,7 @@ function loadSpecDbProduct({
 
 // WHY: Product IDs are opaque hex tokens ({category}-{8-hex}). No identity can be inferred.
 export function inferIdentityFromProductId() {
-  return { brand: '', model: '', variant: '' };
+  return { brand: '', base_model: '', model: '', variant: '' };
 }
 
 export function resolveAuthoritativeProductIdentity({

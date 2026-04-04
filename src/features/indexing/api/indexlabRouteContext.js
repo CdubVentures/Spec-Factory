@@ -8,7 +8,7 @@ import {
   readIndexLabRunAutomationQueue,
   listIndexLabRuns,
 } from './index.js';
-import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from '../learning/index.js';
+import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from './learningSuggestionEmitter.js';
 import {
   evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,
   buildScreenshotManifestFromEvents,

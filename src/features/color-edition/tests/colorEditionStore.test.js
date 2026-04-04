@@ -8,6 +8,9 @@ import {
   writeColorEdition,
   mergeColorEditionDiscovery,
   rebuildColorEditionFinderFromJson,
+  recalculateCumulativeFromRuns,
+  deleteColorEditionFinderRun,
+  deleteColorEditionFinderAll,
 } from '../colorEditionStore.js';
 import { SpecDb } from '../../../db/specDb.js';
 
@@ -17,6 +20,8 @@ function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
 }
 
+// ── JSON read/write ─────────────────────────────────────────────────
+
 describe('colorEditionStore — JSON read/write', () => {
   before(() => fs.mkdirSync(TMP_ROOT, { recursive: true }));
   after(() => cleanup(TMP_ROOT));
@@ -25,22 +30,14 @@ describe('colorEditionStore — JSON read/write', () => {
     const data = {
       product_id: 'mouse-001',
       category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
       cooldown_until: '2026-05-01T00:00:00Z',
-      default_color: 'black',
-      run_count: 2,
       last_ran_at: '2026-04-01T12:00:00Z',
-      colors: {
-        black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-        white: { found_run: 2, found_at: '2026-04-15T00:00:00Z', model: 'gpt-5.4' },
-      },
-      editions: {
-        'cyberpunk-2077-edition': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-      },
+      run_count: 1,
+      runs: [],
     };
-
     writeColorEdition({ productId: 'mouse-001', productRoot: TMP_ROOT, data });
     const result = readColorEdition({ productId: 'mouse-001', productRoot: TMP_ROOT });
-
     assert.deepEqual(result, data);
   });
 
@@ -53,248 +50,274 @@ describe('colorEditionStore — JSON read/write', () => {
     const dir = path.join(TMP_ROOT, 'corrupt-001');
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'color_edition.json'), '{bad json!!!', 'utf8');
-
     const result = readColorEdition({ productId: 'corrupt-001', productRoot: TMP_ROOT });
     assert.equal(result, null);
   });
 
   it('directory auto-created on write', () => {
-    const data = { product_id: 'auto-dir', category: 'mouse', colors: {}, editions: {}, run_count: 0 };
+    const data = { product_id: 'auto-dir', category: 'mouse', selected: { colors: [], editions: {}, default_color: '' }, run_count: 0, runs: [] };
     writeColorEdition({ productId: 'auto-dir', productRoot: TMP_ROOT, data });
-
     const filePath = path.join(TMP_ROOT, 'auto-dir', 'color_edition.json');
     assert.ok(fs.existsSync(filePath));
   });
 });
 
-describe('colorEditionStore — merge', () => {
-  const MERGE_ROOT = path.join(TMP_ROOT, '_merge');
-  before(() => fs.mkdirSync(MERGE_ROOT, { recursive: true }));
+// ── recalculateCumulativeFromRuns ────────────────────────────────────
 
-  it('merge adds new color, preserves existing', () => {
-    writeColorEdition({
-      productId: 'merge-001',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-001',
-        category: 'mouse',
-        cooldown_until: '',
+describe('recalculateCumulativeFromRuns', () => {
+  it('returns empty state for empty runs array', () => {
+    const result = recalculateCumulativeFromRuns([], 'pid', 'mouse');
+    assert.deepEqual(result.selected, { colors: [], editions: {}, default_color: '' });
+    assert.equal(result.run_count, 0);
+    assert.equal(result.last_ran_at, '');
+    assert.equal(result.cooldown_until, '');
+  });
+
+  it('single run: selected = that run', () => {
+    const runs = [{
+      run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+      fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+      selected: {
+        colors: ['black', 'white'],
+        editions: { 'launch-edition': { colors: ['black'] } },
         default_color: 'black',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: { black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: {},
       },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-001',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: { white: { found_run: 2, found_at: '2026-05-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: {},
-        cooldown_until: '2026-06-01T00:00:00Z',
-        last_ran_at: '2026-05-01T00:00:00Z',
-      },
-    });
-
-    assert.ok(merged.colors.black, 'existing color preserved');
-    assert.ok(merged.colors.white, 'new color added');
-    assert.equal(merged.colors.black.found_run, 1);
-    assert.equal(merged.colors.white.found_run, 2);
+      prompt: { system: 's', user: 'u' },
+      response: { colors: ['black', 'white'], editions: { 'launch-edition': { colors: ['black'] } }, default_color: 'black' },
+    }];
+    const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
+    assert.deepEqual(result.selected.colors, ['black', 'white']);
+    assert.deepEqual(result.selected.editions, { 'launch-edition': { colors: ['black'] } });
+    assert.equal(result.selected.default_color, 'black');
+    assert.equal(result.run_count, 1);
+    assert.equal(result.last_ran_at, '2026-04-01T00:00:00Z');
+    assert.equal(result.cooldown_until, '2026-05-01T00:00:00Z');
   });
 
-  it('merge does NOT overwrite existing color attribution (first-discovery-wins)', () => {
-    writeColorEdition({
-      productId: 'merge-no-overwrite',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-no-overwrite',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: 'black',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: { black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: {},
+  it('multiple runs: selected = latest run (highest run_number)', () => {
+    const runs = [
+      {
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+        fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
       },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-no-overwrite',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: { black: { found_run: 3, found_at: '2026-07-01T00:00:00Z', model: 'gpt-6' } },
-        editions: {},
-        cooldown_until: '2026-08-01T00:00:00Z',
-        last_ran_at: '2026-07-01T00:00:00Z',
+      {
+        run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
+        fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+        selected: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
+        prompt: { system: 's', user: 'u' }, response: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
       },
-    });
-
-    assert.equal(merged.colors.black.found_run, 1, 'original attribution preserved');
-    assert.equal(merged.colors.black.model, 'gpt-5.4', 'original model preserved');
-  });
-
-  it('merge adds new edition, preserves existing', () => {
-    writeColorEdition({
-      productId: 'merge-editions',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-editions',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: '',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: {},
-        editions: { 'sf6-chun-li': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-      },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-editions',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: {},
-        editions: { wilderness: { found_run: 2, found_at: '2026-05-01T00:00:00Z', model: 'gpt-5.4' } },
-        cooldown_until: '2026-06-01T00:00:00Z',
-        last_ran_at: '2026-05-01T00:00:00Z',
-      },
-    });
-
-    assert.ok(merged.editions['sf6-chun-li'], 'existing edition preserved');
-    assert.ok(merged.editions.wilderness, 'new edition added');
-  });
-
-  it('merge increments run_count', () => {
-    writeColorEdition({
-      productId: 'merge-count',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-count',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: '',
-        run_count: 3,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: {},
-        editions: {},
-      },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-count',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: {},
-        editions: {},
-        cooldown_until: '',
-        last_ran_at: '2026-05-01T00:00:00Z',
-      },
-    });
-
-    assert.equal(merged.run_count, 4);
-  });
-
-  it('merge updates last_ran_at and cooldown_until', () => {
-    writeColorEdition({
-      productId: 'merge-dates',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-dates',
-        category: 'mouse',
-        cooldown_until: '2026-05-01T00:00:00Z',
-        default_color: '',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: {},
-        editions: {},
-      },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-dates',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: {},
-        editions: {},
-        cooldown_until: '2026-08-01T00:00:00Z',
-        last_ran_at: '2026-07-01T00:00:00Z',
-      },
-    });
-
-    assert.equal(merged.cooldown_until, '2026-08-01T00:00:00Z');
-    assert.equal(merged.last_ran_at, '2026-07-01T00:00:00Z');
-  });
-
-  it('default_color preserved if already set and not provided', () => {
-    writeColorEdition({
-      productId: 'merge-default-keep',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-default-keep',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: 'black',
-        run_count: 1,
-        last_ran_at: '',
-        colors: {},
-        editions: {},
-      },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-default-keep',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: {},
-        editions: {},
-        cooldown_until: '',
-        last_ran_at: '2026-05-01T00:00:00Z',
-      },
-    });
-
-    assert.equal(merged.default_color, 'black');
-  });
-
-  it('default_color updated if provided', () => {
-    writeColorEdition({
-      productId: 'merge-default-update',
-      productRoot: MERGE_ROOT,
-      data: {
-        product_id: 'merge-default-update',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: 'black',
-        run_count: 1,
-        last_ran_at: '',
-        colors: {},
-        editions: {},
-      },
-    });
-
-    const merged = mergeColorEditionDiscovery({
-      productId: 'merge-default-update',
-      productRoot: MERGE_ROOT,
-      newDiscovery: {
-        category: 'mouse',
-        colors: {},
-        editions: {},
-        default_color: 'white',
-        cooldown_until: '',
-        last_ran_at: '2026-05-01T00:00:00Z',
-      },
-    });
-
-    assert.equal(merged.default_color, 'white');
+    ];
+    const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
+    assert.deepEqual(result.selected.colors, ['black', 'white', 'red']);
+    assert.deepEqual(result.selected.editions, { 'launch': { colors: ['black'] } });
+    assert.equal(result.run_count, 2);
+    assert.equal(result.last_ran_at, '2026-06-01T00:00:00Z');
+    assert.equal(result.cooldown_until, '2026-07-01T00:00:00Z');
   });
 });
+
+// ── merge with runs ─────────────────────────────────────────────────
+
+describe('colorEditionStore — merge with runs', () => {
+  const MERGE_ROOT = path.join(TMP_ROOT, '_merge_v2');
+  before(() => fs.mkdirSync(MERGE_ROOT, { recursive: true }));
+
+  it('first merge creates runs array with one entry', () => {
+    const merged = mergeColorEditionDiscovery({
+      productId: 'merge-new',
+      productRoot: MERGE_ROOT,
+      newDiscovery: {
+        category: 'mouse',
+        cooldown_until: '2026-05-01T00:00:00Z',
+        last_ran_at: '2026-04-01T00:00:00Z',
+      },
+      run: {
+        model: 'gpt-5.4', fallback_used: false,
+        selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+        prompt: { system: 'sys prompt', user: '{"brand":"Corsair"}' },
+        response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      },
+    });
+
+    assert.equal(merged.runs.length, 1);
+    assert.equal(merged.runs[0].run_number, 1);
+    assert.equal(merged.runs[0].model, 'gpt-5.4');
+    assert.deepEqual(merged.runs[0].selected.colors, ['black', 'white']);
+    assert.deepEqual(merged.selected.colors, ['black', 'white']);
+    assert.equal(merged.selected.default_color, 'black');
+    assert.equal(merged.run_count, 1);
+  });
+
+  it('second merge appends run and updates selected (latest-wins)', () => {
+    const merged = mergeColorEditionDiscovery({
+      productId: 'merge-new',
+      productRoot: MERGE_ROOT,
+      newDiscovery: {
+        category: 'mouse',
+        cooldown_until: '2026-06-01T00:00:00Z',
+        last_ran_at: '2026-05-01T00:00:00Z',
+      },
+      run: {
+        model: 'gpt-6', fallback_used: false,
+        selected: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
+        prompt: { system: 'sys v2', user: '{"brand":"Corsair"}' },
+        response: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
+      },
+    });
+
+    assert.equal(merged.runs.length, 2);
+    assert.equal(merged.runs[1].run_number, 2);
+    assert.equal(merged.runs[1].model, 'gpt-6');
+    assert.deepEqual(merged.selected.colors, ['black', 'white', 'red']);
+    assert.deepEqual(merged.selected.editions, { 'launch': { colors: ['black'] } });
+    assert.equal(merged.run_count, 2);
+  });
+
+  it('prompt and response are stored in run entry', () => {
+    const existing = readColorEdition({ productId: 'merge-new', productRoot: MERGE_ROOT });
+    assert.equal(existing.runs[0].prompt.system, 'sys prompt');
+    assert.equal(existing.runs[0].prompt.user, '{"brand":"Corsair"}');
+    assert.deepEqual(existing.runs[0].response.colors, ['black', 'white']);
+  });
+});
+
+// ── delete run ──────────────────────────────────────────────────────
+
+describe('colorEditionStore — delete run', () => {
+  const DEL_ROOT = path.join(TMP_ROOT, '_delete');
+  before(() => fs.mkdirSync(DEL_ROOT, { recursive: true }));
+
+  it('deleting a non-latest run keeps selected from latest', () => {
+    writeColorEdition({
+      productId: 'del-001', productRoot: DEL_ROOT,
+      data: {
+        product_id: 'del-001', category: 'mouse',
+        selected: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
+        cooldown_until: '2026-07-01T00:00:00Z', last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
+        runs: [
+          {
+            run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            selected: { colors: ['black'], editions: {}, default_color: 'black' },
+            prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
+          },
+          {
+            run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
+            fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+            selected: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
+            prompt: { system: 's2', user: 'u2' }, response: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
+          },
+        ],
+      },
+    });
+
+    const result = deleteColorEditionFinderRun({ productId: 'del-001', productRoot: DEL_ROOT, runNumber: 1 });
+    assert.equal(result.runs.length, 1);
+    assert.equal(result.runs[0].run_number, 2);
+    assert.deepEqual(result.selected.colors, ['black', 'white', 'red']);
+    assert.equal(result.cooldown_until, '2026-07-01T00:00:00Z');
+  });
+
+  it('deleting the latest run recalculates selected from previous', () => {
+    writeColorEdition({
+      productId: 'del-002', productRoot: DEL_ROOT,
+      data: {
+        product_id: 'del-002', category: 'mouse',
+        selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+        cooldown_until: '2026-07-01T00:00:00Z', last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
+        runs: [
+          {
+            run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            selected: { colors: ['black'], editions: {}, default_color: 'black' },
+            prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
+          },
+          {
+            run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
+            fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+            selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+            prompt: { system: 's2', user: 'u2' }, response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+          },
+        ],
+      },
+    });
+
+    const result = deleteColorEditionFinderRun({ productId: 'del-002', productRoot: DEL_ROOT, runNumber: 2 });
+    assert.equal(result.runs.length, 1);
+    assert.deepEqual(result.selected.colors, ['black']);
+    assert.equal(result.cooldown_until, '2026-05-01T00:00:00Z');
+  });
+
+  it('deleting the only run returns null and removes file', () => {
+    writeColorEdition({
+      productId: 'del-003', productRoot: DEL_ROOT,
+      data: {
+        product_id: 'del-003', category: 'mouse',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+        runs: [{
+          run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+          fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+          selected: { colors: ['black'], editions: {}, default_color: 'black' },
+          prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
+        }],
+      },
+    });
+
+    const result = deleteColorEditionFinderRun({ productId: 'del-003', productRoot: DEL_ROOT, runNumber: 1 });
+    assert.equal(result, null);
+    const check = readColorEdition({ productId: 'del-003', productRoot: DEL_ROOT });
+    assert.equal(check, null);
+  });
+
+  it('deleting non-existent run number returns unchanged doc', () => {
+    writeColorEdition({
+      productId: 'del-004', productRoot: DEL_ROOT,
+      data: {
+        product_id: 'del-004', category: 'mouse',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        cooldown_until: '', last_ran_at: '', run_count: 1,
+        runs: [{
+          run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+          fallback_used: false, cooldown_until: '',
+          selected: { colors: ['black'], editions: {}, default_color: 'black' },
+          prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
+        }],
+      },
+    });
+
+    const result = deleteColorEditionFinderRun({ productId: 'del-004', productRoot: DEL_ROOT, runNumber: 99 });
+    assert.equal(result.runs.length, 1);
+  });
+});
+
+// ── delete all ──────────────────────────────────────────────────────
+
+describe('colorEditionStore — delete all', () => {
+  const DELALL_ROOT = path.join(TMP_ROOT, '_delall');
+  before(() => fs.mkdirSync(DELALL_ROOT, { recursive: true }));
+
+  it('removes JSON file', () => {
+    writeColorEdition({
+      productId: 'delall-001', productRoot: DELALL_ROOT,
+      data: { product_id: 'delall-001', category: 'mouse', selected: { colors: [], editions: {}, default_color: '' }, run_count: 0, runs: [] },
+    });
+
+    const result = deleteColorEditionFinderAll({ productId: 'delall-001', productRoot: DELALL_ROOT });
+    assert.equal(result.deleted, true);
+    const check = readColorEdition({ productId: 'delall-001', productRoot: DELALL_ROOT });
+    assert.equal(check, null);
+  });
+
+  it('returns deleted:true even if file does not exist', () => {
+    const result = deleteColorEditionFinderAll({ productId: 'nonexistent-999', productRoot: DELALL_ROOT });
+    assert.equal(result.deleted, true);
+  });
+});
+
+// ── rebuild JSON → SQL ──────────────────────────────────────────────
 
 describe('colorEditionStore — rebuild JSON → SQL', () => {
   const REBUILD_ROOT = path.join(TMP_ROOT, '_rebuild');
@@ -308,116 +331,65 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
     specDb = new SpecDb({ dbPath: REBUILD_DB_PATH, category: 'mouse' });
   });
 
-  after(() => {
-    specDb.close();
-  });
+  after(() => { specDb.close(); });
 
-  it('rebuild single product JSON → SQL row', () => {
+  it('rebuild new-format product JSON → SQL row', () => {
     writeColorEdition({
-      productId: 'rebuild-001',
-      productRoot: REBUILD_ROOT,
+      productId: 'rebuild-001', productRoot: REBUILD_ROOT,
       data: {
-        product_id: 'rebuild-001',
-        category: 'mouse',
-        cooldown_until: '2026-05-01T00:00:00Z',
-        default_color: 'black',
-        run_count: 3,
-        last_ran_at: '2026-04-15T00:00:00Z',
-        colors: {
-          black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-          white: { found_run: 2, found_at: '2026-04-10T00:00:00Z', model: 'gpt-5.4' },
+        product_id: 'rebuild-001', category: 'mouse',
+        selected: {
+          colors: ['black', 'white'],
+          editions: { 'launch-edition': { colors: ['black'] } },
+          default_color: 'black',
         },
-        editions: {
-          'cyberpunk-2077-edition': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-        },
+        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-15T00:00:00Z', run_count: 3,
+        runs: [],
       },
     });
 
     const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
-    assert.equal(stats.seeded, 1);
+    assert.ok(stats.seeded >= 1);
 
     const row = specDb.getColorEditionFinder('rebuild-001');
     assert.ok(row);
     assert.deepEqual(row.colors, ['black', 'white']);
-    assert.deepEqual(row.editions, ['cyberpunk-2077-edition']);
     assert.equal(row.default_color, 'black');
     assert.equal(row.run_count, 3);
-    assert.equal(row.cooldown_until, '2026-05-01T00:00:00Z');
   });
 
-  it('rebuild multiple products', () => {
+  it('rebuild legacy-format product JSON → SQL row (backward compat)', () => {
     writeColorEdition({
-      productId: 'rebuild-002',
-      productRoot: REBUILD_ROOT,
+      productId: 'rebuild-legacy', productRoot: REBUILD_ROOT,
       data: {
-        product_id: 'rebuild-002',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: 'red',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
+        product_id: 'rebuild-legacy', category: 'mouse',
+        cooldown_until: '', default_color: 'red', run_count: 1, last_ran_at: '',
         colors: { red: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: {},
-      },
-    });
-
-    writeColorEdition({
-      productId: 'rebuild-003',
-      productRoot: REBUILD_ROOT,
-      data: {
-        product_id: 'rebuild-003',
-        category: 'mouse',
-        cooldown_until: '',
-        default_color: '',
-        run_count: 1,
-        last_ran_at: '2026-04-01T00:00:00Z',
-        colors: {},
-        editions: { wilderness: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
+        editions: { 'wilderness': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
       },
     });
 
     const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
-    assert.ok(stats.seeded >= 2);
+    assert.ok(stats.seeded >= 1);
 
-    const r2 = specDb.getColorEditionFinder('rebuild-002');
-    assert.deepEqual(r2.colors, ['red']);
-
-    const r3 = specDb.getColorEditionFinder('rebuild-003');
-    assert.deepEqual(r3.editions, ['wilderness']);
-  });
-
-  it('skips missing/corrupt files gracefully', () => {
-    // Product dir with no color_edition.json
-    fs.mkdirSync(path.join(REBUILD_ROOT, 'rebuild-nofile'), { recursive: true });
-
-    // Product dir with corrupt JSON
-    const corruptDir = path.join(REBUILD_ROOT, 'rebuild-corrupt');
-    fs.mkdirSync(corruptDir, { recursive: true });
-    fs.writeFileSync(path.join(corruptDir, 'color_edition.json'), 'NOT JSON', 'utf8');
-
-    const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
-    assert.equal(stats.skipped, 2);
+    const row = specDb.getColorEditionFinder('rebuild-legacy');
+    assert.ok(row);
+    assert.deepEqual(row.colors, ['red']);
+    assert.deepEqual(row.editions, ['wilderness']);
   });
 
   it('category filter — only seeds rows matching specDb.category', () => {
     writeColorEdition({
-      productId: 'rebuild-wrong-cat',
-      productRoot: REBUILD_ROOT,
+      productId: 'rebuild-wrong-cat', productRoot: REBUILD_ROOT,
       data: {
-        product_id: 'rebuild-wrong-cat',
-        category: 'keyboard',
-        cooldown_until: '',
-        default_color: '',
-        run_count: 1,
-        last_ran_at: '',
-        colors: { black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: {},
+        product_id: 'rebuild-wrong-cat', category: 'keyboard',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        cooldown_until: '', last_ran_at: '', run_count: 1, runs: [],
       },
     });
 
-    const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
+    rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
     const row = specDb.getColorEditionFinder('rebuild-wrong-cat');
-    assert.equal(row, null, 'keyboard product not seeded into mouse specDb');
-    assert.ok(stats.skipped >= 1);
+    assert.equal(row, null);
   });
 });

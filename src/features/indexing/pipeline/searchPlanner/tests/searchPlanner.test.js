@@ -24,7 +24,7 @@ const BASE_CTX = {
   searchProfileBase: { query_rows: BASE_ROWS, base_templates: [] },
   queryExecutionHistory: null,
   config: {},
-  identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
+  identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
   missingFields: ['dpi', 'weight', 'wireless', 'polling_rate'],
 };
 

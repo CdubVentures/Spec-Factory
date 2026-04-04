@@ -1,7 +1,5 @@
 ﻿export {
   bootstrapExpansionCategories,
-  runQueueLoadHarness,
-  runFailureInjectionHarness,
   runFuzzSourceHealthHarness,
   runProductionHardeningReport,
   parseExpansionCategories

@@ -30,7 +30,14 @@ export function registerQueueBillingLearningRoutes(ctx) {
         const limit = toInt(params.get('limit'), 200);
         // WHY: SQL is the sole SSOT for products.
         const dbRows = specDb?.getAllProducts?.() || [];
-        const dbProductMap = Object.fromEntries(dbRows.map(p => [p.product_id, { brand: p.brand, model: p.model, variant: p.variant }]));
+        const dbProductMap = Object.fromEntries(dbRows.map((p) => [p.product_id, {
+          id: p.id,
+          identifier: p.identifier,
+          brand: p.brand,
+          base_model: p.base_model,
+          model: p.model,
+          variant: p.variant,
+        }]));
         const items = await buildReviewQueue({
           storage,
           config,

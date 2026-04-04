@@ -36,6 +36,9 @@ function makeStubReseedDeps() {
       scanAndSeedCheckpoints: stub('scanAndSeedCheckpoints'),
       rebuildColorEditionFinderFromJson: stub('rebuildColorEditionFinderFromJson'),
       rebuildLlmRouteMatrixFromJson: stub('rebuildLlmRouteMatrixFromJson'),
+      reseedFieldKeyOrderFromJson: stub('reseedFieldKeyOrderFromJson'),
+      reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
+      reseedOverridesFromJson: stub('reseedOverridesFromJson'),
     },
     calls,
   };
@@ -241,10 +244,10 @@ describe('buildCategorySurfaces', () => {
 // ── buildReseedSurfaces ─────────────────────────────────────────────────────
 
 describe('buildReseedSurfaces', () => {
-  it('returns exactly 3 entries', () => {
+  it('returns exactly 6 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 3);
+    assert.equal(surfaces.length, 6);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -257,7 +260,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'llm_route_matrix'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
@@ -289,10 +292,10 @@ describe('buildReseedSurfaces', () => {
     assert.equal(entry.shouldRun({ indexLabRoot: null }), false);
   });
 
-  it('color_edition and llm_route_matrix shouldRun is null', () => {
+  it('color_edition, llm_route_matrix, overrides, field_key_order, field_studio_map shouldRun is null', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    for (const key of ['color_edition', 'llm_route_matrix']) {
+    for (const key of ['color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map']) {
       const entry = surfaces.find(s => s.key === key);
       assert.equal(entry.shouldRun, null, `${key} shouldRun`);
     }
@@ -346,7 +349,7 @@ describe('key uniqueness', () => {
     const keys = allSurfaces.map(s => s.key);
     const unique = new Set(keys);
     assert.equal(unique.size, keys.length, `duplicate keys found: ${keys.filter((k, i) => keys.indexOf(k) !== i)}`);
-    assert.equal(unique.size, 12, 'expected 12 total surfaces');
+    assert.equal(unique.size, 15, 'expected 15 total surfaces');
   });
 });
 

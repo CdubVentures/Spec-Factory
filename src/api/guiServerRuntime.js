@@ -2,7 +2,6 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { bootstrapServer } from './serverBootstrap.js';
 import { createGuiServerHttpAssembly } from './guiServerHttpAssembly.js';
 import { registerInfraRoutes } from '../app/api/routes/infraRoutes.js';
@@ -44,8 +43,14 @@ import { createTestModeRouteContext } from '../app/api/routes/testModeRouteConte
 import { createIndexlabRouteContext } from '../features/indexing/api/indexlabRouteContext.js';
 import { createReviewRouteContext } from '../features/review/api/reviewRouteContext.js';
 import { createGuiStaticFileServer } from '../app/api/staticFileServer.js';
+import { fileURLToPath } from 'node:url';
 
-export const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const MODULE_FILENAME = typeof __filename === 'string'
+  ? __filename
+  : fileURLToPath(import.meta.url);
+const MODULE_DIRNAME = path.dirname(MODULE_FILENAME);
+
+export const PROJECT_ROOT = path.resolve(MODULE_DIRNAME, '..', '..');
 
 function withProcessBootstrapOverrides({ env = null, argv = null, cwd = null }, factory) {
   const previousArgv = process.argv;
@@ -170,7 +175,6 @@ export function createGuiServerRuntime({
       }),
       colorEditionFinderRouteContext: createColorEditionFinderRouteContext({
         jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-        colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
         logger: createRouteLlmLogger('color-edition-finder'),
       }),
       configRouteContext: createConfigRouteContext({

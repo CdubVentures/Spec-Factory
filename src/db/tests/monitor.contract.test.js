@@ -306,12 +306,7 @@ function sorted(values) {
 }
 
 test('monitor control-plane contract matches the curated field map', async () => {
-  const [full, seed] = await Promise.all([
-    harness.readCategoryJson('_generated', 'field_rules.json'),
-    harness.readCategoryJson('_source', 'field_catalog.seed.json'),
-  ]);
-
-  assert.deepEqual(seed.groups, EXPECTED_GROUPS);
+  const full = await harness.readCategoryJson('_generated', 'field_rules.json');
   assert.equal(Object.keys(full.fields || {}).length, FIELD_ORDER.length);
   assert.deepEqual(Object.keys(full.fields || {}).sort(), FIELD_SET);
 

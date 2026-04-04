@@ -200,3 +200,123 @@ describe('seedAppDb hash-gated reconcile', () => {
     assert.equal(result.settings_seeded, 0);
   });
 });
+
+// ── Delete reconcile (stale row removal) ───────────────────────────────────
+
+describe('seedAppDb delete reconcile — brands', () => {
+  let db;
+  let tmpDir;
+  beforeEach(() => {
+    db = createTestDb();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'appdb-delete-'));
+  });
+  afterEach(() => {
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('removing a brand from JSON deletes it from SQL on reseed', () => {
+    const twoBrands = {
+      brands: {
+        acme: { identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed' },
+        globex: { identifier: 'ccdd3344', canonical_name: 'Globex', aliases: [], categories: ['mouse'], website: '', added_by: 'seed' },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', twoBrands);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.ok(db.getBrand('aabb1122'));
+    assert.ok(db.getBrand('ccdd3344'));
+
+    const oneBrand = {
+      brands: {
+        acme: { identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed' },
+      },
+    };
+    writeTempJson(tmpDir, 'brands.json', oneBrand);
+    const result = seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.ok(result.brands_removed >= 1);
+    assert.ok(db.getBrand('aabb1122'));
+    assert.ok(!db.getBrand('ccdd3344'), 'globex brand should be removed');
+  });
+
+  test('removing a brand also removes its brand_categories', () => {
+    const twoBrands = {
+      brands: {
+        acme: { identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse', 'keyboard'], website: '', added_by: 'seed' },
+        globex: { identifier: 'ccdd3344', canonical_name: 'Globex', aliases: [], categories: ['monitor'], website: '', added_by: 'seed' },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', twoBrands);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.deepEqual(db.getCategoriesForBrand('ccdd3344'), ['monitor']);
+
+    const oneBrand = { brands: { acme: twoBrands.brands.acme } };
+    writeTempJson(tmpDir, 'brands.json', oneBrand);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.deepEqual(db.getCategoriesForBrand('ccdd3344'), []);
+  });
+});
+
+describe('seedAppDb delete reconcile — settings', () => {
+  let db;
+  let tmpDir;
+  beforeEach(() => {
+    db = createTestDb();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'appdb-delete-'));
+  });
+  afterEach(() => {
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('removing a setting key from JSON deletes it from SQL on reseed', () => {
+    const v1 = { runtime: { llmProvider: 'gemini', llmTimeoutMs: 30000 }, convergence: {}, storage: {}, ui: {} };
+    const settingsPath = writeTempJson(tmpDir, 'settings.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: '/nonexistent', userSettingsPath: settingsPath });
+    assert.ok(db.getSetting('runtime', 'llmTimeoutMs'));
+
+    const v2 = { runtime: { llmProvider: 'gemini' }, convergence: {}, storage: {}, ui: {} };
+    writeTempJson(tmpDir, 'settings.json', v2);
+    const result = seedAppDb({ appDb: db, brandRegistryPath: '/nonexistent', userSettingsPath: settingsPath });
+    assert.ok(result.settings_removed >= 1);
+    assert.ok(!db.getSetting('runtime', 'llmTimeoutMs'), 'llmTimeoutMs should be removed');
+    assert.ok(db.getSetting('runtime', 'llmProvider'));
+  });
+
+  test('removing a studio_map category from JSON deletes it from SQL on reseed', () => {
+    const v1 = {
+      runtime: {}, convergence: {}, storage: {}, ui: {},
+      studio: {
+        mouse: { map: {}, file_path: '/a' },
+        keyboard: { map: {}, file_path: '/b' },
+      },
+    };
+    const settingsPath = writeTempJson(tmpDir, 'settings.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: '/nonexistent', userSettingsPath: settingsPath });
+    assert.ok(db.getStudioMap('mouse'));
+    assert.ok(db.getStudioMap('keyboard'));
+
+    const v2 = {
+      runtime: {}, convergence: {}, storage: {}, ui: {},
+      studio: { mouse: { map: {}, file_path: '/a' } },
+    };
+    writeTempJson(tmpDir, 'settings.json', v2);
+    const result = seedAppDb({ appDb: db, brandRegistryPath: '/nonexistent', userSettingsPath: settingsPath });
+    assert.ok(result.studio_maps_removed >= 1);
+    assert.ok(db.getStudioMap('mouse'));
+    assert.ok(!db.getStudioMap('keyboard'), 'keyboard studio map should be removed');
+  });
+
+  test('seed hashes section is never deleted during settings reconcile', () => {
+    const v1 = { runtime: { llmProvider: 'gemini' }, convergence: {}, storage: {}, ui: {} };
+    const settingsPath = writeTempJson(tmpDir, 'settings.json', v1);
+    const brandPath = writeTempJson(tmpDir, 'brands.json', { brands: { acme: { identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: [], website: '', added_by: 'seed' } } });
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: settingsPath });
+    assert.ok(db.getSeedHash('brand_registry'));
+
+    const v2 = { runtime: {}, convergence: {}, storage: {}, ui: {} };
+    writeTempJson(tmpDir, 'settings.json', v2);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: settingsPath });
+    assert.ok(db.getSeedHash('brand_registry'), '_seed_hashes must survive settings reconcile');
+  });
+});

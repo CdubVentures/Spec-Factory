@@ -3,7 +3,8 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 export function registerColorEditionFinderRoutes(ctx) {
   const {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    colorRegistryPath, logger, runColorEditionFinder, readColorEdition,
+    logger, runColorEditionFinder, readColorEdition,
+    deleteColorEditionFinderRun, deleteColorEditionFinderAll,
   } = ctx;
 
   return async function handleColorEditionFinderRoutes(parts, params, method, req, res) {
@@ -31,6 +32,11 @@ export function registerColorEditionFinderRoutes(ctx) {
       const now = new Date().toISOString();
       const onCooldown = Boolean(row.cooldown_until && row.cooldown_until > now);
 
+      // Support new format (selected) and legacy (colors/editions objects)
+      const selected = jsonData.selected || null;
+      const colorDetails = selected ? {} : (jsonData.colors || {});
+      const editionDetails = selected ? {} : (jsonData.editions || {});
+
       return jsonRes(res, 200, {
         product_id: row.product_id,
         category: row.category,
@@ -41,15 +47,16 @@ export function registerColorEditionFinderRoutes(ctx) {
         on_cooldown: onCooldown,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
-        color_details: jsonData.colors || {},
-        edition_details: jsonData.editions || {},
+        selected: selected || { colors: row.colors, editions: {}, default_color: row.default_color },
+        runs: Array.isArray(jsonData.runs) ? jsonData.runs : [],
+        color_details: colorDetails,
+        edition_details: editionDetails,
       });
     }
 
     // POST /color-edition-finder/:category/:productId — trigger finder
-    if (method === 'POST' && category && productId) {
+    if (method === 'POST' && category && productId && !parts[3]) {
       try {
-        console.log(`[color-edition-finder] POST received: category=${category} productId=${productId} hasLogger=${Boolean(logger)}`);
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
@@ -74,7 +81,6 @@ export function registerColorEditionFinderRoutes(ctx) {
           specDb,
           config,
           logger: logger || null,
-          colorRegistryPath,
         });
 
         emitDataChange({
@@ -82,14 +88,14 @@ export function registerColorEditionFinderRoutes(ctx) {
           event: 'color-edition-finder-run',
           category,
           entities: { productIds: [productId] },
-          meta: { productId, colorsFound: result.colors.length, editionsFound: result.editions.length },
+          meta: { productId, colorsFound: result.colors.length, editionsFound: Object.keys(result.editions).length },
         });
 
         return jsonRes(res, 200, {
           ok: true,
           colors: result.colors,
           editions: result.editions,
-          newColorsRegistered: result.newColorsRegistered,
+          default_color: result.default_color,
           fallbackUsed: result.fallbackUsed,
         });
       } catch (err) {
@@ -97,6 +103,68 @@ export function registerColorEditionFinderRoutes(ctx) {
         console.error('[color-edition-finder] POST failed:', message);
         return jsonRes(res, 500, { error: 'finder failed', message });
       }
+    }
+
+    // DELETE /color-edition-finder/:category/:productId/runs/:runNumber
+    if (method === 'DELETE' && category && productId && parts[3] === 'runs' && parts[4]) {
+      const runNumber = Number(parts[4]);
+      if (!Number.isFinite(runNumber) || runNumber < 1) {
+        return jsonRes(res, 400, { error: 'invalid run number' });
+      }
+
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      const updated = deleteColorEditionFinderRun({ productId, runNumber });
+
+      if (updated) {
+        // Sync SQL from recalculated state
+        specDb.upsertColorEditionFinder({
+          category,
+          product_id: productId,
+          colors: updated.selected?.colors || [],
+          editions: Object.keys(updated.selected?.editions || {}),
+          default_color: updated.selected?.default_color || '',
+          cooldown_until: updated.cooldown_until || '',
+          latest_ran_at: updated.last_ran_at || '',
+          run_count: updated.run_count || 0,
+        });
+      } else {
+        // No runs left — delete SQL row
+        specDb.deleteColorEditionFinder(productId);
+      }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'color-edition-finder-run-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, deletedRun: runNumber, remainingRuns: updated?.run_count || 0 },
+      });
+
+      return jsonRes(res, 200, {
+        ok: true,
+        remaining_runs: updated?.run_count || 0,
+      });
+    }
+
+    // DELETE /color-edition-finder/:category/:productId — delete all
+    if (method === 'DELETE' && category && productId && !parts[3]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      deleteColorEditionFinderAll({ productId });
+      specDb.deleteColorEditionFinder(productId);
+
+      emitDataChange({
+        broadcastWs,
+        event: 'color-edition-finder-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId },
+      });
+
+      return jsonRes(res, 200, { ok: true });
     }
 
     return false;

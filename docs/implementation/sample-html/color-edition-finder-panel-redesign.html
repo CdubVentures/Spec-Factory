@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Color &amp; Edition Finder Panel — Redesign Preview</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-surface-card: #111f41;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.2);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.2);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.2);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.2);
+  --sf-purple-fg: #d8b4fe;
+  --sf-purple-bg: rgba(88, 28, 135, 0.4);
+  --sf-neutral-fg: #94a3b8;
+  --sf-neutral-bg: rgba(148, 163, 184, 0.24);
+  --sf-teal-fg: #5eead4;
+  --sf-teal-bg: rgba(19, 78, 74, 0.4);
+}
+
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 24px;
+  line-height: 1.45;
+}
+
+.preview-root {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ── Section labels ─────────────────────────────────── */
+
+.design-label {
+  text-align: center;
+  font-size: 13px;
+  color: var(--sf-text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+  padding: 6px 16px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 6px;
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background: var(--sf-border-soft-alpha);
+  margin: 10px 0;
+}
+
+/* ── Panel shell ────────────────────────────────────── */
+
+.panel {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-text-primary);
+}
+
+.panel-body {
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Chips / badges ─────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger  { background: var(--sf-danger-bg);  color: var(--sf-danger-fg);  }
+.chip-purple  { background: var(--sf-purple-bg);  color: var(--sf-purple-fg);  }
+.chip-accent  { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1.5px solid var(--sf-accent-strong); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-info    { background: var(--sf-info-bg);    color: var(--sf-info-fg);    }
+.chip-teal    { background: var(--sf-teal-bg);    color: var(--sf-teal-fg);    }
+
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--sf-purple-fg);
+  border: 1.5px solid var(--sf-purple-fg);
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+
+.btn-primary {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--sf-accent);
+  color: #fff;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-danger-ghost {
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1.5px solid var(--sf-danger-fg);
+  border-radius: 5px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--sf-danger-fg);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.btn-danger-ghost:hover { opacity: 1; background: var(--sf-danger-bg); }
+
+.btn-ghost {
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 5px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--sf-text-muted);
+  transition: background 0.15s;
+}
+.btn-ghost:hover { background: var(--sf-surface-elevated); }
+
+/* ── KPI grid ───────────────────────────────────────── */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.kpi-card {
+  background: var(--sf-surface-elevated);
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--sf-font-mono);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.kpi-value.accent  { color: var(--sf-accent-strong); }
+.kpi-value.purple  { color: var(--sf-purple-fg); }
+.kpi-value.success { color: var(--sf-success-fg); }
+.kpi-value.info    { color: var(--sf-info-fg); }
+.kpi-value.teal    { color: var(--sf-teal-fg); }
+
+.kpi-label {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sf-text-muted);
+}
+
+/* ── Cooldown strip ─────────────────────────────────── */
+
+.cooldown-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--sf-surface-elevated);
+  border-radius: 10px;
+}
+
+.cooldown-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sf-text-muted);
+  white-space: nowrap;
+}
+
+.cooldown-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--sf-surface-panel);
+  overflow: hidden;
+}
+
+.cooldown-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.cooldown-bar-fill.warning { background: var(--sf-warning-fg); }
+.cooldown-bar-fill.success { background: var(--sf-success-fg); }
+
+.cooldown-days {
+  font-size: 10px;
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+}
+
+/* ── Selected state card ────────────────────────────── */
+
+.selected-card {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.selected-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selected-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sf-text-muted);
+}
+
+.selected-ssot-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--sf-accent-glow);
+  color: var(--sf-accent-strong);
+  border: 1px solid var(--sf-accent-strong);
+}
+
+.selected-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.selected-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sf-text-dim);
+  margin-bottom: 8px;
+}
+
+.color-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.color-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: var(--sf-font-mono);
+  font-weight: 600;
+  color: var(--sf-text-primary);
+}
+
+.color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.color-pill .default-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sf-accent-strong);
+  margin-left: 2px;
+}
+
+.edition-block {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.edition-slug {
+  font-size: 12px;
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+  color: var(--sf-purple-fg);
+  margin-bottom: 6px;
+}
+
+.edition-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.edition-color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  background: var(--sf-surface-elevated);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--sf-font-mono);
+  color: var(--sf-text-muted);
+}
+
+.edition-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ── Data tables ────────────────────────────────────── */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sf-text-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sf-border-soft);
+}
+
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sf-border-soft-alpha);
+  color: var(--sf-text-primary);
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+
+.mono { font-family: var(--sf-font-mono); }
+.dim  { color: var(--sf-text-muted); }
+.tiny { font-size: 10px; }
+
+/* ── Run history ────────────────────────────────────── */
+
+.run-history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.run-row {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.run-row.is-latest {
+  border-color: var(--sf-accent-strong);
+  border-width: 1.5px;
+}
+
+.run-row-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.run-row-header:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.run-number {
+  font-size: 13px;
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+  color: var(--sf-accent-strong);
+  min-width: 32px;
+}
+
+.run-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.run-date {
+  font-size: 11px;
+  font-family: var(--sf-font-mono);
+  color: var(--sf-text-muted);
+}
+
+.run-expand-icon {
+  font-size: 11px;
+  color: var(--sf-text-dim);
+  transition: transform 0.15s;
+  width: 16px;
+  text-align: center;
+}
+
+.run-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.run-summary-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.run-detail {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid var(--sf-border-soft-alpha);
+}
+
+.run-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.run-detail-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sf-text-dim);
+  margin-top: 10px;
+}
+
+.prompt-block {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--sf-font-mono);
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--sf-text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  cursor: text;
+  user-select: text;
+}
+
+.response-block {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--sf-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  cursor: text;
+  user-select: text;
+}
+
+/* ── Footer ─────────────────────────────────────────── */
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-border-soft-alpha);
+  font-size: 10px;
+  color: var(--sf-text-muted);
+}
+
+.panel-footer strong { color: var(--sf-text-subtle); }
+.footer-sep { color: var(--sf-text-dim); }
+
+/* ── Delete confirmation ────────────────────────────── */
+
+.delete-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--sf-danger-fg);
+}
+
+/* ── Scrollbar styling ──────────────────────────────── */
+
+.prompt-block::-webkit-scrollbar,
+.response-block::-webkit-scrollbar { width: 6px; }
+.prompt-block::-webkit-scrollbar-track,
+.response-block::-webkit-scrollbar-track { background: transparent; }
+.prompt-block::-webkit-scrollbar-thumb,
+.response-block::-webkit-scrollbar-thumb {
+  background: var(--sf-border-soft);
+  border-radius: 3px;
+}
+
+/* ── Toggle animation ───────────────────────────────── */
+
+.rotate-90 { transform: rotate(90deg); }
+</style>
+</head>
+<body>
+
+<div class="preview-root">
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION A: CURRENT DESIGN (for comparison)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="design-label">A — Current Design (flat tables, no selected state, no run history)</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span style="font-size:14px; cursor:pointer; color:var(--sf-text-dim);">-</span>
+    <span class="panel-title">Color &amp; Edition Finder</span>
+    <span class="chip chip-success">Run 3</span>
+    <span class="model-badge">gpt-4.1</span>
+    <button class="btn-primary" style="margin-left:auto;">Run Now</button>
+  </div>
+  <div class="panel-body">
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-value accent">6</div><div class="kpi-label">Colors</div></div>
+      <div class="kpi-card"><div class="kpi-value purple">2</div><div class="kpi-label">Editions</div></div>
+      <div class="kpi-card"><div class="kpi-value success">3</div><div class="kpi-label">Runs</div></div>
+      <div class="kpi-card"><div class="kpi-value info">24d</div><div class="kpi-label">Cooldown</div></div>
+    </div>
+
+    <!-- Colors flat table (current) -->
+    <div>
+      <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-muted); margin-bottom:8px;">
+        Colors <span class="mono dim">6 variants</span>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Color</th><th>Hex</th><th>Run</th><th>Discovered</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span style="display:inline-flex;align-items:center;gap:6px;"><span class="color-swatch" style="background:#3A3F41;"></span><span class="mono" style="font-size:12px;font-weight:600;">black</span><span class="chip chip-accent" style="font-size:9px;">Default</span></span></td>
+            <td class="mono tiny dim">#3A3F41</td><td class="mono tiny" style="color:var(--sf-accent-strong);font-weight:600;">1</td><td class="mono tiny dim">2026-03-01</td><td><span class="chip chip-purple">gpt-4.1</span></td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-flex;align-items:center;gap:6px;"><span class="color-swatch" style="background:#FFFFFF;"></span><span class="mono" style="font-size:12px;font-weight:600;">white</span></span></td>
+            <td class="mono tiny dim">#FFFFFF</td><td class="mono tiny" style="color:var(--sf-accent-strong);font-weight:600;">1</td><td class="mono tiny dim">2026-03-01</td><td><span class="chip chip-purple">gpt-4.1</span></td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-flex;align-items:center;gap:6px;"><span class="color-swatch" style="background:#ef4444;"></span><span class="mono" style="font-size:12px;font-weight:600;">red</span></span></td>
+            <td class="mono tiny dim">#ef4444</td><td class="mono tiny" style="color:var(--sf-accent-strong);font-weight:600;">2</td><td class="mono tiny dim">2026-03-15</td><td><span class="chip chip-purple">gpt-4.1</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Editions flat table (current — no color pairing) -->
+    <div>
+      <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-muted); margin-bottom:8px;">
+        Editions <span class="mono dim">2 editions</span>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Edition</th><th>Run</th><th>Discovered</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td class="mono" style="font-weight:600;font-size:12px;">launch-edition</td><td class="mono tiny" style="color:var(--sf-accent-strong);font-weight:600;">1</td><td class="mono tiny dim">2026-03-01</td><td><span class="chip chip-purple">gpt-4.1</span></td></tr>
+          <tr><td class="mono" style="font-weight:600;font-size:12px;">cyberpunk-2077-edition</td><td class="mono tiny" style="color:var(--sf-accent-strong);font-weight:600;">2</td><td class="mono tiny dim">2026-03-15</td><td><span class="chip chip-purple">gpt-4.1</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer (current) -->
+    <div class="panel-footer">
+      <span>Last run: <strong>2026-04-01</strong></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Model: <span class="model-badge">gpt-4.1</span></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Runs: <strong>3</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION B: NEW DESIGN
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<hr class="divider" style="margin:20px 0;" />
+<div class="design-label">B — New Design (selected state + edition pairing + run history with prompt/response)</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span style="font-size:14px; cursor:pointer; color:var(--sf-text-dim);">-</span>
+    <span class="panel-title">Color &amp; Edition Finder</span>
+    <span class="chip chip-success">Run 3</span>
+    <span class="model-badge">gpt-4.1</span>
+    <button class="btn-primary" style="margin-left:auto;">Run Now</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPI Grid (same + default color KPI) -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-value accent">6</div><div class="kpi-label">Colors</div></div>
+      <div class="kpi-card"><div class="kpi-value purple">2</div><div class="kpi-label">Editions</div></div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="color-swatch" style="background:#3A3F41;width:22px;height:22px;border-radius:5px;"></span>
+          <span class="kpi-value teal" style="font-size:16px;">black</span>
+        </div>
+        <div class="kpi-label">Default Color</div>
+      </div>
+      <div class="kpi-card"><div class="kpi-value success">3</div><div class="kpi-label">Runs</div></div>
+      <div class="kpi-card"><div class="kpi-value info">24d</div><div class="kpi-label">Cooldown</div></div>
+    </div>
+
+    <!-- Cooldown strip -->
+    <div class="cooldown-strip">
+      <span class="cooldown-label">Cooldown</span>
+      <div class="cooldown-bar"><div class="cooldown-bar-fill warning" style="width:20%;"></div></div>
+      <span class="cooldown-days" style="color:var(--sf-warning-fg);">24d</span>
+      <span class="mono tiny dim" style="white-space:nowrap;">Eligible: 2026-05-01</span>
+    </div>
+
+    <!-- ── NEW: Selected State Card ──────────────── -->
+
+    <div class="selected-card">
+      <div class="selected-header">
+        <span class="selected-title">Selected State</span>
+        <span class="selected-ssot-badge">SSOT &bull; from Run #3</span>
+      </div>
+
+      <div class="selected-grid">
+        <!-- Left: Colors -->
+        <div>
+          <div class="selected-section-label">Colors (6)</div>
+          <div class="color-pill-list">
+            <span class="color-pill"><span class="color-swatch" style="background:#3A3F41;"></span>black<span class="default-dot" title="Default"></span></span>
+            <span class="color-pill"><span class="color-swatch" style="background:#FFFFFF;"></span>white</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#ef4444;"></span>red</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#60a5fa;"></span>light-blue</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#15803d;"></span>dark-green</span>
+            <span class="color-pill">
+              <span style="display:flex;gap:1px;">
+                <span class="color-swatch" style="background:#3A3F41;width:7px;border-radius:3px 0 0 3px;"></span>
+                <span class="color-swatch" style="background:#ef4444;width:7px;border-radius:0 3px 3px 0;"></span>
+              </span>
+              black+red
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: Editions with paired colors -->
+        <div>
+          <div class="selected-section-label">Editions (2)</div>
+
+          <div class="edition-block">
+            <div class="edition-slug">launch-edition</div>
+            <div class="edition-colors">
+              <span class="edition-color-chip"><span class="edition-color-dot" style="background:#3A3F41;"></span>black</span>
+              <span class="edition-color-chip"><span class="edition-color-dot" style="background:#FFFFFF;"></span>white</span>
+            </div>
+          </div>
+
+          <div class="edition-block">
+            <div class="edition-slug">cyberpunk-2077-edition</div>
+            <div class="edition-colors">
+              <span class="edition-color-chip"><span class="edition-color-dot" style="background:#fcd34d;"></span>yellow</span>
+              <span class="edition-color-chip">
+                <span style="display:flex;gap:1px;">
+                  <span class="edition-color-dot" style="background:#3A3F41;width:5px;border-radius:2px 0 0 2px;"></span>
+                  <span class="edition-color-dot" style="background:#ef4444;width:5px;border-radius:0 2px 2px 0;"></span>
+                </span>
+                black+red
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NEW: Run History ──────────────────────── -->
+
+    <div class="run-history-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-muted);">
+          Run History <span class="mono dim">3 runs</span>
+        </div>
+        <button class="btn-danger-ghost" style="font-size:9px;">Delete All</button>
+      </div>
+
+      <!-- Run 3 (latest = SSOT, expanded) -->
+      <div class="run-row is-latest">
+        <div class="run-row-header">
+          <span class="run-expand-icon rotate-90">&#9654;</span>
+          <span class="run-number">#3</span>
+          <div class="run-meta">
+            <span class="run-date">2026-04-01</span>
+            <span class="chip chip-purple">gpt-4.1</span>
+            <span class="chip chip-accent" style="font-size:9px;">LATEST &bull; SSOT</span>
+          </div>
+          <div class="run-actions">
+            <div class="run-summary-chips">
+              <span class="chip chip-success" style="font-size:9px;">6 colors</span>
+              <span class="chip chip-purple" style="font-size:9px;">2 editions</span>
+            </div>
+            <button class="btn-danger-ghost">Delete</button>
+          </div>
+        </div>
+        <div class="run-detail">
+          <!-- Run selected values -->
+          <div class="run-detail-section">
+            <div class="run-detail-label">Selected Output</div>
+            <div class="color-pill-list" style="margin-bottom:6px;">
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;"><span class="color-swatch" style="width:12px;height:12px;background:#3A3F41;"></span>black<span class="default-dot"></span></span>
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;"><span class="color-swatch" style="width:12px;height:12px;background:#FFFFFF;"></span>white</span>
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;"><span class="color-swatch" style="width:12px;height:12px;background:#ef4444;"></span>red</span>
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;"><span class="color-swatch" style="width:12px;height:12px;background:#60a5fa;"></span>light-blue</span>
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;"><span class="color-swatch" style="width:12px;height:12px;background:#15803d;"></span>dark-green</span>
+              <span class="color-pill" style="padding:3px 8px 3px 5px;font-size:10px;">
+                <span style="display:flex;gap:1px;"><span class="color-swatch" style="width:6px;height:12px;background:#3A3F41;border-radius:2px 0 0 2px;"></span><span class="color-swatch" style="width:6px;height:12px;background:#ef4444;border-radius:0 2px 2px 0;"></span></span>
+                black+red
+              </span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <span style="font-size:10px;font-family:var(--sf-font-mono);color:var(--sf-purple-fg);font-weight:600;">launch-edition</span>
+              <span style="font-size:10px;color:var(--sf-text-dim);">&middot;</span>
+              <span style="font-size:10px;font-family:var(--sf-font-mono);color:var(--sf-purple-fg);font-weight:600;">cyberpunk-2077-edition</span>
+            </div>
+          </div>
+
+          <!-- System prompt -->
+          <div class="run-detail-section">
+            <div class="run-detail-label">System Prompt</div>
+            <div class="prompt-block">Select the complete set of colors and editions for: Corsair M75 Air Wireless.
+Validate previous findings, discover anything new, and return the definitive complete selection.
+
+Currently selected (from previous run):
+  Colors: black, white, red, light-blue, dark-green
+  Default: black
+  Editions:
+  launch-edition: black, white
+
+Your response replaces this selection entirely.
+Validate each entry — confirm it is real and currently available.
+Discover any new colors or editions not yet found.
+Omit any entry that is incorrect or discontinued — omitting IS the rejection.
+
+Discover every color variant this product is or has been available in.
+
+Each color is either a single atom ("black", "light-gray") or multiple atoms joined by "+" in dominant visual order.
+Dominant means the color with the most surface area — "black+red" means mostly black with red accents.
+The first color in the array is the most common / default variant.
+
+Formatting rules:
+- lowercase only, hyphens between words
+- Modifier-first: "light-blue" not "blue-light", "dark-green" not "green-dark"
+- Normalize "grey" to "gray"
+- Translate marketing names to the nearest registered color.
+
+Base colors (also valid with prefixes light-, dark-): blue, green, gray, pink, red.
+Other colors: black, white, amber, beige, coral, gold, ...
+
+Registered colors with hex values: black (#3A3F41), white (#FFFFFF), red (#ef4444), light-blue (#60a5fa), dark-green (#15803d), ...
+
+Match product colors to registered colors by visual similarity using the hex values above.
+If no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names.</div>
+          </div>
+
+          <!-- User message -->
+          <div class="run-detail-section">
+            <div class="run-detail-label">User Message</div>
+            <div class="prompt-block" style="max-height:80px;">{"brand":"Corsair","base_model":"","model":"M75 Air Wireless","variant":""}</div>
+          </div>
+
+          <!-- Response -->
+          <div class="run-detail-section">
+            <div class="run-detail-label">LLM Response</div>
+            <div class="response-block">{
+  "colors": ["black", "white", "red", "light-blue", "dark-green", "black+red"],
+  "editions": {
+    "launch-edition": { "colors": ["black", "white"] },
+    "cyberpunk-2077-edition": { "colors": ["yellow", "black+red"] }
+  },
+  "default_color": "black"
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 2 (collapsed) -->
+      <div class="run-row">
+        <div class="run-row-header">
+          <span class="run-expand-icon">&#9654;</span>
+          <span class="run-number">#2</span>
+          <div class="run-meta">
+            <span class="run-date">2026-03-15</span>
+            <span class="chip chip-purple">gpt-4.1</span>
+          </div>
+          <div class="run-actions">
+            <div class="run-summary-chips">
+              <span class="chip chip-success" style="font-size:9px;">5 colors</span>
+              <span class="chip chip-purple" style="font-size:9px;">1 edition</span>
+            </div>
+            <button class="btn-danger-ghost">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 1 (collapsed) -->
+      <div class="run-row">
+        <div class="run-row-header">
+          <span class="run-expand-icon">&#9654;</span>
+          <span class="run-number">#1</span>
+          <div class="run-meta">
+            <span class="run-date">2026-03-01</span>
+            <span class="chip chip-purple">gpt-4.1</span>
+            <span class="chip chip-neutral" style="font-size:9px;">First discovery</span>
+          </div>
+          <div class="run-actions">
+            <div class="run-summary-chips">
+              <span class="chip chip-success" style="font-size:9px;">3 colors</span>
+              <span class="chip chip-purple" style="font-size:9px;">1 edition</span>
+            </div>
+            <button class="btn-danger-ghost">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer">
+      <span>Last run: <strong>2026-04-01</strong></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Model: <span class="model-badge">gpt-4.1</span></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Runs: <strong>3</strong></span>
+      <span class="footer-sep">&middot;</span>
+      <span>SSOT source: <strong>Run #3</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION C: DELETE SCENARIO — what happens when Run 3 is deleted
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<hr class="divider" style="margin:20px 0;" />
+<div class="design-label">C — After deleting Run #3: SSOT falls back to Run #2, cooldown recalculates</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span style="font-size:14px; cursor:pointer; color:var(--sf-text-dim);">-</span>
+    <span class="panel-title">Color &amp; Edition Finder</span>
+    <span class="chip chip-success">Run 2</span>
+    <span class="model-badge">gpt-4.1</span>
+    <button class="btn-primary" style="margin-left:auto;">Run Now</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPI — values changed after delete -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-value accent">5</div><div class="kpi-label">Colors</div></div>
+      <div class="kpi-card"><div class="kpi-value purple">1</div><div class="kpi-label">Editions</div></div>
+      <div class="kpi-card">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="color-swatch" style="background:#3A3F41;width:22px;height:22px;border-radius:5px;"></span>
+          <span class="kpi-value teal" style="font-size:16px;">black</span>
+        </div>
+        <div class="kpi-label">Default Color</div>
+      </div>
+      <div class="kpi-card"><div class="kpi-value success">2</div><div class="kpi-label">Runs</div></div>
+      <div class="kpi-card"><div class="kpi-value success">0d</div><div class="kpi-label">Cooldown</div></div>
+    </div>
+
+    <!-- Cooldown — expired! Run 2's cooldown (30d from March 15) already passed -->
+    <div class="cooldown-strip">
+      <span class="cooldown-label">Cooldown</span>
+      <div class="cooldown-bar"><div class="cooldown-bar-fill success" style="width:100%;"></div></div>
+      <span class="cooldown-days" style="color:var(--sf-success-fg);">Ready</span>
+      <span class="chip chip-success" style="font-size:9px;">Eligible for re-run</span>
+    </div>
+
+    <!-- Selected state — now from Run #2 (fewer colors, 1 edition) -->
+    <div class="selected-card">
+      <div class="selected-header">
+        <span class="selected-title">Selected State</span>
+        <span class="selected-ssot-badge">SSOT &bull; from Run #2</span>
+      </div>
+
+      <div class="selected-grid">
+        <div>
+          <div class="selected-section-label">Colors (5)</div>
+          <div class="color-pill-list">
+            <span class="color-pill"><span class="color-swatch" style="background:#3A3F41;"></span>black<span class="default-dot" title="Default"></span></span>
+            <span class="color-pill"><span class="color-swatch" style="background:#FFFFFF;"></span>white</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#ef4444;"></span>red</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#60a5fa;"></span>light-blue</span>
+            <span class="color-pill"><span class="color-swatch" style="background:#15803d;"></span>dark-green</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="selected-section-label">Editions (1)</div>
+          <div class="edition-block">
+            <div class="edition-slug">launch-edition</div>
+            <div class="edition-colors">
+              <span class="edition-color-chip"><span class="edition-color-dot" style="background:#3A3F41;"></span>black</span>
+              <span class="edition-color-chip"><span class="edition-color-dot" style="background:#FFFFFF;"></span>white</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run history — only 2 runs, Run 2 is now latest -->
+    <div class="run-history-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-muted);">
+          Run History <span class="mono dim">2 runs</span>
+        </div>
+        <button class="btn-danger-ghost" style="font-size:9px;">Delete All</button>
+      </div>
+
+      <!-- Run 2 (now latest = SSOT, collapsed) -->
+      <div class="run-row is-latest">
+        <div class="run-row-header">
+          <span class="run-expand-icon">&#9654;</span>
+          <span class="run-number">#2</span>
+          <div class="run-meta">
+            <span class="run-date">2026-03-15</span>
+            <span class="chip chip-purple">gpt-4.1</span>
+            <span class="chip chip-accent" style="font-size:9px;">LATEST &bull; SSOT</span>
+          </div>
+          <div class="run-actions">
+            <div class="run-summary-chips">
+              <span class="chip chip-success" style="font-size:9px;">5 colors</span>
+              <span class="chip chip-purple" style="font-size:9px;">1 edition</span>
+            </div>
+            <button class="btn-danger-ghost">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 1 (collapsed) -->
+      <div class="run-row">
+        <div class="run-row-header">
+          <span class="run-expand-icon">&#9654;</span>
+          <span class="run-number">#1</span>
+          <div class="run-meta">
+            <span class="run-date">2026-03-01</span>
+            <span class="chip chip-purple">gpt-4.1</span>
+            <span class="chip chip-neutral" style="font-size:9px;">First discovery</span>
+          </div>
+          <div class="run-actions">
+            <div class="run-summary-chips">
+              <span class="chip chip-success" style="font-size:9px;">3 colors</span>
+              <span class="chip chip-purple" style="font-size:9px;">1 edition</span>
+            </div>
+            <button class="btn-danger-ghost">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer — updated -->
+    <div class="panel-footer">
+      <span>Last run: <strong>2026-03-15</strong></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Model: <span class="model-badge">gpt-4.1</span></span>
+      <span class="footer-sep">&middot;</span>
+      <span>Runs: <strong>2</strong></span>
+      <span class="footer-sep">&middot;</span>
+      <span>SSOT source: <strong>Run #2</strong></span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /preview-root -->
+</body>
+</html>

@@ -57,15 +57,15 @@ test('detectSiblingManufacturerProductPage distinguishes non-manufacturer exact-
   const cases = [
     [{
       row: { role: 'review', path: '/product/viper-v2' },
-      variables: { model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
+      variables: { base_model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
     }, false],
     [{
       row: { role: 'manufacturer', path: '/product/viper-v2' },
-      variables: { model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
+      variables: { base_model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
     }, true],
     [{
       row: { role: 'manufacturer', path: '/product/viper-v3-pro' },
-      variables: { model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
+      variables: { base_model: 'Viper V3', variant: 'Pro', brand: 'Razer' },
     }, false],
   ];
 

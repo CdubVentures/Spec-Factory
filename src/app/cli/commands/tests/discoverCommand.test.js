@@ -6,8 +6,7 @@ import { createDiscoverCommand } from '../discoverCommand.js';
 function createDeps(overrides = {}) {
   return {
     loadCategoryConfig: async () => ({ schema: { critical_fields: ['dpi', 'sensor'] } }),
-    runDiscoverySeedPlan: async ({ job, runId }) => ({
-      candidatesKey: `_discovery/${runId}/${job.productId}.json`,
+    runDiscoverySeedPlan: async () => ({
       candidates: [{ url: 'https://example.com/product' }],
     }),
     EventLogger: class EventLoggerStub {
@@ -50,7 +49,6 @@ test('discover command applies brand filter and returns selected run summaries',
     runDiscoverySeedPlan: async (payload) => {
       discoverCalls.push(payload);
       return {
-        candidatesKey: `_discovery/${payload.runId}.json`,
         candidates: [{ url: 'https://example.com/a' }, { url: 'https://example.com/b' }],
       };
     },

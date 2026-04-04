@@ -164,7 +164,6 @@ export function makeProcessDiscoveryResultsArgs(overrides = {}) {
     brandResolution,
     learning,
     searchProfileBase,
-    searchProfileKeys,
     providerState,
     _serpSelectorCallFn,
     ...rest
@@ -193,7 +192,6 @@ export function makeProcessDiscoveryResultsArgs(overrides = {}) {
     llmQueries: [],
     queries: ['razer viper v3 pro specs'],
     searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3', ...(searchProfileKeys || {}) },
     providerState: providerState ?? {},
     _serpSelectorCallFn: _serpSelectorCallFn ?? makeStubSerpSelectorCallFn(),
     ...rest,

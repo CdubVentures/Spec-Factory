@@ -161,11 +161,15 @@ function seedProductIdentity(specDb, { productId }) {
     brand: 'TestBrand', model: 'TestModel', base_model: 'TestModel', variant: '',
     status: 'active', seed_urls: '[]', identifier: '', brand_identifier: '',
   });
-  specDb.upsertQueueProduct({
-    category: specDb.category, product_id: productId,
-    status: 'complete', priority: 3, last_run_id: null,
-    rounds_completed: 0, last_completed_at: null,
-  });
+  // WHY: upsertQueueProduct removed from SpecDb — seed directly via raw SQL.
+  specDb.db.prepare(`
+    INSERT INTO product_queue (category, product_id, status, priority, last_run_id, rounds_completed, last_completed_at)
+    VALUES (?, ?, 'complete', 3, NULL, 0, NULL)
+    ON CONFLICT(category, product_id) DO UPDATE SET
+      status = excluded.status, priority = excluded.priority,
+      last_run_id = excluded.last_run_id, rounds_completed = excluded.rounds_completed,
+      last_completed_at = excluded.last_completed_at
+  `).run(specDb.category, productId);
 }
 
 /** Create filesystem artifacts for a run. */

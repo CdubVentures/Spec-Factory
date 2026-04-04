@@ -155,19 +155,27 @@ export const REAL_FLAG_CODES = new Set([
   'conflict_policy_hold',
 ]);
 
-export function inferFlags({ reasonCodes = [], fieldRule = {}, candidates = [], acceptedCandidateId = null, overridden = false }) {
+export function inferFlags({ reasonCodes = [], fieldRule = {}, candidates = [], acceptedCandidateId = null, overridden = false, evidenceSourceCount = null }) {
   const flags = [];
   for (const code of reasonCodes) {
     if (REAL_FLAG_CODES.has(code)) flags.push(code);
   }
   const minRefs = toInt(fieldRule.min_evidence_refs, 1);
   if (minRefs > 1 && !overridden) {
+    // WHY: Synthetic candidates are placeholders for the selected value, not independent evidence.
+    // Only real candidates from distinct sources count toward the evidence requirement.
+    const realCandidates = toArray(candidates).filter(c => !c.is_synthetic_selected);
     const distinctSources = new Set(
-      toArray(candidates)
+      realCandidates
         .map(c => String(c.source_id || c.source_host || c.host || '').trim().toLowerCase())
         .filter(Boolean)
     );
-    if (distinctSources.size > 0 && distinctSources.size < minRefs) {
+    // WHY: In specDb mode, real candidates may not exist but the summary field_reasoning
+    // preserves the original source count from the pipeline run. Use that as fallback.
+    const effectiveSourceCount = distinctSources.size > 0
+      ? distinctSources.size
+      : toInt(evidenceSourceCount, 0);
+    if (effectiveSourceCount > 0 && effectiveSourceCount < minRefs) {
       flags.push('below_min_evidence');
     }
   }

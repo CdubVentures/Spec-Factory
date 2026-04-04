@@ -19,11 +19,9 @@ import {
 } from './resultClassifier.js';
 import {
   buildSerpExplorer,
-  writeDiscoveryPayloads,
 } from './resultPayloadBuilder.js';
 import {
   buildQueryAttemptStats,
-  writeSearchProfileArtifacts,
 } from '../shared/helpers.js';
 import { applyHardDropFilter } from './triageHardDropFilter.js';
 import { sampleRejectAudit, buildAuditTrail } from './triageRejectAuditor.js';
@@ -42,7 +40,7 @@ export async function processDiscoveryResults({
   // LLM & planning
   llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
-  queries, searchProfilePlanned, searchProfileKeys, providerState,
+  queries, searchProfilePlanned, providerState,
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -327,37 +325,14 @@ export async function processDiscoveryResults({
     llm_serp_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
     serp_explorer: serpExplorer
   };
-  await writeSearchProfileArtifacts({
-    storage,
-    payload: searchProfileFinal,
-    keys: searchProfileKeys
-  });
-
-  // ── Phase 9: Write discovery + candidates payloads ──
-  const { discoveryKey, candidatesKey } = await writeDiscoveryPayloads({
-    config, storage, categoryConfig, job, runId,
-    queries, llmQueries, missingFields,
-    internalSatisfied, externalSearchReason,
-    searchAttempts, searchJournal,
-    providerState,
-    searchProfileFinal, serpExplorer,
-    candidateRowsFinal, discovered,
-    selectedUrls, searchProfileKeys,
-  });
-
   return {
     enabled: true,
-    discoveryKey,
-    candidatesKey,
     candidates: candidateRowsFinal,
     selectedUrls,
     allCandidateUrls,
     queries,
     llm_queries: llmQueries,
     search_profile: searchProfileFinal,
-    search_profile_key: searchProfileKeys.inputKey,
-    search_profile_run_key: searchProfileKeys.runKey,
-    search_profile_latest_key: searchProfileKeys.latestKey,
     provider_state: providerState,
     internal_satisfied: internalSatisfied,
     external_search_reason: externalSearchReason,

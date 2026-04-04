@@ -41,7 +41,7 @@ test('buildJobFromDb — happy path returns full job object', () => {
 });
 
 test('buildJobFromDb — returns null when brand is empty', () => {
-  const db = mockSpecDb({ brand: '', model: 'Viper' });
+  const db = mockSpecDb({ brand: '', base_model: 'Viper', model: 'Viper' });
   const result = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
   assert.equal(result, null);
 });
@@ -64,13 +64,13 @@ test('buildJobFromDb — returns null when specDb is null', () => {
 });
 
 test('buildJobFromDb — returns null when productId is empty', () => {
-  const db = mockSpecDb({ brand: 'Razer', model: 'Viper' });
+  const db = mockSpecDb({ brand: 'Razer', base_model: 'Viper', model: 'Viper' });
   const result = buildJobFromDb({ productId: '', category: CATEGORY, specDb: db });
   assert.equal(result, null);
 });
 
 test('buildJobFromDb — returns null when category is empty', () => {
-  const db = mockSpecDb({ brand: 'Razer', model: 'Viper' });
+  const db = mockSpecDb({ brand: 'Razer', base_model: 'Viper', model: 'Viper' });
   const result = buildJobFromDb({ productId: PRODUCT_ID, category: '', specDb: db });
   assert.equal(result, null);
 });

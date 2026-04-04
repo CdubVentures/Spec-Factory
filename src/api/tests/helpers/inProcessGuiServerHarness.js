@@ -31,6 +31,7 @@ export async function startInProcessGuiServer(t, {
 
   async function close() {
     if (!runtime.server.listening) return;
+    runtime.server.unref();
     await new Promise((resolve, reject) => {
       runtime.server.close((error) => {
         if (error) {
@@ -40,6 +41,8 @@ export async function startInProcessGuiServer(t, {
         resolve();
       });
     });
+    // WHY: Windows UV_HANDLE_CLOSING assertion race — let libuv drain before test runner exits.
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
   t?.after?.(() => close().catch(() => {}));

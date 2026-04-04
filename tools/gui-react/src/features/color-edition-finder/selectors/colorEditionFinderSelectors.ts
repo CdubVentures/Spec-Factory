@@ -1,4 +1,36 @@
-import type { ColorEditionFinderResult, ColorRegistryEntry } from '../types.ts';
+import type { ColorEditionFinderResult, ColorEditionFinderSelected, ColorRegistryEntry } from '../types.ts';
+
+export interface ColorPill {
+  readonly name: string;
+  readonly hex: string;
+  readonly isDefault: boolean;
+}
+
+export interface EditionBlock {
+  readonly slug: string;
+  readonly pairedColors: readonly ColorPill[];
+}
+
+export interface SelectedStateDisplay {
+  readonly colors: readonly ColorPill[];
+  readonly editions: readonly EditionBlock[];
+  readonly ssotRunNumber: number;
+  readonly defaultColorHex: string;
+}
+
+export interface RunHistoryRow {
+  readonly runNumber: number;
+  readonly ranAt: string;
+  readonly model: string;
+  readonly fallbackUsed: boolean;
+  readonly colorCount: number;
+  readonly editionCount: number;
+  readonly isLatest: boolean;
+  readonly selected: ColorEditionFinderSelected;
+  readonly systemPrompt: string;
+  readonly userMessage: string;
+  readonly responseJson: string;
+}
 
 export interface KpiCard {
   readonly label: string;
@@ -14,23 +46,6 @@ export interface CooldownState {
   readonly eligibleDate: string;
 }
 
-export interface ColorTableRow {
-  readonly name: string;
-  readonly hex: string;
-  readonly isDefault: boolean;
-  readonly isNew: boolean;
-  readonly foundRun: number;
-  readonly foundAt: string;
-  readonly model: string;
-}
-
-export interface EditionTableRow {
-  readonly slug: string;
-  readonly foundRun: number;
-  readonly foundAt: string;
-  readonly model: string;
-}
-
 export interface StatusChip {
   readonly label: string;
   readonly tone: string;
@@ -43,11 +58,6 @@ export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): K
   const editions = result?.editions?.length ?? 0;
   const runCount = result?.run_count ?? 0;
 
-  // Count new colors: colors that don't appear in color_details with found_run === run_count
-  // Simplification: "new colors" is 0 unless the run response explicitly tracked it
-  // For now, derive from the number of new_colors returned (not stored in result — always 0 in display)
-  const newColors = 0;
-
   const cooldown = deriveCooldownState(result);
   const cooldownLabel = cooldown.onCooldown
     ? `${cooldown.daysRemaining}d`
@@ -56,7 +66,7 @@ export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): K
   return [
     { label: 'Colors', value: String(colors), tone: 'accent' },
     { label: 'Editions', value: String(editions), tone: 'purple' },
-    { label: 'New Colors', value: String(newColors), tone: 'warning' },
+    { label: 'Default Color', value: result?.default_color || '--', tone: 'teal' },
     { label: 'Runs', value: String(runCount), tone: 'success' },
     { label: 'Cooldown', value: cooldownLabel, tone: 'info' },
   ];
@@ -90,48 +100,66 @@ export function deriveCooldownState(result: ColorEditionFinderResult | null): Co
   };
 }
 
-export function deriveColorTableRows(
-  result: ColorEditionFinderResult | null,
-  colorRegistry: ColorRegistryEntry[],
-): ColorTableRow[] {
-  if (!result) return [];
-
-  const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
-
-  return result.colors.map((name, idx) => {
-    const detail = result.color_details[name];
-    // For multi-color (e.g. "black+red"), derive hex from first atom
-    const firstAtom = name.split('+')[0] || name;
-    const hex = hexMap.get(firstAtom) || hexMap.get(name) || '';
-    const isDefault = idx === 0 && name === result.default_color;
-
-    return {
-      name,
-      hex,
-      isDefault,
-      isNew: false, // Would need tracking in result to know
-      foundRun: detail?.found_run ?? 0,
-      foundAt: detail?.found_at?.split('T')[0] ?? '',
-      model: detail?.model ?? '',
-    };
-  });
-}
-
-export function deriveEditionTableRows(result: ColorEditionFinderResult | null): EditionTableRow[] {
-  if (!result) return [];
-
-  return result.editions.map(slug => {
-    const detail = result.edition_details[slug];
-    return {
-      slug,
-      foundRun: detail?.found_run ?? 0,
-      foundAt: detail?.found_at?.split('T')[0] ?? '',
-      model: detail?.model ?? '',
-    };
-  });
-}
-
 export function deriveFinderStatusChip(result: ColorEditionFinderResult | null): StatusChip {
   if (!result) return { label: 'Not Run', tone: 'neutral' };
   return { label: `Run ${result.run_count}`, tone: 'success' };
+}
+
+function resolveHex(name: string, hexMap: Map<string, string>): string {
+  const firstAtom = name.split('+')[0] || name;
+  return hexMap.get(firstAtom) || hexMap.get(name) || '';
+}
+
+function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>): ColorPill {
+  return { name, hex: resolveHex(name, hexMap), isDefault: name === defaultColor };
+}
+
+export function deriveSelectedStateDisplay(
+  result: ColorEditionFinderResult | null,
+  colorRegistry: ColorRegistryEntry[],
+): SelectedStateDisplay {
+  if (!result?.selected) {
+    return { colors: [], editions: [], ssotRunNumber: 0, defaultColorHex: '' };
+  }
+
+  const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
+  const sel = result.selected;
+
+  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap));
+
+  const editions = Object.entries(sel.editions).map(([slug, ed]) => ({
+    slug,
+    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap)),
+  }));
+
+  return {
+    colors,
+    editions,
+    ssotRunNumber: result.run_count,
+    defaultColorHex: resolveHex(sel.default_color, hexMap),
+  };
+}
+
+export function deriveRunHistoryRows(
+  result: ColorEditionFinderResult | null,
+): RunHistoryRow[] {
+  if (!result?.runs?.length) return [];
+
+  const maxRunNumber = Math.max(...result.runs.map(r => r.run_number));
+
+  return [...result.runs]
+    .sort((a, b) => b.run_number - a.run_number)
+    .map(run => ({
+      runNumber: run.run_number,
+      ranAt: run.ran_at,
+      model: run.model,
+      fallbackUsed: run.fallback_used,
+      colorCount: run.selected?.colors?.length ?? 0,
+      editionCount: Object.keys(run.selected?.editions ?? {}).length,
+      isLatest: run.run_number === maxRunNumber,
+      selected: run.selected,
+      systemPrompt: run.prompt?.system ?? '',
+      userMessage: run.prompt?.user ?? '',
+      responseJson: JSON.stringify(run.response, null, 2),
+    }));
 }

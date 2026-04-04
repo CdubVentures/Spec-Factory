@@ -1,6 +1,9 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
 import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteMatrixReseed.js';
+import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
+import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
+import { reseedOverridesFromJson } from '../../features/review/domain/overridesReseed.js';
 import { buildReseedSurfaces } from '../../db/seedRegistry.js';
 
 function assertFunction(name, value) {
@@ -50,6 +53,9 @@ export function createSpecDbRuntime({
     scanAndSeedCheckpoints,
     rebuildColorEditionFinderFromJson,
     rebuildLlmRouteMatrixFromJson,
+    reseedFieldKeyOrderFromJson,
+    reseedFieldStudioMapFromJson,
+    reseedOverridesFromJson,
   });
   const reseedPhases = reseedSurfaces.map(surface => ({
     name: surface.key,

@@ -82,8 +82,8 @@ describe('writeProductIdentity', () => {
 
     const written = JSON.parse(fs.readFileSync(path.join(root, 'mouse-minimal', 'product.json'), 'utf8'));
     assert.equal(written.identity.variant, '');
-    assert.equal(written.identity.sku, '');
-    assert.equal(written.identity.title, '');
+    assert.equal(written.identity.base_model, '');
+    assert.equal(written.identity.brand_identifier, '');
     assert.deepEqual(written.identity.seed_urls, []);
     assert.equal(written.identity.identifier, '');
     assert.equal(written.identity.status, 'active');

@@ -199,6 +199,7 @@ export function createCatalogProduct(overrides = {}) {
   return {
     brand: 'Acme',
     model: 'Orbit X1',
+    base_model: 'Orbit X1',
     variant: '',
     id: 10,
     ...overrides,
@@ -208,6 +209,7 @@ export function createCatalogProduct(overrides = {}) {
 export function createCatalogInput(overrides = {}) {
   const identityLock = {
     brand: 'Acme',
+    base_model: 'Orbit X1',
     model: 'Orbit X1',
     variant: '',
     ...(overrides.identityLock || {}),
@@ -238,7 +240,8 @@ export function createNormalizedIdentity(overrides = {}) {
   return {
     identity: {
       brand: 'Acme',
-      model: 'Orbit X1',
+      base_model: 'Orbit X1',
+      model: 'Orbit X1 Core',
       variant: 'Core',
       ...overrides,
     },

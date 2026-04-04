@@ -427,7 +427,7 @@ export async function readIndexLabRunAutomationQueue(runId) {
 }
 
 export async function listIndexLabRuns(opts) {
-  // WHY: Thread SQL product brand/model/variant into label builder so hex IDs display real names.
+  // WHY: Thread SQL product brand/base_model/variant into label builder so hex IDs display real names.
   if (!opts?.catalogProducts && _getSpecDbReady) {
     try {
       const map = new Map();

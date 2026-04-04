@@ -30,9 +30,9 @@ async function seedCatalogFixtures(helperRoot) {
   await writeJson(path.join(categoryRoot, '_control_plane', 'product_catalog.json'), {
     _version: 1,
     products: {
-      'mouse-acme-m100': { brand: 'Acme', model: 'M100', variant: '' },
-      'mouse-acme-m200': { brand: 'Acme', model: 'M200', variant: '' },
-      'mouse-acme-m300': { brand: 'Acme', model: 'M300', variant: '' }
+      'mouse-acme-m100': { brand: 'Acme', base_model: 'M100', model: 'M100', variant: '' },
+      'mouse-acme-m200': { brand: 'Acme', base_model: 'M200', model: 'M200', variant: '' },
+      'mouse-acme-m300': { brand: 'Acme', base_model: 'M300', model: 'M300', variant: '' }
     }
   });
   await writeJson(path.join(categoryRoot, '_overrides', 'mouse-acme-m100.overrides.json'), {

@@ -24,7 +24,7 @@ flowchart LR
   %% ── INPUTS ──
   subgraph INPUTS["Inputs to NeedSet"]
     direction TB
-    I1["Product Identity\n(brand, model, variant)"]
+    I1["Product Identity\n(brand, base_model, variant; model derived)"]
     I2["Category Config\n(fieldOrder, fieldRules,\nfieldGroups, sourceHosts)"]
     I3["Round Context\n(provenance, previous\nfield histories)"]
     I4["Query Execution\nHistory\n(null on round 0)"]

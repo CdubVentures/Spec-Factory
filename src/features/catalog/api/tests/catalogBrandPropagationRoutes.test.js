@@ -27,7 +27,6 @@ function makeCatalogCtx(overrides = {}) {
     catalogUpdateProduct: async () => ({ ok: true, productId: 'mouse-razer-viper', product: {} }),
     catalogRemoveProduct: async () => ({ ok: true, removed: true }),
     catalogSeedFromCatalog: async () => ({ ok: true, seeded: 0 }),
-    upsertQueueProduct: async () => ({ ok: true }),
     loadProductCatalog: async () => ({ products: {} }),
     readJsonlEvents: async () => [],
     fs: { readFile: async () => '' },
@@ -38,8 +37,6 @@ function makeCatalogCtx(overrides = {}) {
     listDirs: async () => [],
     HELPER_ROOT: 'category_authority',
     broadcastWs: noop,
-    loadQueueState: async () => ({ state: { products: {} } }),
-    saveQueueState: async () => ({ ok: true }),
     getSpecDb: () => null,
   };
   return { ...ctx, ...overrides };
@@ -82,6 +79,8 @@ function makeBrandCtx(overrides = {}) {
     broadcastWs: noop,
     getSpecDb: () => null,
     loadProductCatalog: async () => ({ products: {} }),
+    brandRegistryPath: '',
+    writeBackBrandRegistry: async () => {},
   };
   return { ...ctx, ...overrides };
 }
@@ -141,14 +140,14 @@ test('catalog routes: product identity update upserts same productId in specDb (
   };
 
   const handler = registerCatalogRoutes(makeCatalogCtx({
-    readJsonBody: async () => ({ model: 'Viper V3', brand: 'Razer' }),
+    readJsonBody: async () => ({ base_model: 'Viper V3', brand: 'Razer' }),
     getSpecDb: (category) => (category === 'mouse' ? specDb : null),
     catalogUpdateProduct: async () => ({
       ok: true,
       productId: 'mouse-a1b2c3d4',
       product: {
         brand: 'Razer',
-        model: 'Viper V3',
+        base_model: 'Viper V3',
         variant: '',
         status: 'active',
         seed_urls: [],
@@ -162,33 +161,6 @@ test('catalog routes: product identity update upserts same productId in specDb (
   assert.equal(upsertRows.length, 1);
   assert.equal(upsertRows[0].product_id, 'mouse-a1b2c3d4');
   assert.equal(upsertRows[0].model, 'Viper V3');
-});
-
-test('catalog routes: product delete surfaces queue cleanup failures', async () => {
-  resetDataPropagationCounters();
-  const specDb = {
-    category: 'mouse',
-    deleteQueueProduct: () => {
-      throw new Error('queue_delete_failed');
-    },
-  };
-
-  const handler = registerCatalogRoutes(makeCatalogCtx({
-    getSpecDb: (category) => (category === 'mouse' ? specDb : null),
-    catalogRemoveProduct: async ({ removeQueue }) => {
-      await removeQueue({ category: 'mouse', productId: 'mouse-razer-viper' });
-      return { ok: true, removed: true, productId: 'mouse-razer-viper' };
-    },
-  }));
-
-  await assert.rejects(
-    async () => handler(['catalog', 'mouse', 'products', 'mouse-razer-viper'], new URLSearchParams(), 'DELETE', {}, {}),
-    /queue_delete_failed/
-  );
-  const snapshot = getDataPropagationCountersSnapshot();
-  assert.equal(snapshot.queue_cleanup.attempt_total, 1);
-  assert.equal(snapshot.queue_cleanup.failed_total, 1);
-  assert.equal(snapshot.queue_cleanup.by_category.mouse.failed_total, 1);
 });
 
 test('brand routes: rename forwards getSpecDb resolver to cascade layer', async () => {

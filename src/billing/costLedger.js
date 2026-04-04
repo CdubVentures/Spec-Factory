@@ -22,14 +22,6 @@ function dayFromTs(ts = nowIso()) {
   return String(ts).slice(0, 10);
 }
 
-function legacyLedgerKey(storage, month) {
-  return storage.resolveOutputKey('_billing', 'ledger', `${month}.jsonl`);
-}
-
-function legacyMonthlyRollupKey(storage, month) {
-  return storage.resolveOutputKey('_billing', 'monthly', `${month}.json`);
-}
-
 function ledgerKey(_storage, month) {
   return `_billing/ledger/${month}.jsonl`;
 }
@@ -332,9 +324,7 @@ export async function readMonthlyRollup({ storage, month, specDb = null }) {
     }
   }
   const key = monthlyRollupKey(storage, month);
-  const legacyKey = legacyMonthlyRollupKey(storage, month);
   return (await storage.readJsonOrNull(key)) ||
-    (await storage.readJsonOrNull(legacyKey)) ||
     emptyRollup(month);
 }
 
@@ -350,9 +340,7 @@ export async function readLedgerMonth({ storage, month, specDb = null }) {
     }
   }
   const key = ledgerKey(storage, month);
-  const legacyKey = legacyLedgerKey(storage, month);
-  const text = await storage.readTextOrNull(key) ||
-    await storage.readTextOrNull(legacyKey);
+  const text = await storage.readTextOrNull(key);
   return parseLedgerText(text);
 }
 

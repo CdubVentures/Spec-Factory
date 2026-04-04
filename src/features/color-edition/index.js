@@ -3,6 +3,9 @@ export {
   writeColorEdition,
   mergeColorEditionDiscovery,
   rebuildColorEditionFinderFromJson,
+  recalculateCumulativeFromRuns,
+  deleteColorEditionFinderRun,
+  deleteColorEditionFinderAll,
 } from './colorEditionStore.js';
 
 export { colorEditionFinderResponseSchema } from './colorEditionSchema.js';

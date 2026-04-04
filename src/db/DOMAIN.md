@@ -2,7 +2,7 @@
 
 ## Boundary
 
-SQLite persistence layer for all spec candidate, review, product, queue, billing, learning, and source intelligence data. Synchronous API via `better-sqlite3` with WAL journal mode.
+SQLite persistence layer for all spec candidate, review, product, queue, billing, and source intelligence data. Synchronous API via `better-sqlite3` with WAL journal mode.
 
 ## Public API
 

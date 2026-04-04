@@ -13,6 +13,11 @@ import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js';
 import { setStageCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
 import { writeRunMeta } from '../../../indexlab/runtimeBridgeArtifacts.js';
+import { deriveFullModel } from '../../../features/catalog/identity/identityDedup.js';
+
+const PROJECT_ROOT = pathNode.resolve(
+  decodeURIComponent(new URL('../../../../', import.meta.url).pathname).replace(/^\/([A-Z]:)/i, '$1'),
+);
 
 export function createPipelineCommands({
   asBool,
@@ -63,7 +68,7 @@ export function createPipelineCommands({
       // JSON files may still use the old brand-model slug names. Verify the file
       // actually exists before committing to this key; if it doesn't, fall
       // through to the creation path which builds a fresh input JSON from the
-      // CLI identity args (brand, model, variant, etc.).
+      // CLI identity args (brand, base_model via --model, variant, etc.).
       let candidateExists = false;
       try {
         await storage.readJson(candidateKey);
@@ -99,7 +104,7 @@ export function createPipelineCommands({
       let generatedProductId = productIdArg;
       if (!generatedProductId) {
         try {
-          const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
+          const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
           const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
           const allRows = lookupDb.getAllProducts?.() || [];
           const match = allRows.find((r) =>
@@ -110,13 +115,14 @@ export function createPipelineCommands({
           generatedProductId = match?.product_id || buildProductId(category);
         } catch { generatedProductId = buildProductId(category); }
       }
+      const derivedModel = deriveFullModel(model, variant);
       const job = {
         productId: generatedProductId,
         category,
         identityLock: {
           brand,
           base_model: model,
-          model,
+          model: derivedModel,
           variant,
           brand_identifier: '',
           sku,
@@ -142,8 +148,7 @@ export function createPipelineCommands({
     let specDb = null;
     try {
       const { SpecDb } = await import('../../../db/specDb.js');
-      const projectRoot = pathNode.resolve(decodeURIComponent(new URL('../../../../', import.meta.url).pathname).replace(/^\/([A-Z]:)/i, '$1'));
-      const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
+      const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
       await fsNode.mkdir(specDbDir, { recursive: true });
       specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
@@ -157,14 +162,15 @@ export function createPipelineCommands({
     const cliModel = String(args.model || '').trim();
     const resolvedProductId = productIdArg || s3Key.replace(/.*\//, '').replace(/\.json$/i, '');
     if (cliBrand && cliModel) {
+      const cliVariant = String(args.variant || '').trim();
       jobOverride = {
         productId: resolvedProductId,
         category,
         identityLock: {
           brand: cliBrand,
           base_model: cliModel,
-          model: cliModel,
-          variant: String(args.variant || '').trim(),
+          model: deriveFullModel(cliModel, cliVariant),
+          variant: cliVariant,
           brand_identifier: '',
           sku: String(args.sku || '').trim(),
           title: String(args.title || '').trim(),
@@ -285,6 +291,10 @@ export function createPipelineCommands({
             config: runConfig,
           });
         } catch { /* best-effort: v2 checkpoint still written without panels */ }
+        // WHY: brandResolution is already in SQL (written by the brand_resolved event handler
+        // in runtimeBridgeEventHandlers.js during the run). Read it back so it gets checkpointed
+        // into run.json for rebuild durability.
+        const brandResolution = specDb?.getRunArtifact?.(result.runId, 'brand_resolution')?.payload || null;
         const checkpoint = buildCrawlCheckpoint({
           crawlResults: result.crawlResults,
           runId: result.runId,
@@ -296,6 +306,7 @@ export function createPipelineCommands({
           needset: bridge.needSet,
           searchProfile: bridge.searchProfile,
           runSummary,
+          brandResolution,
           status: 'completed',
           identityLock: result.job?.identityLock || null,
           runtimeOpsPanels,
@@ -320,7 +331,9 @@ export function createPipelineCommands({
           category,
         });
         writeProductCheckpoint({ productCheckpoint: productCp, outRoot, runId: result.runId });
-      } catch { /* best-effort: pipeline continues without checkpoints */ }
+      } catch (cpErr) {
+        console.warn('[checkpoint-write] run.json/product.json write failed:', cpErr?.message || cpErr);
+      }
 
       bridge.setContext({
         category,
@@ -378,7 +391,7 @@ export function createPipelineCommands({
     let productId = String(args['product-id'] || '').trim();
     if (!productId) {
       try {
-        const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
+        const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
         const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
         const allRows = lookupDb.getAllProducts?.() || [];
         const match = allRows.find((r) =>
@@ -393,7 +406,7 @@ export function createPipelineCommands({
     const identityLock = {
       brand,
       base_model: model,
-      model,
+      model: deriveFullModel(model, variant),
       variant,
       sku: String(args.sku || '').trim(),
       mpn: String(args.mpn || '').trim(),

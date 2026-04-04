@@ -9,6 +9,7 @@ import { throwIfSpawnEperm } from '../src/shared/tests/helpers/spawnEperm.js';
 import {
   buildProcessRows,
   buildRestartPlan,
+  killAllManagedProcesses,
   parseCliRequest,
 } from './specfactory-process-manager.js';
 
@@ -202,6 +203,56 @@ test('parseCliRequest requires a valid pid for kill and restart actions', () => 
     pid: 4321,
     json: true,
   });
+});
+
+// ── kill-all contracts ──────────────────────────────────────────────
+
+test('parseCliRequest accepts kill-all without a pid', () => {
+  const request = parseCliRequest(['kill-all']);
+  assert.deepEqual(request, {
+    action: 'kill-all',
+    pid: null,
+    json: true,
+  });
+});
+
+test('parseCliRequest accepts kill-all with --json flag', () => {
+  const request = parseCliRequest(['kill-all', '--json']);
+  assert.deepEqual(request, {
+    action: 'kill-all',
+    pid: null,
+    json: true,
+  });
+});
+
+test('buildProcessRows characterization: test runner with relative path is not classified as spec factory process', () => {
+  // WHY: Test runners launched with relative paths (node --test src/features/...)
+  // are not caught by the SPEC_FACTORY_MARKERS check or the root-path check.
+  // This characterizes the gap that kill-all must close via lock-holder detection.
+  const rows = buildProcessRows(makeState({
+    details: [
+      {
+        pid: 9001,
+        name: 'node.exe',
+        commandLine: 'node --test src/features/indexing/pipeline/searchPlanner/tests/searchPlanner.test.js',
+        executablePath: 'C:\\Program Files\\nodejs\\node.exe',
+        parentPid: 9000,
+      },
+    ],
+  }));
+
+  const row = findRow(rows, 9001);
+  assert.ok(row, 'expected the test runner to be present in rows');
+  assert.equal(row.running, true);
+  assert.equal(row.spec_factory_process, false, 'relative-path test runners are not detected as SF processes');
+  assert.equal(row.can_kill, false, 'buildProcessRows alone cannot authorize killing test runners');
+});
+
+test('killAllManagedProcesses is exported as an async function', () => {
+  // WHY: The kill-all return shape must be stable for both the bat file (exit code)
+  // and the Python GUI (JSON parsing). We verify the export exists without calling
+  // it against the real system (which would kill running processes).
+  assert.equal(typeof killAllManagedProcesses, 'function');
 });
 
 test('process manager ships as a root shortcut with a dedicated icon and no root bat', { skip: process.platform !== 'win32' }, (t) => {

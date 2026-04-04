@@ -4,17 +4,11 @@ import {
   cascadeEnumChange,
   cleanupHarness,
   createHarness,
-  loadQueueState,
-  saveQueueState,
-  upsertQueueRow,
 } from './helpers/componentImpactHarness.js';
 
 test('cascadeEnumChange honors preAffectedProductIds for rename cascades', async () => {
   const harness = await createHarness();
   try {
-    upsertQueueRow(harness.specDb, 'mouse-e', 'complete');
-    upsertQueueRow(harness.specDb, 'mouse-f', 'complete');
-
     harness.specDb.upsertItemFieldState({
       productId: 'mouse-e',
       fieldKey: 'connection',
@@ -47,19 +41,10 @@ test('cascadeEnumChange honors preAffectedProductIds for rename cascades', async
       value: '2.4ghz',
       newValue: 'Wireless',
       preAffectedProductIds: ['mouse-e', 'mouse-f'],
-      loadQueueState,
-      saveQueueState,
       specDb: harness.specDb,
     });
 
-    assert.equal(result.cascaded, 2);
-
-    const queueE = harness.specDb.getQueueProduct('mouse-e');
-    const queueF = harness.specDb.getQueueProduct('mouse-f');
-    assert.equal(queueE?.status, 'stale');
-    assert.equal(queueF?.status, 'stale');
-    assert.equal(queueE?.dirty_flags?.some((flag) => flag.reason === 'enum_renamed'), true);
-    assert.equal(queueF?.dirty_flags?.some((flag) => flag.reason === 'enum_renamed'), true);
+    assert.equal(result.affected.length, 2);
   } finally {
     await cleanupHarness(harness);
   }

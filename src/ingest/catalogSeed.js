@@ -5,7 +5,6 @@ import { spawnSync } from 'node:child_process';
 import zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
 import { nowIso, buildProductId } from '../shared/primitives.js';
-import { upsertQueueProduct } from '../queue/queueState.js';
 import { slugify as canonicalSlugify } from '../features/catalog/identity/slugify.js';
 import { loadCatalogProductsWithFields } from '../features/catalog/products/catalogProductLoader.js';
 import {
@@ -872,17 +871,6 @@ export async function syncJobsFromCatalogSeed({
       productId
     });
 
-    await upsertQueueProduct({
-      storage,
-      category,
-      productId,
-      s3key: '',
-      specDb,
-      patch: {
-        status: 'pending',
-        next_action_hint: 'fast_pass'
-      }
-    });
     created += 1;
   }
 

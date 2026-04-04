@@ -34,14 +34,14 @@ test('buildRunIdentityFingerprint produces sha256-prefixed deterministic hash', 
   const result = buildRunIdentityFingerprint({
     category: 'mouse',
     productId: 'viper-v3-pro',
-    identityLock: { brand: 'Razer', model: 'Viper V3 Pro' }
+    identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro' }
   });
   assert.ok(result.startsWith('sha256:'));
   assert.equal(result.length, 7 + 64);
 });
 
 test('buildRunIdentityFingerprint is deterministic for same input', () => {
-  const args = { category: 'mouse', productId: 'test', identityLock: { brand: 'A', model: 'B' } };
+  const args = { category: 'mouse', productId: 'test', identityLock: { brand: 'A', base_model: 'B', model: 'B' } };
   assert.equal(buildRunIdentityFingerprint(args), buildRunIdentityFingerprint(args));
 });
 
@@ -102,11 +102,11 @@ test('bestIdentityFromSources prefers variant match with identityLock', () => {
 // --- helperSupportsProvisionalFill ---
 
 test('helperSupportsProvisionalFill returns false when no top match', () => {
-  assert.equal(helperSupportsProvisionalFill({}, { brand: 'Razer', model: 'Viper' }), false);
-  assert.equal(helperSupportsProvisionalFill(null, { brand: 'Razer', model: 'Viper' }), false);
+  assert.equal(helperSupportsProvisionalFill({}, { brand: 'Razer', base_model: 'Viper', model: 'Viper' }), false);
+  assert.equal(helperSupportsProvisionalFill(null, { brand: 'Razer', base_model: 'Viper', model: 'Viper' }), false);
 });
 
-test('helperSupportsProvisionalFill returns false when identityLock missing brand/model', () => {
+test('helperSupportsProvisionalFill returns false when identityLock missing brand/base_model', () => {
   const ctx = { supportive_matches: [{ brand: 'Razer', model: 'Viper' }] };
   assert.equal(helperSupportsProvisionalFill(ctx, {}), false);
   assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer' }), false);
@@ -114,22 +114,22 @@ test('helperSupportsProvisionalFill returns false when identityLock missing bran
 
 test('helperSupportsProvisionalFill returns true when brand+model match and no variant constraint', () => {
   const ctx = { supportive_matches: [{ brand: 'Razer', model: 'Viper' }] };
-  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', model: 'Viper' }), true);
+  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', base_model: 'Viper', model: 'Viper' }), true);
 });
 
 test('helperSupportsProvisionalFill returns false when brand mismatch', () => {
   const ctx = { supportive_matches: [{ brand: 'Logitech', model: 'Viper' }] };
-  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', model: 'Viper' }), false);
+  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', base_model: 'Viper', model: 'Viper' }), false);
 });
 
 test('helperSupportsProvisionalFill checks variant overlap', () => {
   const ctx = { supportive_matches: [{ brand: 'Razer', model: 'Viper', variant: 'Pro Wireless' }] };
-  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', model: 'Viper', variant: 'Pro' }), true);
+  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: 'Pro' }), true);
 });
 
 test('helperSupportsProvisionalFill uses active_match fallback', () => {
   const ctx = { active_match: { brand: 'Razer', model: 'Viper' } };
-  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', model: 'Viper' }), true);
+  assert.equal(helperSupportsProvisionalFill(ctx, { brand: 'Razer', base_model: 'Viper', model: 'Viper' }), true);
 });
 
 // --- deriveNeedSetIdentityState ---
@@ -176,51 +176,51 @@ test('deriveNeedSetIdentityState returns unlocked below 0.70', () => {
 
 test('resolveExtractionGateOpen returns true when validated', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B' },
     identityGate: { validated: true }
   }), true);
 });
 
 test('resolveExtractionGateOpen returns false on hard conflict', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B' },
     identityGate: { reasonCodes: ['brand_conflict'] }
   }), false);
 });
 
 test('resolveExtractionGateOpen returns false on IDENTITY_CONFLICT status', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B' },
     identityGate: { status: 'IDENTITY_CONFLICT' }
   }), false);
 });
 
 test('resolveExtractionGateOpen returns false when variant is present but not validated', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B', variant: 'C' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B C', variant: 'C' },
     identityGate: {}
   }), false);
 });
 
 test('resolveExtractionGateOpen returns false for hard ambiguity level', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B', ambiguity_level: 'hard' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B', ambiguity_level: 'hard' },
     identityGate: {}
   }), false);
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'A', model: 'B', ambiguity_level: 'very_hard' },
+    identityLock: { brand: 'A', base_model: 'B', model: 'B', ambiguity_level: 'very_hard' },
     identityGate: {}
   }), false);
 });
 
 test('resolveExtractionGateOpen returns true for easy ambiguity with brand+model', () => {
   assert.equal(resolveExtractionGateOpen({
-    identityLock: { brand: 'Razer', model: 'Viper', ambiguity_level: 'easy' },
+    identityLock: { brand: 'Razer', base_model: 'Viper', model: 'Viper', ambiguity_level: 'easy' },
     identityGate: {}
   }), true);
 });
 
-test('resolveExtractionGateOpen returns false when brand or model missing', () => {
+test('resolveExtractionGateOpen returns false when brand or base_model missing', () => {
   assert.equal(resolveExtractionGateOpen({
     identityLock: { brand: 'Razer' },
     identityGate: {}

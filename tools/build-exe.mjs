@@ -52,6 +52,7 @@ const esbuildArgs = [
   '--external:better-sqlite3',
   '--external:playwright',
   '--external:pdf-parse',
+  '--external:typescript',
   '--external:@aws-sdk',
   // Node builtins
   '--external:node:fs',

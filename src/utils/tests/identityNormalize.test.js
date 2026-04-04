@@ -122,21 +122,21 @@ describe('normalizeAmbiguityLevel', () => {
 describe('resolveIdentityLockStatus', () => {
   it('returns locked_full with brand + model + variant', () => {
     assert.equal(
-      resolveIdentityLockStatus({ brand: 'Razer', model: 'Viper V3 Pro', variant: 'Wireless' }),
+      resolveIdentityLockStatus({ brand: 'Razer', base_model: 'Viper V3 Pro', variant: 'Wireless' }),
       'locked_full'
     );
   });
 
   it('returns locked_full with brand + model + sku', () => {
     assert.equal(
-      resolveIdentityLockStatus({ brand: 'Razer', model: 'Viper V3 Pro', sku: 'RZ01-123' }),
+      resolveIdentityLockStatus({ brand: 'Razer', base_model: 'Viper V3 Pro', sku: 'RZ01-123' }),
       'locked_full'
     );
   });
 
   it('returns locked_brand_model with brand + model only', () => {
     assert.equal(
-      resolveIdentityLockStatus({ brand: 'Razer', model: 'Viper V3 Pro' }),
+      resolveIdentityLockStatus({ brand: 'Razer', base_model: 'Viper V3 Pro' }),
       'locked_brand_model'
     );
   });
@@ -158,7 +158,7 @@ describe('resolveIdentityLockStatus', () => {
 
   it('ignores whitespace-only values', () => {
     assert.equal(
-      resolveIdentityLockStatus({ brand: '  ', model: '' }),
+      resolveIdentityLockStatus({ brand: '  ', base_model: '' }),
       'unlocked'
     );
   });

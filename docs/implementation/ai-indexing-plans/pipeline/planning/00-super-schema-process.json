@@ -69,7 +69,7 @@
       "name": "Search Profile phase",
       "owner": "src/features/indexing/pipeline/searchProfile/runSearchProfile.js",
       "does": [
-        "load learning artifacts and merge learningStoreHints into the lexicon",
+        "load learning artifacts (JSON files) and build enriched lexicon",
         "build deterministic Search Profile returning { searchProfileBase }"
       ],
       "note": "This phase is in-memory only. The planned search_profile artifact is written by Query Journey."
@@ -188,15 +188,13 @@
     "search_profile_event_note": "search_profile_generated is emitted from Search Profile phase; the bridge maps it to the Search Profile tab"
   },
   "learning_loop": {
-    "bootstrap_readback": "src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js",
-    "bootstrap_readback_gate": "loadLearningStoreHintsForRun() returns null unless selfImproveEnabled=true",
     "runtime_learning_reads": [
       "_learning/{category}/field_lexicon.json",
       "_learning/{category}/query_templates.json",
       "_learning/{category}/field_yield.json"
     ],
-    "finalization_writeback": "src/features/indexing/orchestration/finalize/persistSelfImproveLearningStores.js",
-    "wiring_status": "Learning stores are read at bootstrap and consumed by Search Profile phase for query template injection and lexicon enrichment. They are NOT passed to NeedSet — runNeedSet() passes learning: null into buildSearchPlanningContext(). NeedSet planning relies on per-run feedback (previousFieldHistories + queryExecutionHistory) instead of cross-product learning."
+    "bootstrap_function": "loadLearningArtifacts() reads JSON learning files from the category learning directory",
+    "wiring_status": "Learning artifacts (JSON files) are read at bootstrap and consumed by Search Profile phase for query template injection and lexicon enrichment. They are NOT passed to NeedSet — runNeedSet() passes learning: null into buildSearchPlanningContext(). NeedSet planning relies on per-run feedback (previousFieldHistories + queryExecutionHistory) instead of cross-product learning."
   },
   "feedback_loops": {
     "per_run_feedback": {
@@ -204,7 +202,7 @@
       "queryExecutionHistory": "Per-query completion state from frontierDb. Built by buildQueryExecutionHistory(productId) before NeedSet. Drives seed completion, group_query_count, tier allocation."
     },
     "cross_product_learning": {
-      "scope": "Category-level, persisted to SQLite (_learning/{category}/spec.sqlite), survives across runs and products",
+      "scope": "Category-level JSON artifacts (_learning/{category}/*.json), survives across runs and products",
       "consumed_by": "Search Profile phase only — learnedQueries.templates_by_field, templates_by_brand, enrichedLexicon, fieldYieldByDomain",
       "not_consumed_by": "NeedSet planner (learning: null), Search Planner LLM, Result Processing",
       "gate": "selfImproveEnabled (defaults true)"

@@ -69,7 +69,7 @@ src/features/color-edition-finder/
 
 #### LLM Prompt Design
 The system prompt should:
-1. Include product identity: `{ brand, model, variant, category }`
+1. Include product identity: `{ brand, base_model, model, variant, category }`
 2. Include registered colors from `appDb.listColors()` (already available via `registeredColors` in studio payload, or read directly)
 3. Instruct: "Return only colors from this list. Multi-color variants use `+` in dominant order."
 4. Instruct: "Return editions as kebab-case slugs."

@@ -57,5 +57,12 @@ export function createColorEditionFinderStore({ db, category, stmts }) {
     return hydrateRow(row);
   }
 
-  return { upsert, get, listByCategory, getIfOnCooldown };
+  function remove(productId) {
+    return stmts._deleteColorEditionFinder.run(
+      String(category),
+      String(productId || ''),
+    );
+  }
+
+  return { upsert, get, listByCategory, getIfOnCooldown, remove };
 }

@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { SpecDb } from '../../../../../db/specDb.js';
-import { loadQueueState, saveQueueState } from '../../../../../queue/queueState.js';
 import {
   cascadeComponentChange,
   cascadeEnumChange,
@@ -13,8 +12,6 @@ export {
   cascadeComponentChange,
   cascadeEnumChange,
   findProductsReferencingComponent,
-  loadQueueState,
-  saveQueueState,
 };
 
 function createStorage() {
@@ -45,15 +42,4 @@ export async function cleanupHarness(harness) {
   } finally {
     await fs.rm(harness.tempRoot, { recursive: true, force: true });
   }
-}
-
-export function upsertQueueRow(specDb, productId, status = 'complete') {
-  specDb.upsertQueueProduct({
-    product_id: productId,
-    status,
-    priority: 3,
-    attempts_total: 0,
-    retry_count: 0,
-    max_attempts: 3,
-  });
 }

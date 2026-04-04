@@ -289,14 +289,16 @@ export function dedupeQueryRows(rows = [], limit, config = null) {
 // ---------------------------------------------------------------------------
 
 function buildIdentityQueryGuardContext(variables = {}, variantGuardTerms = []) {
+  const queryModel = variables.base_model || variables.model;
+  const queryVariant = variables.base_model ? variables.variant : '';
   const brandTokens = [...new Set(tokenize(variables.brand).map((token) => compactToken(token)).filter(Boolean))];
   const modelTokens = [...new Set([
-    ...tokenize(variables.base_model || variables.model),
-    ...tokenize(variables.variant)
+    ...tokenize(queryModel),
+    ...tokenize(queryVariant)
   ].map((token) => compactToken(token)).filter(Boolean))]
     .filter((token) => !brandTokens.includes(token) && !GENERIC_MODEL_TOKENS.has(token));
   const requiredDigitGroups = extractDigitGroups(
-    [variables.base_model || variables.model, variables.variant].filter(Boolean).join(' ')
+    [queryModel, queryVariant].filter(Boolean).join(' ')
   );
   const allowedModelTokens = new Set();
   for (const token of [...modelTokens, ...toArray(variantGuardTerms).map((value) => compactToken(value))]) {

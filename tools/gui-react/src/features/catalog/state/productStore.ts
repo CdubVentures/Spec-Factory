@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // WHY: selectedBrand, selectedModel, selectedVariant are display-label caches, not canonical state.
-// They travel with selectedProductId so the Sidebar can restore its brand/model/variant
+// They travel with selectedProductId so the Sidebar can restore its brand/base-model/variant
 // dropdowns without re-querying the catalog. This is intentional UI cache.
 interface ProductState {
   selectedProductId: string;

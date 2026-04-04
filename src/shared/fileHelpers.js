@@ -9,6 +9,24 @@ export async function safeReadJson(filePath) {
   } catch { return null; }
 }
 
+// WHY: For seed paths where malformed JSON must NOT be treated as "empty."
+// Returns null only for missing files (ENOENT). Throws on parse errors with
+// a clear message so corrupt JSON is caught, not silently ignored.
+export async function readJsonOrThrow(filePath) {
+  let text;
+  try {
+    text = await fs.readFile(filePath, 'utf8');
+  } catch (err) {
+    if (err?.code === 'ENOENT') return null;
+    throw err;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (parseErr) {
+    throw new Error(`Invalid JSON in ${filePath}: ${parseErr.message}`);
+  }
+}
+
 export async function safeStat(filePath) {
   try { return await fs.stat(filePath); } catch { return null; }
 }

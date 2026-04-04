@@ -5,9 +5,6 @@ import {
   cascadeComponentChange,
   cleanupHarness,
   createHarness,
-  loadQueueState,
-  saveQueueState,
-  upsertQueueRow,
 } from './helpers/componentImpactHarness.js';
 
 test('cascadeComponentChange authoritative updates all linked items and marks queue stale via SpecDb', async () => {
@@ -32,8 +29,6 @@ test('cascadeComponentChange authoritative updates all linked items and marks qu
       matchScore: 1,
     });
 
-    upsertQueueRow(harness.specDb, 'mouse-a', 'complete');
-    upsertQueueRow(harness.specDb, 'mouse-b', 'pending');
     harness.specDb.upsertItemFieldState({
       productId: 'mouse-a',
       fieldKey: 'max_dpi',
@@ -68,8 +63,6 @@ test('cascadeComponentChange authoritative updates all linked items and marks qu
       newValue: '35000',
       variancePolicy: 'authoritative',
       constraints: [],
-      loadQueueState,
-      saveQueueState,
       specDb: harness.specDb,
     });
 
@@ -81,13 +74,6 @@ test('cascadeComponentChange authoritative updates all linked items and marks qu
     assert.equal(stateB?.value, '35000');
     assert.equal(stateA?.accepted_candidate_id, null);
     assert.equal(stateB?.accepted_candidate_id, null);
-
-    const queueA = harness.specDb.getQueueProduct('mouse-a');
-    const queueB = harness.specDb.getQueueProduct('mouse-b');
-    assert.equal(queueA?.status, 'stale');
-    assert.equal(queueB?.status, 'stale');
-    assert.equal(Array.isArray(queueA?.dirty_flags), true);
-    assert.equal(queueA?.dirty_flags?.some((flag) => flag.reason === 'component_change'), true);
   } finally {
     await cleanupHarness(harness);
   }

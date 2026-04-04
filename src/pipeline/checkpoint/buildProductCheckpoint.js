@@ -58,8 +58,6 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
     latest_run_id: String(runId || ''),
     runs_completed: 1,
     sources: runSources.map((src) => mapProductSource(src, runId)),
-    fields: {},
-    provenance: {},
     query_cooldowns: Array.isArray(queryCooldowns) ? queryCooldowns : [],
     updated_at: new Date().toISOString(),
   };

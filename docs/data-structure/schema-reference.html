@@ -84,10 +84,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
 <div class="stats">
   <div class="stat"><div class="n">36</div><div class="l">SpecDb Tables</div></div>
-  <div class="stat"><div class="n">4</div><div class="l">Runtime Learning</div></div>
   <div class="stat"><div class="n">6</div><div class="l">AppDb Tables</div></div>
   <div class="stat"><div class="n">18</div><div class="l">Store Modules</div></div>
-  <div class="stat"><div class="n">46</div><div class="l">Total Tables</div></div>
+  <div class="stat"><div class="n">42</div><div class="l">Total Tables</div></div>
 </div>
 
 <div class="filter-wrap">
@@ -100,11 +99,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
     <span class="tag tag-cols">36 tables (36 schema + 0 migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 36 tables from DDL (36 in specDbSchema.js + 0 migration-created). 4 additional runtime learning tables created by learningStores.js. Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 36 tables from DDL (36 in specDbSchema.js + 0 migration-created). Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   <div class="domain-group">
   <div class="domain-label">Component Identity</div>
   <details class="table-card" data-table="component_identity">
-  <summary><span class="tname">component_identity</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">componentStore</span></span></summary>
+  <summary><span class="tname">component_identity</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">componentStore</span></span></summary>
   <div class="card-body">
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
@@ -136,7 +135,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="component_values">
-  <summary><span class="tname">component_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">componentStore</span></span></summary>
+  <summary><span class="tname">component_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">componentStore</span></span></summary>
   <div class="card-body">
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
@@ -154,7 +153,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">needs_review</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
 <tr><td class="cn">overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
 <tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
-<tr><td class="cn">constraints</td><td class="ct">TEXT</td><td class="cc"> <span class="migr-indicator">via migration</span></td></tr>
 </tbody></table>
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, component_type, component_name, component_maker, property_key)</div><div class="idx-item">idx_cv_type_name (component_type, component_name)</div><div class="idx-item">idx_cv_identity_id (component_identity_id)</div></div>
   </div>
@@ -177,7 +175,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="list_values">
-  <summary><span class="tname">list_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">enumListStore</span></span></summary>
+  <summary><span class="tname">list_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">13 cols</span><span class="tag tag-store">enumListStore</span></span></summary>
   <div class="card-body">
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
@@ -193,7 +191,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
 <tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
 <tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
-<tr><td class="cn">source_timestamp</td><td class="ct">TEXT</td><td class="cc"> <span class="migr-indicator">via migration</span></td></tr>
 </tbody></table>
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, field_key, value)</div><div class="idx-item">idx_lv_field (field_key)</div><div class="idx-item">idx_lv_list_id (list_id)</div></div>
   </div>
@@ -813,7 +810,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="field_key_order">
-  <summary><span class="tname">field_key_order</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">3 cols</span><span class="tag tag-store">fieldStudioMapStore</span></span></summary>
+  <summary><span class="tname">field_key_order</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">3 cols</span><span class="tag tag-store">fieldKeyOrderStore</span></span></summary>
   <div class="card-body">
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody><tr class="pk-row"><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
@@ -902,79 +899,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
 </section>
 
-<section class="surface">
-  <div class="surface-head">
-    <h2>Runtime Learning (SpecDb)</h2>
-    <span class="tag" style="background:var(--amber-s);color:var(--amber)">Runtime-Created</span>
-    <span class="tag tag-cols">4 tables</span>
-  </div>
-  <p class="surface-desc">Runtime-created tables in each category's spec.sqlite. Managed by <code>src/features/indexing/learning/learningStores.js</code>. Created on first pipeline run; accumulate cross-run learning signals (component lexicon, field anchors, URL memory, domain yield).</p>
-  <div class="domain-group">
-  <div class="domain-label">Learning Stores</div>
-  <details class="table-card" data-table="component_lexicon">
-  <summary><span class="tname">component_lexicon</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">learningStores</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
-<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">source_run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(field, category, value)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="field_anchors">
-  <summary><span class="tname">field_anchors</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">learningStores</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
-<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">phrase</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">source_run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(field, category, phrase)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="url_memory">
-  <summary><span class="tname">url_memory</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">learningStores</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
-<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">used_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
-<tr><td class="cn">source_run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
-<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(field, category, url)</div></div>
-  </div>
-</details>
-<details class="table-card" data-table="domain_field_yield">
-  <summary><span class="tname">domain_field_yield</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">learningStores</span></span></summary>
-  <div class="card-body">
-    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
-    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
-<tr><td class="cn">domain</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
-<tr><td class="cn">seen_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
-<tr><td class="cn">used_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
-<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
-</tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(domain, field, category)</div></div>
-  </div>
-</details>
-</div>
-
-</section>
 
 <section class="surface">
   <div class="surface-head">

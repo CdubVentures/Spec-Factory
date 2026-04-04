@@ -79,7 +79,7 @@ export function createCandidateTraceMap() {
  * @param {Map} ctx.candidateTraceByUrl
  * @param {Map} ctx.candidateByUrl - canonical URL → classified candidate row
  * @param {Set} ctx.selectedUrlSet - URLs that were selected by SERP selector
- * @param {object} ctx.variables - brand/model/variant tokens
+ * @param {object} ctx.variables - brand/base_model/variant tokens
  * @param {Map} ctx.queryMetaByQuery - query text → query row metadata
  */
 export function enrichCandidateTraces({

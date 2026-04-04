@@ -10,9 +10,10 @@ function makeJob() {
   return {
     productId: 'test-prod',
     brand: 'Razer',
+    base_model: 'Viper V3 Pro',
     model: 'Viper V3 Pro',
     category: 'mouse',
-    identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
+    identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
   };
 }
 

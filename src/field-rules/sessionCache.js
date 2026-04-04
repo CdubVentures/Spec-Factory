@@ -188,17 +188,12 @@ export function createSessionCache({
       try { savedMap = JSON.parse(sqlRow.map_json); } catch { savedMap = {}; }
       mapSavedAt = sqlRow.updated_at || null;
     } else {
-      // Seed from JSON file (one-time migration)
+      // WHY: JSON→SQL migration is now handled by the field_studio_map reseed surface
+      // in seedRegistry.js. sessionCache only reads SQL. If SQL is empty after reseed,
+      // fall back to reading JSON directly (read-only, no persist).
       const studioMapSnapshot = await readStudioMapSnapshot(category);
       savedMap = isObject(studioMapSnapshot.map) ? studioMapSnapshot.map : {};
       mapSavedAt = studioMapSnapshot.savedAt;
-      // Persist to SQL for future reads
-      if (specDb && Object.keys(savedMap).length > 0) {
-        try {
-          const { hashJson } = await import('../ingest/compileUtils.js');
-          specDb.upsertFieldStudioMap(JSON.stringify(savedMap), hashJson(savedMap));
-        } catch { /* seed best-effort */ }
-      }
     }
 
     const keyMigrations = await readJsonIfExists(keyMigrationsPath(category));
@@ -229,14 +224,12 @@ export function createSessionCache({
     if (fieldKeyOrderRow) {
       mergedFieldOrder = JSON.parse(fieldKeyOrderRow.order_json);
     } else {
-      // WHY: JSON fallback for post-rebuild — reads exported order from _control_plane/
+      // WHY: JSON→SQL migration is now handled by the field_key_order reseed surface.
+      // sessionCache reads SQL. If SQL is empty after reseed, fall back to JSON (read-only)
+      // then to computed order.
       const fieldKeyOrderJson = await readJsonIfExists(fieldKeyOrderPath(category));
       if (fieldKeyOrderJson && Array.isArray(fieldKeyOrderJson.order) && fieldKeyOrderJson.order.length > 0) {
         mergedFieldOrder = fieldKeyOrderJson.order;
-        // WHY: Re-populate SQL from JSON so subsequent reads are fast-path
-        if (specDb?.setFieldKeyOrder) {
-          try { specDb.setFieldKeyOrder(category, JSON.stringify(fieldKeyOrderJson.order)); } catch { /* best-effort */ }
-        }
       } else {
         mergedFieldOrder = buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
       }

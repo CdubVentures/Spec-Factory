@@ -9,7 +9,7 @@ import {
 describe('Phase 02 - Variant Guard Terms', () => {
   it('includes identity tokens and digit groups in variant_guard_terms', () => {
     const profile = buildSearchProfile({
-      job: makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
+      job: makeJob({ identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' } }),
       categoryConfig: makeCategoryConfig(),
       missingFields: ['weight'],
       maxQueries: 12

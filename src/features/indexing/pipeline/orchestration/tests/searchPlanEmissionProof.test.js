@@ -319,7 +319,6 @@ function makeStageStubs() {
       selectedQueryRowMap: new Map(),
       profileQueryRowsByQuery: new Map(),
       searchProfilePlanned: {},
-      searchProfileKeys: {},
       executionQueryLimit: 0,
       queryLimit: 8,
       queryRejectLogCombined: [],

@@ -11,9 +11,10 @@ function makeJob(overrides = {}) {
   return {
     productId: 'test-prod',
     brand: 'Lenovo',
+    base_model: 'Legion M600 Wireless',
     model: 'Legion M600 Wireless',
     category: 'mouse',
-    identityLock: { brand: 'Lenovo', model: 'Legion M600 Wireless', variant: '' },
+    identityLock: { brand: 'Lenovo', base_model: 'Legion M600 Wireless', model: 'Legion M600 Wireless', variant: '' },
     ...overrides,
   };
 }

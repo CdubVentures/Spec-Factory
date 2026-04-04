@@ -34,7 +34,7 @@ function buildInitialContext(params) {
   const {
     config = {}, storage, category, categoryConfig, job, runId, logger,
     roundContext, requiredFields, llmContext, frontierDb,
-    learningStoreHints, planner, normalizeFieldListFn,
+    planner, normalizeFieldListFn,
   } = params;
 
   const resolvedSearchEngines = config.searchEngines || 'bing,google';
@@ -49,7 +49,7 @@ function buildInitialContext(params) {
   return {
     config: discoveryConfig, storage, category, categoryConfig, job, runId, logger,
     roundContext, requiredFields, llmContext, frontierDb,
-    learningStoreHints, planner, normalizeFieldListFn,
+    planner, normalizeFieldListFn,
     planningHints, queryExecutionHistory,
     // WHY: Auto-collects all function-valued params as DI overrides.
     // Phase descriptors read ctx._di?.keyName || defaultImport.

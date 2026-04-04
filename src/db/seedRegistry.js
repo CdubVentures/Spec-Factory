@@ -199,6 +199,51 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: ${result.reseeded} LLM route rows re-seeded`
           : '',
     },
+    {
+      key: 'overrides',
+      label: 'Consolidated Overrides',
+      scope: 'reseed',
+      tables: ['item_field_state', 'product_review_state'],
+      shouldRun: null,
+      execute: (ctx) => deps.reseedOverridesFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded
+          ? `${category}: overrides re-seeded (${result.productCount} products) — field_rules_signature invalidated for full re-seed`
+          : '',
+    },
+    {
+      key: 'field_key_order',
+      label: 'Field Key Order',
+      scope: 'reseed',
+      tables: ['field_key_order'],
+      shouldRun: null,
+      execute: (ctx) => deps.reseedFieldKeyOrderFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded
+          ? `${category}: field_key_order re-seeded (${result.count} keys)`
+          : '',
+    },
+    {
+      key: 'field_studio_map',
+      label: 'Field Studio Map',
+      scope: 'reseed',
+      tables: ['field_studio_map', 'list_values'],
+      shouldRun: null,
+      execute: (ctx) => deps.reseedFieldStudioMapFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded
+          ? `${category}: field_studio_map re-seeded${result.manualRemoved > 0 ? ` (${result.manualRemoved} stale manual enums removed)` : ''}`
+          : '',
+    },
   ];
 }
 

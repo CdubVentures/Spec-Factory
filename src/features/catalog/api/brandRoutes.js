@@ -37,7 +37,9 @@ export function registerBrandRoutes(ctx) {
   async function syncRenameCascadeProducts() {}
 
   function afterMutation() {
-    writeBackBrandRegistry(appDb, brandRegistryPath).catch(() => {});
+    writeBackBrandRegistry(appDb, brandRegistryPath).catch((err) => {
+      console.warn('[mirror-write] brand_registry.json write-back failed:', err?.message || err);
+    });
   }
 
   return async function handleBrandRoutes(parts, params, method, req, res) {

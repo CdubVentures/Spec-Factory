@@ -8,10 +8,6 @@ import {
 } from '../shared/queryPlan.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../shared/discoveryIdentity.js';
-import {
-  buildSearchProfileKeys,
-  writeSearchProfileArtifacts,
-} from '../shared/helpers.js';
 
 /**
  * @param {object} ctx
@@ -106,14 +102,6 @@ export async function runQueryJourney({
     selectedQueryRows.map((row) => [String(row?.query || '').trim().toLowerCase(), row]),
   );
 
-  const searchProfileKeys = buildSearchProfileKeys({
-    storage,
-    config,
-    category: categoryConfig.category,
-    productId: job.productId,
-    runId,
-  });
-
   // WHY: llm_queries populated from enhanced rows that were LLM-rewritten.
   const llmQueries = toArray(enhancedRows)
     .filter((row) => String(row?.hint_source || '').endsWith('_llm'))
@@ -128,7 +116,7 @@ export async function runQueryJourney({
     category: categoryConfig.category,
     product_id: job.productId,
     run_id: runId,
-    base_model: job.baseModel || '',
+    base_model: job.base_model || job?.identityLock?.base_model || job.baseModel || '',
     aliases: job.aliases || [],
     generated_at: new Date().toISOString(),
     status: 'planned',
@@ -152,15 +140,7 @@ export async function runQueryJourney({
       confidence: brandResolution.confidence ?? null,
       reasoning: brandResolution.reasoning || [],
     } : null,
-    key: searchProfileKeys.inputKey,
-    run_key: searchProfileKeys.runKey,
-    latest_key: searchProfileKeys.latestKey,
   };
-  await writeSearchProfileArtifacts({
-    storage,
-    payload: searchProfilePlanned,
-    keys: searchProfileKeys,
-  });
   logger?.info?.('query_journey_completed', {
     selected_query_count: queries.length,
     selected_queries: queries,
@@ -175,7 +155,6 @@ export async function runQueryJourney({
     selectedQueryRowMap,
     profileQueryRowsByQuery,
     searchProfilePlanned,
-    searchProfileKeys,
     executionQueryLimit,
     queryLimit,
     queryRejectLogCombined,

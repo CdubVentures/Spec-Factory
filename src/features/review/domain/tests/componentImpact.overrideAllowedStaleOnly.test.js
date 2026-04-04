@@ -4,9 +4,6 @@ import {
   cascadeComponentChange,
   cleanupHarness,
   createHarness,
-  loadQueueState,
-  saveQueueState,
-  upsertQueueRow,
 } from './helpers/componentImpactHarness.js';
 
 test('cascadeComponentChange override_allowed marks products stale without pushing values and keeps lowest priority', async () => {
@@ -30,9 +27,6 @@ test('cascadeComponentChange override_allowed marks products stale without pushi
       matchType: 'exact',
       matchScore: 1,
     });
-
-    upsertQueueRow(harness.specDb, 'mouse-override-a', 'complete');
-    upsertQueueRow(harness.specDb, 'mouse-override-b', 'complete');
 
     harness.specDb.upsertItemFieldState({
       productId: 'mouse-override-a',
@@ -68,8 +62,6 @@ test('cascadeComponentChange override_allowed marks products stale without pushi
       newValue: '35000',
       variancePolicy: 'override_allowed',
       constraints: [],
-      loadQueueState,
-      saveQueueState,
       specDb: harness.specDb,
     });
 
@@ -81,13 +73,6 @@ test('cascadeComponentChange override_allowed marks products stale without pushi
     const stateB = harness.specDb.getItemFieldState('mouse-override-b').find((row) => row.field_key === 'max_dpi');
     assert.equal(stateA?.value, '26000');
     assert.equal(stateB?.value, '30000');
-
-    const queueA = harness.specDb.getQueueProduct('mouse-override-a');
-    const queueB = harness.specDb.getQueueProduct('mouse-override-b');
-    assert.equal(queueA?.status, 'stale');
-    assert.equal(queueB?.status, 'stale');
-    assert.equal(queueA?.priority, 3);
-    assert.equal(queueB?.priority, 3);
   } finally {
     await cleanupHarness(harness);
   }

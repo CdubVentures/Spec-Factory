@@ -37,6 +37,7 @@ function makeJob(overrides = {}) {
     productId: 'mouse-endgame-gear-op1-8k',
     identityLock: {
       brand: 'Endgame Gear',
+      base_model: 'OP1 8K',
       model: 'OP1 8K',
       variant: '',
       ...overrides.identityLock
@@ -205,7 +206,7 @@ describe('Field Allocation — Round-Robin Fairness', () => {
 describe('Brand Domain Injection — Official Domain Fallback', () => {
   it('uses brand resolver officialDomain for soft host-biased queries when no approved host matches', () => {
     const profile = buildSearchProfile({
-      job: makeJob({ identityLock: { brand: 'Endgame Gear', model: 'OP1 8K', variant: '' } }),
+      job: makeJob({ identityLock: { brand: 'Endgame Gear', base_model: 'OP1 8K', model: 'OP1 8K', variant: '' } }),
       categoryConfig: makeCategoryConfig(),
       missingFields: ['weight', 'sensor'],
       maxQueries: 24,
@@ -228,7 +229,7 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
 
   it('still uses approved hosts when brand IS in the approved list', () => {
     const profile = buildSearchProfile({
-      job: makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
+      job: makeJob({ identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' } }),
       categoryConfig: makeCategoryConfig(),
       missingFields: ['weight'],
       maxQueries: 24,

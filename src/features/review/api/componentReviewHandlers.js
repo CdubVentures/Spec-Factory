@@ -79,8 +79,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     cascadeEnumChange,
     specDbCache,
     broadcastWs,
-    loadQueueState,
-    saveQueueState,
     runEnumConsistencyReview,
   } = context;
 
@@ -269,8 +267,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
               value: rawValue,
               newValue: targetValue,
               preAffectedProductIds,
-              loadQueueState,
-              saveQueueState,
               specDb,
             });
           }

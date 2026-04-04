@@ -28,8 +28,6 @@ export function registerCatalogRoutes(ctx) {
     listDirs,
     HELPER_ROOT,
     broadcastWs,
-    loadQueueState,
-    saveQueueState,
     getSpecDb,
     appDb,
   } = ctx;
@@ -38,21 +36,6 @@ export function registerCatalogRoutes(ctx) {
     const cat = String(category || '').trim().toLowerCase();
     if (!cat) return null;
     return getSpecDb(cat);
-  }
-
-  function deleteQueueProductRow(specDb, category, productId) {
-    if (!specDb || !productId) return 0;
-    if (typeof specDb.deleteQueueProduct === 'function') {
-      const result = specDb.deleteQueueProduct(productId);
-      return Number(result?.changes || 0);
-    }
-    if (specDb.db?.prepare) {
-      const result = specDb.db
-        .prepare('DELETE FROM product_queue WHERE category = ? AND product_id = ?')
-        .run(specDb.category || category, productId);
-      return Number(result?.changes || 0);
-    }
-    return 0;
   }
 
   function deleteCatalogProductRow(specDb, category, productId) {
@@ -84,46 +67,8 @@ export function registerCatalogRoutes(ctx) {
     };
   }
 
-  async function removeQueueEntry(category, productId) {
-    const cat = String(category || '').trim().toLowerCase();
-    const pid = String(productId || '').trim();
-    if (!cat || !pid) return false;
-
-    let removed = false;
-    let cleanupError = null;
-    const specDb = resolveSpecDb(cat);
-    if (specDb) {
-      try {
-        const changes = deleteQueueProductRow(specDb, cat, pid);
-        if (changes > 0) removed = true;
-      } catch (error) {
-        cleanupError = cleanupError || error;
-      }
-    }
-
-    if (loadQueueState && saveQueueState) {
-      try {
-        const loaded = await loadQueueState({ storage, category: cat, specDb });
-        if (loaded.state?.products?.[pid]) {
-          delete loaded.state.products[pid];
-          await saveQueueState({ storage, category: cat, state: loaded.state, specDb });
-          removed = true;
-        }
-      } catch (error) {
-        cleanupError = cleanupError || error;
-      }
-    }
-
-    if (cleanupError) {
-      recordQueueCleanupOutcome({
-        category: cat,
-        success: false,
-        reason: cleanupError?.message || 'queue_cleanup_failed',
-      });
-      throw cleanupError;
-    }
-    recordQueueCleanupOutcome({ category: cat, success: true });
-    return removed;
+  async function removeQueueEntry() {
+    return false;
   }
 
   return async function handleCatalogRoutes(parts, params, method, req, res) {

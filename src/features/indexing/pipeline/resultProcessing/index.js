@@ -1,7 +1,7 @@
 export { processDiscoveryResults } from './processDiscoveryResults.js';
 export { createCandidateTraceMap, enrichCandidateTraces } from './resultTraceBuilder.js';
 export { classifyAndDeduplicateCandidates, classifyDomains } from './resultClassifier.js';
-export { buildSerpExplorer, writeDiscoveryPayloads } from './resultPayloadBuilder.js';
+export { buildSerpExplorer } from './resultPayloadBuilder.js';
 export { buildSerpSelectorInput, validateSelectorOutput, adaptSerpSelectorOutput } from './serpSelector.js';
 export { createSerpSelectorCallLlm } from './serpSelectorLlmAdapter.js';
 export { applyHardDropFilter } from './triageHardDropFilter.js';

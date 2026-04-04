@@ -693,13 +693,15 @@ export async function finalizeOverrides({
     runtime_engine_warning_count: (runtimeGateResult.warnings || []).length
   };
 
+  // WHY: File writes kept for review pre-wire. Future: validation stage will replace
+  // file writes with DB → product.json update flow.
   await Promise.all([
     writeStorageJson(storage, latest.normalizedKey, nextNormalized),
     writeStorageJson(storage, latest.provenanceKey, nextProvenance),
     writeStorageJson(storage, latest.summaryKey, nextSummary)
   ]);
 
-  // Dual-write finalized overrides to SpecDb
+  // Write finalized overrides to SpecDb
   if (specDb) {
     try {
       const tx = specDb.db.transaction(() => {

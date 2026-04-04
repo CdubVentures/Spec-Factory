@@ -46,8 +46,6 @@ async function handleEnumOverrideEndpoint({
     storage,
     outputRoot,
     cascadeEnumChange,
-    loadQueueState,
-    saveQueueState,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -345,8 +343,6 @@ async function handleEnumOverrideEndpoint({
           value: cascadeValue,
           newValue: cascadeNewValue,
           preAffectedProductIds: cascadePreAffectedProductIds,
-          loadQueueState,
-          saveQueueState,
           specDb: runtimeSpecDb,
         });
       }
@@ -387,8 +383,6 @@ async function handleEnumRenameEndpoint({
     storage,
     outputRoot,
     cascadeEnumChange,
-    loadQueueState,
-    saveQueueState,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -466,8 +460,6 @@ async function handleEnumRenameEndpoint({
         value: oldValue,
         newValue: trimmedNew,
         preAffectedProductIds: affectedProductIds,
-        loadQueueState,
-        saveQueueState,
         specDb: runtimeSpecDb,
       });
 

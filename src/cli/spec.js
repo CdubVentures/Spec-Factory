@@ -7,7 +7,6 @@ import {
   slug,
   parseCsvList,
   parseJsonArg,
-  parseQueuePriority,
   openSpecDbForCategory
 } from '../app/cli/cliHelpers.js';
 import fsNode from 'node:fs/promises';
@@ -35,13 +34,6 @@ function usage() {
     '  list-fields --category <category> [--group <group>] [--required-level <level>] [--local]',
     '  field-report --category <category> [--format md|json] [--local]',
     '  field-rules-verify --category <category> [--fixture <path>] [--strict-bytes] [--local]',
-    '  create-golden --category <category> --product-id <id> [--fields-json <json>] [--identity-json <json>] [--unknowns-json <json>] [--notes <text>] [--local]',
-    '  create-golden --category <category> --from-catalog [--count <n>] [--product-id <id>] [--local]',
-    '  test-golden --category <category> [--local]',
-    '  calibrate-confidence --category <category> [--product-id <id>] [--local]',
-    '  accuracy-report --category <category> [--format md|json] [--max-cases <n>] [--local]',
-    '  accuracy-benchmark --category <category> [--period weekly|daily] [--max-cases <n>] [--golden-files] [--local]',
-    '  accuracy-trend --category <category> --field <field> [--period <n>d|week|month] [--local]',
     '  generate-types --category <category> [--out-dir <path>] [--local]',
     '  publish --category <category> [--product-id <id>] [--all-approved] [--format all|csv|sqlite] [--local]',
     '  provenance --category <category> --product-id <id> [--field <field>|--full] [--local]',
@@ -55,14 +47,6 @@ function usage() {
     '  drift-reconcile --category <category> --product-id <id> [--auto-republish true|false] [--local]',
     '  discover --category <category> [--brand <brand>] [--local]',
     '  ingest-csv --category <category> --path <csv> [--imports-root <path>] [--local]',
-    '  queue add --category <category> --brand <brand> --model <model> [--variant <variant>] [--priority <1-5>] [--local]',
-    '  queue add --category <category> --product-id <id> [--s3key <key>] [--priority <1-5>] [--local]',
-    '  queue add-batch --category <category> --file <csv> [--imports-root <path>] [--local]',
-    '  queue list --category <category> [--status <status>] [--limit <n>] [--local]',
-    '  queue stats --category <category> [--local]',
-    '  queue retry --category <category> --product-id <id> [--local]',
-    '  queue pause --category <category> --product-id <id> [--local]',
-    '  queue clear --category <category> --status <status> [--local]',
     '  review layout --category <category> [--local]',
     '  review queue --category <category> [--status needs_review|queued|...] [--limit <n>] [--local]',
     '  review product --category <category> --product-id <id> [--without-candidates] [--local]',
@@ -75,7 +59,6 @@ function usage() {
     '  review metrics --category <category> [--window-hours <n>] [--local]',
     '  review suggest --category <category> --type enum|component|alias --field <field> --value <value> --evidence-url <url> --evidence-quote <quote> [--canonical <value>] [--reason <text>] [--reviewer <id>] [--product-id <id>] [--local]',
     '  billing-report [--month YYYY-MM] [--local]',
-    '  explain-unk --category <category> --brand <brand> --model <model> [--variant <variant>] [--product-id <id>] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
     '  benchmark --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
     '  benchmark-golden --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
@@ -84,8 +67,6 @@ function usage() {
     '  product-reconcile --category <category> [--dry-run] [--local]',
     '  seed-db --category <category> [--local]',
     '  seed-checkpoint --category <category> [--out <path>] [--local]',
-    '  migrate-product-ids --category <category> [--dry-run] [--local]',
-    '  backfill-brand-identifiers --category <category> [--dry-run] [--local]',
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
     '',
     'Global options:',
@@ -134,6 +115,15 @@ function buildConfig(args) {
   };
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
+  // WHY: Env vars set via applyEnvOverrides must survive the user-settings merge.
+  // buildRawConfig reads these, but applyRuntimeSettingsToConfig overwrites them.
+  // Including them as explicit overrides ensures they are re-applied after merge.
+  if (process.env.CATEGORY_AUTHORITY_ROOT) {
+    overrides.categoryAuthorityRoot = process.env.CATEGORY_AUTHORITY_ROOT;
+  }
+  if (process.env.SPEC_DB_DIR) {
+    overrides.specDbDir = process.env.SPEC_DB_DIR;
+  }
   return loadConfigWithUserSettings(overrides);
 }
 
@@ -146,28 +136,6 @@ function createLazyLoader(factory) {
     return cachedPromise;
   };
 }
-
-const loadQueueCommandHandler = createLazyLoader(async () => {
-  const [{ createQueueCommand }, { ingestCsvFile }, queueState] = await Promise.all([
-    import('../app/cli/commands/queueCommand.js'),
-    import('../ingest/csvIngestor.js'),
-    import('../queue/queueState.js'),
-  ]);
-  return createQueueCommand({
-    toPosixKey,
-    parseCsvList,
-    parseJsonArg,
-    parseQueuePriority,
-    asBool,
-    ingestCsvFile,
-    upsertQueueProduct: queueState.upsertQueueProduct,
-    syncQueueFromInputs: queueState.syncQueueFromInputs,
-    listQueueProducts: queueState.listQueueProducts,
-    loadQueueState: queueState.loadQueueState,
-    clearQueueByStatus: queueState.clearQueueByStatus,
-    openSpecDbForCategory,
-  });
-});
 
 const loadReviewCommandHandler = createLazyLoader(async () => {
   const [{ createReviewCommand }, reviewDomain] = await Promise.all([
@@ -252,11 +220,6 @@ const loadBillingReportCommandHandler = createLazyLoader(async () => {
   });
 });
 
-const loadExplainUnkCommandHandler = createLazyLoader(async () => {
-  const { createExplainUnkCommand } = await import('../app/cli/commands/explainUnkCommand.js');
-  return createExplainUnkCommand({ openSpecDbForCategory });
-});
-
 const loadLlmHealthCommandHandler = createLazyLoader(async () => {
   const [{ createLlmHealthCommand }, { runLlmHealthCheck }] = await Promise.all([
     import('../app/cli/commands/llmHealthCommand.js'),
@@ -306,33 +269,6 @@ const loadFieldRulesCommands = createLazyLoader(async () => {
   });
 });
 
-const loadTestingQualityCommands = createLazyLoader(async () => {
-  const [
-    { createTestingQualityCommands },
-    goldenFiles,
-    reviewDomain,
-    { computeCalibrationReport },
-  ] = await Promise.all([
-    import('../app/cli/commands/testingQualityCommands.js'),
-    import('../testing/goldenFiles.js'),
-    import('../features/review/domain/index.js'),
-    import('../calibration/confidenceCalibrator.js'),
-  ]);
-  return createTestingQualityCommands({
-    asBool,
-    createGoldenFixture: goldenFiles.createGoldenFixture,
-    createGoldenFromCatalog: goldenFiles.createGoldenFromCatalog,
-    validateGoldenFixtures: goldenFiles.validateGoldenFixtures,
-    runQaJudge: reviewDomain.runQaJudge,
-    computeCalibrationReport,
-    buildAccuracyReport: goldenFiles.buildAccuracyReport,
-    renderAccuracyReportMarkdown: goldenFiles.renderAccuracyReportMarkdown,
-    runAccuracyBenchmarkReport: goldenFiles.runAccuracyBenchmarkReport,
-    buildAccuracyTrend: goldenFiles.buildAccuracyTrend,
-    openSpecDbForCategory,
-  });
-});
-
 const loadPublishingCommands = createLazyLoader(async () => {
   const [
     { createPublishingCommands },
@@ -356,13 +292,12 @@ const loadPublishingCommands = createLazyLoader(async () => {
     buildLlmMetrics: publishingPipeline.buildLlmMetrics,
     parseExpansionCategories: expansionHardening.parseExpansionCategories,
     bootstrapExpansionCategories: expansionHardening.bootstrapExpansionCategories,
-    runQueueLoadHarness: expansionHardening.runQueueLoadHarness,
-    runFailureInjectionHarness: expansionHardening.runFailureInjectionHarness,
     runFuzzSourceHealthHarness: expansionHardening.runFuzzSourceHealthHarness,
     runProductionHardeningReport: expansionHardening.runProductionHardeningReport,
     scanAndEnqueueDriftedProducts: driftScheduler.scanAndEnqueueDriftedProducts,
     reconcileDriftedProduct: driftScheduler.reconcileDriftedProduct,
     reconcileOrphans,
+    openSpecDbForCategory,
   });
 });
 
@@ -383,6 +318,7 @@ const loadDataUtilityCommands = createLazyLoader(async () => {
     ingestCsvFile,
     EventLogger,
     generateTypesForCategory,
+    openSpecDbForCategory,
   });
 });
 
@@ -395,7 +331,7 @@ const loadBatchCommandGroup = createLazyLoader(async () => {
   ] = await Promise.all([
     import('../app/cli/commands/batchCommand.js'),
     import('../categories/loader.js'),
-    import('../features/indexing/learning/index.js'),
+    import('../features/indexing/orchestration/banditScheduler.js'),
     import('../pipeline/runProduct.js'),
   ]);
   return createBatchCommand({
@@ -416,7 +352,7 @@ const loadPipelineCommands = createLazyLoader(async () => {
   ] = await Promise.all([
     import('../app/cli/commands/pipelineCommands.js'),
     import('../pipeline/runProduct.js'),
-    import('../runner/runUntilComplete.js'),
+    import('../pipeline/runUntilComplete.js'),
     import('../indexlab/runtimeBridge.js'),
   ]);
   return createPipelineCommands({
@@ -457,20 +393,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadFieldRulesCommands()).commandFieldReport(config, storage, args);
     case 'field-rules-verify':
       return (await loadFieldRulesCommands()).commandFieldRulesVerify(config, storage, args);
-    case 'create-golden':
-      return (await loadTestingQualityCommands()).commandCreateGolden(config, storage, args);
-    case 'test-golden':
-      return (await loadTestingQualityCommands()).commandTestGolden(config, storage, args);
-    case 'qa-judge':
-      return (await loadTestingQualityCommands()).commandQaJudge(config, storage, args);
-    case 'calibrate-confidence':
-      return (await loadTestingQualityCommands()).commandCalibrateConfidence(config, storage, args);
-    case 'accuracy-report':
-      return (await loadTestingQualityCommands()).commandAccuracyReport(config, storage, args);
-    case 'accuracy-benchmark':
-      return (await loadTestingQualityCommands()).commandAccuracyBenchmark(config, storage, args);
-    case 'accuracy-trend':
-      return (await loadTestingQualityCommands()).commandAccuracyTrend(config, storage, args);
     case 'generate-types':
       return (await loadDataUtilityCommands()).commandGenerateTypes(config, storage, args);
     case 'publish':
@@ -499,16 +421,12 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadDiscoverCommandHandler())(config, storage, args);
     case 'ingest-csv':
       return (await loadDataUtilityCommands()).commandIngestCsv(config, storage, args);
-    case 'queue':
-      return (await loadQueueCommandHandler())(config, storage, args);
     case 'review':
       return (await loadReviewCommandHandler())(config, storage, args);
     case 'export-overrides':
       return (await loadExportOverridesCommandHandler())(config, storage, args);
     case 'billing-report':
       return (await loadBillingReportCommandHandler())(config, storage, args);
-    case 'explain-unk':
-      return (await loadExplainUnkCommandHandler())(config, storage, args);
     case 'llm-health':
       return (await loadLlmHealthCommandHandler())(config, storage, args);
     case 'benchmark':
@@ -523,10 +441,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadDataUtilityCommands()).commandSeedDb(config, storage, args);
     case 'seed-checkpoint':
       return (await loadDataUtilityCommands()).commandSeedCheckpoint(config, storage, args);
-    case 'migrate-product-ids':
-      return (await loadDataUtilityCommands()).commandMigrateProductIds(config, storage, args);
-    case 'backfill-brand-identifiers':
-      return (await loadDataUtilityCommands()).commandBackfillBrandIdentifiers(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
     default:

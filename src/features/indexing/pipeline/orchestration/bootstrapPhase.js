@@ -6,7 +6,6 @@
 import { resolveJobIdentity, toArray } from '../shared/discoveryIdentity.js';
 import { normalizeHost } from '../shared/hostParser.js';
 import {
-  mergeLearningStoreHintsIntoLexicon,
   loadLearningArtifacts,
   ensureCategorySourceLookups,
 } from '../shared/helpers.js';
@@ -62,7 +61,7 @@ export const bootstrapPhase = {
       storage: ctx.storage,
       category: categoryConfig?.category,
     });
-    const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, ctx.learningStoreHints);
+    const enrichedLexicon = learning.lexicon;
     const identityLock = {
       brand: resolvedIdentity.brand,
       base_model: resolvedIdentity.base_model,

@@ -6,10 +6,8 @@ import path from 'node:path';
 import { createStorage } from '../../../core/storage/storage.js';
 import {
   bootstrapExpansionCategories,
-  runFailureInjectionHarness,
   runFuzzSourceHealthHarness,
   runProductionHardeningReport,
-  runQueueLoadHarness
 } from '../index.js';
 
 function makeStorage(tempRoot) {
@@ -49,6 +47,7 @@ test('bootstrapExpansionCategories initializes monitor and keyboard scaffolding 
     assert.equal(result.categories_count, 2);
     assert.equal(result.categories.includes('monitor'), true);
     assert.equal(result.categories.includes('keyboard'), true);
+    assert.equal(result.rows.length, 2);
 
     assert.equal(await exists(path.join(helperRoot, 'monitor', 'schema.json')), true);
     assert.equal(await exists(path.join(helperRoot, 'keyboard', 'schema.json')), true);
@@ -57,38 +56,18 @@ test('bootstrapExpansionCategories initializes monitor and keyboard scaffolding 
     assert.equal(await exists(path.join(goldenRoot, 'monitor', 'manifest.json')), true);
     assert.equal(await exists(path.join(goldenRoot, 'keyboard', 'manifest.json')), true);
     assert.deepEqual(
-      result.rows.map((row) => path.relative(tempRoot, row.starter_field_studio_source).replace(/\\/g, '/')).sort(),
-      [
-        'category_authority/keyboard/_source/field_catalog.seed.json',
-        'category_authority/monitor/_source/field_catalog.seed.json'
-      ]
+      result.rows.map((row) => row.created_files_count).sort((left, right) => left - right),
+      [2, 2]
     );
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
 
-test('queue load, failure injection, and fuzz source-health harnesses execute successfully', async () => {
+test('fuzz source-health harness executes successfully', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-expansion-harness-'));
   const storage = makeStorage(tempRoot);
   try {
-    const load = await runQueueLoadHarness({
-      storage,
-      category: 'monitor',
-      productCount: 30,
-      selectCycles: 12
-    });
-    assert.equal(load.category, 'monitor');
-    assert.equal(load.select_cycles_completed > 0, true);
-
-    const failure = await runFailureInjectionHarness({
-      storage,
-      category: 'monitor',
-      maxAttempts: 2
-    });
-    assert.equal(failure.final_status, 'failed');
-    assert.equal(failure.passed, true);
-
     const fuzz = await runFuzzSourceHealthHarness({
       storage,
       category: 'monitor',

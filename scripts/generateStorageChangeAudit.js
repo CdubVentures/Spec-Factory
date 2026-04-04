@@ -69,7 +69,6 @@ const PHASES = [
       'src/app/cli/commands/pipelineCommands.js',
       'src/app/cli/commands/migrateToSqliteCommand.js',
       'src/features/indexing/orchestration/shared/runtimeHelpers.js',
-      'src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js',
       'src/api/guiServerRuntimeConfig.js',
       'SpecFactory.bat',
       'scripts/verify-wave4.js',
@@ -115,11 +114,10 @@ const PHASES = [
   },
   {
     key: 'phase-e',
-    title: 'Phase E: Crawl Ledger, Learning, Crawlee, and Junk Cleanup',
-    target: 'Frontier eliminated — crawl ledger now in spec.sqlite. Learning storage moved. Runtime-only directories formalized.',
+    title: 'Phase E: Crawl Ledger, Crawlee, and Junk Cleanup',
+    target: 'Frontier eliminated — crawl ledger now in spec.sqlite. Learning SQLite stores removed. Runtime-only directories formalized.',
     primaryFiles: [
       'src/db/stores/crawlLedgerStore.js',
-      'src/features/indexing/learning/learningStores.js',
       'src/features/crawl/crawlSession.js',
       'src/features/crawl/videoCleanup.js',
       'tools/crawl-probe.mjs',

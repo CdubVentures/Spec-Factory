@@ -1,15 +1,16 @@
 import { runColorEditionFinder } from '../colorEditionFinder.js';
-import { readColorEdition } from '../colorEditionStore.js';
+import { readColorEdition, deleteColorEditionFinderRun, deleteColorEditionFinderAll } from '../colorEditionStore.js';
 
 export function createColorEditionFinderRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
     throw new TypeError('options must be an object');
   }
 
-  const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, colorRegistryPath, logger } = options;
+  const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, logger } = options;
 
   return {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    colorRegistryPath, logger, runColorEditionFinder, readColorEdition,
+    logger, runColorEditionFinder, readColorEdition,
+    deleteColorEditionFinderRun, deleteColorEditionFinderAll,
   };
 }

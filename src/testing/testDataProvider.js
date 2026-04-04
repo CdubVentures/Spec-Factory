@@ -12,6 +12,7 @@
 import { z } from 'zod';
 import { zodToLlmSchema } from '../core/llm/zodToLlmSchema.js';
 import { callLlmWithRouting } from '../core/llm/client/routing.js';
+import { deriveFullModel } from '../features/catalog/identity/identityDedup.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -1378,13 +1379,16 @@ export function buildTestProducts(category, contractAnalysis) {
   const defs = contractAnalysis?.scenarioDefs || SCENARIO_DEFS_DEFAULT;
   return defs.map(sc => {
     const slug = `${category}-testco-scenario-${String(sc.id).padStart(2, '0')}`;
+    const baseModel = `Scenario ${sc.id}`;
+    const variant = sc.name;
     return {
       productId: slug,
       category,
       identityLock: {
         brand: 'TestCo',
-        model: `Scenario ${sc.id}`,
-        variant: sc.name,
+        base_model: baseModel,
+        model: deriveFullModel(baseModel, variant),
+        variant,
         id: 9000 + sc.id,
         identifier: `test${String(sc.id).padStart(3, '0')}a`
       },
@@ -2298,6 +2302,7 @@ export function buildDeterministicSourceResults({
   const baseValues = buildBaseValues(contractAnalysis, scenario.id, { componentDBsOverride: componentDBs });
   const brand = product.identityLock?.brand || 'TestCo';
   const model = product.identityLock?.model || 'Unknown';
+  const baseModel = String(product.identityLock?.base_model || model || '').trim();
   const modelSlug = encodeURIComponent(model.toLowerCase().replace(/\s+/g, '-'));
 
   const sourceTemplates = [
@@ -2362,7 +2367,12 @@ export function buildDeterministicSourceResults({
       ts: now,
       status: 200,
       identity: { match: true, score: 1.0 },
-      identityCandidates: { brand, model, variant: product.identityLock?.variant || '' },
+      identityCandidates: {
+        brand,
+        base_model: baseModel,
+        model: baseModel || model,
+        variant: product.identityLock?.variant || '',
+      },
       fieldCandidates: candidates,
       anchorCheck: { conflicts: [], majorConflicts: [] },
       anchorStatus: 'pass',
@@ -2726,6 +2736,7 @@ IMPORTANT:
     const host = src.host || `test-source-${idx + 1}.example.com`;
     const tier = src.tier || (idx === 0 ? 1 : idx === 1 ? 2 : 3);
     const tierNames = { 1: 'manufacturer', 2: 'review', 3: 'retailer' };
+    const baseModel = String(product.identityLock?.base_model || model || '').trim();
 
     return {
       url: `https://${host}/products/${encodeURIComponent(model.toLowerCase().replace(/\s+/g, '-'))}`,
@@ -2740,7 +2751,8 @@ IMPORTANT:
       identity: { match: true, score: 1.0 },
       identityCandidates: {
         brand,
-        model,
+        base_model: baseModel,
+        model: baseModel || model,
         variant: product.identityLock?.variant || ''
       },
       fieldCandidates: (src.fieldCandidates || []).map((cand, ci) => ({

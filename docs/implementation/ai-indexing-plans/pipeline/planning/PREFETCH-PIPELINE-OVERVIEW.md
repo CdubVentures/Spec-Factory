@@ -319,8 +319,8 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
    - Apply brand promotions to `categoryConfig` (sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry). The phase returns pure data; the orchestrator owns the mutation.
    - `resolveJobIdentity(job)` builds `variables` object (`brand`, `model`, `variant`, `category`).
    - Normalize `missingFields` from `fieldOrder` and provenance.
-   - `loadLearningStoreHintsForRun()` loads learning artifacts from storage.
-   - `mergeLearningStoreHints()` produces `enrichedLexicon`.
+   - `loadLearningArtifacts()` loads learning artifacts (JSON files) from storage.
+   - Build `enrichedLexicon` from learning artifacts.
    - `resolveSearchProfileCaps(config)` produces `searchProfileCaps`.
    - Build `identityLock` from `job.identityLock` or `job` fields (`brand`, `model`, `variant`, `productId`).
    - These feed Search Profile, Search Planner, and several downstream phases.
@@ -537,13 +537,12 @@ URLs are tracked through the frontier database:
 - Scrape status (pending / complete / failed) determines if a URL needs revisiting
 - Field extraction results are linked back to the source URL
 
-### Cross-Product Learning (Category-Level)
+### Cross-Product Learning (Category-Level, JSON Artifacts)
 
 When `selfImproveEnabled`:
-- Domain/field yield: "For mice, rtings.com tends to have sensor DPI data"
-- URL memory: "This URL was useful for weight data"
-- Field anchors: "The term 'optical resolution' maps to the DPI field"
-- Component lexicon: "HERO 2 is a sensor"
+- Field lexicon: "The term 'optical resolution' maps to the DPI field"
+- Query templates: learned query patterns per field and brand
+- Field yield by domain: "For mice, rtings.com tends to have sensor DPI data"
 
 This learning influences which query templates Search Profile generates but does NOT influence NeedSet's tier decisions.
 
@@ -598,12 +597,11 @@ These are per-product, per-run, and reset between runs. They are the signals Nee
 
 ### Cross-product category learning (query generation only)
 
-- **Bootstrap**: `loadLearningStoreHintsForRun()` reads from SQLite (`_learning/{category}/spec.sqlite`) when `selfImproveEnabled=true`. `loadLearningArtifacts()` reads `field_lexicon.json`, `query_templates.json`, `field_yield.json`.
-- **Consumed by**: Search Profile phase only — `learnedQueries.templates_by_field` and `templates_by_brand` inject learned query templates. `enrichedLexicon` merges learning hints into the field lexicon. `fieldYieldByDomain` optionally informs domain-aware query generation.
+- **Bootstrap**: `loadLearningArtifacts()` reads `field_lexicon.json`, `query_templates.json`, `field_yield.json` from the category learning directory.
+- **Consumed by**: Search Profile phase only — `learnedQueries.templates_by_field` and `templates_by_brand` inject learned query templates. `enrichedLexicon` provides field lexicon enrichment. `fieldYieldByDomain` optionally informs domain-aware query generation.
 - **Not consumed by**: NeedSet planner (`runNeedSet()` passes `learning: null` into `buildSearchPlanningContext()`), Search Planner LLM, or Result Processing.
-- **Finalization writeback**: `persistSelfImproveLearningStores()` writes domain/field yield, URL memory, field anchors, and component lexicon to SQLite when `selfImproveEnabled=true` and there are accepted updates.
 
-Category learning captures cross-product patterns (e.g., "for mice, sensor DPI is found on spec sheets") that accumulate over time with configurable decay. It influences which query templates Search Profile generates, but does not influence NeedSet's tier allocation or group exhaustion logic.
+Category learning captures cross-product patterns (e.g., "for mice, sensor DPI is found on spec sheets") that accumulate over time. It influences which query templates Search Profile generates, but does not influence NeedSet's tier allocation or group exhaustion logic.
 
 ## Mermaid Diagram Index
 

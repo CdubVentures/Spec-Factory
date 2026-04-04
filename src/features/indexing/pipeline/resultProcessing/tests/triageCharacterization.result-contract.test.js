@@ -24,17 +24,11 @@ it('returns all required top-level keys with correct types', async () => {
 
   // Top-level keys
   assert.equal(result.enabled, true);
-  // writeDiscoveryPayloads is a no-op stub — keys are undefined
-  assert.equal(result.discoveryKey, undefined);
-  assert.equal(result.candidatesKey, undefined);
   assert.ok(Array.isArray(result.candidates), 'candidates is array');
   assert.ok(Array.isArray(result.selectedUrls), 'selectedUrls is array');
   assert.ok(Array.isArray(result.queries), 'queries is array');
   assert.ok(Array.isArray(result.llm_queries), 'llm_queries is array');
   assert.ok(typeof result.search_profile === 'object' && result.search_profile !== null, 'search_profile is object');
-  assert.equal(typeof result.search_profile_key, 'string');
-  assert.equal(typeof result.search_profile_run_key, 'string');
-  assert.equal(typeof result.search_profile_latest_key, 'string');
   assert.ok(typeof result.provider_state === 'object', 'provider_state is object');
   assert.equal(typeof result.internal_satisfied, 'boolean');
   assert.equal(typeof result.external_search_reason, 'string');

@@ -9,9 +9,10 @@ function makeJob(overrides = {}) {
   return {
     productId: 'test-prod',
     brand: 'Corsair',
+    base_model: 'K95 Platinum',
     model: 'K95 Platinum',
     category: 'keyboard',
-    identityLock: { brand: 'Corsair', model: 'K95 Platinum', variant: '' },
+    identityLock: { brand: 'Corsair', base_model: 'K95 Platinum', model: 'K95 Platinum', variant: '' },
     ...overrides,
   };
 }

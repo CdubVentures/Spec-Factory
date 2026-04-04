@@ -55,6 +55,7 @@ smoke-output.log
 helper_files/_test_*/
 helper_files/_global/
 category_authority/_test_*/
+category_authority/_runtime/
 category_authority_override/
 test-categoryAuthorityRoot/
 

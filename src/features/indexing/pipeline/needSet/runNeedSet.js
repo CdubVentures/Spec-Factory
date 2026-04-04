@@ -47,7 +47,7 @@ export async function runNeedSet({
       round: roundContext?.round || 0,
       brand: job?.brand || job?.identityLock?.brand || '',
       model: job?.model || job?.identityLock?.model || '',
-      baseModel: job?.baseModel || job?.identityLock?.base_model || '',
+      baseModel: job?.base_model || job?.identityLock?.base_model || job?.baseModel || '',
       aliases: job?.aliases || [],
       previousFieldHistories: roundContext?.previousFieldHistories || {},
     });

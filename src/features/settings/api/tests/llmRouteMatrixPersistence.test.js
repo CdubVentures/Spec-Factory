@@ -121,6 +121,61 @@ test('rebuildLlmRouteMatrixFromJson skips when helperRoot is falsy', () => {
   specDb.close();
 });
 
+test('hash-gated: skips reseed when file hash unchanged', () => {
+  const helperRoot = makeTmpHelperRoot();
+  const specDb = makeSpecDb('mouse');
+  const customRows = sampleCustomRows('mouse');
+  writeMatrixJson(helperRoot, 'mouse', { rows: customRows });
+
+  const first = rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(first.reseeded, 2);
+
+  const second = rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(second.reseeded, 0, 'should skip when hash unchanged');
+
+  specDb.close();
+  fs.rmSync(helperRoot, { recursive: true, force: true });
+});
+
+test('hash-gated: reseeds when file content changes', () => {
+  const helperRoot = makeTmpHelperRoot();
+  const specDb = makeSpecDb('mouse');
+  const customRows = sampleCustomRows('mouse');
+  writeMatrixJson(helperRoot, 'mouse', { rows: customRows });
+
+  rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(specDb.getLlmRouteMatrix().length, 2);
+
+  writeMatrixJson(helperRoot, 'mouse', { rows: [customRows[0]] });
+  const result = rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(result.reseeded, 1);
+  assert.equal(specDb.getLlmRouteMatrix().length, 1);
+
+  specDb.close();
+  fs.rmSync(helperRoot, { recursive: true, force: true });
+});
+
+test('empty rows JSON clears custom SQL rows and resets to defaults', () => {
+  const helperRoot = makeTmpHelperRoot();
+  const specDb = makeSpecDb('mouse');
+  const customRows = sampleCustomRows('mouse');
+  writeMatrixJson(helperRoot, 'mouse', { rows: customRows });
+  rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(specDb.getLlmRouteMatrix()[0].model_ladder_today, 'custom-model-x');
+
+  writeMatrixJson(helperRoot, 'mouse', { rows: [] });
+  const result = rebuildLlmRouteMatrixFromJson({ specDb, helperRoot });
+  assert.equal(result.reseeded, 0);
+  assert.equal(result.cleared, true, 'should report cleared');
+
+  const rows = specDb.getLlmRouteMatrix();
+  assert.ok(rows.length > 0, 'defaults should auto-generate on next access');
+  assert.notEqual(rows[0].model_ladder_today, 'custom-model-x', 'custom model should be gone');
+
+  specDb.close();
+  fs.rmSync(helperRoot, { recursive: true, force: true });
+});
+
 test('round-trip: save custom rows → export → rebuild specDb → reseed → custom rows survive', () => {
   const helperRoot = makeTmpHelperRoot();
   const customRows = sampleCustomRows('mouse');

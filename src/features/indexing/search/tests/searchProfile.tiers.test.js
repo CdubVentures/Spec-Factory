@@ -148,7 +148,7 @@ describe('Phase 02 - buildTier1Queries', () => {
 
   it('includes brand model variant in query string', () => {
     const rows = buildTier1Queries(
-      makeJob({ identityLock: { brand: 'Logitech', model: 'G Pro X', variant: 'Superlight 2' } }),
+      makeJob({ identityLock: { brand: 'Logitech', base_model: 'G Pro X', variant: 'Superlight 2' } }),
       makeSeedStatus({ specs_seed: { is_needed: true } }),
       null,
     );
@@ -222,7 +222,7 @@ describe('Phase 02 - buildTier2Queries', () => {
       }),
     ];
     const rows = buildTier2Queries(
-      makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
+      makeJob({ identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' } }),
       groups,
     );
     assert.ok(rows[0].query.includes('Razer'));
@@ -294,7 +294,7 @@ describe('Phase 02 - buildTier3Queries', () => {
       }),
     ];
     const rows = buildTier3Queries(
-      makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
+      makeJob({ identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' } }),
       groups,
       makeCategoryConfig(),
       null,

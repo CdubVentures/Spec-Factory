@@ -12,7 +12,8 @@ function makeJob(overrides = {}) {
   return {
     productId: 'test-product',
     brand: 'Razer',
-    model: 'Viper V3',
+    base_model: 'Viper V3',
+    model: 'Viper V3 Pro',
     variant: 'Pro',
     category: 'mouse',
     requirements: { focus_fields: ['dpi'] },
@@ -64,7 +65,6 @@ function makeContext(overrides = {}) {
     brandResolution,
     storage,
     planningHints,
-    learningStoreHints,
     normalizeFieldListFn,
     ...rest
   } = overrides;
@@ -78,7 +78,6 @@ function makeContext(overrides = {}) {
     storage: storage ?? makeStorage(),
     brandResolution: brandResolution === undefined ? makeBrandResolution() : brandResolution,
     planningHints: makePlanningHints(planningHints),
-    learningStoreHints: learningStoreHints ?? null,
     normalizeFieldListFn: normalizeFieldListFn ?? ((fields) => [...new Set(fields)]),
     planner: {},
     focusGroups: [{
@@ -139,14 +138,14 @@ describe('bootstrapPhase.execute return contract', () => {
     assert.deepEqual(result.variables, {
       brand: 'Razer',
       base_model: 'Viper V3',
-      model: 'Viper V3',
+      model: 'Viper V3 Pro',
       variant: 'Pro',
       category: 'mouse',
     });
     assert.deepEqual(result.identityLock, {
       brand: 'Razer',
       base_model: 'Viper V3',
-      model: 'Viper V3',
+      model: 'Viper V3 Pro',
       variant: 'Pro',
       brand_identifier: '',
       productId: 'test-product',
@@ -156,7 +155,7 @@ describe('bootstrapPhase.execute return contract', () => {
     assert.equal(result.categoryConfig.sourceHostMap.get('razer.com').baseUrl, 'https://razer.com');
   });
 
-  it('returns loaded learning artifacts and merged lexicon hints without overwriting an existing host entry', async () => {
+  it('returns loaded learning artifacts and enrichedLexicon without overwriting an existing host entry', async () => {
     const existingMap = new Map([['razer.com', { host: 'razer.com', tierName: 'existing' }]]);
     const storage = makeStorage({
       '_learning/mouse/field_lexicon.json': { fields: { sensor_model: { synonyms: { optical: { count: 1 } } } } },
@@ -169,14 +168,6 @@ describe('bootstrapPhase.execute return contract', () => {
         sourceHosts: [],
         sourceHostMap: existingMap,
         approvedRootDomains: new Set(['razer.com']),
-      },
-      learningStoreHints: {
-        anchorsByField: {
-          sensor_model: [
-            { phrase: 'optical sensor', decayStatus: 'active' },
-            { phrase: 'old phrase', decayStatus: 'expired' },
-          ],
-        },
       },
     });
 
@@ -191,7 +182,6 @@ describe('bootstrapPhase.execute return contract', () => {
       fieldYield: { sensor_model: 0.8 },
     });
     assert.equal(result.enrichedLexicon.fields.sensor_model.synonyms.optical.count, 1);
-    assert.equal(result.enrichedLexicon.fields.sensor_model.synonyms['optical sensor'].count, 3);
   });
 
   it('returns a schema-valid bootstrap payload without promoting a source host when no official domain is resolved', async () => {
@@ -200,7 +190,7 @@ describe('bootstrapPhase.execute return contract', () => {
       categoryConfig: { sourceHosts: [] },
       job: {
         brand: 'Razer',
-        model: 'Viper V3',
+        base_model: 'Viper V3',
         variant: '',
         requirements: { focus_fields: [] },
       },

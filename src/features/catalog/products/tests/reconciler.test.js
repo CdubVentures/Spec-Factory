@@ -41,7 +41,7 @@ function makeProduct(productId, brand, model, variant, extra = {}) {
   return {
     productId,
     category: 'mouse',
-    identityLock: { brand, model, variant },
+    identityLock: { brand, base_model: model, model, variant },
     seedUrls: [],
     anchors: {},
     ...extra
@@ -53,7 +53,7 @@ function mockSpecDbFromProducts(products) {
   const rows = Object.values(products).map((p) => ({
     product_id: p.productId,
     brand: p.identityLock?.brand || '',
-    base_model: p.identityLock?.model || '',
+    base_model: p.identityLock?.base_model || '',
     model: p.identityLock?.model || '',
     variant: p.identityLock?.variant || '',
   }));
@@ -246,7 +246,7 @@ test('reconcileOrphans: live mode deletes orphan files', async () => {
   assert.equal(result.orphan_count, 1);
   assert.equal(result.deleted_count, 1);
   assert.equal(result.deleted[0].productId, 'mouse-acer-cestus-310-310');
-  assert.equal(result.queue_cleaned, 1);
+  assert.equal(result.queue_cleaned, 0);
 });
 
 test('reconcileOrphans: no orphans returns clean report', async () => {

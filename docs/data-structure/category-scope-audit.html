@@ -633,7 +633,7 @@ svg text{font-family:var(--sans)}
   <div class="principle-grid">
     <div class="principle-card">
       <h4 style="color:var(--green)">SpecDb = Per-Category</h4>
-      <p><code>specDbRuntime.js</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category. 42 base tables, all with <code>category TEXT NOT NULL</code>. Unique constraints combine <code>(category, ...)</code>.</p>
+      <p><code>specDbRuntime.js</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category. 36 base tables, all with <code>category TEXT NOT NULL</code>. Unique constraints combine <code>(category, ...)</code>.</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">AppDb Settings = Global</h4>
@@ -750,7 +750,7 @@ svg text{font-family:var(--sans)}
       <!-- SpecDb -->
       <rect x="340" y="335" width="220" height="70" rx="6" fill="var(--s1)" stroke="var(--green)" stroke-width="1.5"/>
       <text x="450" y="360" text-anchor="middle" fill="var(--green)" font-size="11" font-weight="700">SpecDb (per-category)</text>
-      <text x="450" y="377" text-anchor="middle" fill="var(--t3)" font-size="9">42 base + 4 learning tables</text>
+      <text x="450" y="377" text-anchor="middle" fill="var(--t3)" font-size="9">36 base + 4 learning tables</text>
       <text x="450" y="393" text-anchor="middle" fill="var(--t3)" font-size="8">.workspace/db/{cat}/spec.sqlite</text>
 
       <path d="M450 275 L450 335" stroke="var(--green)" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>

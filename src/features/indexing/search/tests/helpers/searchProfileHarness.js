@@ -24,6 +24,7 @@ export function makeJob(overrides = {}) {
     productId: 'mouse-razer-viper-v3-pro',
     identityLock: {
       brand: 'Razer',
+      base_model: 'Viper V3 Pro',
       model: 'Viper V3 Pro',
       variant: '',
       ...overrides.identityLock,

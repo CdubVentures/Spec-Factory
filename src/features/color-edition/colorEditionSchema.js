@@ -3,15 +3,14 @@ import { z } from 'zod';
 /**
  * Zod schema for the Color & Edition Finder LLM response.
  *
- * - colors: EG-format color strings (atoms joined by "+", dominant-first)
- * - editions: kebab-case slugs
- * - new_colors: unknown atoms the LLM discovered, with hex for auto-registration
+ * - colors: flat array of ALL product colors (colors[0] = default)
+ * - editions: keyed by slug, each with its own colors subset
+ * - default_color: must equal colors[0]
  */
 export const colorEditionFinderResponseSchema = z.object({
   colors: z.array(z.string()),
-  editions: z.array(z.string()),
-  new_colors: z.array(z.object({
-    name: z.string(),
-    hex: z.string(),
-  })).optional().default([]),
+  editions: z.record(z.string(), z.object({
+    colors: z.array(z.string()),
+  })).default({}),
+  default_color: z.string().default(''),
 });

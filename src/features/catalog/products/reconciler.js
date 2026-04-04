@@ -8,7 +8,6 @@
  */
 
 import { isFabricatedVariant, cleanVariant } from '../identity/identityDedup.js';
-import { loadQueueState, saveQueueState } from '../../../queue/queueState.js';
 import { loadCanonicalIdentityIndex } from '../identity/identityGate.js';
 
 import { normalizeTokenCollapsed } from '../../../shared/primitives.js';
@@ -223,32 +222,16 @@ export async function reconcileOrphans({
   }
 
   const deleted = [];
-  let queueCleaned = 0;
+  const queueCleaned = 0;
 
   if (!dryRun) {
-    // Load queue state once for batch removal
-    const loaded = await loadQueueState({ storage, category, specDb });
-    let queueChanged = false;
-
     for (const orphan of scan.orphans) {
-      // Delete the product input file
       await storage.deleteObject(orphan.key);
       deleted.push({
         productId: orphan.productId,
         key: orphan.key,
         canonicalProductId: orphan.canonicalProductId
       });
-
-      // Remove from queue if present
-      if (loaded.state.products?.[orphan.productId]) {
-        delete loaded.state.products[orphan.productId];
-        queueCleaned += 1;
-        queueChanged = true;
-      }
-    }
-
-    if (queueChanged) {
-      await saveQueueState({ storage, category, state: loaded.state, specDb });
     }
   }
 

@@ -39,7 +39,7 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     storage: createMockStorage(),
     getSpecDb: () => createMockSpecDb({
       products: [
-        { id: 10, product_id: 'mouse-acme-orbit-x1', brand: 'Acme', model: 'Orbit X1', variant: '', identifier: 'abc123', status: 'active' },
+        { id: 10, product_id: 'mouse-acme-orbit-x1', brand: 'Acme', model: 'Orbit X1', base_model: 'Orbit X1', variant: '', identifier: 'abc123', status: 'active' },
       ],
       queueProducts: [
         { product_id: 'mouse-acme-orbit-x1', status: 'complete' },
@@ -62,7 +62,7 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     brand: 'Acme',
     brand_identifier: '',
     model: 'Orbit X1',
-    base_model: '',
+    base_model: 'Orbit X1',
     variant: '',
     status: 'complete',
     hasFinal: true,
@@ -76,15 +76,15 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
   });
 });
 
-test('SQL catalog builder: skips products with empty brand or model', async () => {
+test('SQL catalog builder: skips products with empty brand or base_model', async () => {
   const buildCatalog = createCatalogBuilder({
     config: {},
     storage: createMockStorage(),
     getSpecDb: () => createMockSpecDb({
       products: [
-        { id: 1, product_id: 'mouse-empty', brand: '', model: 'X', variant: '', identifier: '', status: 'active' },
-        { id: 2, product_id: 'mouse-nomodel', brand: 'Acme', model: '', variant: '', identifier: '', status: 'active' },
-        { id: 3, product_id: 'mouse-good', brand: 'Razer', model: 'Viper', variant: '', identifier: 'r1', status: 'active' },
+        { id: 1, product_id: 'mouse-empty', brand: '', model: 'X', base_model: 'X', variant: '', identifier: '', status: 'active' },
+        { id: 2, product_id: 'mouse-nobase', brand: 'Acme', model: 'Orbit', base_model: '', variant: '', identifier: '', status: 'active' },
+        { id: 3, product_id: 'mouse-good', brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', identifier: 'r1', status: 'active' },
       ],
     }),
     cleanVariant,
@@ -102,9 +102,9 @@ test('SQL catalog builder: sorts by brand → model → variant', async () => {
     storage: createMockStorage(),
     getSpecDb: () => createMockSpecDb({
       products: [
-        { id: 2, product_id: 'mouse-z', brand: 'Zowie', model: 'FK2', variant: '', identifier: '', status: 'active' },
-        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'Orbit', variant: '', identifier: '', status: 'active' },
-        { id: 3, product_id: 'mouse-a2', brand: 'Acme', model: 'Orbit', variant: 'Pro', identifier: '', status: 'active' },
+        { id: 2, product_id: 'mouse-z', brand: 'Zowie', model: 'FK2', base_model: 'FK2', variant: '', identifier: '', status: 'active' },
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'Orbit', base_model: 'Orbit', variant: '', identifier: '', status: 'active' },
+        { id: 3, product_id: 'mouse-a2', brand: 'Acme', model: 'Orbit Pro', base_model: 'Orbit', variant: 'Pro', identifier: '', status: 'active' },
       ],
     }),
     cleanVariant,
@@ -139,7 +139,7 @@ test('SQL catalog builder: product with no queue entry defaults to pending', asy
     storage: { async objectExists() { return false; }, resolveOutputKey: () => '' },
     getSpecDb: () => createMockSpecDb({
       products: [
-        { id: 1, product_id: 'mouse-new', brand: 'Test', model: 'New', variant: '', identifier: '', status: 'active' },
+        { id: 1, product_id: 'mouse-new', brand: 'Test', model: 'New', base_model: 'New', variant: '', identifier: '', status: 'active' },
       ],
     }),
     cleanVariant,
