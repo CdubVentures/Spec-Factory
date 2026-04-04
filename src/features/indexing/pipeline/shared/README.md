@@ -17,7 +17,7 @@ Re-exports from `shared/index.js`:
 
 ## Dependencies
 
-- **Allowed:** `src/utils/`, `src/categories/`, `src/s3/`, `zod`
+- **Allowed:** `src/utils/`, `src/categories/`, `src/core/storage/`, `zod`
 - **Forbidden:** Pipeline phase folders, `src/features/`
 
 ## Domain Invariants

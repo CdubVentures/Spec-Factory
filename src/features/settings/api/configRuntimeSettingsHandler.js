@@ -2,7 +2,6 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,
-  snapshotRuntimeSettings,
 } from '../../settings-authority/index.js';
 
 function buildRuntimeSettingsGetSnapshot(cfg, toInt) {
@@ -53,9 +52,6 @@ export function createRuntimeSettingsHandler({
       const INT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap;
       const FLOAT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap;
       const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_PUT.boolMap;
-      const nextRuntimeSnapshot = {
-        ...snapshotRuntimeSettings(config),
-      };
 
       const applied = {};
       const rejected = {};
@@ -79,23 +75,19 @@ export function createRuntimeSettingsHandler({
           const { configKey: cfgKey, allowed, csv } = STRING_ENUM_MAP[key];
           const str = String(value ?? '').trim().toLowerCase();
           if (csv) {
-            // CSV field: validate each comma-separated token against allowed list
             const tokens = str ? str.split(',').map(t => t.trim()).filter(Boolean) : [];
             const valid = tokens.filter(t => allowed.includes(t));
             const normalized = [...new Set(valid)].join(',');
-            nextRuntimeSnapshot[cfgKey] = normalized;
             applied[key] = normalized;
             runtimePatch[cfgKey] = normalized;
           } else {
             if (!allowed.includes(str)) { rejected[key] = 'invalid_enum'; continue; }
-            nextRuntimeSnapshot[cfgKey] = str;
             applied[key] = str;
             runtimePatch[cfgKey] = str;
           }
         } else if (key in STRING_FREE_MAP) {
           const cfgKey = STRING_FREE_MAP[key];
           const str = String(value ?? '').trim();
-          nextRuntimeSnapshot[cfgKey] = str;
           applied[key] = str;
           runtimePatch[cfgKey] = str;
         } else if (key in INT_RANGE_MAP) {
@@ -103,7 +95,6 @@ export function createRuntimeSettingsHandler({
           const n = Number.parseInt(String(value ?? ''), 10);
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_integer'; continue; }
           const clamped = Math.max(min, Math.min(max, n));
-          nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
           runtimePatch[cfgKey] = clamped;
         } else if (key in FLOAT_RANGE_MAP) {
@@ -111,38 +102,19 @@ export function createRuntimeSettingsHandler({
           const n = Number.parseFloat(String(value ?? ''));
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_float'; continue; }
           const clamped = Math.max(min, Math.min(max, n));
-          nextRuntimeSnapshot[cfgKey] = clamped;
           applied[key] = clamped;
           runtimePatch[cfgKey] = clamped;
         } else if (key in BOOL_MAP) {
           const cfgKey = BOOL_MAP[key];
           const b = value === true || value === 'true' || value === 1;
-          nextRuntimeSnapshot[cfgKey] = b;
           applied[key] = b;
           runtimePatch[cfgKey] = b;
         }
       }
-      Object.assign(nextRuntimeSnapshot, runtimePatch);
-
-      // WHY: Prevent persisting an empty provider registry when the live config
-      // has a non-empty one. The registry is not in the runtime-settings route
-      // maps, so it comes from snapshotRuntimeSettings(config). If the config
-      // was correctly seeded from defaults but the snapshot somehow has "[]",
-      // preserve the config's registry to avoid wiping model→provider routing.
-      if (
-        nextRuntimeSnapshot.llmProviderRegistryJson === '[]'
-        && typeof config.llmProviderRegistryJson === 'string'
-        && config.llmProviderRegistryJson.length > 2
-      ) {
-        nextRuntimeSnapshot.llmProviderRegistryJson = config.llmProviderRegistryJson;
-      }
 
       persistenceCtx.recordRouteWriteAttempt('runtime', 'runtime-settings-route');
-      let persistedArtifacts = null;
       try {
-        persistedArtifacts = await persistenceCtx.persistCanonicalSections({
-          runtime: nextRuntimeSnapshot,
-        });
+        await persistenceCtx.mergeRuntimePatch(runtimePatch, { emptyRegistryGuard: true });
         persistenceCtx.recordRouteWriteOutcome('runtime', 'runtime-settings-route', true);
       } catch {
         persistenceCtx.recordRouteWriteOutcome('runtime', 'runtime-settings-route', false, 'runtime_settings_persist_failed');

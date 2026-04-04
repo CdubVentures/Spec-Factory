@@ -6,7 +6,6 @@
 
 | Service | Purpose | Access method | Config surface | Live consumer paths | Failure behavior | Status |
 |---------|---------|---------------|----------------|---------------------|------------------|--------|
-| Amazon S3 | optional storage backend for runtime artifact I/O when `outputMode === 's3'` | AWS SDK | `src/shared/settingsRegistry.js`, `src/config.js` | `src/s3/storage.js` | storage calls fail at read/write time; local mode remains the default when S3 is not selected | optional |
 | SearXNG | local search provider for discovery | HTTP plus Docker Compose control | `src/shared/settingsRegistry.js`, `src/config.js`, `tools/searxng/docker-compose.yml` | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/searxngRoutes.js` | status/start endpoints return failure metadata when sidecar is missing or unhealthy | optional |
 | Intel Graph helper API | local GraphQL helper on `http://localhost:8787/graphql` | HTTP proxy | route-local upstream in the proxy handler | `src/app/api/routes/infra/graphqlRoutes.js`, `src/api/intelGraphApi.js` | proxy returns upstream failure to caller | local optional |
 | Provider-routed LLM endpoints | OpenAI-compatible, Anthropic, Gemini, DeepSeek, and local lab model endpoints depending on provider registry config | HTTP | runtime keys plus provider registry JSON in `src/shared/settingsRegistry.js` and `src/core/llm/providerMeta.js` | `src/core/llm/client/routing.js`, `src/core/llm/providers/index.js`, `src/core/llm/providers/openaiCompatible.js` | request-time failures surface to callers; routing may fall back if configured | optional |
@@ -15,7 +14,6 @@
 
 ## Important Current-State Notes
 
-- The live source tree does not mount a storage-settings HTTP surface. S3 selection is a config/runtime concern, not a live GUI settings form in the current code.
 - `src/features/indexing/api/storageManagerRoutes.js` currently reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` for the `/storage/*` inventory surface. That reporting path does not read a writable storage-state settings layer.
 - `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` are unauthenticated and can expose secret-bearing fields when configured. Treat them as trusted-network-only surfaces.
 - All currently wired provider dispatch goes through `src/core/llm/providers/index.js` to `src/core/llm/providers/openaiCompatible.js`, including provider types such as `anthropic`.
@@ -25,7 +23,7 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/s3/storage.js` | S3 versus local storage adapter selection |
+| source | `src/core/storage/storage.js` | local filesystem storage adapter |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory surface reports local backend metadata |
 | source | `src/app/api/processRuntime.js` | Docker plus SearXNG control boundary |
 | source | `src/app/api/routes/infra/graphqlRoutes.js` | local GraphQL proxy contract |

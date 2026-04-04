@@ -70,7 +70,8 @@ export async function enhanceQueryRows({
   const payload = {
     identity_lock: {
       brand: String(identityLock.brand || ''),
-      model: String(identityLock.model || ''),
+      base_model: String(identityLock.base_model || ''),
+      model: String(identityLock.base_model || identityLock.model || ''),
       variant: String(identityLock.variant || ''),
     },
     query_history: toArray(queryHistory),

@@ -127,6 +127,9 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   'source-strategy': Object.freeze([
     ['source-strategy', CATEGORY_TOKEN],
   ]),
+  'spec-seeds': Object.freeze([
+    ['spec-seeds', CATEGORY_TOKEN],
+  ]),
   indexing: Object.freeze([
     ['indexing', 'llm-config'],
     ['indexing', 'llm-metrics', CATEGORY_TOKEN],
@@ -149,6 +152,7 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'review',
   'review-layout',
   'source-strategy',
+  'spec-seeds',
   'settings',
   'storage',
   'studio',
@@ -184,6 +188,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'source-strategy-created': ['source-strategy'],
   'source-strategy-updated': ['source-strategy'],
   'source-strategy-deleted': ['source-strategy'],
+  'spec-seeds-updated': ['spec-seeds'],
   'queue-retry': ['queue'],
   'queue-pause': ['queue'],
   'queue-priority': ['queue'],

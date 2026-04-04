@@ -17,6 +17,39 @@ export const PROVIDER_API_KEY_MAP: Readonly<Record<string, keyof RuntimeApiKeySl
 };
 
 /**
+ * Resolves the editable API-key value for a provider row.
+ *
+ * Precedence:
+ *  1. The provider row's own apiKey when non-empty
+ *  2. The mapped flat runtime key for built-in default providers
+ *  3. The provider row's current value (including explicit empty string)
+ *
+ * WHY: The provider-registry editor must not backfill from unrelated server
+ * snapshots while the user is editing. An explicit clear ("") must remain
+ * blank instead of being immediately repopulated from stale external data.
+ */
+export function resolveEditableProviderApiKey(
+  provider: LlmProviderEntry,
+  runtimeKeys: RuntimeApiKeySlice,
+): string {
+  if (typeof provider.apiKey === 'string' && provider.apiKey.length > 0) {
+    return provider.apiKey;
+  }
+
+  const runtimeKeyField = PROVIDER_API_KEY_MAP[provider.id];
+  const runtimeValue = runtimeKeyField ? runtimeKeys[runtimeKeyField] : '';
+  // TODO(SET-005): Remove after debugging — trace what backfills cleared keys
+  if (runtimeKeyField && runtimeValue) {
+    console.warn('[apikey-debug]', provider.id, { providerApiKey: provider.apiKey, runtimeKeyField, runtimeValue: runtimeValue.slice(0, 8) + '...' });
+  }
+  if (typeof runtimeValue === 'string' && runtimeValue.length > 0) {
+    return runtimeValue;
+  }
+
+  return provider.apiKey ?? '';
+}
+
+/**
  * Extracts API keys from registry providers and maps them to standalone runtime key fields.
  * WHY: When resetting to defaults, registry-stored keys must be preserved via standalone fields.
  */

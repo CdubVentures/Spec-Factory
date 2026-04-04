@@ -68,7 +68,7 @@
 | `src/observability/` | local counters and telemetry helpers | `dataPropagationCounters.js`, `settingsPersistenceCounters.js` |
 | `src/pipeline/` | crawl-first run orchestration and seams | `runProduct.js`, `seams/` |
 | `src/shared/` | shared registry/defaults/accessors and generic helpers | `settingsRegistry.js` exports `143` live entries: `136` runtime, `3` bootstrap env, `4` UI |
-| `src/s3/` | local/S3 storage adapter | `storage.js` supports local by default and S3 when `config.outputMode === 's3'` |
+| `src/core/storage/` | local filesystem storage adapter | `storage.js` provides key-based artifact I/O over the local filesystem |
 
 ## High-Signal `tools/` Subtrees
 

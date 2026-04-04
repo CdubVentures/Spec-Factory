@@ -1,7 +1,7 @@
 {
   "name": "spec-harvester",
   "version": "1.0.0",
-  "description": "Backend-first mouse spec harvester with S3 IO",
+  "description": "Backend-first mouse spec harvester",
   "type": "module",
   "main": "src/cli/spec.js",
   "engines": {
@@ -20,13 +20,10 @@
     "discover": "node src/cli/spec.js discover",
     "discover-sources": "node src/cli/spec.js discover",
     "crawl-product": "node src/cli/spec.js run-one",
-    "build-index": "node src/cli/spec.js rebuild-index",
     "intel:api": "node src/cli/spec.js intel-graph-api --category mouse --port 8787 --local",
     "benchmark": "node src/cli/spec.js benchmark",
-    "rebuild-index": "node src/cli/spec.js rebuild-index",
     "smoke": "node src/cli/spec.js run-one --local --dry-run --s3key specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json",
     "smoke:local": "node src/cli/smoke-local.js",
-    "test:s3": "node src/cli/spec.js test-s3",
     "gui:api": "node src/api/guiServer.js --port 8788 --local",
     "gui:dev": "cd tools/gui-react && npm run dev",
     "gui:build": "cd tools/gui-react && npm run build",
@@ -40,7 +37,6 @@
     "esbuild": "^0.25.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.862.0",
     "@duckduckgo/autoconsent": "^14.64.0",
     "@mozilla/readability": "^0.6.0",
     "ajv": "^8.17.1",

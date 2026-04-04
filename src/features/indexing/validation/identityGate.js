@@ -79,7 +79,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
   let score = 0;
 
   const expectedBrand = str(identityLock.brand);
-  const expectedModel = str(identityLock.model);
+  const expectedModel = str(identityLock.base_model || identityLock.model);
   const expectedVariant = str(identityLock.variant);
   const expectedSku = str(identityLock.sku);
   const expectedMpn = str(identityLock.mpn);

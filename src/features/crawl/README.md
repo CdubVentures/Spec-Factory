@@ -36,7 +36,7 @@ Exported from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `src/fetcher/stealthProfile.js`, `src/shared/settingsAccessor.js`, crawl ledger adapter (via DI)
+- **Allowed:** `src/shared/settingsAccessor.js`, crawl ledger adapter (via DI)
 - **Forbidden:** `src/features/indexing/` (no extraction, consensus, or finalization imports)
 
 ## Domain Invariants

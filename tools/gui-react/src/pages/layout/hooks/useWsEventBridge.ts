@@ -5,6 +5,7 @@ import { useEventsStore } from '../../../stores/eventsStore.ts';
 import { useIndexLabStore, type IndexLabEvent } from '../../../stores/indexlabStore.ts';
 import type { ProcessStatus, RuntimeEvent } from '../../../types/events.ts';
 import { useWsSubscription } from '../../../hooks/useWsSubscription.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import {
   resolveDataChangeScopedCategories,
   recordDataChangeInvalidationFlush,
@@ -72,6 +73,11 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
         || (msg.type && msg.type !== 'data-change' ? msg.type : ''),
       ).trim();
       if (!eventName) return;
+      // WHY: Server confirmed a settings write landed. Clear flushPending so
+      // hydrate() is unblocked for the next server refetch (SET-005).
+      if (eventName === 'runtime-settings-updated' || eventName === 'user-settings-updated') {
+        useRuntimeSettingsValueStore.getState().confirmFlush();
+      }
       const scopedCategories = resolveDataChangeScopedCategories(msg, category);
       dataChangeSchedulerRef.current?.schedule({
         message: msg,

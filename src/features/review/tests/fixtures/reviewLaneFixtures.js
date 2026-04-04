@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
-import { createStorage } from '../../../../s3/storage.js';
+import { createStorage } from '../../../../core/storage/storage.js';
 import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../contracts/componentReviewShapes.js';
 
 export const PRODUCT_A = 'mouse-razer-viper-v3-pro';

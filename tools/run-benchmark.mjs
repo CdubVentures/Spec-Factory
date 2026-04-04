@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, loadDotEnvFile, applyRunProfile } from '../../src/config.js';
-import { createStorage } from '../../src/s3/storage.js';
+import { createStorage } from '../../src/core/storage/storage.js';
 import { runProduct } from '../../src/pipeline/runProduct.js';
 
 loadDotEnvFile();

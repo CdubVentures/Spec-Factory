@@ -1,4 +1,4 @@
-import { toPosixKey } from '../../../../s3/storage.js';
+import { toPosixKey } from '../../../../core/storage/storage.js';
 import { OUTPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 import { normalizeMissingFieldTargets } from '../../../../utils/fieldKeys.js';
 import { normalizeHost } from '../../../../shared/hostParser.js';

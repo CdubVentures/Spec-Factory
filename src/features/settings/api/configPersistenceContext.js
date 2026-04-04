@@ -10,6 +10,7 @@ import {
   recordSettingsWriteAttempt,
   recordSettingsWriteOutcome,
 } from '../../../observability/settingsPersistenceCounters.js';
+import { SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS } from '../../../core/config/settingsClassification.js';
 
 export function createConfigPersistenceContext({
   config,
@@ -95,12 +96,39 @@ export function createConfigPersistenceContext({
         guardedPatch.llmProviderRegistryJson = config.llmProviderRegistryJson;
       }
 
+      // WHY: Heal blank secret/registry rows in SQL by pulling from live config.
+      // The old DELETE-all + INSERT-all pattern healed these as a side effect
+      // because snapshotRuntimeSettings(config) included env-var secrets. The
+      // patch-only path must do this explicitly: if SQL has a blank secret but
+      // config has a value (from .env), include it in the patch so the UPSERT
+      // heals the row. Without this, stale blank rows persist forever.
+      const currentState = userSettingsState?.runtime;
+      if (currentState && typeof currentState === 'object') {
+        for (const secretKey of SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS) {
+          if (guardedPatch[secretKey] !== undefined) continue;
+          const sqlValue = String(currentState[secretKey] ?? '').trim();
+          const configValue = String(config[secretKey] ?? '').trim();
+          if (!sqlValue && configValue) {
+            guardedPatch[secretKey] = configValue;
+          }
+        }
+        if (
+          guardedPatch.llmProviderRegistryJson === undefined
+          && String(currentState.llmProviderRegistryJson ?? '').trim() === '[]'
+          && typeof config.llmProviderRegistryJson === 'string'
+          && config.llmProviderRegistryJson.length > 2
+        ) {
+          guardedPatch.llmProviderRegistryJson = config.llmProviderRegistryJson;
+        }
+      }
+
       recordSettingsWriteAttempt({ sections: ['runtime'], target: 'app.sqlite' });
 
       try {
         const { sanitizedPatch, payload } = await mergeAndPersistRuntimePatch({
           appDb,
           patch: guardedPatch,
+          config,
         });
 
         // WHY: Update canonical state inside the lock so the next queued write

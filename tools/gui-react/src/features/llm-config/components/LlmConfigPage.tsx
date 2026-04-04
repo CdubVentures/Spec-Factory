@@ -23,7 +23,12 @@ import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 import { uiPhaseIdToOverrideKey } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
 import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry.ts';
-import { extractRegistryApiKeys, providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate.ts';
+import {
+  providerHasApiKey,
+  PROVIDER_API_KEY_MAP,
+  resolveEditableProviderApiKey,
+  type RuntimeApiKeySlice,
+} from '../state/llmProviderApiKeyGate.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
@@ -129,9 +134,18 @@ export function LlmConfigPage() {
     () => parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson),
     [],
   );
-  const serverResolvedKeys = indexingLlmConfig?.resolved_api_keys as
-    | Record<string, string>
-    | undefined;
+  const runtimeApiKeys: RuntimeApiKeySlice = useMemo(() => {
+    const keys = {
+      geminiApiKey: policy.apiKeys.gemini ?? '',
+      deepseekApiKey: policy.apiKeys.deepseek ?? '',
+      anthropicApiKey: policy.apiKeys.anthropic ?? '',
+      openaiApiKey: policy.apiKeys.openai ?? '',
+    };
+    // TODO(SET-005): Remove after debugging
+    if (keys.geminiApiKey) console.warn('[runtimeApiKeys-memo]', 'gemini=', keys.geminiApiKey.slice(0, 8) + '...');
+    else console.warn('[runtimeApiKeys-memo]', 'gemini=EMPTY');
+    return keys;
+  }, [policy.apiKeys]);
 
   const registry: LlmProviderEntry[] = useMemo(() => {
     const merged = mergeDefaultsIntoRegistry(
@@ -139,19 +153,13 @@ export function LlmConfigPage() {
       defaultRegistry,
     );
     return merged.map((provider) => {
-      if (provider.apiKey) return provider;
-      const envField = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
-      const envValue = envField ? policy.apiKeys[envField] : undefined;
-      if (envValue) return { ...provider, apiKey: envValue };
-      const serverKey = envField && serverResolvedKeys ? serverResolvedKeys[envField] : undefined;
-      if (serverKey) return { ...provider, apiKey: serverKey };
-      return provider;
+      const apiKey = resolveEditableProviderApiKey(provider, runtimeApiKeys);
+      return apiKey === provider.apiKey ? provider : { ...provider, apiKey };
     });
   }, [
     policy.providerRegistry,
-    policy.apiKeys,
     defaultRegistry,
-    serverResolvedKeys,
+    runtimeApiKeys,
   ]);
 
   // WHY: If the default registry gained new providers (e.g. lab-openai) since the
@@ -169,13 +177,6 @@ export function LlmConfigPage() {
     }
   }, [registry, policy.providerRegistry, llmAuthority]);
 
-  const runtimeApiKeys: RuntimeApiKeySlice = useMemo(() => ({
-    geminiApiKey: policy.apiKeys.gemini ?? '',
-    deepseekApiKey: policy.apiKeys.deepseek ?? '',
-    anthropicApiKey: policy.apiKeys.anthropic ?? '',
-    openaiApiKey: policy.apiKeys.openai ?? '',
-  }), [policy.apiKeys]);
-
   const apiKeyFilter = useCallback(
     (provider: LlmProviderEntry) => providerHasApiKey(provider, runtimeApiKeys),
     [runtimeApiKeys],
@@ -185,15 +186,26 @@ export function LlmConfigPage() {
     // WHY: Re-bridge costs so budget fields stay in sync when model costs
     // are edited in the Provider Registry panel.
     const costs = syncCostsFromRegistry(nextRegistry, policy.models.plan);
-    // WHY: Sync API keys from registry providers to flat apiKeys fields.
-    // Without this, entering a key in the registry panel only writes to
-    // providerRegistry[idx].apiKey (inside the JSON blob). The flat fields
-    // (geminiApiKey, etc.) stay empty, so bootstrapApiKeyForProvider and
-    // resolved_api_keys both report missing keys, keeping the lockout active.
-    const extractedKeys = extractRegistryApiKeys(nextRegistry);
-    const apiKeysPatch = Object.keys(extractedKeys).length > 0
-      ? { apiKeys: { ...policy.apiKeys, ...extractedKeys } }
-      : {};
+    // WHY: Sync API keys from registry providers to flat apiKeys fields
+    // in BOTH directions — set when present, clear when removed. Without
+    // this, the display memo backfills cleared keys from stale flat fields.
+    // PROVIDER_API_KEY_MAP returns flat config keys (geminiApiKey) but
+    // policy.apiKeys uses policy field names (gemini). Map between them.
+    const FLAT_TO_POLICY_FIELD: Record<string, keyof typeof policy.apiKeys> = {
+      geminiApiKey: 'gemini',
+      deepseekApiKey: 'deepseek',
+      anthropicApiKey: 'anthropic',
+      openaiApiKey: 'openai',
+    };
+    const syncedApiKeys = { ...policy.apiKeys };
+    for (const provider of nextRegistry) {
+      const flatKey = PROVIDER_API_KEY_MAP[provider.id];
+      if (!flatKey) continue;
+      const policyField = FLAT_TO_POLICY_FIELD[flatKey];
+      if (!policyField) continue;
+      syncedApiKeys[policyField] = provider.apiKey?.trim() || '';
+    }
+    const apiKeysPatch = { apiKeys: syncedApiKeys };
     llmAuthority.updatePolicy({
       providerRegistry: nextRegistry,
       ...apiKeysPatch,
@@ -259,22 +271,12 @@ export function LlmConfigPage() {
       }
       if (key) resolvedKeys[provider.id] = key;
     }
-    if (serverResolvedKeys) {
-      for (const [field, envKey] of Object.entries(PROVIDER_API_KEY_MAP)) {
-        if (!resolvedKeys[field] && serverResolvedKeys[envKey]) {
-          resolvedKeys[field] = serverResolvedKeys[envKey];
-        }
-      }
-    }
 
     const resetRegistry = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
-    const preservedRegistry = resetRegistry.map((provider) => {
-      const currentProvider = currentRegistry.find((p) => p.id === provider.id);
-      return {
-        ...provider,
-        apiKey: resolvedKeys[provider.id] || provider.apiKey,
-      };
-    });
+    const preservedRegistry = resetRegistry.map((provider) => ({
+      ...provider,
+      apiKey: resolvedKeys[provider.id] || provider.apiKey,
+    }));
 
     llmAuthority.updatePolicy({
       ...DEFAULT_LLM_POLICY,

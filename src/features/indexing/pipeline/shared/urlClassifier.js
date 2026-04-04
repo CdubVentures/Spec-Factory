@@ -28,7 +28,7 @@ import {
 export function computeIdentityMatchLevel({ url = '', title = '', snippet = '', identityLock = {} } = {}) {
   const haystack = `${String(url || '')} ${String(title || '')} ${String(snippet || '')}`.toLowerCase();
   const brand = String(identityLock.brand || '').trim().toLowerCase();
-  const model = String(identityLock.model || '').trim().toLowerCase();
+  const model = String(identityLock.base_model || identityLock.model || '').trim().toLowerCase();
   const variant = String(identityLock.variant || '').trim().toLowerCase();
   const hasBrand = brand ? haystack.includes(brand) : false;
   const hasModel = model ? haystack.includes(model) : false;

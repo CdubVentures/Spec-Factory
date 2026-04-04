@@ -17,7 +17,7 @@ const PHASES = [
     title: 'Phase A: Prefix Path Translation Bug',
     target: 'Strip storage key prefixes before joining local output roots.',
     primaryFiles: [
-      'src/s3/storage.js',
+      'src/core/storage/storage.js',
       'src/shared/storageKeyPrefixes.js',
     ],
     patterns: [
@@ -205,7 +205,7 @@ const ROOT_CONCERNS = [
     summary: 'Legacy hidden runtime root that the consolidation plan is replacing.',
     primaryFiles: [
       'src/core/config/runtimeArtifactRoots.js',
-      'src/s3/storage.js',
+      'src/core/storage/storage.js',
     ],
     patterns: [
       { label: 'LOCALAPPDATA', regex: /LOCALAPPDATA|localappdata/i },

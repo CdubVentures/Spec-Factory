@@ -550,7 +550,7 @@ echo.
 echo   Default: remove run artifacts + history, keep billing.
 echo   --dry-run         Show what would be removed.
 echo   --yes / -y        Skip confirmation prompt.
-echo   --remote          Also remove from S3 (requires S3_BUCKET).
+echo   --remote          (Retired — S3 backend removed.)
 echo   --clear-billing   Also remove out\_billing.
 echo   --clear-db        Also remove .workspace\db.
 echo   --all             Same as --clear-billing --clear-db.
@@ -598,30 +598,8 @@ rmdir /S /Q "%TARGET_PATH%"
 exit /b 0
 
 :delete_remote
-if not defined S3_BUCKET (
-  echo     S3_BUCKET not set. Skipping remote cleanup.
-  exit /b 0
-)
-where.exe aws >nul 2>&1
-if errorlevel 1 (
-  echo     AWS CLI not found in PATH. Skipping remote cleanup.
-  exit /b 0
-)
-set "S3_PATH=specs/outputs/"
-if defined S3_OUTPUT_PREFIX set "S3_PATH=%S3_OUTPUT_PREFIX%"
-if "%DRY_RUN%"=="1" (
-  if "%KEEP_BILLING%"=="1" (
-    echo     [dry-run] would run: aws s3 rm "s3://%S3_BUCKET%/%S3_PATH%" --recursive --exclude "_billing/*"
-  ) else (
-    echo     [dry-run] would run: aws s3 rm "s3://%S3_BUCKET%/%S3_PATH%" --recursive
-  )
-  exit /b 0
-)
-if "%KEEP_BILLING%"=="1" (
-  aws s3 rm "s3://%S3_BUCKET%/%S3_PATH%" --recursive --exclude "_billing/*" --exclude "_billing"
-) else (
-  aws s3 rm "s3://%S3_BUCKET%/%S3_PATH%" --recursive
-)
+:: S3 backend removed — this subroutine is now a no-op.
+echo     Remote cleanup skipped (S3 backend retired).
 exit /b 0
 
 :: ══════════════════════════════════════════════════════════════════════

@@ -74,7 +74,7 @@
   - `OUTPUT_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/output`
   - `INDEXLAB_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/runs`
 - `src/features/indexing/api/storageManagerRoutes.js` currently reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` for the `/storage/*` inventory surface.
-- `src/s3/storage.js` still supports S3 when `config.outputMode === 's3'`, but there is no live operator-facing storage-settings API in the current server source.
+- `src/core/storage/storage.js` provides local filesystem storage. The S3 backend has been retired.
 
 ## Process Runtime and Long-Running Work
 
@@ -95,7 +95,7 @@
 | global runtime/UI settings | `src/db/appDb.js` plus `src/features/settings-authority/userSettingsService.js` | AppDb primary, JSON fallback |
 | per-category review/indexing data | `src/db/specDb.js` | lazy-loaded through `src/app/api/specDbRuntime.js` |
 | authored category control plane | `category_authority/` loaded via `src/categories/loader.js` | rules, sources, spec seeds, generated artifacts |
-| storage adapter | `src/s3/storage.js` | local by default, S3 when `outputMode === 's3'` |
+| storage adapter | `src/core/storage/storage.js` | local filesystem storage |
 
 ## Error Handling
 

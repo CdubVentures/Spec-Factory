@@ -2,7 +2,7 @@
 // Exposes identical method names so callsites need zero changes to their call patterns.
 // Key behavioral change: getQueryRecord returns null when cooldown expires (was permanent cache).
 
-import { canonicalizeUrl } from '../../../../research/urlNormalize.js';
+import { canonicalizeUrl } from '../../../../shared/urlNormalize.js';
 import { stableHashString } from '../../../../shared/stableHash.js';
 
 function normalizeQuery(value) {

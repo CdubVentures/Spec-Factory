@@ -14,7 +14,7 @@ Exports from `pipeline/index.js`:
 
 ## Dependencies
 
-- **Allowed:** `src/core/`, `src/shared/`, `src/indexlab/`, `src/research/`, `src/features/indexing/search/`, `src/categories/`, `src/utils/`, `src/planner/`, `src/s3/`, `src/intel/`
+- **Allowed:** `src/core/`, `src/shared/`, `src/indexlab/`, `src/research/`, `src/features/indexing/search/`, `src/categories/`, `src/utils/`, `src/planner/`, `src/intel/`
 - **Forbidden:** Other feature folders
 
 ## Domain Invariants

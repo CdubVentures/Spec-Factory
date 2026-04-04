@@ -10,7 +10,7 @@ This feature is the control plane for need-driven discovery and deterministic in
 - `src/features/indexing/{discovery,learning,search}/index.js`: feature-owned subcontracts used inside indexing and by approved callers that need those focused seams.
 
 ## Dependencies
-- Allowed: internal indexing modules under `src/features/indexing/**`, `src/core/**`, `src/shared/**`, and existing runtime seams in `src/{adapters,api,categories,components,constants.js,db,engine,evidence,field-rules,index,indexlab,intel,pipeline,research,retrieve,s3,scoring,utils}` plus `src/features/catalog/index.js`.
+- Allowed: internal indexing modules under `src/features/indexing/**`, `src/core/**`, `src/shared/**`, and existing runtime seams in `src/{adapters,api,categories,components,constants.js,db,engine,evidence,field-rules,index,indexlab,intel,pipeline,research,s3,scoring,utils}` plus `src/features/catalog/index.js`.
 - Forbidden: deep imports into other feature internals; new cross-boundary consumers should use `src/features/indexing/index.js` or another explicit indexing export.
 
 ## Domain Invariants

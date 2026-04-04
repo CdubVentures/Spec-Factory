@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createStorage } from '../../s3/storage.js';
+import { createStorage } from '../../core/storage/storage.js';
 import { loadQueueState } from '../../queue/queueState.js';
 import {
   reconcileDriftedProduct,

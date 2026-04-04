@@ -81,6 +81,11 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
         persistedRuntime = sections.runtime;
         return { legacy: { runtime: sections.runtime } };
       },
+      mergeRuntimePatch: async (patch) => {
+        persistedRuntime = patch;
+        for (const [k, v] of Object.entries(patch)) { config[k] = v; }
+        return { sections: { runtime: patch } };
+      },
       recordRouteWriteAttempt: () => {},
       recordRouteWriteOutcome: () => {},
       ...persistenceOverrides,
@@ -190,17 +195,13 @@ test('PUT /llm-policy persists flat keys to canonical sections', async () => {
   assert.equal(persisted.llmModelPlan, 'gemini-2.5-flash');
 });
 
-test('PUT /llm-policy persists from live config instead of stale blank runtime secrets', async () => {
+test('PUT /llm-policy submits only LLM flat keys as patch (no stale base)', async () => {
+  // WHY: The handler no longer reads getUserSettingsState or builds a full
+  // 136-key snapshot. It submits only the ~25 LLM_POLICY_FLAT_KEYS via
+  // mergeRuntimePatch. The queue merges them onto current SQL state.
   const ctx = buildHandler({
     geminiApiKey: 'env-gem-key',
     llmProviderRegistryJson: makeProviderRegistryJson(),
-  }, {
-    getUserSettingsState: () => ({
-      runtime: {
-        geminiApiKey: '',
-        llmProviderRegistryJson: '[]',
-      },
-    }),
   });
 
   const getRes = await ctx.get();
@@ -209,9 +210,11 @@ test('PUT /llm-policy persists from live config instead of stale blank runtime s
   await ctx.put(policy);
 
   const persisted = ctx.getPersistedRuntime();
-  assert.equal(persisted.geminiApiKey, 'env-gem-key');
-  assert.notEqual(persisted.llmProviderRegistryJson, '[]');
+  // Patch should contain only LLM keys, not all 136 runtime keys
   assert.equal(persisted.llmMaxOutputTokensPlan, 9999);
+  assert.equal(persisted.llmModelPlan, 'gemini-2.5-flash');
+  // Non-LLM keys like domainClassifierUrlCap should NOT be in the patch
+  assert.equal(persisted.domainClassifierUrlCap, undefined);
 });
 
 test('PUT /llm-policy emits data change broadcast', async () => {

@@ -157,7 +157,7 @@ function normalizeIdentityLock(row) {
 
 function buildJobFromRow({ category, row }) {
   const identityLock = normalizeIdentityLock(row);
-  if (!identityLock.brand || !identityLock.model) {
+  if (!identityLock.brand || !identityLock.base_model) {
     return null;
   }
 

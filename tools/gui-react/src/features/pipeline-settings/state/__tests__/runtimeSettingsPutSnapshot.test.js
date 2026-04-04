@@ -29,11 +29,15 @@ test('PUT runtime-settings response includes full snapshot after persist', async
     recordRouteWriteOutcome: () => {},
     persistCanonicalSections: async (sections) => {
       persistedSections = sections;
-      // Simulate: after persist, config is updated
       if (sections.runtime) {
         Object.assign(config, sections.runtime);
       }
       return { legacy: { runtime: sections.runtime } };
+    },
+    mergeRuntimePatch: async (patch) => {
+      persistedSections = { runtime: patch };
+      Object.assign(config, patch);
+      return { sections: { runtime: patch } };
     },
   };
 

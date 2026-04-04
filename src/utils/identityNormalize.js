@@ -27,7 +27,7 @@ export function normalizeAmbiguityLevel(value = '', familyModelCount = 0) {
 
 export function resolveIdentityLockStatus(identityLock = {}) {
   const brand = normalizeIdentityToken(identityLock?.brand);
-  const model = normalizeIdentityToken(identityLock?.model);
+  const model = normalizeIdentityToken(identityLock?.base_model || identityLock?.model);
   const variant = normalizeIdentityToken(identityLock?.variant);
   const sku = normalizeIdentityToken(identityLock?.sku);
   const lockCount = [brand, model, variant, sku].filter(Boolean).length;

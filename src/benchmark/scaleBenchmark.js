@@ -1,4 +1,4 @@
-import { toPosixKey } from '../s3/storage.js';
+import { toPosixKey } from '../core/storage/storage.js';
 import { toInt, toFloat } from '../shared/valueNormalizers.js';
 import { toArray } from '../shared/primitives.js';
 

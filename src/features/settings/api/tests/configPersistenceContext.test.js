@@ -21,6 +21,7 @@ test('createConfigPersistenceContext returns expected shape', () => {
   assert.equal(typeof ctx.getUserSettingsState, 'function');
   assert.equal(typeof ctx.getUiSettingsState, 'function');
   assert.equal(typeof ctx.persistCanonicalSections, 'function');
+  assert.equal(typeof ctx.mergeRuntimePatch, 'function');
   assert.equal(typeof ctx.recordRouteWriteAttempt, 'function');
   assert.equal(typeof ctx.recordRouteWriteOutcome, 'function');
 });

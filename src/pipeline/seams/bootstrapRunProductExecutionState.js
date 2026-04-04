@@ -128,7 +128,7 @@ export async function bootstrapRunProductExecutionState({
   const seedUrls = job.seedUrls || [];
 
   const brand = String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim();
-  const model = String(identityLock.model || job?.identityLock?.model || job?.model || '').trim();
+  const model = String(identityLock.base_model || job?.identityLock?.base_model || identityLock.model || job?.identityLock?.model || '').trim();
 
   logger.info('bootstrap_step', { step: 'llm', progress: 65 });
   const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({

@@ -21,6 +21,8 @@ import {
   slotValueToText,
 } from '../utils/slotValueShape.js';
 import { projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
+import { buildCategorySurfaces } from './seedRegistry.js';
+import { runCategorySeed } from './seedEngine.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1106,17 +1108,6 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
   return { productCount, errors };
 }
 
-// ── Queue state seeding ──────────────────────────────────────────────────────
-
-// WHY: seedQueueState removed — _queue/state.json is retired.
-// product_queue is rebuilt from product.json checkpoints via seedFromCheckpoint.
-
-// ── Curation suggestions seeding (removed — SQL is now the SSOT) ─────────────
-
-// ── Component review queue seeding (removed — SQL is now the SSOT) ───────────
-
-// ── Product catalog seeding ───────────────────────────────────────────────────
-
 // ── Backfill item_component_links from item_field_state ──────────────────────
 
 function backfillComponentLinks(db, fieldMeta, fieldRules) {
@@ -1624,127 +1615,31 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
   };
 }
 
-// ── Step 10: Source strategies ── (removed: sources.json is now the SSOT)
+// ── Category surface registry (built once at module load) ────────────────────
+
+const categorySurfaces = buildCategorySurfaces({
+  seedComponents, reconcileComponentDbRows,
+  seedComponentOverrides,
+  seedListValues, reconcileListSeedRows,
+  seedProducts,
+  backfillComponentLinks,
+  seedSourceAndKeyReview,
+});
 
 // ── Main entry point ─────────────────────────────────────────────────────────
 
 export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
-  const start = Date.now();
-  const errors = [];
-
   const seededFieldRules = projectFieldRulesForConsumer(fieldRules, 'seed');
   const fieldMeta = buildFieldMeta(seededFieldRules);
-  const reconcileComponentResult = reconcileComponentDbRows(db, seededFieldRules);
-  const reconcileListResult = await reconcileListSeedRows(db, seededFieldRules, config, category);
 
-  if (logger) {
-    if (reconcileComponentResult.removed_identity_rows > 0 || reconcileComponentResult.removed_value_rows > 0
-      || reconcileComponentResult.removed_alias_rows > 0 || reconcileComponentResult.removed_item_component_link_rows > 0
-      || reconcileComponentResult.removed_key_review_rows > 0) {
-      logger.log?.('info', `[seed] Reconciled stale components: identities=${reconcileComponentResult.removed_identity_rows}, values=${reconcileComponentResult.removed_value_rows}, aliases=${reconcileComponentResult.removed_alias_rows}, links=${reconcileComponentResult.removed_item_component_link_rows}, keyReviews=${reconcileComponentResult.removed_key_review_rows}`);
-    }
-    if (reconcileListResult.removed_list_value_rows > 0) {
-      logger.log?.('info', `[seed] Reconciled stale list values: ${reconcileListResult.removed_list_value_rows}`);
-    }
-  }
+  const result = await runCategorySeed({
+    db, config, category,
+    fieldRules: seededFieldRules,
+    fieldMeta,
+    logger,
+    surfaces: categorySurfaces,
+  });
 
-  // Step 1: Components
-  const compResult = seedComponents(db, seededFieldRules);
-  if (logger) {
-    logger.log?.('info', `[seed] Components: ${compResult.identityCount} identities, ${compResult.aliasCount} aliases, ${compResult.valueCount} values`);
-  }
-
-  // Step 1a: Component overrides (must run after base components to overlay)
-  const overrideResult = await seedComponentOverrides(db, config, category);
-  if (logger && overrideResult.overrideCount > 0) {
-    logger.log?.('info', `[seed] Component overrides: ${overrideResult.overrideCount} properties`);
-  }
-
-  // Step 2: List values
-  const listResult = await seedListValues(db, seededFieldRules, config, category);
-  if (logger) {
-    logger.log?.('info', `[seed] List values: ${listResult.count}`);
-  }
-
-  // Steps 3-7: Per-product
-  const productResult = await seedProducts(db, config, category, seededFieldRules, fieldMeta);
-  if (productResult.errors.length > 0) {
-    errors.push(...productResult.errors);
-  }
-  if (logger) {
-    logger.log?.('info', `[seed] Products: ${productResult.productCount}, errors: ${productResult.errors.length}`);
-  }
-
-  // Step 4a: Backfill item_component_links from item_field_state + aliases
-  const backfillResult = backfillComponentLinks(db, fieldMeta, seededFieldRules);
-  if (logger && backfillResult.backfilled > 0) {
-    logger.log?.('info', `[seed] Component link backfill: ${backfillResult.backfilled} links`);
-  }
-
-  // Step 5: (removed — product catalog seeded via scanAndSeedCheckpoints from product.json files)
-
-  // Step 6: (removed — queue state seeded via scanAndSeedCheckpoints from product.json files)
-
-  // Step 7-8: (removed — curation suggestions and component review queue are now SQL-only)
-
-  // Clear stale candidate pointers before deriving source/key-review tables.
-  const preIntegrityResult = typeof db.pruneOrphanCandidateReferences === 'function'
-    ? db.pruneOrphanCandidateReferences()
-    : null;
-  if (logger && preIntegrityResult) {
-    const totalCleared = Object.values(preIntegrityResult).reduce((sum, value) => sum + (Number(value) || 0), 0);
-    if (totalCleared > 0) {
-      logger.log?.('info', `[seed] Candidate pointer cleanup (pre-key-review): ${JSON.stringify(preIntegrityResult)}`);
-    }
-  }
-
-  // Step 9: Backfill source + key review tables from existing data
-  const skrResult = seedSourceAndKeyReview(db, category, fieldMeta);
-  if (logger) {
-    logger.log?.('info', `[seed] Source & Key Review: ${skrResult.sourceRegistryCount} sources, ${skrResult.keyReviewStateCount} review states, ${skrResult.keyReviewAuditCount} audit entries`);
-  }
-
-  // Re-run after key-review backfill to clear stale selected_candidate_id on legacy rows.
-  const postIntegrityResult = typeof db.pruneOrphanCandidateReferences === 'function'
-    ? db.pruneOrphanCandidateReferences()
-    : null;
-  if (logger && postIntegrityResult) {
-    const totalCleared = Object.values(postIntegrityResult).reduce((sum, value) => sum + (Number(value) || 0), 0);
-    if (totalCleared > 0) {
-      logger.log?.('info', `[seed] Candidate pointer cleanup (post-key-review): ${JSON.stringify(postIntegrityResult)}`);
-    }
-  }
-
-  // Step 10: Source strategies (removed — sources.json is now the SSOT)
-
-  const duration_ms = Date.now() - start;
-  const counts = db.counts();
-
-  return {
-    category,
-    counts,
-    duration_ms,
-    errors,
-    source_strategies_seeded: 0,
-    components_seeded: compResult.identityCount,
-    component_overrides_seeded: overrideResult.overrideCount,
-    list_values_seeded: listResult.count,
-    products_seeded: productResult.productCount,
-    component_links_backfilled: backfillResult.backfilled,
-    catalog_seeded: 0,
-    queue_seeded: 0,
-    suggestions_seeded: 0,
-    review_queue_seeded: 0,
-    source_registry_seeded: skrResult.sourceRegistryCount,
-    key_review_states_seeded: skrResult.keyReviewStateCount,
-    key_review_audit_seeded: skrResult.keyReviewAuditCount,
-    key_review_runs_seeded: skrResult.keyReviewRunCount,
-    removed_identity_rows: reconcileComponentResult.removed_identity_rows,
-    removed_value_rows: reconcileComponentResult.removed_value_rows,
-    removed_alias_rows: reconcileComponentResult.removed_alias_rows,
-    removed_item_component_link_rows: reconcileComponentResult.removed_item_component_link_rows,
-    removed_key_review_rows: reconcileComponentResult.removed_key_review_rows,
-    removed_list_value_rows: reconcileListResult.removed_list_value_rows,
-  };
+  return result;
 }
 

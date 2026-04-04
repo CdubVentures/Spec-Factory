@@ -19,7 +19,7 @@ Exports from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `pipeline/shared/`, `src/core/llm/`, `src/categories/`, `src/s3/`, `src/shared/`
+- **Allowed:** `pipeline/shared/`, `src/core/llm/`, `src/categories/`, `src/core/storage/`, `src/shared/`
 - **Forbidden:** Other pipeline phase folders
 
 ## Domain Invariants

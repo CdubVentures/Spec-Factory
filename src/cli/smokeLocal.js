@@ -27,7 +27,7 @@ export async function main() {
     { asBool, parseArgs },
   ] = await Promise.all([
     import('../config.js'),
-    import('../s3/storage.js'),
+    import('../core/storage/storage.js'),
     import('../pipeline/runProduct.js'),
     import('./args.js'),
   ]);

@@ -22,7 +22,7 @@ graph TD
   SpecDb["Per-category SpecDb (.workspace/db/<category>/spec.sqlite)"]
   Authority["Category Authority Files (category_authority/)"]
   Workspace["Runtime Roots (.workspace/output + .workspace/runs)"]
-  Storage["Storage Adapter (src/s3/storage.js)"]
+  Storage["Storage Adapter (src/core/storage/storage.js)"]
   Searxng["Optional SearXNG (tools/searxng/docker-compose.yml)"]
   Graphql["Optional GraphQL Helper (src/api/intelGraphApi.js)"]
   Llm["Provider-routed LLM Clients (src/core/llm/*)"]
@@ -71,7 +71,7 @@ graph TD
 | Per-category SpecDb | `src/db/specDb.js` |
 | Authority content root | `category_authority/` |
 | Runtime artifact roots | `src/core/config/runtimeArtifactRoots.js` |
-| Storage adapter | `src/s3/storage.js` |
+| Storage adapter | `src/core/storage/storage.js` |
 | Storage manager routes | `src/features/indexing/api/storageManagerRoutes.js` |
 | SearXNG stack | `tools/searxng/docker-compose.yml` |
 | GraphQL helper API | `src/api/intelGraphApi.js` |

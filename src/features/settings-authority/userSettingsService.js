@@ -586,12 +586,50 @@ export function drainPersistQueue() {
 // the MERGED snapshot before any SQL write to prevent invalid state from reaching
 // the database. Used by mergeRuntimePatch in configPersistenceContext to serialize
 // concurrent writes from /runtime-settings and /llm-policy handlers.
-export async function mergeAndPersistRuntimePatch({ appDb, patch, settingsRoot = null, categoryAuthorityRoot = null }) {
+export async function mergeAndPersistRuntimePatch({
+  appDb,
+  patch,
+  settingsRoot = null,
+  categoryAuthorityRoot = null,
+  config = null,
+}) {
   // 1. Read current full state from SQL
   const existing = readSettingsFromAppDb(appDb);
 
   // 2. Merge patch in memory (sanitize patch first)
-  const sanitizedPatch = sanitizeRuntimeSettings(patch);
+  const sanitizedIncomingPatch = sanitizeRuntimeSettings(patch);
+  const sanitizedPatch = { ...sanitizedIncomingPatch };
+
+  // WHY: Preserve effective env-backed secrets and the default provider registry
+  // when SQL still contains stale blank bootstrap rows and the incoming patch
+  // does not explicitly touch those keys. The patch-based path no longer
+  // rewrites the whole runtime section, so this healing must happen explicitly.
+  if (config && typeof config === 'object') {
+    const effectiveRuntime = snapshotRuntimeSettings(config);
+    const repairKeys = new Set([
+      ...SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS,
+      'llmProviderRegistryJson',
+    ]);
+
+    for (const key of repairKeys) {
+      if (Object.hasOwn(sanitizedIncomingPatch, key)) continue;
+
+      const persistedValue = existing.runtime?.[key];
+      const persistedIsStale = SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
+        ? String(persistedValue ?? '').trim() === ''
+        : shouldSkipBootstrapRuntimeOverride(key, persistedValue);
+      if (!persistedIsStale) continue;
+
+      const effectiveValue = effectiveRuntime[key];
+      const effectiveIsEmpty = SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
+        ? String(effectiveValue ?? '').trim() === ''
+        : shouldSkipBootstrapRuntimeOverride(key, effectiveValue);
+      if (effectiveIsEmpty) continue;
+
+      sanitizedPatch[key] = effectiveValue;
+    }
+  }
+
   const mergedRuntime = { ...existing.runtime, ...sanitizedPatch };
 
   // 3. Build full snapshot and VALIDATE BEFORE any SQL write
@@ -719,4 +757,3 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
   };
 }
-

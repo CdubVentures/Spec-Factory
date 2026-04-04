@@ -2,6 +2,22 @@
   "_doc": "Global color registry. Managed by GUI.",
   "_version": 1,
   "colors": {
+    "amber": {
+      "hex": "#f59e0b",
+      "css_var": "--color-amber"
+    },
+    "assassins-creed-valhalla-edition-basim": {
+      "hex": "#000000",
+      "css_var": "--color-assassins-creed-valhalla-edition-basim"
+    },
+    "assassins-creed-valhalla-edition-eivor": {
+      "hex": "#a0522d",
+      "css_var": "--color-assassins-creed-valhalla-edition-eivor"
+    },
+    "beige": {
+      "hex": "#f5f5f4",
+      "css_var": "--color-beige"
+    },
     "black": {
       "hex": "#3A3F41",
       "css_var": "--color-black"
@@ -10,93 +26,497 @@
       "hex": "#3b82f6",
       "css_var": "--color-blue"
     },
+    "brown": {
+      "hex": "#8b4513",
+      "css_var": "--color-brown"
+    },
+    "classic-black": {
+      "hex": "#000000",
+      "css_var": "--color-classic-black"
+    },
+    "classic-blue": {
+      "hex": "#0000ff",
+      "css_var": "--color-classic-blue"
+    },
+    "classic-bronze": {
+      "hex": "#cd7f32",
+      "css_var": "--color-classic-bronze"
+    },
+    "classic-gold": {
+      "hex": "#ffd700",
+      "css_var": "--color-classic-gold"
+    },
+    "classic-gray": {
+      "hex": "#808080",
+      "css_var": "--color-classic-gray"
+    },
+    "classic-green": {
+      "hex": "#00ff00",
+      "css_var": "--color-classic-green"
+    },
+    "classic-light-gray": {
+      "hex": "#d3d3d3",
+      "css_var": "--color-classic-light-gray"
+    },
+    "classic-orange": {
+      "hex": "#ffa500",
+      "css_var": "--color-classic-orange"
+    },
+    "classic-pink": {
+      "hex": "#ffc0cb",
+      "css_var": "--color-classic-pink"
+    },
+    "classic-purple": {
+      "hex": "#800080",
+      "css_var": "--color-classic-purple"
+    },
+    "classic-red": {
+      "hex": "#ff0000",
+      "css_var": "--color-classic-red"
+    },
+    "classic-silver": {
+      "hex": "#c0c0c0",
+      "css_var": "--color-classic-silver"
+    },
+    "classic-white": {
+      "hex": "#ffffff",
+      "css_var": "--color-classic-white"
+    },
+    "classic-yellow": {
+      "hex": "#ffff00",
+      "css_var": "--color-classic-yellow"
+    },
+    "coral": {
+      "hex": "#fb7185",
+      "css_var": "--color-coral"
+    },
     "cyan": {
       "hex": "#06b6d4",
       "css_var": "--color-cyan"
+    },
+    "cyberpunk-2077-edition-black": {
+      "hex": "#000000",
+      "css_var": "--color-cyberpunk-2077-edition-black"
+    },
+    "cyberpunk-2077-edition-yellow": {
+      "hex": "#ffff00",
+      "css_var": "--color-cyberpunk-2077-edition-yellow"
     },
     "dark-blue": {
       "hex": "#1d4ed8",
       "css_var": "--color-dark-blue"
     },
+    "dark-brown": {
+      "hex": "#451a03",
+      "css_var": "--color-dark-brown"
+    },
+    "dark-cyan": {
+      "hex": "#0e7490",
+      "css_var": "--color-dark-cyan"
+    },
+    "dark-fuchsia": {
+      "hex": "#a21caf",
+      "css_var": "--color-dark-fuchsia"
+    },
+    "dark-gray": {
+      "hex": "#374151",
+      "css_var": "--color-dark-gray"
+    },
     "dark-green": {
       "hex": "#15803d",
       "css_var": "--color-dark-green"
     },
+    "dark-indigo": {
+      "hex": "#4338ca",
+      "css_var": "--color-dark-indigo"
+    },
+    "dark-lime": {
+      "hex": "#4d7c0f",
+      "css_var": "--color-dark-lime"
+    },
+    "dark-orange": {
+      "hex": "#c2410c",
+      "css_var": "--color-dark-orange"
+    },
+    "dark-pink": {
+      "hex": "#be185d",
+      "css_var": "--color-dark-pink"
+    },
+    "dark-purple": {
+      "hex": "#7e22ce",
+      "css_var": "--color-dark-purple"
+    },
     "dark-red": {
-      "hex": "#dc2626",
+      "hex": "#b91c1c",
       "css_var": "--color-dark-red"
     },
+    "dark-rose": {
+      "hex": "#be123c",
+      "css_var": "--color-dark-rose"
+    },
+    "dark-sky": {
+      "hex": "#0369a1",
+      "css_var": "--color-dark-sky"
+    },
+    "dark-slate": {
+      "hex": "#334155",
+      "css_var": "--color-dark-slate"
+    },
+    "dark-stone": {
+      "hex": "#44403c",
+      "css_var": "--color-dark-stone"
+    },
+    "dark-teal": {
+      "hex": "#0f766e",
+      "css_var": "--color-dark-teal"
+    },
+    "dark-violet": {
+      "hex": "#6d28d9",
+      "css_var": "--color-dark-violet"
+    },
+    "dark-yellow": {
+      "hex": "#a16207",
+      "css_var": "--color-dark-yellow"
+    },
+    "dc-comics-edition-batman": {
+      "hex": "#000000",
+      "css_var": "--color-dc-comics-edition-batman"
+    },
+    "dc-comics-edition-wonder-woman": {
+      "hex": "#ffd700",
+      "css_var": "--color-dc-comics-edition-wonder-woman"
+    },
+    "diablo-iv-edition-lilith": {
+      "hex": "#8b0000",
+      "css_var": "--color-diablo-iv-edition-lilith"
+    },
+    "diablo-iv-edition-mephisto": {
+      "hex": "#800080",
+      "css_var": "--color-diablo-iv-edition-mephisto"
+    },
+    "emerald": {
+      "hex": "#10b981",
+      "css_var": "--color-emerald"
+    },
+    "final-fantasy-xiv-edition-warrior-of-light": {
+      "hex": "#ffffff",
+      "css_var": "--color-final-fantasy-xiv-edition-warrior-of-light"
+    },
+    "final-fantasy-xiv-edition-zenos-yae-galvus": {
+      "hex": "#ff0000",
+      "css_var": "--color-final-fantasy-xiv-edition-zenos-yae-galvus"
+    },
+    "fuchsia": {
+      "hex": "#c026d3",
+      "css_var": "--color-fuchsia"
+    },
+    "game-of-thrones-edition-stark": {
+      "hex": "#ffffff",
+      "css_var": "--color-game-of-thrones-edition-stark"
+    },
+    "game-of-thrones-edition-targaryen": {
+      "hex": "#ff0000",
+      "css_var": "--color-game-of-thrones-edition-targaryen"
+    },
+    "genshin-impact-edition-paimon": {
+      "hex": "#ffff00",
+      "css_var": "--color-genshin-impact-edition-paimon"
+    },
+    "genshin-impact-edition-zhongli": {
+      "hex": "#a0522d",
+      "css_var": "--color-genshin-impact-edition-zhongli"
+    },
     "gold": {
-      "hex": "#ca8a04",
+      "hex": "#eab308",
       "css_var": "--color-gold"
     },
     "gray": {
-      "hex": "#6b7280",
+      "hex": "#586062",
       "css_var": "--color-gray"
     },
     "green": {
       "hex": "#22c55e",
       "css_var": "--color-green"
     },
+    "halo-infinite-edition-blue": {
+      "hex": "#0000ff",
+      "css_var": "--color-halo-infinite-edition-blue"
+    },
+    "halo-infinite-edition-green": {
+      "hex": "#00ff00",
+      "css_var": "--color-halo-infinite-edition-green"
+    },
+    "harry-potter-edition-gryffindor": {
+      "hex": "#ff0000",
+      "css_var": "--color-harry-potter-edition-gryffindor"
+    },
+    "harry-potter-edition-slytherin": {
+      "hex": "#008000",
+      "css_var": "--color-harry-potter-edition-slytherin"
+    },
     "indigo": {
       "hex": "#6366f1",
       "css_var": "--color-indigo"
+    },
+    "ivory": {
+      "hex": "#fafaf9",
+      "css_var": "--color-ivory"
+    },
+    "lavender": {
+      "hex": "#a78bfa",
+      "css_var": "--color-lavender"
+    },
+    "league-of-legends-edition-ahri": {
+      "hex": "#ff69b4",
+      "css_var": "--color-league-of-legends-edition-ahri"
+    },
+    "league-of-legends-edition-jinx": {
+      "hex": "#ff00ff",
+      "css_var": "--color-league-of-legends-edition-jinx"
+    },
+    "light-amber": {
+      "hex": "#f59e0b",
+      "css_var": "--color-light-amber"
     },
     "light-blue": {
       "hex": "#60a5fa",
       "css_var": "--color-light-blue"
     },
+    "light-brown": {
+      "hex": "#a0522d",
+      "css_var": "--color-light-brown"
+    },
+    "light-coral": {
+      "hex": "#fda4af",
+      "css_var": "--color-light-coral"
+    },
+    "light-cyan": {
+      "hex": "#06b6d4",
+      "css_var": "--color-light-cyan"
+    },
+    "light-emerald": {
+      "hex": "#10b981",
+      "css_var": "--color-light-emerald"
+    },
+    "light-fuchsia": {
+      "hex": "#c026d3",
+      "css_var": "--color-light-fuchsia"
+    },
     "light-gray": {
-      "hex": "#9ca3af",
+      "hex": "#6b7280",
       "css_var": "--color-light-gray"
     },
     "light-green": {
-      "hex": "#86efac",
+      "hex": "#22c55e",
       "css_var": "--color-light-green"
     },
+    "light-indigo": {
+      "hex": "#6366f1",
+      "css_var": "--color-light-indigo"
+    },
+    "light-lime": {
+      "hex": "#84cc16",
+      "css_var": "--color-light-lime"
+    },
+    "light-olive": {
+      "hex": "#808000",
+      "css_var": "--color-light-olive"
+    },
+    "light-orange": {
+      "hex": "#fb923c",
+      "css_var": "--color-light-orange"
+    },
     "light-pink": {
-      "hex": "#f9a8d4",
+      "hex": "#ec4899",
       "css_var": "--color-light-pink"
     },
+    "light-purple": {
+      "hex": "#a855f7",
+      "css_var": "--color-light-purple"
+    },
     "light-red": {
-      "hex": "#fca5a5",
+      "hex": "#ef4444",
       "css_var": "--color-light-red"
+    },
+    "light-rose": {
+      "hex": "#f43f5e",
+      "css_var": "--color-light-rose"
+    },
+    "light-sky": {
+      "hex": "#0ea5e9",
+      "css_var": "--color-light-sky"
+    },
+    "light-slate": {
+      "hex": "#64748b",
+      "css_var": "--color-light-slate"
+    },
+    "light-stone": {
+      "hex": "#78716c",
+      "css_var": "--color-light-stone"
+    },
+    "light-teal": {
+      "hex": "#14b8a6",
+      "css_var": "--color-light-teal"
+    },
+    "light-violet": {
+      "hex": "#8b5cf6",
+      "css_var": "--color-light-violet"
+    },
+    "light-yellow": {
+      "hex": "#facc15",
+      "css_var": "--color-light-yellow"
     },
     "lime": {
       "hex": "#84cc16",
       "css_var": "--color-lime"
     },
+    "lord-of-the-rings-edition-aragorn": {
+      "hex": "#a0522d",
+      "css_var": "--color-lord-of-the-rings-edition-aragorn"
+    },
+    "lord-of-the-rings-edition-gandalf": {
+      "hex": "#808080",
+      "css_var": "--color-lord-of-the-rings-edition-gandalf"
+    },
     "magenta": {
       "hex": "#d946ef",
       "css_var": "--color-magenta"
+    },
+    "maroon": {
+      "hex": "#7f1d1d",
+      "css_var": "--color-maroon"
+    },
+    "marvel-edition-captain-america": {
+      "hex": "#0000ff",
+      "css_var": "--color-marvel-edition-captain-america"
+    },
+    "marvel-edition-iron-man": {
+      "hex": "#ff0000",
+      "css_var": "--color-marvel-edition-iron-man"
+    },
+    "matte-black": {
+      "hex": "#2c2c2c",
+      "css_var": "--color-matte-black"
+    },
+    "mercury-white": {
+      "hex": "#e5e5e5",
+      "css_var": "--color-mercury-white"
+    },
+    "monster-hunter-rise-edition-magnamalo": {
+      "hex": "#8b0000",
+      "css_var": "--color-monster-hunter-rise-edition-magnamalo"
+    },
+    "monster-hunter-rise-edition-rathalos": {
+      "hex": "#ff0000",
+      "css_var": "--color-monster-hunter-rise-edition-rathalos"
+    },
+    "navy": {
+      "hex": "#1e3a8a",
+      "css_var": "--color-navy"
+    },
+    "olive": {
+      "hex": "#a16207",
+      "css_var": "--color-olive"
     },
     "orange": {
       "hex": "#f97316",
       "css_var": "--color-orange"
     },
+    "overwatch-2-edition-genji": {
+      "hex": "#00ff00",
+      "css_var": "--color-overwatch-2-edition-genji"
+    },
+    "overwatch-2-edition-tracer": {
+      "hex": "#ff0000",
+      "css_var": "--color-overwatch-2-edition-tracer"
+    },
     "pink": {
       "hex": "#ec4899",
       "css_var": "--color-pink"
+    },
+    "pokemon-edition-eevee": {
+      "hex": "#deb887",
+      "css_var": "--color-pokemon-edition-eevee"
+    },
+    "pokemon-edition-pikachu": {
+      "hex": "#ffd700",
+      "css_var": "--color-pokemon-edition-pikachu"
     },
     "purple": {
       "hex": "#a855f7",
       "css_var": "--color-purple"
     },
+    "quartz-pink": {
+      "hex": "#f760a0",
+      "css_var": "--color-quartz-pink"
+    },
     "red": {
       "hex": "#ef4444",
       "css_var": "--color-red"
+    },
+    "resident-evil-village-edition-ethan": {
+      "hex": "#ffffff",
+      "css_var": "--color-resident-evil-village-edition-ethan"
+    },
+    "resident-evil-village-edition-lady-dimitrescu": {
+      "hex": "#000000",
+      "css_var": "--color-resident-evil-village-edition-lady-dimitrescu"
     },
     "rose": {
       "hex": "#f43f5e",
       "css_var": "--color-rose"
     },
+    "salmon": {
+      "hex": "#fda4af",
+      "css_var": "--color-salmon"
+    },
     "silver": {
-      "hex": "#94a3b8",
+      "hex": "#cbd5e1",
       "css_var": "--color-silver"
+    },
+    "sky": {
+      "hex": "#0ea5e9",
+      "css_var": "--color-sky"
+    },
+    "slate": {
+      "hex": "#64748b",
+      "css_var": "--color-slate"
+    },
+    "star-wars-edition-darth-vader": {
+      "hex": "#000000",
+      "css_var": "--color-star-wars-edition-darth-vader"
+    },
+    "star-wars-edition-luke-skywalker": {
+      "hex": "#add8e6",
+      "css_var": "--color-star-wars-edition-luke-skywalker"
+    },
+    "stone": {
+      "hex": "#78716c",
+      "css_var": "--color-stone"
+    },
+    "street-fighter-v-edition-chun-li": {
+      "hex": "#ff69b4",
+      "css_var": "--color-street-fighter-v-edition-chun-li"
+    },
+    "street-fighter-v-edition-ryu": {
+      "hex": "#808080",
+      "css_var": "--color-street-fighter-v-edition-ryu"
     },
     "teal": {
       "hex": "#14b8a6",
       "css_var": "--color-teal"
+    },
+    "turquoise": {
+      "hex": "#2dd4bf",
+      "css_var": "--color-turquoise"
+    },
+    "valorant-edition-jett": {
+      "hex": "#00ffff",
+      "css_var": "--color-valorant-edition-jett"
+    },
+    "valorant-edition-phoenix": {
+      "hex": "#ff4500",
+      "css_var": "--color-valorant-edition-phoenix"
     },
     "violet": {
       "hex": "#8b5cf6",
@@ -107,7 +527,7 @@
       "css_var": "--color-white"
     },
     "yellow": {
-      "hex": "#eab308",
+      "hex": "#ffd83a",
       "css_var": "--color-yellow"
     }
   }

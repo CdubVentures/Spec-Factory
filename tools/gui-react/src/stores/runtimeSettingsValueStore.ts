@@ -17,14 +17,23 @@ interface RuntimeSettingsValueState {
   hydrated: boolean;
   /** Whether any consumer has unsaved edits. */
   dirty: boolean;
+  /** Whether an unmount flush is in flight (keepalive fetch sent, server not yet confirmed).
+   * WHY: When the user navigates away with pending edits, teardownFetch fires but the
+   * server hasn't confirmed the write. hydrate() must block until the server confirms
+   * via WebSocket event, otherwise stale pre-flush data overwrites the user's edit. */
+  flushPending: boolean;
   /** Apply server-fetched settings (initial hydration or reload). */
   hydrate: (settings: RuntimeSettings) => void;
   /** Update a single key (user edit). Marks dirty. */
   updateKey: (key: string, value: unknown) => void;
   /** Bulk-update multiple keys (user edit). Marks dirty. */
   updateKeys: (patch: Partial<RuntimeSettings>) => void;
-  /** Mark as clean (after successful save). */
+  /** Mark as clean (after successful save). Clears both dirty and flushPending. */
   markClean: () => void;
+  /** Set flushPending=true and dirty=false. Called on unmount flush before teardownFetch. */
+  markFlushPending: () => void;
+  /** Clear flushPending. Called when server confirms the write landed (WS event). */
+  confirmFlush: () => void;
   /** Replace entire values object (e.g. after normalization). */
   replaceValues: (values: RuntimeSettings) => void;
   /** Force hydration even if dirty (for initial load). */
@@ -41,13 +50,15 @@ export const useRuntimeSettingsValueStore = create<RuntimeSettingsValueState>(
     values: null,
     hydrated: false,
     dirty: false,
+    flushPending: false,
 
     hydrate: (settings) => {
       const state = get();
       // WHY: First hydration always applies. Subsequent hydrations only apply
-      // when the user has no pending edits (dirty = false). This prevents
-      // a server refresh from overwriting the user's in-progress edits.
-      if (state.hydrated && state.dirty) return;
+      // when the user has no pending edits (dirty) and no unmount flush is in
+      // flight (flushPending). flushPending blocks stale server data from
+      // overwriting user edits that haven't been confirmed by the server yet.
+      if (state.hydrated && (state.dirty || state.flushPending)) return;
       // WHY: Merge onto pre-seeded values (from hydrateKeys) rather than
       // replacing them. This preserves LLM flat keys that were seeded
       // before the runtime-settings query completed.
@@ -97,7 +108,11 @@ export const useRuntimeSettingsValueStore = create<RuntimeSettingsValueState>(
       });
     },
 
-    markClean: () => set({ dirty: false }),
+    markClean: () => set({ dirty: false, flushPending: false }),
+
+    markFlushPending: () => set({ dirty: false, flushPending: true }),
+
+    confirmFlush: () => set({ flushPending: false }),
 
     replaceValues: (values) => set({ values, dirty: get().dirty }),
   }),

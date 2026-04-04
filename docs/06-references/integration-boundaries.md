@@ -8,7 +8,7 @@
 
 | Boundary | Owner path(s) | External identity | Contract surface | Failure behavior |
 |----------|---------------|-------------------|------------------|------------------|
-| Artifact storage backend | `src/s3/storage.js`, `src/api/bootstrap/createBootstrapEnvironment.js` | local filesystem by default, Amazon S3 only when `config.outputMode === 's3'` | object-style `list/read/write/delete` methods behind `createStorage(config)` | read/write failures surface to CLI/API callers; local mode remains the default unless S3 is explicitly selected |
+| Artifact storage backend | `src/core/storage/storage.js`, `src/api/bootstrap/createBootstrapEnvironment.js` | local filesystem | object-style `list/read/write/delete` methods behind `createStorage(config)` | read/write failures surface to CLI/API callers |
 | Storage inventory API | `src/features/indexing/api/storageManagerRoutes.js` | local run tree plus optional storage abstraction reads | `/api/v1/storage/overview`, `/runs`, `/prune`, `/purge`, `/export` | missing runs return `404`, active-run deletes return `409`, purge requires explicit `confirmToken`; current overview payload reports `storage_backend: "local"` |
 | SearXNG search sidecar | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/searxngRoutes.js`, `tools/searxng/docker-compose.yml` | local HTTP service, default `http://127.0.0.1:8080` | HTTP status probes plus local Docker Compose start | `/api/v1/searxng/status` or `/api/v1/searxng/start` returns failure metadata |
 | Intel Graph helper API | `src/app/api/routes/infra/graphqlRoutes.js`, `src/api/intelGraphApi.js` | local GraphQL server on `http://localhost:8787/graphql` | JSON GraphQL POST proxy | proxy returns `502 graphql_proxy_failed` when helper is absent or unhealthy |
@@ -38,7 +38,7 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/s3/storage.js` | storage abstraction boundary and `outputMode === 's3'` selection |
+| source | `src/core/storage/storage.js` | local filesystem storage adapter |
 | source | `src/api/bootstrap/createBootstrapEnvironment.js` | storage bootstrap path and runtime roots |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | current storage inventory/maintenance API surface |
 | source | `src/app/api/processRuntime.js` | SearXNG probing and child-process integration |

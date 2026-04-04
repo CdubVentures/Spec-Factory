@@ -14,14 +14,14 @@ The current live storage feature is the `/storage` inventory and maintenance sur
 | storage manager panel | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | run overview, run inventory, and destructive maintenance actions |
 | storage manager API | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory, delete, prune, purge, and export endpoints |
 | IndexLab route delegation | `src/features/indexing/api/indexlabRoutes.js` | mounts the storage manager under the main indexing route family |
-| storage backend adapter | `src/s3/storage.js` | local or S3 storage implementation selected from config |
+| storage backend adapter | `src/core/storage/storage.js` | local filesystem storage adapter |
 | storage overview bar | `tools/gui-react/src/features/storage-manager/components/StorageOverviewBar.tsx` | renders aggregate inventory and backend details |
 
 ## Dependencies
 
 - `src/features/indexing/api/storageManagerRoutes.js`
 - `src/features/indexing/api/indexlabRoutes.js`
-- `src/s3/storage.js`
+- `src/core/storage/storage.js`
 - `tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts`
 - `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts`
 - `tools/gui-react/src/features/storage-manager/state/useStorageActions.ts`
@@ -42,7 +42,7 @@ The current live storage feature is the `/storage` inventory and maintenance sur
    - `GET /api/v1/storage/export`
 6. `src/features/indexing/api/storageManagerRoutes.js` lists run artifacts from the IndexLab storage tree and executes delete/prune/purge/export operations.
 7. The same handler currently reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` from its own `resolveBackend()` helpers.
-8. `src/s3/storage.js` still supports S3 when `config.outputMode === 's3'`, but that selection is not exposed through a writable GUI storage-settings form.
+8. `src/core/storage/storage.js` provides local filesystem storage; the S3 backend has been retired.
 
 ## Side Effects
 
@@ -84,7 +84,7 @@ sequenceDiagram
   end
   box Storage
     participant RunsRoot as IndexLab runs<br/>(.workspace/runs)
-    participant Adapter as storage.js<br/>(src/s3/storage.js)
+    participant Adapter as storage.js<br/>(src/core/storage/storage.js)
   end
   Page->>Panel: render storage manager
   Panel->>IndexlabRoutes: GET /api/v1/storage/overview
@@ -108,7 +108,7 @@ sequenceDiagram
 | source | `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts` | `/storage/runs` client contract |
 | source | `src/features/indexing/api/indexlabRoutes.js` | `/storage/*` delegation path |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | actual inventory and maintenance endpoints |
-| source | `src/s3/storage.js` | local versus S3 backend selection |
+| source | `src/core/storage/storage.js` | local filesystem storage adapter |
 | runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-03-31 |
 
 ## Related Documents

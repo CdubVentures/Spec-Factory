@@ -103,6 +103,5 @@ export function createColorEditionFinderCallLlm(deps) {
       category: domainArgs.product?.category || '',
       seed_urls: domainArgs.product?.seed_urls || [],
     }),
-    timeoutMs: 120_000,
   }));
 }

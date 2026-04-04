@@ -26,7 +26,7 @@ HTTP server composition root: bootstraps the DI context, wires feature route han
 - `src/db/specDb.js` (database — instantiated in bootstrap, passed via DI)
 - `src/features/*/api/*` (route registrars + context factories — all 12 features)
 - `src/app/api/*` (request dispatch, route registry, pipeline, static server)
-- `src/s3/storage.js`, `src/categories/loader.js`, `src/queue/queueState.js`
+- `src/core/storage/storage.js`, `src/categories/loader.js`, `src/queue/queueState.js`
 - `src/features/catalog/index.js`, `src/features/settings-authority/index.js`
 - `src/utils/candidateIdentifier.js` (to be moved to shared in Phase 4)
 

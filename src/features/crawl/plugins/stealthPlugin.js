@@ -3,7 +3,7 @@
  * Hooks into beforeNavigate to inject stealth scripts before page load.
  */
 
-import { STEALTH_INIT_SCRIPT } from '../../../fetcher/stealthProfile.js';
+import { STEALTH_INIT_SCRIPT } from './stealthProfile.js';
 
 // WHY: Only patches that Crawlee's fingerprint-suite does NOT cover.
 // Removed vendor, plugins, languages, hardwareConcurrency, webglVendor —

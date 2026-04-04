@@ -63,8 +63,8 @@ table.ref tr:hover{background:var(--s2)}
   <h1>Rebuild Map: JSON &rarr; SQL</h1>
   <p>Every SQL table and its durable rebuild source. Shows which file rebuilds each table, when the file is written, and when it&rsquo;s read back during recovery.</p>
   <div class="meta">
-    <span>Updated 2026-04-02</span>
-    <span>Live-validated against codebase</span>
+    <span>Updated 2026-04-03</span>
+    <span>Post O(1) Seed Registry</span>
   </div>
 </header>
 
@@ -81,8 +81,8 @@ table.ref tr:hover{background:var(--s2)}
 <div class="legend">
   <strong>Legend:</strong>
   <span class="tag tag-hash">hash-gated</span> SHA256 &mdash; re-imports only when content changes
-  <span class="tag tag-reseed">reseed phase</span> Runs every category open (O(1) registry)
-  <span class="tag tag-seed">seedSpecDb</span> First seed or hash-gated reconcile
+  <span class="tag tag-reseed">reseed phase</span> Runs every category open (O(1) via <code>seedRegistry.js</code>)
+  <span class="tag tag-seed">seedSpecDb</span> First seed or hash-gated reconcile (dispatched via <code>seedEngine.js</code>)
   <span class="tag tag-lazy">lazy</span> Rebuilt on next access
   <span class="tag tag-learn">learning</span> Self-creating tables populated during runs
   <span class="tag tag-none">no source</span> SQL-only, lost on rebuild
@@ -189,7 +189,7 @@ table.ref tr:hover{background:var(--s2)}
   <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
   <tr><td class="fp">settings</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
   <tr><td class="fp">studio_maps</td><td class="fp">user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> seedAppDb</td></tr>
-  <tr><td class="fp">color_registry</td><td class="fp">color_registry.json</td><td><span class="tag tag-hash">hash-gated</span> seedColorRegistry</td></tr>
+  <tr><td class="fp">color_registry</td><td class="fp">color_registry.json (may be stale &mdash; see Caveats)</td><td><span class="tag tag-hash">hash-gated</span> seedColorRegistry</td></tr>
   </tbody>
   </table>
 </section>
@@ -257,14 +257,14 @@ table.ref tr:hover{background:var(--s2)}
   <table class="ref">
   <thead><tr><th>Table</th><th>Rebuild Source</th><th>Trigger</th></tr></thead>
   <tbody>
-  <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json (custom) + defaults</td><td><span class="tag tag-reseed">reseed</span></td></tr>
+  <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json (custom) + defaults from specDbHelpers.buildDefaultLlmRoutes(). If no JSON exists, defaults regenerate but custom edits are lost.</td><td><span class="tag tag-reseed">reseed</span></td></tr>
   <tr><td class="fp">source_registry</td><td>Derived from candidates + item state during seed</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_state</td><td>Derived from item_field_state + components + lists</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_runs</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_run_sources</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">key_review_audit</td><td>Derived &mdash; seeded alongside key_review_state</td><td><span class="tag tag-seed">seedSpecDb</span></td></tr>
   <tr><td class="fp">field_studio_map</td><td class="fp">field_studio_map.json</td><td><span class="tag tag-lazy">lazy</span></td></tr>
-  <tr><td class="fp">field_key_order</td><td>SQL-persisted (drag-drop order); no JSON source, survives rebuild</td><td><span class="tag tag-lazy">lazy</span></td></tr>
+  <tr><td class="fp">field_key_order</td><td>SQL-persisted (drag-drop order). Mirror path exists (studioRoutes.js:516) and fallback reader exists (sessionCache.js:143), but JSON mirror is not consistently written. Lost on full DB delete unless JSON was manually synced.</td><td><span class="tag tag-lazy">lazy</span></td></tr>
   <tr><td class="fp">data_authority_sync</td><td>Self-healing &mdash; repopulates on next sync</td><td><span class="tag tag-lazy">lazy</span></td></tr>
   </tbody>
   </table>
@@ -359,14 +359,36 @@ table.ref tr:hover{background:var(--s2)}
     <h2>Reseed Phase Registry</h2>
     <span class="tag tag-reseed">O(1) Scaling</span>
   </div>
-  <p class="surface-desc">Registered in <code>src/app/api/specDbRuntime.js</code>. Each phase runs independently on every category open. Adding a new phase = one array entry.</p>
+  <p class="surface-desc">Defined in <code>src/db/seedRegistry.js</code> via <code>buildReseedSurfaces(deps)</code>. Wired into <code>src/app/api/specDbRuntime.js</code> via DI. Each phase runs independently on every category open. Adding a new phase = one registry entry + one DI arg.</p>
 
   <table class="ref">
   <thead><tr><th>Phase</th><th>Source</th><th>Tables</th></tr></thead>
   <tbody>
   <tr><td class="fp">checkpoint</td><td class="fp">run.json + product.json + media files</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, products, product_queue, source_screenshots, source_videos</td></tr>
-  <tr><td class="fp">color-edition</td><td class="fp">color_edition.json</td><td>color_edition_finder</td></tr>
-  <tr><td class="fp">llm-route-matrix</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td></tr>
+  <tr><td class="fp">color_edition</td><td class="fp">color_edition.json</td><td>color_edition_finder</td></tr>
+  <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- CATEGORY SEED REGISTRY -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Category Seed Registry</h2>
+    <span class="tag tag-seed">O(1) Scaling</span>
+  </div>
+  <p class="surface-desc">Defined in <code>src/db/seedRegistry.js</code> via <code>buildCategorySurfaces(steps)</code>. Dispatched by <code>src/db/seedEngine.js</code> in dependency order (topological sort). Each surface has optional <code>before</code>/<code>after</code> hooks for reconcile/cleanup. Adding a new surface = one registry entry + one seeder function.</p>
+
+  <table class="ref">
+  <thead><tr><th>Surface</th><th>dependsOn</th><th>before hook</th><th>Tables</th></tr></thead>
+  <tbody>
+  <tr><td class="fp">components</td><td>&mdash;</td><td class="fp">reconcileComponentDbRows</td><td>component_identity, component_aliases, component_values</td></tr>
+  <tr><td class="fp">component_overrides</td><td class="fp">components</td><td>&mdash;</td><td>component_identity, component_values</td></tr>
+  <tr><td class="fp">lists</td><td>&mdash;</td><td class="fp">reconcileListSeedRows</td><td>list_values</td></tr>
+  <tr><td class="fp">products</td><td class="fp">components, lists</td><td>&mdash;</td><td>candidates, item_field_state, item_component_links, item_list_links, candidate_reviews</td></tr>
+  <tr><td class="fp">backfill_links</td><td class="fp">products</td><td>&mdash;</td><td>item_component_links</td></tr>
+  <tr><td class="fp">source_key_review</td><td class="fp">products, backfill_links</td><td class="fp">pruneOrphanCandidateReferences</td><td>source_registry, key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td></tr>
   </tbody>
   </table>
 </section>
@@ -378,7 +400,7 @@ table.ref tr:hover{background:var(--s2)}
     <h2>Hash-Gated Reconciliation</h2>
     <span class="tag tag-hash">SHA256</span>
   </div>
-  <p class="surface-desc">File content hashed and compared to stored value. Only re-imports when hash differs. App DB hashes stored in <code>app.sqlite.settings</code> under <code>_seed_hashes</code> section. Spec DB uses <code>field_rules_signature</code> (mtime+size of generated files) stored in <code>data_authority_sync.last_sync_meta</code>.</p>
+  <p class="surface-desc">File content hashed and compared to stored value. Only re-imports when hash differs. App DB hashes stored in <code>app.sqlite.settings</code> under <code>_seed_hashes</code> section (global surfaces documented in <code>seedRegistry.js GLOBAL_SURFACES</code>). Spec DB uses <code>field_rules_signature</code> (mtime+size of 7 generated files) stored in <code>data_authority_sync.last_sync_meta</code> &mdash; gates whether the category seed engine runs at all.</p>
 
   <table class="ref">
   <thead><tr><th>Source</th><th>Hash Key</th><th>Tables</th></tr></thead>
@@ -387,6 +409,47 @@ table.ref tr:hover{background:var(--s2)}
   <tr><td class="fp">user-settings.json</td><td class="fp">_seed_hashes.user_settings</td><td>settings, studio_maps</td></tr>
   <tr><td class="fp">color_registry.json</td><td class="fp">_seed_hashes.color_registry</td><td>color_registry</td></tr>
   <tr><td class="fp">field rules (7 generated files)</td><td class="fp">data_authority_sync.last_sync_meta.field_rules_signature</td><td>All seedSpecDb tables (full reconcile)</td></tr>
+  </tbody>
+  </table>
+</section>
+
+<!-- DATA INTEGRITY CAVEATS -->
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Data Integrity Caveats</h2>
+    <span class="tag tag-none">known gaps</span>
+  </div>
+  <p class="surface-desc">The rebuild system is optimized for recovering major caches, not guaranteed lossless deletion of all SQL. These are the known gaps as of 2026-04-03.</p>
+
+  <table class="ref">
+  <thead><tr><th>Issue</th><th>Impact</th><th>Blocker For</th></tr></thead>
+  <tbody>
+  <tr>
+    <td><strong>color_registry.json drift.</strong> Write-back code exists (<code>colorRegistrySeed.js:179</code>) but may not have run. JSON can be stale vs SQL.</td>
+    <td>Deleting app.sqlite rebuilds from stale JSON, losing colors added via GUI since last write-back.</td>
+    <td>Safe app.sqlite deletion</td>
+  </tr>
+  <tr>
+    <td><strong>field_key_order has no durable mirror.</strong> Mirror path exists (<code>studioRoutes.js:516</code>, fallback <code>sessionCache.js:143</code>) but JSON is not consistently written.</td>
+    <td>Drag-drop field ordering lost on full spec.sqlite delete.</td>
+    <td>Lossless spec.sqlite rebuild</td>
+  </tr>
+  <tr>
+    <td><strong>llm_route_matrix.json may not exist.</strong> Categories without custom LLM routes have no JSON mirror. Defaults regenerate from <code>specDbHelpers.buildDefaultLlmRoutes()</code>, but custom edits would not survive.</td>
+    <td>Custom LLM route edits lost on spec.sqlite delete if no JSON mirror was written.</td>
+    <td>Lossless spec.sqlite rebuild (custom routes only)</td>
+  </tr>
+  <tr>
+    <td><strong>Checkpoint persistence is best-effort.</strong> product.json and run.json are written during pipeline runs (<code>pipelineCommands.js:323</code>), but crashes or aborts may leave incomplete checkpoints.</td>
+    <td>Runs or products from incomplete pipeline executions may not be recoverable.</td>
+    <td>Full run history rebuild</td>
+  </tr>
+  <tr>
+    <td><strong>5 tables have no rebuild path.</strong> billing_entries, field_history, bridge_events, source_corpus, source_intel_domains are SQL-only. Documented in the &ldquo;No Rebuild Source&rdquo; section above.</td>
+    <td>Data in these tables is lost on full rebuild. Accepted &mdash; operational data that repopulates during use.</td>
+    <td>N/A (accepted loss)</td>
+  </tr>
   </tbody>
   </table>
 </section>

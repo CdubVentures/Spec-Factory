@@ -88,6 +88,9 @@ export function useLlmPolicyAuthority({
       saveFn: () => saveFnRef.current(),
       getUnloadBody,
       unloadUrl: '/api/v1/llm-policy',
+      onFlushPending: () => {
+        useRuntimeSettingsValueStore.getState().markFlushPending();
+      },
     });
 
   // WHY: Hydrate once from server — push flat keys into the store.

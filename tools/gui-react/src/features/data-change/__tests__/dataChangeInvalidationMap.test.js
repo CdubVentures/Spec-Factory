@@ -141,3 +141,18 @@ test('source strategy event invalidates category-scoped source strategy query ke
 
   assert.equal(hasQueryKey(keys, ['source-strategy', 'mouse']), true);
 });
+
+test('spec-seeds event invalidates category-scoped spec-seeds query key (not broad fallback)', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'spec-seeds-updated',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['spec-seeds', 'mouse']), true);
+  // WHY: Prove the broad fallback path is NOT triggered.
+  assert.equal(hasQueryKey(keys, ['brands']), false);
+});

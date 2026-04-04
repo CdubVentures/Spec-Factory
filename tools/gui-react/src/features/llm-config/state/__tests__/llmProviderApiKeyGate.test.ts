@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual } from 'node:assert';
-import { providerHasApiKey, extractRegistryApiKeys, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../llmProviderApiKeyGate.ts';
+import {
+  providerHasApiKey,
+  extractRegistryApiKeys,
+  PROVIDER_API_KEY_MAP,
+  resolveEditableProviderApiKey,
+  type RuntimeApiKeySlice,
+} from '../llmProviderApiKeyGate.ts';
 import type { LlmProviderEntry } from '../../types/llmProviderRegistryTypes.ts';
 
 function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name: string }): LlmProviderEntry {
@@ -174,5 +180,27 @@ describe('extractRegistryApiKeys', () => {
       geminiApiKey: 'AIza-key',
       anthropicApiKey: 'sk-ant',
     });
+  });
+});
+
+describe('resolveEditableProviderApiKey', () => {
+  it('inherits a built-in provider key from the mapped flat runtime field', () => {
+    const provider = makeProvider({ id: 'default-gemini', name: 'Gemini', apiKey: '' });
+    const keys = { ...emptyKeys(), geminiApiKey: 'AIza-runtime-key' };
+
+    deepStrictEqual(resolveEditableProviderApiKey(provider, keys), 'AIza-runtime-key');
+  });
+
+  it('preserves an explicit empty string when no runtime key exists', () => {
+    const provider = makeProvider({ id: 'default-gemini', name: 'Gemini', apiKey: '' });
+
+    deepStrictEqual(resolveEditableProviderApiKey(provider, emptyKeys()), '');
+  });
+
+  it('preserves a partially edited provider key instead of replacing it from runtime keys', () => {
+    const provider = makeProvider({ id: 'default-gemini', name: 'Gemini', apiKey: 'sk-partial' });
+    const keys = { ...emptyKeys(), geminiApiKey: 'AIza-runtime-key' };
+
+    deepStrictEqual(resolveEditableProviderApiKey(provider, keys), 'sk-partial');
   });
 });

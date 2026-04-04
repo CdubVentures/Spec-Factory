@@ -333,138 +333,86 @@
 <div class="container">
 
 <header>
-  <div class="tag">Codebase Audit</div>
+  <div class="tag">Codebase Audit &mdash; Updated 2026-04-03</div>
   <h1>Spec-Factory <span>src/</span> Analysis</h1>
-  <p>What each folder does, which are core to the app, and which look like dead code — based on import tracing, CLI registration, and cross-folder references.</p>
+  <p>What each folder does, which are core to the app, and which are narrow-scope or misplaced &mdash; based on import tracing, CLI registration, and cross-folder references.</p>
 </header>
 
 <div class="summary-grid">
   <div class="stat-card">
-    <div class="label">Total Folders</div>
-    <div class="value">31</div>
+    <div class="label">Active Folders</div>
+    <div class="value">25</div>
   </div>
   <div class="stat-card">
-    <div class="label">Prod Files</div>
-    <div class="value">561</div>
+    <div class="label">Deleted (Cleaned)</div>
+    <div class="value green">6 folders</div>
   </div>
   <div class="stat-card">
     <div class="label">Dead Code</div>
-    <div class="value red">2 folders</div>
+    <div class="value green">0 folders</div>
   </div>
   <div class="stat-card">
-    <div class="label">Suspect / Narrow</div>
-    <div class="value orange">6 folders</div>
+    <div class="label">Narrow / Misplaced</div>
+    <div class="value orange">7 folders</div>
   </div>
 </div>
 
 <div class="tldr">
-  <h3>TL;DR — Safe to Delete or Audit</h3>
+  <h3>TL;DR &mdash; Cleanup Completed + Remaining Items</h3>
   <ul>
-    <li><code>concurrency/</code> — <strong>Dead.</strong> 7 prod files, zero imports from anywhere. The index.js even has a comment about deleted files. Request throttling logic is inlined in features/indexing instead.</li>
-    <li><code>retrieve/</code> — <strong>Dead.</strong> 3 prod files, zero imports from any other folder. Only mentioned in a comment in shared/contentHash.js.</li>
-    <li><code>indexer/</code> — <strong>Near-dead.</strong> Single file, no tests, only wired via CLI <code>rebuild-index</code>. Likely superseded by DB-based indexing.</li>
-    <li><code>fetcher/</code> — <strong>Barely alive.</strong> 1 file (stealthProfile.js), referenced indirectly via settings config, not directly imported for logic.</li>
-    <li><code>research/</code> — <strong>One-trick.</strong> Just urlNormalize.js, imported by a single file in features/indexing. Could be moved into shared/.</li>
-    <li><code>testing/</code> — <strong>Test infra only.</strong> No prod files — exclusively test helpers (testDataProvider, goldenFiles, testRunner). Not dead, but mislabeled — it's test infrastructure, not "testing feature".</li>
+    <li><code>concurrency/</code> &mdash; <strong>Deleted.</strong> All 7 files removed. Zero orphaned imports.</li>
+    <li><code>retrieve/</code> &mdash; <strong>Deleted.</strong> All 3 files removed. Evidence retrieval absorbed into review/engine modules.</li>
+    <li><code>indexer/</code> &mdash; <strong>Deleted.</strong> rebuildIndex.js removed. DB-based indexing superseded it.</li>
+    <li><code>fetcher/</code> &mdash; <strong>Deleted.</strong> stealthProfile.js relocated to <code>features/crawl/plugins/</code>.</li>
+    <li><code>research/</code> &mdash; <strong>Deleted.</strong> urlNormalize.js relocated to <code>shared/</code>.</li>
+    <li><code>s3/</code> &mdash; <strong>Deleted.</strong> S3Storage class removed, LocalStorage relocated to <code>core/storage/</code>. AWS SDK dependency removed.</li>
+    <li><code>testing/</code> &mdash; <strong>Misplaced.</strong> Still exists as a top-level <code>src/</code> folder. Contains test infrastructure (testDataProvider, goldenFiles, testRunner) &mdash; not a "feature".</li>
   </ul>
 </div>
 
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot dot-dead"></div> Dead Code</div>
-  <div class="legend-item"><div class="legend-dot dot-suspect"></div> Suspect / Barely Used</div>
+  <div class="legend-item"><div class="legend-dot dot-active"></div> Cleaned Up (Deleted)</div>
+  <div class="legend-item"><div class="legend-dot dot-suspect"></div> Misplaced</div>
   <div class="legend-item"><div class="legend-dot dot-narrow"></div> Narrow / CLI-Only</div>
-  <div class="legend-item"><div class="legend-dot dot-active"></div> Active</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Active</div>
   <div class="legend-item"><div class="legend-dot dot-core"></div> Core Infrastructure</div>
 </div>
 
-<!-- ═══════════════ DEAD CODE ═══════════════ -->
+<!-- ═══════════════ CLEANED UP (formerly dead) ═══════════════ -->
 <section>
-  <h2><span class="icon" style="background:var(--red-dim);color:var(--red)">✗</span> Dead Code</h2>
+  <h2><span class="icon" style="background:rgba(110,231,183,0.15);color:var(--accent)">✓</span> Cleaned Up (Deleted)</h2>
   <div class="folder-list">
 
-    <div class="folder-card dead">
+    <div class="folder-card" style="border-left:3px solid var(--accent);opacity:0.7">
       <div class="folder-head">
-        <span class="folder-name">concurrency/</span>
+        <span class="folder-name">concurrency/ &middot; retrieve/ &middot; indexer/ &middot; fetcher/ &middot; research/ &middot; s3/</span>
         <div class="folder-meta">
-          <span class="m">7 files</span><span class="m">63 KB</span><span class="m">0 external imports</span>
-          <span class="badge badge-dead">Dead</span>
+          <span class="badge badge-active">Deleted</span>
         </div>
       </div>
       <div class="folder-desc">
-        Exports WorkerPool, BudgetEnforcer, HostPacer, LaneManager, AsyncDeepJob, and requestThrottler utilities. <strong>Not a single file outside this folder imports from it.</strong> The index.js itself has a comment noting deleted files from a "pipeline rework." The search execution code in <code>features/indexing</code> uses a <code>requestThrottler</code> parameter but never imports it from here — it's passed in from a different source. This entire folder is orphaned.
-      </div>
-    </div>
-
-    <div class="folder-card dead">
-      <div class="folder-head">
-        <span class="folder-name">retrieve/</span>
-        <div class="folder-meta">
-          <span class="m">3 files</span><span class="m">94 KB</span><span class="m">0 external imports</span>
-          <span class="badge badge-dead">Dead</span>
-        </div>
-      </div>
-      <div class="folder-desc">
-        Contains tierAwareRetriever.js and primeSourcesBuilder.js — evidence retrieval logic for product data. <strong>Zero imports from any other folder.</strong> The only external reference is a historical comment in <code>shared/contentHash.js</code>. Evidence retrieval appears to have been absorbed into the review and engine modules directly.
+        All six folders flagged in the original audit have been <strong>fully deleted</strong> with zero orphaned imports remaining. <code>concurrency/</code> (7 files), <code>retrieve/</code> (3 files), <code>indexer/</code> (1 file), <code>fetcher/</code> (11 files), and <code>research/</code> (12 files) were removed as dead code. <code>s3/</code> storage abstraction was relocated to <code>core/storage/</code> with the S3 backend and AWS SDK dependency stripped. Useful code was relocated: <code>stealthProfile.js</code> &rarr; <code>features/crawl/plugins/</code>, <code>urlNormalize.js</code> &rarr; <code>shared/</code>, <code>LocalStorage</code> &rarr; <code>core/storage/</code>.
       </div>
     </div>
 
   </div>
 </section>
 
-<!-- ═══════════════ SUSPECT ═══════════════ -->
+<!-- ═══════════════ NARROW / MISPLACED ═══════════════ -->
 <section>
-  <h2><span class="icon" style="background:var(--orange-dim);color:var(--orange)">?</span> Suspect / Barely Used</h2>
+  <h2><span class="icon" style="background:var(--orange-dim);color:var(--orange)">?</span> Narrow / Misplaced</h2>
   <div class="folder-list">
-
-    <div class="folder-card suspect">
-      <div class="folder-head">
-        <span class="folder-name">indexer/</span>
-        <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">6 KB</span><span class="m">CLI only</span>
-          <span class="badge badge-suspect">Suspect</span>
-        </div>
-      </div>
-      <div class="folder-desc">
-        Single file <code>rebuildIndex.js</code> — rebuilds the category index from SQLite. Only wired through the CLI <code>rebuild-index</code> command. No tests, no other consumers. Likely vestigial from before the DB became the primary index source.
-      </div>
-    </div>
-
-    <div class="folder-card suspect">
-      <div class="folder-head">
-        <span class="folder-name">fetcher/</span>
-        <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">15 KB</span><span class="m">indirect refs only</span>
-          <span class="badge badge-suspect">Suspect</span>
-        </div>
-      </div>
-      <div class="folder-desc">
-        Contains <code>stealthProfile.js</code> — browser stealth configuration for web crawling. Referenced indirectly through settings registry and crawl adapters, but the crawl plugins import it from the <code>features/crawl</code> layer, not directly. May be duplicated or superseded.
-      </div>
-    </div>
-
-    <div class="folder-card suspect">
-      <div class="folder-head">
-        <span class="folder-name">research/</span>
-        <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">12 KB</span><span class="m">1 external import</span>
-          <span class="badge badge-suspect">Suspect</span>
-        </div>
-      </div>
-      <div class="folder-desc">
-        Just <code>urlNormalize.js</code> — URL canonicalization utility. Imported by exactly one file (<code>features/indexing/.../crawlLedgerAdapter.js</code>). An entire top-level folder for a single utility function is overkill — this should live in <code>shared/</code>.
-      </div>
-    </div>
 
     <div class="folder-card suspect">
       <div class="folder-head">
         <span class="folder-name">testing/</span>
         <div class="folder-meta">
-          <span class="m">0 prod files</span><span class="m">267 KB</span><span class="m">test infra only</span>
+          <span class="m">4 prod files</span><span class="m">288 KB</span><span class="m">0 external imports</span>
           <span class="badge badge-suspect">Misplaced</span>
         </div>
       </div>
       <div class="folder-desc">
-        Contains <strong>zero production files</strong> — it's entirely test infrastructure: golden file management, test data providers, and a custom test runner pipeline. Not dead, but misleading as a top-level <code>src/</code> folder. Should be under a <code>test-utils/</code> or <code>__test__/</code> directory.
+        Test infrastructure: golden file management (<code>goldenFiles.js</code>), test data providers (<code>testDataProvider.js</code> &mdash; 145 KB), and a custom test runner pipeline. Not dead, but misleading as a top-level <code>src/</code> folder. Should live under <code>test-utils/</code> or similar.
       </div>
     </div>
 
@@ -480,12 +428,12 @@
       <div class="folder-head">
         <span class="folder-name">calibration/</span>
         <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">14 KB</span><span class="m">CLI only</span>
+          <span class="m">1 prod + 1 test</span><span class="m">8 KB</span><span class="m">CLI only</span>
           <span class="badge badge-narrow">CLI-Only</span>
         </div>
       </div>
       <div class="folder-desc">
-        Single file <code>confidenceCalibrator.js</code> — measures how well confidence scores align with actual accuracy. Only reachable via <code>calibrate-confidence</code> CLI command. Not dead, but very narrow scope.
+        Single file <code>confidenceCalibrator.js</code> &mdash; measures how well confidence scores align with actual accuracy. Only reachable via <code>calibrate-confidence</code> CLI command. Not dead, but very narrow scope.
       </div>
     </div>
 
@@ -493,12 +441,12 @@
       <div class="folder-head">
         <span class="folder-name">runner/</span>
         <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">8 KB</span><span class="m">CLI + pipeline</span>
+          <span class="m">1 prod file</span><span class="m">5 KB</span><span class="m">CLI + pipeline</span>
           <span class="badge badge-narrow">Narrow</span>
         </div>
       </div>
       <div class="folder-desc">
-        Single file <code>runUntilComplete.js</code> — repeatedly runs the product pipeline until convergence. Used by the <code>run-until-complete</code> CLI command and pipeline commands. Legitimate but very thin — could be merged into <code>pipeline/</code>.
+        Single file <code>runUntilComplete.js</code> &mdash; repeatedly runs the product pipeline until convergence. Used by the <code>run-until-complete</code> CLI command and benchmark scripts. Legitimate but very thin &mdash; could be merged into <code>pipeline/</code>.
       </div>
     </div>
 
@@ -506,7 +454,7 @@
       <div class="folder-head">
         <span class="folder-name">benchmark/</span>
         <div class="folder-meta">
-          <span class="m">5 files</span><span class="m">62 KB</span><span class="m">CLI only</span>
+          <span class="m">5 prod + 5 tests</span><span class="m">80 KB</span><span class="m">CLI only</span>
           <span class="badge badge-narrow">CLI-Only</span>
         </div>
       </div>
@@ -519,12 +467,12 @@
       <div class="folder-head">
         <span class="folder-name">runtime/</span>
         <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">17 KB</span><span class="m">140 refs (but misleading)</span>
+          <span class="m">1 prod + 1 test</span><span class="m">20 KB</span><span class="m">self-contained</span>
           <span class="badge badge-narrow">Narrow</span>
         </div>
       </div>
       <div class="folder-desc">
-        Just <code>fleetMonitor.js</code>. The 140 "external imports" count is inflated — most references are to the <em>word</em> "runtime" in other folder names and imports. The actual <code>runtime/</code> folder has narrow scope: fleet monitoring for worker pools.
+        Just <code>fleetMonitor.js</code> &mdash; fleet monitoring for worker pools. Self-contained with no external imports. Narrow scope.
       </div>
     </div>
 
@@ -532,7 +480,7 @@
       <div class="folder-head">
         <span class="folder-name">observability/</span>
         <div class="folder-meta">
-          <span class="m">2 files</span><span class="m">21 KB</span><span class="m">9 imports</span>
+          <span class="m">2 prod + 2 tests</span><span class="m">21 KB</span><span class="m">self-contained</span>
           <span class="badge badge-narrow">Narrow</span>
         </div>
       </div>
@@ -558,24 +506,24 @@
         </div>
       </div>
       <div class="folder-desc">
-        <strong>This is your app.</strong> The largest folder by far — 55% of all production code. Houses the domain-specific feature modules for the spec harvesting pipeline.
+        <strong>This is your app.</strong> The largest folder by far &mdash; houses the domain-specific feature modules for the spec harvesting pipeline. The learning/evidence subsystem within <code>indexing/</code> was removed in recent refactoring.
       </div>
       <div class="features-sub">
-        <div class="sub-title">Sub-features breakdown:</div>
+        <div class="sub-title">Sub-features breakdown (13 active):</div>
         <div class="sub-grid">
-          <div class="sub-item"><span class="sname">indexing/</span> <span class="sdesc">3.3 MB · 181 files · Web search, crawling orchestration, LLM extraction pipeline — the heart of spec harvesting</span></div>
-          <div class="sub-item"><span class="sname">review/</span> <span class="sdesc">922 KB · 33 files · Human review UI data layer — grid views, candidate scoring, override management</span></div>
-          <div class="sub-item"><span class="sname">catalog/</span> <span class="sdesc">294 KB · 23 files · Product catalog management, CRUD operations, discovery</span></div>
-          <div class="sub-item"><span class="sname">crawl/</span> <span class="sdesc">317 KB · 17 files · Browser-based crawling: stealth, plugin system, adapters, session management</span></div>
-          <div class="sub-item"><span class="sname">extraction/</span> <span class="sdesc">158 KB · 10 files · LLM-based data extraction from crawled pages, screenshot plugin</span></div>
-          <div class="sub-item"><span class="sname">studio/</span> <span class="sdesc">131 KB · 6 files · "EG" (extraction guidance) presets and studio API routes</span></div>
-          <div class="sub-item"><span class="sname">settings-authority/</span> <span class="sdesc">99 KB · 12 files · Settings schema validation and authority layer</span></div>
-          <div class="sub-item"><span class="sname">color-edition/</span> <span class="sdesc">75 KB · 7 files · Color variant extraction via LLM</span></div>
-          <div class="sub-item"><span class="sname">settings/</span> <span class="sdesc">67 KB · 9 files · User-facing settings management and API</span></div>
-          <div class="sub-item"><span class="sname">color-registry/</span> <span class="sdesc">36 KB · 4 files · Global color name registry and API</span></div>
-          <div class="sub-item"><span class="sname">expansion-hardening/</span> <span class="sdesc">28 KB · 2 files · Chaos testing / hardening harness for pipeline expansion</span></div>
-          <div class="sub-item"><span class="sname">category-authority/</span> <span class="sdesc">26 KB · 3 files · Category definition authority and API</span></div>
-          <div class="sub-item"><span class="sname">review-curation/</span> <span class="sdesc">6 KB · 1 file · Re-exports review layout/curation functions (thin facade)</span></div>
+          <div class="sub-item"><span class="sname">indexing/</span> <span class="sdesc">4.0 MB &middot; 45 files &middot; Web search, crawling orchestration, LLM extraction pipeline &mdash; the heart of spec harvesting. Learning subsystem removed.</span></div>
+          <div class="sub-item"><span class="sname">review/</span> <span class="sdesc">1.4 MB &middot; 40 files &middot; Human review UI data layer &mdash; grid views, candidate scoring, override management</span></div>
+          <div class="sub-item"><span class="sname">crawl/</span> <span class="sdesc">402 KB &middot; 45 files &middot; Browser-based crawling: stealth, plugin system, adapters, session management. Well-tested.</span></div>
+          <div class="sub-item"><span class="sname">catalog/</span> <span class="sdesc">342 KB &middot; 25 files &middot; Product catalog management, CRUD operations, discovery</span></div>
+          <div class="sub-item"><span class="sname">extraction/</span> <span class="sdesc">156 KB &middot; 4 files &middot; LLM-based data extraction from crawled pages, screenshot plugin</span></div>
+          <div class="sub-item"><span class="sname">settings-authority/</span> <span class="sdesc">153 KB &middot; 27 files &middot; Settings schema validation and authority layer. Well-tested (12 tests).</span></div>
+          <div class="sub-item"><span class="sname">studio/</span> <span class="sdesc">148 KB &middot; 7 files &middot; "EG" (extraction guidance) presets and studio API routes</span></div>
+          <div class="sub-item"><span class="sname">settings/</span> <span class="sdesc">105 KB &middot; 10 files &middot; User-facing settings management and API</span></div>
+          <div class="sub-item"><span class="sname">color-edition/</span> <span class="sdesc">97 KB &middot; 12 files &middot; Color variant extraction via LLM</span></div>
+          <div class="sub-item"><span class="sname">color-registry/</span> <span class="sdesc">38 KB &middot; 7 files &middot; Global color name registry and API</span></div>
+          <div class="sub-item"><span class="sname">expansion-hardening/</span> <span class="sdesc">33 KB &middot; 4 files &middot; Chaos testing / hardening harness for pipeline expansion</span></div>
+          <div class="sub-item"><span class="sname">category-authority/</span> <span class="sdesc">18 KB &middot; 4 files &middot; Category definition authority and API</span></div>
+          <div class="sub-item"><span class="sname">review-curation/</span> <span class="sdesc">5 KB &middot; 2 files &middot; Re-exports review layout/curation functions (thin facade)</span></div>
         </div>
       </div>
     </div>
@@ -610,12 +558,12 @@
       <div class="folder-head">
         <span class="folder-name">cli/</span>
         <div class="folder-meta">
-          <span class="m">5 files</span><span class="m">58 KB</span><span class="m">entry point</span>
+          <span class="m">4 files</span><span class="m">50 KB</span><span class="m">entry point</span>
           <span class="badge badge-active">Entry Point</span>
         </div>
       </div>
       <div class="folder-desc">
-        <strong>The main entry point</strong> (<code>spec.js</code>) — the CLI dispatcher with ~40 subcommands. Also contains args parser, S3 integration, and smoke test runner.
+        <strong>The main entry point</strong> (<code>spec.js</code>) &mdash; the CLI dispatcher with ~40 subcommands. Also contains args parser and smoke test runner. S3 integration removed.
       </div>
     </div>
 
@@ -735,12 +683,12 @@
       <div class="folder-head">
         <span class="folder-name">shared/</span>
         <div class="folder-meta">
-          <span class="m">15 files</span><span class="m">260 KB</span><span class="m">179 imports</span>
+          <span class="m">19 prod + 22 tests</span><span class="m">371 KB</span><span class="m">179+ imports</span>
           <span class="badge badge-core">Most Imported</span>
         </div>
       </div>
       <div class="folder-desc">
-        <strong>The #1 most imported folder.</strong> Settings registry (63 KB alone!), content hashing, host parsing, file helpers, value normalizers, serialization, primitives. The foundational utility layer everything depends on.
+        <strong>The #1 most imported folder.</strong> Settings registry (63 KB alone!), content hashing, host parsing, file helpers, value normalizers, serialization, primitives, and <code>urlNormalize.js</code> (relocated from deleted <code>research/</code>). The foundational utility layer everything depends on.
       </div>
     </div>
 
@@ -748,12 +696,12 @@
       <div class="folder-head">
         <span class="folder-name">core/</span>
         <div class="folder-meta">
-          <span class="m">34 files</span><span class="m">418 KB</span><span class="m">71 imports</span>
+          <span class="m">30 files</span><span class="m">588 KB</span><span class="m">71+ imports</span>
           <span class="badge badge-core">Core</span>
         </div>
       </div>
       <div class="folder-desc">
-        Three pillars: <strong>config/</strong> (runtime config assembly, settings resolution, environment loading), <strong>events/</strong> (event system, data change contracts), <strong>llm/</strong> (LLM client abstraction, prompt management, model routing).
+        Four pillars: <strong>config/</strong> (runtime config assembly, settings resolution, environment loading), <strong>events/</strong> (event system, data change contracts), <strong>llm/</strong> (LLM client abstraction, prompt management, model routing), <strong>storage/</strong> (local filesystem storage adapter &mdash; relocated from <code>s3/</code>, S3 backend removed).
       </div>
     </div>
 
@@ -761,25 +709,12 @@
       <div class="folder-head">
         <span class="folder-name">db/</span>
         <div class="folder-meta">
-          <span class="m">31 files</span><span class="m">711 KB</span><span class="m">51 imports</span>
+          <span class="m">33 prod + 30 tests</span><span class="m">874 KB</span><span class="m">51 imports</span>
           <span class="badge badge-core">Core</span>
         </div>
       </div>
       <div class="folder-desc">
-        SQLite database layer (better-sqlite3): specDb (main product data), appDb (app state), schemas, migrations, seed data, and domain-specific stores. The persistence backbone — second largest folder by byte size.
-      </div>
-    </div>
-
-    <div class="folder-card core">
-      <div class="folder-head">
-        <span class="folder-name">s3/</span>
-        <div class="folder-meta">
-          <span class="m">1 file</span><span class="m">20 KB</span><span class="m">16 imports</span>
-          <span class="badge badge-core">Core</span>
-        </div>
-      </div>
-      <div class="folder-desc">
-        S3 storage abstraction — the I/O layer for reading/writing product specs, configs, and outputs. Small but critical.
+        SQLite database layer (better-sqlite3): specDb (main product data), appDb (app state), schemas, migrations, seed data, and domain-specific stores. Seed system recently refactored into <code>seedEngine.js</code> + <code>seedRegistry.js</code> (O(1) registry-driven pattern). The persistence backbone.
       </div>
     </div>
 
@@ -859,7 +794,7 @@
 </section>
 
 <footer>
-  Generated from CdubVentures/Spec-Factory @ main · Import-traced analysis · April 2026
+  Updated 2026-04-03 &middot; Import-traced analysis &middot; CdubVentures/Spec-Factory @ main
 </footer>
 
 </div>

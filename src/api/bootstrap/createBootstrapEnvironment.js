@@ -3,7 +3,7 @@ import path from 'node:path';
 import { loadConfig, loadDotEnvFile } from '../../config.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../../core/config/manifest.js';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
-import { createStorage } from '../../s3/storage.js';
+import { createStorage } from '../../core/storage/storage.js';
 import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
 import { cleanVariant as canonicalCleanVariant } from '../../features/catalog/index.js';
 import {

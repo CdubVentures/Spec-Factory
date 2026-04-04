@@ -8,7 +8,7 @@ async function createStoreHarness() {
     { prefix: 'store-hydration-race-' },
   );
   const store = mod.useRuntimeSettingsValueStore;
-  store.setState({ values: null, hydrated: false, dirty: false });
+  store.setState({ values: null, hydrated: false, dirty: false, flushPending: false });
   return store;
 }
 
@@ -94,4 +94,52 @@ test('markClean clears dirty without changing stored values', async () => {
   const state = store.getState();
   assert.equal(state.dirty, false);
   assert.equal(state.values.fetchTimeout, 10000);
+});
+
+// WHY: flushPending lifecycle tests — SET-005 fix.
+// When unmount flush fires (teardownFetch keepalive), dirty clears but
+// flushPending blocks hydrate until the server confirms via WS event.
+
+test('flushPending blocks hydrate like dirty does', async () => {
+  const store = await createStoreHarness();
+
+  store.getState().hydrate({ fetchTimeout: 5000 });
+  store.getState().markFlushPending();
+
+  // Stale server data should be blocked
+  store.getState().hydrate({ fetchTimeout: 1 });
+
+  assert.equal(store.getState().values.fetchTimeout, 5000);
+  assert.equal(store.getState().flushPending, true);
+  assert.equal(store.getState().dirty, false);
+});
+
+test('confirmFlush unblocks hydrate after server confirms', async () => {
+  const store = await createStoreHarness();
+
+  store.getState().hydrate({ fetchTimeout: 5000 });
+  store.getState().markFlushPending();
+  store.getState().confirmFlush();
+
+  // Fresh server data should apply
+  store.getState().hydrate({ fetchTimeout: 9999 });
+
+  assert.equal(store.getState().values.fetchTimeout, 9999);
+  assert.equal(store.getState().flushPending, false);
+});
+
+test('markClean clears both dirty and flushPending', async () => {
+  const store = await createStoreHarness();
+
+  store.getState().hydrate({ fetchTimeout: 5000 });
+  store.getState().updateKeys({ fetchTimeout: 10000 });
+  store.getState().markFlushPending();
+
+  assert.equal(store.getState().dirty, false);
+  assert.equal(store.getState().flushPending, true);
+
+  store.getState().markClean();
+
+  assert.equal(store.getState().dirty, false);
+  assert.equal(store.getState().flushPending, false);
 });

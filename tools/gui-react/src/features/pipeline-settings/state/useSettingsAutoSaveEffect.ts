@@ -27,6 +27,11 @@ export interface UseSettingsAutoSaveOptions {
   getUnloadBody: () => unknown;
   unloadUrl: string;
   unloadMethod?: 'PUT' | 'POST';
+  /** Called synchronously when unmount flush fires, before teardownFetch.
+   * WHY: Signals that edits are in transit (keepalive fetch) but not yet
+   * confirmed by the server. The store should block hydrate() until the
+   * server confirms via WebSocket event. */
+  onFlushPending?: () => void;
 }
 
 export interface UseSettingsAutoSaveResult {
@@ -48,6 +53,7 @@ export function useSettingsAutoSaveEffect({
   getUnloadBody,
   unloadUrl,
   unloadMethod = 'PUT',
+  onFlushPending,
 }: UseSettingsAutoSaveOptions): UseSettingsAutoSaveResult {
   const lastSavedFingerprintRef = useRef('');
   const lastAttemptFingerprintRef = useRef('');
@@ -61,12 +67,14 @@ export function useSettingsAutoSaveEffect({
   const payloadFingerprintRef = useRef(payloadFingerprint);
   const saveFnRef = useRef(saveFn);
   const getUnloadBodyRef = useRef(getUnloadBody);
+  const onFlushPendingRef = useRef(onFlushPending);
   dirtyRef.current = dirty;
   autoSaveEnabledRef.current = autoSaveEnabled;
   enabledRef.current = enabled;
   payloadFingerprintRef.current = payloadFingerprint;
   saveFnRef.current = saveFn;
   getUnloadBodyRef.current = getUnloadBody;
+  onFlushPendingRef.current = onFlushPending;
 
   // --- Auto-save effect ---
   useEffect(() => {
@@ -134,6 +142,10 @@ export function useSettingsAutoSaveEffect({
       });
       if (!flush) return;
       lastAttemptFingerprintRef.current = payloadFingerprintRef.current;
+      // WHY: Signal that edits are in transit before the fire-and-forget fetch.
+      // The store sets flushPending=true so hydrate() blocks until the server
+      // confirms the write via WebSocket event (SET-005).
+      onFlushPendingRef.current?.();
       teardownFetch({
         url: unloadUrl,
         method: unloadMethod,

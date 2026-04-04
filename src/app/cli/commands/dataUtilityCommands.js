@@ -7,7 +7,6 @@ export function createDataUtilityCommands({
   asBool,
   ingestCsvFile,
   EventLogger,
-  runS3Integration,
   generateTypesForCategory,
 }) {
   async function commandIngestCsv(config, storage, args) {
@@ -56,14 +55,6 @@ export function createDataUtilityCommands({
     } finally {
       db.close();
     }
-  }
-
-  async function commandTestS3() {
-    const output = await runS3Integration(process.argv.slice(3));
-    return {
-      command: 'test-s3',
-      ...output
-    };
   }
 
   async function commandGenerateTypes(config, _storage, args) {
@@ -158,7 +149,6 @@ export function createDataUtilityCommands({
     commandSeedCheckpoint,
     commandMigrateProductIds,
     commandBackfillBrandIdentifiers,
-    commandTestS3,
     commandGenerateTypes,
   };
 }

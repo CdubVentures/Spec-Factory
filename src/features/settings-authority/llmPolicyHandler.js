@@ -1,12 +1,12 @@
 // WHY: Dedicated endpoint for the composite LlmPolicy object.
 // GET returns the assembled policy from live config.
-// PUT receives a composite, disassembles to flat keys, persists, and applies.
+// PUT receives a composite, disassembles to flat keys, persists via queued
+// patch merge, and applies to live config inside the queue's critical section.
 
 import { assembleLlmPolicy, disassembleLlmPolicy, LLM_POLICY_FLAT_KEYS } from '../../core/llm/llmPolicySchema.js';
 import { validateModelKeysAgainstRegistry } from '../../core/llm/llmModelValidation.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 import { emitDataChange } from '../../core/events/dataChangeContract.js';
-import { applyRuntimeSettingsToConfig } from './userSettingsService.js';
 
 export function createLlmPolicyHandler({
   jsonRes,
@@ -41,38 +41,20 @@ export function createLlmPolicyHandler({
         return jsonRes(res, 422, { ok: false, error: 'invalid_model', rejected });
       }
 
-      // WHY: Apply to live config so subsequent reads see the new values.
-      applyRuntimeSettingsToConfig(config, flatKeys);
-
-      // WHY: Merge with existing persisted runtime to avoid wiping non-LLM keys.
-      const userSettingsState = persistenceCtx.getUserSettingsState();
-      const currentUserRuntime = (
-        userSettingsState?.runtime && typeof userSettingsState.runtime === 'object'
-      ) ? userSettingsState.runtime : {};
-
-      const nextRuntimeSnapshot = { ...currentUserRuntime };
+      // WHY: Build patch from only the LLM policy flat keys. The queued
+      // mergeRuntimePatch reads current SQL state inside the lock, merges
+      // this patch on top, validates, and UPSERTs — eliminating the stale-base
+      // and two-writer race conditions (SET-001, SET-002).
+      const flatPatch = {};
       for (const key of LLM_POLICY_FLAT_KEYS) {
         if (key in flatKeys) {
-          nextRuntimeSnapshot[key] = flatKeys[key];
+          flatPatch[key] = flatKeys[key];
         }
-      }
-
-      // WHY: Prevent persisting an empty registry when the live config has a
-      // non-empty one. An empty registry wipes model→provider routing, causing
-      // api_key_present:false and blocking pipeline runs. This can happen when
-      // the persistence context's initial state came from SQL with "[]" while
-      // the config was correctly seeded from defaults during boot.
-      if (
-        nextRuntimeSnapshot.llmProviderRegistryJson === '[]'
-        && typeof config.llmProviderRegistryJson === 'string'
-        && config.llmProviderRegistryJson.length > 2
-      ) {
-        nextRuntimeSnapshot.llmProviderRegistryJson = config.llmProviderRegistryJson;
       }
 
       persistenceCtx.recordRouteWriteAttempt('runtime', 'llm-policy-route');
       try {
-        await persistenceCtx.persistCanonicalSections({ runtime: nextRuntimeSnapshot });
+        await persistenceCtx.mergeRuntimePatch(flatPatch, { emptyRegistryGuard: true });
         persistenceCtx.recordRouteWriteOutcome('runtime', 'llm-policy-route', true);
       } catch {
         persistenceCtx.recordRouteWriteOutcome('runtime', 'llm-policy-route', false, 'llm_policy_persist_failed');

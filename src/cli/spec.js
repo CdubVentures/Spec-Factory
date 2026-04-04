@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { loadConfigWithUserSettings, loadDotEnvFile, validateConfig } from '../config.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
-import { createStorage, toPosixKey } from '../s3/storage.js';
+import { createStorage, toPosixKey } from '../core/storage/storage.js';
 import { parseArgs, asBool } from './args.js';
 import {
   slug,
@@ -77,10 +77,9 @@ function usage() {
     '  billing-report [--month YYYY-MM] [--local]',
     '  explain-unk --category <category> --brand <brand> --model <model> [--variant <variant>] [--product-id <id>] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
-    '  test-s3 [--fixture <path>] [--s3key <key>] [--dry-run]',
     '  benchmark --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
     '  benchmark-golden --category <category> [--fixture <path>] [--max-cases <n>] [--local]',
-    '  rebuild-index --category <category> [--local]',
+
     '  intel-graph-api --category <category> [--host <host>] [--port <port>] [--local]',
     '  product-reconcile --category <category> [--dry-run] [--local]',
     '  seed-db --category <category> [--local]',
@@ -132,7 +131,6 @@ function buildConfig(args) {
   const overrides = {
     localInputRoot: args['local-input-root'] || undefined,
     localOutputRoot: args['local-output-root'] || undefined,
-    outputMode: args['output-mode'] || undefined
   };
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
@@ -222,16 +220,6 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
   });
 });
 
-const loadRebuildIndexCommandHandler = createLazyLoader(async () => {
-  const [{ createRebuildIndexCommand }, { rebuildCategoryIndex }] = await Promise.all([
-    import('../app/cli/commands/rebuildIndexCommand.js'),
-    import('../indexer/rebuildIndex.js'),
-  ]);
-  return createRebuildIndexCommand({
-    rebuildCategoryIndex,
-    openSpecDbForCategory,
-  });
-});
 
 const loadBenchmarkCommandHandler = createLazyLoader(async () => {
   const [{ createBenchmarkCommand }, { runGoldenBenchmark }] = await Promise.all([
@@ -383,20 +371,17 @@ const loadDataUtilityCommands = createLazyLoader(async () => {
     { createDataUtilityCommands },
     { ingestCsvFile },
     { EventLogger },
-    { runS3Integration },
     { generateTypesForCategory },
   ] = await Promise.all([
     import('../app/cli/commands/dataUtilityCommands.js'),
     import('../ingest/csvIngestor.js'),
     import('../logger.js'),
-    import('./s3Integration.js'),
     import('../build/generate-types.js'),
   ]);
   return createDataUtilityCommands({
     asBool,
     ingestCsvFile,
     EventLogger,
-    runS3Integration,
     generateTypesForCategory,
   });
 });
@@ -526,10 +511,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadExplainUnkCommandHandler())(config, storage, args);
     case 'llm-health':
       return (await loadLlmHealthCommandHandler())(config, storage, args);
-    case 'test-s3':
-      return (await loadDataUtilityCommands()).commandTestS3();
-    case 'rebuild-index':
-      return (await loadRebuildIndexCommandHandler())(config, storage, args);
     case 'benchmark':
       return (await loadBenchmarkCommandHandler())(config, storage, args, 'benchmark');
     case 'benchmark-golden':

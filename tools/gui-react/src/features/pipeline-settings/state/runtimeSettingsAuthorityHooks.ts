@@ -182,6 +182,9 @@ export function useRuntimeSettingsAuthority({
       saveFn: () => saveFnRef.current(),
       getUnloadBody,
       unloadUrl: '/api/v1/runtime-settings',
+      onFlushPending: () => {
+        useRuntimeSettingsValueStore.getState().markFlushPending();
+      },
     });
 
   const recordPersistSuccess = (nextPayload: RuntimeSettings) => {

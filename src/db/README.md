@@ -26,6 +26,8 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 - `specDbIntegrity.js` → `cleanupLegacyIdentityFallbackRows`, `assertStrictIdentitySlotIntegrity`
 - `specDbStatements.js` → `prepareStatements(db)` — compiled SQL
 - `seed.js` → `seedSpecDb({ db, config, category, fieldRules, logger })`, `reEvaluateEnumPolicy`
+- `seedRegistry.js` → `GLOBAL_SURFACES`, `buildCategorySurfaces(steps)`, `buildReseedSurfaces(deps)`, `topologicalSort(surfaces)`, `getSurfaceByKey(surfaces, key)` — central manifest of all seed surfaces (global metadata + category/reseed factories via DI)
+- `seedEngine.js` → `runCategorySeed({ db, config, category, fieldRules, fieldMeta, logger, surfaces })` — generic orchestration loop for category surfaces (iterates in dependency order, hard-fail semantics)
 
 ## Dependencies (Allowed Imports)
 

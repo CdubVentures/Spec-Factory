@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { loadDotEnvFile, loadConfig } from '../src/config.js';
-import { createStorage } from '../src/s3/storage.js';
+import { createStorage } from '../src/core/storage/storage.js';
 import { runUntilComplete } from '../src/runner/runUntilComplete.js';
 
 function parseArgs(argv = []) {

@@ -1,6 +1,7 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
 import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteMatrixReseed.js';
+import { buildReseedSurfaces } from '../../db/seedRegistry.js';
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
@@ -41,34 +42,26 @@ export function createSpecDbRuntime({
   const specDbSeedPromises = new Map();
   const reviewLayoutByCategory = new Map();
 
-  // WHY: O(1) Feature Scaling — adding a new reseed phase = one entry here.
-  // Each phase fires independently after auto-seed and on partial rebuild
-  // (isSeeded = true). The generic engine below handles dedup, logging, and
-  // error isolation so phases never need to be wired individually.
-  const reseedPhases = [
-    {
-      name: 'checkpoint',
-      shouldRun: () => Boolean(indexLabRoot),
-      trigger: (_category, db) => scanAndSeedCheckpoints({ specDb: db, indexLabRoot, productRoot }),
-      formatLog: (category, result) =>
-        result.runs_seeded > 0 ? `${category}: ${result.runs_seeded} runs re-seeded from checkpoints` : '',
-    },
-    {
-      name: 'color-edition',
-      trigger: (_category, db) => rebuildColorEditionFinderFromJson({ specDb: db, productRoot }),
-      formatLog: (category, result) =>
-        result.seeded > 0 ? `${category}: ${result.seeded} color-edition rows re-seeded from product files` : '',
-    },
-    {
-      name: 'llm-route-matrix',
-      trigger: (_category, db) => rebuildLlmRouteMatrixFromJson({
-        specDb: db,
-        helperRoot: config.categoryAuthorityRoot || 'category_authority',
-      }),
-      formatLog: (category, result) =>
-        result.reseeded > 0 ? `${category}: ${result.reseeded} LLM route matrix rows re-seeded from file` : '',
-    },
-  ];
+  // WHY: Reseed phases are defined in seedRegistry.js for O(1) discoverability.
+  // The factory receives feature-module functions via DI (src/db/ can't import
+  // from src/features/ or src/pipeline/ directly). triggerReseedPhases below
+  // handles dedup, logging, and error isolation.
+  const reseedSurfaces = buildReseedSurfaces({
+    scanAndSeedCheckpoints,
+    rebuildColorEditionFinderFromJson,
+    rebuildLlmRouteMatrixFromJson,
+  });
+  const reseedPhases = reseedSurfaces.map(surface => ({
+    name: surface.key,
+    shouldRun: surface.shouldRun
+      ? () => surface.shouldRun({ indexLabRoot })
+      : undefined,
+    trigger: (_category, db) => surface.execute({
+      db, indexLabRoot, productRoot,
+      helperRoot: config.categoryAuthorityRoot || 'category_authority',
+    }),
+    formatLog: surface.formatLog,
+  }));
 
   // WHY: Single Map keyed by `${category}:${phaseName}` replaces per-phase Maps.
   const reseedPromises = new Map();
