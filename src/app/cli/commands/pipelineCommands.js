@@ -3,7 +3,7 @@ import pathNode from 'node:path';
 import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { buildProductId } from '../../../shared/primitives.js';
-import { loadProductCatalog, findProductByIdentity } from '../../../features/catalog/products/productCatalog.js';
+import { SpecDb as SpecDbForLookup } from '../../../db/specDb.js';
 import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlCheckpoint.js';
 import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
 import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
@@ -95,11 +95,19 @@ export function createPipelineCommands({
       const title = String(args.title || (!seedIsUrl ? seed : '')).trim();
       // WHY: Reuse existing product_id when brand+model match — prevents duplicate
       // random hex IDs for the same product across runs.
+      // WHY: Reuse existing product_id from SQL when brand+model match.
       let generatedProductId = productIdArg;
       if (!generatedProductId) {
         try {
-          const catalog = await loadProductCatalog(config, category);
-          generatedProductId = findProductByIdentity(catalog, brand, model, variant) || buildProductId(category);
+          const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
+          const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
+          const allRows = lookupDb.getAllProducts?.() || [];
+          const match = allRows.find((r) =>
+            String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
+            String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
+            String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
+          );
+          generatedProductId = match?.product_id || buildProductId(category);
         } catch { generatedProductId = buildProductId(category); }
       }
       const job = {
@@ -107,6 +115,7 @@ export function createPipelineCommands({
         category,
         identityLock: {
           brand,
+          base_model: model,
           model,
           variant,
           brand_identifier: '',
@@ -153,6 +162,7 @@ export function createPipelineCommands({
         category,
         identityLock: {
           brand: cliBrand,
+          base_model: cliModel,
           model: cliModel,
           variant: String(args.variant || '').trim(),
           brand_identifier: '',
@@ -368,13 +378,21 @@ export function createPipelineCommands({
     let productId = String(args['product-id'] || '').trim();
     if (!productId) {
       try {
-        const catalog = await loadProductCatalog(config, category);
-        productId = findProductByIdentity(catalog, brand, model, variant) || buildProductId(category);
+        const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
+        const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
+        const allRows = lookupDb.getAllProducts?.() || [];
+        const match = allRows.find((r) =>
+          String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
+          String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
+          String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
+        );
+        productId = match?.product_id || buildProductId(category);
       } catch { productId = buildProductId(category); }
     }
 
     const identityLock = {
       brand,
+      base_model: model,
       model,
       variant,
       sku: String(args.sku || '').trim(),

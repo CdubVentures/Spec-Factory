@@ -1,7 +1,5 @@
-// WHY: Unified storage adapter for queue product CRUD.
-// Eliminates the dual-path `if (specDb)` pattern in queueState.js.
-// Factory returns either a SQLite adapter (wrapping SpecDb) or a JSON
-// adapter (wrapping storage read/write). Both return normalized JS rows.
+// WHY: Queue storage adapter — SQL-only (product_queue table via SpecDb).
+// JSON adapter removed — SQL is the sole SSOT for queue state.
 
 import { nowIso, toArray } from '../shared/primitives.js';
 import { toInt } from '../shared/valueNormalizers.js';
@@ -10,7 +8,7 @@ function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
 }
 
-function normalizeProductRow(productId, current = {}) {
+export function normalizeProductRow(productId, current = {}) {
   return {
     productId,
     s3key: current.s3key || '',
@@ -80,67 +78,6 @@ function jsRowToSqliteUpsert(productId, row) {
   };
 }
 
-// ── JSON state helpers ──────────────────────────────────────────────
-
-function modernQueueStateKey(category) {
-  return `_queue/${String(category || '').trim()}/state.json`;
-}
-
-function legacyQueueStateKey(storage, category) {
-  return storage.resolveOutputKey('_queue', category, 'state.json');
-}
-
-async function readQueueJsonSafe(storage, key) {
-  if (typeof storage.readTextOrNull === 'function') {
-    const text = await storage.readTextOrNull(key);
-    if (text == null) return { data: null, corrupt: false };
-    try {
-      return { data: JSON.parse(text), corrupt: false };
-    } catch (error) {
-      if (error instanceof SyntaxError) return { data: null, corrupt: true };
-      throw error;
-    }
-  }
-  try {
-    return { data: await storage.readJsonOrNull(key), corrupt: false };
-  } catch (error) {
-    if (error instanceof SyntaxError) return { data: null, corrupt: true };
-    throw error;
-  }
-}
-
-async function loadJsonState(storage, category) {
-  const key = modernQueueStateKey(category);
-  const legacyKey = legacyQueueStateKey(storage, category);
-  const modern = await readQueueJsonSafe(storage, key);
-  const legacy = await readQueueJsonSafe(storage, legacyKey);
-  const existing = modern.data || legacy.data;
-  const products = {};
-  for (const [productId, row] of Object.entries(existing?.products || {})) {
-    products[productId] = normalizeProductRow(productId, row);
-  }
-  return {
-    products,
-    corrupt: Boolean((modern.corrupt || legacy.corrupt) && !existing),
-  };
-}
-
-async function saveJsonState(storage, category, products) {
-  const state = {
-    category,
-    updated_at: nowIso(),
-    products: {},
-  };
-  for (const [productId, row] of Object.entries(products)) {
-    state.products[productId] = normalizeProductRow(productId, row);
-  }
-  const key = modernQueueStateKey(category);
-  const legacyKey = legacyQueueStateKey(storage, category);
-  const payload = Buffer.from(JSON.stringify(state, null, 2), 'utf8');
-  await storage.writeObject(key, payload, { contentType: 'application/json' });
-  await storage.writeObject(legacyKey, payload, { contentType: 'application/json' });
-}
-
 // ── SQLite adapter ──────────────────────────────────────────────────
 
 function createSqliteAdapter(specDb) {
@@ -191,113 +128,15 @@ function createSqliteAdapter(specDb) {
       tx();
     },
 
-    // WHY: JSON adapter tracks corrupt recovery; SQLite never has this.
     recoveredFromCorrupt: false,
-  };
-}
-
-// ── JSON adapter ────────────────────────────────────────────────────
-
-function createJsonAdapter(storage, category) {
-  let cachedState = null;
-  let recoveredFromCorrupt = false;
-
-  async function ensureLoaded() {
-    if (!cachedState) {
-      const loaded = await loadJsonState(storage, category);
-      cachedState = loaded.products;
-      recoveredFromCorrupt = loaded.corrupt;
-    }
-    return cachedState;
-  }
-
-  async function flush() {
-    if (cachedState) {
-      await saveJsonState(storage, category, cachedState);
-    }
-  }
-
-  return {
-    async get(productId) {
-      const products = await ensureLoaded();
-      const row = products[productId];
-      return row ? normalizeProductRow(productId, row) : null;
-    },
-
-    async getAll(statusFilter) {
-      const products = await ensureLoaded();
-      const rows = Object.entries(products).map(([id, row]) => normalizeProductRow(id, row));
-      if (!statusFilter) return rows;
-      const wanted = String(statusFilter).trim().toLowerCase();
-      return rows.filter((r) => String(r.status || '').trim().toLowerCase() === wanted);
-    },
-
-    async selectNext() {
-      const products = await ensureLoaded();
-      const rows = Object.entries(products).map(([id, row]) => normalizeProductRow(id, row));
-      // WHY: Return all eligible rows — scoring happens in queueState.js
-      const eligible = rows.filter((r) =>
-        !['complete', 'blocked', 'paused', 'skipped', 'in_progress', 'needs_manual', 'exhausted', 'failed'].includes(r.status)
-      );
-      if (!eligible.length) return null;
-      eligible.sort((a, b) => (a.priority ?? 3) - (b.priority ?? 3));
-      return eligible[0];
-    },
-
-    async save(productId, row) {
-      const products = await ensureLoaded();
-      products[productId] = normalizeProductRow(productId, row);
-      await flush();
-    },
-
-    async patch(productId, patchData) {
-      const products = await ensureLoaded();
-      const existing = products[productId];
-      if (!existing) return null;
-      const merged = normalizeProductRow(productId, { ...existing, ...patchData });
-      products[productId] = merged;
-      await flush();
-      return merged;
-    },
-
-    async delete(productId) {
-      const products = await ensureLoaded();
-      const existed = Boolean(products[productId]);
-      delete products[productId];
-      if (existed) await flush();
-      return { changes: existed ? 1 : 0 };
-    },
-
-    async clearByStatus(status) {
-      const products = await ensureLoaded();
-      const wanted = String(status).trim().toLowerCase();
-      const removed = [];
-      for (const [id, row] of Object.entries(products)) {
-        if (String(row.status || '').trim().toLowerCase() === wanted) {
-          removed.push(id);
-          delete products[id];
-        }
-      }
-      if (removed.length > 0) await flush();
-      return { removed_count: removed.length, removed_product_ids: removed };
-    },
-
-    async saveBatch(productsMap) {
-      const products = await ensureLoaded();
-      for (const [productId, row] of Object.entries(productsMap)) {
-        products[productId] = normalizeProductRow(productId, row);
-      }
-      await flush();
-    },
-
-    get recoveredFromCorrupt() { return recoveredFromCorrupt; },
   };
 }
 
 // ── Factory ─────────────────────────────────────────────────────────
 
 export function createQueueAdapter({ storage, category, specDb = null }) {
-  return specDb
-    ? createSqliteAdapter(specDb)
-    : createJsonAdapter(storage, category);
+  if (!specDb) {
+    throw new TypeError(`createQueueAdapter requires specDb for category "${category}" — JSON fallback has been removed`);
+  }
+  return createSqliteAdapter(specDb);
 }

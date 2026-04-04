@@ -166,7 +166,7 @@ export function buildRawConfig({ manifestApplicator }) {
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
 
     // --- OpenAI aliases (computed from LLM chain) ---
-    openaiApiKey: '',
+    openaiApiKey: process.env.OPENAI_API_KEY || '',
     openaiBaseUrl: resolvedBaseUrl,
     openaiModelExtract: explicitLlmModelExtract || defaultModel,
     openaiModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,

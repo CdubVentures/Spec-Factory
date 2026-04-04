@@ -66,7 +66,7 @@ export function createBootstrapSessionLayer({
   // appDb existed. Now that SQL is open, rehydrate config from the authoritative store
   // so any settings that were saved to SQL but not mirrored to JSON are restored.
   const persistedSettings = loadUserSettingsSync({ appDb });
-  applyRuntimeSettingsToConfig(config, persistedSettings.runtime);
+  applyRuntimeSettingsToConfig(config, persistedSettings.runtime, { mode: 'bootstrap' });
 
   const colorRegistryPath = path.resolve(HELPER_ROOT, '_global', 'color_registry.json');
   seedColorRegistry(appDb, colorRegistryPath);

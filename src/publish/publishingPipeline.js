@@ -266,10 +266,11 @@ async function publishSingleProduct({ storage, config, category, productId, spec
   const identity = isObject(latest.normalized.identity) ? latest.normalized.identity : {};
   const identityRecord = {
     brand: String(identity.brand || '').trim(),
+    base_model: String(identity.base_model || '').trim(),
     model: String(identity.model || '').trim(),
     variant: String(identity.variant || '').trim(),
-    full_name: String(`${identity.brand || ''} ${identity.model || ''} ${identity.variant || ''}`).replace(/\s+/g, ' ').trim(),
-    slug: slug(`${identity.brand || ''}-${identity.model || ''}-${identity.variant || ''}`)
+    full_name: String(`${identity.brand || ''} ${identity.base_model || identity.model || ''} ${identity.variant || ''}`).replace(/\s+/g, ' ').trim(),
+    slug: slug(`${identity.brand || ''}-${identity.base_model || identity.model || ''}-${identity.variant || ''}`)
   };
 
   const coverage = coverageFromSpecs(specs, stableSpecFieldOrder(specs));

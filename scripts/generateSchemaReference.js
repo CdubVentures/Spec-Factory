@@ -14,11 +14,14 @@ const root = path.resolve(__dirname, '..');
 const specSchema = fs.readFileSync(path.join(root, 'src/db/specDbSchema.js'), 'utf8');
 const appSchema = fs.readFileSync(path.join(root, 'src/db/appDbSchema.js'), 'utf8');
 const migrationsSrc = fs.readFileSync(path.join(root, 'src/db/specDbMigrations.js'), 'utf8');
+const learningSrc = fs.readFileSync(path.join(root, 'src/features/indexing/learning/learningStores.js'), 'utf8');
 
 // ── Parse CREATE TABLE blocks ──
 function parseTables(ddl) {
   const tables = [];
-  const re = /CREATE\s+(VIRTUAL\s+)?TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)\s*(?:USING\s+(\w+)\s*)?\(([^;]+?)\);/gis;
+  // Match CREATE TABLE ending with ); or ) at end of template literal / string
+  // Greedy body match ensures we capture through nested parens (datetime('now'))
+  const re = /CREATE\s+(VIRTUAL\s+)?TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)\s*(?:USING\s+(\w+)\s*)?\(([^;`]+)\)\s*[;`]/gis;
   let m;
   while ((m = re.exec(ddl)) !== null) {
     const isVirtual = !!m[1];
@@ -46,8 +49,15 @@ function parseTables(ddl) {
         if (uMatch) uniques.push(uMatch[1].trim());
         continue;
       }
-      // CHECK constraint (standalone)
-      if (/^CHECK\s*\(/i.test(trimmed)) continue;
+      // CHECK constraint (standalone continuation line) — append to previous column
+      if (/^CHECK\s*\(/i.test(trimmed)) {
+        if (columns.length > 0) {
+          // Extract full CHECK(...) including nested parens
+          const checkMatch = trimmed.match(/CHECK\s*(\(.*\))/i);
+          if (checkMatch) columns[columns.length - 1].constraints += ` CHECK${checkMatch[1]}`;
+        }
+        continue;
+      }
 
       // Virtual table columns (FTS5)
       if (isVirtual) {
@@ -107,15 +117,23 @@ function parseIndexes(ddl) {
 // ── Parse migration columns ──
 function parseMigrationColumns(src) {
   const adds = {};
-  const re = /ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(TEXT|INTEGER|REAL)([^`']*)/gi;
+  // Capture everything after the type until the closing backtick
+  const re = /ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(TEXT|INTEGER|REAL)\s*([^`]*)/gi;
   let m;
   while ((m = re.exec(src)) !== null) {
     const table = m[1];
     const col = m[2];
     const type = m[3].toUpperCase();
-    const rest = m[4].trim().replace(/['"`]/g, '');
+    let rest = m[4].trim();
+    // Strip REFERENCES for FK display (handled separately)
+    const fkMatch = rest.match(/REFERENCES\s+(\w+)\s*\((\w+)\)/i);
+    let fk = null;
+    if (fkMatch) {
+      fk = `${fkMatch[1]}(${fkMatch[2]})`;
+      rest = rest.replace(/REFERENCES\s+\w+\s*\(\w+\)(\s+ON\s+DELETE\s+CASCADE)?/i, '').trim();
+    }
     if (!adds[table]) adds[table] = [];
-    adds[table].push({ name: col, type, constraints: rest || '', isPk: false, fk: null, fromMigration: true });
+    adds[table].push({ name: col, type, constraints: rest || '', isPk: false, fk, fromMigration: true });
   }
   return adds;
 }
@@ -127,16 +145,18 @@ const storeMap = {
   enum_lists: 'enumListStore', list_values: 'enumListStore',
   item_field_state: 'itemStateStore', item_component_links: 'itemStateStore', item_list_links: 'itemStateStore', product_review_state: 'itemStateStore',
   key_review_state: 'keyReviewStore', key_review_runs: 'keyReviewStore', key_review_run_sources: 'keyReviewStore', key_review_audit: 'keyReviewStore',
-  product_queue: 'queueProductStore', products: 'queueProductStore', product_runs: 'queueProductStore', audit_log: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
+  product_queue: 'queueProductStore', products: 'queueProductStore', product_runs: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
   llm_route_matrix: 'llmRouteSourceStore', source_registry: 'llmRouteSourceStore',
-  llm_cache: 'sourceIntelStore', learning_profiles: 'sourceIntelStore', category_brain: 'sourceIntelStore', source_corpus: 'sourceIntelStore', runtime_events: 'sourceIntelStore', bridge_events: 'sourceIntelStore', source_intel_domains: 'sourceIntelStore', source_intel_field_rewards: 'sourceIntelStore',
-  crawl_sources: 'artifactStore', source_screenshots: 'artifactStore', source_pdfs: 'artifactStore', source_videos: 'artifactStore',
+  llm_cache: 'sourceIntelStore', source_corpus: 'sourceIntelStore', bridge_events: 'sourceIntelStore', source_intel_domains: 'sourceIntelStore',
+  crawl_sources: 'artifactStore', source_screenshots: 'artifactStore', source_videos: 'artifactStore',
   runs: 'runMetaStore', run_artifacts: 'runArtifactStore',
   billing_entries: 'billingStore', field_history: 'fieldHistoryStore', field_studio_map: 'fieldStudioMapStore',
   knob_snapshots: 'telemetryIndexStore', query_index: 'telemetryIndexStore', url_index: 'telemetryIndexStore', prompt_index: 'telemetryIndexStore',
   brand_domains: 'specDb (direct)', data_authority_sync: 'specDb (direct)',
-  brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb',
+  field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore',
+  brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
+  component_lexicon: 'learningStores', field_anchors: 'learningStores', url_memory: 'learningStores', domain_field_yield: 'learningStores',
 };
 
 // ── Domain groups ──
@@ -145,37 +165,51 @@ const specDbGroups = [
   { label: 'Component Identity', tables: ['component_identity', 'component_aliases', 'component_values'] },
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
   { label: 'Item State', tables: ['item_field_state', 'item_component_links', 'item_list_links', 'product_review_state'] },
-  { label: 'Catalog & Queue', tables: ['products', 'product_queue', 'product_runs', 'curation_suggestions', 'component_review_queue', 'audit_log'] },
+  { label: 'Catalog & Queue', tables: ['products', 'product_queue', 'product_runs', 'curation_suggestions', 'component_review_queue'] },
   { label: 'LLM Route Configuration', tables: ['llm_route_matrix'] },
   { label: 'Source Capture', tables: ['source_registry'] },
   { label: 'Key Review', tables: ['key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'] },
   { label: 'Billing', tables: ['billing_entries'] },
-  { label: 'Source Intelligence', tables: ['source_intel_domains', 'source_intel_field_rewards'] },
-  { label: 'Learning & Cache', tables: ['llm_cache', 'learning_profiles', 'category_brain', 'source_corpus'] },
-  { label: 'Runtime Events', tables: ['runtime_events', 'bridge_events'] },
+  { label: 'Source Intelligence', tables: ['source_intel_domains'] },
+  { label: 'Learning & Cache', tables: ['llm_cache', 'source_corpus'] },
+  { label: 'Bridge Events', tables: ['bridge_events'] },
   { label: 'Runs & Artifacts', tables: ['runs', 'run_artifacts'] },
   { label: 'Brand / Domain', tables: ['brand_domains'] },
   { label: 'Data Sync', tables: ['data_authority_sync'] },
   { label: 'Field History', tables: ['field_history'] },
-  { label: 'Crawl Artifacts', tables: ['crawl_sources', 'source_screenshots', 'source_videos', 'source_pdfs'] },
+  { label: 'Crawl Artifacts', tables: ['crawl_sources', 'source_screenshots', 'source_videos'] },
   { label: 'Telemetry Indexes', tables: ['knob_snapshots', 'query_index', 'url_index', 'prompt_index'] },
-  { label: 'Field Studio', tables: ['field_studio_map'] },
+  { label: 'Field Studio', tables: ['field_studio_map', 'field_key_order'] },
   { label: 'Crawl Ledger', tables: ['url_crawl_ledger', 'query_cooldowns'] },
+  { label: 'Color & Edition', tables: ['color_edition_finder'] },
 ];
 
 const appDbGroups = [
-  { label: 'Global State', tables: ['brands', 'brand_categories', 'brand_renames', 'settings', 'studio_maps'] },
+  { label: 'Global State', tables: ['brands', 'brand_categories', 'brand_renames', 'settings', 'studio_maps', 'color_registry'] },
 ];
 
 // ── Parse everything ──
 const specTables = parseTables(specSchema);
+const migrationTables = parseTables(migrationsSrc);
+const learningTables = parseTables(learningSrc);
 const appTables = parseTables(appSchema);
-const allTables = [...specTables, ...appTables];
+// Mark learning tables
+for (const t of learningTables) t.isLearning = true;
+const allTables = [...specTables, ...migrationTables, ...learningTables, ...appTables];
 const tableMap = Object.fromEntries(allTables.map(t => [t.name, t]));
 
-const specIndexes = { ...parseIndexes(specSchema), ...parseIndexes(migrationsSrc) };
-const appIndexes = parseIndexes(appSchema);
-const allIndexes = { ...specIndexes, ...appIndexes };
+// Merge indexes by combining arrays per table, not overwriting
+function mergeIndexes(...sources) {
+  const merged = {};
+  for (const src of sources) {
+    for (const [table, idxList] of Object.entries(src)) {
+      if (!merged[table]) merged[table] = [];
+      merged[table].push(...idxList);
+    }
+  }
+  return merged;
+}
+const allIndexes = mergeIndexes(parseIndexes(specSchema), parseIndexes(migrationsSrc), parseIndexes(appSchema));
 
 // Merge migration columns
 const migCols = parseMigrationColumns(migrationsSrc);
@@ -337,10 +371,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 </header>
 
 <div class="stats">
-  <div class="stat"><div class="n">${specTables.filter(t => !t.isVirtual).length}</div><div class="l">SpecDb Tables</div></div>
-  <div class="stat"><div class="n">${specTables.filter(t => t.isVirtual).length}</div><div class="l">Virtual (FTS)</div></div>
+  <div class="stat"><div class="n">${specTables.length + migrationTables.length}</div><div class="l">SpecDb Tables</div></div>
+  <div class="stat"><div class="n">${learningTables.length}</div><div class="l">Runtime Learning</div></div>
   <div class="stat"><div class="n">${appTables.length}</div><div class="l">AppDb Tables</div></div>
-  <div class="stat"><div class="n">18</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n">${new Set(Object.values(storeMap)).size}</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n">${allTables.length}</div><div class="l">Total Tables</div></div>
 </div>
 
@@ -352,10 +386,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="surface-head">
     <h2>SpecDb</h2>
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
-    <span class="tag tag-cols">${specTables.length} tables</span>
+    <span class="tag tag-cols">${specTables.length + migrationTables.length} tables (${specTables.length} schema + ${migrationTables.length} migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). ${specTables.length + migrationTables.length} tables from DDL (${specTables.length} in specDbSchema.js + ${migrationTables.length} migration-created). ${learningTables.length} additional runtime learning tables created by learningStores.js. Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   ${renderGroups(specDbGroups)}
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>Runtime Learning (SpecDb)</h2>
+    <span class="tag" style="background:var(--amber-s);color:var(--amber)">Runtime-Created</span>
+    <span class="tag tag-cols">${learningTables.length} tables</span>
+  </div>
+  <p class="surface-desc">Runtime-created tables in each category's spec.sqlite. Managed by <code>src/features/indexing/learning/learningStores.js</code>. Created on first pipeline run; accumulate cross-run learning signals (component lexicon, field anchors, URL memory, domain yield).</p>
+  ${renderGroups([{ label: 'Learning Stores', tables: learningTables.map(t => t.name) }])}
 </section>
 
 <section class="surface">
@@ -364,7 +408,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <span class="tag" style="background:var(--green-s);color:var(--green)">Global</span>
     <span class="tag tag-cols">${appTables.length} tables</span>
   </div>
-  <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, and field studio maps.</p>
+  <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, field studio maps, and color registry.</p>
   ${renderGroups(appDbGroups)}
 </section>
 
@@ -389,7 +433,7 @@ filter?.addEventListener('input', () => {
 </body>
 </html>`;
 
-const outPath = path.join(root, 'docs/implementation/sql-full-migration/schema-reference.html');
+const outPath = path.join(root, 'docs/data-structure/schema-reference.html');
 fs.writeFileSync(outPath, html, 'utf8');
 console.log(`Written ${(html.length / 1024).toFixed(1)}KB to ${path.relative(root, outPath)}`);
-console.log(`Tables: ${specTables.length} spec + ${appTables.length} app = ${allTables.length} total`);
+console.log(`Tables: ${specTables.length} spec + ${migrationTables.length} migration + ${learningTables.length} learning + ${appTables.length} app = ${allTables.length} total`);

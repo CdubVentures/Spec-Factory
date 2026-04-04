@@ -19,6 +19,7 @@ import {
   recordSettingsWriteOutcome,
 } from '../../observability/settingsPersistenceCounters.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
+import { SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS } from '../../core/config/settingsClassification.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
@@ -580,6 +581,59 @@ export function drainPersistQueue() {
   return userSettingsPersistQueue;
 }
 
+// WHY: Patch-based alternative to persistUserSettingsSections for the runtime
+// section. Only UPSERTs the changed keys (no DELETE-all + INSERT-all). Validates
+// the MERGED snapshot before any SQL write to prevent invalid state from reaching
+// the database. Used by mergeRuntimePatch in configPersistenceContext to serialize
+// concurrent writes from /runtime-settings and /llm-policy handlers.
+export async function mergeAndPersistRuntimePatch({ appDb, patch, settingsRoot = null, categoryAuthorityRoot = null }) {
+  // 1. Read current full state from SQL
+  const existing = readSettingsFromAppDb(appDb);
+
+  // 2. Merge patch in memory (sanitize patch first)
+  const sanitizedPatch = sanitizeRuntimeSettings(patch);
+  const mergedRuntime = { ...existing.runtime, ...sanitizedPatch };
+
+  // 3. Build full snapshot and VALIDATE BEFORE any SQL write
+  const merged = {
+    runtime: mergedRuntime,
+    studio: existing.studio,
+    ui: existing.ui,
+  };
+  const payload = deriveSettingsArtifactsFromUserSettings(merged).snapshot;
+  assertValidSnapshot(payload);
+
+  // 4. Only now commit: UPSERT only the patch keys (no DELETE-all)
+  const tx = appDb.db.transaction(() => {
+    for (const [key, value] of Object.entries(sanitizedPatch)) {
+      appDb.upsertSetting({
+        section: 'runtime',
+        key,
+        value: serializeSettingValue(value),
+        type: detectSettingType(value),
+      });
+    }
+  });
+  tx();
+
+  // 5. Best-effort JSON mirror (full snapshot for rebuild seeding)
+  if (shouldMirrorJsonFallback({ appDb, settingsRoot, categoryAuthorityRoot })) {
+    try {
+      const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
+      await writeUserSettingsFile(path.join(resolvedRoot, USER_SETTINGS_FILE), payload);
+    } catch (mirrorErr) {
+      recordSettingsWriteOutcome({
+        sections: ['runtime'],
+        target: USER_SETTINGS_FILE,
+        success: false,
+        reason: mirrorErr?.code || mirrorErr?.message || 'json_mirror_write_failed',
+      });
+    }
+  }
+
+  return { sanitizedPatch, payload };
+}
+
 export function snapshotRuntimeSettings(config = {}) {
   return pickRuntimeSnapshotFromConfig(config);
 }
@@ -607,13 +661,40 @@ function rebuildDerivedConfigState(config, appliedKeys) {
   }
 }
 
-export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
+function shouldSkipBootstrapRuntimeOverride(key, value) {
+  if (
+    typeof value === 'string'
+    && value === ''
+    && SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(key)
+  ) {
+    return true;
+  }
+  if (key !== 'llmProviderRegistryJson') {
+    return false;
+  }
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) && parsed.length === 0;
+  } catch {
+    // Invalid persisted JSON should still flow through; the live config
+    // will preserve the bad payload for debugging instead of silently masking it.
+    return false;
+  }
+}
+
+export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}, options = {}) {
+  const mode = String(options.mode || 'live').trim().toLowerCase();
   if (!config || typeof config !== 'object') return;
   const source = sanitizeRuntimeSettings(runtimeSettings);
+  const applied = {};
   for (const [key, value] of Object.entries(source)) {
+    if (mode === 'bootstrap' && shouldSkipBootstrapRuntimeOverride(key, value)) {
+      continue;
+    }
     config[key] = value;
+    applied[key] = value;
   }
-  rebuildDerivedConfigState(config, source);
+  rebuildDerivedConfigState(config, applied);
 }
 
 export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
@@ -638,6 +719,4 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
   };
 }
-
-
 

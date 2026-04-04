@@ -167,6 +167,7 @@ const loadQueueCommandHandler = createLazyLoader(async () => {
     listQueueProducts: queueState.listQueueProducts,
     loadQueueState: queueState.loadQueueState,
     clearQueueByStatus: queueState.clearQueueByStatus,
+    openSpecDbForCategory,
   });
 });
 

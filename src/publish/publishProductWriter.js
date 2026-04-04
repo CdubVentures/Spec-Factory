@@ -180,6 +180,7 @@ export function sortIndexItems(items = []) {
       published_version: item.published_version,
       published_at: item.published_at,
       brand: item.identity?.brand || '',
+      base_model: item.identity?.base_model || '',
       model: item.identity?.model || '',
       variant: item.identity?.variant || '',
       coverage: toNumber(item.metrics?.coverage, 0),
@@ -255,13 +256,14 @@ export async function writeCsvExport(storage, category, records) {
     }
   }
   const fields = [...fieldSet].sort((a, b) => a.localeCompare(b));
-  const headers = ['product_id', 'brand', 'model', 'variant', 'published_version', 'published_at', ...fields];
+  const headers = ['product_id', 'brand', 'base_model', 'model', 'variant', 'published_version', 'published_at', ...fields];
 
   const lines = [headers.map(csvEscape).join(',')];
   for (const row of records) {
     const line = [
       row.product_id,
       row.identity?.brand || '',
+      row.identity?.base_model || '',
       row.identity?.model || '',
       row.identity?.variant || '',
       row.published_version,
@@ -295,9 +297,9 @@ export async function writeSqliteExport(storage, category, records) {
     'rows = json.loads(sys.argv[2])',
     'conn = sqlite3.connect(db_path)',
     'cur = conn.cursor()',
-    'cur.execute("CREATE TABLE IF NOT EXISTS products (product_id TEXT PRIMARY KEY, category TEXT, brand TEXT, model TEXT, variant TEXT, published_version TEXT, published_at TEXT, specs_json TEXT)")',
+    'cur.execute("CREATE TABLE IF NOT EXISTS products (product_id TEXT PRIMARY KEY, category TEXT, brand TEXT, base_model TEXT, model TEXT, variant TEXT, published_version TEXT, published_at TEXT, specs_json TEXT)")',
     'for row in rows:',
-    '  cur.execute("INSERT OR REPLACE INTO products (product_id, category, brand, model, variant, published_version, published_at, specs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (row.get("product_id", ""), row.get("category", ""), ((row.get("identity") or {}).get("brand", "")), ((row.get("identity") or {}).get("model", "")), ((row.get("identity") or {}).get("variant", "")), row.get("published_version", ""), row.get("published_at", ""), json.dumps(row.get("specs") or {})))',
+    '  cur.execute("INSERT OR REPLACE INTO products (product_id, category, brand, base_model, model, variant, published_version, published_at, specs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (row.get("product_id", ""), row.get("category", ""), ((row.get("identity") or {}).get("brand", "")), ((row.get("identity") or {}).get("base_model", "")), ((row.get("identity") or {}).get("model", "")), ((row.get("identity") or {}).get("variant", "")), row.get("published_version", ""), row.get("published_at", ""), json.dumps(row.get("specs") or {})))',
     'conn.commit()',
     'conn.close()'
   ].join('\n');

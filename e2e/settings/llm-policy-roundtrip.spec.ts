@@ -9,6 +9,25 @@ import { test, expect } from './fixtures.ts';
 
 const API_BASE = 'http://127.0.0.1:8788';
 
+async function setRuntimeAutoSaveEnabled(
+  page: import('playwright/test').Page,
+  request: import('playwright/test').APIRequestContext,
+  expected: boolean,
+) {
+  const autoSaveButton = page.getByRole('button', { name: /Auto-Save (On|Off)/ }).first();
+  await expect(autoSaveButton).toBeVisible();
+  const currentEnabled = (((await autoSaveButton.textContent()) || '').trim() === 'Auto-Save On');
+  if (currentEnabled !== expected) {
+    await autoSaveButton.click();
+  }
+  await expect(autoSaveButton).toHaveText(expected ? 'Auto-Save On' : 'Auto-Save Off');
+  await expect.poll(async () => {
+    const res = await request.get(`${API_BASE}/api/v1/ui-settings`);
+    const body = await res.json();
+    return Boolean(body.runtimeAutoSaveEnabled);
+  }).toBe(expected);
+}
+
 function findNumberInput(page: import('playwright/test').Page, label: string) {
   return page.locator('div')
     .filter({ has: page.getByText(label, { exact: true }) })
@@ -39,15 +58,6 @@ test.describe('LLM Policy API round-trip', () => {
     const modifiedPolicy = JSON.parse(JSON.stringify(baseline.policy));
     modifiedPolicy.tokens.maxOutput = newMaxOutput;
 
-    const validModels = modifiedPolicy.providerRegistry
-      ?.flatMap((provider: { models?: { modelId: string }[] }) =>
-        provider.models?.map((model: { modelId: string }) => model.modelId) || [])
-      || [];
-    if (validModels.length > 0) {
-      modifiedPolicy.models.plan = validModels[0];
-      modifiedPolicy.models.reasoning = validModels.find((modelId: string) => modelId !== validModels[0]) || validModels[0];
-    }
-
     const putRes = await request.put(`${API_BASE}/api/v1/llm-policy`, {
       data: modifiedPolicy,
     });
@@ -65,6 +75,9 @@ test.describe('LLM Policy API round-trip', () => {
 
 test.describe('LLM Config page - UI round-trip', () => {
   test('Max Output Tokens auto-saves through /llm-policy and survives reload', async ({ page, request }) => {
+    const uiBaselineRes = await request.get(`${API_BASE}/api/v1/ui-settings`);
+    const uiBaseline = await uiBaselineRes.json();
+    const originalAutoSave = Boolean(uiBaseline.runtimeAutoSaveEnabled);
     const getRes = await request.get(`${API_BASE}/api/v1/llm-policy`);
     const baseline = await getRes.json();
     const originalPlanTokens = baseline.policy.tokens.plan;
@@ -78,6 +91,7 @@ test.describe('LLM Config page - UI round-trip', () => {
 
       const loadResponse = await loadResponsePromise;
       expect(loadResponse.status()).toBe(200);
+      await setRuntimeAutoSaveEnabled(page, request, true);
 
       const maxOutputInput = findNumberInput(page, 'Max Output Tokens');
       await expect(maxOutputInput).toBeVisible();
@@ -104,6 +118,80 @@ test.describe('LLM Config page - UI round-trip', () => {
     } finally {
       await request.put(`${API_BASE}/api/v1/llm-policy`, {
         data: baseline.policy,
+      });
+      await request.put(`${API_BASE}/api/v1/ui-settings`, {
+        data: { runtimeAutoSaveEnabled: originalAutoSave },
+      });
+    }
+  });
+
+  test('Max Output Tokens requires manual Save when runtime auto-save is off', async ({ page, request }) => {
+    const uiBaselineRes = await request.get(`${API_BASE}/api/v1/ui-settings`);
+    const uiBaseline = await uiBaselineRes.json();
+    const originalAutoSave = Boolean(uiBaseline.runtimeAutoSaveEnabled);
+    const getRes = await request.get(`${API_BASE}/api/v1/llm-policy`);
+    const baseline = await getRes.json();
+    const originalPlanTokens = baseline.policy.tokens.plan;
+    const newPlanTokens = originalPlanTokens === 4096 ? 3072 : 4096;
+    const llmPutRequests: string[] = [];
+
+    const onRequest = (requestEvent: import('playwright/test').Request) => {
+      if (requestEvent.url().includes('/api/v1/llm-policy') && requestEvent.method() === 'PUT') {
+        llmPutRequests.push(requestEvent.url());
+      }
+    };
+
+    page.on('request', onRequest);
+    try {
+      const loadResponsePromise = page.waitForResponse((response) =>
+        response.url().includes('/api/v1/llm-policy') && response.request().method() === 'GET');
+
+      await page.goto('/#/llm-config');
+
+      const loadResponse = await loadResponsePromise;
+      expect(loadResponse.status()).toBe(200);
+      await setRuntimeAutoSaveEnabled(page, request, false);
+
+      const maxOutputInput = findNumberInput(page, 'Max Output Tokens');
+      await expect(maxOutputInput).toBeVisible();
+
+      const requestCountBeforeEdit = llmPutRequests.length;
+      await maxOutputInput.fill(String(newPlanTokens));
+      await maxOutputInput.blur();
+
+      await page.waitForTimeout(2_000);
+      expect(llmPutRequests.length).toBe(requestCountBeforeEdit);
+      await expect.poll(async () => {
+        const afterEditRes = await request.get(`${API_BASE}/api/v1/llm-policy`);
+        const afterEdit = await afterEditRes.json();
+        return afterEdit.policy.tokens.plan;
+      }).toBe(originalPlanTokens);
+
+      const saveRequestPromise = page.waitForRequest((requestEvent) =>
+        requestEvent.url().includes('/api/v1/llm-policy') && requestEvent.method() === 'PUT');
+
+      await page.getByRole('button', { name: /^Save$/ }).click();
+
+      const saveRequest = await saveRequestPromise;
+      expect(saveRequest.postDataJSON()).toMatchObject({
+        tokens: { plan: newPlanTokens },
+      });
+
+      await expect.poll(async () => {
+        const afterSaveRes = await request.get(`${API_BASE}/api/v1/llm-policy`);
+        const afterSave = await afterSaveRes.json();
+        return afterSave.policy.tokens.plan;
+      }).toBe(newPlanTokens);
+
+      await page.reload();
+      await expect(findNumberInput(page, 'Max Output Tokens')).toHaveValue(String(newPlanTokens));
+    } finally {
+      page.off('request', onRequest);
+      await request.put(`${API_BASE}/api/v1/llm-policy`, {
+        data: baseline.policy,
+      });
+      await request.put(`${API_BASE}/api/v1/ui-settings`, {
+        data: { runtimeAutoSaveEnabled: originalAutoSave },
       });
     }
   });

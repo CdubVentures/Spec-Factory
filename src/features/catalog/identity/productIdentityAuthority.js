@@ -33,24 +33,8 @@ function pickVariant(...sources) {
   return '';
 }
 
-async function loadCatalogProduct({
-  category = '',
-  productId = '',
-  config = {},
-  loadProductCatalog = null,
-} = {}) {
-  if (typeof loadProductCatalog !== 'function') return {};
-  const cat = String(category || '').trim().toLowerCase();
-  const pid = String(productId || '').trim();
-  if (!cat || !pid) return {};
-  try {
-    const catalog = await loadProductCatalog(config, cat);
-    const product = catalog?.products?.[pid];
-    return isObject(product) ? product : {};
-  } catch {
-    return {};
-  }
-}
+// WHY: loadCatalogProduct removed — SQL (specDb) is the sole SSOT for product identity.
+// The catalog → db → normalized → inferred hierarchy is now: db → normalized → inferred.
 
 function loadSpecDbProduct({
   productId = '',
@@ -128,23 +112,16 @@ export async function resolveProductIdentity({
   category = '',
   productId = '',
   config = {},
-  loadProductCatalog = null,
   specDb = null,
   catalogProduct = null,
   dbProduct = null,
   normalizedIdentity = null,
 } = {}) {
-  const catalog = isObject(catalogProduct)
-    ? catalogProduct
-    : await loadCatalogProduct({
-      category,
-      productId,
-      config,
-      loadProductCatalog,
-    });
+  // WHY: SQL is SSOT. catalogProduct param kept for backward compat but db takes priority.
   const db = isObject(dbProduct)
     ? dbProduct
     : loadSpecDbProduct({ productId, specDb });
+  const catalog = isObject(catalogProduct) ? catalogProduct : {};
 
   return resolveAuthoritativeProductIdentity({
     productId,

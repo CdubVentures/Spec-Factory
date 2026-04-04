@@ -13,9 +13,8 @@
 
 import { writeFileSync } from 'node:fs';
 import { slugify } from './slugify.js';
-import { loadCatalogProducts, discoverCategoriesLocal } from '../products/catalogProductLoader.js';
+import { discoverCategoriesLocal } from '../products/catalogProductLoader.js';
 import { generateIdentifier } from './productIdentity.js';
-import { loadProductCatalog } from '../products/productCatalog.js';
 
 function nowIso() {
   return new Date().toISOString();
@@ -237,14 +236,11 @@ export async function removeBrand({ config, appDb, slug, force = false, getSpecD
     // WHY: Phase F — query SQL by brand_identifier (survives renames), fall back to JSON display name
     const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
     let count = 0;
+    // WHY: SQL is the sole SSOT for products.
     if (specDb?.db) {
       count = specDb.db.prepare(
         'SELECT COUNT(*) as c FROM products WHERE category = ? AND brand_identifier = ?'
       ).get(category, brand.identifier)?.c || 0;
-    } else {
-      const catalog = await loadProductCatalog(config, category);
-      count = Object.values(catalog.products || {})
-        .filter((row) => row.brand === brand.canonical_name).length;
     }
     productsByCategory[category] = count;
     totalProducts += count;
@@ -300,7 +296,7 @@ export function findBrandByAlias(appDb, query) {
 /**
  * Seed brands from activeFiltering data.
  */
-export async function seedBrandsFromActiveFiltering({ config, appDb, category = 'all', extraCategories = [] }) {
+export async function seedBrandsFromActiveFiltering({ config, appDb, category = 'all', extraCategories = [], getSpecDb = null }) {
   const root = config?.categoryAuthorityRoot || 'category_authority';
   const cat = String(category ?? '').trim().toLowerCase();
   const categories = cat && cat !== 'all'
@@ -311,10 +307,12 @@ export async function seedBrandsFromActiveFiltering({ config, appDb, category = 
     return { ok: true, seeded: 0, skipped: 0, categories_scanned: 0, total_brands: 0 };
   }
 
+  // WHY: SQL is the sole SSOT for products — discover brands from specDb per category.
   const brandMap = new Map();
   for (const categoryName of categories) {
-    const catalog = await loadProductCatalog(config, categoryName);
-    for (const row of Object.values(catalog.products || {})) {
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(categoryName) : null;
+    const rows = specDb?.getAllProducts?.() || [];
+    for (const row of rows) {
       const brandName = String(row?.brand ?? '').trim();
       if (!brandName) continue;
       const brandSlug = slugify(brandName);
@@ -360,7 +358,7 @@ export async function seedBrandsFromActiveFiltering({ config, appDb, category = 
 /**
  * Seed brands from app-owned catalog data.
  */
-export async function seedBrandsFromCatalog({ config, appDb, category = 'all', extraCategories = [] }) {
+export async function seedBrandsFromCatalog({ config, appDb, category = 'all', extraCategories = [], getSpecDb = null }) {
   const root = config?.categoryAuthorityRoot || 'category_authority';
   let targetCategories;
   const cat = String(category ?? '').trim().toLowerCase();
@@ -375,10 +373,12 @@ export async function seedBrandsFromCatalog({ config, appDb, category = 'all', e
     return { ok: true, seeded: 0, skipped: 0, categories_scanned: 0, total_brands: 0 };
   }
 
+  // WHY: SQL is the sole SSOT for products — discover brands from specDb per category.
   const brandMap = new Map();
   for (const categoryName of targetCategories) {
-    const products = await loadCatalogProducts({ category: categoryName, config });
-    if (!products || products.length === 0) continue;
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(categoryName) : null;
+    const products = specDb?.getAllProducts?.() || [];
+    if (products.length === 0) continue;
     for (const row of products) {
       const brandName = String(row.brand ?? '').trim();
       if (!brandName) continue;
@@ -527,14 +527,11 @@ export async function getBrandImpactAnalysis({ config, appDb, slug, getSpecDb = 
     // WHY: Phase F — query SQL by brand_identifier (survives renames), fall back to JSON display name
     const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
     let matched = [];
+    // WHY: SQL is the sole SSOT for products.
     if (specDb?.db) {
       matched = specDb.db.prepare(
         'SELECT product_id FROM products WHERE category = ? AND brand_identifier = ?'
       ).all(category, existing.identifier).map(r => [r.product_id]);
-    } else {
-      const catalog = await loadProductCatalog(config, category);
-      matched = Object.entries(catalog.products || {})
-        .filter(([, p]) => p.brand === existing.canonical_name);
     }
     products_by_category[category] = matched.length;
     product_details[category] = matched.map(([pid]) => pid);

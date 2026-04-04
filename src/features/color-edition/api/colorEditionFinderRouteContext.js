@@ -6,10 +6,10 @@ export function createColorEditionFinderRouteContext(options = {}) {
     throw new TypeError('options must be an object');
   }
 
-  const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, colorRegistryPath } = options;
+  const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, colorRegistryPath, logger } = options;
 
   return {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    colorRegistryPath, runColorEditionFinder, readColorEdition,
+    colorRegistryPath, logger, runColorEditionFinder, readColorEdition,
   };
 }

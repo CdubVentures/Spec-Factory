@@ -65,7 +65,6 @@ export function registerReviewRoutes(ctx) {
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
     loadCategoryConfig,
-    loadProductCatalog,
     readLatestArtifacts,
     sessionCache,
     reviewLayoutByCategory,
@@ -124,7 +123,7 @@ export function registerReviewRoutes(ctx) {
   const fieldReviewContext = {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage,
     getSpecDb, buildReviewLayout, buildProductReviewPayload, buildReviewQueue,
-    loadProductCatalog, sessionCache, annotateCandidatePrimaryReviews, slugify,
+    sessionCache, annotateCandidatePrimaryReviews, slugify,
     broadcastWs, path, spawn,
   };
 

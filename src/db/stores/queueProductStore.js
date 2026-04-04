@@ -224,27 +224,6 @@ export function createQueueProductStore({ db, category, stmts }) {
       .run(category, productId);
   }
 
-  // --- Audit Log ---
-
-  function insertAuditLog(entry) {
-    db.prepare(`
-      INSERT INTO audit_log (
-        category, entity_type, entity_id, field_changed, old_value, new_value,
-        change_type, actor_type, actor_id, run_id, note,
-        product_id, component_type, component_name, field_key
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      entry.category || category,
-      entry.entity_type, entry.entity_id,
-      entry.field_changed ?? null, entry.old_value ?? null, entry.new_value ?? null,
-      entry.change_type || 'update',
-      entry.actor_type || 'system', entry.actor_id ?? null,
-      entry.run_id ?? null, entry.note ?? null,
-      entry.product_id ?? null, entry.component_type ?? null,
-      entry.component_name ?? null, entry.field_key ?? null
-    );
-  }
-
   // --- Staleness marking ---
 
   function markProductsStale(productIds, dirtyFlag) {
@@ -442,7 +421,6 @@ export function createQueueProductStore({ db, category, stmts }) {
     getProduct,
     getAllProducts,
     deleteProduct,
-    insertAuditLog,
     markProductsStale,
     markProductsStaleDetailed,
     upsertCurationSuggestion,

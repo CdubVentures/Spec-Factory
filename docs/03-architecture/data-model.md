@@ -19,11 +19,11 @@
 | Category | Canonical owner | Derived/read model surfaces |
 |----------|-----------------|----------------------------|
 | Category rules, labels, maps | `category_authority/{category}/_generated/*`, `category_authority/{category}/_control_plane/*`, `user-settings.json` | `sessionCache`, review layouts, runtime idx badges |
-| Product catalog and brand registry | SQL `products` table (SSOT), `.workspace/products/{pid}/product.json` (rebuild file), `product_catalog.json` (read-only boot seed) | `products`, `brands`, queue snapshots, review payload identity blocks |
+| Product catalog and brand registry | `.workspace/products/{pid}/product.json` (sole disk SSOT), SQL `products` table (runtime cache). `product_catalog.json` retired — legacy import only. | `products`, `brands`, queue snapshots, review payload identity blocks |
 | Accepted field/component/list values | `item_field_state`, `component_values`, `list_values` | review payloads, normalized output, learning reports |
 | Queue state | `product_queue` plus file-backed queue helpers in `src/queue/queueState.js` | runtime dashboards, review queue, daemon selection |
 | Billing telemetry | `billing_entries`, `_billing/*` | Billing GUI, reports |
-| Runtime/evidence telemetry | `runtime_events`, `evidence_*`, `source_corpus` | Runtime Ops, IndexLab analytics, evidence search |
+| Runtime/evidence telemetry | `bridge_events`, `evidence_*`, `source_corpus` | Runtime Ops, IndexLab analytics, evidence search |
 
 ## Migration Path
 
@@ -35,7 +35,6 @@
 ## Notes
 
 - The schema comment at the bottom of `src/db/specDbSchema.js` explicitly states that the removed `source_strategy` table is no longer used; `sources.json` under category authority is the SSOT for source strategy.
-- `evidence_chunks_fts` is the only verified virtual table in the schema; it indexes `evidence_chunks` text for evidence search.
 - Several columns hold JSON-encoded text payloads (`meta`, `host_stats`, `per_field_helpfulness`, `last_run`, `data`, `fields`, `methods`) even though the underlying SQLite type is `TEXT`.
 - Store modules are composited via `src/db/stores/`: candidateStore, reviewStore, componentStore, itemStateStore, enumListStore, keyReviewStore, billingStore, sourceIntelStore (corpus/cache/events), queueProductStore, llmRouteSourceStore, and fieldHistoryStore.
 
@@ -358,28 +357,6 @@
 | `fetched_at` | `TEXT` |  | Timestamp. |
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
 
-### `audit_log`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `event_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-| `category` | `TEXT` |  | Category slug. |
-| `entity_type` | `TEXT` | `NOT NULL` |  |
-| `entity_id` | `TEXT` | `NOT NULL` |  |
-| `field_changed` | `TEXT` |  |  |
-| `old_value` | `TEXT` |  |  |
-| `new_value` | `TEXT` |  |  |
-| `change_type` | `TEXT` | `DEFAULT 'update'` |  |
-| `actor_type` | `TEXT` | `DEFAULT 'system'` |  |
-| `actor_id` | `TEXT` |  |  |
-| `run_id` | `TEXT` |  | IndexLab or pipeline run identifier. |
-| `note` | `TEXT` |  |  |
-| `product_id` | `TEXT` |  | Product identifier used across catalog, queue, and review. |
-| `component_type` | `TEXT` |  |  |
-| `component_name` | `TEXT` |  |  |
-| `field_key` | `TEXT` |  |  |
-
 ## LLM routing and source lineage
 
 ### `llm_route_matrix`
@@ -442,54 +419,6 @@
 | `fetched_at` | `TEXT` |  | Timestamp. |
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
 | `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
-### `source_artifacts`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `artifact_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `source_id` | `TEXT` | `NOT NULL REFERENCES source_registry(source_id)` |  |
-| `artifact_type` | `TEXT` | `NOT NULL` |  |
-| `local_path` | `TEXT` | `NOT NULL` |  |
-| `content_hash` | `TEXT` |  |  |
-| `mime_type` | `TEXT` |  |  |
-| `size_bytes` | `INTEGER` |  |  |
-| `captured_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
-### `source_assertions`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `assertion_id` | `TEXT` | `PRIMARY KEY` | Canonical assertion row id. |
-| `source_id` | `TEXT` | `NOT NULL REFERENCES source_registry(source_id)` |  |
-| `field_key` | `TEXT` | `NOT NULL` |  |
-| `context_kind` | `TEXT` | `NOT NULL CHECK(context_kind IN ('scalar','component','list'))` |  |
-| `context_ref` | `TEXT` |  |  |
-| `item_field_state_id` | `INTEGER` | `REFERENCES item_field_state(id)` |  |
-| `component_value_id` | `INTEGER` | `REFERENCES component_values(id)` |  |
-| `list_value_id` | `INTEGER` | `REFERENCES list_values(id)` |  |
-| `enum_list_id` | `INTEGER` | `REFERENCES enum_lists(id)` |  |
-| `value_raw` | `TEXT` |  |  |
-| `value_normalized` | `TEXT` |  |  |
-| `unit` | `TEXT` |  |  |
-| `candidate_id` | `TEXT` |  |  |
-| `extraction_method` | `TEXT` |  |  |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
-### `source_evidence_refs`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `evidence_ref_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `assertion_id` | `TEXT` | `NOT NULL REFERENCES source_assertions(assertion_id)` |  |
-| `evidence_url` | `TEXT` |  |  |
-| `snippet_id` | `TEXT` |  |  |
-| `quote` | `TEXT` |  |  |
-| `method` | `TEXT` |  |  |
-| `tier` | `INTEGER` |  |  |
-| `retrieved_at` | `TEXT` |  |  |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
 
 ## Key review workflow
 
@@ -580,7 +509,7 @@
 |-------|------|-------------|-------|
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
 | `key_review_run_id` | `INTEGER` | `NOT NULL REFERENCES key_review_runs(run_id)` |  |
-| `assertion_id` | `TEXT` | `NOT NULL REFERENCES source_assertions(assertion_id)` |  |
+| `assertion_id` | `TEXT` | `NOT NULL` |  |
 | `packet_role` | `TEXT` |  |  |
 | `position` | `INTEGER` |  |  |
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
@@ -669,65 +598,7 @@
 | `first_seen_at` | `TEXT` |  |  |
 | `last_seen_at` | `TEXT` |  |  |
 
-### `runtime_events`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `ts` | `TEXT` | `NOT NULL` | Timestamp. |
-| `level` | `TEXT` | `DEFAULT 'info'` |  |
-| `event` | `TEXT` | `NOT NULL` | Telemetry event name. |
-| `category` | `TEXT` | `DEFAULT ''` | Category slug. |
-| `product_id` | `TEXT` | `DEFAULT ''` | Product identifier used across catalog, queue, and review. |
-| `run_id` | `TEXT` | `DEFAULT ''` | IndexLab or pipeline run identifier. |
-| `data` | `TEXT` | `DEFAULT '{}'` |  |
-
-## Evidence and discovery support
-
-### `evidence_documents`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `doc_id` | `TEXT` | `PRIMARY KEY` |  |
-| `content_hash` | `TEXT` | `NOT NULL` | Deduplication key with parser_version. |
-| `parser_version` | `TEXT` | `NOT NULL` |  |
-| `url` | `TEXT` | `NOT NULL` |  |
-| `host` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `tier` | `INTEGER` | `DEFAULT 99` |  |
-| `role` | `TEXT` | `DEFAULT ''` |  |
-| `category` | `TEXT` | `NOT NULL DEFAULT ''` | Category slug. |
-| `product_id` | `TEXT` | `NOT NULL DEFAULT ''` | Product identifier used across catalog, queue, and review. |
-| `dedupe_outcome` | `TEXT` | `NOT NULL DEFAULT 'new'` |  |
-| `indexed_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | Timestamp. |
-
-### `evidence_chunks`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `chunk_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `doc_id` | `TEXT` | `NOT NULL REFERENCES evidence_documents(doc_id)` |  |
-| `snippet_id` | `TEXT` | `NOT NULL` | Stable snippet id inside evidence index. |
-| `chunk_index` | `INTEGER` | `NOT NULL` |  |
-| `chunk_type` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `text` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `normalized_text` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `snippet_hash` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `extraction_method` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `field_hints` | `TEXT` | `NOT NULL DEFAULT '[]'` |  |
-
-### `evidence_facts`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `fact_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
-| `chunk_id` | `INTEGER` | `NOT NULL REFERENCES evidence_chunks(chunk_id)` |  |
-| `doc_id` | `TEXT` | `NOT NULL REFERENCES evidence_documents(doc_id)` |  |
-| `field_key` | `TEXT` | `NOT NULL` |  |
-| `value_raw` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `value_normalized` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `unit` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `extraction_method` | `TEXT` | `NOT NULL DEFAULT ''` |  |
-| `confidence` | `REAL` | `NOT NULL DEFAULT 0` |  |
+## Discovery support
 
 ### `brand_domains`
 

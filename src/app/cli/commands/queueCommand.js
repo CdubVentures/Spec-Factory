@@ -12,9 +12,14 @@ export function createQueueCommand({
   listQueueProducts,
   loadQueueState,
   clearQueueByStatus,
+  openSpecDbForCategory = null,
 }) {
   return async function commandQueue(config, storage, args) {
     const category = String(args.category || 'mouse').trim() || 'mouse';
+    // WHY: SQL is the sole SSOT for queue state. Ensure specDb is available for all queue ops.
+    const specDb = typeof openSpecDbForCategory === 'function'
+      ? await openSpecDbForCategory(config, category)
+      : null;
     const action = String(args._?.[0] || '').trim().toLowerCase();
     if (!action) {
       throw new Error('queue requires a subcommand: add|add-batch|list|stats|retry|pause|clear');
@@ -77,7 +82,7 @@ export function createQueueCommand({
     if (action === 'list') {
       const sync = asBool(args.sync, false);
       if (sync) {
-        await syncQueueFromInputs({ storage, category });
+        await syncQueueFromInputs({ storage, category, specDb });
       }
       const status = String(args.status || '').trim().toLowerCase();
       const limit = Math.max(1, Number.parseInt(String(args.limit || '100'), 10) || 100);
@@ -85,7 +90,8 @@ export function createQueueCommand({
         storage,
         category,
         status,
-        limit
+        limit,
+        specDb
       });
       return {
         command: 'queue',
@@ -100,9 +106,9 @@ export function createQueueCommand({
     if (action === 'stats') {
       const sync = asBool(args.sync, false);
       if (sync) {
-        await syncQueueFromInputs({ storage, category });
+        await syncQueueFromInputs({ storage, category, specDb });
       }
-      const loaded = await loadQueueState({ storage, category });
+      const loaded = await loadQueueState({ storage, category, specDb });
       const products = loaded.state.products || {};
       return {
         command: 'queue',
@@ -118,7 +124,7 @@ export function createQueueCommand({
       if (!productId) {
         throw new Error(`queue ${action} requires --product-id <id>`);
       }
-      const loaded = await loadQueueState({ storage, category });
+      const loaded = await loadQueueState({ storage, category, specDb });
       const existing = loaded.state.products?.[productId];
       if (!existing) {
         throw new Error(`queue ${action} could not find product '${productId}'`);

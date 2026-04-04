@@ -82,7 +82,7 @@ export const MIGRATIONS = [
   `ALTER TABLE runs RENAME COLUMN phase_cursor TO stage_cursor`,
   // WHY: base_model enables proper model/variant dropdown separation in IndexLab.
   // model = full product name, base_model = family name, variant = differentiator.
-  // The product-catalog reseed phase populates correct values from product_catalog.json on every startup.
+  // The checkpoint reseed phase populates correct values from product.json files on every startup.
   `ALTER TABLE products ADD COLUMN base_model TEXT DEFAULT ''`,
 ];
 

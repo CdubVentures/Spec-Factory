@@ -665,7 +665,7 @@ export function ProductManager() {
                     <div>specs/inputs/{category}/products/<span className="font-semibold">{editPid}</span>.json</div>
                     <div>*/latest/, */runs/, */review/ under <span className="font-semibold">{editPid}</span></div>
                     <div>*/published/<span className="font-semibold">{editPid}</span>/*</div>
-                    <div>category_authority/{category}/_overrides/<span className="font-semibold">{editPid}</span>.overrides.json</div>
+                    <div>category_authority/{category}/_overrides/overrides.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
                     <div>_queue/{category}/state.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
                   </div>
                 </details>

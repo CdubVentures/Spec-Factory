@@ -53,7 +53,6 @@ export function registerStudioRoutes(ctx) {
     startProcess,
     broadcastWs,
     reviewLayoutByCategory,
-    loadProductCatalog,
     cleanVariant,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
     appDb,
@@ -148,23 +147,24 @@ export function registerStudioRoutes(ctx) {
       }));
     }
 
-    // Studio products (reads from product catalog)
+    // Studio products (reads from SQL)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'products' && method === 'GET') {
       const category = parts[1];
-      const catalog = await loadProductCatalog(config, category);
+      const specDb = getSpecDb(category);
+      const dbRows = specDb?.getAllProducts?.() || [];
       const products = [];
       const brandSet = new Set();
-      for (const [pid, entry] of Object.entries(catalog.products || {})) {
-        const brand = String(entry.brand || '').trim();
-        const model = String(entry.model || '').trim();
-        const variant = cleanVariant(entry.variant);
+      for (const row of dbRows) {
+        const brand = String(row.brand || '').trim();
+        const model = String(row.model || '').trim();
+        const variant = cleanVariant(row.variant);
         if (!brand || !model) continue;
         brandSet.add(brand);
         products.push({
           brand,
           model,
           variant,
-          productId: pid,
+          productId: row.product_id,
         });
       }
       return jsonRes(res, 200, { products, brands: [...brandSet].sort() });

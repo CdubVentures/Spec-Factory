@@ -45,6 +45,7 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
     category: String(category || ''),
     identity: {
       brand: String(id.brand || ''),
+      base_model: String(id.base_model || ''),
       model: String(id.model || ''),
       variant: String(id.variant || ''),
       brand_identifier: String(id.brand_identifier || ''),

@@ -10,10 +10,9 @@ function assertObject(name, value) {
   }
 }
 
-// WHY: SQL-first catalog builder. When loadProductCatalog/loadQueueState are omitted,
-// reads directly from specDb (products + product_queue tables). This eliminates the
-// dependency on product_catalog.json and fixture input files for the GUI dropdown.
-// Legacy path (JSON + fixtures) is kept for backward compat when those deps are provided.
+// WHY: SQL-first catalog builder. Reads directly from specDb (products + product_queue
+// tables). This eliminates the dependency on product_catalog.json and fixture input
+// files for the GUI dropdown.
 
 function buildQueueLookup(queueRows) {
   const map = new Map();
@@ -78,95 +77,16 @@ export function createCatalogBuilder({
   config,
   storage,
   getSpecDb,
-  loadQueueState,
-  loadProductCatalog,
   cleanVariant,
-  path,
 } = {}) {
   assertObject('config', config);
   assertObject('storage', storage);
   assertFunction('getSpecDb', getSpecDb);
   assertFunction('cleanVariant', cleanVariant);
 
-  // WHY: SQL-first path — when loadProductCatalog/loadQueueState are not provided,
-  // read entirely from specDb. This is the new default for the GUI catalog.
-  const useSqlPath = typeof loadProductCatalog !== 'function' || typeof loadQueueState !== 'function';
-
-  if (!useSqlPath) {
-    assertObject('path', path);
-  }
-
   return async function buildCatalog(category) {
     const specDb = getSpecDb(category);
-
-    if (useSqlPath) {
-      return buildCatalogFromSql({ specDb, storage, cleanVariant, category });
-    }
-
-    // Legacy path — reads from catalog JSON
-    const catalog = await loadProductCatalog(config, category);
-    const queue = await loadQueueState({ storage, category, specDb }).catch(() => ({ state: { products: {} } }));
-    const queueProducts = queue.state?.products || {};
-
-    const seen = new Map();
-
-    for (const [pid, entry] of Object.entries(catalog.products || {})) {
-      const brand = String(entry.brand || '').trim();
-      const model = String(entry.model || '').trim();
-      const variant = cleanVariant(entry.variant);
-      if (!brand || !model) continue;
-      if (seen.has(pid)) continue;
-      seen.set(pid, {
-        productId: pid,
-        id: entry.id || 0,
-        identifier: entry.identifier || '',
-        brand,
-        brand_identifier: String(entry.brand_identifier || '').trim(),
-        model,
-        base_model: String(entry.base_model || '').trim(),
-        variant,
-        status: 'pending',
-        hasFinal: false,
-        validated: false,
-        confidence: 0,
-        coverage: 0,
-        fieldsFilled: 0,
-        fieldsTotal: 0,
-        lastRun: '',
-        inActive: true,
-      });
-    }
-
-    // WHY: Enrich each product from catalog with summary/queue data — no fixture scan.
-    for (const [existingProductId, existing] of seen) {
-      const latestBase = storage.resolveOutputKey(category, existingProductId, 'latest');
-      const [summary, hasFinal] = await Promise.all([
-        specDb
-          ? Promise.resolve(specDb.getSummaryForProduct(existingProductId))
-          : storage.readJsonOrNull(`${latestBase}/summary.json`),
-        storage.objectExists(`final/${category}/${existingProductId}/normalized.json`).catch(() => false),
-      ]);
-      const qp = queueProducts[existingProductId] || {};
-
-      Object.assign(existing, {
-        status: qp.status || (summary ? 'complete' : 'pending'),
-        hasFinal,
-        validated: !!(summary?.validated),
-        confidence: summary?.confidence || 0,
-        coverage: (summary?.coverage_overall_percent || 0) / 100,
-        fieldsFilled: summary?.fields_filled || 0,
-        fieldsTotal: summary?.fields_total || 0,
-        lastRun: summary?.lastRun || summary?.generated_at || '',
-      });
-    }
-
-    const rows = [...seen.values()];
-    rows.sort((a, b) =>
-      a.brand.localeCompare(b.brand) ||
-      a.model.localeCompare(b.model) ||
-      a.variant.localeCompare(b.variant)
-    );
-    return rows;
+    return buildCatalogFromSql({ specDb, storage, cleanVariant, category });
   };
 }
 

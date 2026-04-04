@@ -141,3 +141,150 @@ test('export-overrides handles null override_provenance gracefully', async () =>
   const result = await cmd({}, {}, { category: 'mouse', _: [] });
   assert.equal(result.products[0].overrides.weight.override_provenance, null);
 });
+
+// ── migrate-overrides tests ──────────────────────────────────────────────────
+
+import { createMigrateOverridesCommand } from '../exportOverridesCommand.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+function createMigrationMockSpecDb({
+  productIdsWithOverrides = [],
+  reviewStates = {},
+  overriddenFields = {},
+  itemFieldStateIds = {},
+  reviewsByContext = {},
+} = {}) {
+  return {
+    listProductIdsWithOverrides() { return productIdsWithOverrides; },
+    listApprovedProductIds() { return productIdsWithOverrides.filter(pid => reviewStates[pid]?.review_status === 'approved'); },
+    getProductReviewState(pid) { return reviewStates[pid] || null; },
+    getOverriddenFieldsForProduct(pid) { return overriddenFields[pid] || []; },
+    getItemFieldStateByProductAndField(pid, fieldKey) { return itemFieldStateIds[`${pid}::${fieldKey}`] || null; },
+    getReviewsForContext(contextType, contextId) { return reviewsByContext[`${contextType}::${contextId}`] || []; },
+    close() {},
+  };
+}
+
+function createMigrationHarness(overrides = {}) {
+  const mockSpecDb = overrides.specDb || createMigrationMockSpecDb(overrides);
+  return createMigrateOverridesCommand({
+    openSpecDbForCategory: async () => mockSpecDb,
+  });
+}
+
+test('migrate-overrides requires --category', async () => {
+  const cmd = createMigrationHarness();
+  await assert.rejects(
+    cmd({}, {}, { _: [] }),
+    /category/i,
+  );
+});
+
+test('migrate-overrides includes in_progress products', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrate-test-'));
+  try {
+    const cmd = createMigrationHarness({
+      productIdsWithOverrides: ['mouse-draft', 'mouse-wip'],
+      reviewStates: {
+        'mouse-draft': { review_status: 'draft' },
+        'mouse-wip': { review_status: 'in_progress', review_started_at: '2026-04-01T00:00:00Z' },
+      },
+      overriddenFields: {
+        'mouse-draft': [{ field_key: 'weight', value: '80g', override_value: '80g', override_source: 'manual_entry' }],
+        'mouse-wip': [{ field_key: 'sensor', value: 'HERO', override_value: 'HERO', override_source: 'candidate_selection' }],
+      },
+    });
+    const config = { categoryAuthorityRoot: tmpDir };
+    const result = await cmd(config, {}, { category: 'mouse', _: [] });
+
+    assert.equal(result.command, 'migrate-overrides');
+    assert.equal(result.migrated_count, 2);
+
+    // Read the consolidated file to verify
+    const filePath = path.join(tmpDir, 'mouse', '_overrides', 'overrides.json');
+    const raw = await fs.readFile(filePath, 'utf8');
+    const envelope = JSON.parse(raw);
+    assert.equal(envelope.version, 2);
+    assert.ok(envelope.products['mouse-draft']);
+    assert.ok(envelope.products['mouse-wip']);
+    assert.equal(envelope.products['mouse-draft'].review_status, 'draft');
+    assert.equal(envelope.products['mouse-wip'].review_status, 'in_progress');
+    assert.equal(envelope.products['mouse-wip'].overrides.sensor.override_value, 'HERO');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('migrate-overrides captures AI reviews written with itemFieldStateId', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrate-test-'));
+  try {
+    const cmd = createMigrationHarness({
+      productIdsWithOverrides: ['mouse-reviewed'],
+      reviewStates: {
+        'mouse-reviewed': { review_status: 'approved', reviewed_by: 'user', reviewed_at: '2026-04-01T00:00:00Z' },
+      },
+      overriddenFields: {
+        'mouse-reviewed': [{
+          field_key: 'weight',
+          value: '63g',
+          override_value: '63g',
+          override_source: 'candidate_selection',
+          accepted_candidate_id: 'cand-weight-001',
+        }],
+      },
+      // itemFieldState row has id=42 for weight field
+      itemFieldStateIds: {
+        'mouse-reviewed::weight': { id: 42 },
+      },
+      // AI review was written with contextId = '42' (itemFieldStateId), not 'mouse-reviewed'
+      reviewsByContext: {
+        'item::42': [{
+          candidate_id: 'cand-weight-001',
+          ai_review_status: 'accepted',
+          ai_confidence: 0.95,
+          ai_reason: 'primary_confirm',
+          ai_reviewed_at: '2026-04-01T00:00:00Z',
+          ai_review_model: 'gpt-4',
+        }],
+      },
+    });
+    const config = { categoryAuthorityRoot: tmpDir };
+    const result = await cmd(config, {}, { category: 'mouse', _: [] });
+
+    const filePath = path.join(tmpDir, 'mouse', '_overrides', 'overrides.json');
+    const raw = await fs.readFile(filePath, 'utf8');
+    const envelope = JSON.parse(raw);
+
+    const weightOverride = envelope.products['mouse-reviewed'].overrides.weight;
+    assert.ok(weightOverride.ai_review, 'AI review should be present');
+    assert.equal(weightOverride.ai_review.ai_review_status, 'accepted');
+    assert.equal(weightOverride.ai_review.ai_confidence, 0.95);
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('migrate-overrides writes version 2 envelope', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrate-test-'));
+  try {
+    const cmd = createMigrationHarness({
+      productIdsWithOverrides: ['mouse-a'],
+      reviewStates: { 'mouse-a': { review_status: 'approved' } },
+      overriddenFields: { 'mouse-a': [] },
+    });
+    const config = { categoryAuthorityRoot: tmpDir };
+    await cmd(config, {}, { category: 'mouse', _: [] });
+
+    const filePath = path.join(tmpDir, 'mouse', '_overrides', 'overrides.json');
+    const raw = await fs.readFile(filePath, 'utf8');
+    const envelope = JSON.parse(raw);
+    assert.equal(envelope.version, 2);
+    assert.equal(envelope.category, 'mouse');
+    assert.ok(envelope.updated_at);
+    assert.ok(envelope.products);
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});

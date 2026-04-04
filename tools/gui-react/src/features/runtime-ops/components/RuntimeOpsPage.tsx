@@ -96,6 +96,7 @@ function buildRunPickerLabel({
   category = '',
   productId = '',
   brand = '',
+  base_model = '',
   model = '',
   variant = '',
   runId = '',
@@ -103,12 +104,13 @@ function buildRunPickerLabel({
   category?: string;
   productId?: string;
   brand?: string;
+  base_model?: string;
   model?: string;
   variant?: string;
   runId?: string;
 }): string {
   const categoryLabel = titleCaseWords(category);
-  const identityLabel = [brand, model, variant].map(toToken).filter(Boolean).join(' ')
+  const identityLabel = [brand, base_model || model, variant].map(toToken).filter(Boolean).join(' ')
     || humanizeProductId({ category, productId });
   const dedupedIdentityLabel = identityLabel.toLowerCase() === categoryLabel.toLowerCase()
     ? ''
@@ -200,6 +202,7 @@ export function RuntimeOpsPage() {
           category: fallbackCategory,
           productId: fallbackProductId,
           brand: toToken(processStatus?.brand),
+          base_model: toToken(processStatus?.base_model),
           model: toToken(processStatus?.model),
           variant: toToken(processStatus?.variant),
           runId: effectiveRunId,

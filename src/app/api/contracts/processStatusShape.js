@@ -8,7 +8,7 @@ export const PROCESS_STATUS_KEYS = Object.freeze([
   'run_id', 'runId',
   'category',
   'product_id', 'productId',
-  'brand', 'model', 'variant',
+  'brand', 'base_model', 'model', 'variant',
   'storage_destination', 'storageDestination',
   'pid', 'command', 'startedAt', 'endedAt', 'exitCode',
 ]);

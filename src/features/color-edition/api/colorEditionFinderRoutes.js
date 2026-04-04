@@ -3,7 +3,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 export function registerColorEditionFinderRoutes(ctx) {
   const {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    colorRegistryPath, runColorEditionFinder, readColorEdition,
+    colorRegistryPath, logger, runColorEditionFinder, readColorEdition,
   } = ctx;
 
   return async function handleColorEditionFinderRoutes(parts, params, method, req, res) {
@@ -49,6 +49,7 @@ export function registerColorEditionFinderRoutes(ctx) {
     // POST /color-edition-finder/:category/:productId — trigger finder
     if (method === 'POST' && category && productId) {
       try {
+        console.log(`[color-edition-finder] POST received: category=${category} productId=${productId} hasLogger=${Boolean(logger)}`);
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
@@ -72,7 +73,7 @@ export function registerColorEditionFinderRoutes(ctx) {
           appDb,
           specDb,
           config,
-          logger: null,
+          logger: logger || null,
           colorRegistryPath,
         });
 

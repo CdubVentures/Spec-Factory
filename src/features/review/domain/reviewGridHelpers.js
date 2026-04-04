@@ -41,7 +41,15 @@ export function resolveOverrideFilePath({ config = {}, category, productId }) {
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
 }
 
-export async function readOverrideFile(filePath) {
+export async function readOverrideFile(filePath, { config, category, productId } = {}) {
+  // WHY: Overlap 0d — try consolidated file first when context is available
+  if (config && category && productId) {
+    try {
+      const { readProductFromConsolidated } = await import('../../../shared/consolidatedOverrides.js');
+      const entry = await readProductFromConsolidated({ config, category, productId });
+      if (entry) return entry;
+    } catch { /* consolidated read failed — fall through to per-product file */ }
+  }
   try {
     const raw = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(raw);

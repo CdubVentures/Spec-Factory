@@ -4,10 +4,9 @@ import {
   normalizeAmbiguityLevel
 } from '../../../../utils/identityNormalize.js';
 import { sha256 } from './cryptoHelpers.js';
-import { loadProductCatalog } from '../../../catalog/index.js';
 import { toFloat } from './typeHelpers.js';
 
-export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {} } = {}) {
+export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null } = {}) {
   const brandToken = normalizeIdentityToken(identityLock?.brand);
   const modelToken = normalizeIdentityToken(identityLock?.model);
   if (!brandToken || !modelToken) {
@@ -19,17 +18,17 @@ export async function resolveIdentityAmbiguitySnapshot({ config, category = '', 
   }
 
   try {
-    const catalog = await loadProductCatalog(config || {}, String(category || '').trim().toLowerCase());
-    const rows = Object.values(catalog?.products || {});
+    // WHY: SQL is the sole SSOT for products.
+    const rows = specDb?.getAllProducts?.() || [];
     const familyCount = rows.filter((row) =>
       normalizeIdentityToken(row?.brand) === brandToken
-      && normalizeIdentityToken(row?.model) === modelToken
+      && normalizeIdentityToken(row?.base_model) === modelToken
     ).length;
     const safeCount = Math.max(1, familyCount);
     return {
       family_model_count: safeCount,
       ambiguity_level: ambiguityLevelFromFamilyCount(safeCount),
-      source: 'catalog'
+      source: 'specDb'
     };
   } catch {
     return {

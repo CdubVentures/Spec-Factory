@@ -1,5 +1,4 @@
 export {
-  loadProductCatalog,
   addProduct,
   addProductsBulk,
   updateProduct,
@@ -37,7 +36,7 @@ export {
   resolveAuthoritativeProductIdentity,
   resolveProductIdentity,
 } from './identity/productIdentityAuthority.js';
-export { generateIdentifier, nextAvailableId } from './identity/productIdentity.js';
+export { generateIdentifier } from './identity/productIdentity.js';
 export { slugify } from './identity/slugify.js';
 export { resolveBrandIdentifier } from './identity/resolveBrandIdentifier.js';
 export {

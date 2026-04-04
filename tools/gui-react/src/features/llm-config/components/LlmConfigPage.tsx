@@ -23,7 +23,7 @@ import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 import { uiPhaseIdToOverrideKey } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
 import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry.ts';
-import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate.ts';
+import { extractRegistryApiKeys, providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
@@ -185,8 +185,18 @@ export function LlmConfigPage() {
     // WHY: Re-bridge costs so budget fields stay in sync when model costs
     // are edited in the Provider Registry panel.
     const costs = syncCostsFromRegistry(nextRegistry, policy.models.plan);
+    // WHY: Sync API keys from registry providers to flat apiKeys fields.
+    // Without this, entering a key in the registry panel only writes to
+    // providerRegistry[idx].apiKey (inside the JSON blob). The flat fields
+    // (geminiApiKey, etc.) stay empty, so bootstrapApiKeyForProvider and
+    // resolved_api_keys both report missing keys, keeping the lockout active.
+    const extractedKeys = extractRegistryApiKeys(nextRegistry);
+    const apiKeysPatch = Object.keys(extractedKeys).length > 0
+      ? { apiKeys: { ...policy.apiKeys, ...extractedKeys } }
+      : {};
     llmAuthority.updatePolicy({
       providerRegistry: nextRegistry,
+      ...apiKeysPatch,
       ...(costs ? {
         budget: {
           ...policy.budget,
@@ -196,7 +206,7 @@ export function LlmConfigPage() {
         },
       } : {}),
     });
-  }, [llmAuthority, policy.models.plan, policy.budget]);
+  }, [llmAuthority, policy.models.plan, policy.budget, policy.apiKeys]);
 
   /* --- Phase Overrides bridge --- */
   const phaseOverrides: LlmPhaseOverrides = policy.phaseOverrides as LlmPhaseOverrides;

@@ -833,7 +833,7 @@ export async function syncJobsFromCatalogSeed({
   }
 
   const selected = limit > 0 ? extracted.products.slice(0, limit) : extracted.products;
-  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category });
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category, specDb });
   let created = 0;
   let skippedExisting = 0;
   let skippedIdentityGate = 0;

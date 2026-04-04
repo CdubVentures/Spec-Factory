@@ -94,7 +94,7 @@ svg text{font-family:var(--sans)}
   <h1>Spec Factory &mdash; Architecture Reference</h1>
   <p>Complete system architecture. SQLite as durable store. JSON as config + checkpoint safety net. This documents the completed state of the system, not plans.</p>
   <div class="meta">
-    <span>Audited 2026-03-31</span>
+    <span>Audited 2026-04-02</span>
     <span>Live-validated</span>
   </div>
 </header>
@@ -104,11 +104,11 @@ svg text{font-family:var(--sans)}
 <!-- ================================================================== -->
 <div class="stats">
   <div class="stat"><div class="n" style="color:var(--accent)">2</div><div class="l">Databases</div></div>
-  <div class="stat"><div class="n" style="color:var(--green)">60</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">49</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n" style="color:var(--violet)">136</div><div class="l">Runtime Settings</div></div>
   <div class="stat"><div class="n" style="color:var(--amber)">11</div><div class="l">RuntimeOps Panels</div></div>
-  <div class="stat"><div class="n" style="color:var(--cyan)">1–4</div><div class="l">Component DBs</div></div>
-  <div class="stat"><div class="n" style="color:var(--rose)">80–111</div><div class="l">Field Definitions</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">21</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n" style="color:var(--rose)">80&ndash;111</div><div class="l">Field Definitions</div></div>
 </div>
 
 <!-- ================================================================== -->
@@ -159,7 +159,7 @@ svg text{font-family:var(--sans)}
 
       <!-- Features -->
       <rect x="540" y="20" width="200" height="64" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.5"/>
-      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules</text>
+      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules (13)</text>
       <text x="640" y="64" text-anchor="middle" fill="#475569" font-size="10">Indexing / Catalog / Review / Settings</text>
 
       <!-- Core -->
@@ -187,7 +187,7 @@ svg text{font-family:var(--sans)}
       <!-- Bridge Events -->
       <rect x="580" y="130" width="200" height="72" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.5"/>
       <text x="680" y="158" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Bridge Events</text>
-      <text x="680" y="176" text-anchor="middle" fill="#475569" font-size="10">Logger &rarr; runtime_events SQL</text>
+      <text x="680" y="176" text-anchor="middle" fill="#475569" font-size="10">Logger &rarr; bridge_events SQL</text>
 
       <!-- Arrow: CatAuth -> Pipeline -->
       <line x1="240" y1="166" x2="298" y2="166" stroke="#f59e0b" stroke-width="1.2" marker-end="url(#ah-a)"/>
@@ -200,14 +200,14 @@ svg text{font-family:var(--sans)}
       <rect x="20" y="250" width="290" height="90" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
       <text x="165" y="276" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700">SPECDB (per-category)</text>
       <text x="165" y="294" text-anchor="middle" fill="#475569" font-size="10">.workspace/db/{category}/spec.sqlite</text>
-      <text x="165" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">55 base tables</text>
-      <text x="165" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Products, candidates, evidence, billing, telemetry</text>
+      <text x="165" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">43 base tables</text>
+      <text x="165" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Products, candidates, evidence, billing, telemetry, crawl ledger</text>
 
       <rect x="340" y="250" width="220" height="90" rx="10" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
       <text x="450" y="276" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">APPDB (global)</text>
       <text x="450" y="294" text-anchor="middle" fill="#475569" font-size="10">.workspace/db/app.sqlite</text>
-      <text x="450" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">5 tables</text>
-      <text x="450" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Brands, settings, studio maps</text>
+      <text x="450" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">6 tables</text>
+      <text x="450" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Brands, settings, studio maps, color registry</text>
 
       <!-- Checkpoint files -->
       <rect x="20" y="390" width="290" height="80" rx="10" fill="#ffffff" stroke="#71717a" stroke-width="1" stroke-dasharray="5,3"/>
@@ -226,7 +226,7 @@ svg text{font-family:var(--sans)}
       <!-- Settings Registry -->
       <rect x="650" y="390" width="200" height="80" rx="10" fill="#ffffff" stroke="#f43f5e" stroke-width="1.5"/>
       <text x="750" y="416" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="700">SETTINGS REGISTRY</text>
-      <text x="750" y="434" text-anchor="middle" fill="#475569" font-size="10">142 entries (SSOT)</text>
+      <text x="750" y="434" text-anchor="middle" fill="#475569" font-size="10">136 entries (SSOT)</text>
       <text x="750" y="450" text-anchor="middle" fill="#94a3b8" font-size="10">Drives: config, TS types, UI, validation</text>
       <text x="750" y="464" text-anchor="middle" fill="#94a3b8" font-size="9">O(1) feature scaling</text>
 
@@ -258,20 +258,20 @@ svg text{font-family:var(--sans)}
   <div class="surface-head">
     <h2>Database Surfaces</h2>
     <span class="tag tag-cols">2 databases</span>
-    <span class="tag" style="background:var(--green-s);color:var(--green)">60 base tables</span>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">49 base tables</span>
   </div>
-  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). Frontier functionality lives in SpecDb via crawlLedgerStore (query_cooldowns + url_crawl_ledger tables). Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
+  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). Runtime total reaches 53 tables when 4 learning stores are created by pipeline runs. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
 
   <table class="col-table" style="margin-bottom:24px">
     <thead><tr><th>Database</th><th>Scope</th><th>Path</th><th>Tables</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">55 base (54 + 1 FTS). Production: up to 62 with runtime tables</td><td class="cc">All domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, run metadata</td></tr>
-      <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">5</td><td class="cc">Brands, user settings, studio field maps, brand categories, brand renames</td></tr>
+      <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">43 base. Runtime: up to 47 with 4 learning stores</td><td class="cc">All domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, run metadata, crawl ledger, color-edition finder</td></tr>
+      <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">6</td><td class="cc">Brands, brand categories, brand renames, user settings, studio field maps, color registry</td></tr>
     </tbody>
   </table>
 
   <div class="domain-group">
-    <div class="domain-label">SpecDb &mdash; Tables by Domain (55 base + runtime)</div>
+    <div class="domain-label">SpecDb &mdash; Tables by Domain (43 base + 4 learning runtime)</div>
     <table class="col-table">
       <thead><tr><th>Domain</th><th>Tables</th><th>Store Module</th></tr></thead>
       <tbody>
@@ -283,32 +283,33 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">Run Metadata</td><td class="ct">runs</td><td class="cc">runMetaStore</td></tr>
         <tr><td class="cn">Run Artifacts</td><td class="ct">run_artifacts</td><td class="cc">runArtifactStore</td></tr>
         <tr><td class="cn">Billing</td><td class="ct">billing_entries</td><td class="cc">billingStore</td></tr>
-        <tr><td class="cn">Cache &amp; Telemetry</td><td class="ct">llm_cache, source_corpus, runtime_events, bridge_events</td><td class="cc">sourceIntelStore</td></tr>
-        <tr><td class="cn">LLM Route / Source</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">llmRouteSourceStore</td></tr>
-        <tr><td class="cn">Evidence Index</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts (virtual)</td><td class="cc">evidenceIndex</td></tr>
-        <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">artifactStore</td></tr>
+        <tr><td class="cn">Source Intel</td><td class="ct">llm_cache, source_corpus, bridge_events</td><td class="cc">sourceIntelStore</td></tr>
+        <tr><td class="cn">LLM Route / Source</td><td class="ct">llm_route_matrix, source_registry, brand_domains</td><td class="cc">llmRouteSourceStore</td></tr>
+        <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos</td><td class="cc">artifactStore</td></tr>
         <tr><td class="cn">Telemetry Index</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">telemetryIndexStore</td></tr>
         <tr><td class="cn">Field History</td><td class="ct">field_history</td><td class="cc">fieldHistoryStore</td></tr>
-        <tr><td class="cn">Queue / Products</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue, audit_log</td><td class="cc">queueProductStore</td></tr>
+        <tr><td class="cn">Queue / Products</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">queueProductStore</td></tr>
         <tr><td class="cn">Field Studio Map</td><td class="ct">field_studio_map</td><td class="cc">fieldStudioMapStore</td></tr>
+        <tr><td class="cn">Field Key Order</td><td class="ct">field_key_order</td><td class="cc">fieldKeyOrderStore</td></tr>
         <tr><td class="cn">Crawl Ledger</td><td class="ct">query_cooldowns, url_crawl_ledger</td><td class="cc">crawlLedgerStore</td></tr>
-        <tr><td class="cn">Field Studio</td><td class="ct">field_studio_map</td><td class="cc">fieldStudioMapStore</td></tr>
-        <tr><td class="cn">Learning (runtime)</td><td class="ct">component_lexicon, field_anchors, url_memory, domain_field_yield</td><td class="cc">learningStores (created by any pipeline run)</td></tr>
-        <tr><td class="cn" style="color:var(--rose)">Ghost tables</td><td class="ct" style="opacity:0.6">crawl_media, domain_classifications, metrics</td><td class="cc" style="color:var(--rose)">No CREATE TABLE in current code &mdash; orphaned from deleted code</td></tr>
+        <tr><td class="cn">Color &amp; Edition Finder</td><td class="ct">color_edition_finder</td><td class="cc">colorEditionFinderStore</td></tr>
+        <tr><td class="cn">Data Authority Sync</td><td class="ct">data_authority_sync</td><td class="cc">Schema-managed (no dedicated store)</td></tr>
+        <tr><td class="cn">Learning (runtime)</td><td class="ct">component_lexicon, field_anchors, url_memory, domain_field_yield</td><td class="cc">learningStores (created by pipeline runs)</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">AppDb &mdash; Tables (5 tables)</div>
+    <div class="domain-label">AppDb &mdash; Tables (6 tables)</div>
     <table class="col-table">
       <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td class="cn">brands</td><td class="cc">Brand definitions (name, aliases, website, categories)</td></tr>
-        <tr><td class="cn">settings</td><td class="cc">User settings key-value store (primary for dual-write)</td></tr>
-        <tr><td class="cn">studio_maps</td><td class="cc">Field-to-sheet mapping for studio export</td></tr>
+        <tr><td class="cn">brands</td><td class="cc">Brand definitions (identifier, canonical name, slug, aliases, website)</td></tr>
         <tr><td class="cn">brand_categories</td><td class="cc">Brand-to-category associations</td></tr>
         <tr><td class="cn">brand_renames</td><td class="cc">Brand rename history log</td></tr>
+        <tr><td class="cn">settings</td><td class="cc">User settings key-value store (primary for dual-write)</td></tr>
+        <tr><td class="cn">studio_maps</td><td class="cc">Field-to-sheet mapping for studio export</td></tr>
+        <tr><td class="cn">color_registry</td><td class="cc">Global color definitions (name, hex, css_var)</td></tr>
       </tbody>
     </table>
   </div>
@@ -371,7 +372,7 @@ svg text{font-family:var(--sans)}
     <div class="domain-label">B. Category Authority (_generated/)</div>
 
     <details class="card" data-search="field_rules.json field definitions constraints">
-      <summary><span class="tname">field_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">80–111 defs</span></span></summary>
+      <summary><span class="tname">field_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">80&ndash;111 defs</span></span></summary>
       <div class="card-body">
         <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Field definitions with constraints, types, validation rules, display metadata. Compiled from category authority source sheets. Count varies by category: mouse 80, keyboard 101, monitor 111.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No (recompiled, not edited)</p>
       </div>
@@ -385,7 +386,7 @@ svg text{font-family:var(--sans)}
     </details>
 
     <details class="card" data-search="field_groups.json semantic groupings">
-      <summary><span class="tname">field_groups.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">10–12 groups</span></span></summary>
+      <summary><span class="tname">field_groups.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">10&ndash;12 groups</span></span></summary>
       <div class="card-body">
         <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Semantic field groupings for UI display and pipeline logic. Count varies by category: mouse 12, keyboard 12, monitor 10.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
       </div>
@@ -434,7 +435,7 @@ svg text{font-family:var(--sans)}
     </details>
 
     <details class="card" data-search="component_db encoders sensors switches materials">
-      <summary><span class="tname">component_db/*.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/component_db/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">1–4 files</span></span></summary>
+      <summary><span class="tname">component_db/*.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/component_db/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">1&ndash;4 files</span></span></summary>
       <div class="card-body">
         <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Component reference databases for hardware component identification and normalization. Mouse has 4 files (encoders, sensors, switches, materials). Keyboard and monitor have 1 file each.</p>
         <table class="col-table" style="margin-top:8px">
@@ -455,10 +456,10 @@ svg text{font-family:var(--sans)}
   <div class="domain-group">
     <div class="domain-label">C. Control Plane</div>
 
-    <details class="card" data-search="product_catalog.json product inventory">
-      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-immutable">Read-Only Seed</span><span class="tag tag-sql">In SQL</span></span></summary>
+    <details class="card" data-search="product_catalog.json product inventory retired">
+      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-dead">RETIRED</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Read-only boot seed for product identity. Read once at startup to populate an empty SQL database. Never mutated on CRUD.<br><strong>SSOT:</strong> SQL products table + .workspace/products/{pid}/product.json<br><strong>Written by:</strong> Never (static seed file)<br><strong>Mutable?</strong> No<br><strong>Per-category variance:</strong> mouse only. Not present in keyboard/monitor.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Status:</strong> RETIRED. No longer read by the seed path.<br><strong>Replaced by:</strong> <code>.workspace/products/{pid}/product.json</code> is now the sole SSOT for product identity (brand, model, variant, category). Rebuilt via checkpoint reseed.<br><strong>Historical note:</strong> Was a read-only boot seed for mouse category only. File may still exist on disk but is not consumed by any active code path.</p>
       </div>
     </details>
 
@@ -524,10 +525,10 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="settings" data-search="settings registry runtime ssot configuration knobs">
   <div class="surface-head">
     <h2>Settings Registry (SSOT)</h2>
-    <span class="tag" style="background:rgba(244,63,94,0.12);color:var(--rose)">140+ entries</span>
+    <span class="tag" style="background:rgba(244,63,94,0.12);color:var(--rose)">136 runtime entries</span>
     <span class="tag tag-cols">O(1) scaling</span>
   </div>
-  <p class="surface-desc">The <code>RUNTIME_SETTINGS_REGISTRY</code> in <code>src/shared/settingsRegistry.js</code> is the single source of truth for all runtime configuration. Each entry is a plain object defining key, type, default, constraints, and UI metadata. Adding one entry auto-derives: config manifest, TypeScript types, UI rendering, validation, clamping, and API payloads.</p>
+  <p class="surface-desc">The <code>RUNTIME_SETTINGS_REGISTRY</code> in <code>src/shared/settingsRegistry.js</code> is the single source of truth for all runtime configuration. Each entry is a plain object defining key, type, default, constraints, and UI metadata. Adding one entry auto-derives: config manifest, TypeScript types, UI rendering, validation, clamping, and API payloads. The file also exports <code>BOOTSTRAP_ENV_REGISTRY</code> (3 entries: startup-only env vars) and <code>UI_SETTINGS_REGISTRY</code> (4 entries: auto-save booleans).</p>
 
   <div class="domain-group">
     <div class="domain-label">Registry Entry Shape</div>
@@ -558,17 +559,18 @@ svg text{font-family:var(--sans)}
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">Settings Groups</div>
+    <div class="domain-label">Settings Groups (RUNTIME_SETTINGS_REGISTRY)</div>
     <table class="col-table">
       <thead><tr><th>Group</th><th>Count</th><th>Examples</th></tr></thead>
       <tbody>
-        <tr><td class="cn" style="color:var(--green)">runtime</td><td class="ct">55</td><td class="cc">crawleeHeadless, capturePageScreenshotEnabled, crawlVideoRecordingEnabled, stealthEnabled, fetchLoadingDelayMs, fetchSuiteMode, runtimeControlFile</td></tr>
-        <tr><td class="cn" style="color:var(--amber)">misc</td><td class="ct">53</td><td class="cc">maxRunSeconds, serperEnabled, googleSearchTimeoutMs, domainClassifierUrlCap, searchProfileQueryCap, pipelineSchemaEnforcementMode, autoScrollEnabled</td></tr>
-        <tr><td class="cn" style="color:var(--accent)">llm</td><td class="ct">21</td><td class="cc">llmProvider, llmModelPlan, llmModelReasoning, llmMaxOutputTokens, llmCostInputPer1M, anthropicApiKey, deepseekApiKey, openaiApiKey</td></tr>
+        <tr><td class="cn" style="color:var(--green)">runtime</td><td class="ct">55</td><td class="cc">crawleeHeadless, capturePageScreenshotEnabled, crawlVideoRecordingEnabled, stealthEnabled, fetchLoadingDelayMs, fetchSuiteMode, cookieConsentEnabled</td></tr>
+        <tr><td class="cn" style="color:var(--amber)">misc</td><td class="ct">53</td><td class="cc">maxRunSeconds, serperEnabled, googleSearchTimeoutMs, domainClassifierUrlCap, searchProfileQueryCap, autoScrollEnabled, geminiApiKey</td></tr>
+        <tr><td class="cn" style="color:var(--accent)">llm</td><td class="ct">21</td><td class="cc">llmProvider, llmModelPlan, llmModelReasoning, llmMaxOutputTokens, llmCostInputPer1M, anthropicApiKey, deepseekApiKey, llmBaseUrl</td></tr>
         <tr><td class="cn" style="color:var(--violet)">paths</td><td class="ct">3</td><td class="cc">categoryAuthorityRoot, localInputRoot, specDbDir</td></tr>
         <tr><td class="cn" style="color:var(--cyan)">discovery</td><td class="ct">1</td><td class="cc">frontierRepairSearchEnabled (retired/inactive)</td></tr>
       </tbody>
     </table>
+    <p style="color:var(--t3);font-size:0.78rem;margin-top:8px">Note: 3 entries (llmPhaseOverridesJson, llmProviderRegistryJson, localOutputRoot) have no explicit group field. Total with group: 133. Total entries: 136.</p>
   </div>
 
   <div class="domain-group">
@@ -600,30 +602,34 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="stores" data-search="store module registry sql tables ownership">
   <div class="surface-head">
     <h2>Store Module Registry</h2>
-    <span class="tag tag-store">17 modules</span>
+    <span class="tag tag-store">21 modules</span>
   </div>
-  <p class="surface-desc">Each store module owns a set of SQL tables and provides the read/write API for its domain. No other module may directly query another store's tables. Store modules are initialized at database open time and exposed through the SpecDb/AppDb facade.</p>
+  <p class="surface-desc">Each store module owns a set of SQL tables and provides the read/write API for its domain. No other module may directly query another store's tables. Store modules are initialized at database open time and exposed through the SpecDb facade. Operational stores (deletionStore, purgeStore, provenanceStore) work across multiple stores' tables rather than owning dedicated tables. All store files live in <code>src/db/stores/</code>.</p>
 
   <table class="col-table">
     <thead><tr><th>Store Module</th><th>Owned Tables</th><th>Table Count</th></tr></thead>
     <tbody>
+      <tr><td class="cn">artifactStore</td><td class="ct">crawl_sources, source_screenshots, source_videos</td><td class="cc">3</td></tr>
+      <tr><td class="cn">billingStore</td><td class="ct">billing_entries</td><td class="cc">1</td></tr>
       <tr><td class="cn">candidateStore</td><td class="ct">candidates, candidate_reviews</td><td class="cc">2</td></tr>
+      <tr><td class="cn">colorEditionFinderStore</td><td class="ct">color_edition_finder</td><td class="cc">1</td></tr>
       <tr><td class="cn">componentStore</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">3</td></tr>
+      <tr><td class="cn">crawlLedgerStore</td><td class="ct">query_cooldowns, url_crawl_ledger</td><td class="cc">2</td></tr>
+      <tr><td class="cn">deletionStore</td><td class="ct" style="opacity:0.7">Cross-store: cascading deletes across all tables + JSON + filesystem</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">enumListStore</td><td class="ct">enum_lists, list_values</td><td class="cc">2</td></tr>
+      <tr><td class="cn">fieldHistoryStore</td><td class="ct">field_history</td><td class="cc">1</td></tr>
+      <tr><td class="cn">fieldKeyOrderStore</td><td class="ct">field_key_order</td><td class="cc">1</td></tr>
+      <tr><td class="cn">fieldStudioMapStore</td><td class="ct">field_studio_map</td><td class="cc">1</td></tr>
       <tr><td class="cn">itemStateStore</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">4</td></tr>
       <tr><td class="cn">keyReviewStore</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">4</td></tr>
-      <tr><td class="cn">runMetaStore</td><td class="ct">runs</td><td class="cc">1</td></tr>
+      <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix, source_registry</td><td class="cc">2</td></tr>
+      <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from item_field_state + candidates</td><td class="cc">Operational</td></tr>
+      <tr><td class="cn">purgeStore</td><td class="ct" style="opacity:0.7">Cross-store: bulk category/product cleanup in referential integrity order</td><td class="cc">Operational</td></tr>
+      <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">5</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
-      <tr><td class="cn">billingStore</td><td class="ct">billing_entries</td><td class="cc">1</td></tr>
-      <tr><td class="cn">sourceIntelStore</td><td class="ct">llm_cache, source_corpus, runtime_events, bridge_events</td><td class="cc">4</td></tr>
-      <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">5</td></tr>
-      <tr><td class="cn">evidenceIndex</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts</td><td class="cc">4</td></tr>
-      <tr><td class="cn">artifactStore</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">4</td></tr>
+      <tr><td class="cn">runMetaStore</td><td class="ct">runs</td><td class="cc">1</td></tr>
+      <tr><td class="cn">sourceIntelStore</td><td class="ct">llm_cache, source_corpus, bridge_events</td><td class="cc">3</td></tr>
       <tr><td class="cn">telemetryIndexStore</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">4</td></tr>
-      <tr><td class="cn">fieldHistoryStore</td><td class="ct">field_history</td><td class="cc">1</td></tr>
-      <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue, audit_log</td><td class="cc">6</td></tr>
-      <tr><td class="cn">fieldStudioMapStore</td><td class="ct">field_studio_map</td><td class="cc">1</td></tr>
-      <tr><td class="cn">crawlLedgerStore</td><td class="ct">query_cooldowns, url_crawl_ledger (SpecDb)</td><td class="cc">2</td></tr>
     </tbody>
   </table>
 </section>
@@ -667,13 +673,12 @@ svg text{font-family:var(--sans)}
       <tbody>
         <tr><td class="cn">/indexlab/runs</td><td class="ct">GET</td><td class="cc">specDb.listRuns()</td></tr>
         <tr><td class="cn">/indexlab/run/{id}</td><td class="ct">GET</td><td class="cc">SQL runs + run_artifacts + events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/events</td><td class="ct">GET</td><td class="cc">SQL runtime_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/events</td><td class="ct">GET</td><td class="cc">SQL bridge_events</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/needset</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (needset)</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/search-profile</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (search_profile)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/rounds</td><td class="ct">GET</td><td class="cc">Aggregated from runtime_events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/evidence-index</td><td class="ct">GET</td><td class="cc">evidence_chunks_fts (FTS search)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/rounds</td><td class="ct">GET</td><td class="cc">Aggregated from bridge_events</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/serp</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (serp_explorer)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/learning</td><td class="ct">GET</td><td class="cc">Filtered runtime_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/learning</td><td class="ct">GET</td><td class="cc">Filtered bridge_events</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/source-indexing-packets</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/item-indexing-packet</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/automation-queue</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
@@ -681,7 +686,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">/indexlab/run/{id}/key-review-summary</td><td class="ct">GET</td><td class="cc">SQL key_review_state aggregate</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/field-summary</td><td class="ct">GET</td><td class="cc">SQL item_field_state + candidates</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/component-summary</td><td class="ct">GET</td><td class="cc">SQL component_identity + values</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/crawl-media</td><td class="ct">GET</td><td class="cc">SQL crawl_media (screenshots, videos, PDFs)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/crawl-media</td><td class="ct">GET</td><td class="cc">SQL crawl_sources + source_screenshots + source_videos</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/billing</td><td class="ct">GET</td><td class="cc">SQL billing_entries for run</td></tr>
       </tbody>
     </table>
@@ -789,9 +794,9 @@ svg text{font-family:var(--sans)}
 
   <div class="tree-block"><span class="dir">.workspace/</span>
   <span class="dir">db/</span>
-    <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps (5 tables)</span>
+    <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps, color registry (6 tables)</span>
     <span class="dir">{category}/</span>
-      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 55 base tables (+ runtime)</span>
+      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 43 base tables (+ 4 learning runtime)</span>
   <span class="dir">runs/</span>
     <span class="dir">{runId}/</span>
       <span class="file">run.json</span>                         <span class="comment">-- Crawl checkpoint (rebuild safety net)</span>
@@ -813,9 +818,9 @@ svg text{font-family:var(--sans)}
   <div class="tree-block"><span class="dir">category_authority/</span>
   <span class="dir">{category}/</span>
     <span class="dir">_generated/</span>                          <span class="comment">-- Compiled authority files (immutable)</span>
-      <span class="file">field_rules.json</span>                 <span class="comment">-- 80–111 field definitions (varies by category)</span>
+      <span class="file">field_rules.json</span>                 <span class="comment">-- 80-111 field definitions (varies by category)</span>
       <span class="file">known_values.json</span>                <span class="comment">-- Enumerated values per field</span>
-      <span class="file">field_groups.json</span>                <span class="comment">-- 10–12 semantic field groupings (varies)</span>
+      <span class="file">field_groups.json</span>                <span class="comment">-- 10-12 semantic field groupings (varies)</span>
       <span class="file">ui_field_catalog.json</span>            <span class="comment">-- UI rendering metadata</span>
       <span class="file">parse_templates.json</span>             <span class="comment">-- Parsing rules library</span>
       <span class="file">cross_validation_rules.json</span>      <span class="comment">-- Business rule constraints</span>
@@ -829,7 +834,7 @@ svg text{font-family:var(--sans)}
         <span class="file">materials.json</span>                 <span class="comment">-- 3 material types</span>
     <span class="file">sources.json</span>                       <span class="comment">-- Source strategy (mutable SSOT, not in SQL)</span>
     <span class="dir">_control_plane/</span>                      <span class="comment">-- Control plane files (varies by category)</span>
-      <span class="file">product_catalog.json</span>             <span class="comment">-- Product inventory seed (mouse only)</span>
+      <span class="file">product_catalog.json</span>             <span class="comment">-- RETIRED &mdash; product.json is sole SSOT</span>
       <span class="file">field_studio_map.json</span>            <span class="comment">-- Sheet-to-field mapping (all categories)</span>
       <span class="file">rename_log.json</span>                  <span class="comment">-- Rename audit trail (mouse only)</span>
   <span class="dir">_global/</span>
@@ -860,7 +865,7 @@ svg text{font-family:var(--sans)}
 
     <div class="principle-card" style="border-color:var(--violet)">
       <h4 style="color:var(--violet)">Event-Driven Runtime</h4>
-      <p>Pipeline phases emit structured events via the Logger. Events flow through the Bridge into runtime_events SQL and bridge_events tables. The GUI consumes events via WebSocket for live updates and via pre-built panels for historical runs.</p>
+      <p>Pipeline phases emit structured events via the Logger. Events flow through the Bridge into bridge_events tables. The GUI consumes events via WebSocket for live updates and via pre-built panels for historical runs.</p>
     </div>
 
     <div class="principle-card" style="border-color:var(--accent)">
@@ -870,7 +875,7 @@ svg text{font-family:var(--sans)}
 
     <div class="principle-card" style="border-color:var(--rose)">
       <h4 style="color:var(--rose)">O(1) Feature Scaling via Registry</h4>
-      <p>The RUNTIME_SETTINGS_REGISTRY (140+ entries) drives config, TypeScript types, UI rendering, and validation from a single definition. Adding a new setting requires modifying exactly one file &mdash; everything else auto-derives.</p>
+      <p>The RUNTIME_SETTINGS_REGISTRY (136 entries) drives config, TypeScript types, UI rendering, and validation from a single definition. Adding a new setting requires modifying exactly one file &mdash; everything else auto-derives.</p>
     </div>
 
     <div class="principle-card" style="border-color:var(--cyan)">
@@ -895,6 +900,28 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">llm_dashboard</td><td class="ct">buildLlmCallsDashboard</td><td class="cc">LLM call log: model, tokens, cost, latency, cache hits</td></tr>
         <tr><td class="cn">fallbacks</td><td class="ct">buildFallbackEvents</td><td class="cc">Fallback events: retries, error recovery, degraded paths</td></tr>
         <tr><td class="cn">queue</td><td class="ct">buildQueueState</td><td class="cc">Product queue state: pending, active, completed, failed</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Feature Modules (13)</div>
+    <table class="col-table">
+      <thead><tr><th>Module</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">catalog</td><td class="ct">src/features/catalog/</td></tr>
+        <tr><td class="cn">category-authority</td><td class="ct">src/features/category-authority/</td></tr>
+        <tr><td class="cn">color-edition</td><td class="ct">src/features/color-edition/</td></tr>
+        <tr><td class="cn">color-registry</td><td class="ct">src/features/color-registry/</td></tr>
+        <tr><td class="cn">crawl</td><td class="ct">src/features/crawl/</td></tr>
+        <tr><td class="cn">expansion-hardening</td><td class="ct">src/features/expansion-hardening/</td></tr>
+        <tr><td class="cn">extraction</td><td class="ct">src/features/extraction/</td></tr>
+        <tr><td class="cn">indexing</td><td class="ct">src/features/indexing/</td></tr>
+        <tr><td class="cn">review</td><td class="ct">src/features/review/</td></tr>
+        <tr><td class="cn">review-curation</td><td class="ct">src/features/review-curation/</td></tr>
+        <tr><td class="cn">settings</td><td class="ct">src/features/settings/</td></tr>
+        <tr><td class="cn">settings-authority</td><td class="ct">src/features/settings-authority/</td></tr>
+        <tr><td class="cn">studio</td><td class="ct">src/features/studio/</td></tr>
       </tbody>
     </table>
   </div>
@@ -942,9 +969,11 @@ svg text{font-family:var(--sans)}
       group.classList.toggle('hidden', !hasVisibleCard && !hasVisibleRow && !groupText.includes(q));
     });
 
-    // Show/hide sections based on visible children
+    // Show/hide sections based on visible children or matching section search text
     allSurfaces.forEach(section => {
-      const sectionText = (section.dataset.search || '' + ' ' + (section.querySelector('.surface-head')?.textContent || '')).toLowerCase();
+      const sectionSearch = (section.dataset.search || '').toLowerCase();
+      const headText = (section.querySelector('.surface-head')?.textContent || '').toLowerCase();
+      const sectionText = sectionSearch + ' ' + headText;
       const hasVisibleChild = section.querySelector('.card:not(.hidden), .domain-group:not(.hidden), .col-table tbody tr:not(.hidden)');
       section.classList.toggle('hidden', !hasVisibleChild && !sectionText.includes(q));
     });

@@ -30,7 +30,7 @@ test('buildJobFromDb — happy path returns full job object', () => {
     identityLock: {
       brand: 'Razer',
       base_model: 'Viper V3 Pro',
-      model: 'Viper V3 Pro',
+      model: 'Viper V3 Pro 4K',
       variant: '4K',
       brand_identifier: '',
       sku: '',
@@ -46,8 +46,8 @@ test('buildJobFromDb — returns null when brand is empty', () => {
   assert.equal(result, null);
 });
 
-test('buildJobFromDb — returns null when model is empty', () => {
-  const db = mockSpecDb({ brand: 'Razer', model: '' });
+test('buildJobFromDb — returns null when base_model is empty', () => {
+  const db = mockSpecDb({ brand: 'Razer', base_model: '', model: 'Viper' });
   const result = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
   assert.equal(result, null);
 });
@@ -98,7 +98,7 @@ test('buildJobFromDb — trims whitespace from brand/model/variant', () => {
   const job = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
   assert.equal(job.identityLock.brand, 'Razer');
   assert.equal(job.identityLock.base_model, 'Viper');
-  assert.equal(job.identityLock.model, 'Viper');
+  assert.equal(job.identityLock.model, 'Viper Pro');
   assert.equal(job.identityLock.variant, 'Pro');
 });
 

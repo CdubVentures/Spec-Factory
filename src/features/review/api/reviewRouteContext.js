@@ -23,7 +23,7 @@ export function createReviewRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
-    loadCategoryConfig, loadProductCatalog, sessionCache, reviewLayoutByCategory,
+    loadCategoryConfig, sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson, spawn,
     syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
     getPendingItemPrimaryCandidateIds, markPrimaryLaneReviewedInItemState,
@@ -42,7 +42,7 @@ export function createReviewRouteContext(options = {}) {
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady, buildReviewLayout,
     buildProductReviewPayload, buildReviewQueue, buildComponentReviewLayout,
     buildComponentReviewPayloads, buildEnumReviewPayloads, loadCategoryConfig,
-    loadProductCatalog, readLatestArtifacts, sessionCache, reviewLayoutByCategory,
+    readLatestArtifacts, sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, findProductsReferencingComponent,
     invalidateFieldRulesCache,
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,

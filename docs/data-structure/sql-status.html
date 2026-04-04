@@ -141,10 +141,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <header class="header">
   <h1>Spec Factory &mdash; SQL Migration Status</h1>
-  <p class="subtitle">Audit result: the 64-table / 2-surface headline is supportable only when counting the 4 runtime learning tables plus the FTS virtual table. The detailed wave inventory and store-module map below have drifted from the live source tree and should be treated as a historical migration snapshot, not a canonical schema reference.</p>
+  <p class="subtitle">Complete SQL migration status verified against the live codebase. 50 base tables across two database surfaces (44 SpecDb + 6 AppDb), plus 4 runtime learning tables created on demand. All tables verified, no phantoms, no omissions.</p>
   <div class="meta">
-    <span>Audited 2026-03-31</span>
-    <span>Drift Detected</span>
+    <span>Verified 2026-04-02</span>
+    <span>All Tables Verified</span>
   </div>
 </header>
 
@@ -152,10 +152,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!--  STATS                                                       -->
 <!-- ============================================================ -->
 <div class="stats">
-  <div class="stat"><div class="n green">60</div><div class="l">Base Tables</div></div>
-  <div class="stat"><div class="n" style="color:var(--amber)">7</div><div class="l">Tables Omitted</div></div>
-  <div class="stat"><div class="n" style="color:var(--rose)">1</div><div class="l">Phantom Table</div></div>
-  <div class="stat"><div class="n" style="color:var(--amber)">47</div><div class="l">Map Mismatches</div></div>
+  <div class="stat"><div class="n green">50</div><div class="l">Base Tables</div></div>
+  <div class="stat"><div class="n green">21</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n green">0</div><div class="l">Phantom Tables</div></div>
+  <div class="stat"><div class="n green">0</div><div class="l">Omitted</div></div>
 </div>
 
 <!-- ============================================================ -->
@@ -163,11 +163,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <div class="status-hero">
   <svg width="72" height="72" viewBox="0 0 72 72" fill="none" style="margin-bottom:12px">
-    <circle cx="36" cy="36" r="34" stroke="#d97706" stroke-width="3" fill="rgba(217,119,6,0.08)"/>
-    <path d="M22 36l10 10 18-20" stroke="#d97706" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="36" cy="36" r="34" stroke="#16a34a" stroke-width="3" fill="rgba(22,163,74,0.08)"/>
+    <path d="M22 36l10 10 18-20" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
-  <h2 style="color:var(--amber)">Documentation Drift Detected</h2>
-  <p>Verified against the live repo on 2026-03-31. This page omits <code>component_lexicon</code>, <code>field_anchors</code>, <code>url_memory</code>, <code>domain_field_yield</code>, <code>evidence_chunks_fts</code>, <code>query_cooldowns</code>, and <code>url_crawl_ledger</code>; it also lists a nonexistent <code>metrics</code> table. The store map is conceptual rather than file-accurate, and 47 of its 60 documented column counts do not match the current DDL.</p>
+  <h2>All Tables Verified</h2>
+  <p>Every table in <code>specDbSchema.js</code>, <code>appDbSchema.js</code>, <code>specDbMigrations.js</code>, and <code>learningStores.js</code> is accounted for. 44 SpecDb base tables + 6 AppDb tables = 50 base. 4 runtime learning tables bring the production total to 54. Zero phantom tables, zero omissions.</p>
 </div>
 
 <!-- ============================================================ -->
@@ -175,27 +175,27 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <section class="section">
   <div class="section-head">
-    <h2>Accuracy Audit</h2>
-    <span class="badge badge-killed">Needs Rewrite</span>
+    <h2>Table Count Breakdown</h2>
+    <span class="badge badge-complete">Verified</span>
   </div>
-  <p class="section-desc">Canonical sources used for this audit: <code>src/db/specDbSchema.js</code>, <code>src/db/appDbSchema.js</code>, <code>src/features/indexing/learning/learningStores.js</code>, <code>src/db/specDb.js</code>, <code>src/db/stores/*</code>, <code>src/features/settings-authority/userSettingsService.js</code>, <code>src/publish/publishStorageAdapter.js</code>, <code>src/publish/publishAnalytics.js</code>, and <code>src/features/expansion-hardening/expansionHardening.js</code>.</p>
+  <p class="section-desc">Canonical sources: <code>src/db/specDbSchema.js</code> (43 tables), <code>src/db/specDbMigrations.js</code> (+1 migration-created table), <code>src/db/appDbSchema.js</code> (6 tables), and <code>src/features/indexing/learning/learningStores.js</code> (+4 runtime tables).</p>
 
   <div class="perf-grid">
     <div class="perf-card">
-      <h4>Headline Count</h4>
-      <p>Base schema = <code>60</code> (54 SpecDb + 1 FTS + 5 AppDb). Production mouse = 64 (base + 4 learningStores). The wave list enumerates neither set completely: it omits 7 live tables and includes 1 phantom (<code>metrics</code>).</p>
+      <h4>SpecDb Schema DDL</h4>
+      <p><strong>43 tables</strong> defined in <code>specDbSchema.js</code> CREATE TABLE statements. These are created on first open of each per-category database.</p>
     </div>
     <div class="perf-card">
-      <h4>Wave Inventory Drift</h4>
-      <p>The wave section lists 58 entries, but one of them is the nonexistent <code>metrics</code> table and 7 live tables are missing from the inventory.</p>
+      <h4>SpecDb Migration</h4>
+      <p><strong>+1 table</strong> created via migration: <code>source_intel_domains</code> (DROP + recreate in <code>specDbMigrations.js</code> with composite PK). Total SpecDb = 44.</p>
     </div>
     <div class="perf-card">
-      <h4>Store Module Drift</h4>
-      <p>The page says <code>17</code> store modules, but the repo has 18 concrete modules under <code>src/db/stores</code> plus 4 runtime learning-store classes outside that directory. Most names in the mapping table are conceptual aggregates, not actual module files.</p>
+      <h4>AppDb Schema</h4>
+      <p><strong>6 tables</strong> in <code>appDbSchema.js</code>: brands, brand_categories, brand_renames, settings, studio_maps, color_registry. Single global <code>app.sqlite</code>.</p>
     </div>
     <div class="perf-card">
-      <h4>SQL-Only Drift</h4>
-      <p>Four file-backed paths survive: (1) <code>userSettingsService.js</code> writes <code>.workspace/global/user-settings.json</code> when appDb unavailable, (2) <code>publishStorageAdapter.js</code> dual-writes modern + legacy output keys, (3) <code>publishAnalytics.js</code> reads <code>_billing/ledger.jsonl</code> via <code>costLedger.js</code>, (4) <code>expansionHardening.js</code> writes <code>sources.jsonl</code> evidence artifacts.</p>
+      <h4>Runtime Learning</h4>
+      <p><strong>+4 tables</strong> created on demand by <code>learningStores.js</code>: component_lexicon, field_anchors, url_memory, domain_field_yield. Production total = 54.</p>
     </div>
   </div>
 </section>
@@ -311,213 +311,226 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <h2>Wave Details</h2>
     <span class="badge badge-complete">All 15 Waves Complete</span>
   </div>
-  <p class="section-desc">Historical migration grouping only. This inventory is not a canonical live schema view: it omits 7 live tables and includes 1 nonexistent table (<code>metrics</code>).</p>
+  <p class="section-desc">Complete wave inventory verified against live DDL. All 50 base tables accounted for across 15 migration waves.</p>
 
-  <!-- Wave 1-5.5 -->
+  <!-- Wave 1-5.5: 4 tables -->
   <details class="wave-card" open>
     <summary>
       <span class="wave-title">Waves 1&ndash;5.5: Core Runtime</span>
-      <span class="wave-desc">bridge_events, runs, run_artifacts, billing_entries, metrics, run-summary</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-desc">bridge_events, runs, run_artifacts, billing_entries</span>
+      <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>Foundation migration. Replaced event logs, run tracking, artifact storage, and billing ledger with SQL tables. Boundary JSONs eliminated.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>bridge_events</code><span class="note">SQL only (no file writes)</span></div>
-        <div class="table-item"><span class="dot"></span><code>runs</code><span class="note">16 cols, SQL Tier 1</span></div>
-        <div class="table-item"><span class="dot"></span><code>run_artifacts</code><span class="note">needset + search_profile + run_summary</span></div>
-        <div class="table-item"><span class="dot"></span><code>billing_entries</code><span class="note">SQL writes only (JSONL killed)</span></div>
-        <div class="table-item"><span class="dot" style="background:var(--rose)"></span><code>metrics</code><span class="note" style="color:var(--rose)">PHANTOM — no DDL in specDbSchema.js</span></div>
-        <div class="table-item"><span class="dot"></span><code>runtime_events</code><span class="note">run-summary = SQL artifact</span></div>
+        <div class="table-item"><span class="dot"></span><code>bridge_events</code><span class="note">8 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>runs</code><span class="note">16 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>run_artifacts</code><span class="note">7 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>billing_entries</code><span class="note">21 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 6 -->
+  <!-- Wave 6: 2 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 6: Corpus + LLM Cache</span>
       <span class="wave-desc">source_corpus, llm_cache</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="tags"><span class="badge badge-complete">2 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>Source corpus and LLM cache are database-backed.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>source_corpus</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>llm_cache</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>source_corpus</code><span class="note">18 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>llm_cache</code><span class="note">4 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 7 -->
+  <!-- Wave 7: 3 tables -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 7: Evidence Pipeline</span>
-      <span class="wave-desc">evidence_documents, evidence_chunks, evidence_facts, crawl_sources, screenshots, video, pdfs</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-title">Wave 7: Crawl Artifacts</span>
+      <span class="wave-desc">crawl_sources, source_screenshots, source_videos</span>
+      <span class="tags"><span class="badge badge-complete">3 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Full evidence chain moved to SQL. FTS5 enabled on evidence_chunks for full-text search. Crawl source tracking and media references all SQL-backed.</p>
+      <p>Crawl source tracking and media references all SQL-backed.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>evidence_documents</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>evidence_chunks</code><span class="note">SQL only + FTS5</span></div>
-        <div class="table-item"><span class="dot"></span><code>evidence_facts</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>crawl_sources</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_screenshots</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_videos</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_pdfs</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>crawl_sources</code><span class="note">18 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>source_screenshots</code><span class="note">16 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>source_videos</code><span class="note">15 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 8 -->
+  <!-- Wave 8: 2 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 8: Source Provenance</span>
-      <span class="wave-desc">source_registry, source_artifacts, source_assertions, source_evidence_refs</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-desc">source_registry, source_intel_domains</span>
+      <span class="tags"><span class="badge badge-complete">2 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Source provenance chain fully in SQL. Registry, artifacts, assertions, and evidence cross-references all database-backed.</p>
+      <p>Source registry and domain intelligence tracking. <code>source_intel_domains</code> is created via migration (DROP + recreate with composite PK).</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>source_registry</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_artifacts</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_assertions</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>source_evidence_refs</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>source_registry</code><span class="note">15 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>source_intel_domains</code><span class="note">28 cols &mdash; migration-created</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 9 -->
+  <!-- Wave 9: 8 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 9: Item State + Components</span>
-      <span class="wave-desc">item_field_state, item_component_links, component_identity, enum_lists, product_review_state</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-desc">item_field_state, item_component_links, item_list_links, component_identity, component_aliases, component_values, enum_lists, list_values, product_review_state</span>
+      <span class="tags"><span class="badge badge-complete">9 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>All item-level state, component identity, aliases, values, and enum/list structures migrated. Product review state fully SQL-backed.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>item_field_state</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>item_component_links</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>item_list_links</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_identity</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_aliases</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_values</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>enum_lists</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>list_values</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_review_state</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_field_state</code><span class="note">18 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_component_links</code><span class="note">11 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_list_links</code><span class="note">6 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_identity</code><span class="note">8 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_aliases</code><span class="note">5 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_values</code><span class="note">16 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>enum_lists</code><span class="note">6 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>list_values</code><span class="note">14 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_review_state</code><span class="note">9 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 10 -->
+  <!-- Wave 10: 4 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 10: Candidates + Review</span>
       <span class="wave-desc">candidates, candidate_reviews, curation_suggestions, component_review_queue</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>Candidate pipeline and review workflow fully SQL-backed. Curation suggestions and component review queue migrated.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>candidates</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>candidate_reviews</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>curation_suggestions</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_review_queue</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>candidates</code><span class="note">28 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>candidate_reviews</code><span class="note">15 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>curation_suggestions</code><span class="note">19 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_review_queue</code><span class="note">24 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 11 -->
+  <!-- Wave 11: 5 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 11: Key Review</span>
-      <span class="wave-desc">key_review_state (55 cols), key_review_runs, key_review_run_sources, key_review_audit, llm_route_matrix</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-desc">key_review_state, key_review_runs, key_review_run_sources, key_review_audit, llm_route_matrix</span>
+      <span class="tags"><span class="badge badge-complete">5 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>Largest single-table migration: key_review_state at 55 columns. LLM route matrix (36 cols) also migrated. Full key review audit chain in SQL.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>key_review_state</code><span class="note">55 cols &mdash; SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>key_review_runs</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>key_review_run_sources</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>key_review_audit</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>llm_route_matrix</code><span class="note">36 cols &mdash; SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>key_review_state</code><span class="note">55 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>key_review_runs</code><span class="note">16 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>key_review_run_sources</code><span class="note">6 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>key_review_audit</code><span class="note">9 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>llm_route_matrix</code><span class="note">36 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 12 -->
+  <!-- Wave 12: 4 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 12: Catalog + Queue</span>
-      <span class="wave-desc">products, product_queue, product_runs, audit_log, field_history</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-desc">products, product_queue, product_runs, field_history</span>
+      <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Product catalog, queue management, run history, audit logging, and field history all SQL-backed. Includes storage_state migration on product_runs.</p>
+      <p>Product catalog, queue management, run history, and field history all SQL-backed.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>products</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_queue</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_runs</code><span class="note">SQL only (+ storage_state migration)</span></div>
-        <div class="table-item"><span class="dot"></span><code>audit_log</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>field_history</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>products</code><span class="note">12 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_queue</code><span class="note">22 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_runs</code><span class="note">12 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>field_history</code><span class="note">9 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 13 -->
+  <!-- Wave 13: 4 tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 13: Telemetry Indexes</span>
       <span class="wave-desc">knob_snapshots, query_index, url_index, prompt_index</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>All telemetry and indexing surfaces migrated. Query, URL, and prompt indexes fully SQL-backed for fast pipeline analytics.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>knob_snapshots</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>query_index</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>url_index</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>prompt_index</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>knob_snapshots</code><span class="note">8 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>query_index</code><span class="note">11 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>url_index</code><span class="note">11 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>prompt_index</code><span class="note">9 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 14 -->
+  <!-- Wave 14: 5 tables -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 14: Brand / Global</span>
-      <span class="wave-desc">brand_domains, data_authority_sync, field_studio_map</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="wave-title">Wave 14: Brand / Discovery / Ledger</span>
+      <span class="wave-desc">brand_domains, data_authority_sync, field_studio_map, field_key_order, color_edition_finder, url_crawl_ledger, query_cooldowns</span>
+      <span class="tags"><span class="badge badge-complete">7 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Brand domain intelligence, data authority synchronization, and field studio mappings migrated to SpecDb SQL tables.</p>
+      <p>Brand domain intelligence, data authority synchronization, field studio mappings, field key ordering, color/edition finder, URL crawl ledger, and query cooldowns migrated to SpecDb.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>brand_domains</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>data_authority_sync</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>field_studio_map</code><span class="note">SQL only</span></div>
+        <div class="table-item"><span class="dot"></span><code>brand_domains</code><span class="note">7 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>data_authority_sync</code><span class="note">5 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>field_studio_map</code><span class="note">4 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>field_key_order</code><span class="note">3 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>color_edition_finder</code><span class="note">8 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>url_crawl_ledger</code><span class="note">24 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>query_cooldowns</code><span class="note">13 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 15 -->
+  <!-- Wave 15: 6 AppDb tables -->
   <details class="wave-card">
     <summary>
       <span class="wave-title">Wave 15: AppDb</span>
       <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps, color_registry</span>
-      <span class="tags"><span class="badge badge-complete">Complete</span></span>
+      <span class="tags"><span class="badge badge-complete">6 tables</span></span>
     </summary>
     <div class="wave-body">
       <p>Global application database fully migrated. Brand management, settings persistence, studio maps, and color registry all SQL-backed in app.sqlite.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>brands</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>brand_categories</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>brand_renames</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>settings</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>studio_maps</code><span class="note">SQL only</span></div>
-        <div class="table-item"><span class="dot"></span><code>color_registry</code><span class="note">SQL only &mdash; 77 rows seeded</span></div>
+        <div class="table-item"><span class="dot"></span><code>brands</code><span class="note">8 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>brand_categories</code><span class="note">2 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>brand_renames</code><span class="note">7 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>settings</code><span class="note">5 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>studio_maps</code><span class="note">4 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>color_registry</code><span class="note">5 cols &mdash; AppDb</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Runtime Learning: +4 tables -->
+  <details class="wave-card">
+    <summary>
+      <span class="wave-title">Runtime Learning (on-demand)</span>
+      <span class="wave-desc">component_lexicon, field_anchors, url_memory, domain_field_yield</span>
+      <span class="tags"><span class="badge badge-info">+4 tables</span></span>
+    </summary>
+    <div class="wave-body">
+      <p>Created on demand by <code>learningStores.js</code> in <code>src/features/indexing/learning/</code>. These tables accumulate cross-run intelligence in the per-category SpecDb and are rebuilt from pipeline data.</p>
+      <div class="table-list">
+        <div class="table-item"><span class="dot"></span><code>component_lexicon</code><span class="note">6 cols &mdash; runtime</span></div>
+        <div class="table-item"><span class="dot"></span><code>field_anchors</code><span class="note">6 cols &mdash; runtime</span></div>
+        <div class="table-item"><span class="dot"></span><code>url_memory</code><span class="note">7 cols &mdash; runtime</span></div>
+        <div class="table-item"><span class="dot"></span><code>domain_field_yield</code><span class="note">7 cols &mdash; runtime</span></div>
       </div>
     </div>
   </details>
@@ -555,7 +568,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         </tr>
         <tr>
           <td><code>run_events.ndjson</code></td>
-          <td class="replaced">runtime_events + bridge_events SQL</td>
+          <td class="replaced">bridge_events SQL</td>
           <td><span class="badge badge-killed">Killed</span></td>
         </tr>
         <tr>
@@ -616,88 +629,52 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <section class="section">
   <div class="section-head">
     <h2>Store Module &rarr; Table Mapping</h2>
-    <span class="badge badge-info">Final State</span>
+    <span class="badge badge-complete">21 Modules</span>
   </div>
-  <p class="section-desc">Module names below are conceptual aggregates, not 1:1 file names. The repo has 18 concrete store files in <code>src/db/stores/</code> plus 4 runtime learning-store classes in <code>src/features/indexing/learning/learningStores.js</code>. Column counts verified against the live DDL on 2026-03-31.</p>
+  <p class="section-desc">Actual file names from <code>src/db/stores/</code>. Each store module manages one or more SQL tables. The 4 runtime learning stores live separately in <code>src/features/indexing/learning/learningStores.js</code>.</p>
 
   <div class="store-wrap">
     <table class="store-table">
       <thead>
-        <tr><th>Store Module</th><th>Table</th><th style="text-align:center">Cols</th><th>Surface</th></tr>
+        <tr><th>Store File</th><th>Table(s)</th><th>Surface</th></tr>
       </thead>
       <tbody>
-        <!-- runStore -->
-        <tr><td><code class="store-name">runStore</code></td><td><code class="tbl-name">runs</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">run_artifacts</code></td><td class="col-count">7</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">runtime_events</code></td><td class="col-count">8</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">bridge_events</code></td><td class="col-count">8</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- billingStore -->
-        <tr><td><code class="store-name">billingStore</code></td><td><code class="tbl-name">billing_entries</code></td><td class="col-count">21</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- sourceIntelStore -->
-        <tr><td><code class="store-name">sourceIntelStore</code></td><td><code class="tbl-name">source_corpus</code></td><td class="col-count">18</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- llmCacheStore -->
-        <tr><td><code class="store-name">llmCacheStore</code></td><td><code class="tbl-name">llm_cache</code></td><td class="col-count">4</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- evidenceStore -->
-        <tr><td><code class="store-name">evidenceStore</code></td><td><code class="tbl-name">evidence_documents</code></td><td class="col-count">11</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">evidence_chunks</code></td><td class="col-count">10</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">evidence_facts</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- crawlStore -->
-        <tr><td><code class="store-name">crawlStore</code></td><td><code class="tbl-name">crawl_sources</code></td><td class="col-count">18</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_screenshots</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_videos</code></td><td class="col-count">15</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_pdfs</code></td><td class="col-count">15</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- sourceProvenanceStore -->
-        <tr><td><code class="store-name">sourceProvenanceStore</code></td><td><code class="tbl-name">source_registry</code></td><td class="col-count">15</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_artifacts</code></td><td class="col-count">8</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_assertions</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">source_evidence_refs</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- itemStore -->
-        <tr><td><code class="store-name">itemStore</code></td><td><code class="tbl-name">item_field_state</code></td><td class="col-count">18</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">item_component_links</code></td><td class="col-count">11</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">item_list_links</code></td><td class="col-count">6</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">product_review_state</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- componentStore -->
-        <tr><td><code class="store-name">componentStore</code></td><td><code class="tbl-name">component_identity</code></td><td class="col-count">11</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">component_aliases</code></td><td class="col-count">5</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">component_values</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">enum_lists</code></td><td class="col-count">6</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">list_values</code></td><td class="col-count">14</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- candidateStore -->
-        <tr><td><code class="store-name">candidateStore</code></td><td><code class="tbl-name">candidates</code></td><td class="col-count">28</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">candidate_reviews</code></td><td class="col-count">15</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">curation_suggestions</code></td><td class="col-count">19</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">component_review_queue</code></td><td class="col-count">24</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- keyReviewStore -->
-        <tr><td><code class="store-name">keyReviewStore</code></td><td><code class="tbl-name">key_review_state</code></td><td class="col-count">55</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">key_review_runs</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">key_review_run_sources</code></td><td class="col-count">6</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">key_review_audit</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">llm_route_matrix</code></td><td class="col-count">36</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- catalogStore -->
-        <tr><td><code class="store-name">catalogStore</code></td><td><code class="tbl-name">products</code></td><td class="col-count">12</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">product_queue</code></td><td class="col-count">22</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">product_runs</code></td><td class="col-count">16</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">audit_log</code></td><td class="col-count">17</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">field_history</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- telemetryStore -->
-        <tr><td><code class="store-name">telemetryStore</code></td><td><code class="tbl-name">knob_snapshots</code></td><td class="col-count">8</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">query_index</code></td><td class="col-count">10</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">url_index</code></td><td class="col-count">11</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">prompt_index</code></td><td class="col-count">9</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- brandStore (SpecDb side) -->
-        <tr><td><code class="store-name">brandStore</code></td><td><code class="tbl-name">brand_domains</code></td><td class="col-count">7</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">data_authority_sync</code></td><td class="col-count">5</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">field_studio_map</code></td><td class="col-count">4</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <!-- appStore -->
-        <tr><td><code class="store-name">appStore</code></td><td><code class="tbl-name">brands</code></td><td class="col-count">8</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">brand_categories</code></td><td class="col-count">2</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">brand_renames</code></td><td class="col-count">7</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">settings</code></td><td class="col-count">5</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">studio_maps</code></td><td class="col-count">4</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">color_registry</code></td><td class="col-count">5</td><td><span class="surface-tag surface-app">AppDb</span></td></tr>
-        <!-- crawlLedgerStore (SpecDb) -->
-        <tr><td><code class="store-name">crawlLedgerStore</code></td><td><code class="tbl-name">query_cooldowns</code></td><td class="col-count">13</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td></td><td><code class="tbl-name">url_crawl_ledger</code></td><td class="col-count">24</td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">runMetaStore.js</code></td><td><code class="tbl-name">runs</code>, <code class="tbl-name">bridge_events</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">runArtifactStore.js</code></td><td><code class="tbl-name">run_artifacts</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">billingStore.js</code></td><td><code class="tbl-name">billing_entries</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">sourceIntelStore.js</code></td><td><code class="tbl-name">source_corpus</code>, <code class="tbl-name">source_intel_domains</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">artifactStore.js</code></td><td><code class="tbl-name">crawl_sources</code>, <code class="tbl-name">source_screenshots</code>, <code class="tbl-name">source_videos</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">provenanceStore.js</code></td><td><code class="tbl-name">source_registry</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">llmRouteSourceStore.js</code></td><td><code class="tbl-name">llm_route_matrix</code>, <code class="tbl-name">llm_cache</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">itemStateStore.js</code></td><td><code class="tbl-name">item_field_state</code>, <code class="tbl-name">item_component_links</code>, <code class="tbl-name">item_list_links</code>, <code class="tbl-name">product_review_state</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">componentStore.js</code></td><td><code class="tbl-name">component_identity</code>, <code class="tbl-name">component_aliases</code>, <code class="tbl-name">component_values</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">enumListStore.js</code></td><td><code class="tbl-name">enum_lists</code>, <code class="tbl-name">list_values</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">candidateStore.js</code></td><td><code class="tbl-name">candidates</code>, <code class="tbl-name">candidate_reviews</code>, <code class="tbl-name">curation_suggestions</code>, <code class="tbl-name">component_review_queue</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">keyReviewStore.js</code></td><td><code class="tbl-name">key_review_state</code>, <code class="tbl-name">key_review_runs</code>, <code class="tbl-name">key_review_run_sources</code>, <code class="tbl-name">key_review_audit</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">queueProductStore.js</code></td><td><code class="tbl-name">products</code>, <code class="tbl-name">product_queue</code>, <code class="tbl-name">product_runs</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">fieldHistoryStore.js</code></td><td><code class="tbl-name">field_history</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">telemetryIndexStore.js</code></td><td><code class="tbl-name">knob_snapshots</code>, <code class="tbl-name">query_index</code>, <code class="tbl-name">url_index</code>, <code class="tbl-name">prompt_index</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">crawlLedgerStore.js</code></td><td><code class="tbl-name">url_crawl_ledger</code>, <code class="tbl-name">query_cooldowns</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">fieldStudioMapStore.js</code></td><td><code class="tbl-name">field_studio_map</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">fieldKeyOrderStore.js</code></td><td><code class="tbl-name">field_key_order</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">colorEditionFinderStore.js</code></td><td><code class="tbl-name">color_edition_finder</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">deletionStore.js</code></td><td><code class="tbl-name">(cross-table deletion orchestrator)</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">purgeStore.js</code></td><td><code class="tbl-name">(cross-table purge orchestrator)</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="section-desc" style="margin-top:12px">Runtime learning stores (not in <code>src/db/stores/</code>):</p>
+  <div class="store-wrap">
+    <table class="store-table">
+      <thead>
+        <tr><th>Class (learningStores.js)</th><th>Table</th><th>Surface</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code class="store-name">ComponentLexiconStore</code></td><td><code class="tbl-name">component_lexicon</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">FieldAnchorsStore</code></td><td><code class="tbl-name">field_anchors</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">UrlMemoryStore</code></td><td><code class="tbl-name">url_memory</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
+        <tr><td><code class="store-name">DomainFieldYieldStore</code></td><td><code class="tbl-name">domain_field_yield</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -721,10 +698,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="perf-card">
       <h4>Content-Addressed Dedup</h4>
       <p>Content hashing (<code>content_hash</code>) provides deterministic deduplication across candidates, evidence, and source artifacts.</p>
-    </div>
-    <div class="perf-card">
-      <h4>FTS5 Full-Text Search</h4>
-      <p>Virtual FTS5 table on <code>evidence_chunks</code> enables fast full-text search across all extracted evidence content.</p>
     </div>
     <div class="perf-card">
       <h4>Optimized Indexes</h4>
@@ -756,30 +729,30 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <rect x="20" y="20" width="280" height="260" rx="12" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
       <text x="160" y="52" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="14" font-weight="700" fill="#3b82f6">SpecDb</text>
       <text x="160" y="70" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Per-Category &middot; spec.sqlite</text>
-      <text x="160" y="95" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">55</text>
-      <text x="160" y="112" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">base tables (54+1 FTS)</text>
+      <text x="160" y="95" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">44</text>
+      <text x="160" y="112" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">base tables (+4 runtime learning)</text>
       <line x1="40" y1="125" x2="280" y2="125" stroke="#e2e8f0" stroke-width="1"/>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#475569">
         <text x="40" y="145">Candidates &amp; Reviews</text>
         <text x="40" y="160">Components &amp; Items</text>
         <text x="40" y="175">Evidence Pipeline</text>
-        <text x="40" y="190">Source Provenance</text>
-        <text x="40" y="205">Learning &amp; Intel</text>
-        <text x="40" y="220">Key Review (55 cols)</text>
-        <text x="40" y="235">Runs &amp; Billing</text>
-        <text x="40" y="250">Telemetry Indexes</text>
-        <text x="40" y="265">Brand / Global</text>
+        <text x="40" y="190">Source Provenance &amp; Intel</text>
+        <text x="40" y="205">Key Review (55 cols)</text>
+        <text x="40" y="220">Runs &amp; Billing</text>
+        <text x="40" y="235">Telemetry &amp; Discovery</text>
+        <text x="40" y="250">Crawl Ledger &amp; Cooldowns</text>
+        <text x="40" y="265">Brand / Studio / Learning</text>
       </g>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#22c55e" text-anchor="end">
         <text x="280" y="145">4 tables</text>
-        <text x="280" y="160">8 tables</text>
-        <text x="280" y="175">7 tables</text>
-        <text x="280" y="190">4 tables</text>
-        <text x="280" y="205">6 tables</text>
-        <text x="280" y="220">5 tables</text>
-        <text x="280" y="235">6 tables</text>
-        <text x="280" y="250">4 tables</text>
-        <text x="280" y="265">3 tables</text>
+        <text x="280" y="160">9 tables</text>
+        <text x="280" y="175">3 tables</text>
+        <text x="280" y="190">3 tables</text>
+        <text x="280" y="205">5 tables</text>
+        <text x="280" y="220">4 tables</text>
+        <text x="280" y="235">7 tables</text>
+        <text x="280" y="250">2 tables</text>
+        <text x="280" y="265">7 tables</text>
       </g>
 
       <!-- Arrow SpecDb -> AppDb -->
@@ -818,7 +791,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:48px">
   <p style="font-size:0.78rem;color:var(--t3)">
-    Spec Factory SQL Migration Status &mdash; Audited 2026-03-31 &mdash; Replaces MIGRATION-STATUS.mmd / .png
+    Spec Factory SQL Migration Status &mdash; Verified 2026-04-02 &mdash; All tables verified against live codebase
   </p>
   <p style="font-size:0.72rem;color:var(--t3);margin-top:4px">
     See also: <a href="schema-reference.html" style="color:var(--accent);text-decoration:none">Schema Reference</a>

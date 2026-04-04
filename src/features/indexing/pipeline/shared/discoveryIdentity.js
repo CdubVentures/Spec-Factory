@@ -75,13 +75,15 @@ export function resolveJobIdentity(job = {}) {
     : {};
   return {
     brand: String(identityLock.brand || job?.brand || '').trim(),
+    base_model: String(identityLock.base_model || job?.base_model || '').trim(),
     model: String(identityLock.model || job?.model || '').trim(),
     variant: String(identityLock.variant || job?.variant || '').trim()
   };
 }
 
 export function productText(variables = {}) {
-  return [variables.brand, variables.model, variables.variant]
+  // WHY: Use base_model + variant to avoid duplication when model is the full derived name.
+  return [variables.brand, variables.base_model || variables.model, variables.variant]
     .map((value) => String(value || '').trim())
     .filter(Boolean)
     .join(' ')
@@ -125,10 +127,11 @@ export function normalizeIdentityTokens(variables = {}) {
 export function buildModelSlugCandidates(variables = {}, cap = 6) {
   const entries = [];
   const brandSlug = slug(variables.brand || '');
-  const modelSlug = slug(variables.model || '');
+  const baseModel = variables.base_model || variables.model || '';
+  const modelSlug = slug(baseModel);
   const variantSlug = slug(variables.variant || '');
-  const combinedModel = slug([variables.model, variables.variant].filter(Boolean).join(' '));
-  const brandModel = slug([variables.brand, variables.model, variables.variant].filter(Boolean).join(' '));
+  const combinedModel = slug([baseModel, variables.variant].filter(Boolean).join(' '));
+  const brandModel = slug([variables.brand, baseModel, variables.variant].filter(Boolean).join(' '));
 
   for (const value of [combinedModel, modelSlug, brandModel]) {
     if (value) {

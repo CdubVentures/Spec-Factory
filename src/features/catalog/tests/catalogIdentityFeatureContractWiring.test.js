@@ -11,5 +11,6 @@ test('catalog feature contract exports canonical identity capabilities after com
   assert.equal(typeof catalog.resolveProductIdentity, 'function');
   assert.equal(typeof catalog.resolveAuthoritativeProductIdentity, 'function');
   assert.equal(typeof catalog.inferIdentityFromProductId, 'function');
-  assert.equal(typeof catalog.loadProductCatalog, 'function');
+  // WHY: loadProductCatalog retired — product.json is the sole disk SSOT, SQL is cache.
+  assert.equal(catalog.loadProductCatalog, undefined);
 });

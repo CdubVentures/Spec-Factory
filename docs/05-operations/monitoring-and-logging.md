@@ -18,7 +18,6 @@
 | Sink | Path | Producer | Notes |
 |------|------|----------|-------|
 | Runtime NDJSON log | `_runtime/events.jsonl` under the active output root | `src/logger.js` via `EventLogger` | append-only NDJSON event stream |
-| SQLite runtime telemetry | `runtime_events` table in the category SpecDb | `src/logger.js`, `src/db/specDb.js` | best-effort mirror of runtime events |
 | Per-run IndexLab events | `run_events.ndjson` under each IndexLab run directory | IndexLab runtime builders/readers | replayed by `indexlabRoutes` and Runtime Ops |
 | Process log broadcast | WebSocket `process` channel | `src/app/api/processRuntime.js` | child stdout/stderr lines while a process is active |
 | Launcher setup state | in-memory launcher state via `/api/install/state` | `tools/specfactory-launcher.mjs` | separate setup/bootstrap runtime, not `src/api/guiServer.js` |
@@ -64,7 +63,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
   - inspect `/api/v1/health` and `/api/v1/process/status`,
   - inspect Runtime Ops,
   - inspect `_runtime/events.jsonl`,
-  - inspect `runtime_events` and other SpecDb telemetry tables.
+  - inspect `bridge_events` and other SpecDb telemetry tables.
 - Observed during live validation on 2026-03-31 local time: `/api/v1/process/status` returned `running: false` while still retaining the last completed `run_id`, `category`, `product_id`, `storage_destination`, `pid`, `exitCode`, `startedAt`, and `endedAt`. Do not assume the idle shape clears those fields.
 
 ## Validated Against

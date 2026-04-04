@@ -122,15 +122,20 @@ export function createRuntimeSettingsHandler({
           runtimePatch[cfgKey] = b;
         }
       }
-      const userSettingsState = persistenceCtx.getUserSettingsState();
-      const currentUserRuntime = (
-        userSettingsState
-        && userSettingsState.runtime
-        && typeof userSettingsState.runtime === 'object'
-      )
-        ? userSettingsState.runtime
-        : {};
-      Object.assign(nextRuntimeSnapshot, currentUserRuntime, runtimePatch);
+      Object.assign(nextRuntimeSnapshot, runtimePatch);
+
+      // WHY: Prevent persisting an empty provider registry when the live config
+      // has a non-empty one. The registry is not in the runtime-settings route
+      // maps, so it comes from snapshotRuntimeSettings(config). If the config
+      // was correctly seeded from defaults but the snapshot somehow has "[]",
+      // preserve the config's registry to avoid wiping model→provider routing.
+      if (
+        nextRuntimeSnapshot.llmProviderRegistryJson === '[]'
+        && typeof config.llmProviderRegistryJson === 'string'
+        && config.llmProviderRegistryJson.length > 2
+      ) {
+        nextRuntimeSnapshot.llmProviderRegistryJson = config.llmProviderRegistryJson;
+      }
 
       persistenceCtx.recordRouteWriteAttempt('runtime', 'runtime-settings-route');
       let persistedArtifacts = null;

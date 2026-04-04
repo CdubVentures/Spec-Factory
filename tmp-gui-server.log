@@ -1,0 +1,13 @@
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\Spec Factory\.workspace\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\Spec Factory\.workspace\runs
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-BdIXYzKE.js, BrandManager-Bz4wkcz5.js, buttonClasses-DdWdVcJt.js, CatalogPage-DGzRGB0S.js, CategoryManager-HK7Q5VSg.js, ColorRegistryPage-CYXxWULu.js, colors-DrFtcRO7.js, ComponentReviewPage-BDz_R6W9.js, DataTable-25ctIxis.js, DrawerShell-cdjePsYH.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-BpjSQ7H8.js, FlagsSection-DEsDgzyR.js, formatting-B6A_RRxb.js, index-D9kdOkYS.js, index-Df9P1GMc.css, IndexingPage-DzVgr-BK.js, invalidateFieldRulesQueries-BP8pxOwC.js, LlmConfigPage-BzYsAWNt.js, LlmGlobalSection-BbKAZXgi.js, llmPhaseOverridesBridge.generated-BF4RkQig.js, LlmPhaseSection-C7b9hCOW.js, LlmProviderRegistrySection-GNY75u12.js, LlmSettingsPage-Cgln85cz.js, MetricRow-D_hTP0AY.js, ModelAccessBadges-qyT9pHFE.js, ModelSelectDropdown-DZprqGzs.js, OverviewPage-gZsoYErN.js, PipelineDeterministicStrategySection-oL_l633W.js, PipelineSettingsPage-CO6gQJu_.js, PipelineSourceStrategySection-BU3ilGwc.js, ProductPage-EnJoAgy6.js, ReviewPage-N63aSqnk.js, RuntimeFlowDraftPayload-DpkS8uyP.js, RuntimeOpsPage-CHX_GIC_.js, settingsStatus-AVm2qVB3.js, SidebarShell-CrLN22Kj.js, sortable.esm-DHLR6drX.js, Sparkline-DpfYBocK.js, StoragePage-CusMVRyc.js, studioConstants-nqhBdjjj.js, StudioPage-DmhgspiF.js, TabStrip-r04xn31b.js, TestModePage-CpMOWx8E.js, TierHierarchyPanel-tsYdj7p-.js, TierPicker-BQ4_5Tt7.js, TrafficLight-DioLRezk.js, useFieldLabels-B_DuU3ok.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-C3F9BWoW.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-ChHmRzDf.js
+[auto-seed] mouse: 2 color-edition rows re-seeded from product files
+[auto-seed] mouse: 12 runs re-seeded from checkpoints

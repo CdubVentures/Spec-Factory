@@ -35,7 +35,6 @@ async function readJsonIfExists(filePath) {
 }
 
 import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
-import { cleanVariant, isFabricatedVariant } from '../features/catalog/identity/identityDedup.js';
 
 function isKnownToken(v) {
   const token = normalizeToken(v);
@@ -668,6 +667,14 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
   const helperRoot = config.categoryAuthorityRoot || 'category_authority';
   const overridesDir = path.join(helperRoot, category, '_overrides');
 
+  // WHY: Overlap 0d — read consolidated overrides once, fall back to per-product files
+  let consolidatedProducts = {};
+  try {
+    const { readConsolidatedOverrides } = await import('../shared/consolidatedOverrides.js');
+    const consolidated = await readConsolidatedOverrides({ config, category });
+    consolidatedProducts = consolidated?.products || {};
+  } catch { /* consolidated file missing or module not available — fall back to per-product */ }
+
   let entries;
   try {
     entries = await fs.readdir(outputRoot, { withFileTypes: true });
@@ -686,11 +693,15 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
     const latestDir = path.join(outputRoot, productId, 'latest');
 
     try {
+      // WHY: Overlap 0d — per-product-level fallback: consolidated first, then per-product file
+      const overridesFromConsolidated = consolidatedProducts[productId] || null;
       const [candidates, normalized, provenance, overrides] = await Promise.all([
         readJsonIfExists(path.join(latestDir, 'candidates.json')),
         readJsonIfExists(path.join(latestDir, 'normalized.json')),
         readJsonIfExists(path.join(latestDir, 'provenance.json')),
-        readJsonIfExists(path.join(overridesDir, `${productId}.overrides.json`))
+        overridesFromConsolidated
+          ? Promise.resolve(overridesFromConsolidated)
+          : readJsonIfExists(path.join(overridesDir, `${productId}.overrides.json`))
       ]);
 
       if (!normalized) continue;
@@ -1097,88 +1108,14 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
 
 // ── Queue state seeding ──────────────────────────────────────────────────────
 
-async function seedQueueState(db, config, category) {
-  // Try modern queue state path first, then legacy
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
-  const modernPath = path.resolve(`_queue/${category}/state.json`);
-  const legacyPath = path.join(helperRoot, category, '_queue', 'state.json');
-
-  let state = await readJsonIfExists(modernPath) || await readJsonIfExists(legacyPath);
-  if (!state || !isObject(state.products)) return { count: 0 };
-
-  let count = 0;
-  const tx = db.db.transaction(() => {
-    for (const [productId, row] of Object.entries(state.products)) {
-      if (!isObject(row)) continue;
-      db.upsertQueueProduct({
-        product_id: productId,
-        s3key: row.s3key || '',
-        status: row.status || 'pending',
-        priority: row.priority ?? 3,
-        attempts_total: row.attempts_total ?? 0,
-        retry_count: row.retry_count ?? 0,
-        max_attempts: row.max_attempts ?? 3,
-        next_retry_at: row.next_retry_at || null,
-        last_run_id: row.last_run_id || null,
-        cost_usd_total: row.cost_usd_total_for_product ?? row.cost_usd_total ?? 0,
-        rounds_completed: row.rounds_completed ?? 0,
-        next_action_hint: row.next_action_hint || null,
-        last_urls_attempted: row.last_urls_attempted || [],
-        last_error: row.last_error || null,
-        last_started_at: row.last_started_at || null,
-        last_completed_at: row.last_completed_at || null,
-        last_summary: row.last_summary || null
-      });
-      count++;
-    }
-  });
-  tx();
-  return { count };
-}
+// WHY: seedQueueState removed — _queue/state.json is retired.
+// product_queue is rebuilt from product.json checkpoints via seedFromCheckpoint.
 
 // ── Curation suggestions seeding (removed — SQL is now the SSOT) ─────────────
 
 // ── Component review queue seeding (removed — SQL is now the SSOT) ───────────
 
 // ── Product catalog seeding ───────────────────────────────────────────────────
-
-export async function seedProductCatalog(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
-  const catalogPath = path.join(helperRoot, category, '_control_plane', 'product_catalog.json');
-  const catalog = await readJsonIfExists(catalogPath);
-  if (!catalog || !isObject(catalog.products)) return { count: 0 };
-
-  let count = 0;
-  const tx = db.db.transaction(() => {
-    for (const [productId, entry] of Object.entries(catalog.products)) {
-      if (!isObject(entry)) continue;
-      const model = String(entry.model || '').trim();
-      const baseModel = String(entry.base_model || '').trim();
-      let variant = cleanVariant(entry.variant);
-      // WHY: Fabricated variants (tokens already in model) must never reach the DB.
-      // Use base_model for the check when available — variant tokens naturally
-      // appear in the full model name but NOT in the base_model.
-      const fabricationRef = baseModel !== model ? baseModel : model;
-      if (variant && isFabricatedVariant(fabricationRef, variant)) {
-        variant = '';
-      }
-      db.upsertProduct({
-        product_id: productId,
-        brand: entry.brand || '',
-        model,
-        base_model: baseModel,
-        variant,
-        status: entry.status || 'active',
-        seed_urls: Array.isArray(entry.seed_urls) ? entry.seed_urls : [],
-        identifier: entry.identifier || null,
-        brand_identifier: entry.brand_identifier || '',
-      });
-      count++;
-    }
-  });
-  tx();
-  return { count };
-}
 
 // ── Backfill item_component_links from item_field_state ──────────────────────
 
@@ -1744,17 +1681,9 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     logger.log?.('info', `[seed] Component link backfill: ${backfillResult.backfilled} links`);
   }
 
-  // Step 5: Product catalog
-  const catalogResult = await seedProductCatalog(db, config, category);
-  if (logger && catalogResult.count > 0) {
-    logger.log?.('info', `[seed] Product catalog: ${catalogResult.count} products`);
-  }
+  // Step 5: (removed — product catalog seeded via scanAndSeedCheckpoints from product.json files)
 
-  // Step 6: Queue state from JSON
-  const queueResult = await seedQueueState(db, config, category);
-  if (logger && queueResult.count > 0) {
-    logger.log?.('info', `[seed] Queue state: ${queueResult.count} products`);
-  }
+  // Step 6: (removed — queue state seeded via scanAndSeedCheckpoints from product.json files)
 
   // Step 7-8: (removed — curation suggestions and component review queue are now SQL-only)
 
@@ -1802,8 +1731,8 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     list_values_seeded: listResult.count,
     products_seeded: productResult.productCount,
     component_links_backfilled: backfillResult.backfilled,
-    catalog_seeded: catalogResult.count,
-    queue_seeded: queueResult.count,
+    catalog_seeded: 0,
+    queue_seeded: 0,
     suggestions_seeded: 0,
     review_queue_seeded: 0,
     source_registry_seeded: skrResult.sourceRegistryCount,

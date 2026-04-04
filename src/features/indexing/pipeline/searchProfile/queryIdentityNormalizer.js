@@ -38,6 +38,7 @@ export function resolveJobIdentity(job = {}) {
   const identityLock = isObject(job?.identityLock) ? job.identityLock : {};
   return {
     brand: clean(identityLock.brand || job?.brand || ''),
+    base_model: clean(identityLock.base_model || job?.base_model || ''),
     model: clean(identityLock.model || job?.model || ''),
     variant: clean(identityLock.variant || job?.variant || '')
   };
@@ -145,7 +146,7 @@ export function extractDigitGroups(value) {
 
 export function buildVariantGuardTerms(identity = {}) {
   const brand = clean(identity.brand || '').toLowerCase();
-  const model = clean(identity.model || '').toLowerCase();
+  const model = clean(identity.base_model || identity.model || '').toLowerCase();
   const variant = clean(identity.variant || '').toLowerCase();
   const product = clean([brand, model, variant].filter(Boolean).join(' '));
   const modelVariant = clean([model, variant].filter(Boolean).join(' '));

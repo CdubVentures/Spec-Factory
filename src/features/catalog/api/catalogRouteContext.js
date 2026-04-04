@@ -15,7 +15,7 @@ export function createCatalogRouteContext(options = {}) {
 
   const {
     jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
-    loadProductCatalog, readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
+    readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
     resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
   } = options;
 
@@ -23,7 +23,7 @@ export function createCatalogRouteContext(options = {}) {
     jsonRes, readJsonBody, toInt, config, storage, reconcileOrphans, buildCatalog,
     listProducts, catalogAddProduct, catalogAddProductsBulk, catalogUpdateProduct,
     catalogRemoveProduct, catalogSeedFromCatalog, upsertQueueProduct,
-    loadProductCatalog, readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
+    readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
     resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, loadQueueState,
     saveQueueState, getSpecDb, appDb,
   };

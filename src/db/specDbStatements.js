@@ -480,11 +480,6 @@ export function prepareStatements(db) {
       LIMIT 1
     `),
 
-    _insertRuntimeEvent: db.prepare(`
-      INSERT INTO runtime_events (ts, level, event, category, product_id, run_id, data)
-      VALUES (@ts, @level, @event, @category, @product_id, @run_id, @data)
-    `),
-
     _insertBridgeEvent: db.prepare(`
       INSERT INTO bridge_events (run_id, category, product_id, ts, stage, event, payload)
       VALUES (@run_id, @category, @product_id, @ts, @stage, @event, @payload)
@@ -569,7 +564,7 @@ export function prepareStatements(db) {
       DELETE FROM field_history WHERE category = @category AND product_id = @product_id
     `),
 
-    // --- Artifact store (crawl_sources, source_screenshots, source_pdfs) ---
+    // --- Artifact store (crawl_sources, source_screenshots, source_videos) ---
 
     _insertCrawlSource: db.prepare(`
       INSERT OR REPLACE INTO crawl_sources (
@@ -592,18 +587,6 @@ export function prepareStatements(db) {
         @screenshot_id, @content_hash, @category, @product_id, @run_id, @source_url,
         @host, @selector, @format, @width, @height, @size_bytes,
         @file_path, @captured_at, @doc_kind, @source_tier
-      )
-    `),
-
-    _insertPdf: db.prepare(`
-      INSERT OR REPLACE INTO source_pdfs (
-        pdf_id, content_hash, parent_content_hash, category, product_id, run_id,
-        source_url, host, filename, size_bytes, file_path,
-        pages_scanned, tables_found, pair_count, crawled_at
-      ) VALUES (
-        @pdf_id, @content_hash, @parent_content_hash, @category, @product_id, @run_id,
-        @source_url, @host, @filename, @size_bytes, @file_path,
-        @pages_scanned, @tables_found, @pair_count, @crawled_at
       )
     `),
 

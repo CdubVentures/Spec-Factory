@@ -1,4 +1,7 @@
 /**
+ * DEPRECATED: This migration has already been run. It reads product_catalog.json which is
+ * being retired (product.json is now the sole SSOT). Left in place for historical reference.
+ *
  * One-time migration: backfill brand_identifier on all products in a category.
  *
  * For each product with an empty brand_identifier, resolves the brand display

@@ -100,17 +100,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     file_path: 'fetch-1.webm', captured_at: now,
   });
 
-  // source_pdfs
-  specDb.insertPdf({
-    pdf_id: `pdf_${runId}`,
-    content_hash: contentHash, parent_content_hash: contentHash,
-    category: cat, product_id: productId, run_id: runId,
-    source_url: url, host: new URL(url).hostname,
-    filename: 'spec.pdf', size_bytes: 2000,
-    file_path: 'spec.pdf', pages_scanned: 1, tables_found: 0,
-    pair_count: 0, crawled_at: now,
-  });
-
   // billing_entries
   specDb.insertBillingEntry({
     provider: 'google', model: 'gemini-2.5-pro', category: cat,
@@ -120,13 +109,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     host: '', url_count: 1, evidence_chars: 500, estimated_usage: false,
     meta: '{}',
   });
-
-  // audit_log
-  specDb.db.prepare(`INSERT INTO audit_log (event_at, category, entity_type, entity_id, field_changed, old_value, new_value, change_type, actor_type, actor_id, run_id, product_id)
-    VALUES (?, ?, 'candidate', 'c1', 'value', NULL, 'test', 'insert', 'pipeline', 'sys', ?, ?)`).run(now, cat, runId, productId);
-
-  // runtime_events
-  specDb.insertRuntimeEvent({ ts: now, level: 'info', event: 'run_start', category: cat, product_id: productId, run_id: runId, data: '{}' });
 
   // bridge_events
   specDb.insertBridgeEvent({ run_id: runId, category: cat, product_id: productId, ts: now, stage: 'crawl', event: 'start', payload: '{}' });
@@ -311,10 +293,7 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_pdfs', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'billing_entries', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'audit_log', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'runtime_events', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'knob_snapshots', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'query_index', 'run_id = ?', [RUN_1]), 0);
@@ -489,7 +468,6 @@ test('deleteUrl — removes URL-scoped SQL rows across all runs', () => {
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_pdfs', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'candidates', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_registry', 'source_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'canonical_url = ? AND product_id = ?', [URL_1, PID_A]), 0);
@@ -622,9 +600,7 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'source_pdfs', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'billing_entries', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'audit_log', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'candidates', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'candidate_reviews'), 0);
     assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'product_id = ?', [PID_A]), 0);
@@ -633,7 +609,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'field_history', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'runtime_events', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);
     assert.equal(countRows(h.specDb.db, 'knob_snapshots', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);
     assert.equal(countRows(h.specDb.db, 'prompt_index', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);

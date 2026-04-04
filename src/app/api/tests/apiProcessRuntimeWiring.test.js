@@ -123,6 +123,7 @@ test('process runtime start publishes run metadata and preserves the completed s
     product_id: 'mouse-razer-viper-v3-pro-white',
     productId: 'mouse-razer-viper-v3-pro-white',
     brand: 'Razer',
+    base_model: 'Viper V3 Pro',
     model: 'Viper V3 Pro',
     variant: 'White',
     storage_destination: 'local',

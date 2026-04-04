@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  resolveOverrideFilePath,
   setOverrideFromCandidate,
 } from '../overrideWorkflow.js';
+import { resolveConsolidatedOverridePath } from '../../../../shared/consolidatedOverrides.js';
 import {
   createReviewOverrideHarness,
   readOverridePayload,
@@ -30,9 +30,9 @@ test('setOverrideFromCandidate writes helper override entries from review candid
     candidateId: 'cand_1',
   });
 
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
+  const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   const overridePayload = await readOverridePayload(harness);
-  assert.equal(setResult.override_path, overridePath);
+  assert.equal(setResult.override_path, consolidatedPath);
   assert.equal(setResult.candidate_id, 'cand_1');
   assert.equal(setResult.value, '59');
   assert.equal(overridePayload.overrides.weight.override_value, '59');

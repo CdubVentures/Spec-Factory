@@ -149,7 +149,8 @@ export async function runQueueLoadHarness({
   storage,
   category = 'mouse',
   productCount = 200,
-  selectCycles = 100
+  selectCycles = 100,
+  specDb = null,
 }) {
   const normalizedCategory = normalizeCategory(category) || 'mouse';
   const count = Math.max(1, toInt(productCount, 200));
@@ -172,7 +173,7 @@ export async function runQueueLoadHarness({
 
   let selected = 0;
   for (let idx = 0; idx < cycles; idx += 1) {
-    const loaded = await loadQueueState({ storage, category: normalizedCategory });
+    const loaded = await loadQueueState({ storage, category: normalizedCategory, specDb });
     const next = selectNextQueueProduct(loaded.state);
     if (!next || !next.productId) {
       break;
@@ -206,7 +207,8 @@ export async function runFailureInjectionHarness({
   storage,
   category = 'mouse',
   productId = '',
-  maxAttempts = 3
+  maxAttempts = 3,
+  specDb = null,
 }) {
   const normalizedCategory = normalizeCategory(category) || 'mouse';
   const targetProductId = normalizeCategory(productId) || `${normalizedCategory}-failure-injection`;
@@ -241,7 +243,7 @@ export async function runFailureInjectionHarness({
     });
   }
 
-  const loaded = await loadQueueState({ storage, category: normalizedCategory });
+  const loaded = await loadQueueState({ storage, category: normalizedCategory, specDb });
   const final = loaded.state.products[targetProductId] || {};
   return {
     category: normalizedCategory,

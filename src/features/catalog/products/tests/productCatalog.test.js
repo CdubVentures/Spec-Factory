@@ -4,13 +4,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {
-  loadProductCatalog,
   addProduct,
   updateProduct,
   removeProduct,
   seedFromCatalog,
   listProducts,
-  findProductByIdentity
 } from '../productCatalog.js';
 import { SpecDb } from '../../../../db/specDb.js';
 
@@ -64,38 +62,6 @@ async function seedCatalogProduct(config, category, pid, product) {
   catalog.products[pid] = product;
   await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
 }
-
-// --- loadProductCatalog ---
-
-test('loadProductCatalog: returns empty catalog when file does not exist', async () => {
-  const config = await tmpConfig();
-  try {
-    const cat = await loadProductCatalog(config, 'mouse');
-    assert.equal(cat._version, 1);
-    assert.deepEqual(cat.products, {});
-  } finally {
-    await cleanup(config);
-  }
-});
-
-test('loadProductCatalog: reads existing catalog', async () => {
-  const config = await tmpConfig();
-  try {
-    const cpDir = path.join(config.categoryAuthorityRoot, 'mouse', '_control_plane');
-    await fs.mkdir(cpDir, { recursive: true });
-    await fs.writeFile(path.join(cpDir, 'product_catalog.json'), JSON.stringify({
-      _version: 1,
-      products: {
-        'mouse-a1b2c3d4': { brand: 'Razer', model: 'Viper V3 Pro', variant: '', status: 'active' }
-      }
-    }));
-    const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(cat.products['mouse-a1b2c3d4']);
-    assert.equal(cat.products['mouse-a1b2c3d4'].brand, 'Razer');
-  } finally {
-    await cleanup(config);
-  }
-});
 
 // --- addProduct ---
 
@@ -207,10 +173,11 @@ test('updateProduct: patches seed_urls without changing productId', async () => 
   const config = await tmpConfig();
   try {
     const pid = 'mouse-aabb1122';
-    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper V3 Pro', variant: '', status: 'active', seed_urls: [] });
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper V3 Pro', base_model: 'Viper V3 Pro', variant: '', status: 'active', seed_urls: [] });
 
     const result = await updateProduct({
-      config, category: 'mouse', productId: pid,
+      config, category: 'mouse', productId: pid, specDb,
       patch: { seed_urls: ['https://razer.com/viper'] }
     });
 
@@ -227,11 +194,12 @@ test('updateProduct: identity change keeps same productId (immutable)', async ()
   const config = await tmpConfig();
   try {
     const pid = 'mouse-ccdd3344';
-    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
     const result = await updateProduct({
-      config, category: 'mouse', productId: pid,
-      patch: { model: 'Viper V3 Pro' }
+      config, category: 'mouse', productId: pid, specDb,
+      patch: { base_model: 'Viper V3 Pro' }
     });
 
     assert.equal(result.ok, true);
@@ -259,9 +227,10 @@ test('removeProduct: removes product from catalog', async () => {
   const config = await tmpConfig();
   try {
     const pid = 'mouse-eeff5566';
-    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
-    const result = await removeProduct({ config, category: 'mouse', productId: pid });
+    const result = await removeProduct({ config, category: 'mouse', productId: pid, specDb });
     assert.equal(result.ok, true);
     assert.equal(result.removed, true);
   } finally {
@@ -321,7 +290,7 @@ test('seedFromCatalog: skips existing products in identity mode', async () => {
   const config = await tmpConfig();
   try {
     // Pre-seed a product in the catalog JSON
-    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
     // Seed from catalog — the existing product should be SKIPPED in identity mode
     const result = await seedFromCatalog({ config, category: 'mouse' });
@@ -359,48 +328,6 @@ test('listProducts: returns empty array when no products', () => {
   } finally {
     specDb.close();
   }
-});
-
-// --- findProductByIdentity: split identity ---
-
-test('findProductByIdentity: matches split identity on base_model + variant', () => {
-  const catalog = {
-    products: {
-      'mouse-001': { brand: 'Finalmouse', base_model: 'ULX Prophecy', model: 'ULX Prophecy Scream', variant: 'Scream' },
-    }
-  };
-  const pid = findProductByIdentity(catalog, 'Finalmouse', 'ULX Prophecy', 'Scream');
-  assert.equal(pid, 'mouse-001');
-});
-
-test('findProductByIdentity: matches on base_model (non-split)', () => {
-  const catalog = {
-    products: {
-      'mouse-002': { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
-    }
-  };
-  const pid = findProductByIdentity(catalog, 'Razer', 'Viper V3 Pro', '');
-  assert.equal(pid, 'mouse-002');
-});
-
-test('findProductByIdentity: no match when base_model is missing', () => {
-  const catalog = {
-    products: {
-      'mouse-003': { brand: 'Razer', model: 'Viper V3 Pro', variant: '' },
-    }
-  };
-  const pid = findProductByIdentity(catalog, 'Razer', 'Viper V3 Pro', '');
-  assert.equal(pid, null);
-});
-
-test('findProductByIdentity: no false match when searching full model against base_model', () => {
-  const catalog = {
-    products: {
-      'mouse-001': { brand: 'Finalmouse', base_model: 'ULX Prophecy', model: 'ULX Prophecy Scream', variant: 'Scream' },
-    }
-  };
-  const pid = findProductByIdentity(catalog, 'Finalmouse', 'ULX Prophecy Scream', '');
-  assert.equal(pid, null);
 });
 
 test('listProducts: returns base_model and variant from SQL', () => {

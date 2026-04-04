@@ -34,7 +34,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const variant = product.variant || '';
   const seedUrls = product.seed_urls || [];
 
-  const productLine = [brand, model, variant].filter(Boolean).join(' ');
+  const productLine = [brand, product.base_model || model, variant].filter(Boolean).join(' ');
   const urlSection = seedUrls.length > 0
     ? `Known product URLs (start here): ${seedUrls.join(', ')}`
     : '';
@@ -103,5 +103,6 @@ export function createColorEditionFinderCallLlm(deps) {
       category: domainArgs.product?.category || '',
       seed_urls: domainArgs.product?.seed_urls || [],
     }),
+    timeoutMs: 120_000,
   }));
 }

@@ -6,7 +6,7 @@
  * returns the discovered colors/editions.
  */
 
-import { callLlmWithRouting } from '../../core/llm/client/routing.js';
+import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { writeBackColorRegistry } from '../color-registry/colorRegistrySeed.js';
 import { createColorEditionFinderCallLlm } from './colorEditionLlmAdapter.js';
 import { mergeColorEditionDiscovery } from './colorEditionStore.js';
@@ -42,11 +42,7 @@ export async function runColorEditionFinder({
 
   // Build or use overridden LLM caller
   const callLlm = _callLlmOverride
-    || createColorEditionFinderCallLlm({
-      callRoutedLlmFn: callLlmWithRouting,
-      config,
-      logger,
-    });
+    || createColorEditionFinderCallLlm(buildLlmCallDeps({ config, logger }));
 
   // Call LLM
   let response;

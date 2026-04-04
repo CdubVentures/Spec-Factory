@@ -21,6 +21,7 @@ import { registerColorRoutes } from '../features/color-registry/api/colorRoutes.
 import { createColorRouteContext } from '../features/color-registry/api/colorRouteContext.js';
 import { registerColorEditionFinderRoutes } from '../features/color-edition/api/colorEditionFinderRoutes.js';
 import { createColorEditionFinderRouteContext } from '../features/color-edition/api/colorEditionFinderRouteContext.js';
+import { createRouteLlmLogger } from '../core/llm/createRouteLlmLogger.js';
 import { registerRuntimeOpsRoutes } from '../features/indexing/api/runtimeOpsRoutes.js';
 import {
   createApiPathParser,
@@ -104,7 +105,7 @@ export function createGuiServerRuntime({
         toInt, toFloat, toUnitRatio, hasKnownValue,
         safeReadJson, safeStat, listFiles, listDirs, readJsonlEvents, safeJoin,
         canonicalSlugify, invalidateFieldRulesCache,
-        loadProductCatalog, loadCategoryConfig,
+        loadCategoryConfig,
       },
       domain: {
         ensureGridKeyReviewState, resolveKeyReviewForLaneMutation,
@@ -157,11 +158,10 @@ export function createGuiServerRuntime({
       queueBillingLearningRouteContext: createQueueBillingLearningRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,
         getSpecDb, broadcastWs, safeReadJson, safeStat, listFiles,
-        loadProductCatalog,
       }),
       brandRouteContext: createBrandRouteContext({
         jsonRes, readJsonBody, config, storage,
-        resolveCategoryAlias, broadcastWs, getSpecDb, loadProductCatalog, appDb,
+        resolveCategoryAlias, broadcastWs, getSpecDb, appDb,
         brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
       }),
       colorRouteContext: createColorRouteContext({
@@ -171,6 +171,7 @@ export function createGuiServerRuntime({
       colorEditionFinderRouteContext: createColorEditionFinderRouteContext({
         jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
         colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
+        logger: createRouteLlmLogger('color-edition-finder'),
       }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,
@@ -180,11 +181,11 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
         listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
         getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
-        reviewLayoutByCategory, loadProductCatalog, appDb,
+        reviewLayoutByCategory, appDb,
       }),
       catalogRouteContext: createCatalogRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
-        loadProductCatalog, readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
+        readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
         resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
       }),
       testModeRouteContext: createTestModeRouteContext({
@@ -202,7 +203,7 @@ export function createGuiServerRuntime({
       reviewRouteContext: createReviewRouteContext({
         jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
         HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
-        loadCategoryConfig, loadProductCatalog, sessionCache, reviewLayoutByCategory,
+        loadCategoryConfig, sessionCache, reviewLayoutByCategory,
         broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson,
         syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
         getPendingItemPrimaryCandidateIds, markPrimaryLaneReviewedInItemState,

@@ -465,7 +465,7 @@ export async function buildProductReviewPayload({
 
   // Read override file only in JSON-primary mode.
   const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const overrideDoc = useSpecDb ? null : await readOverrideFile(overridePath);
+  const overrideDoc = useSpecDb ? null : await readOverrideFile(overridePath, { config, category, productId });
   const overrides = isObject(overrideDoc?.overrides) ? overrideDoc.overrides : {};
 
   for (const row of resolvedLayout.rows || []) {

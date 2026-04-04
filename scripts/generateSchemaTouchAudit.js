@@ -100,13 +100,9 @@ const CONSOLIDATION_NOTES = new Map([
     recommendation: 'Keep',
     note: 'Focused vertical table — separate from screenshots/PDFs by design.',
   }],
-  ['specdb:source_pdfs', {
-    recommendation: 'Keep',
-    note: 'Focused vertical table — separate from screenshots/videos by design.',
-  }],
   ['specdb:bridge_events', {
     recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into runtime_events/events.',
+    note: 'Primary event table (runtime_events removed).',
   }],
 ]);
 

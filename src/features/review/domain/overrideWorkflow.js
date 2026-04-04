@@ -1,8 +1,12 @@
 import path from 'node:path';
-import fs from 'node:fs/promises';
 import { nowIso } from '../../../shared/primitives.js';
 import { createFieldRulesEngine } from '../../../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../../../engine/runtimeGate.js';
+import {
+  upsertProductInConsolidated,
+  readProductFromConsolidated,
+  resolveConsolidatedOverridePath,
+} from '../../../shared/consolidatedOverrides.js';
 import { buildProductReviewPayload } from './reviewGridData.js';
 import { isObject, toArray, normalizeToken } from './reviewNormalization.js';
 import { toFloat } from '../../../shared/valueNormalizers.js';
@@ -19,7 +23,6 @@ import {
   addFieldToList,
   reviewKeys,
   latestKeys,
-  readOverrideFile,
   findCandidateRows,
   buildCandidateOverrideEntry,
   buildCandidateMap,
@@ -165,11 +168,10 @@ export async function setOverrideFromCandidate({
     throw new Error(`candidate_id '${targetCandidateId}' not found for field '${normalizedField}'`);
   }
 
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
+  // WHY: Overlap 0d — read from consolidated JSON SSOT before merge
+  const existing = await readProductFromConsolidated({ config, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
-    version: 1,
     category,
     product_id: productId,
     created_at: nowIso(),
@@ -187,7 +189,6 @@ export async function setOverrideFromCandidate({
     reason,
     setAt
   });
-  current.version = 1;
   current.category = category;
   current.product_id = productId;
   current.review_started_at = startedAt;
@@ -198,7 +199,8 @@ export async function setOverrideFromCandidate({
     [normalizedField]: entry
   };
 
-  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
+  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  await upsertProductInConsolidated({ config, category, productId, productEntry: current });
   if (specDb) {
     try {
       specDb.upsertItemFieldState({
@@ -223,18 +225,6 @@ export async function setOverrideFromCandidate({
         fieldKey: normalizedField,
         value: String(candidate.value || '').trim(),
       });
-      specDb.insertAuditLog({
-        entity_type: 'item_field_state',
-        entity_id: `${productId}::${normalizedField}`,
-        field_changed: normalizedField,
-        new_value: String(candidate.value || '').trim(),
-        change_type: 'override',
-        actor_type: 'user',
-        actor_id: reviewer || null,
-        product_id: productId,
-        field_key: normalizedField,
-        note: reason || 'candidate_selection'
-      });
       specDb.upsertProductReviewState({
         productId,
         reviewStatus: 'in_progress',
@@ -243,8 +233,9 @@ export async function setOverrideFromCandidate({
     } catch { /* best-effort */ }
   }
 
+  const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
-    override_path: overridePath,
+    override_path: consolidatedPath,
     field: normalizedField,
     candidate_id: candidate.candidate_id,
     value: String(candidate.value || '').trim()
@@ -272,11 +263,10 @@ export async function setManualOverride({
     throw new Error('setManualOverride requires value');
   }
   const normalizedEvidence = normalizeOverrideEvidence(evidence);
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
+  // WHY: Overlap 0d — read from consolidated JSON SSOT before merge
+  const existing = await readProductFromConsolidated({ config, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
-    version: 1,
     category,
     product_id: productId,
     created_at: nowIso(),
@@ -286,7 +276,6 @@ export async function setManualOverride({
   };
 
   const setAt = nowIso();
-  current.version = 1;
   current.category = category;
   current.product_id = productId;
   current.review_started_at = startedAt;
@@ -323,7 +312,8 @@ export async function setManualOverride({
     }
   };
 
-  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
+  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  await upsertProductInConsolidated({ config, category, productId, productEntry: current });
   if (specDb) {
     try {
       specDb.upsertItemFieldState({
@@ -348,18 +338,6 @@ export async function setManualOverride({
         fieldKey: normalizedField,
         value: nextValue,
       });
-      specDb.insertAuditLog({
-        entity_type: 'item_field_state',
-        entity_id: `${productId}::${normalizedField}`,
-        field_changed: normalizedField,
-        new_value: nextValue,
-        change_type: 'manual_override',
-        actor_type: 'user',
-        actor_id: reviewer || null,
-        product_id: productId,
-        field_key: normalizedField,
-        note: reason || 'manual_entry'
-      });
       specDb.upsertProductReviewState({
         productId,
         reviewStatus: 'in_progress',
@@ -368,8 +346,9 @@ export async function setManualOverride({
     } catch { /* best-effort */ }
   }
 
+  const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
-    override_path: overridePath,
+    override_path: consolidatedPath,
     field: normalizedField,
     candidate_id: current.overrides[normalizedField].candidate_id,
     value: nextValue
@@ -396,11 +375,10 @@ export async function approveGreenOverrides({
   });
   const rows = findCandidateRows(review.candidates);
   const candidateMap = buildCandidateMap(rows);
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
+  // WHY: Overlap 0d — read from consolidated JSON SSOT before merge
+  const existing = await readProductFromConsolidated({ config, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
-    version: 1,
     category,
     product_id: productId,
     created_at: nowIso(),
@@ -450,7 +428,6 @@ export async function approveGreenOverrides({
     approvedFields.push(field);
   }
 
-  current.version = 1;
   current.category = category;
   current.product_id = productId;
   current.review_started_at = startedAt;
@@ -458,7 +435,8 @@ export async function approveGreenOverrides({
   current.updated_at = nowIso();
   current.overrides = overrides;
 
-  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
+  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  await upsertProductInConsolidated({ config, category, productId, productEntry: current });
   if (approvedFields.length > 0 && specDb) {
     try {
       for (const field of approvedFields) {
@@ -479,24 +457,13 @@ export async function approveGreenOverrides({
           overriddenBy: reviewer || 'bulk_approve',
           overriddenAt: entry.set_at || nowIso()
         });
-        specDb.insertAuditLog({
-          entity_type: 'item_field_state',
-          entity_id: `${productId}::${field}`,
-          field_changed: field,
-          new_value: entry.override_value || entry.value || '',
-          change_type: 'bulk_approve_green',
-          actor_type: 'user',
-          actor_id: reviewer || 'bulk_approve',
-          product_id: productId,
-          field_key: field,
-          note: reason || 'bulk_approve_green'
-        });
       }
     } catch { /* best-effort SQL write */ }
   }
 
+  const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
-    override_path: overridePath,
+    override_path: consolidatedPath,
     approved_count: approvedFields.length,
     skipped_count: skipped.length,
     approved_fields: approvedFields,
@@ -573,15 +540,16 @@ export async function finalizeOverrides({
   reviewer = '',
   specDb = null
 }) {
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const overrideDoc = await readOverrideFile(overridePath, { specDb, category, productId });
+  const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
+  // WHY: Overlap 0d — read from consolidated JSON SSOT
+  const overrideDoc = await readProductFromConsolidated({ config, category, productId });
   const overrides = isObject(overrideDoc?.overrides) ? overrideDoc.overrides : {};
   const overrideEntries = Object.entries(overrides);
   if (!overrideEntries.length) {
     return {
       applied: false,
       reason: 'no_overrides',
-      override_path: overridePath,
+      override_path: consolidatedPath,
       override_count: 0
     };
   }
@@ -598,7 +566,7 @@ export async function finalizeOverrides({
     return {
       applied: false,
       reason: 'apply_overrides_flag_not_set',
-      override_path: overridePath,
+      override_path: consolidatedPath,
       override_count: overrideEntries.length,
       pending_fields: overrideEntries.map(([field]) => field)
     };
@@ -733,7 +701,7 @@ export async function finalizeOverrides({
     return {
       applied: false,
       reason: 'runtime_validation_failed',
-      override_path: overridePath,
+      override_path: consolidatedPath,
       override_count: overrideEntries.length,
       applied_count: appliedRows.length,
       latest_keys: latest,
@@ -785,19 +753,6 @@ export async function finalizeOverrides({
             fieldKey: row.field,
             value: row.value,
           });
-          specDb.insertAuditLog({
-            entity_type: 'item_field_state',
-            entity_id: `${productId}::${row.field}`,
-            field_changed: row.field,
-            old_value: row.previous,
-            new_value: row.value,
-            change_type: 'finalize_override',
-            actor_type: 'user',
-            actor_id: reviewer || null,
-            product_id: productId,
-            field_key: row.field,
-            note: row.override_reason || row.override_source || 'finalized'
-          });
         }
       });
       tx();
@@ -841,7 +796,6 @@ export async function finalizeOverrides({
     : null;
   const nextOverrideDoc = {
     ...(isObject(overrideDoc) ? overrideDoc : {}),
-    version: 1,
     category,
     product_id: productId,
     review_status: saveAsDraft ? 'draft' : 'approved',
@@ -857,18 +811,12 @@ export async function finalizeOverrides({
     },
     overrides
   };
-  // WHY: Write override envelope to disk so AI review state and all override
-  // data survives DB rebuild. SQL is still the authoritative runtime source.
-  try {
-    const diskEnvelope = await readOverrideFile(overridePath, { specDb, category, productId });
-    if (diskEnvelope && overridePath) {
-      await fs.writeFile(overridePath, JSON.stringify(diskEnvelope, null, 2), 'utf8');
-    }
-  } catch { /* best-effort — SQL is authoritative */ }
+  // WHY: Overlap 0d — consolidated JSON is SSOT, replaces per-product disk write
+  await upsertProductInConsolidated({ config, category, productId, productEntry: nextOverrideDoc });
 
   return {
     applied: true,
-    override_path: overridePath,
+    override_path: consolidatedPath,
     override_count: overrideEntries.length,
     applied_count: appliedRows.length,
     latest_keys: latest,

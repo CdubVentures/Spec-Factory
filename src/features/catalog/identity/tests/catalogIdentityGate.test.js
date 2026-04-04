@@ -18,90 +18,78 @@ async function cleanup(config) {
   try { await fs.rm(config._tmp, { recursive: true, force: true }); } catch {}
 }
 
-async function writeCatalog(config, category, products) {
-  const dir = path.join(config.categoryAuthorityRoot, category, '_control_plane');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(
-    path.join(dir, 'product_catalog.json'),
-    JSON.stringify({ _version: 1, products }, null, 2),
-    'utf8'
-  );
+// WHY: Mock specDb with getAllProducts() for identity gate tests.
+function mockSpecDb(products = {}) {
+  const rows = Object.entries(products).map(([pid, p]) => ({
+    product_id: pid,
+    brand: p.brand || '',
+    base_model: p.base_model || '',
+    model: p.model || '',
+    variant: p.variant || '',
+    status: p.status || 'active',
+  }));
+  return { getAllProducts: () => rows };
 }
 
 test('identity gate rejects fabricated variant substring', async () => {
-  const config = await makeConfig();
-  try {
-    await writeCatalog(config, 'mouse', {
-      'mouse-acer-cestus-310': { brand: 'Acer', base_model: 'Cestus 310', model: 'Cestus 310', variant: '' }
-    });
-    const canonicalIndex = await loadCanonicalIdentityIndex({ config, category: 'mouse' });
-    const gate = evaluateIdentityGate({
-      category: 'mouse',
-      brand: 'Acer',
-      model: 'Cestus 310',
-      variant: '310',
-      canonicalIndex
-    });
-    assert.equal(gate.valid, false);
-    assert.equal(gate.reason, 'variant_is_model_substring');
-    assert.equal(gate.canonicalProductId, 'mouse-acer-cestus-310');
-  } finally {
-    await cleanup(config);
-  }
+  const specDb = mockSpecDb({
+    'mouse-acer-cestus-310': { brand: 'Acer', base_model: 'Cestus 310', model: 'Cestus 310', variant: '' }
+  });
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config: {}, category: 'mouse', specDb });
+  const gate = evaluateIdentityGate({
+    category: 'mouse',
+    brand: 'Acer',
+    model: 'Cestus 310',
+    variant: '310',
+    canonicalIndex
+  });
+  assert.equal(gate.valid, false);
+  assert.equal(gate.reason, 'variant_is_model_substring');
+  assert.equal(gate.canonicalProductId, 'mouse-acer-cestus-310');
 });
 
 test('identity gate rejects non-empty variant when canonical empty variant exists', async () => {
-  const config = await makeConfig();
-  try {
-    await writeCatalog(config, 'mouse', {
-      'mouse-logitech-g-pro-x-superlight-2': {
-        brand: 'Logitech',
-        base_model: 'G Pro X Superlight 2',
-        model: 'G Pro X Superlight 2',
-        variant: ''
-      }
-    });
-    const canonicalIndex = await loadCanonicalIdentityIndex({ config, category: 'mouse' });
-    const gate = evaluateIdentityGate({
-      category: 'mouse',
+  const specDb = mockSpecDb({
+    'mouse-logitech-g-pro-x-superlight-2': {
       brand: 'Logitech',
+      base_model: 'G Pro X Superlight 2',
       model: 'G Pro X Superlight 2',
-      variant: 'Wireless',
-      canonicalIndex
-    });
-    assert.equal(gate.valid, false);
-    assert.equal(gate.reason, 'canonical_without_variant_exists');
-    assert.equal(gate.canonicalProductId, 'mouse-logitech-g-pro-x-superlight-2');
-  } finally {
-    await cleanup(config);
-  }
+      variant: ''
+    }
+  });
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config: {}, category: 'mouse', specDb });
+  const gate = evaluateIdentityGate({
+    category: 'mouse',
+    brand: 'Logitech',
+    model: 'G Pro X Superlight 2',
+    variant: 'Wireless',
+    canonicalIndex
+  });
+  assert.equal(gate.valid, false);
+  assert.equal(gate.reason, 'canonical_without_variant_exists');
+  assert.equal(gate.canonicalProductId, 'mouse-logitech-g-pro-x-superlight-2');
 });
 
 test('identity gate accepts legitimate variant when variant exists in canonical set', async () => {
-  const config = await makeConfig();
-  try {
-    await writeCatalog(config, 'mouse', {
-      'mouse-razer-viper-v3-pro-white': {
-        brand: 'Razer',
-        base_model: 'Viper V3 Pro',
-        model: 'Viper V3 Pro',
-        variant: 'White'
-      }
-    });
-    const canonicalIndex = await loadCanonicalIdentityIndex({ config, category: 'mouse' });
-    const gate = evaluateIdentityGate({
-      category: 'mouse',
+  const specDb = mockSpecDb({
+    'mouse-razer-viper-v3-pro-white': {
       brand: 'Razer',
+      base_model: 'Viper V3 Pro',
       model: 'Viper V3 Pro',
-      variant: 'White',
-      canonicalIndex
-    });
-    assert.equal(gate.valid, true);
-    assert.equal(gate.reason, null);
-    assert.equal(gate.canonicalProductId, 'mouse-razer-viper-v3-pro-white');
-  } finally {
-    await cleanup(config);
-  }
+      variant: 'White'
+    }
+  });
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config: {}, category: 'mouse', specDb });
+  const gate = evaluateIdentityGate({
+    category: 'mouse',
+    brand: 'Razer',
+    model: 'Viper V3 Pro',
+    variant: 'White',
+    canonicalIndex
+  });
+  assert.equal(gate.valid, true);
+  assert.equal(gate.reason, null);
+  assert.equal(gate.canonicalProductId, 'mouse-razer-viper-v3-pro-white');
 });
 
 // --- split-identity tests ---

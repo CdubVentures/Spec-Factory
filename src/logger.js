@@ -59,21 +59,6 @@ export class EventLogger {
       process.stderr.write(`${JSON.stringify(row)}\n`);
     }
 
-    // SQLite write (synchronous, best-effort)
-    if (this.specDb) {
-      try {
-        this.specDb.insertRuntimeEvent({
-          ts: new Date().toISOString(),
-          level: level,
-          event: event,
-          category: this.category || '',
-          product_id: data?.productId || data?.product_id || '',
-          run_id: this.runId || '',
-          data: JSON.stringify(data || {})
-        });
-      } catch { /* best-effort */ }
-    }
-
   }
 
   info(event, data = {}) {

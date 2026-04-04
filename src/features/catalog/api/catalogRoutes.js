@@ -19,7 +19,6 @@ export function registerCatalogRoutes(ctx) {
     catalogRemoveProduct,
     catalogSeedFromCatalog,
     upsertQueueProduct,
-    loadProductCatalog,
     readJsonlEvents,
     fs,
     path,
@@ -71,19 +70,6 @@ export function registerCatalogRoutes(ctx) {
     return 0;
   }
 
-
-  async function syncCategoryCatalogToSpecDb(category) {
-    const cat = String(category || '').trim().toLowerCase();
-    if (!cat) return 0;
-    const specDb = resolveSpecDb(cat);
-    if (!specDb?.upsertProduct) return 0;
-    const catalog = await loadProductCatalog(config, cat);
-    let synced = 0;
-    for (const [pid, product] of Object.entries(catalog.products || {})) {
-      if (upsertCatalogProductRow(specDb, cat, pid, product)) synced += 1;
-    }
-    return synced;
-  }
 
   function makeQueueUpsert(category) {
     const defaultCategory = String(category || '').trim().toLowerCase();
@@ -173,7 +159,6 @@ export function registerCatalogRoutes(ctx) {
           appDb,
         });
         if (result?.ok) {
-          await syncCategoryCatalogToSpecDb(category);
           emitDataChange({
             broadcastWs,
             event: 'catalog-seed',
@@ -204,9 +189,6 @@ export function registerCatalogRoutes(ctx) {
           appDb,
         });
         if (result?.ok) {
-          if (Number(result?.created || 0) > 0) {
-            await syncCategoryCatalogToSpecDb(category);
-          }
           emitDataChange({
             broadcastWs,
             event: 'catalog-bulk-add',
@@ -360,7 +342,6 @@ export function registerCatalogRoutes(ctx) {
           productId,
           category,
           config,
-          loadProductCatalog,
           specDb,
           normalizedIdentity: normalized.identity,
         });

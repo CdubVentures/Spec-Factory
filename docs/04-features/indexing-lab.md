@@ -50,7 +50,7 @@
 
 - Writes IndexLab run folders under the configured IndexLab root.
 - Writes crawl results, screenshots, video, and HTML artifacts to the IndexLab run tree and SpecDb-backed crawl ledger surfaces.
-- Appends runtime telemetry through `EventLogger` to NDJSON and/or `runtime_events` SQLite rows.
+- Appends runtime telemetry through `EventLogger` to NDJSON.
 - May update queue and billing tables during a run.
 
 ## Error Paths

@@ -146,6 +146,7 @@ async function writeImportState(filePath, state) {
 function normalizeIdentityLock(row) {
   return {
     brand: String(row.brand || '').trim(),
+    base_model: String(row.base_model || '').trim(),
     model: String(row.model || '').trim(),
     variant: String(row.variant || '').trim(),
     sku: String(row.sku || '').trim(),

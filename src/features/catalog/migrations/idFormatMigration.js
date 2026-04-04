@@ -1,4 +1,7 @@
 /**
+ * DEPRECATED: This migration has already been run. It reads product_catalog.json which is
+ * being retired (product.json is now the sole SSOT). Left in place for historical reference.
+ *
  * One-time migration: rekey all products from slug-based IDs to {category}-{identifier} format.
  *
  * Each catalog product already has an 8-char hex `identifier` field. This migration:
@@ -41,19 +44,16 @@ const TABLES_WITH_PRODUCT_ID = [
   'crawl_sources',
   'source_screenshots',
   'source_videos',
-  'source_pdfs',
   'field_history',
   'runs',
   'run_artifacts',
   'bridge_events',
-  'runtime_events',
   'billing_entries',
   'source_registry',
   'curation_suggestions',
   'component_review_queue',
   'query_index',
   'knob_snapshots',
-  'audit_log',
 ];
 
 /**

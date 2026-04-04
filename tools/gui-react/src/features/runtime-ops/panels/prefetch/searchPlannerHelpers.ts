@@ -132,10 +132,10 @@ export function buildPlannerInputSummary(callPayloads: Array<PlannerPromptInput 
     missingFields.push(...normalizeList(payload.missingCriticalFields));
     existingQueries.push(...normalizeList(payload.existingQueries));
     if (payload.product) {
-      const product = payload.product || {};
+      const product = (payload.product || {}) as Record<string, unknown>;
       const category = normalizeToken(String(product.category || '').trim());
       const brand = String(product.brand || '').trim();
-      const model = String(product.model || '').trim();
+      const model = String(product.base_model || product.model || '').trim();
       const variant = String(product.variant || '').trim();
       const identityLabel = [brand, model, variant].filter(Boolean).join(' ').trim();
       if (identityLabel) products.push(identityLabel);

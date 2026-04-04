@@ -72,7 +72,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
     existsSync: fsSync.existsSync,
   });
   const userSettings = loadUserSettingsSync();
-  applyRuntimeSettingsToConfig(config, userSettings.runtime);
+  applyRuntimeSettingsToConfig(config, userSettings.runtime, { mode: 'bootstrap' });
   normalizeRuntimeArtifactWorkspaceDefaults({
     config,
     projectRoot,

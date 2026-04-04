@@ -149,6 +149,7 @@ export function createProcessRuntime({
         category: extractCliArgValue(cliArgs, '--category') || null,
         productId: extractCliArgValue(cliArgs, '--product-id') || null,
         brand: extractCliArgValue(cliArgs, '--brand') || null,
+        base_model: extractCliArgValue(cliArgs, '--model') || null,
         model: extractCliArgValue(cliArgs, '--model') || null,
         variant: extractCliArgValue(cliArgs, '--variant') || null,
         storageDestination: 'local',

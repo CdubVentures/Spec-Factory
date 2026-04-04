@@ -4,7 +4,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { cleanVariant, isFabricatedVariant } from '../identity/identityDedup.js';
+import { normalizeProductIdentity } from '../identity/identityDedup.js';
 
 function helperRootFromConfig(config = {}) {
   return path.resolve(String(config?.categoryAuthorityRoot || 'category_authority'));
@@ -53,23 +53,18 @@ function normalizeCatalogProducts(catalogDoc = {}) {
       continue;
     }
     const brand = String(row.brand ?? '').trim();
-    const model = String(row.model ?? '').trim();
-    if (!brand || !model) {
+    const rawModel = String(row.model ?? '').trim();
+    const rawBaseModel = String(row.base_model || '').trim();
+    if (!brand || !rawBaseModel) {
       continue;
     }
-    const baseModel = String(row.base_model || '').trim();
-    // WHY: Defense-in-depth — strip fabricated variants at read boundary.
-    // Use base_model for the check, not full model (variant tokens appear in full model).
-    let variant = cleanVariant(row.variant);
-    if (variant && isFabricatedVariant(baseModel, variant)) {
-      variant = '';
-    }
+    const identity = normalizeProductIdentity('', brand, rawBaseModel, row.variant);
     rows.push({
       productId: String(productId || '').trim(),
-      brand,
-      base_model: baseModel,
-      model,
-      variant,
+      brand: identity.brand,
+      base_model: identity.base_model,
+      model: rawModel || identity.model,
+      variant: identity.variant,
       brand_identifier: String(row.brand_identifier || '').trim(),
     });
   }
@@ -107,33 +102,39 @@ function normalizeOverrideValues(overrideDoc = {}) {
 }
 
 async function loadCanonicalFieldsByProduct({ category, config = {} }) {
-  const overrideDir = overrideDirPath({ category, config });
-  let entries = [];
-  try {
-    entries = await fs.readdir(overrideDir, { withFileTypes: true });
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return {};
-    }
-    return {};
-  }
-
   const out = {};
-  const jsonFiles = entries
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.overrides.json'))
-    .map((entry) => entry.name);
 
-  for (const name of jsonFiles) {
-    const doc = await readJsonIfExists(path.join(overrideDir, name));
-    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
-      continue;
+  // WHY: Overlap 0d — read consolidated overrides first, per-product fallback for migration period
+  try {
+    const { readConsolidatedOverrides } = await import('../../../shared/consolidatedOverrides.js');
+    const consolidated = await readConsolidatedOverrides({ config, category });
+    const consolidatedProducts = consolidated?.products || {};
+    for (const [pid, entry] of Object.entries(consolidatedProducts)) {
+      if (pid && entry) {
+        out[pid] = normalizeOverrideValues(entry);
+      }
     }
-    const fromPayload = String(doc.product_id ?? '').trim();
-    const fromFileName = String(name).replace(/\.overrides\.json$/i, '').trim();
-    const productId = fromPayload || fromFileName;
-    if (!productId) continue;
-    out[productId] = normalizeOverrideValues(doc);
-  }
+  } catch { /* module not available — fall through to per-product scan */ }
+
+  // Per-product-level fallback: scan directory for products missing from consolidated
+  const overrideDir = overrideDirPath({ category, config });
+  try {
+    const entries = await fs.readdir(overrideDir, { withFileTypes: true });
+    const jsonFiles = entries
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.overrides.json'))
+      .map((entry) => entry.name);
+
+    for (const name of jsonFiles) {
+      const doc = await readJsonIfExists(path.join(overrideDir, name));
+      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) continue;
+      const fromPayload = String(doc.product_id ?? '').trim();
+      const fromFileName = String(name).replace(/\.overrides\.json$/i, '').trim();
+      const productId = fromPayload || fromFileName;
+      if (!productId || out[productId]) continue;
+      out[productId] = normalizeOverrideValues(doc);
+    }
+  } catch { /* directory missing — no fallback needed */ }
+
   return out;
 }
 

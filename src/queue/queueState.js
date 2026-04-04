@@ -221,7 +221,7 @@ export async function migrateQueueEntry({ storage, category, oldProductId, newPr
 
 export async function syncQueueFromInputs({ storage, category, specDb = null, config = {} }) {
   const loaded = await loadQueueState({ storage, category, specDb });
-  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category });
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category, specDb });
   let added = 0;
   let rejectedByIdentityGate = 0;
 

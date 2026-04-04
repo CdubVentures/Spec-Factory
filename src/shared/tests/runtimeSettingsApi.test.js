@@ -204,7 +204,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT persists runtime settings to SQL and subsequent GET reflects changes', async () => {
-    const payload = { llmModelPlan: 'test-persist-model-xyz', domainClassifierUrlCap: 9 };
+    const payload = { llmModelPlan: 'gemini-2.5-flash-lite', domainClassifierUrlCap: 9 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -212,14 +212,14 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
-    assert.equal(putBody.applied.llmModelPlan, 'test-persist-model-xyz');
+    assert.equal(putBody.applied.llmModelPlan, 'gemini-2.5-flash-lite');
     assert.equal(putBody.applied.domainClassifierUrlCap, 9);
 
     // WHY: Verify persistence via GET — SQL writes are synchronous, no polling needed.
     const getRes = await fetch(`${_baseUrl}/runtime-settings`);
     assert.equal(getRes.status, 200);
     const getBody = await getRes.json();
-    assert.equal(getBody.llmModelPlan, 'test-persist-model-xyz');
+    assert.equal(getBody.llmModelPlan, 'gemini-2.5-flash-lite');
     assert.equal(getBody.domainClassifierUrlCap, 9);
 
     const legacySettingsExists = await Promise.all([

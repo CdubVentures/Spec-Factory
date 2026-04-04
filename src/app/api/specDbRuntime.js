@@ -1,6 +1,5 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
-import { seedProductCatalog } from '../../db/seed.js';
 import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteMatrixReseed.js';
 
 function assertFunction(name, value) {
@@ -53,12 +52,6 @@ export function createSpecDbRuntime({
       trigger: (_category, db) => scanAndSeedCheckpoints({ specDb: db, indexLabRoot, productRoot }),
       formatLog: (category, result) =>
         result.runs_seeded > 0 ? `${category}: ${result.runs_seeded} runs re-seeded from checkpoints` : '',
-    },
-    {
-      name: 'product-catalog',
-      trigger: (_category, db) => seedProductCatalog(db, config, _category),
-      formatLog: (category, result) =>
-        result.count > 0 ? `${category}: ${result.count} products re-seeded from catalog` : '',
     },
     {
       name: 'color-edition',

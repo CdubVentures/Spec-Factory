@@ -6,13 +6,12 @@
 import { resolveProductIdentity } from '../../catalog/index.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
-async function applyCatalogIdentity(payload, category, productId, { catalogEntry = null, specDb = null, config, loadProductCatalog }) {
+async function applyCatalogIdentity(payload, category, productId, { catalogEntry = null, specDb = null, config }) {
   if (!payload || typeof payload !== 'object') return payload;
   payload.identity = await resolveProductIdentity({
     productId,
     category,
     config,
-    loadProductCatalog,
     specDb,
     catalogProduct: catalogEntry,
     normalizedIdentity: payload.identity,
@@ -32,7 +31,6 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     buildReviewLayout,
     buildProductReviewPayload,
     buildReviewQueue,
-    loadProductCatalog,
     sessionCache,
     annotateCandidatePrimaryReviews,
     slugify,
@@ -93,7 +91,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       specDb,
       catalogProduct: catEntry,
     });
-    await applyCatalogIdentity(payload, category, productId, { catalogEntry: catEntry, specDb, config, loadProductCatalog });
+    await applyCatalogIdentity(payload, category, productId, { catalogEntry: catEntry, specDb, config });
     return jsonRes(res, 200, payload);
   }
 
@@ -105,7 +103,9 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     const brandsParam = params.get('brands') || '';
     const limit = toInt(params.get('limit'), 20);
     const wantCandidates = params.get('includeCandidates') !== 'false';
-    const catalog = await loadProductCatalog(config, category);
+    // WHY: SQL is the sole SSOT for products.
+    const dbProducts = specDb?.getAllProducts?.('active') || [];
+    const dbProductMap = Object.fromEntries(dbProducts.map(p => [p.product_id, { brand: p.brand, model: p.model, variant: p.variant, id: p.id, identifier: p.identifier, base_model: p.base_model }]));
     let productIds;
     if (idsParam) {
       productIds = idsParam.split(',').filter(Boolean);
@@ -117,18 +117,12 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
         status: 'needs_review',
         limit,
         specDb,
-        catalogProducts: catalog.products || {},
+        catalogProducts: dbProductMap,
       });
       productIds = queue.map(q => q.product_id || q.productId).filter(Boolean).slice(0, limit);
     }
-    const catalogPids = new Set(Object.keys(catalog.products || {}));
-    if (specDb) {
-      try {
-        const dbProducts = specDb.getAllProducts('active');
-        for (const p of dbProducts) catalogPids.add(p.product_id);
-      } catch { /* fall through */ }
-    }
-    productIds = productIds.filter(pid => catalogPids.has(pid));
+    const validPids = new Set(Object.keys(dbProductMap));
+    productIds = productIds.filter(pid => validPids.has(pid));
     const brandsFilter = brandsParam ? new Set(brandsParam.split(',').map(b => b.trim().toLowerCase()).filter(Boolean)) : null;
     const batchSession = await sessionCache.getSessionRules(category);
     const batchLayout = await buildReviewLayout({
@@ -142,7 +136,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     const payloads = [];
     for (const pid of productIds) {
       try {
-        const ce = catalog.products?.[pid] || {};
+        const ce = dbProductMap[pid] || {};
         const payload = await buildProductReviewPayload({
           storage,
           config,
@@ -153,7 +147,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
           specDb,
           catalogProduct: ce,
         });
-        await applyCatalogIdentity(payload, category, pid, { catalogEntry: ce, specDb, config, loadProductCatalog });
+        await applyCatalogIdentity(payload, category, pid, { catalogEntry: ce, specDb, config });
         if (payload) {
           if (brandsFilter) {
             const brand = String(payload.identity?.brand || '').trim().toLowerCase();
@@ -170,20 +164,10 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
   if (parts[0] === 'review' && parts[1] && parts[2] === 'products-index' && method === 'GET') {
     const category = parts[1];
     const specDb = getSpecDb(category);
-    const catalog = await loadProductCatalog(config, category);
-    const catalogProducts = catalog.products || {};
-    let productIds = Object.keys(catalogProducts);
-    if (productIds.length === 0) {
-      if (specDb) {
-        try {
-          const dbProducts = specDb.getAllProducts('active');
-          productIds = dbProducts.map(p => p.product_id);
-          for (const p of dbProducts) {
-            catalogProducts[p.product_id] = { brand: p.brand, model: p.model, variant: p.variant, id: p.id, identifier: p.identifier };
-          }
-        } catch { /* fall through */ }
-      }
-    }
+    // WHY: SQL is the sole SSOT for products.
+    const indexDbProducts = specDb?.getAllProducts?.('active') || [];
+    const indexProductMap = Object.fromEntries(indexDbProducts.map(p => [p.product_id, { brand: p.brand, model: p.model, variant: p.variant, id: p.id, identifier: p.identifier, base_model: p.base_model }]));
+    const productIds = indexDbProducts.map(p => p.product_id);
 
     const indexSession = await sessionCache.getSessionRules(category);
     const indexLayout = await buildReviewLayout({
@@ -195,7 +179,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     const payloads = [];
     for (const pid of productIds) {
       try {
-        const ce = catalogProducts[pid] || {};
+        const ce = indexProductMap[pid] || {};
         const payload = await buildProductReviewPayload({
           storage,
           config,
@@ -206,7 +190,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
           specDb,
           catalogProduct: ce,
         });
-        await applyCatalogIdentity(payload, category, pid, { catalogEntry: ce, specDb, config, loadProductCatalog });
+        await applyCatalogIdentity(payload, category, pid, { catalogEntry: ce, specDb, config });
         if (payload) payloads.push(payload);
       } catch { /* skip failed products */ }
     }
@@ -276,13 +260,10 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
   if (parts[0] === 'review' && parts[1] && parts[2] === 'candidates' && parts[3] && parts[4] && method === 'GET') {
     const [, category, , productId, field] = parts;
     const specDb = getSpecDb(category);
-    const catalog = await loadProductCatalog(config, category);
-    const catalogPids = new Set(Object.keys(catalog.products || {}));
-    if (catalogPids.size > 0 && !catalogPids.has(productId)) {
-      const dbProduct = specDb?.getProduct(productId);
-      if (!dbProduct) {
-        return jsonRes(res, 404, { error: 'not_in_catalog', message: `Product ${productId} is not in the product catalog` });
-      }
+    // WHY: SQL is the sole SSOT — verify product exists in specDb.
+    const dbProduct = specDb?.getProduct(productId);
+    if (!dbProduct) {
+      return jsonRes(res, 404, { error: 'product_not_found', message: `Product ${productId} not found` });
     }
     const candSession = await sessionCache.getSessionRules(category);
     const candLayout = await buildReviewLayout({

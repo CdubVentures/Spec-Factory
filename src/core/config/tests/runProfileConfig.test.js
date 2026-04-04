@@ -29,3 +29,14 @@ test('loadConfig derives default model from registry SSOT, not API key presence'
     assert.equal(cfg.deepseekApiKey, 'ds-test-key');
   });
 });
+
+test('loadConfig reads OPENAI_API_KEY into openaiApiKey', () => {
+  const keys = ['OPENAI_API_KEY'];
+
+  return withSavedEnv(keys, () => {
+    process.env.OPENAI_API_KEY = 'openai-test-key';
+
+    const cfg = loadConfig({});
+    assert.equal(cfg.openaiApiKey, 'openai-test-key');
+  });
+});

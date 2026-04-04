@@ -14,7 +14,6 @@ import {
 export function createDomainChecklistBuilder({
   readGzipJsonlEvents,
   readJsonlEvents,
-  loadProductCatalog,
 }) {
   async function buildIndexingDomainChecklist({
     storage,
@@ -52,15 +51,15 @@ export function createDomainChecklistBuilder({
       };
     }
 
-    if (resolvedProductId) {
+    // WHY: SQL is the sole SSOT for products — look up brand from specDb.
+    if (resolvedProductId && specDb) {
       try {
-        const catalog = await loadProductCatalog(config, normalizedCategory);
-        const entry = catalog?.products?.[resolvedProductId] || null;
-        if (entry?.brand) {
-          addTokensFromText(brandTokens, entry.brand);
+        const dbProduct = specDb.getProduct(resolvedProductId);
+        if (dbProduct?.brand) {
+          addTokensFromText(brandTokens, dbProduct.brand);
         }
       } catch {
-        // ignore optional catalog lookup failures
+        // ignore optional product lookup failures
       }
     }
 

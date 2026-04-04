@@ -50,10 +50,11 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
     });
   }
 
-  const canonicalIndex = config?.categoryAuthorityRoot
+  const canonicalIndex = specDb || config?.categoryAuthorityRoot
     ? await loadCanonicalIdentityIndex({
       config,
-      category
+      category,
+      specDb
     })
     : { source: 'none', pairVariants: new Map(), tupleToProductId: new Map() };
   const hasCanonicalSource = canonicalIndex.source !== 'none'
@@ -63,10 +64,34 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
     const canonical = [];
     const orphans = [];
     const untracked = [];
+    const warnings = [];
 
     for (const p of products) {
       const pPairKey = pairKey(p.brand, p.base_model);
       const canonicalVariants = canonicalIndex.pairVariants.get(pPairKey);
+
+      // WHY: Check fabricated variants BEFORE canonical index lookup.
+      // When the canonical index is built from specDb (all products), fabricated
+      // variants have their own tuple keys and would appear "canonical" otherwise.
+      if (cleanVariant(p.variant) && isFabricatedVariant(p.base_model, p.variant)) {
+        const canonicalPid = canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.base_model, '')) || '';
+        if (canonicalPid) {
+          orphans.push({
+            ...p,
+            canonicalProductId: canonicalPid,
+            reason: 'fabricated_variant_with_canonical'
+          });
+        } else {
+          // WHY: Fabricated variant exists but no canonical base product.
+          // This is a warning, not an orphan — we can't safely delete without a canonical target.
+          warnings.push({
+            ...p,
+            reason: 'fabricated_variant_no_canonical'
+          });
+        }
+        continue;
+      }
+
       const canonicalProductId = canonicalIndex.tupleToProductId.get(
         tupleKey(p.brand, p.base_model, p.variant)
       ) || '';
@@ -88,14 +113,10 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
       }
 
       if (cleanVariant(p.variant)) {
-        const canonicalPid = canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.base_model, '')) || '';
-        const reason = isFabricatedVariant(p.base_model, p.variant)
-          ? 'fabricated_variant_with_canonical'
-          : 'variant_not_in_canonical';
         orphans.push({
           ...p,
-          canonicalProductId: canonicalPid,
-          reason
+          canonicalProductId: canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.base_model, '')) || '',
+          reason: 'variant_not_in_canonical'
         });
         continue;
       }
@@ -112,11 +133,11 @@ export async function scanOrphans({ storage, category, config = {}, specDb = nul
       total_scanned: products.length,
       canonical_count: canonical.length,
       orphan_count: orphans.length,
-      warning_count: untracked.length,
+      warning_count: warnings.length + untracked.length,
       untracked_count: untracked.length,
       canonical,
       orphans,
-      warnings: untracked,
+      warnings: [...warnings, ...untracked],
       untracked
     };
   }
@@ -206,7 +227,7 @@ export async function reconcileOrphans({
 
   if (!dryRun) {
     // Load queue state once for batch removal
-    const loaded = await loadQueueState({ storage, category });
+    const loaded = await loadQueueState({ storage, category, specDb });
     let queueChanged = false;
 
     for (const orphan of scan.orphans) {
@@ -227,7 +248,7 @@ export async function reconcileOrphans({
     }
 
     if (queueChanged) {
-      await saveQueueState({ storage, category, state: loaded.state });
+      await saveQueueState({ storage, category, state: loaded.state, specDb });
     }
   }
 

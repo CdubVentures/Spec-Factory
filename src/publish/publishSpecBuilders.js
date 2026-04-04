@@ -78,6 +78,14 @@ export async function readOverrideDoc({ config = {}, category, productId, specDb
       }
     } catch { /* SQL read failed — return null payload */ }
   }
+  // WHY: Overlap 0d — try consolidated JSON when SQL has no data
+  try {
+    const { readProductFromConsolidated } = await import('../shared/consolidatedOverrides.js');
+    const entry = await readProductFromConsolidated({ config, category, productId });
+    if (entry) {
+      return { path: `json://overrides/${category}/${productId}`, payload: entry };
+    }
+  } catch { /* consolidated read failed */ }
   return { path: overridePath, payload: null };
 }
 

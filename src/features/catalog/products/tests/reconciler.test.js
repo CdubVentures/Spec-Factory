@@ -53,10 +53,25 @@ function mockSpecDbFromProducts(products) {
   const rows = Object.values(products).map((p) => ({
     product_id: p.productId,
     brand: p.identityLock?.brand || '',
+    base_model: p.identityLock?.model || '',
     model: p.identityLock?.model || '',
     variant: p.identityLock?.variant || '',
   }));
-  return { getAllProducts: () => rows };
+  const queueRows = Object.values(products).map((p) => ({
+    product_id: p.productId,
+    status: 'pending',
+  }));
+  return {
+    getAllProducts: () => rows,
+    getAllQueueProducts: (statusFilter) => statusFilter
+      ? queueRows.filter(r => r.status === statusFilter)
+      : queueRows,
+    getQueueProduct: (pid) => queueRows.find(r => r.product_id === pid) || null,
+    upsertQueueProduct: () => {},
+    deleteQueueProduct: () => ({ changes: 1 }),
+    clearQueueByStatus: () => {},
+    db: { transaction: (fn) => fn },
+  };
 }
 
 function makeQueueState(category, productIds) {
@@ -168,40 +183,9 @@ test('scanOrphans: handles empty category gracefully', async () => {
   assert.equal(result.orphan_count, 0);
 });
 
-test('scanOrphans: uses canonical source when categoryAuthorityRoot is provided', async () => {
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'reconciler-canonical-'));
-  const helperRoot = path.join(tmp, 'category_authority');
-  const categoryDir = path.join(helperRoot, 'mouse');
-  await fs.mkdir(path.join(categoryDir, '_control_plane'), { recursive: true });
-  await fs.writeFile(path.join(categoryDir, '_control_plane', 'product_catalog.json'), JSON.stringify({
-    _doc: 'Per-category product catalog. Managed by GUI.',
-    _version: 1,
-    products: {
-      'mouse-acer-cestus-310': {
-        id: 1,
-        identifier: 'acer-cestus-310',
-        brand: 'Acer',
-        model: 'Cestus 310',
-        variant: '',
-        status: 'active',
-        seed_urls: [],
-        added_at: '2026-03-09T00:00:00.000Z',
-        added_by: 'test'
-      },
-      'mouse-razer-viper-v3-pro': {
-        id: 2,
-        identifier: 'razer-viper-v3-pro',
-        brand: 'Razer',
-        model: 'Viper V3 Pro',
-        variant: '',
-        status: 'active',
-        seed_urls: [],
-        added_at: '2026-03-09T00:00:01.000Z',
-        added_by: 'test'
-      }
-    }
-  }, null, 2), 'utf8');
-
+test('scanOrphans: uses canonical source when specDb has products', async () => {
+  // WHY: The 3 products in the scan include 1 canonical, 1 fabricated variant, 1 untracked.
+  // The canonical index is built from specDb which has all 3 products.
   const products = {
     'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
     'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
@@ -210,23 +194,18 @@ test('scanOrphans: uses canonical source when categoryAuthorityRoot is provided'
   const storage = createMockStorage({});
   const specDb = mockSpecDbFromProducts(products);
 
-  try {
-    const result = await scanOrphans({
-      storage,
-      category: 'mouse',
-      config: { categoryAuthorityRoot: helperRoot },
-      specDb,
-    });
+  const result = await scanOrphans({
+    storage,
+    category: 'mouse',
+    config: {},
+    specDb,
+  });
 
-    assert.equal(result.canonical_source, 'product_catalog');
-    assert.equal(result.canonical_count, 1);
-    assert.equal(result.orphan_count, 1);
-    assert.equal(result.untracked_count, 1);
-    assert.equal(result.orphans[0].reason, 'fabricated_variant_with_canonical');
-    assert.equal(result.untracked[0].reason, 'not_in_canonical_source');
-  } finally {
-    await fs.rm(tmp, { recursive: true, force: true });
-  }
+  assert.equal(result.canonical_source, 'specDb');
+  // WHY: With specDb as source, all non-fabricated products are canonical (2 of 3).
+  assert.equal(result.canonical_count, 2);
+  assert.equal(result.orphan_count, 1);
+  assert.equal(result.orphans[0].reason, 'fabricated_variant_with_canonical');
 });
 
 // --- reconcileOrphans ---

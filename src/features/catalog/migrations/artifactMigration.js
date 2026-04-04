@@ -131,33 +131,48 @@ export async function migrateProductArtifacts({
     }
   }
 
-  // Migrate override file (local filesystem)
+  // Migrate override in consolidated JSON (Overlap 0d)
   let override_migrated = false;
   try {
-    const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
-    const oldOverridePath = path.join(helperRoot, category, '_overrides', `${oldProductId}.overrides.json`);
-    const newOverridePath = path.join(helperRoot, category, '_overrides', `${newProductId}.overrides.json`);
-
-    const overrideContent = await fs.readFile(oldOverridePath, 'utf8').catch(() => null);
-    if (overrideContent) {
-      try {
-        const parsed = JSON.parse(overrideContent);
-        if (parsed.product_id === oldProductId) {
-          parsed.product_id = newProductId;
-        }
-        await fs.mkdir(path.dirname(newOverridePath), { recursive: true });
-        await fs.writeFile(newOverridePath, JSON.stringify(parsed, null, 2), 'utf8');
-      } catch {
-        // If JSON parse fails, copy as-is
-        await fs.mkdir(path.dirname(newOverridePath), { recursive: true });
-        await fs.writeFile(newOverridePath, overrideContent, 'utf8');
+    const { readConsolidatedOverrides, writeConsolidatedOverrides } = await import('../../../shared/consolidatedOverrides.js');
+    const consolidated = await readConsolidatedOverrides({ config, category });
+    if (consolidated?.products?.[oldProductId]) {
+      const entry = consolidated.products[oldProductId];
+      if (entry.product_id === oldProductId) {
+        entry.product_id = newProductId;
       }
-      await fs.unlink(oldOverridePath).catch(() => {});
+      consolidated.products[newProductId] = entry;
+      delete consolidated.products[oldProductId];
+      await writeConsolidatedOverrides({ config, category, envelope: consolidated });
       override_migrated = true;
-      migrated_keys.push(`override:${oldOverridePath}`);
+      migrated_keys.push(`override:consolidated:${oldProductId}->${newProductId}`);
     }
-  } catch {
-    // Override file doesn't exist or migration failed — not critical
+  } catch { /* consolidated migration failed — try per-product fallback */ }
+
+  // Fallback: migrate per-product override file (migration period)
+  if (!override_migrated) {
+    try {
+      const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
+      const oldOverridePath = path.join(helperRoot, category, '_overrides', `${oldProductId}.overrides.json`);
+      const newOverridePath = path.join(helperRoot, category, '_overrides', `${newProductId}.overrides.json`);
+      const overrideContent = await fs.readFile(oldOverridePath, 'utf8').catch(() => null);
+      if (overrideContent) {
+        try {
+          const parsed = JSON.parse(overrideContent);
+          if (parsed.product_id === oldProductId) {
+            parsed.product_id = newProductId;
+          }
+          await fs.mkdir(path.dirname(newOverridePath), { recursive: true });
+          await fs.writeFile(newOverridePath, JSON.stringify(parsed, null, 2), 'utf8');
+        } catch {
+          await fs.mkdir(path.dirname(newOverridePath), { recursive: true });
+          await fs.writeFile(newOverridePath, overrideContent, 'utf8');
+        }
+        await fs.unlink(oldOverridePath).catch(() => {});
+        override_migrated = true;
+        migrated_keys.push(`override:${oldOverridePath}`);
+      }
+    } catch { /* not critical */ }
   }
 
   // Migrate queue entry

@@ -13,7 +13,7 @@ export function createBrandRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, config, storage,
     resolveCategoryAlias, broadcastWs, getSpecDb,
-    loadProductCatalog, appDb, brandRegistryPath,
+    appDb, brandRegistryPath,
   } = options;
 
   return {
@@ -21,6 +21,6 @@ export function createBrandRouteContext(options = {}) {
     addBrand, addBrandsBulk, updateBrand, removeBrand, getBrandsForCategory,
     seedBrandsFromActiveFiltering, renameBrand, getBrandImpactAnalysis,
     resolveCategoryAlias, upsertQueueProduct, broadcastWs, getSpecDb,
-    loadProductCatalog, brandRegistryPath, writeBackBrandRegistry,
+    brandRegistryPath, writeBackBrandRegistry,
   };
 }

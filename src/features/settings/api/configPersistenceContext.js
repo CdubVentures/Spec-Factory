@@ -1,7 +1,9 @@
 import {
   applyRuntimeSettingsToConfig,
   deriveSettingsArtifactsFromUserSettings,
+  mergeAndPersistRuntimePatch,
   persistUserSettingsSections,
+  snapshotRuntimeSettings,
   snapshotUiSettings,
 } from '../../settings-authority/index.js';
 import {
@@ -18,12 +20,12 @@ export function createConfigPersistenceContext({
   const initialSettingsArtifacts = deriveSettingsArtifactsFromUserSettings(initialUserSettings);
   const uiSettingsState = snapshotUiSettings(initialSettingsArtifacts.sections.ui || {});
 
-  function applyDerivedSettingsArtifacts(artifacts) {
+  function applyDerivedSettingsArtifacts(artifacts, options = {}) {
     if (!artifacts || typeof artifacts !== 'object') return;
     const sections = artifacts.sections && typeof artifacts.sections === 'object'
       ? artifacts.sections
       : {};
-    applyRuntimeSettingsToConfig(config, sections.runtime || {});
+    applyRuntimeSettingsToConfig(config, sections.runtime || {}, options);
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
 
@@ -33,7 +35,7 @@ export function createConfigPersistenceContext({
   // idempotent for identical inputs — it overwrites keys and rebuilds derived state.
   // This call is the safety net: if a caller constructs this context without the
   // session-layer apply having run first, config still gets the SQL truth.
-  applyDerivedSettingsArtifacts(initialSettingsArtifacts);
+  applyDerivedSettingsArtifacts(initialSettingsArtifacts, { mode: 'bootstrap' });
 
   async function persistCanonicalSections({
     runtime = null,
@@ -68,10 +70,71 @@ export function createConfigPersistenceContext({
     });
   }
 
+  // WHY: Serialize runtime patch writes to prevent two-writer race (SET-001).
+  // Each patch acquires the lock, reads current SQL state, merges the patch,
+  // validates the merged snapshot, UPSERTs only changed keys, then updates
+  // the in-memory canonical state — all inside the critical section.
+  let runtimePatchQueue = Promise.resolve();
+
+  async function mergeRuntimePatch(patch, { emptyRegistryGuard = false } = {}) {
+    if (!appDb) {
+      // WHY: Fallback for test/no-db contexts — delegate to existing full-section
+      // persist which handles the JSON-only path.
+      const snapshot = { ...snapshotRuntimeSettings(config), ...patch };
+      return persistCanonicalSections({ runtime: snapshot });
+    }
+
+    const task = async () => {
+      let guardedPatch = { ...patch };
+      if (
+        emptyRegistryGuard
+        && guardedPatch.llmProviderRegistryJson === '[]'
+        && typeof config.llmProviderRegistryJson === 'string'
+        && config.llmProviderRegistryJson.length > 2
+      ) {
+        guardedPatch.llmProviderRegistryJson = config.llmProviderRegistryJson;
+      }
+
+      recordSettingsWriteAttempt({ sections: ['runtime'], target: 'app.sqlite' });
+
+      try {
+        const { sanitizedPatch, payload } = await mergeAndPersistRuntimePatch({
+          appDb,
+          patch: guardedPatch,
+        });
+
+        // WHY: Update canonical state inside the lock so the next queued write
+        // sees fresh state. This eliminates SET-002 and SET-007.
+        userSettingsState = payload;
+        applyRuntimeSettingsToConfig(config, sanitizedPatch);
+        Object.assign(uiSettingsState, snapshotUiSettings(
+          deriveSettingsArtifactsFromUserSettings(payload).sections.ui || {}
+        ));
+
+        recordSettingsWriteOutcome({ sections: ['runtime'], target: 'app.sqlite', success: true });
+
+        return deriveSettingsArtifactsFromUserSettings(payload);
+      } catch (err) {
+        recordSettingsWriteOutcome({
+          sections: ['runtime'],
+          target: 'app.sqlite',
+          success: false,
+          reason: err?.code || err?.message || 'runtime_patch_persist_failed',
+        });
+        throw err;
+      }
+    };
+
+    const next = runtimePatchQueue.then(task, task);
+    runtimePatchQueue = next.catch(() => {});
+    return next;
+  }
+
   return {
     getUserSettingsState() { return userSettingsState; },
     getUiSettingsState() { return uiSettingsState; },
     persistCanonicalSections,
+    mergeRuntimePatch,
     recordRouteWriteAttempt: recordRouteWriteAttemptWrapper,
     recordRouteWriteOutcome: recordRouteWriteOutcomeWrapper,
   };

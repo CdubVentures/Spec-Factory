@@ -4,7 +4,7 @@
 // writeProductIdentity is idempotent (skips existing files), so this is safe to re-run.
 
 import { writeProductIdentity } from './writeProductIdentity.js';
-import { cleanVariant, isFabricatedVariant } from '../identity/identityDedup.js';
+import { normalizeProductIdentity } from '../identity/identityDedup.js';
 
 export function backfillProductJsons({ specDb, category, productRoot }) {
   if (!specDb) return { total: 0, created: 0, skipped: 0 };
@@ -22,20 +22,17 @@ export function backfillProductJsons({ specDb, category, productRoot }) {
       seedUrls = row.seed_urls ? JSON.parse(row.seed_urls) : [];
     } catch { /* ignore parse errors */ }
 
-    const model = String(row.model || '').trim();
-    // WHY: Fabricated variants (tokens already in model) must never reach product.json.
-    let variant = cleanVariant(row.variant);
-    if (variant && isFabricatedVariant(model, variant)) {
-      variant = '';
-    }
+    const cat = category || row.category || '';
+    const identity = normalizeProductIdentity(cat, row.brand, row.base_model, row.variant);
 
     const result = writeProductIdentity({
       productId: pid,
-      category: category || row.category || '',
+      category: cat,
       identity: {
-        brand: row.brand || '',
-        model,
-        variant,
+        brand: identity.brand,
+        base_model: identity.base_model,
+        model: identity.model,
+        variant: identity.variant,
         brand_identifier: row.brand_identifier || '',
       },
       seedUrls: Array.isArray(seedUrls) ? seedUrls : [],

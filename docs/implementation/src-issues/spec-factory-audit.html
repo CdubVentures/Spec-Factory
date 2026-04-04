@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec-Factory · src/ Codebase Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e12;
+    --surface: #14171e;
+    --surface2: #1a1e28;
+    --border: #252a36;
+    --text: #c8cdd8;
+    --text-dim: #6b7280;
+    --text-bright: #e8ecf4;
+    --accent: #6ee7b7;
+    --accent-dim: #065f46;
+    --red: #f87171;
+    --red-dim: #7f1d1d;
+    --orange: #fb923c;
+    --orange-dim: #7c2d12;
+    --yellow: #fbbf24;
+    --yellow-dim: #78350f;
+    --blue: #60a5fa;
+    --blue-dim: #1e3a5f;
+    --purple: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .grain {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 256px;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+  }
+
+  header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+  }
+
+  header .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 span { color: var(--accent); }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    max-width: 700px;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-card .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .stat-card .value.red { color: var(--red); }
+  .stat-card .value.orange { color: var(--orange); }
+  .stat-card .value.green { color: var(--accent); }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .legend-item {
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  .dot-dead { background: var(--red); }
+  .dot-suspect { background: var(--orange); }
+  .dot-narrow { background: var(--yellow); }
+  .dot-active { background: var(--accent); }
+  .dot-core { background: var(--blue); }
+
+  section { margin-bottom: 2.5rem; }
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  h2 .icon {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+  }
+
+  .folder-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .folder-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .folder-card:hover { border-color: #3a4050; }
+
+  .folder-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    border-radius: 10px 0 0 10px;
+  }
+
+  .folder-card.dead::before { background: var(--red); }
+  .folder-card.suspect::before { background: var(--orange); }
+  .folder-card.narrow::before { background: var(--yellow); }
+  .folder-card.active::before { background: var(--accent); }
+  .folder-card.core::before { background: var(--blue); }
+
+  .folder-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap; gap: 0.5rem;
+  }
+
+  .folder-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-bright);
+  }
+
+  .folder-meta {
+    display: flex; gap: 0.75rem;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  .folder-meta .m {
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .folder-desc {
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .folder-desc strong { color: var(--text-bright); font-weight: 600; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .badge-dead { background: var(--red-dim); color: var(--red); }
+  .badge-suspect { background: var(--orange-dim); color: var(--orange); }
+  .badge-narrow { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-active { background: rgba(110,231,183,0.12); color: var(--accent); }
+  .badge-core { background: var(--blue-dim); color: var(--blue); }
+
+  .features-sub {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border);
+  }
+
+  .features-sub .sub-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .sub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .sub-item {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .sub-item .sname {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--text-bright);
+    font-size: 0.8rem;
+  }
+
+  .sub-item .sdesc { color: var(--text-dim); font-size: 0.78rem; margin-top: 2px; }
+
+  .tldr {
+    background: linear-gradient(135deg, var(--red-dim), var(--surface));
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .tldr h3 {
+    color: var(--red);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+  }
+
+  .tldr ul { list-style: none; }
+
+  .tldr li {
+    padding: 0.3rem 0;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .tldr li::before {
+    content: '→ ';
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  .tldr li code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(248,113,113,0.12);
+    color: var(--red);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.82rem;
+  }
+
+  footer {
+    text-align: center;
+    padding-top: 3rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 640px) {
+    .container { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.5rem; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="container">
+
+<header>
+  <div class="tag">Codebase Audit</div>
+  <h1>Spec-Factory <span>src/</span> Analysis</h1>
+  <p>What each folder does, which are core to the app, and which look like dead code — based on import tracing, CLI registration, and cross-folder references.</p>
+</header>
+
+<div class="summary-grid">
+  <div class="stat-card">
+    <div class="label">Total Folders</div>
+    <div class="value">31</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Prod Files</div>
+    <div class="value">561</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Dead Code</div>
+    <div class="value red">2 folders</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Suspect / Narrow</div>
+    <div class="value orange">6 folders</div>
+  </div>
+</div>
+
+<div class="tldr">
+  <h3>TL;DR — Safe to Delete or Audit</h3>
+  <ul>
+    <li><code>concurrency/</code> — <strong>Dead.</strong> 7 prod files, zero imports from anywhere. The index.js even has a comment about deleted files. Request throttling logic is inlined in features/indexing instead.</li>
+    <li><code>retrieve/</code> — <strong>Dead.</strong> 3 prod files, zero imports from any other folder. Only mentioned in a comment in shared/contentHash.js.</li>
+    <li><code>indexer/</code> — <strong>Near-dead.</strong> Single file, no tests, only wired via CLI <code>rebuild-index</code>. Likely superseded by DB-based indexing.</li>
+    <li><code>fetcher/</code> — <strong>Barely alive.</strong> 1 file (stealthProfile.js), referenced indirectly via settings config, not directly imported for logic.</li>
+    <li><code>research/</code> — <strong>One-trick.</strong> Just urlNormalize.js, imported by a single file in features/indexing. Could be moved into shared/.</li>
+    <li><code>testing/</code> — <strong>Test infra only.</strong> No prod files — exclusively test helpers (testDataProvider, goldenFiles, testRunner). Not dead, but mislabeled — it's test infrastructure, not "testing feature".</li>
+  </ul>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-dead"></div> Dead Code</div>
+  <div class="legend-item"><div class="legend-dot dot-suspect"></div> Suspect / Barely Used</div>
+  <div class="legend-item"><div class="legend-dot dot-narrow"></div> Narrow / CLI-Only</div>
+  <div class="legend-item"><div class="legend-dot dot-active"></div> Active</div>
+  <div class="legend-item"><div class="legend-dot dot-core"></div> Core Infrastructure</div>
+</div>
+
+<!-- ═══════════════ DEAD CODE ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:var(--red-dim);color:var(--red)">✗</span> Dead Code</h2>
+  <div class="folder-list">
+
+    <div class="folder-card dead">
+      <div class="folder-head">
+        <span class="folder-name">concurrency/</span>
+        <div class="folder-meta">
+          <span class="m">7 files</span><span class="m">63 KB</span><span class="m">0 external imports</span>
+          <span class="badge badge-dead">Dead</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Exports WorkerPool, BudgetEnforcer, HostPacer, LaneManager, AsyncDeepJob, and requestThrottler utilities. <strong>Not a single file outside this folder imports from it.</strong> The index.js itself has a comment noting deleted files from a "pipeline rework." The search execution code in <code>features/indexing</code> uses a <code>requestThrottler</code> parameter but never imports it from here — it's passed in from a different source. This entire folder is orphaned.
+      </div>
+    </div>
+
+    <div class="folder-card dead">
+      <div class="folder-head">
+        <span class="folder-name">retrieve/</span>
+        <div class="folder-meta">
+          <span class="m">3 files</span><span class="m">94 KB</span><span class="m">0 external imports</span>
+          <span class="badge badge-dead">Dead</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Contains tierAwareRetriever.js and primeSourcesBuilder.js — evidence retrieval logic for product data. <strong>Zero imports from any other folder.</strong> The only external reference is a historical comment in <code>shared/contentHash.js</code>. Evidence retrieval appears to have been absorbed into the review and engine modules directly.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ SUSPECT ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:var(--orange-dim);color:var(--orange)">?</span> Suspect / Barely Used</h2>
+  <div class="folder-list">
+
+    <div class="folder-card suspect">
+      <div class="folder-head">
+        <span class="folder-name">indexer/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">6 KB</span><span class="m">CLI only</span>
+          <span class="badge badge-suspect">Suspect</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Single file <code>rebuildIndex.js</code> — rebuilds the category index from SQLite. Only wired through the CLI <code>rebuild-index</code> command. No tests, no other consumers. Likely vestigial from before the DB became the primary index source.
+      </div>
+    </div>
+
+    <div class="folder-card suspect">
+      <div class="folder-head">
+        <span class="folder-name">fetcher/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">15 KB</span><span class="m">indirect refs only</span>
+          <span class="badge badge-suspect">Suspect</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Contains <code>stealthProfile.js</code> — browser stealth configuration for web crawling. Referenced indirectly through settings registry and crawl adapters, but the crawl plugins import it from the <code>features/crawl</code> layer, not directly. May be duplicated or superseded.
+      </div>
+    </div>
+
+    <div class="folder-card suspect">
+      <div class="folder-head">
+        <span class="folder-name">research/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">12 KB</span><span class="m">1 external import</span>
+          <span class="badge badge-suspect">Suspect</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Just <code>urlNormalize.js</code> — URL canonicalization utility. Imported by exactly one file (<code>features/indexing/.../crawlLedgerAdapter.js</code>). An entire top-level folder for a single utility function is overkill — this should live in <code>shared/</code>.
+      </div>
+    </div>
+
+    <div class="folder-card suspect">
+      <div class="folder-head">
+        <span class="folder-name">testing/</span>
+        <div class="folder-meta">
+          <span class="m">0 prod files</span><span class="m">267 KB</span><span class="m">test infra only</span>
+          <span class="badge badge-suspect">Misplaced</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Contains <strong>zero production files</strong> — it's entirely test infrastructure: golden file management, test data providers, and a custom test runner pipeline. Not dead, but misleading as a top-level <code>src/</code> folder. Should be under a <code>test-utils/</code> or <code>__test__/</code> directory.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ NARROW ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:var(--yellow-dim);color:var(--yellow)">~</span> Narrow / CLI-Only</h2>
+  <div class="folder-list">
+
+    <div class="folder-card narrow">
+      <div class="folder-head">
+        <span class="folder-name">calibration/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">14 KB</span><span class="m">CLI only</span>
+          <span class="badge badge-narrow">CLI-Only</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Single file <code>confidenceCalibrator.js</code> — measures how well confidence scores align with actual accuracy. Only reachable via <code>calibrate-confidence</code> CLI command. Not dead, but very narrow scope.
+      </div>
+    </div>
+
+    <div class="folder-card narrow">
+      <div class="folder-head">
+        <span class="folder-name">runner/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">8 KB</span><span class="m">CLI + pipeline</span>
+          <span class="badge badge-narrow">Narrow</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Single file <code>runUntilComplete.js</code> — repeatedly runs the product pipeline until convergence. Used by the <code>run-until-complete</code> CLI command and pipeline commands. Legitimate but very thin — could be merged into <code>pipeline/</code>.
+      </div>
+    </div>
+
+    <div class="folder-card narrow">
+      <div class="folder-head">
+        <span class="folder-name">benchmark/</span>
+        <div class="folder-meta">
+          <span class="m">5 files</span><span class="m">62 KB</span><span class="m">CLI only</span>
+          <span class="badge badge-narrow">CLI-Only</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Benchmarking suite: benchmarkMatrix, evalLab, goldenBenchmark, regressionGates, scaleBenchmark. Only reachable via <code>benchmark</code> CLI commands. Developer tooling, not app logic.
+      </div>
+    </div>
+
+    <div class="folder-card narrow">
+      <div class="folder-head">
+        <span class="folder-name">runtime/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">17 KB</span><span class="m">140 refs (but misleading)</span>
+          <span class="badge badge-narrow">Narrow</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Just <code>fleetMonitor.js</code>. The 140 "external imports" count is inflated — most references are to the <em>word</em> "runtime" in other folder names and imports. The actual <code>runtime/</code> folder has narrow scope: fleet monitoring for worker pools.
+      </div>
+    </div>
+
+    <div class="folder-card narrow">
+      <div class="folder-head">
+        <span class="folder-name">observability/</span>
+        <div class="folder-meta">
+          <span class="m">2 files</span><span class="m">21 KB</span><span class="m">9 imports</span>
+          <span class="badge badge-narrow">Narrow</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Counter/metrics instrumentation: <code>dataPropagationCounters.js</code> and <code>settingsPersistenceCounters.js</code>. Used by db stores and settings modules for internal telemetry.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ ACTIVE ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:rgba(110,231,183,0.15);color:var(--accent)">✓</span> Active Application Code</h2>
+  <div class="folder-list">
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">features/</span>
+        <div class="folder-meta">
+          <span class="m">308 files</span><span class="m">5.4 MB</span><span class="m">41 imports</span>
+          <span class="badge badge-active">Main App</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        <strong>This is your app.</strong> The largest folder by far — 55% of all production code. Houses the domain-specific feature modules for the spec harvesting pipeline.
+      </div>
+      <div class="features-sub">
+        <div class="sub-title">Sub-features breakdown:</div>
+        <div class="sub-grid">
+          <div class="sub-item"><span class="sname">indexing/</span> <span class="sdesc">3.3 MB · 181 files · Web search, crawling orchestration, LLM extraction pipeline — the heart of spec harvesting</span></div>
+          <div class="sub-item"><span class="sname">review/</span> <span class="sdesc">922 KB · 33 files · Human review UI data layer — grid views, candidate scoring, override management</span></div>
+          <div class="sub-item"><span class="sname">catalog/</span> <span class="sdesc">294 KB · 23 files · Product catalog management, CRUD operations, discovery</span></div>
+          <div class="sub-item"><span class="sname">crawl/</span> <span class="sdesc">317 KB · 17 files · Browser-based crawling: stealth, plugin system, adapters, session management</span></div>
+          <div class="sub-item"><span class="sname">extraction/</span> <span class="sdesc">158 KB · 10 files · LLM-based data extraction from crawled pages, screenshot plugin</span></div>
+          <div class="sub-item"><span class="sname">studio/</span> <span class="sdesc">131 KB · 6 files · "EG" (extraction guidance) presets and studio API routes</span></div>
+          <div class="sub-item"><span class="sname">settings-authority/</span> <span class="sdesc">99 KB · 12 files · Settings schema validation and authority layer</span></div>
+          <div class="sub-item"><span class="sname">color-edition/</span> <span class="sdesc">75 KB · 7 files · Color variant extraction via LLM</span></div>
+          <div class="sub-item"><span class="sname">settings/</span> <span class="sdesc">67 KB · 9 files · User-facing settings management and API</span></div>
+          <div class="sub-item"><span class="sname">color-registry/</span> <span class="sdesc">36 KB · 4 files · Global color name registry and API</span></div>
+          <div class="sub-item"><span class="sname">expansion-hardening/</span> <span class="sdesc">28 KB · 2 files · Chaos testing / hardening harness for pipeline expansion</span></div>
+          <div class="sub-item"><span class="sname">category-authority/</span> <span class="sdesc">26 KB · 3 files · Category definition authority and API</span></div>
+          <div class="sub-item"><span class="sname">review-curation/</span> <span class="sdesc">6 KB · 1 file · Re-exports review layout/curation functions (thin facade)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">api/</span>
+        <div class="folder-meta">
+          <span class="m">22 files</span><span class="m">240 KB</span><span class="m">24 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        GUI server (Express-based), Intel Graph API, review candidate runtime, round summaries. The HTTP API layer for the desktop GUI and any external consumers.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">app/</span>
+        <div class="folder-meta">
+          <span class="m">42 files</span><span class="m">450 KB</span><span class="m">21 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        CLI command implementations (<code>app/cli/commands/</code>) and API route handlers (<code>app/api/</code>). The "controller" layer — wires CLI subcommands to domain logic.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">cli/</span>
+        <div class="folder-meta">
+          <span class="m">5 files</span><span class="m">58 KB</span><span class="m">entry point</span>
+          <span class="badge badge-active">Entry Point</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        <strong>The main entry point</strong> (<code>spec.js</code>) — the CLI dispatcher with ~40 subcommands. Also contains args parser, S3 integration, and smoke test runner.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">pipeline/</span>
+        <div class="folder-meta">
+          <span class="m">11 files</span><span class="m">154 KB</span><span class="m">38 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Core product processing pipeline: <code>runProduct.js</code>, URL quality gates, checkpoint/resume system, pipeline seams for dependency injection. Heavily referenced across the codebase.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">engine/</span>
+        <div class="folder-meta">
+          <span class="m">14 files</span><span class="m">259 KB</span><span class="m">14 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Field rules engine — constraint evaluation, cross-validation, normalization, curation suggestions, evidence auditing. The business logic for determining spec field values.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">field-rules/</span>
+        <div class="folder-meta">
+          <span class="m">10 files</span><span class="m">259 KB</span><span class="m">23 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Field rules compiler, loader, and session cache. Compiles category-specific field definitions (from JSON configs) into runtime rules consumed by the engine. Includes schema validation and migration support.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">ingest/</span>
+        <div class="folder-meta">
+          <span class="m">17 files</span><span class="m">319 KB</span><span class="m">7 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Category compilation pipeline — transforms raw category authority files + CSV data into field rules. The "build step" for your data schema: compileAssembler, compileFieldRuleBuilder, compileMapNormalization, etc.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">indexlab/</span>
+        <div class="folder-meta">
+          <span class="m">10 files</span><span class="m">466 KB</span><span class="m">22 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        The "IndexLab" runtime bridge — orchestrates the indexing pipeline with event handlers, LLM tracking, artifact building, search slot management, and stage lifecycle. The operational control plane.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">publish/</span>
+        <div class="folder-meta">
+          <span class="m">7 files</span><span class="m">180 KB</span><span class="m">3 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Publishing pipeline — writes finalized product specs to output, generates changelogs, drift detection/reconciliation, analytics. The output stage.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">billing/</span>
+        <div class="folder-meta">
+          <span class="m">3 files</span><span class="m">44 KB</span><span class="m">10 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        LLM cost tracking: cost ledger, rate definitions, model pricing catalog. Tracks spend across extraction/indexing runs.
+      </div>
+    </div>
+
+    <div class="folder-card active">
+      <div class="folder-head">
+        <span class="folder-name">queue/</span>
+        <div class="folder-meta">
+          <span class="m">2 files</span><span class="m">78 KB</span><span class="m">19 imports</span>
+          <span class="badge badge-active">Active</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Queue state management and storage adapter for batch processing. Tracks product run states, priorities, and scheduling.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ CORE INFRA ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:var(--blue-dim);color:var(--blue)">◆</span> Core Infrastructure</h2>
+  <div class="folder-list">
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">shared/</span>
+        <div class="folder-meta">
+          <span class="m">15 files</span><span class="m">260 KB</span><span class="m">179 imports</span>
+          <span class="badge badge-core">Most Imported</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        <strong>The #1 most imported folder.</strong> Settings registry (63 KB alone!), content hashing, host parsing, file helpers, value normalizers, serialization, primitives. The foundational utility layer everything depends on.
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">core/</span>
+        <div class="folder-meta">
+          <span class="m">34 files</span><span class="m">418 KB</span><span class="m">71 imports</span>
+          <span class="badge badge-core">Core</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Three pillars: <strong>config/</strong> (runtime config assembly, settings resolution, environment loading), <strong>events/</strong> (event system, data change contracts), <strong>llm/</strong> (LLM client abstraction, prompt management, model routing).
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">db/</span>
+        <div class="folder-meta">
+          <span class="m">31 files</span><span class="m">711 KB</span><span class="m">51 imports</span>
+          <span class="badge badge-core">Core</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        SQLite database layer (better-sqlite3): specDb (main product data), appDb (app state), schemas, migrations, seed data, and domain-specific stores. The persistence backbone — second largest folder by byte size.
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">s3/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">20 KB</span><span class="m">16 imports</span>
+          <span class="badge badge-core">Core</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        S3 storage abstraction — the I/O layer for reading/writing product specs, configs, and outputs. Small but critical.
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">categories/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">50 KB</span><span class="m">12 imports</span>
+          <span class="badge badge-core">Core</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Category configuration loader — reads and resolves category definitions (e.g., "mouse") that drive the entire field-rule and extraction pipeline.
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">utils/</span>
+        <div class="folder-meta">
+          <span class="m">6 files</span><span class="m">59 KB</span><span class="m">23 imports</span>
+          <span class="badge badge-core">Core</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Utility functions: candidate identification, component identification, field key helpers, identity normalization, slot value shape validation, tier helpers.
+      </div>
+    </div>
+
+    <div class="folder-card core">
+      <div class="folder-head">
+        <span class="folder-name">build/</span>
+        <div class="folder-meta">
+          <span class="m">1 file</span><span class="m">19 KB</span><span class="m">19 imports</span>
+          <span class="badge badge-core">Build Tool</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Type generation (<code>generate-types.js</code>) — auto-generates TypeScript type definitions from the field rules schema. Build-time tooling, not runtime.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ STANDALONE ═══════════════ -->
+<section>
+  <h2><span class="icon" style="background:var(--surface2);color:var(--purple)">◇</span> Standalone Files</h2>
+  <div class="folder-list">
+
+    <div class="folder-card" style="border-left: 3px solid var(--purple);">
+      <div class="folder-head">
+        <span class="folder-name">config.js · constants.js · logger.js</span>
+        <div class="folder-meta">
+          <span class="badge" style="background:rgba(167,139,250,0.12);color:var(--purple)">Root Files</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Top-level config, constants, and event logger. Imported widely. These are fine as standalone files.
+      </div>
+    </div>
+
+    <div class="folder-card" style="border-left: 3px solid var(--purple);">
+      <div class="folder-head">
+        <span class="folder-name">tests/</span>
+        <div class="folder-meta">
+          <span class="m">1 test file</span>
+          <span class="badge" style="background:rgba(167,139,250,0.12);color:var(--purple)">Root Tests</span>
+        </div>
+      </div>
+      <div class="folder-desc">
+        Just <code>eventLoggerFlush.test.js</code> — integration test for the root logger. Nothing notable.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  Generated from CdubVentures/Spec-Factory @ main · Import-traced analysis · April 2026
+</footer>
+
+</div>
+</body>
+</html>

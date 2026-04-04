@@ -31,8 +31,8 @@ test('syncQueueFromInputs applies the identity gate and rejects conflicting vari
     const queueRows = new Map();
     const mockSpecDb = {
       getAllProducts: () => [
-        { product_id: 'mouse-acer-cestus-310', brand: 'Acer', model: 'Cestus 310', variant: '' },
-        { product_id: 'mouse-acer-cestus-310-310', brand: 'Acer', model: 'Cestus 310', variant: '310' },
+        { product_id: 'mouse-acer-cestus-310', brand: 'Acer', base_model: 'Cestus 310', model: 'Cestus 310', variant: '' },
+        { product_id: 'mouse-acer-cestus-310-310', brand: 'Acer', base_model: 'Cestus 310', model: 'Cestus 310', variant: '310' },
       ],
       getAllQueueProducts: () => [...queueRows.values()],
       getQueueProduct: (pid) => queueRows.get(pid) || null,

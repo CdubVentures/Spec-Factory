@@ -27,9 +27,9 @@
 
 ## SSOT
 
-- **SQL `products` table** in `spec.sqlite` is the live queryable SSOT for product identity.
-- **`.workspace/products/{pid}/product.json`** is the per-product rebuild file (created at add time, grown after runs).
-- **`product_catalog.json`** is a read-only boot seed — read at first startup to populate an empty SQL database. Never mutated on CRUD.
+- **`.workspace/products/{pid}/product.json`** is the sole disk SSOT per product (identity + run history, created at add time, grown after runs).
+- **SQL `products` table** in `spec.sqlite` is the runtime cache, rebuilt from product.json files via `scanAndSeedCheckpoints`.
+- **`product_catalog.json`** is retired — kept only as a legacy import format for `seedFromCatalog`. Not read at boot, not the SSOT.
 - **No fixture input files** — the `fixtures/` directory and `INPUT_KEY_PREFIX` pattern have been eliminated.
 
 ## Flow

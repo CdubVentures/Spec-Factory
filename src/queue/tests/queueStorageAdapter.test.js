@@ -89,12 +89,11 @@ test('createQueueAdapter returns sqlite adapter when specDb provided', () => {
   assert.equal(typeof adapter.patch, 'function');
 });
 
-test('createQueueAdapter returns json adapter when specDb is null', async () => {
-  const storage = makeStorage();
-  const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
-  assert.equal(typeof adapter.get, 'function');
-  assert.equal(typeof adapter.getAll, 'function');
-  assert.equal(typeof adapter.save, 'function');
+test('createQueueAdapter throws when specDb is null', () => {
+  assert.throws(
+    () => createQueueAdapter({ storage: null, category: 'mouse', specDb: null }),
+    /requires specDb/
+  );
 });
 
 // ── SQLite adapter tests ────────────────────────────────────────────
@@ -189,43 +188,4 @@ test('sqlite adapter selectNext returns top eligible row', async () => {
   assert.equal(next.product_id || next.productId, 'hi');
 });
 
-// ── JSON adapter tests ──────────────────────────────────────────────
-
-test('json adapter save and get round-trips via storage', async () => {
-  const storage = makeStorage();
-  const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
-
-  await adapter.save('mouse-j1', { s3key: 'k/j1.json', status: 'pending', priority: 2 });
-  const row = await adapter.get('mouse-j1');
-  assert.equal(row.status, 'pending');
-  assert.equal(row.priority, 2);
-});
-
-test('json adapter getAll returns all products from storage', async () => {
-  const storage = makeStorage();
-  const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
-
-  await adapter.save('a', { status: 'pending' });
-  await adapter.save('b', { status: 'complete' });
-  const all = await adapter.getAll();
-  assert.equal(all.length, 2);
-
-  const pending = await adapter.getAll('pending');
-  assert.equal(pending.length, 1);
-});
-
-test('json adapter clearByStatus removes matching and returns ids', async () => {
-  const storage = makeStorage();
-  const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
-
-  await adapter.save('a', { status: 'failed' });
-  await adapter.save('b', { status: 'failed' });
-  await adapter.save('c', { status: 'pending' });
-
-  const result = await adapter.clearByStatus('failed');
-  assert.equal(result.removed_count, 2);
-  assert.ok(result.removed_product_ids.includes('a'));
-
-  const remaining = await adapter.getAll();
-  assert.equal(remaining.length, 1);
-});
+// WHY: JSON adapter tests removed — SQL is the sole queue SSOT.

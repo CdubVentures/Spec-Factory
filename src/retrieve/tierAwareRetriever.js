@@ -702,7 +702,7 @@ export function buildTierAwareFieldRetrieval({
     })
   }));
 
-  const identityParts = [identity.brand, identity.model, identity.variant]
+  const identityParts = [identity.brand, identity.base_model || identity.model, identity.variant]
     .map((value) => String(value || '').trim())
     .filter(Boolean)
     .join(' ');

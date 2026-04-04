@@ -61,30 +61,31 @@ function createCatalogStorageFixture() {
 }
 
 function createBuildCatalog(overrides = {}) {
+  const catalogProduct = createCatalogProduct();
   return createCatalogBuilder({
     config: { localMode: true },
     storage: createCatalogStorageFixture(),
     getSpecDb: () => ({
       id: 'fake-specdb',
+      getAllProducts: () => [{
+        product_id: 'mouse-acme-orbit-x1',
+        id: catalogProduct.id || 10,
+        identifier: catalogProduct.identifier || '',
+        brand: catalogProduct.brand || 'Acme',
+        base_model: catalogProduct.base_model || '',
+        model: catalogProduct.model || 'Orbit X1',
+        variant: catalogProduct.variant || '',
+        brand_identifier: '',
+      }],
+      getAllQueueProducts: () => [{
+        product_id: 'mouse-acme-orbit-x1',
+        status: 'complete',
+      }],
       getSummaryForProduct: (pid) => pid === 'mouse-acme-orbit-x1' ? createCatalogSummary() : null,
       getNormalizedForProduct: (pid) => pid === 'mouse-acme-orbit-x1' ? createNormalizedIdentity() : null,
       getTrafficLightForProduct: () => null,
     }),
-    loadQueueState: async () => ({
-      state: {
-        products: {
-          'mouse-acme-orbit-x1': { status: 'complete' },
-        },
-      },
-    }),
-    loadProductCatalog: async () => ({
-      products: {
-        'mouse-acme-orbit-x1': createCatalogProduct(),
-      },
-    }),
     cleanVariant,
-    catalogKey,
-    path,
     ...overrides,
   });
 }
@@ -116,35 +117,38 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
   ]);
 });
 
-test('catalog builder falls back to pending defaults when queue state loading fails', async () => {
-  const seedInput = createCatalogInput({ active: false });
+test('catalog builder falls back to pending defaults when no summary exists', async () => {
+  const catalogProduct = createCatalogProduct();
   const buildCatalog = createBuildCatalog({
     storage: {
-      async listInputKeys() {
-        return ['inputs/seed.json'];
-      },
-      async readJsonOrNull(key) {
-        if (key === 'inputs/seed.json') return seedInput;
-        return null;
-      },
-      resolveOutputKey(category, productId) {
-        return `out/${category}/${productId}/latest`;
-      },
-      async objectExists() {
-        return false;
-      },
+      async listInputKeys() { return []; },
+      async readJsonOrNull() { return null; },
+      resolveOutputKey(category, productId) { return `out/${category}/${productId}/latest`; },
+      async objectExists() { return false; },
     },
-    getSpecDb: () => null,
-    loadQueueState: async () => {
-      throw new Error('queue offline');
-    },
+    getSpecDb: () => ({
+      getAllProducts: () => [{
+        product_id: 'mouse-acme-orbit-x1',
+        id: catalogProduct.id || 10,
+        identifier: '',
+        brand: 'Acme',
+        base_model: '',
+        model: 'Orbit X1',
+        variant: '',
+        brand_identifier: '',
+      }],
+      getAllQueueProducts: () => [],
+      getSummaryForProduct: () => null,
+      getNormalizedForProduct: () => null,
+      getTrafficLightForProduct: () => null,
+    }),
   });
 
   const rows = await buildCatalog('mouse');
   assert.deepEqual(rows, [
     {
       productId: 'mouse-acme-orbit-x1',
-      id: 10,
+      id: catalogProduct.id || 10,
       identifier: '',
       brand: 'Acme',
       brand_identifier: '',

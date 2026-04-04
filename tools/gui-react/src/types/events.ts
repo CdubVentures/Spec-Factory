@@ -17,6 +17,7 @@ export interface ProcessStatus {
   product_id?: string | null;
   productId?: string | null;
   brand?: string | null;
+  base_model?: string | null;
   model?: string | null;
   variant?: string | null;
   storage_destination?: 'local';

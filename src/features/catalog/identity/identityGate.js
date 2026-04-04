@@ -1,14 +1,11 @@
 /**
  * Identity Dedup Gate (Phase 15.1A)
  *
- * Gate decisions are based on a canonical identity set loaded from:
- * 1) product_catalog.json (preferred)
- * 2) activeFiltering.json (fallback)
+ * Gate decisions are based on a canonical identity set loaded from SQL (specDb).
  */
 
 import { slugify } from './slugify.js';
 import { cleanVariant, isFabricatedVariant } from './identityDedup.js';
-import { loadProductCatalog } from '../products/productCatalog.js';
 import { normalizeText, normalizeTokenCollapsed } from '../../../shared/primitives.js';
 
 function pairKey(brand, model) {
@@ -66,22 +63,22 @@ export function buildCanonicalIdentityIndex({
   };
 }
 
-export async function loadCanonicalIdentityIndex({ config, category }) {
+export async function loadCanonicalIdentityIndex({ config, category, specDb = null }) {
   const cat = normalizeText(category).toLowerCase();
-  const catalog = await loadProductCatalog(config, cat);
-  const catalogEntries = Object.entries(catalog.products || {});
 
-  if (catalogEntries.length > 0) {
-    const products = catalogEntries.map(([productId, row]) => ({
-      productId,
-      brand: row.brand,
-      base_model: row.base_model,
-      model: row.model,
-      variant: row.variant || ''
+  // WHY: SQL is the sole SSOT for products. Build the identity index from specDb.
+  const rows = specDb?.getAllProducts?.() || [];
+  if (rows.length > 0) {
+    const products = rows.map((r) => ({
+      productId: r.product_id,
+      brand: r.brand,
+      base_model: r.base_model,
+      model: r.model,
+      variant: r.variant || ''
     }));
     return buildCanonicalIdentityIndex({
       category: cat,
-      source: 'product_catalog',
+      source: 'specDb',
       products
     });
   }

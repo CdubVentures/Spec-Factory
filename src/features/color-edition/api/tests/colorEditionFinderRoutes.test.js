@@ -44,6 +44,7 @@ function makeCtx(overrides = {}) {
       getSpecDb: () => makeSpecDbStub(overrides.finderRow, overrides.listRows),
       broadcastWs: () => {},
       colorRegistryPath: null,
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
       runColorEditionFinder: overrides.runFn || (async () => ({
         colors: ['black'], editions: [], newColorsRegistered: [], fallbackUsed: false,
       })),

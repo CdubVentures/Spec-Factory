@@ -46,11 +46,11 @@ export function createRunListBuilder({
     return token.slice(-5);
   };
 
-  const buildPickerLabel = ({ category = '', productId = '', brand = '', model = '', variant = '', runId = '' } = {}) => {
+  const buildPickerLabel = ({ category = '', productId = '', brand = '', base_model = '', model = '', variant = '', runId = '' } = {}) => {
     const categoryLabel = titleCaseWords(category);
     // WHY: Prefer brand+model+variant from catalog/identity for display. Hex IDs are opaque.
     const productLabel = (brand || model)
-      ? [brand, model, variant].filter(Boolean).join(' ')
+      ? [brand, base_model || model, variant].filter(Boolean).join(' ')
       : humanizeProductId({ category, productId });
     const runToken = toRunDisplayToken(runId);
     const lead = [categoryLabel, productLabel].filter(Boolean).join(' • ');
@@ -169,7 +169,7 @@ export function createRunListBuilder({
       if (!catalogProducts) return {};
       const entry = catalogProducts instanceof Map ? catalogProducts.get(pid) : catalogProducts[pid];
       if (!entry) return {};
-      return { brand: String(entry.brand || '').trim(), model: String(entry.model || '').trim(), variant: String(entry.variant || '').trim() };
+      return { brand: String(entry.brand || '').trim(), base_model: String(entry.base_model || '').trim(), model: String(entry.model || '').trim(), variant: String(entry.variant || '').trim() };
     };
     const indexLabRoot = getIndexLabRoot();
     const categoryFilter = toToken(category).toLowerCase();
@@ -238,6 +238,7 @@ export function createRunListBuilder({
         const runDir = safeJoin(getIndexLabRoot(), rowRunId) || '';
         // WHY: products SQL table is the SSOT for brand/model. Catalog JSON is seed-only.
         let brand = '';
+        let base_model = '';
         let model = '';
         let variant = '';
         if (specDb) {
@@ -245,6 +246,7 @@ export function createRunListBuilder({
             const product = specDb.getProduct(rowProductId);
             if (product) {
               brand = toToken(product.brand);
+              base_model = toToken(product.base_model);
               model = toToken(product.model);
               variant = toToken(product.variant);
             }
@@ -253,6 +255,7 @@ export function createRunListBuilder({
         if (!brand) {
           const resolved = resolveBrandModel(rowProductId);
           brand = resolved.brand || '';
+          base_model = resolved.base_model || '';
           model = resolved.model || '';
           variant = resolved.variant || '';
         }
@@ -264,6 +267,7 @@ export function createRunListBuilder({
           const idBrand = toToken(identity.brand);
           if (idBrand && idBrand.toLowerCase() !== 'unknown') {
             brand = idBrand;
+            base_model = toToken(identity.base_model) || '';
             model = toToken(identity.model) || '';
             variant = toToken(identity.variant) || '';
           }
@@ -278,6 +282,7 @@ export function createRunListBuilder({
           category: rowCategory,
           product_id: rowProductId,
           brand,
+          base_model,
           model,
           variant,
           status: resolvedStatus,
@@ -294,7 +299,7 @@ export function createRunListBuilder({
           storage_state: resolveStorageState(resolvedStatus),
           size_bytes: metrics.total_size_bytes,
           storage_metrics: metrics,
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, brand, model, variant, runId: rowRunId }),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, brand, base_model, model, variant, runId: rowRunId }),
           has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
           has_search_profile: Boolean(sqlRow.search_profile_summary || sqlRow.has_search_profile),
           counters: sqlRow.counters,
@@ -325,6 +330,8 @@ export function createRunListBuilder({
       const identity = meta.identity && typeof meta.identity === 'object' ? meta.identity : {};
       const idBrand = toToken(identity.brand);
       const fileBrand = (idBrand && idBrand.toLowerCase() !== 'unknown') ? idBrand : '';
+      const idBaseModel = toToken(identity.base_model);
+      const fileBaseModel = fileBrand ? idBaseModel : '';
       const idModel = toToken(identity.model);
       const fileModel = fileBrand ? idModel : '';
       const fileVariant = fileBrand ? toToken(identity.variant) : '';
@@ -334,6 +341,7 @@ export function createRunListBuilder({
         category: fileCategory,
         product_id: fileProductId,
         brand: fileBrand,
+        base_model: fileBaseModel,
         model: fileModel,
         variant: fileVariant,
         status: resolvedStatus,
@@ -350,7 +358,7 @@ export function createRunListBuilder({
         storage_state: resolveStorageState(resolvedStatus),
         size_bytes: fileMetrics.total_size_bytes,
         storage_metrics: fileMetrics,
-        picker_label: buildPickerLabel({ category: fileCategory, productId: fileProductId, brand: fileBrand, model: fileModel, variant: fileVariant, runId: fileRunId }),
+        picker_label: buildPickerLabel({ category: fileCategory, productId: fileProductId, brand: fileBrand, base_model: fileBaseModel, model: fileModel, variant: fileVariant, runId: fileRunId }),
         has_needset: false,
         has_search_profile: false,
         counters: fileCounters,

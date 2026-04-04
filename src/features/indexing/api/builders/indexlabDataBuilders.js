@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { loadProductCatalog } from '../../../catalog/index.js';
 import { createPhaseDataReaders } from './phaseDataReaders.js';
 import { createRunArtifactReaders } from './runArtifactReaders.js';
 import { createDomainChecklistBuilder } from './domainChecklistBuilder.js';
@@ -272,7 +271,6 @@ export function initIndexLabDataBuilders({
   _domainChecklistBuilder = createDomainChecklistBuilder({
     readGzipJsonlEvents,
     readJsonlEvents,
-    loadProductCatalog,
   });
   _automationQueueBuilder = createAutomationQueueBuilder({
     resolveContext: resolveIndexLabRunContext,
@@ -429,37 +427,37 @@ export async function readIndexLabRunAutomationQueue(runId) {
 }
 
 export async function listIndexLabRuns(opts) {
-  // WHY: Thread catalog brand/model/variant into label builder so hex IDs display real names.
-  if (!opts?.catalogProducts && _config) {
+  // WHY: Thread SQL product brand/model/variant into label builder so hex IDs display real names.
+  if (!opts?.catalogProducts && _getSpecDbReady) {
     try {
       const map = new Map();
       if (opts?.category) {
-        // Single category — load just that catalog.
-        const catalog = await loadProductCatalog(_config, opts.category);
-        for (const [pid, entry] of Object.entries(catalog.products || {})) {
-          map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+        const specDb = await _getSpecDbReady(opts.category);
+        const rows = specDb?.getAllProducts?.() || [];
+        for (const row of rows) {
+          map.set(row.product_id, { brand: row.brand || '', base_model: row.base_model || '', model: row.model || '', variant: row.variant || '' });
         }
       } else {
-        // WHY: "all" view (no category filter) — load catalogs for every known category
-        // so hex product IDs resolve to human-readable brand+model labels.
-        const catRoot = path.resolve(_config.categoryAuthorityRoot || 'category_authority');
+        // WHY: "all" view — load products from every known category's specDb.
+        const catRoot = path.resolve(_config?.categoryAuthorityRoot || 'category_authority');
         const entries = await fs.readdir(catRoot, { withFileTypes: true }).catch(() => []);
         const cats = entries
           .filter((e) => e.isDirectory() && !e.name.startsWith('_') && e.name !== 'tests')
           .map((e) => e.name);
         await Promise.all(cats.map(async (cat) => {
           try {
-            const catalog = await loadProductCatalog(_config, cat);
-            for (const [pid, entry] of Object.entries(catalog.products || {})) {
-              map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+            const specDb = await _getSpecDbReady(cat);
+            const rows = specDb?.getAllProducts?.() || [];
+            for (const row of rows) {
+              map.set(row.product_id, { brand: row.brand || '', base_model: row.base_model || '', model: row.model || '', variant: row.variant || '' });
             }
-          } catch { /* skip unloadable catalog */ }
+          } catch { /* skip unavailable specDb */ }
         }));
       }
       if (map.size > 0) {
         return _runListBuilder.listIndexLabRuns({ ...opts, catalogProducts: map });
       }
-    } catch { /* fall through to no-catalog path */ }
+    } catch { /* fall through to no-product path */ }
   }
   return _runListBuilder.listIndexLabRuns(opts);
 }

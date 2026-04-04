@@ -45,7 +45,8 @@ export const bootstrapPhase = {
     const resolvedIdentity = resolveJobIdentity(ctx.job);
     const variables = {
       brand: resolvedIdentity.brand,
-      model: resolvedIdentity.model,
+      base_model: resolvedIdentity.base_model || resolvedIdentity.model,
+      model: resolvedIdentity.base_model || resolvedIdentity.model,
       variant: resolvedIdentity.variant,
       category: ctx.job?.category || categoryConfig?.category,
     };
@@ -64,6 +65,7 @@ export const bootstrapPhase = {
     const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, ctx.learningStoreHints);
     const identityLock = {
       brand: resolvedIdentity.brand,
+      base_model: resolvedIdentity.base_model || resolvedIdentity.model,
       model: resolvedIdentity.model,
       variant: resolvedIdentity.variant,
       brand_identifier: resolvedIdentity.brand_identifier || ctx.job?.identityLock?.brand_identifier || '',

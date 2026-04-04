@@ -20,7 +20,6 @@ export function registerBrandRoutes(ctx) {
     upsertQueueProduct,
     broadcastWs,
     getSpecDb,
-    loadProductCatalog,
     brandRegistryPath,
     writeBackBrandRegistry,
   } = ctx;
@@ -68,7 +67,7 @@ export function registerBrandRoutes(ctx) {
     // POST /api/v1/brands/seed - auto-seed from activeFiltering
     if (parts[0] === 'brands' && parts[1] === 'seed' && method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const result = await seedBrandsFromActiveFiltering({ config, appDb, category: body.category || 'all' });
+      const result = await seedBrandsFromActiveFiltering({ config, appDb, category: body.category || 'all', getSpecDb });
       if (result?.ok) {
         const eventCategory = String(body.category || 'all').trim() || 'all';
         emitDataChange({

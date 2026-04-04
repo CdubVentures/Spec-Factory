@@ -3,8 +3,39 @@ import assert from 'node:assert/strict';
 
 import { createLlmPolicyHandler } from '../llmPolicyHandler.js';
 import { LLM_POLICY_FLAT_KEYS } from '../../../core/llm/llmPolicySchema.js';
+import { buildRegistryLookup } from '../../../core/llm/routeResolver.js';
+
+function makeProviderRegistryJson() {
+  return JSON.stringify([
+    {
+      id: 'default-gemini',
+      name: 'Gemini',
+      type: 'openai-compatible',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      apiKey: '',
+      enabled: true,
+      models: [
+        { id: 'gemini-flash', modelId: 'gemini-2.5-flash', role: 'primary', costInputPer1M: 0.15, costOutputPer1M: 0.6, costCachedPer1M: 0.0375 },
+        { id: 'gemini-pro', modelId: 'gemini-2.5-pro', role: 'reasoning', costInputPer1M: 1.25, costOutputPer1M: 10, costCachedPer1M: 0.31 },
+      ],
+    },
+    {
+      id: 'default-deepseek',
+      name: 'DeepSeek',
+      type: 'openai-compatible',
+      baseUrl: 'https://api.deepseek.com',
+      apiKey: '',
+      enabled: true,
+      models: [
+        { id: 'deepseek-chat', modelId: 'deepseek-chat', role: 'primary', costInputPer1M: 0.28, costOutputPer1M: 0.42, costCachedPer1M: 0.028 },
+        { id: 'deepseek-reasoner', modelId: 'deepseek-reasoner', role: 'reasoning', costInputPer1M: 0.28, costOutputPer1M: 0.42, costCachedPer1M: 0.028 },
+      ],
+    },
+  ]);
+}
 
 function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
+  const defaultRegistryJson = makeProviderRegistryJson();
   const config = {
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
@@ -26,11 +57,12 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
     llmReasoningBudget: 32768,
     llmReasoningMode: true,
     llmPhaseOverridesJson: '{}',
-    llmProviderRegistryJson: '[]',
+    llmProviderRegistryJson: defaultRegistryJson,
     llmCostInputPer1M: 1.25,
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
     llmTimeoutMs: 30000,
+    _registryLookup: buildRegistryLookup(defaultRegistryJson),
     ...configOverrides,
   };
 
@@ -111,20 +143,25 @@ test('PUT then GET round-trip preserves API keys (no secret corruption)', async 
 test('PUT /llm-policy applies composite and returns updated policy', async () => {
   const ctx = buildHandler();
   const res = await ctx.put({
-    models: { plan: 'new-model', reasoning: 'new-reason', planFallback: 'fb', reasoningFallback: 'rfb' },
+    models: {
+      plan: 'gemini-2.5-flash',
+      reasoning: 'deepseek-reasoner',
+      planFallback: 'deepseek-chat',
+      reasoningFallback: 'gemini-2.5-pro',
+    },
     provider: { id: 'openai', baseUrl: 'https://api.openai.com', planProvider: '', planBaseUrl: '' },
     apiKeys: { gemini: '', deepseek: '', anthropic: '', openai: 'sk-test', plan: '' },
     tokens: { maxOutput: 1400, maxTokens: 16384, plan: 8192, reasoning: 4096, planFallback: 2048, reasoningFallback: 2048 },
     reasoning: { enabled: true, budget: 32768, mode: true },
     phaseOverrides: {},
-    providerRegistry: [],
+    providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
   });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.ok, true);
-  assert.equal(ctx.config.llmModelPlan, 'new-model');
+  assert.equal(ctx.config.llmModelPlan, 'gemini-2.5-flash');
   assert.equal(ctx.config.llmPlanUseReasoning, true);
   assert.equal(ctx.config.llmMaxOutputTokensPlan, 8192);
 });
@@ -132,38 +169,86 @@ test('PUT /llm-policy applies composite and returns updated policy', async () =>
 test('PUT /llm-policy persists flat keys to canonical sections', async () => {
   const ctx = buildHandler();
   await ctx.put({
-    models: { plan: 'persisted-model', reasoning: 'r', planFallback: '', reasoningFallback: '' },
+    models: {
+      plan: 'gemini-2.5-flash',
+      reasoning: 'deepseek-reasoner',
+      planFallback: '',
+      reasoningFallback: '',
+    },
     provider: { id: '', baseUrl: '', planProvider: '', planBaseUrl: '' },
     apiKeys: { gemini: '', deepseek: '', anthropic: '', openai: '', plan: '' },
     tokens: { maxOutput: 1400, maxTokens: 16384, plan: 4096, reasoning: 4096, planFallback: 2048, reasoningFallback: 2048 },
     reasoning: { enabled: false, budget: 32768, mode: true },
     phaseOverrides: {},
-    providerRegistry: [],
+    providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
   });
 
   const persisted = ctx.getPersistedRuntime();
   assert.ok(persisted);
-  assert.equal(persisted.llmModelPlan, 'persisted-model');
+  assert.equal(persisted.llmModelPlan, 'gemini-2.5-flash');
+});
+
+test('PUT /llm-policy persists from live config instead of stale blank runtime secrets', async () => {
+  const ctx = buildHandler({
+    geminiApiKey: 'env-gem-key',
+    llmProviderRegistryJson: makeProviderRegistryJson(),
+  }, {
+    getUserSettingsState: () => ({
+      runtime: {
+        geminiApiKey: '',
+        llmProviderRegistryJson: '[]',
+      },
+    }),
+  });
+
+  const getRes = await ctx.get();
+  const policy = getRes.body.policy;
+  policy.tokens.plan = 9999;
+  await ctx.put(policy);
+
+  const persisted = ctx.getPersistedRuntime();
+  assert.equal(persisted.geminiApiKey, 'env-gem-key');
+  assert.notEqual(persisted.llmProviderRegistryJson, '[]');
+  assert.equal(persisted.llmMaxOutputTokensPlan, 9999);
 });
 
 test('PUT /llm-policy emits data change broadcast', async () => {
   const ctx = buildHandler();
   await ctx.put({
-    models: { plan: 'x', reasoning: '', planFallback: '', reasoningFallback: '' },
+    models: {
+      plan: 'gemini-2.5-flash',
+      reasoning: 'deepseek-reasoner',
+      planFallback: '',
+      reasoningFallback: '',
+    },
     provider: { id: '', baseUrl: '', planProvider: '', planBaseUrl: '' },
     apiKeys: { gemini: '', deepseek: '', anthropic: '', openai: '', plan: '' },
     tokens: { maxOutput: 0, maxTokens: 0, plan: 0, reasoning: 0, planFallback: 0, reasoningFallback: 0 },
     reasoning: { enabled: false, budget: 0, mode: false },
     phaseOverrides: {},
-    providerRegistry: [],
+    providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 0, costOutputPer1M: 0, costCachedInputPer1M: 0 },
     timeoutMs: 0,
   });
 
   const broadcasts = ctx.getBroadcasts();
   assert.ok(broadcasts.length > 0);
+});
+
+test('PUT /llm-policy validates against the incoming provider registry when the cached lookup is stale', async () => {
+  const ctx = buildHandler({
+    _registryLookup: buildRegistryLookup('[]'),
+  });
+  const getRes = await ctx.get();
+  const policy = getRes.body.policy;
+  policy.tokens.plan = 9999;
+
+  const res = await ctx.put(policy);
+  assert.equal(res.status, 200);
+  assert.equal(res.body.ok, true);
+  assert.equal(ctx.config.llmMaxOutputTokensPlan, 9999);
 });
 
 test('handler returns false for non-matching route', async () => {

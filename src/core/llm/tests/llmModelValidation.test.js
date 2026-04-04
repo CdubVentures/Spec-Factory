@@ -40,13 +40,13 @@ describe('validateModelKeysAgainstRegistry', () => {
   it('rejects model IDs not in registry', () => {
     const lookup = buildRegistryLookup(makeRegistry());
     const flatKeys = {
-      llmModelPlan: 'test-persist-model-xyz',
+      llmModelPlan: '_test_invalid_model_',
       llmModelReasoning: 'gpt-5-medium',
     };
     const rejected = validateModelKeysAgainstRegistry(flatKeys, lookup);
     strictEqual(rejected.length, 1);
     strictEqual(rejected[0].key, 'llmModelPlan');
-    strictEqual(rejected[0].value, 'test-persist-model-xyz');
+    strictEqual(rejected[0].value, '_test_invalid_model_');
   });
 
   it('rejects multiple invalid models', () => {

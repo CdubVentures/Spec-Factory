@@ -35,7 +35,7 @@ describe('validateModelExistence', () => {
 
   it('returns issue for model not in registry', () => {
     const issues = validateModelExistence(
-      { llmModelPlan: 'test-persist-model-xyz' },
+      { llmModelPlan: '_test_invalid_model_' },
       makeRegistry(),
     );
     strictEqual(issues.length, 1);

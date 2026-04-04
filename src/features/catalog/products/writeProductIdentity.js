@@ -35,8 +35,6 @@ export function writeProductIdentity({
       model: String(identity.model || ''),
       variant: String(identity.variant || ''),
       brand_identifier: String(identity.brand_identifier || ''),
-      sku: String(identity.sku || ''),
-      title: String(identity.title || ''),
       seed_urls: Array.isArray(seedUrls) ? seedUrls : [],
       identifier: String(identifier || identity.identifier || ''),
       status: String(identity.status || 'active'),

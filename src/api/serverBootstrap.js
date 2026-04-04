@@ -7,7 +7,6 @@ import { loadCategoryConfig } from '../categories/loader.js';
 import { invalidateFieldRulesCache } from '../field-rules/loader.js';
 import {
   slugify as canonicalSlugify,
-  loadProductCatalog,
 } from '../features/catalog/index.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from './services/specDbSyncService.js';
 import { handleCompileProcessCompletion } from './services/compileProcessCompletion.js';
@@ -41,7 +40,7 @@ export const BOOTSTRAP_RETURN_GROUPS = {
   realtime: ['broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame'],
   process: ['processStatus', 'startProcess', 'stopProcess', 'isProcessRunning', 'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack'],
   http: ['jsonRes', 'corsHeaders', 'readJsonBody'],
-  helpers: ['toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue', 'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin', 'canonicalSlugify', 'invalidateFieldRulesCache', 'loadProductCatalog', 'loadCategoryConfig'],
+  helpers: ['toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue', 'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin', 'canonicalSlugify', 'invalidateFieldRulesCache', 'loadCategoryConfig'],
   domain: [
     'ensureGridKeyReviewState', 'resolveKeyReviewForLaneMutation',
     'markPrimaryLaneReviewedInItemState', 'syncItemFieldStateFromPrimaryLaneAccept',
@@ -184,7 +183,7 @@ export function bootstrapServer({ projectRoot }) {
       toInt, toFloat, toUnitRatio, hasKnownValue,
       safeReadJson, safeStat, listFiles, listDirs, readJsonlEvents, safeJoin,
       canonicalSlugify, invalidateFieldRulesCache,
-      loadProductCatalog, loadCategoryConfig,
+      loadCategoryConfig,
     },
     domain: { ...domain },
   };

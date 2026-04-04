@@ -84,7 +84,7 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _getLlmCache: this._getLlmCache, _upsertLlmCache: this._upsertLlmCache, _evictExpiredCache: this._evictExpiredCache,
-        _upsertSourceCorpus: this._upsertSourceCorpus, _insertRuntimeEvent: this._insertRuntimeEvent,
+        _upsertSourceCorpus: this._upsertSourceCorpus,
         _insertBridgeEvent: this._insertBridgeEvent, _getBridgeEventsByRunId: this._getBridgeEventsByRunId,
       }
     });
@@ -119,7 +119,7 @@ export class SpecDb {
     this._artifactStore = createArtifactStore({
       db: this.db, category: this.category,
       stmts: {
-        _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertPdf: this._insertPdf, _insertVideo: this._insertVideo,
+        _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertVideo: this._insertVideo,
         _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getScreenshotsByProduct: this._getScreenshotsByProduct, _getVideosByProduct: this._getVideosByProduct,
         _getCrawlSourceByHash: this._getCrawlSourceByHash,
       }
@@ -337,7 +337,7 @@ export class SpecDb {
     const rows = this.getItemFieldState(productId);
     const product = this.getProduct(productId);
     return {
-      identity: { brand: product?.brand ?? '', model: product?.model ?? '', variant: product?.variant ?? '' },
+      identity: { brand: product?.brand ?? '', base_model: product?.base_model ?? '', model: product?.model ?? '', variant: product?.variant ?? '' },
       fields: Object.fromEntries(rows.filter(r => r.value != null).map(r => [r.field_key, r.value])),
     };
   }
@@ -659,8 +659,6 @@ export class SpecDb {
   getAllProducts(sf) { return this._queueProductStore.getAllProducts(sf); }
   deleteProduct(pid) { return this._queueProductStore.deleteProduct(pid); }
 
-  insertAuditLog(entry) { this._queueProductStore.insertAuditLog(entry); }
-
   markProductsStale(pids, df) { this._queueProductStore.markProductsStale(pids, df); }
   markProductsStaleDetailed(pids, dfo) { this._queueProductStore.markProductsStaleDetailed(pids, dfo); }
 
@@ -712,12 +710,12 @@ export class SpecDb {
     const tables = [
       'candidates', 'candidate_reviews', 'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
-      'item_list_links', 'product_queue', 'product_runs', 'products', 'audit_log',
+      'item_list_links', 'product_queue', 'product_runs', 'products',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
       'source_registry',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries', 'llm_cache',
-      'source_corpus', 'runtime_events',
+      'source_corpus',
       'color_edition_finder'
     ];
     const result = {};
@@ -795,9 +793,6 @@ export class SpecDb {
 
   // --- Runtime Events ---
 
-  insertRuntimeEvent(e) { this._sourceIntelStore.insertRuntimeEvent(e); }
-  insertRuntimeEventsBatch(es) { this._sourceIntelStore.insertRuntimeEventsBatch(es); }
-
   // --- Bridge Events (transformed runtime events for GUI readers) ---
 
   insertBridgeEvent(e) { this._sourceIntelStore.insertBridgeEvent(e); }
@@ -816,11 +811,10 @@ export class SpecDb {
   getRunArtifact(runId, type) { return this._runArtifactStore.getRunArtifact(runId, type); }
   getRunArtifactsByRunId(runId) { return this._runArtifactStore.getRunArtifactsByRunId(runId); }
 
-  // --- Artifact Store (crawl_sources, source_screenshots, source_pdfs) ---
+  // --- Artifact Store (crawl_sources, source_screenshots, source_videos) ---
 
   insertCrawlSource(row) { return this._artifactStore.insertCrawlSource(row); }
   insertScreenshot(row) { return this._artifactStore.insertScreenshot(row); }
-  insertPdf(row) { return this._artifactStore.insertPdf(row); }
   insertVideo(row) { return this._artifactStore.insertVideo(row); }
   getCrawlSourcesByProduct(pid) { return this._artifactStore.getCrawlSourcesByProduct(pid); }
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }

@@ -20,7 +20,7 @@ function makeCrawlCheckpoint(overrides = {}) {
       duration_ms: 5000,
       status: 'completed',
     },
-    identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '', sku: '', title: 'Razer Viper V3 Pro' },
+    identity: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
     fetch_plan: { total_queued: 5, seed_count: 2, approved_count: 2, blocked_count: 0 },
     counters: { urls_crawled: 3, urls_successful: 2, urls_blocked: 1, urls_failed: 0, urls_timeout_rescued: 0 },
     artifacts: { html_dir: 'html', screenshot_dir: 'screenshots', video_dir: 'video' },
@@ -42,7 +42,7 @@ function makeProductCheckpoint(overrides = {}) {
     checkpoint_type: 'product',
     product_id: 'mouse-razer-viper',
     category: 'mouse',
-    identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '', sku: '', title: 'Razer Viper V3 Pro' },
+    identity: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
     latest_run_id: 'run-seed-001',
     runs_completed: 2,
     sources: [

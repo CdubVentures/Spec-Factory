@@ -57,7 +57,7 @@ export function loadConfigWithUserSettings(overrides = {}) {
   // Fallback: CLI usage or snapshot read failure
   try {
     const userSettings = loadUserSettingsSync();
-    applyRuntimeSettingsToConfig(config, userSettings.runtime);
+    applyRuntimeSettingsToConfig(config, userSettings.runtime, { mode: 'bootstrap' });
   } catch { /* best-effort — CLI may run without persisted settings */ }
   return config;
 }

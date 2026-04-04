@@ -15,33 +15,8 @@ const CATEGORY = 'mouse';
 const NOW_ISO = '2026-02-13T00:00:00.000Z';
 
 test('markStaleQueueProducts only marks sufficiently old complete rows across adapters', async () => {
+  // WHY: JSON adapter removed — SQL is the sole queue SSOT.
   const cases = [
-    {
-      label: 'json',
-      seed: async ({ storage }) => {
-        await upsertQueueProduct({
-          storage,
-          category: CATEGORY,
-          productId: 'mouse-old',
-          s3key: 'specs/inputs/mouse/products/mouse-old.json',
-          patch: {
-            status: 'complete',
-            last_completed_at: '2025-01-01T00:00:00.000Z'
-          }
-        });
-        await upsertQueueProduct({
-          storage,
-          category: CATEGORY,
-          productId: 'mouse-new',
-          s3key: 'specs/inputs/mouse/products/mouse-new.json',
-          patch: {
-            status: 'complete',
-            last_completed_at: '2026-02-12T00:00:00.000Z'
-          }
-        });
-        return null;
-      }
-    },
     {
       label: 'specDb',
       seed: async () => {

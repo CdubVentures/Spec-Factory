@@ -2,7 +2,7 @@
 // when the database is lost or needs recovery. All writes are idempotent upserts wrapped
 // in a single transaction for atomicity.
 
-import { cleanVariant, isFabricatedVariant } from '../../features/catalog/identity/identityDedup.js';
+import { normalizeProductIdentity } from '../../features/catalog/identity/identityDedup.js';
 
 function extractHost(url) {
   try { return new URL(String(url || '')).hostname; } catch { return ''; }
@@ -129,29 +129,23 @@ function seedCrawlCheckpoint(specDb, cp) {
 }
 
 function seedProductCheckpoint(specDb, cp) {
-  const identity = cp.identity || {};
-  const model = String(identity.model || '').trim();
-  const baseModel = String(identity.base_model || '').trim();
-  // WHY: Fabricated variants (tokens already in model) must never reach the DB.
-  // Use base_model for the check when available — variant tokens naturally
-  // appear in the full model name but NOT in the base_model.
-  let variant = cleanVariant(identity.variant);
-  const fabricationRef = baseModel !== model ? baseModel : model;
-  if (variant && isFabricatedVariant(fabricationRef, variant)) {
-    variant = '';
-  }
+  const raw = cp.identity || {};
+  // WHY: base_model is the identity primary key. model is derived from base_model + variant.
+  const normalized = normalizeProductIdentity(
+    cp.category, raw.brand, raw.base_model, raw.variant
+  );
 
   specDb.upsertProduct({
     category: cp.category || '',
     product_id: cp.product_id || '',
-    brand: identity.brand || '',
-    model,
-    base_model: baseModel,
-    variant,
-    status: identity.status || 'active',
-    seed_urls: Array.isArray(identity.seed_urls) ? JSON.stringify(identity.seed_urls) : (identity.seed_urls || null),
-    identifier: identity.identifier || null,
-    brand_identifier: identity.brand_identifier || '',
+    brand: normalized.brand,
+    model: normalized.model,
+    base_model: normalized.base_model,
+    variant: normalized.variant,
+    status: raw.status || 'active',
+    seed_urls: Array.isArray(raw.seed_urls) ? JSON.stringify(raw.seed_urls) : (raw.seed_urls || null),
+    identifier: raw.identifier || null,
+    brand_identifier: raw.brand_identifier || '',
   });
 
   specDb.upsertQueueProduct({

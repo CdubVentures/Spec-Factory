@@ -3,7 +3,7 @@ import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
 
 /**
  * Source Intelligence store — extracted from SpecDb.
- * Owns: source_corpus, runtime_events, llm_cache tables.
+ * Owns: source_corpus, llm_cache tables.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
@@ -74,27 +74,6 @@ export function createSourceIntelStore({ db, category, stmts }) {
     return row?.c || 0;
   }
 
-  // --- Runtime Events ---
-
-  function insertRuntimeEvent(event) {
-    stmts._insertRuntimeEvent.run({
-      ts: event.ts || new Date().toISOString(),
-      level: event.level || 'info',
-      event: event.event || '',
-      category: event.category || '',
-      product_id: event.product_id || event.productId || '',
-      run_id: event.run_id || event.runId || '',
-      data: JSON.stringify(event.data || {})
-    });
-  }
-
-  function insertRuntimeEventsBatch(events) {
-    const tx = db.transaction((items) => {
-      for (const event of items) { insertRuntimeEvent(event); }
-    });
-    tx(events);
-  }
-
   // --- Bridge Events (transformed runtime events for GUI readers) ---
 
   function insertBridgeEvent(row) {
@@ -137,8 +116,6 @@ export function createSourceIntelStore({ db, category, stmts }) {
     upsertSourceCorpusBatch,
     getSourceCorpusByCategory,
     getSourceCorpusCount,
-    insertRuntimeEvent,
-    insertRuntimeEventsBatch,
     insertBridgeEvent,
     getBridgeEventsByRunId,
     purgeBridgeEventsForRun,

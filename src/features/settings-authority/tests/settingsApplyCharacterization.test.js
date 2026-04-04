@@ -78,3 +78,37 @@ test('applyRuntimeSettingsToConfig rebuilds registry lookup when provider regist
   assert.equal(route.baseUrl, 'https://test.example.com');
   assert.equal(route.apiKey, 'test-key-123');
 });
+
+test('applyRuntimeSettingsToConfig bootstrap mode preserves env-backed secret keys when persisted values are blank', () => {
+  const config = loadConfig({ geminiApiKey: 'gem-env-key' });
+
+  applyRuntimeSettingsToConfig(config, {
+    geminiApiKey: '',
+  }, { mode: 'bootstrap' });
+
+  assert.equal(config.geminiApiKey, 'gem-env-key');
+});
+
+test('applyRuntimeSettingsToConfig bootstrap mode preserves the default provider registry when persisted registry is empty', () => {
+  const config = loadConfig();
+  const originalRegistry = config.llmProviderRegistryJson;
+
+  assert.notEqual(originalRegistry, '[]');
+
+  applyRuntimeSettingsToConfig(config, {
+    llmProviderRegistryJson: '[]',
+  }, { mode: 'bootstrap' });
+
+  assert.equal(config.llmProviderRegistryJson, originalRegistry);
+  assert.ok(config._registryLookup, 'registry lookup should remain populated');
+});
+
+test('applyRuntimeSettingsToConfig live mode still allows explicit secret clearing', () => {
+  const config = loadConfig({ geminiApiKey: 'gem-env-key' });
+
+  applyRuntimeSettingsToConfig(config, {
+    geminiApiKey: '',
+  });
+
+  assert.equal(config.geminiApiKey, '');
+});

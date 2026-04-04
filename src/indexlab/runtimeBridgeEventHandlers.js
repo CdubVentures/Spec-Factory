@@ -474,7 +474,9 @@ async function handleBrandResolved(state, deps, { ts, row }) {
         if (!existing) {
           state.specDb.upsertProduct({
             product_id: productId,
+            category: state.specDb.category || '',
             brand,
+            base_model: String(identity.base_model || '').trim(),
             model: String(identity.model || '').trim(),
             variant: String(identity.variant || '').trim(),
             status: 'active',

@@ -1,79 +1,25 @@
 /**
  * Product Catalog — per-category product management.
  *
- * SSOT: SQL products table (spec.sqlite). product_catalog.json is a read-only boot seed.
- * Per-product rebuild file: .workspace/products/{pid}/product.json (writeProductIdentity).
- *
+ * SSOT: product.json per product (.workspace/products/{pid}/product.json).
+ * SQL products table is the runtime cache, rebuilt from product.json via scanAndSeedCheckpoints.
  * CRUD writes to SQL via upsertCatalogProductRow (called from catalogRoutes.js).
- * No fixture files, no catalog JSON mutation.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { normalizeProductIdentity, deriveFullModel } from '../identity/identityDedup.js';
 import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
-import { generateIdentifier, nextAvailableId } from '../identity/productIdentity.js';
+import { generateIdentifier } from '../identity/productIdentity.js';
 import { writeProductIdentity } from './writeProductIdentity.js';
 import { buildProductId } from '../../../shared/primitives.js';
 import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveBrandIdentifier } from '../identity/resolveBrandIdentifier.js';
 
-function catalogPath(config, category) {
-  const root = config?.categoryAuthorityRoot || 'category_authority';
-  return path.resolve(root, category, '_control_plane', 'product_catalog.json');
-}
-
 function nowIso() {
   return new Date().toISOString();
 }
-
-function emptyCatalog() {
-  return {
-    _doc: 'Per-category product catalog. Managed by GUI.',
-    _version: 1,
-    products: {}
-  };
-}
-
-// WHY: With decoupled productIds (random hex), duplicate detection must be
-// identity-based, not ID-based. Returns the existing productId or null.
-export function findProductByIdentity(catalog, brand, baseModel, variant) {
-  const b = String(brand ?? '').trim().toLowerCase();
-  const m = String(baseModel ?? '').trim().toLowerCase();
-  const v = String(variant ?? '').trim().toLowerCase();
-  for (const [pid, p] of Object.entries(catalog.products || {})) {
-    if (String(p.brand ?? '').trim().toLowerCase() !== b) continue;
-    if (String(p.variant ?? '').trim().toLowerCase() !== v) continue;
-    // WHY: Compare base_model (identity primary key).
-    const pBaseModel = String(p.base_model ?? '').trim().toLowerCase();
-    if (pBaseModel === m) return pid;
-  }
-  return null;
-}
-
-// ── Load / Save ───────────────────────────────────────────────────
-
-export async function loadProductCatalog(config, category) {
-  const filePath = catalogPath(config, category);
-  try {
-    const text = await fs.readFile(filePath, 'utf8');
-    const data = JSON.parse(text);
-    if (!data || typeof data !== 'object' || !data.products) {
-      return emptyCatalog();
-    }
-    return data;
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      return emptyCatalog();
-    }
-    throw err;
-  }
-}
-
-// WHY: saveProductCatalog removed — product_catalog.json is a read-only boot seed.
-// SQL products table is the live SSOT. CRUD writes go through upsertCatalogProductRow
-// in catalogRoutes.js. Per-product rebuild file is .workspace/products/{pid}/product.json.
 
 // ── CRUD ──────────────────────────────────────────────────────────
 
@@ -105,30 +51,20 @@ export async function addProduct({
   // Normalize identity (strips fabricated variants against base_model)
   const identity = normalizeProductIdentity(cat, cleanBrand, cleanBaseModel, variant);
 
-  // WHY: Check SQL first (live SSOT), fall back to catalog JSON (boot seed).
-  // Compare against base_model + variant (the primary identity), not model.
-  let existingPid = null;
-  if (specDb) {
-    const allProducts = specDb.getAllProducts?.() || [];
-    existingPid = allProducts.find((r) =>
-      String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
-      String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
-      String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
-    )?.product_id || null;
-  }
-  if (!existingPid) {
-    const catalog = await loadProductCatalog(config, cat);
-    existingPid = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
-  }
+  // WHY: SQL is the sole SSOT for products. product_catalog.json is retired.
+  const allProducts = specDb?.getAllProducts?.() || [];
+  const existingPid = allProducts.find((r) =>
+    String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
+    String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
+    String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
+  )?.product_id || null;
   if (existingPid) {
     return { ok: false, error: 'product_already_exists', productId: existingPid };
   }
 
-  const catalog = await loadProductCatalog(config, cat);
   const pid = buildProductId(cat);
 
   const product = {
-    id: nextAvailableId(catalog),
     identifier: generateIdentifier(),
     brand: identity.brand,
     base_model: identity.base_model,
@@ -172,6 +108,7 @@ export async function addProductsBulk({
   rows = [],
   storage = null,
   upsertQueue = null,
+  specDb = null,
   appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
@@ -181,7 +118,6 @@ export async function addProductsBulk({
   if (!cat) return { ok: false, error: 'category_required' };
   if (!defaultBrand) return { ok: false, error: 'brand_required' };
   if (inputRows.length === 0) {
-    const catalog = await loadProductCatalog(config, cat);
     return {
       ok: true,
       total: 0,
@@ -190,12 +126,13 @@ export async function addProductsBulk({
       skipped_duplicate: 0,
       invalid: 0,
       failed: 0,
-      total_catalog: Object.keys(catalog.products || {}).length,
+      total_catalog: 0,
       results: []
     };
   }
 
-  const catalog = await loadProductCatalog(config, cat);
+  // WHY: SQL is the sole SSOT — build dedup set from specDb, not catalog JSON.
+  const allProducts = specDb?.getAllProducts?.() || [];
   const seenInRequest = new Set();
   const results = [];
 
@@ -246,10 +183,14 @@ export async function addProductsBulk({
     }
     seenInRequest.add(identityKey);
 
-    const existingPid = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
-    if (existingPid) {
+    const existingRow = allProducts.find((r) =>
+      String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
+      String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
+      String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
+    );
+    if (existingRow) {
       skippedExisting += 1;
-      results.push({ ...normalizedResult, productId: existingPid, status: 'skipped_existing', reason: 'already_exists' });
+      results.push({ ...normalizedResult, productId: existingRow.product_id, status: 'skipped_existing', reason: 'already_exists' });
       continue;
     }
 
@@ -257,7 +198,6 @@ export async function addProductsBulk({
     normalizedResult.productId = pid;
 
     const product = {
-      id: nextAvailableId(catalog),
       identifier: generateIdentifier(),
       brand: identity.brand,
       base_model: identity.base_model,
@@ -271,8 +211,6 @@ export async function addProductsBulk({
     };
 
     try {
-      catalog.products[pid] = product;
-
       try {
         writeProductIdentity({
           productId: pid,
@@ -297,7 +235,6 @@ export async function addProductsBulk({
       results.push({ ...normalizedResult, status: 'created' });
     } catch (error) {
       failed += 1;
-      delete catalog.products[pid];
       results.push({
         ...normalizedResult,
         status: 'failed',
@@ -314,7 +251,7 @@ export async function addProductsBulk({
     skipped_duplicate: skippedDuplicate,
     invalid,
     failed,
-    total_catalog: Object.keys(catalog.products || {}).length,
+    total_catalog: allProducts.length + created,
     results
   };
 }
@@ -337,28 +274,24 @@ export async function updateProduct({
   if (!cat) return { ok: false, error: 'category_required' };
   if (!productId) return { ok: false, error: 'product_id_required' };
 
-  const catalog = await loadProductCatalog(config, cat);
-  const existing = catalog.products[productId];
-  if (!existing) {
+  // WHY: SQL is the sole SSOT — look up existing product from specDb.
+  const existingRow = specDb?.getAllProducts?.().find(r => r.product_id === productId) || null;
+  if (!existingRow) {
     return { ok: false, error: 'product_not_found', productId };
   }
 
   // Apply patches — base_model is the primary field, model is derived.
-  // Backward compat: if caller sends model but not base_model, treat model as base_model.
-  const newBrand = patch.brand !== undefined ? String(patch.brand).trim() : existing.brand;
+  const newBrand = patch.brand !== undefined ? String(patch.brand).trim() : existingRow.brand;
   const newBaseModel = patch.base_model !== undefined
     ? String(patch.base_model).trim()
-    : patch.model !== undefined
-      ? String(patch.model).trim()
-      : existing.base_model;
-  const newVariant = patch.variant !== undefined ? String(patch.variant).trim() : existing.variant;
+    : existingRow.base_model;
+  const newVariant = patch.variant !== undefined ? String(patch.variant).trim() : existingRow.variant;
 
-  if (patch.seed_urls !== undefined) {
-    existing.seed_urls = Array.isArray(patch.seed_urls) ? patch.seed_urls.filter(Boolean) : existing.seed_urls;
-  }
-  if (patch.status !== undefined) {
-    existing.status = patch.status;
-  }
+  const existingSeedUrls = (() => { try { return JSON.parse(existingRow.seed_urls || '[]'); } catch { return []; } })();
+  const updatedSeedUrls = patch.seed_urls !== undefined
+    ? (Array.isArray(patch.seed_urls) ? patch.seed_urls.filter(Boolean) : existingSeedUrls)
+    : existingSeedUrls;
+  const updatedStatus = patch.status !== undefined ? patch.status : (existingRow.status || 'active');
 
   // WHY: Normalize identity (strip fabricated variants) but productId stays immutable
   const identity = normalizeProductIdentity(cat, newBrand, newBaseModel, newVariant);
@@ -366,19 +299,19 @@ export async function updateProduct({
   // WHY: Resolve brand_identifier when brand changes; preserve existing otherwise
   const newBrandIdentifier = patch.brand !== undefined
     ? resolveBrandIdentifier(appDb, identity.brand)
-    : (existing.brand_identifier || '');
+    : (existingRow.brand_identifier || '');
 
   const updated = {
-    ...existing,
+    identifier: existingRow.identifier || '',
     brand: identity.brand,
     base_model: identity.base_model,
     model: identity.model,
     variant: identity.variant,
     brand_identifier: newBrandIdentifier,
+    status: updatedStatus,
+    seed_urls: updatedSeedUrls,
     updated_at: nowIso()
   };
-
-  catalog.products[productId] = updated;
 
   if (upsertQueue) {
     await upsertQueue({ storage, category: cat, productId, s3key: '', patch: { status: 'pending' }, specDb });
@@ -396,18 +329,18 @@ export async function removeProduct({
   category,
   productId,
   storage = null,
-  removeQueue = null
+  removeQueue = null,
+  specDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   if (!cat) return { ok: false, error: 'category_required' };
   if (!productId) return { ok: false, error: 'product_id_required' };
 
-  const catalog = await loadProductCatalog(config, cat);
-  if (!catalog.products[productId]) {
+  // WHY: SQL is the sole SSOT — check existence from specDb.
+  const existingRow = specDb?.getAllProducts?.().find(r => r.product_id === productId) || null;
+  if (!existingRow) {
     return { ok: false, error: 'product_not_found', productId };
   }
-
-  delete catalog.products[productId];
 
   if (removeQueue) {
     await removeQueue({ storage, category: cat, productId });
@@ -431,6 +364,7 @@ export async function seedFromCatalog({
   mode = 'identity',
   storage = null,
   upsertQueue = null,
+  specDb = null,
   appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
@@ -445,7 +379,8 @@ export async function seedFromCatalog({
     return { ok: true, seeded: 0, skipped: 0, total: 0, fields_imported: 0, message: 'no_catalog_data' };
   }
 
-  const catalog = await loadProductCatalog(config, cat);
+  // WHY: SQL is the sole SSOT — build dedup set from specDb, not catalog JSON.
+  const allProducts = specDb?.getAllProducts?.() || [];
   let seeded = 0;
   let skipped = 0;
   let fieldsImported = 0;
@@ -456,7 +391,7 @@ export async function seedFromCatalog({
     const baseModel = String(row.base_model ?? '').trim();
     const rawVariant = String(row.variant ?? '').trim();
 
-    if (!brand || !model) continue;
+    if (!brand || !baseModel) continue;
 
     // In full mode, skip products with brand+model but zero data fields
     if (isFullMode) {
@@ -471,8 +406,12 @@ export async function seedFromCatalog({
 
     const identity = normalizeProductIdentity(cat, brand, baseModel, rawVariant);
     // WHY: Prefer productId from catalog loader (preserves existing ID on re-seed),
-    // then identity lookup, then generate new hex ID only for truly new products.
-    const foundByIdentity = findProductByIdentity(catalog, identity.brand, identity.base_model, identity.variant);
+    // then identity lookup from SQL, then generate new hex ID only for truly new products.
+    const foundByIdentity = allProducts.find((r) =>
+      String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
+      String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
+      String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
+    )?.product_id || null;
     const pid = row.productId || foundByIdentity || buildProductId(cat);
 
     const isExisting = Boolean(row.productId || foundByIdentity);
@@ -481,48 +420,28 @@ export async function seedFromCatalog({
       continue;
     }
 
-    if (!isExisting) {
-      catalog.products[pid] = {
-        id: nextAvailableId(catalog),
-        identifier: generateIdentifier(),
-        brand: identity.brand,
-        base_model: identity.base_model,
-        model: identity.model,
-        variant: identity.variant,
-        brand_identifier: row.brand_identifier || resolveBrandIdentifier(appDb, identity.brand),
-        status: 'active',
-        seed_urls: [],
-        added_at: nowIso(),
-        added_by: isFullMode ? 'catalog_import' : 'seed'
-      };
-    }
-
     // WHY: Write product.json for new products (rebuild SSOT)
+    const newIdentifier = generateIdentifier();
+    const newBrandIdentifier = row.brand_identifier || resolveBrandIdentifier(appDb, identity.brand);
     if (!isExisting) {
       try {
-        const catEntry = catalog.products[pid];
         writeProductIdentity({
           productId: pid,
           category: cat,
-          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: catEntry.brand_identifier },
-          identifier: catEntry.identifier,
+          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: newBrandIdentifier },
+          identifier: newIdentifier,
         });
       } catch { /* best-effort */ }
     }
 
     // Full mode: write field value overrides (merge with existing, don't overwrite manual edits)
     if (isFullMode && row.canonical_fields && Object.keys(row.canonical_fields).length > 0) {
-      const overrideDir = path.resolve(config?.categoryAuthorityRoot || 'category_authority', cat, '_overrides');
-      await fs.mkdir(overrideDir, { recursive: true });
-      const overridePath = path.join(overrideDir, `${pid}.overrides.json`);
+      const { readProductFromConsolidated, upsertProductInConsolidated } = await import('../../../shared/consolidatedOverrides.js');
       const setAt = nowIso();
 
-      // Load existing override file if updating an existing product
-      let existingOverrideFile = null;
-      if (isExisting) {
-        try { existingOverrideFile = JSON.parse(await fs.readFile(overridePath, 'utf8')); } catch { /* no existing overrides */ }
-      }
-      const existingOverrides = existingOverrideFile?.overrides || {};
+      // WHY: Overlap 0d — read existing from consolidated JSON SSOT
+      const existingEntry = await readProductFromConsolidated({ config, category: cat, productId: pid });
+      const existingOverrides = existingEntry?.overrides || {};
 
       const overrides = { ...existingOverrides };
       for (const [field, value] of Object.entries(row.canonical_fields)) {
@@ -562,17 +481,16 @@ export async function seedFromCatalog({
         fieldsImported += 1;
       }
       if (Object.keys(overrides).length > 0) {
-        const overrideFile = {
-          version: 1,
+        const overrideEntry = {
           category: cat,
           product_id: pid,
-          created_at: existingOverrideFile?.created_at || setAt,
-          review_started_at: existingOverrideFile?.review_started_at || setAt,
+          created_at: existingEntry?.created_at || setAt,
+          review_started_at: existingEntry?.review_started_at || setAt,
           review_status: 'in_progress',
           updated_at: setAt,
           overrides
         };
-        await fs.writeFile(overridePath, JSON.stringify(overrideFile, null, 2), 'utf8');
+        await upsertProductInConsolidated({ config, category: cat, productId: pid, productEntry: overrideEntry });
       }
     }
 
@@ -588,7 +506,7 @@ export async function seedFromCatalog({
     ok: true,
     seeded,
     skipped,
-    total: Object.keys(catalog.products).length,
+    total: allProducts.length + seeded,
     fields_imported: fieldsImported
   };
 }

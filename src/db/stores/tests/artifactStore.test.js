@@ -38,17 +38,6 @@ function makeStore(db) {
         @file_path, @captured_at, @doc_kind, @source_tier
       )
     `),
-    _insertPdf: db.prepare(`
-      INSERT OR REPLACE INTO source_pdfs (
-        pdf_id, content_hash, parent_content_hash, category, product_id, run_id,
-        source_url, host, filename, size_bytes, file_path,
-        pages_scanned, tables_found, pair_count, crawled_at
-      ) VALUES (
-        @pdf_id, @content_hash, @parent_content_hash, @category, @product_id, @run_id,
-        @source_url, @host, @filename, @size_bytes, @file_path,
-        @pages_scanned, @tables_found, @pair_count, @crawled_at
-      )
-    `),
     _getCrawlSourcesByProduct: db.prepare(`SELECT * FROM crawl_sources WHERE product_id = ? ORDER BY crawled_at DESC`),
     _getScreenshotsByProduct: db.prepare(`SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC`),
     _getCrawlSourceByHash: db.prepare(`SELECT * FROM crawl_sources WHERE content_hash = ? AND product_id = ?`),
@@ -139,34 +128,6 @@ test('insertScreenshot inserts and getScreenshotsByProduct retrieves', () => {
   db.close();
 });
 
-// --- source_pdfs ---
-
-test('insertPdf inserts and is queryable', () => {
-  const db = createTestDb();
-  const store = makeStore(db);
-  store.insertPdf({
-    pdf_id: 'pdf-001',
-    content_hash: 'pdf-hash',
-    parent_content_hash: 'page-hash',
-    product_id: 'mouse-test',
-    run_id: 'run-001',
-    source_url: 'https://example.com/datasheet.pdf',
-    host: 'example.com',
-    filename: 'datasheet.pdf',
-    size_bytes: 200000,
-    file_path: 'artifacts/mouse/mouse-test/sources/page-hash/datasheet.pdf',
-    pages_scanned: 5,
-    tables_found: 2,
-    pair_count: 30,
-    crawled_at: '2026-03-27T00:00:00Z',
-  });
-  const row = db.prepare('SELECT * FROM source_pdfs WHERE pdf_id = ?').get('pdf-001');
-  assert.ok(row);
-  assert.equal(row.filename, 'datasheet.pdf');
-  assert.equal(row.pages_scanned, 5);
-  db.close();
-});
-
 // --- specDb public delegation ---
 
 test('specDb.insertScreenshot delegates to artifactStore', () => {
@@ -226,23 +187,3 @@ test('specDb.getCrawlSourceByHash delegates to artifactStore', () => {
   specDb.db.close();
 });
 
-test('specDb.insertPdf delegates to artifactStore', () => {
-  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-  specDb.insertPdf({
-    pdf_id: 'delegate-pdf-001',
-    content_hash: 'pdf-hash',
-    parent_content_hash: 'page-hash',
-    product_id: 'mouse-test',
-    run_id: 'run-001',
-    source_url: 'https://example.com/doc.pdf',
-    host: 'example.com',
-    filename: 'doc.pdf',
-    size_bytes: 100000,
-    file_path: 'pdfs/doc.pdf',
-    crawled_at: '2026-03-27T00:00:00Z',
-  });
-  const row = specDb.db.prepare('SELECT * FROM source_pdfs WHERE pdf_id = ?').get('delegate-pdf-001');
-  assert.ok(row);
-  assert.equal(row.filename, 'doc.pdf');
-  specDb.db.close();
-});

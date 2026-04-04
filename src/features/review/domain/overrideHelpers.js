@@ -122,7 +122,7 @@ export function extractOverrideProvenance(override = {}, category, productId, fi
     };
   }
   return {
-    url: `category_authority://${category}/_overrides/${productId}.overrides.json`,
+    url: `category_authority://${category}/_overrides/overrides.json#${productId}`,
     source_id: String(fallbackSource.source_id || '').trim() || null,
     retrieved_at: nowIso(),
     snippet_id: null,
@@ -249,8 +249,14 @@ export async function readOverrideFile(filePath, { specDb = null, category = '',
           overrides
         };
       }
-    } catch { /* SQL read failed — return null */ }
+    } catch { /* SQL read failed — fall through to consolidated */ }
   }
+  // WHY: Overlap 0d — fallback to consolidated JSON (handles edit→rebuild gap)
+  try {
+    const { readProductFromConsolidated } = await import('../../../shared/consolidatedOverrides.js');
+    const entry = await readProductFromConsolidated({ config: {}, category, productId });
+    if (entry) return entry;
+  } catch { /* consolidated read failed */ }
   return null;
 }
 
@@ -387,8 +393,17 @@ export async function listOverrideDocs(helperRoot, category, { specDb = null } =
         }
       }
       return out;
-    } catch { /* SQL read failed — return empty */ }
+    } catch { /* SQL read failed — fall through to consolidated */ }
   }
+  // WHY: Overlap 0d — fallback to consolidated JSON
+  try {
+    const { readConsolidatedOverrides } = await import('../../../shared/consolidatedOverrides.js');
+    const consolidated = await readConsolidatedOverrides({ config: { categoryAuthorityRoot: helperRoot }, category });
+    return Object.entries(consolidated?.products || {}).map(([pid, entry]) => ({
+      path: `json://overrides/${category}/${pid}`,
+      payload: entry,
+    }));
+  } catch { /* consolidated read failed */ }
   return [];
 }
 

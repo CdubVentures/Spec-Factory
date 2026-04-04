@@ -263,16 +263,6 @@ CREATE TABLE IF NOT EXISTS product_runs (
   UNIQUE(category, product_id, run_id)
 );
 
-CREATE TABLE IF NOT EXISTS audit_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_at TEXT DEFAULT (datetime('now')),
-  category TEXT, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL,
-  field_changed TEXT, old_value TEXT, new_value TEXT,
-  change_type TEXT DEFAULT 'update',
-  actor_type TEXT DEFAULT 'system', actor_id TEXT, run_id TEXT, note TEXT,
-  product_id TEXT, component_type TEXT, component_name TEXT, field_key TEXT
-);
-
 CREATE TABLE IF NOT EXISTS llm_route_matrix (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -319,7 +309,6 @@ CREATE INDEX IF NOT EXISTS idx_cs_category ON curation_suggestions(category, sug
 CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, component_type, status);
 CREATE INDEX IF NOT EXISTS idx_pr_product ON product_runs(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, is_latest) WHERE is_latest = 1;
-CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
@@ -537,20 +526,6 @@ CREATE TABLE IF NOT EXISTS source_corpus (
 CREATE INDEX IF NOT EXISTS idx_sc_category ON source_corpus(category);
 CREATE INDEX IF NOT EXISTS idx_sc_domain ON source_corpus(root_domain);
 
--- Migration Phase 9: Runtime events
-CREATE TABLE IF NOT EXISTS runtime_events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  ts TEXT NOT NULL,
-  level TEXT DEFAULT 'info',
-  event TEXT NOT NULL,
-  category TEXT DEFAULT '',
-  product_id TEXT DEFAULT '',
-  run_id TEXT DEFAULT '',
-  data TEXT DEFAULT '{}'
-);
-CREATE INDEX IF NOT EXISTS idx_re_ts ON runtime_events(ts);
-CREATE INDEX IF NOT EXISTS idx_re_product ON runtime_events(product_id);
-
 -- Bridge events: transformed runtime events for GUI readers (mirrors run_events.ndjson shape)
 CREATE TABLE IF NOT EXISTS bridge_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -703,26 +678,6 @@ CREATE TABLE IF NOT EXISTS source_videos (
 );
 CREATE INDEX IF NOT EXISTS idx_sv_product ON source_videos(product_id);
 CREATE INDEX IF NOT EXISTS idx_sv_run ON source_videos(run_id);
-
-CREATE TABLE IF NOT EXISTS source_pdfs (
-  pdf_id             TEXT PRIMARY KEY,
-  content_hash       TEXT NOT NULL,
-  parent_content_hash TEXT NOT NULL DEFAULT '',
-  category           TEXT NOT NULL,
-  product_id         TEXT NOT NULL,
-  run_id             TEXT NOT NULL,
-  source_url         TEXT NOT NULL DEFAULT '',
-  host               TEXT NOT NULL DEFAULT '',
-  filename           TEXT NOT NULL DEFAULT '',
-  size_bytes         INTEGER DEFAULT 0,
-  file_path          TEXT NOT NULL DEFAULT '',
-  pages_scanned      INTEGER DEFAULT 0,
-  tables_found       INTEGER DEFAULT 0,
-  pair_count         INTEGER DEFAULT 0,
-  crawled_at         TEXT NOT NULL DEFAULT ''
-);
-CREATE INDEX IF NOT EXISTS idx_sp_product ON source_pdfs(product_id);
-CREATE INDEX IF NOT EXISTS idx_sp_content ON source_pdfs(content_hash);
 
 -- Telemetry indexes (replaces NDJSON files in INDEXLAB_ROOT/{category}/)
 

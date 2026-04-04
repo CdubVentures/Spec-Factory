@@ -85,8 +85,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     const tx = db.transaction(() => {
       // Phase 1 — Leaf tables
       totalDeleted += db.prepare('DELETE FROM billing_entries WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM audit_log WHERE run_id = ?').run(rid).changes;
-      try { totalDeleted += db.prepare('DELETE FROM runtime_events WHERE run_id = ?').run(rid).changes; } catch { /* table may not exist */ }
       try { totalDeleted += db.prepare('DELETE FROM bridge_events WHERE run_id = ?').run(rid).changes; } catch { /* table may not exist */ }
       totalDeleted += db.prepare('DELETE FROM knob_snapshots WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM query_index WHERE run_id = ?').run(rid).changes;
@@ -108,7 +106,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE run_id = ?').run(rid).changes;
 
       // Phase 5 — Run metadata
       totalDeleted += db.prepare('DELETE FROM run_artifacts WHERE run_id = ?').run(rid).changes;
@@ -202,7 +199,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       // Artifact tables
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
-      totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
 
       // Accumulated tables
@@ -309,7 +305,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     const tx = db.transaction(() => {
       // Phase 1 — Leaf/telemetry tables
       totalDeleted += db.prepare('DELETE FROM billing_entries WHERE product_id = ?').run(pid).changes;
-      totalDeleted += db.prepare('DELETE FROM audit_log WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_index WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE product_id = ?').run(pid).changes;
@@ -319,7 +314,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
       if (allRunIds.length) {
         const ph = placeholders(allRunIds);
-        try { totalDeleted += db.prepare(`DELETE FROM runtime_events WHERE run_id IN (${ph})`).run(...allRunIds).changes; } catch { /* table may not exist */ }
         try { totalDeleted += db.prepare(`DELETE FROM bridge_events WHERE run_id IN (${ph})`).run(...allRunIds).changes; } catch { /* table may not exist */ }
         totalDeleted += db.prepare(`DELETE FROM knob_snapshots WHERE run_id IN (${ph})`).run(...allRunIds).changes;
         totalDeleted += db.prepare(`DELETE FROM url_index WHERE run_id IN (${ph})`).run(...allRunIds).changes;
@@ -352,7 +346,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE product_id = ?').run(pid).changes;
-      totalDeleted += db.prepare('DELETE FROM source_pdfs WHERE product_id = ?').run(pid).changes;
 
       // Phase 6 — Run metadata
       if (allRunIds.length) {

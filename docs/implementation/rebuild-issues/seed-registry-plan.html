@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O(1) Seed Registry &mdash; Implementation Plan (v3)</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1100px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin:2.5rem 0 .5rem;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.05rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--text)}
+h4{font-size:0.92rem;font-weight:700;margin:1rem 0 .4rem}
+p,li{font-size:0.88rem;color:var(--t2);max-width:800px}
+ul,ol{padding-left:1.5rem;margin:.5rem 0}
+li{margin:.3rem 0}
+table.ref{width:100%;border-collapse:collapse;font-size:0.82rem;margin:.5rem 0 1.5rem}
+table.ref th{text-align:left;padding:8px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:2px solid var(--border);background:var(--s2)}
+table.ref td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ref tr:last-child td{border-bottom:none}
+table.ref tr:hover{background:var(--s2)}
+.fp{font-family:var(--mono);font-weight:500;font-size:0.8rem;letter-spacing:-0.01em}
+.tag{display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-done{background:var(--green-s);color:var(--green)}
+.tag-issue{background:var(--rose-s);color:var(--rose)}
+.tag-todo{background:var(--amber-s);color:var(--amber)}
+.tag-arch{background:var(--violet-s);color:var(--violet)}
+.tag-skip{background:var(--s3);color:var(--t3)}
+.tag-info{background:var(--cyan-s);color:var(--cyan)}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:1rem 0}
+.card h4{font-size:0.92rem;font-weight:700;margin-bottom:8px}
+.card-warn{border-color:var(--amber);border-width:2px}
+.card-key{border-left:4px solid var(--accent)}
+.card-principle{border-left:4px solid var(--violet)}
+code{font-family:var(--mono);font-size:0.82rem;background:var(--s2);padding:1px 6px;border-radius:4px}
+pre{font-family:var(--mono);font-size:0.8rem;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:.5rem 0 1rem;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:.75rem 0}
+.flow .step{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:600}
+.flow .arrow{color:var(--t3);font-size:0.9rem}
+.callout{background:var(--accent-s);border:1px solid var(--accent);border-radius:10px;padding:16px 20px;margin:1rem 0;font-size:0.85rem;color:var(--text)}
+.callout strong{color:var(--accent)}
+.callout-warn{background:var(--amber-s);border-color:var(--amber)}
+.callout-warn strong{color:var(--amber)}
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>O(1) Seed Registry</h1>
+  <p>One file documents every seed surface in the system &mdash; global, category, and reseed. A new dev opens <code>seedRegistry.js</code> and sees the complete picture. Adding a new surface within the current signature boundary = one registry entry + one seeder function.</p>
+  <div class="meta">
+    <span>2026-04-03 (v3)</span>
+    <span>Post SSOT overlap resolution (0a&ndash;0d)</span>
+    <span>Status: Plan</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n" style="color:var(--violet)">3</div><div class="l">Global Surfaces</div></div>
+  <div class="stat"><div class="n" style="color:var(--accent)">6</div><div class="l">Category Surfaces</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">3</div><div class="l">Reseed Surfaces</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">5</div><div class="l">Phases</div></div>
+</div>
+
+<!-- ═══════════════════ CORE IDEA ═══════════════════ -->
+
+<h2>0. The Core Idea</h2>
+
+<div class="callout">
+<strong>One file. Every surface. Three scopes.</strong> &mdash; <code>src/db/seedRegistry.js</code> is the single source of truth for &ldquo;what gets seeded, when, and where.&rdquo; A new developer reads this file and knows the full system. No archaeology across bootstrap, seed.js, and specDbRuntime.js required.
+</div>
+
+<p>The registry serves two purposes:</p>
+<ol>
+  <li><strong>Discoverability</strong> &mdash; every surface is documented in one place with its scope, tables, dependencies, source file, and data-flow direction. Applies to ALL scopes (global, category, reseed).</li>
+  <li><strong>Orchestration</strong> &mdash; the category seed engine and reseed phase runner iterate the registry instead of maintaining inline dispatch. Applies to category + reseed scopes only.</li>
+</ol>
+
+<p>Global surfaces appear in the registry for discoverability but are <strong>not engine-dispatched</strong>. They have different semantics (different DB, interleaved config rehydration, SQL-primary data flow) that make generic dispatch wrong.</p>
+
+<h3>Three scopes</h3>
+<table class="ref">
+<tr><th>Scope</th><th>DB</th><th>When</th><th>Error model</th><th>Registry role</th></tr>
+<tr>
+  <td class="fp">global</td>
+  <td class="fp">app.sqlite</td>
+  <td>Once at server bootstrap</td>
+  <td>Each surface hash-gated independently</td>
+  <td><span class="tag tag-info">documented</span> &mdash; not engine-dispatched</td>
+</tr>
+<tr>
+  <td class="fp">category</td>
+  <td class="fp">spec.sqlite (per category)</td>
+  <td>On category open / field-rules change</td>
+  <td>Hard-fail: any throw aborts the entire seed</td>
+  <td><span class="tag tag-done">orchestrated</span> &mdash; engine iterates registry</td>
+</tr>
+<tr>
+  <td class="fp">reseed</td>
+  <td class="fp">spec.sqlite (per category)</td>
+  <td>After auto-seed, on partial rebuild</td>
+  <td>Best-effort: errors caught per-phase, logged</td>
+  <td><span class="tag tag-done">orchestrated</span> &mdash; runtime reads registry</td>
+</tr>
+</table>
+
+<!-- ═══════════════════ O(1) HONESTY ═══════════════════ -->
+
+<h3>O(1) &mdash; honest boundaries</h3>
+
+<div class="callout callout-warn">
+<strong>O(1) is conditional on the field-rules signature boundary.</strong> Category seed is gated by <code>buildFieldRulesSignature()</code> which hashes 7 specific inputs (field_rules.json, known_values.json, parse_templates.json, cross_validation_rules.json, ui_field_catalog.json, component_db/*, component_overrides/*). A new surface whose source falls inside this boundary is truly O(1) &mdash; one registry entry and done. A new surface with a novel source outside this boundary also requires updating the signature in <code>src/field-rules/loader.js</code> so hash-gated reconcile detects the change. That makes it O(2), not O(1).
+</div>
+
+<table class="ref">
+<tr><th>Scenario</th><th>Files to touch</th><th>Scaling</th></tr>
+<tr><td>New category surface, source within signature boundary</td><td>1 (registry entry) + seeder</td><td><span class="tag tag-done">O(1)</span></td></tr>
+<tr><td>New category surface, novel source outside boundary</td><td>1 (registry) + 1 (signature) + seeder</td><td><span class="tag tag-info">O(2)</span></td></tr>
+<tr><td>New reseed surface</td><td>1 (registry entry) + seeder</td><td><span class="tag tag-done">O(1)</span></td></tr>
+<tr><td>New global surface</td><td>1 (registry metadata) + seeder + bootstrap wiring</td><td><span class="tag tag-info">O(2)</span></td></tr>
+</table>
+
+<!-- ═══════════════════ WHY NOT DISPATCH GLOBAL ═══════════════════ -->
+
+<h3>Why global surfaces are documented but not dispatched</h3>
+<pre>
+// createBootstrapSessionLayer.js — the actual boot order
+1. seedAppDb({ appDb, brandRegistryPath, userSettingsPath })   // brands + settings → app.sqlite
+2. rehydrateConfig(appDb)                                      // MUST happen between seeders
+3. seedColorRegistry(appDb, colorRegistryPath)                  // colors → app.sqlite
+</pre>
+<p>Step 2 rehydrates runtime config from SQL after settings are seeded. Color registry depends on that config. Additionally: global surfaces write to <code>appDb</code> (not <code>specDb</code>), are SQL-primary with JSON fallback, and each has its own per-surface hash-gate.</p>
+
+<!-- ═══════════════════ DESIGN CONSTRAINTS ═══════════════════ -->
+
+<h2>1. Design Constraints (From Code Reality)</h2>
+
+<div class="card card-key">
+<h4>Constraint 1: Seeders have different signatures &mdash; don&rsquo;t unify them</h4>
+<table class="ref">
+<tr><th>Seeder</th><th>Actual Signature</th><th>I/O Pattern</th></tr>
+<tr><td class="fp">seedComponents</td><td class="fp">(db, fieldRules)</td><td>Reads <code>fieldRules.componentDBs</code> in-memory</td></tr>
+<tr><td class="fp">seedComponentOverrides</td><td class="fp">(db, config, category)</td><td>Scans <code>_overrides/components/</code> dir</td></tr>
+<tr><td class="fp">seedListValues</td><td class="fp">(db, fieldRules, config, category)</td><td>Reads fieldRules + known_values</td></tr>
+<tr><td class="fp">seedProducts</td><td class="fp">(db, config, category, fieldRules, fieldMeta)</td><td>Multi-source directory scan + consolidated overrides</td></tr>
+<tr><td class="fp">backfillComponentLinks</td><td class="fp">(db, fieldMeta, fieldRules)</td><td>Derived from SQL state &mdash; no JSON</td></tr>
+<tr><td class="fp">seedSourceAndKeyReview</td><td class="fp">(db, category, fieldMeta)</td><td>Derived from SQL state &mdash; no JSON</td></tr>
+</table>
+<p>Each registry entry uses a one-line closure to adapt its seeder to <code>execute(ctx)</code>. Existing seeder functions are never modified.</p>
+</div>
+
+<div class="card card-key">
+<h4>Constraint 2: Category seed is hard-fail; reseed is best-effort</h4>
+<p>If any step in <code>seedSpecDb()</code> throws, the entire sync fails and <code>specDbSyncService</code> records failure. Reseed phases catch errors per-phase and log them. The engine preserves both semantics via scope.</p>
+</div>
+
+<div class="card card-key">
+<h4>Constraint 3: Category-level hash-gating stays outside the registry</h4>
+<p><code>buildFieldRulesSignature()</code> produces one hash from 7 inputs. If unchanged, <code>triggerHashGatedReconcile</code> skips the entire <code>seedSpecDb</code> call. This gates whether the engine runs at all &mdash; not a per-surface concern.</p>
+</div>
+
+<div class="card card-key">
+<h4>Constraint 4: Reconcile/cleanup steps are surface-local hooks</h4>
+<ul>
+  <li><code>reconcileComponentDbRows(db, fieldRules)</code> &mdash; runs before <code>seedComponents</code></li>
+  <li><code>reconcileListSeedRows(db, fieldRules, config, category)</code> &mdash; runs before <code>seedListValues</code></li>
+  <li><code>db.pruneOrphanCandidateReferences()</code> &mdash; runs before AND after <code>seedSourceAndKeyReview</code></li>
+</ul>
+<p>These are <code>before</code>/<code>after</code> hooks on their respective surface entries.</p>
+</div>
+
+<div class="card card-key">
+<h4>Constraint 5: No circular imports</h4>
+<p>A naive design creates a cycle: <code>seedRegistry.js</code> imports step functions from <code>seed.js</code>, <code>seedEngine.js</code> imports from <code>seedRegistry.js</code>, <code>seed.js</code> imports from <code>seedEngine.js</code>.</p>
+<p><strong>Fix:</strong> Category surfaces use a <strong>factory pattern</strong>. <code>seedRegistry.js</code> exports <code>buildCategorySurfaces(steps)</code> that receives step functions as arguments &mdash; no import from <code>seed.js</code>. <code>seedEngine.js</code> receives surfaces as a parameter &mdash; no import from <code>seedRegistry.js</code>. <code>seed.js</code> is the composition root that wires everything together.</p>
+<pre>
+// Dependency graph (no cycles):
+seedRegistry.js  ← (no imports from seed.js or seedEngine.js)
+seedEngine.js    ← (no imports from seed.js or seedRegistry.js)
+seed.js          → seedRegistry.js (buildCategorySurfaces)
+seed.js          → seedEngine.js   (runCategorySeed)
+</pre>
+</div>
+
+<!-- ═══════════════════ ENTRY SHAPES ═══════════════════ -->
+
+<h2>2. Registry Entry Shapes</h2>
+
+<h3>Global entry (documentation only &mdash; no <code>execute</code>)</h3>
+<pre>
+{
+  key:        'brands',
+  label:      'Brand Registry',
+  scope:      'global',
+  db:         'app.sqlite',
+  tables:     ['brands', 'brand_categories', 'brand_renames'],
+  source:     'category_authority/_global/brand_registry.json',
+  dataFlow:   'json-authoritative → SQL cache',
+  hashGated:  true,
+  hashKey:    'brand_registry',
+  calledFrom: 'src/api/bootstrap/createBootstrapSessionLayer.js',
+  seederFile: 'src/db/appDbSeed.js',
+}
+</pre>
+<p>No <code>execute</code>, no <code>summarize</code>. Metadata only. New dev reads it and knows: what exists, where it lives, what it writes to.</p>
+
+<h3>Category entry (factory-built, engine-dispatched)</h3>
+<p>Category surfaces are built via <code>buildCategorySurfaces(steps)</code> to avoid circular imports. The factory receives step functions as arguments and returns surface entries:</p>
+<pre>
+// seedRegistry.js — factory function (no imports from seed.js)
+export function buildCategorySurfaces(steps) {
+  return [
+    {
+      key:       'components',
+      label:     'Components',
+      scope:     'category',
+      dependsOn: [],
+      tables:    ['component_identity', 'component_aliases', 'component_values'],
+
+      before:    (ctx) =&gt; steps.reconcileComponentDbRows(ctx.db, ctx.fieldRules),
+      execute:   (ctx) =&gt; steps.seedComponents(ctx.db, ctx.fieldRules),
+      after:     null,
+      summarize: (result, beforeResult) =&gt; ({
+        components_seeded: result.identityCount,
+        removed_identity_rows: beforeResult?.removed_identity_rows ?? 0,
+        removed_value_rows: beforeResult?.removed_value_rows ?? 0,
+        removed_alias_rows: beforeResult?.removed_alias_rows ?? 0,
+        removed_item_component_link_rows: beforeResult?.removed_item_component_link_rows ?? 0,
+        removed_key_review_rows: beforeResult?.removed_key_review_rows ?? 0,
+      }),
+    },
+    // ... remaining surfaces
+  ];
+}
+</pre>
+
+<p><code>seed.js</code> is the composition root &mdash; it passes the private step functions into the factory:</p>
+<pre>
+// seed.js — composition root (imports registry + engine, no cycle)
+import { buildCategorySurfaces } from './seedRegistry.js';
+import { runCategorySeed } from './seedEngine.js';
+
+const surfaces = buildCategorySurfaces({
+  seedComponents, reconcileComponentDbRows,
+  seedComponentOverrides,
+  seedListValues, reconcileListSeedRows,
+  seedProducts,
+  backfillComponentLinks,
+  seedSourceAndKeyReview,
+});
+
+export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
+  return runCategorySeed({ db, config, category, fieldRules, logger, surfaces });
+}
+</pre>
+
+<h3>Reseed entry (static data, runtime-dispatched)</h3>
+<p>Reseed surfaces import from feature modules (not <code>seed.js</code>), so they are plain static entries &mdash; no factory needed.</p>
+<pre>
+{
+  key:       'checkpoint',
+  label:     'Checkpoints',
+  scope:     'reseed',
+  tables:    ['products', 'product_queue', 'runs', 'product_runs',
+              'run_artifacts', 'crawl_sources', 'url_crawl_ledger',
+              'query_cooldowns', 'screenshots', 'videos'],
+  shouldRun: (ctx) =&gt; Boolean(ctx.indexLabRoot),
+  execute:   (ctx) =&gt; scanAndSeedCheckpoints({
+               specDb: ctx.db, indexLabRoot: ctx.indexLabRoot,
+               productRoot: ctx.productRoot }),
+  formatLog: (category, result) =&gt;
+    result.runs_seeded &gt; 0
+      ? `${category}: ${result.runs_seeded} runs re-seeded from checkpoints`
+      : '',
+}
+</pre>
+
+<h3>Engine context bag (category)</h3>
+<pre>
+ctx = {
+  db,                  // SpecDb instance
+  config,              // app config
+  category,            // resolved category string
+  fieldRules,          // already projected via projectFieldRulesForConsumer(raw, 'seed')
+  fieldMeta,           // built via buildFieldMeta(fieldRules)
+  logger,              // optional structured logger
+}
+</pre>
+
+<!-- ═══════════════════ COMPLETE SURFACE INVENTORY ═══════════════════ -->
+
+<h2>3. Complete Surface Inventory</h2>
+
+<p>This is everything. One table per scope. A new developer reads this and knows the full seed system.</p>
+
+<h3>Global surfaces (scope: &lsquo;global&rsquo;) &mdash; documented, not dispatched <span class="tag tag-info">metadata</span></h3>
+<table class="ref">
+<tr><th>Key</th><th>Source File</th><th>Tables</th><th>Data Flow</th><th>Hash-Gated</th></tr>
+<tr>
+  <td class="fp">brands</td>
+  <td class="fp">brand_registry.json</td>
+  <td class="fp">brands, brand_categories, brand_renames</td>
+  <td>JSON &rarr; SQL on boot; SQL-primary at runtime</td>
+  <td>Yes (<code>brand_registry</code>)</td>
+</tr>
+<tr>
+  <td class="fp">settings</td>
+  <td class="fp">user-settings.json</td>
+  <td class="fp">settings, studio_maps</td>
+  <td>JSON &rarr; SQL on boot; SQL-primary at runtime; JSON is fallback mirror</td>
+  <td>Yes (<code>user_settings</code>)</td>
+</tr>
+<tr>
+  <td class="fp">colors</td>
+  <td class="fp">color_registry.json</td>
+  <td class="fp">color_registry</td>
+  <td>JSON &rarr; SQL (with fallback to <code>EG_DEFAULT_COLORS</code>, 77 entries)</td>
+  <td>Yes (<code>color_registry</code>)</td>
+</tr>
+</table>
+<p><strong>Called from:</strong> <code>createBootstrapSessionLayer.js</code> &mdash; brands+settings via <code>seedAppDb()</code>, then config rehydration, then colors via <code>seedColorRegistry()</code>.</p>
+<p><strong>Implementation:</strong> <code>src/db/appDbSeed.js</code> (brands + settings), <code>src/features/color-registry/colorRegistrySeed.js</code> (colors).</p>
+
+<h3>Category surfaces (scope: &lsquo;category&rsquo;) &mdash; engine-dispatched, hard-fail <span class="tag tag-done">orchestrated</span></h3>
+<table class="ref">
+<tr><th>Key</th><th>dependsOn</th><th>before hook</th><th>execute adapter</th><th>after hook</th></tr>
+<tr>
+  <td class="fp">components</td>
+  <td>&mdash;</td>
+  <td class="fp">reconcileComponentDbRows(db, fieldRules)</td>
+  <td class="fp">seedComponents(db, fieldRules)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td class="fp">component_overrides</td>
+  <td class="fp">components</td>
+  <td>&mdash;</td>
+  <td class="fp">seedComponentOverrides(db, config, category)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td class="fp">lists</td>
+  <td>&mdash;</td>
+  <td class="fp">reconcileListSeedRows(db, fieldRules, config, category)</td>
+  <td class="fp">seedListValues(db, fieldRules, config, category)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td class="fp">products</td>
+  <td class="fp">components, lists</td>
+  <td>&mdash;</td>
+  <td class="fp">seedProducts(db, config, category, fieldRules, fieldMeta)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td class="fp">backfill_links</td>
+  <td class="fp">products</td>
+  <td>&mdash;</td>
+  <td class="fp">backfillComponentLinks(db, fieldMeta, fieldRules)</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td class="fp">source_key_review</td>
+  <td class="fp">products, backfill_links</td>
+  <td class="fp">db.pruneOrphanCandidateReferences()</td>
+  <td class="fp">seedSourceAndKeyReview(db, category, fieldMeta)</td>
+  <td class="fp">db.pruneOrphanCandidateReferences()</td>
+</tr>
+</table>
+
+<h3>Reseed surfaces (scope: &lsquo;reseed&rsquo;) &mdash; runtime-dispatched, best-effort <span class="tag tag-done">orchestrated</span></h3>
+<table class="ref">
+<tr><th>Key</th><th>Tables</th><th>shouldRun guard</th><th>execute adapter</th></tr>
+<tr>
+  <td class="fp">checkpoint</td>
+  <td class="fp">products, product_queue, runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, screenshots, videos</td>
+  <td class="fp">() =&gt; Boolean(indexLabRoot)</td>
+  <td class="fp">scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot })</td>
+</tr>
+<tr>
+  <td class="fp">color_edition</td>
+  <td class="fp">color_edition_finder</td>
+  <td>&mdash;</td>
+  <td class="fp">rebuildColorEditionFinderFromJson({ specDb, productRoot })</td>
+</tr>
+<tr>
+  <td class="fp">llm_route_matrix</td>
+  <td class="fp">llm_route_matrix</td>
+  <td>&mdash;</td>
+  <td class="fp">rebuildLlmRouteMatrixFromJson({ specDb, helperRoot })</td>
+</tr>
+</table>
+
+<!-- ═══════════════════ ADDING A NEW SURFACE ═══════════════════ -->
+
+<h2>4. How to Add a New Surface (The Whole Point)</h2>
+
+<div class="card card-principle">
+<h4>New dev guide: &ldquo;I need to seed a new table&rdquo;</h4>
+<ol>
+  <li>Open <code>src/db/seedRegistry.js</code>. Read the inventory. Determine scope:
+    <ul>
+      <li><strong>Global</strong> (app-wide, runs once at boot, writes to app.sqlite) &rarr; add a metadata entry, implement seeder in its domain module, wire into <code>createBootstrapSessionLayer.js</code>.</li>
+      <li><strong>Category</strong> (per-category, writes to spec.sqlite) &rarr; add a surface to the <code>buildCategorySurfaces</code> factory return array. Pass the step function via the <code>steps</code> arg. Done &mdash; engine picks it up.</li>
+      <li><strong>Reseed</strong> (per-category, best-effort, runs after auto-seed) &rarr; add an entry to <code>RESEED_SURFACES</code>. Done &mdash; runtime picks it up.</li>
+    </ul>
+  </li>
+  <li>Write the seeder function. It can have any signature &mdash; the closure in the registry entry adapts it.</li>
+  <li>For category surfaces: check whether your data source is inside the <code>buildFieldRulesSignature()</code> boundary (the 7 inputs in <code>src/field-rules/loader.js:127</code>). If not, add your source to the signature so hash-gated reconcile detects changes on category reopen.</li>
+</ol>
+</div>
+
+<!-- ═══════════════════ MODULE LAYOUT ═══════════════════ -->
+
+<h2>5. Module Layout</h2>
+
+<pre>
+src/db/
+  seedRegistry.js    // GLOBAL_SURFACES (static metadata)
+                     // RESEED_SURFACES (static entries with execute closures)
+                     // buildCategorySurfaces(steps) — factory, no imports from seed.js
+                     // topologicalSort(surfaces) — utility
+
+  seedEngine.js      // runCategorySeed({ ..., surfaces }) — loop, no imports from registry
+                     // Receives surfaces as parameter (dependency injection)
+
+  seed.js            // Composition root:
+                     //   - Owns all step functions (seedComponents, etc.)
+                     //   - Calls buildCategorySurfaces(steps) → surfaces
+                     //   - Calls runCategorySeed({ ..., surfaces })
+                     //   - Exports seedSpecDb (unchanged public API)
+
+  // NO CYCLES:
+  // seedRegistry.js ← (nothing from seed.js or seedEngine.js)
+  // seedEngine.js   ← (nothing from seed.js or seedRegistry.js)
+  // seed.js         → seedRegistry.js + seedEngine.js (one-way)
+</pre>
+
+<!-- ═══════════════════ PHASES ═══════════════════ -->
+
+<h2>6. Execution Phases</h2>
+
+<h3>Phase 0: Baseline Green <span class="tag tag-todo">gate</span></h3>
+
+<div class="card">
+<h4>Action</h4>
+<pre>node --test</pre>
+<p>Full suite must pass before any work begins.</p>
+<p><strong>Files changed:</strong> 0 &nbsp; <strong>Risk:</strong> None</p>
+</div>
+
+<!-- ═══════════════════ PHASE 1 ═══════════════════ -->
+
+<h3>Phase 1: Registry Data Structure <span class="tag tag-arch">contract &rarr; red &rarr; green</span></h3>
+
+<div class="card">
+<h4>1a &mdash; Contract</h4>
+<p><strong>Module:</strong> <code>src/db/seedRegistry.js</code></p>
+<p><strong>Exports:</strong></p>
+<ul>
+  <li><code>GLOBAL_SURFACES</code> &mdash; array of global metadata entries (no execute/summarize)</li>
+  <li><code>RESEED_SURFACES</code> &mdash; array of reseed entries with execute + formatLog closures</li>
+  <li><code>buildCategorySurfaces(steps)</code> &mdash; factory that returns category entries with execute + summarize closures. Receives step functions via dependency injection. No imports from <code>seed.js</code>.</li>
+  <li><code>topologicalSort(surfaces)</code> &mdash; utility, returns surfaces ordered by dependsOn</li>
+  <li><code>getSurfaceByKey(allSurfaces, key)</code> &mdash; lookup utility</li>
+</ul>
+
+<p><strong>Invariants:</strong></p>
+<ul>
+  <li>Every surface has a unique <code>key</code> across all scopes</li>
+  <li>Every <code>dependsOn</code> reference resolves to an existing category entry</li>
+  <li>No circular dependencies</li>
+  <li>Every category entry (from factory) has <code>execute</code> (function) and <code>summarize</code> (function)</li>
+  <li>Every reseed entry has <code>execute</code> (function) and <code>formatLog</code> (function)</li>
+  <li>Global entries have NO <code>execute</code> &mdash; they are metadata only</li>
+  <li>Global entries have <code>calledFrom</code> and <code>seederFile</code> (string pointers)</li>
+  <li><code>buildCategorySurfaces</code> has zero imports from <code>seed.js</code></li>
+</ul>
+</div>
+
+<div class="card">
+<h4>1b &mdash; RED: Test matrix</h4>
+<p><strong>File:</strong> <code>src/db/tests/seedRegistry.test.js</code></p>
+<ul>
+  <li>GLOBAL_SURFACES has exactly 3 entries (brands, settings, colors)</li>
+  <li>RESEED_SURFACES has exactly 3 entries</li>
+  <li><code>buildCategorySurfaces(stubSteps)</code> returns exactly 6 entries</li>
+  <li>Every <code>key</code> is unique when all arrays are concatenated</li>
+  <li>Every <code>dependsOn</code> ref resolves within the category array</li>
+  <li>No circular dependencies (<code>topologicalSort</code> succeeds)</li>
+  <li><code>topologicalSort</code> returns keys where every entry appears after its deps</li>
+  <li><code>getSurfaceByKey(all, 'products')</code> returns the products entry</li>
+  <li><code>getSurfaceByKey(all, 'brands')</code> returns a global entry with no <code>execute</code></li>
+  <li><code>getSurfaceByKey(all, 'nonexistent')</code> returns undefined</li>
+  <li>Every category entry has <code>execute</code> and <code>summarize</code> as functions</li>
+  <li>Every reseed entry has <code>execute</code> and <code>formatLog</code> as functions</li>
+  <li>No global entry has <code>execute</code></li>
+  <li><code>component_overrides</code> depends on <code>components</code></li>
+  <li><code>products</code> depends on <code>components</code> and <code>lists</code></li>
+  <li><code>backfill_links</code> depends on <code>products</code></li>
+  <li><code>source_key_review</code> depends on <code>products</code> and <code>backfill_links</code></li>
+  <li>Category factory calls <code>steps.seedComponents</code> (etc.) &mdash; verify via spy/stub</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>1c &mdash; GREEN: Implement</h4>
+<p><strong>File:</strong> <code>src/db/seedRegistry.js</code> (~200 lines)</p>
+<p><code>GLOBAL_SURFACES</code> and <code>RESEED_SURFACES</code> are static arrays. <code>RESEED_SURFACES</code> imports seeders from their feature modules (no cycle &mdash; those modules don&rsquo;t import seed.js). <code>buildCategorySurfaces(steps)</code> is a pure function that returns an array of entries using <code>steps.*</code> references in closures.</p>
+<p><strong>Files changed:</strong> 1 new source, 1 new test &nbsp; <strong>Risk:</strong> Low</p>
+<p><strong>Note:</strong> No changes to <code>seed.js</code> in this phase. The factory receives functions as arguments, so no exports from <code>seed.js</code> are needed yet.</p>
+</div>
+
+<!-- ═══════════════════ PHASE 2 ═══════════════════ -->
+
+<h3>Phase 2: Category Seed Engine <span class="tag tag-arch">contract &rarr; red &rarr; green</span></h3>
+
+<div class="card">
+<h4>2a &mdash; Contract</h4>
+<p><strong>Module:</strong> <code>src/db/seedEngine.js</code></p>
+<p><strong>Exports:</strong></p>
+<ul>
+  <li><code>runCategorySeed({ db, config, category, fieldRules, logger, surfaces })</code></li>
+</ul>
+<p>The engine receives <code>surfaces</code> as a parameter (dependency injection). No imports from <code>seedRegistry.js</code> or <code>seed.js</code>.</p>
+
+<p><strong>Engine algorithm:</strong></p>
+<div class="flow">
+  <span class="step">Build ctx</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">Toposort surfaces</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">For each: before &rarr; execute &rarr; after &rarr; summarize</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">Aggregate &amp; return</span>
+</div>
+
+<ol>
+  <li>Project <code>fieldRules</code> via <code>projectFieldRulesForConsumer(fieldRules, 'seed')</code></li>
+  <li>Build <code>fieldMeta</code> via <code>buildFieldMeta(projectedFieldRules)</code></li>
+  <li>Pack into <code>ctx</code></li>
+  <li>Topological sort <code>surfaces</code> by <code>dependsOn</code></li>
+  <li>For each surface:
+    <ul>
+      <li><code>before(ctx)</code> if defined &rarr; <code>beforeResult</code></li>
+      <li><code>execute(ctx)</code> &rarr; <code>result</code></li>
+      <li><code>after(ctx)</code> if defined</li>
+      <li><code>summarize(result, beforeResult, afterResult)</code> &rarr; merge into aggregate</li>
+      <li>Log via <code>logger</code></li>
+    </ul>
+  </li>
+  <li>On error: <strong>throw immediately</strong> (hard-fail)</li>
+  <li>Collect product errors into <code>errors</code> array</li>
+  <li>Return <code>{ category, duration_ms, errors, counts: db.counts(), ...aggregated }</code></li>
+</ol>
+</div>
+
+<div class="card">
+<h4>2b &mdash; RED: Test matrix</h4>
+<p><strong>File:</strong> <code>src/db/tests/seedEngine.test.js</code></p>
+<p>Tests use <strong>stub surfaces</strong> &mdash; no real DB, no real seeders.</p>
+<ul>
+  <li>Runs surfaces in dependency order</li>
+  <li>Calls <code>before &rarr; execute &rarr; after</code> per surface</li>
+  <li>Passes <code>ctx</code> to all three hooks</li>
+  <li>Passes <code>(executeResult, beforeResult, afterResult)</code> to <code>summarize</code></li>
+  <li>Aggregates <code>summarize</code> results into return object</li>
+  <li>Includes <code>category</code>, <code>duration_ms</code>, <code>errors</code>, <code>counts</code></li>
+  <li>Hard-fail: surface B throws &rarr; surfaces after B do not run, error re-thrown</li>
+  <li>Null <code>before</code>/<code>after</code> &mdash; skipped without error</li>
+  <li>Collects <code>errors</code> from product-like surfaces</li>
+  <li>Null logger doesn&rsquo;t throw</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>2c &mdash; GREEN: Implement</h4>
+<p><strong>File:</strong> <code>src/db/seedEngine.js</code> (~80&ndash;100 lines)</p>
+<p>Imports <code>topologicalSort</code> from <code>seedRegistry.js</code> (the only import &mdash; a pure utility, no cycle). Imports <code>projectFieldRulesForConsumer</code> and <code>buildFieldMeta</code> from existing modules.</p>
+<p><strong>Files changed:</strong> 1 new source, 1 new test &nbsp; <strong>Risk:</strong> Low (fully isolated, no wiring yet)</p>
+</div>
+
+<!-- ═══════════════════ PHASE 3 ═══════════════════ -->
+
+<h3>Phase 3: Wire seedSpecDb Through Engine <span class="tag tag-issue">critical path</span></h3>
+
+<p>This is the only phase with real risk. The mitigation is a <strong>temporary</strong> characterization test.</p>
+
+<div class="card">
+<h4>3a &mdash; CHARACTERIZATION: Temporary return-shape guard</h4>
+<p><strong>File:</strong> <code>src/db/tests/seedSpecDbCharacterization.test.js</code></p>
+<p>Golden-master test that asserts the <code>seedSpecDb</code> return object shape &mdash; every key, every type. This is a <strong>temporary refactor guard</strong>, not a permanent test. It will be relaxed or deleted in Phase 5 after the wiring is proven.</p>
+<ul>
+  <li>Return has <code>category</code> (string)</li>
+  <li>Return has <code>duration_ms</code> (number)</li>
+  <li>Return has <code>errors</code> (array)</li>
+  <li>Return has <code>counts</code> (object)</li>
+  <li>Return has every <code>*_seeded</code> key (number)</li>
+  <li>Return has every <code>removed_*</code> key (number)</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>3b &mdash; GREEN: Replace dispatch with engine call</h4>
+<p><strong>Modified:</strong> <code>src/db/seed.js</code> &mdash; <code>seedSpecDb()</code> (lines 1631&ndash;1749)</p>
+<p><code>seed.js</code> becomes the composition root:</p>
+<pre>
+import { buildCategorySurfaces } from './seedRegistry.js';
+import { runCategorySeed } from './seedEngine.js';
+
+// Build surfaces once — step functions are private to this module
+const surfaces = buildCategorySurfaces({
+  seedComponents, reconcileComponentDbRows,
+  seedComponentOverrides,
+  seedListValues, reconcileListSeedRows,
+  seedProducts,
+  backfillComponentLinks,
+  seedSourceAndKeyReview,
+});
+
+export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
+  return runCategorySeed({ db, config, category, fieldRules, logger, surfaces });
+}
+</pre>
+<p><strong>Verification:</strong></p>
+<pre>
+node --test src/db/tests/seedSpecDbCharacterization.test.js
+node --test src/db/tests/
+node --test
+</pre>
+<p><strong>Files changed:</strong> 1 new test, 1 modified (seed.js) &nbsp; <strong>Risk:</strong> Medium &mdash; mitigated by characterization test + full suite</p>
+</div>
+
+<div class="card card-warn">
+<h4>Rollback strategy</h4>
+<p>If tests fail: restore <code>seedSpecDb</code> inline dispatch from git. Registry and engine remain as tested, independent modules.</p>
+</div>
+
+<!-- ═══════════════════ PHASE 4 ═══════════════════ -->
+
+<h3>Phase 4: Unify Reseed Phases <span class="tag tag-info">recommended</span></h3>
+
+<div class="card">
+<h4>4a &mdash; Wire reseed phases through registry</h4>
+<p><strong>Modified:</strong> <code>src/app/api/specDbRuntime.js</code> (lines 48&ndash;71)</p>
+<pre>
+import { RESEED_SURFACES } from '../../db/seedRegistry.js';
+
+const reseedPhases = RESEED_SURFACES.map(surface =&gt; ({
+  name: surface.key,
+  shouldRun: surface.shouldRun || (() =&gt; true),
+  trigger: (_category, db) =&gt; surface.execute({
+    db, config, category: _category,
+    indexLabRoot, productRoot,
+  }),
+  formatLog: surface.formatLog,
+}));
+</pre>
+<p><code>triggerReseedPhases</code> and its best-effort error handling stay exactly as-is.</p>
+<p><strong>Verification:</strong></p>
+<pre>node --test src/app/api/tests/specDbRuntime*.test.js</pre>
+<p><strong>Files changed:</strong> 1 modified (specDbRuntime.js) &nbsp; <strong>Risk:</strong> Low</p>
+</div>
+
+<!-- ═══════════════════ PHASE 5 ═══════════════════ -->
+
+<h3>Phase 5: Subtractive Cleanup + Docs <span class="tag tag-done">finish</span></h3>
+
+<div class="card">
+<h4>5a &mdash; Remove dead return-object fields</h4>
+<p>Legacy zero fields no consumer reads:</p>
+<pre>
+source_strategies_seeded: 0
+catalog_seeded: 0
+queue_seeded: 0
+suggestions_seeded: 0
+review_queue_seeded: 0
+</pre>
+<p>Verify via grep, then remove from summarize functions.</p>
+</div>
+
+<div class="card">
+<h4>5b &mdash; Remove dead dispatch code</h4>
+<p>Inline dispatch in <code>seedSpecDb</code> is dead after Phase 3. Dead step comments (Step 5, 6, 7-8, 10) cleaned up. Individual seed functions stay &mdash; referenced via registry closures.</p>
+</div>
+
+<div class="card">
+<h4>5c &mdash; Retire characterization test</h4>
+<p>The <code>seedSpecDbCharacterization.test.js</code> from Phase 3a was a temporary refactor guard. Now that wiring is proven and the permanent tests (registry validation + engine unit tests) cover behavior, <strong>delete or relax it</strong>. An exact-shape assertion becomes a maintenance burden for every future surface addition &mdash; the opposite of O(1).</p>
+</div>
+
+<div class="card">
+<h4>5d &mdash; Docs</h4>
+<ul>
+  <li><code>docs/data-structure/rebuild-map.html</code> &mdash; reference <code>seedRegistry.js</code> as canonical surface inventory</li>
+  <li><code>docs/implementation/rebuild-issues/seeding-handoff.html</code> &mdash; mark O(1) registry as DONE</li>
+  <li><code>src/db/README.md</code> &mdash; add registry + engine to public API section</li>
+</ul>
+</div>
+
+<!-- ═══════════════════ RISK TABLE ═══════════════════ -->
+
+<h2>7. Risk Summary</h2>
+
+<table class="ref">
+<tr><th>Phase</th><th>Risk</th><th>Key Files</th><th>Rollback</th></tr>
+<tr>
+  <td>0 &mdash; Baseline</td>
+  <td><span class="tag tag-done">none</span></td>
+  <td>&mdash;</td>
+  <td>&mdash;</td>
+</tr>
+<tr>
+  <td>1 &mdash; Registry</td>
+  <td><span class="tag tag-done">low</span></td>
+  <td class="fp">seedRegistry.js (new)<br>tests/seedRegistry.test.js (new)</td>
+  <td>Delete new files</td>
+</tr>
+<tr>
+  <td>2 &mdash; Engine</td>
+  <td><span class="tag tag-done">low</span></td>
+  <td class="fp">seedEngine.js (new)<br>tests/seedEngine.test.js (new)</td>
+  <td>Delete new files</td>
+</tr>
+<tr>
+  <td>3 &mdash; Wire</td>
+  <td><span class="tag tag-issue">medium</span></td>
+  <td class="fp">seed.js (composition root)<br>tests/seedSpecDbCharacterization.test.js (temp)</td>
+  <td>Restore inline dispatch from git</td>
+</tr>
+<tr>
+  <td>4 &mdash; Reseed</td>
+  <td><span class="tag tag-done">low</span></td>
+  <td class="fp">specDbRuntime.js (replace array)</td>
+  <td>Restore inline array</td>
+</tr>
+<tr>
+  <td>5 &mdash; Cleanup</td>
+  <td><span class="tag tag-done">low</span></td>
+  <td class="fp">seed.js, docs, delete characterization test</td>
+  <td>&mdash;</td>
+</tr>
+</table>
+
+<!-- ═══════════════════ EXECUTION ORDER ═══════════════════ -->
+
+<h2>8. Execution Order</h2>
+
+<div class="flow">
+  <span class="step" style="background:var(--green-s)">Phase 0</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">Phase 1</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">Phase 2</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step" style="background:var(--rose-s)">Phase 3</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step" style="background:var(--cyan-s)">Phase 4</span>
+  <span class="arrow">&rarr;</span>
+  <span class="step">Phase 5</span>
+</div>
+
+<p><strong>Checkpoint gates:</strong></p>
+<ul>
+  <li>After Phase 1: <code>node --test src/db/tests/seedRegistry.test.js</code></li>
+  <li>After Phase 2: <code>node --test src/db/tests/seedEngine.test.js</code></li>
+  <li>After Phase 3: <code>node --test</code> (full suite &mdash; non-negotiable)</li>
+  <li>After Phase 4: <code>node --test src/app/api/tests/</code></li>
+</ul>
+
+<!-- ═══════════════════ COMPLIANCE ═══════════════════ -->
+
+<h2>9. CLAUDE.md Compliance</h2>
+
+<table class="ref">
+<tr><th>Rule</th><th>How This Plan Complies</th></tr>
+<tr><td>TDD non-negotiable</td><td>Every phase follows CONTRACT &rarr; RED &rarr; GREEN. Phase 3 adds temporary CHARACTERIZATION.</td></tr>
+<tr><td>Contract-first macro-TDD</td><td>Phases 1a and 2a define full boundary contracts before tests.</td></tr>
+<tr><td>O(1) Feature Scaling</td><td>Category + reseed = O(1) within signature boundary. Global = O(2). Honest.</td></tr>
+<tr><td>Smallest increments</td><td>Each phase independently shippable and revertable.</td></tr>
+<tr><td>Subtractive engineering</td><td>Phase 5 removes dead dispatch, dead return fields, dead comments, and the temp characterization test.</td></tr>
+<tr><td>Characterization wall</td><td>Phase 3a locks return shape; Phase 5c retires it after wiring is proven.</td></tr>
+<tr><td>No circular deps</td><td>Factory pattern + DI. Dependency graph is acyclic. Documented in Section 5.</td></tr>
+<tr><td>Escalation mandate</td><td>Max 3 attempts per phase, then [STATE: BLOCKED].</td></tr>
+<tr><td>No new packages</td><td>Zero deps. Toposort is a ~15-line function.</td></tr>
+</table>
+
+<!-- ═══════════════════ APPENDIX ═══════════════════ -->
+
+<h2>Appendix A: Why the Original Plan Was Rejected</h2>
+
+<ol>
+  <li><strong>JSON-centric entry shape.</strong> Proposed <code>jsonPath &rarr; seeder(db, jsonData, ctx)</code>. Only 3 of 12 surfaces read JSON from a path. Corrected: <code>execute(ctx)</code> with closure adapters.</li>
+  <li><strong>Per-surface hash-gating.</strong> Category seed is all-or-nothing. Corrected: hash-gating stays outside the registry.</li>
+  <li><strong>Missing orchestration hooks.</strong> Corrected: <code>before</code>/<code>after</code> hooks on surfaces that own them.</li>
+  <li><strong>Unified error semantics.</strong> Corrected: scope determines error model.</li>
+  <li><strong>Forced global dispatch.</strong> Corrected: global surfaces are metadata, not engine-dispatched.</li>
+</ol>
+
+<h2>Appendix B: v2 &rarr; v3 Changes</h2>
+
+<p>Four issues fixed from v2 review:</p>
+<ol>
+  <li><strong>Inventory drift.</strong> Colors corrected from &ldquo;53&rdquo; to 77 (<code>EG_DEFAULT_COLORS</code>, test asserts &ge; 70). Checkpoint tables corrected from 4 to 10 (products, product_queue, runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, screenshots, videos).</li>
+  <li><strong>O(1) honesty.</strong> Added explicit caveat: O(1) only holds for surfaces whose source falls within the <code>buildFieldRulesSignature()</code> boundary (7 inputs). Novel sources require updating the signature = O(2). Section 0 now has a clear table.</li>
+  <li><strong>Circular import.</strong> Fixed via factory pattern: <code>buildCategorySurfaces(steps)</code> receives step functions as arguments instead of importing them from <code>seed.js</code>. <code>runCategorySeed</code> receives surfaces as a parameter instead of importing them from <code>seedRegistry.js</code>. <code>seed.js</code> is the composition root. Dependency graph is acyclic.</li>
+  <li><strong>Characterization test permanence.</strong> Marked as temporary refactor guard. Phase 5c explicitly retires or relaxes it after wiring is proven. An exact-shape assertion that must be updated for every new surface would undermine the O(1) goal.</li>
+</ol>
+
+</div>
+</body>
+</html>
