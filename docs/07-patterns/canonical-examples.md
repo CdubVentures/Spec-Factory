@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified repository patterns for adding common work items without inventing new structure.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Adding A New API Endpoint
 
@@ -144,34 +144,64 @@ If a migration changes the canonical schema contract, update [data-model.md](../
 
 ## Adding A New Test
 
-Based on `src/publish/tests/publishingPipeline.publish.test.js`.
+Based on `src/features/settings/api/tests/uiSettingsRoutes.test.js`.
 
-Use Node's built-in runner, keep setup local to the test file, and assert through public APIs or written artifacts rather than internal implementation details.
+Use Node's built-in runner, keep setup local to the test file, and assert through public route/service behavior rather than internal implementation details.
 
 ```js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { publishExampleArtifacts } from '../src/publish/examplePublisher.js';
 
-test('publishExampleArtifacts writes one current artifact', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-example-'));
+import { AppDb } from '../../../../db/appDb.js';
+import { registerConfigRoutes } from '../configRoutes.js';
 
-  try {
-    const result = await publishExampleArtifacts({
-      config: { helperFilesRoot: tempRoot },
-      storage: null,
-      category: 'mouse',
-      productIds: ['mouse-example'],
-    });
+function makeCtx(overrides = {}) {
+  return {
+    jsonRes: (_res, status, body) => ({ status, body }),
+    readJsonBody: async () => ({}),
+    appDb: null,
+    broadcastWs: () => {},
+    toInt: (value, fallback = 0) => {
+      const parsed = Number.parseInt(String(value ?? ''), 10);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    },
+    collectLlmModels: () => [],
+    llmProviderFromModel: () => '',
+    resolvePricingForModel: () => ({}),
+    resolveTokenProfileForModel: () => ({}),
+    resolveLlmRoleDefaults: () => ({}),
+    resolveLlmKnobDefaults: () => ({}),
+    llmRoutingSnapshot: () => ({}),
+    buildLlmMetrics: async () => ({}),
+    buildIndexingDomainChecklist: async () => ({}),
+    buildReviewMetrics: async () => ({}),
+    getSpecDb: () => null,
+    storage: {},
+    OUTPUT_ROOT: 'out',
+    HELPER_ROOT: 'category_authority',
+    ...overrides,
+  };
+}
 
-    assert.equal(result.published_count, 1);
-    assert.equal(result.results[0]?.product_id, 'mouse-example');
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+test('ui-settings PUT persists toggles to AppDb', async (t) => {
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
+
+  const handler = registerConfigRoutes(makeCtx({
+    appDb,
+    readJsonBody: async () => ({
+      runtimeAutoSaveEnabled: false,
+    }),
+  }));
+
+  const result = await handler(['ui-settings'], new URLSearchParams(), 'PUT', {}, {});
+  assert.equal(result.status, 200);
+  assert.equal(result.body.snapshot.runtimeAutoSaveEnabled, false);
+
+  const persisted = Object.fromEntries(
+    appDb.getSection('ui').map((row) => [row.key, row.value]),
+  );
+  assert.equal(persisted.runtimeAutoSaveEnabled, 'false');
 });
 ```
 
@@ -184,32 +214,35 @@ Long-running work in this repo is usually exposed as an exported worker function
 ```js
 // src/features/example/exampleBatch.js
 export async function runExampleBatch({
-  storage,
-  config,
+  specDb,
   category,
   logger = null,
 }) {
-  const rows = specDb ? specDb.getAllProducts() : [];
-  logger?.info?.('example_batch_start', { category, total: rows.length });
+  const products = specDb?.getAllProducts?.() || [];
+  logger?.info?.('example_batch_start', { category, total: products.length });
 
   return {
     category,
-    processed_count: rows.length,
+    processed_count: products.length,
   };
 }
 ```
 
 ```js
 // src/app/cli/commands/exampleCommand.js
-export function createExampleCommand({ runExampleBatch }) {
-  async function commandRunExample(config, storage, args) {
+export function createExampleCommand({ runExampleBatch, openSpecDbForCategory }) {
+  async function commandRunExample(config, _storage, args) {
     const category = args.category || 'mouse';
-    return runExampleBatch({
-      storage,
-      config,
-      category,
-      logger: null,
-    });
+    const specDb = await openSpecDbForCategory(config, category);
+    try {
+      return await runExampleBatch({
+        specDb,
+        category,
+        logger: null,
+      });
+    } finally {
+      try { specDb?.close(); } catch { /* best effort */ }
+    }
   }
 
   return {
@@ -219,10 +252,10 @@ export function createExampleCommand({ runExampleBatch }) {
 ```
 
 ```js
-// src/app/cli/spec.js  —  wiring a command into the entrypoint switch
+// src/app/cli/spec.js
 const loadExampleCommand = createLazyLoader(async () => {
   const { createExampleCommand } = await import('./commands/exampleCommand.js');
-  return createExampleCommand({ runExampleBatch });
+  return createExampleCommand({ runExampleBatch, openSpecDbForCategory });
 });
 
 // inside executeCommand()
@@ -273,19 +306,19 @@ export async function addExampleItem({ config, name, tags = [] }) {
 | source | `src/app/api/routes/infra/categoryRoutes.js` | injected route-factory shape and `return false` non-match contract |
 | source | `src/features/settings/api/configRoutes.js` | live route-family registrar pattern |
 | source | `src/app/api/guiServerRuntime.js` | route-context assembly and `routeDefinitions` mounting pattern |
-| source | `src/app/api/guiRouteRegistration.js` | routeDefinitions consumption path |
+| source | `src/app/api/guiRouteRegistration.js` | `routeDefinitions` consumption path |
 | source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` is not the live mounted SSOT |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | page registry, tab metadata, and derived route pattern |
 | source | `tools/gui-react/src/App.tsx` | HashRouter shell and registry-driven route mounting |
 | source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab derivation from the page registry |
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
-| source | `tools/gui-react/src/app/api/client.ts` | canonical GUI API client wrapper |
+| source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |
 | source | `src/core/events/dataChangeContract.js` | canonical `emitDataChange` import path for route examples |
+| source | `src/features/settings/api/tests/uiSettingsRoutes.test.js` | Node `node:test` structure with route-handler invocation and persistence assertions |
 | source | `src/app/cli/commands/batchCommand.js` | thin CLI command factory pattern |
 | source | `src/app/cli/spec.js` | CLI command wrapper and lazy-loader registration pattern |
 | source | `src/features/catalog/identity/brandRegistry.js` | service-function options object and structured return pattern |
-| test | `src/publish/tests/publishingPipeline.publish.test.js` | Node `node:test` structure with local fixtures and public-API assertions |
 
 ## Related Documents
 

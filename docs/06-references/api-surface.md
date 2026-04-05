@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Global Notes
 
@@ -24,7 +24,7 @@
 | POST | `/api/v1/categories` | create category skeleton | none | `{ name }` | `{ ok, slug, categories }` |
 | GET | `/api/v1/searxng/status` | SearXNG local status | none | none | status object |
 | POST | `/api/v1/searxng/start` | start local SearXNG stack | none | none | start result or error |
-| POST | `/api/v1/process/start` | spawn CLI child process | none | process launch plan fields such as `category`, `command`, `replaceRunning`, `runId` | normalized process status |
+| POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `seedUrls`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
 | POST | `/api/v1/process/stop` | stop child process | none | `{ force? }` | normalized process status |
 | GET | `/api/v1/process/status` | read child-process status | none | none | normalized process status |
 | POST | `/api/v1/graphql` | proxy GraphQL request to local helper server | none | GraphQL JSON body | proxied GraphQL JSON or `502` |
@@ -55,11 +55,13 @@
 |--------|------|---------|------|--------------|----------------|
 | GET | `/api/v1/storage/overview` | summarize archived/live run inventory and backend details | none | none | `{ total_runs, total_size_bytes, categories, products_indexed, oldest_run, newest_run, avg_run_size_bytes, storage_backend, backend_detail }` |
 | GET | `/api/v1/storage/runs` | list run inventory, optionally filtered by `category` and `limit` query params | none | none | `{ runs }` |
-| GET | `/api/v1/storage/runs/:runId` | read one run's storage metadata bundle | none | none | `{ run_id, ...meta }` or `404 { error: 'run_not_found', run_id }` |
-| DELETE | `/api/v1/storage/runs/:runId` | delete one archived run bundle | none | none | `{ ok, run_id, deleted_from }` or `409 { ok: false, error: 'run_in_progress', run_id }` |
+| GET | `/api/v1/storage/runs/:runId` | read one run's storage metadata bundle | none | none | `{ run_id, ...meta, sources, identity }` or `404 { error: 'run_not_found', run_id }` |
+| DELETE | `/api/v1/storage/runs/:runId` | delete one archived run bundle and related SQL state | none | none | deletion result or `409 { ok: false, error: 'run_in_progress', run_id }` |
 | POST | `/api/v1/storage/runs/bulk-delete` | bulk-delete archived run bundles | none | `{ runIds: string[] }` | `{ ok, deleted, errors }` |
 | POST | `/api/v1/storage/prune` | prune old archived runs, optionally failed-only | none | `{ olderThanDays?, failedOnly? }` | `{ ok, pruned, errors }` |
 | POST | `/api/v1/storage/purge` | purge all archived runs after explicit confirmation token | none | `{ confirmToken }` | `{ ok, purged }` or `400 { ok: false, error: 'confirm_token_required' }` |
+| POST | `/api/v1/storage/urls/delete` | delete one URL plus derived artifacts and SQL rows | none | `{ url, productId, category }` | deletion result or `400/501/500` |
+| POST | `/api/v1/storage/products/:productId/purge-history` | delete all run history for one product | none | `{ category }` | deletion result or `409 { ok: false, error: 'product_has_active_run', run_id }` |
 | GET | `/api/v1/storage/export` | download run inventory export JSON | none | none | `{ exported_at, storage_backend, runs }` with `Content-Disposition: attachment` |
 
 ## IndexLab Endpoints
@@ -78,9 +80,9 @@
 | GET | `/api/v1/indexlab/run/:runId/run-meta-packet` | read run-meta packet | none | none | run-meta packet payload |
 | GET | `/api/v1/indexlab/run/:runId/serp` | read SERP explorer payload | none | none | SERP payload |
 | GET | `/api/v1/indexlab/run/:runId/automation-queue` | read automation queue | none | none | automation queue payload |
-| GET | `/api/v1/indexlab/run/:runId/evidence-index` | query evidence index | none | none | evidence search payload |
 | GET | `/api/v1/indexlab/run/:runId/rounds` | summarize run rounds from events | none | none | round summary |
 | GET | `/api/v1/indexlab/run/:runId/learning` | summarize learning updates for a run | none | none | learning payload |
+| GET | `/api/v1/indexlab/product-history` | read one product's aggregate run, query, and URL history | none | none | `{ product_id, category, aggregate, runs, queries, urls }` |
 | GET | `/api/v1/indexlab/indexes/query-summary` | summarize query index by category | none | none | summary payload |
 | GET | `/api/v1/indexlab/indexes/url-summary` | summarize URL index by category | none | none | summary payload |
 | GET | `/api/v1/indexlab/indexes/prompt-summary` | summarize prompt index by category | none | none | summary payload |
@@ -103,14 +105,34 @@
 | GET | `/api/v1/indexlab/run/:runId/runtime/documents/:encodedUrl` | runtime document detail | none | none | document detail |
 | GET | `/api/v1/indexlab/run/:runId/runtime/metrics` | runtime metrics rail | none | none | metrics payload |
 | GET | `/api/v1/indexlab/run/:runId/runtime/extraction/fields` | extraction field telemetry | none | none | extraction payload |
+| GET | `/api/v1/indexlab/run/:runId/runtime/extraction/plugins` | extraction plugin execution summary | none | none | `{ run_id, plugins }` |
+| GET | `/api/v1/indexlab/run/:runId/runtime/extraction/open-folder/:folder` | open local extraction artifact folder in the OS shell | none | none | `{ opened }` or `404/500` |
+| GET | `/api/v1/indexlab/run/:runId/runtime/extraction/resolve-folder/:folder` | resolve local extraction artifact folder path without opening it | none | none | `{ path, folder, type: 'local' }` |
 | GET | `/api/v1/indexlab/run/:runId/runtime/fallbacks` | fallback events | none | none | fallback payload |
 | GET | `/api/v1/indexlab/run/:runId/runtime/queue` | queue telemetry | none | none | queue payload |
+| GET | `/api/v1/indexlab/run/:runId/runtime/crawl-ledger` | live URL crawl history plus query cooldown state | none | none | `{ run_id, urls, query_cooldowns }` or `400 { error: 'product_id required' }` |
 | GET | `/api/v1/indexlab/run/:runId/runtime/workers/:workerId` | worker detail | none | none | worker detail |
-| GET | `/api/v1/indexlab/run/:runId/runtime/screencast/:workerId/last` | last screencast frame | none | none | retained or synthetic frame payload |
+| GET | `/api/v1/indexlab/run/:runId/runtime/screencast/:workerId/last` | last retained or synthesized screencast frame | none | none | `{ run_id, worker_id, frame }` or `404 { error: 'screencast_frame_not_found' }` |
+| GET | `/api/v1/indexlab/run/:runId/runtime/video/:workerId` | stream retained crawl video for one worker | none | none | `video/webm` stream or `404 { error: 'video_not_found' }` |
 | GET | `/api/v1/indexlab/run/:runId/runtime/llm-dashboard` | runtime LLM dashboard | none | none | dashboard payload |
 | GET | `/api/v1/indexlab/run/:runId/runtime/prefetch` | needset/search-profile prefetch payload | none | none | prefetch payload |
+| GET | `/api/v1/indexlab/run/:runId/runtime/fetch` | fetch-phase runtime payload | none | none | fetch payload |
 | GET | `/api/v1/indexlab/run/:runId/runtime/pipeline` | pipeline-flow payload | none | none | pipeline payload |
-| GET | `/api/v1/indexlab/run/:runId/runtime/assets/:filename` | serve retained runtime screenshot asset | none | none | binary image asset |
+| GET | `/api/v1/indexlab/run/:runId/runtime/assets/:filename` | serve retained runtime screenshot asset | none | none | binary image/video asset or `404 { error: 'file_not_found' }` |
+
+## Color Registry And Finder Endpoints
+
+| Method | Path | Purpose | Auth | Request body | Response shape |
+|--------|------|---------|------|--------------|----------------|
+| GET | `/api/v1/colors` | list global color registry entries | none | none | `Color[]` |
+| POST | `/api/v1/colors` | add one global color | none | `{ name, hex }` | `{ ok, color }` or `400 { ok: false, error }` |
+| PUT | `/api/v1/colors/:name` | update one color hex | none | `{ hex }` | `{ ok, color }` or `404 { ok: false, error: 'not_found' }` |
+| DELETE | `/api/v1/colors/:name` | delete one color | none | none | `{ ok: true, deleted }` or `404 { ok: false, error: 'not_found' }` |
+| GET | `/api/v1/color-edition-finder/:category` | list color-edition-finder rows for one category | none | none | row array or `503 { error: 'specDb not ready' }` |
+| GET | `/api/v1/color-edition-finder/:category/:productId` | read one product's color-edition-finder state | none | none | detail payload or `404/503` |
+| POST | `/api/v1/color-edition-finder/:category/:productId` | run the finder for one product | none | none | `{ ok, colors, editions, default_color, fallbackUsed }` or `404/503/500` |
+| DELETE | `/api/v1/color-edition-finder/:category/:productId/runs/:runNumber` | delete one historical finder run | none | none | `{ ok: true, remaining_runs }` or `400/503` |
+| DELETE | `/api/v1/color-edition-finder/:category/:productId` | delete all finder state for one product | none | none | `{ ok: true }` or `503` |
 
 ## Catalog And Brand Endpoints
 
@@ -140,16 +162,17 @@
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
 | GET | `/api/v1/field-labels/:category` | session-derived field labels | none | none | `{ category, labels }` |
-| GET | `/api/v1/studio/:category/payload` | studio payload (backfills missing EG defaults; returns `egLockedKeys`, `egEditablePaths`, `egToggles`) | none | none | field rules, order, UI catalog, guardrails, EG lock state |
+| GET | `/api/v1/studio/:category/payload` | studio payload (backfills missing EG defaults; returns `egLockedKeys`, `egEditablePaths`, `egToggles`, `registeredColors`) | none | none | field rules, order, UI catalog, guardrails, EG lock state |
 | GET | `/api/v1/studio/:category/products` | product list for studio context | none | none | `{ products, brands }` |
 | POST | `/api/v1/studio/:category/compile` | start compile-rules process | none | none | process status |
 | POST | `/api/v1/studio/:category/validate-rules` | start validate-rules process | none | none | process status |
 | GET | `/api/v1/studio/:category/guardrails` | read generated studio guardrails | none | none | guardrails JSON |
-| GET | `/api/v1/studio/:category/known-values` | read known values from SpecDb | none | none | known-values payload |
+| GET | `/api/v1/studio/:category/known-values` | read known values from SpecDb | none | none | known-values payload or `503 { error: 'specdb_not_ready' }` |
 | POST | `/api/v1/studio/:category/enum-consistency` | enum-consistency review/apply from suggestions | none | `{ field, apply?, maxPending?, formatGuidance? }` | consistency payload |
-| GET | `/api/v1/studio/:category/component-db` | read component DB projection from SpecDb | none | none | component-db payload |
+| GET | `/api/v1/studio/:category/component-db` | read component DB projection from SpecDb | none | none | component-db payload or `503 { error: 'specdb_not_ready' }` |
 | GET | `/api/v1/studio/:category/field-studio-map` | read preferred field-studio map | none | none | map payload |
 | PUT | `/api/v1/studio/:category/field-studio-map` | save field-studio map (sanitizes locked EG field overrides) | none | field-studio map JSON | save result |
+| PUT | `/api/v1/studio/:category/field-key-order` | persist field-key ordering | none | `{ order: string[] }` | `{ ok: true, category }` or `503 { error: 'specdb_not_ready' }` |
 | POST | `/api/v1/studio/:category/validate-field-studio-map` | validate field-studio map | none | field-studio map JSON | validation result |
 | GET | `/api/v1/studio/:category/tooltip-bank` | read tooltip-bank aggregate | none | none | tooltip entries + files |
 | POST | `/api/v1/studio/:category/invalidate-cache` | invalidate session/studio caches | none | none | `{ ok: true }` |
@@ -220,21 +243,25 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/app/api/guiServerRuntime.js` | mounted route families include `specSeeds` in the live runtime |
+| source | `src/app/api/guiServerRuntime.js` | mounted route families include `specSeeds`, `colors`, and `colorEditionFinder` in the live runtime |
 | source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, and route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
+| source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status surface |
+| source | `src/features/indexing/api/builders/processStartLaunchPlan.js` | `/process/start` launch-plan contract |
 | source | `src/features/settings/api/configRoutes.js` | current settings/config endpoints |
 | source | `src/features/settings/api/configUiSettingsHandler.js` | `ui-settings` GET/PUT contract |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `runtime-settings` GET/PUT/POST contract |
 | source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix GET/PUT/reset contract |
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, checklist, and review-metrics payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
-| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints |
+| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints, analytics, and live-crawl surfaces |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | live `/storage/*` inventory and maintenance endpoints |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |
+| source | `src/features/color-registry/api/colorRoutes.js` | global color registry endpoints |
+| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition-finder endpoints |
 | source | `src/features/catalog/api/catalogRoutes.js` | catalog/product/event endpoints |
 | source | `src/features/catalog/api/brandRoutes.js` | brand endpoints |
-| source | `src/features/studio/api/studioRoutes.js` | studio endpoints |
+| source | `src/features/studio/api/studioRoutes.js` | studio endpoints including `field-key-order` |
 | source | `src/features/category-authority/api/dataAuthorityRoutes.js` | authority snapshot endpoint |
 | source | `src/features/indexing/api/queueBillingLearningRoutes.js` | queue/billing/learning endpoints |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy endpoints |

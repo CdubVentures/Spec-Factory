@@ -24,6 +24,7 @@ __pycache__/
 .tmp/*
 !.tmp/.gitkeep
 .workspace/
+.claude/
 .server-state/
 artifacts/
 debug/
@@ -44,6 +45,7 @@ test-results/
 .tmp-*
 _tmp_*
 *.tmp
+
 
 # Agent/CI run logs
 .codex-*
