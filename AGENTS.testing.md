@@ -321,7 +321,7 @@ node tools/dev-stack-control.js start-stack
 # GUI: http://localhost:5183
 
 # Option B: API server only (if GUI is not needed)
-node src/api/guiServer.js
+node src/app/api/guiServer.js
 ```
 
 #### 2. Verify server health
@@ -995,7 +995,7 @@ PORT=8789 GUI_PORT=5184 node tools/dev-stack-control.js start-stack
 
 Or API-only:
 ```bash
-PORT=8789 node src/api/guiServer.js
+PORT=8789 node src/app/api/guiServer.js
 ```
 
 ### Health Check (use YOUR port)

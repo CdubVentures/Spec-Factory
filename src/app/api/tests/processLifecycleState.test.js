@@ -9,7 +9,7 @@ import {
 
 const STARTED_PAYLOAD = {
   pid: 1234,
-  command: 'node src/cli/spec.js indexlab',
+  command: 'node src/app/cli/spec.js indexlab',
   startedAt: '2026-03-20T10:00:00.000Z',
   runId: 'run_test1234',
   category: 'mouse',
@@ -48,7 +48,7 @@ describe('process lifecycle status contract', () => {
       storage_destination: 'local',
       storageDestination: 'local',
       pid: 1234,
-      command: 'node src/cli/spec.js indexlab',
+      command: 'node src/app/cli/spec.js indexlab',
       startedAt: '2026-03-20T10:00:00.000Z',
       exitCode: null,
       endedAt: null,

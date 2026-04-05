@@ -257,6 +257,118 @@ describe('seedAppDb delete reconcile — brands', () => {
   });
 });
 
+describe('seedAppDb delete reconcile — brand_renames', () => {
+  let db;
+  let tmpDir;
+  beforeEach(() => {
+    db = createTestDb();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'appdb-rename-'));
+  });
+  afterEach(() => {
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('removing a rename from JSON deletes it from SQL on reseed', () => {
+    const v1 = {
+      brands: {
+        acme: {
+          identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed',
+          renames: [
+            { old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' },
+            { old_slug: 'ac', new_slug: 'acme', old_name: 'Ac', new_name: 'Acme' },
+          ],
+        },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 2);
+
+    const v2 = {
+      brands: {
+        acme: {
+          ...v1.brands.acme,
+          renames: [{ old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' }],
+        },
+      },
+    };
+    writeTempJson(tmpDir, 'brands.json', v2);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    const renames = db.getRenamesForBrand('aabb1122');
+    assert.equal(renames.length, 1);
+    assert.equal(renames[0].old_slug, 'acm');
+  });
+
+  test('re-seeding same brand does NOT create duplicate renames', () => {
+    const v1 = {
+      brands: {
+        acme: {
+          identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed',
+          renames: [{ old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' }],
+        },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 1);
+
+    // Change something else to trigger reseed (hash must differ)
+    const v2 = { brands: { acme: { ...v1.brands.acme, website: 'https://acme.test' } } };
+    writeTempJson(tmpDir, 'brands.json', v2);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 1, 'should NOT create duplicate rename rows');
+  });
+
+  test('brand with no renames in JSON clears all its renames on reseed', () => {
+    const v1 = {
+      brands: {
+        acme: {
+          identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed',
+          renames: [{ old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' }],
+        },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 1);
+
+    const v2 = { brands: { acme: { ...v1.brands.acme, renames: [] } } };
+    writeTempJson(tmpDir, 'brands.json', v2);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 0, 'all renames should be cleared');
+  });
+
+  test('adding a rename to JSON inserts it on reseed', () => {
+    const v1 = {
+      brands: {
+        acme: {
+          identifier: 'aabb1122', canonical_name: 'Acme', aliases: [], categories: ['mouse'], website: '', added_by: 'seed',
+          renames: [{ old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' }],
+        },
+      },
+    };
+    const brandPath = writeTempJson(tmpDir, 'brands.json', v1);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 1);
+
+    const v2 = {
+      brands: {
+        acme: {
+          ...v1.brands.acme,
+          renames: [
+            { old_slug: 'acm', new_slug: 'acme', old_name: 'Acm', new_name: 'Acme' },
+            { old_slug: 'ac', new_slug: 'acme', old_name: 'Ac', new_name: 'Acme' },
+          ],
+        },
+      },
+    };
+    writeTempJson(tmpDir, 'brands.json', v2);
+    seedAppDb({ appDb: db, brandRegistryPath: brandPath, userSettingsPath: '/nonexistent' });
+    assert.equal(db.getRenamesForBrand('aabb1122').length, 2);
+  });
+});
+
 describe('seedAppDb delete reconcile — settings', () => {
   let db;
   let tmpDir;

@@ -81,7 +81,7 @@ test('process runtime start publishes run metadata and preserves the completed s
   const h = createHarness();
 
   const status = h.runtime.startProcess(
-    'src/cli/spec.js',
+    'src/app/cli/spec.js',
     [
       'indexlab',
       '--run-id', '20260318061504-16a0b3',
@@ -96,7 +96,7 @@ test('process runtime start publishes run metadata and preserves the completed s
   assert.equal(h.spawnCalls.length, 1);
   assert.equal(h.spawnCalls[0].command, process.execPath);
   assert.deepEqual(h.spawnCalls[0].args, [
-    'src/cli/spec.js',
+    'src/app/cli/spec.js',
     'indexlab',
     '--run-id', '20260318061504-16a0b3',
     '--category', 'mouse',
@@ -112,7 +112,7 @@ test('process runtime start publishes run metadata and preserves the completed s
   assert.deepEqual(status, {
     running: true,
     pid: 4201,
-    command: `${process.execPath} src/cli/spec.js indexlab --run-id 20260318061504-16a0b3 --category mouse --product-id mouse-razer-viper-v3-pro-white --brand Razer --model Viper V3 Pro --variant White`,
+    command: `${process.execPath} src/app/cli/spec.js indexlab --run-id 20260318061504-16a0b3 --category mouse --product-id mouse-razer-viper-v3-pro-white --brand Razer --model Viper V3 Pro --variant White`,
     startedAt: status.startedAt,
     exitCode: null,
     endedAt: null,
@@ -157,7 +157,7 @@ test('process runtime start publishes run metadata and preserves the completed s
 
 test('process runtime stop returns a confirmed stop status for an active child', async () => {
   const h = createHarness();
-  h.runtime.startProcess('src/cli/spec.js', ['indexlab', '--run-id', 'run_abcdefgh']);
+  h.runtime.startProcess('src/app/cli/spec.js', ['indexlab', '--run-id', 'run_abcdefgh']);
 
   const stopStatus = await h.runtime.stopProcess(1500, { force: false });
   assert.equal(stopStatus.stop_attempted, true);
@@ -168,7 +168,7 @@ test('process runtime stop returns a confirmed stop status for an active child',
 
 test('process runtime forwards screencast subscribe and unsubscribe only while the child is active', async () => {
   const h = createHarness();
-  h.runtime.startProcess('src/cli/spec.js', ['indexlab', '--run-id', 'run_wsforward']);
+  h.runtime.startProcess('src/app/cli/spec.js', ['indexlab', '--run-id', 'run_wsforward']);
   const child = h.children[0];
 
   const subscribeForwarded = h.runtime.forwardScreencastControl({ subscribeWorkerId: 'worker-42' });
@@ -193,7 +193,7 @@ test('process runtime completion forwards storage-derived output and indexlab ro
   const expectedIndexLabRoot = path.join(storageRoot, 'indexlab');
 
   h.runtime.startProcess(
-    'src/cli/spec.js',
+    'src/app/cli/spec.js',
     ['indexlab', '--run-id', 'run_storage_root1', '--out', expectedIndexLabRoot],
     {
       LOCAL_OUTPUT_ROOT: expectedOutputRoot,
@@ -211,7 +211,7 @@ test('process runtime non-zero exit skips compile completion but still reports t
   const h = createHarness();
 
   h.runtime.startProcess(
-    'src/cli/spec.js',
+    'src/app/cli/spec.js',
     ['indexlab', '--run-id', 'run_failed01', '--category', 'mouse'],
   );
 

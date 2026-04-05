@@ -239,7 +239,7 @@
     },
     "ui.tooltip_source": {
       "status": "ui_only",
-      "consumer": "src/api/guiServer.js + React GUI",
+      "consumer": "src/app/api/guiServer.js + React GUI",
       "description": "Source reference for tooltip content"
     }
   }

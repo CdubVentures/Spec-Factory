@@ -12,4 +12,4 @@ COPY . .
 
 ENV NODE_ENV=production
 
-CMD ["node", "src/cli/run-batch.js", "--category", "mouse"]
+CMD ["node", "src/app/cli/spec.js", "run-batch", "--category", "mouse"]

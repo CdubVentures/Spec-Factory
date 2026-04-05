@@ -246,6 +246,95 @@ function reconcileComponentDbRows(db, fieldRules) {
   };
 }
 
+// WHY: Reconcile component override rows so that removed override files or removed
+// properties within surviving files result in stale SQL rows being pruned. Missing
+// override directory = empty authoritative set (not a no-op).
+async function reconcileComponentOverrideRows(db, config, category) {
+  const helperRoot = config.categoryAuthorityRoot || 'category_authority';
+  const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
+  let removedOverrideValueRows = 0;
+  let removedAliasRows = 0;
+  let resetReviewStatusRows = 0;
+
+  // Build expected set from override files on disk
+  // key = "type|name|maker", value = Set<propertyKey>
+  const expectedOverrides = new Map();
+  let files = [];
+  try {
+    const entries = await fs.readdir(overrideDir, { withFileTypes: true });
+    files = entries.filter(e => e.isFile() && e.name.endsWith('.json')).map(e => e.name);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    // Missing directory = empty authoritative set — all overrides are stale
+  }
+
+  for (const fileName of files) {
+    let ovr;
+    try {
+      const raw = await fs.readFile(path.join(overrideDir, fileName), 'utf8');
+      ovr = JSON.parse(raw);
+    } catch { continue; }
+    if (!ovr || !ovr.name) continue;
+    const componentType = ovr.componentType || fileName.split('_')[0];
+    const maker = ovr.identity?.maker ?? '';
+    const key = `${componentType}|${ovr.name}|${maker}`;
+    const propKeys = new Set(Object.keys(ovr.properties || {}));
+    expectedOverrides.set(key, propKeys);
+  }
+
+  // Query existing override-backed rows
+  const existingOverrides = db.db.prepare(
+    'SELECT id, component_type, component_name, component_maker, property_key FROM component_values WHERE category = ? AND overridden = 1'
+  ).all(db.category);
+
+  if (!existingOverrides.length) {
+    return { removed_override_value_rows: 0, removed_alias_rows: 0, reset_review_status_rows: 0 };
+  }
+
+  // Find stale component tuples (components no longer in any override file)
+  const staleComponents = new Set();
+  const deleteOverrideValue = db.db.prepare('DELETE FROM component_values WHERE id = ?');
+
+  const tx = db.db.transaction(() => {
+    for (const row of existingOverrides) {
+      const key = `${row.component_type}|${row.component_name}|${row.component_maker}`;
+      const expectedProps = expectedOverrides.get(key);
+      if (!expectedProps || !expectedProps.has(row.property_key)) {
+        deleteOverrideValue.run(row.id);
+        removedOverrideValueRows++;
+        if (!expectedProps) staleComponents.add(key);
+      }
+    }
+
+    // For fully stale components: reset review_status, aliases_overridden, user aliases
+    for (const key of staleComponents) {
+      const [componentType, componentName, maker] = key.split('|');
+
+      // Reset review_status
+      const reviewResult = db.db.prepare(
+        'UPDATE component_identity SET review_status = NULL WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ? AND review_status IS NOT NULL'
+      ).run(db.category, componentType, componentName, maker);
+      resetReviewStatusRows += reviewResult.changes || 0;
+
+      // Reset aliases_overridden + delete user aliases
+      db.db.prepare(
+        'UPDATE component_identity SET aliases_overridden = 0 WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?'
+      ).run(db.category, componentType, componentName, maker);
+
+      const idRow = db.db.prepare(
+        'SELECT id FROM component_identity WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?'
+      ).get(db.category, componentType, componentName, maker);
+      if (idRow) {
+        const aliasResult = db.db.prepare("DELETE FROM component_aliases WHERE component_id = ? AND source = 'user'").run(idRow.id);
+        removedAliasRows += aliasResult.changes || 0;
+      }
+    }
+  });
+  tx();
+
+  return { removed_override_value_rows: removedOverrideValueRows, removed_alias_rows: removedAliasRows, reset_review_status_rows: resetReviewStatusRows };
+}
+
 async function collectListSeedRows(fieldRules, config, category) {
   const rows = [];
 
@@ -554,6 +643,8 @@ async function seedListValues(db, fieldRules, config, category) {
 }
 
 // ── Enum policy re-evaluation ──────────────────────────────────────────────
+
+export { reconcileComponentOverrideRows };
 
 export function reEvaluateEnumPolicy(db, fieldKey, newPolicy, knownNormalizedValues) {
   const category = db.category;
@@ -1057,7 +1148,7 @@ function seedSourceAndKeyReview(db, category, fieldMeta) {
 
 const categorySurfaces = buildCategorySurfaces({
   seedComponents, reconcileComponentDbRows,
-  seedComponentOverrides,
+  seedComponentOverrides, reconcileComponentOverrideRows,
   seedListValues, reconcileListSeedRows,
   seedProducts,
   backfillComponentLinks,

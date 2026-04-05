@@ -198,6 +198,22 @@ describe('scanAndSeedCheckpoints: behavior', () => {
     assert.equal(result.sources_seeded, 1);
     assert.equal(result.artifacts_seeded, 3); // needset + run_summary + run_checkpoint (search_profile is null)
   });
+
+  test('sources_seeded includes product checkpoint sources', async () => {
+    const db = createHarness();
+    const root = path.join(tmpDir, 'prod-src');
+    writeCheckpoint(path.join(root, 'products', 'mouse-razer-viper'), 'product.json', makeProductCheckpoint({
+      sources: [
+        { url: 'https://razer.com/page', final_url: 'https://razer.com/page', host: 'razer.com', content_hash: 'a'.repeat(64), html_file: 'aaaaaaaaaaaa.html.gz', screenshot_count: 1, status: 200, first_seen_run_id: 'run-scan-001', last_seen_run_id: 'run-scan-001' },
+      ],
+    }));
+    const result = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot: root });
+    assert.equal(result.products_seeded, 1);
+    assert.equal(result.sources_seeded, 1);
+    const sources = db.getCrawlSourcesByProduct('mouse-razer-viper');
+    assert.equal(sources.length, 1);
+    assert.equal(sources[0].content_hash, 'a'.repeat(64));
+  });
 });
 
 // ── Validation ──────────────────────────────────────────────────────────────

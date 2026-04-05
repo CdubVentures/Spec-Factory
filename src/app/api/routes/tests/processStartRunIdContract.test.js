@@ -237,7 +237,7 @@ test('process/start forwards the launch plan cli args and env overrides to start
 
   const result = await invokeProcessStart(handler);
   assert.equal(result.status, 200);
-  assert.equal(capturedCommand, 'src/cli/spec.js');
+  assert.equal(capturedCommand, 'src/app/cli/spec.js');
   assert.deepEqual(capturedArgs, forwardedArgs);
   assert.deepEqual(capturedEnv, forwardedEnv);
   assert.equal(result.body?.run_id, requestedRunId);

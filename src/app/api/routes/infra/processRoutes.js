@@ -92,7 +92,7 @@ export function createInfraProcessRoutes({
           }
         }
 
-        const status = startProcess('src/cli/spec.js', cliArgs, envOverrides);
+        const status = startProcess('src/app/cli/spec.js', cliArgs, envOverrides);
         return jsonRes(res, 200, normalizeRunStatus(status, requestedRunId));
       } catch (err) {
         return jsonRes(res, 409, { error: err.message });

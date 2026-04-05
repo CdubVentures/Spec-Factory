@@ -10,7 +10,7 @@
 - Health alias without prefix: `/health`
 - Auth: no verified auth middleware protects these endpoints in the current runtime
 - Route parsing and category alias normalization live in `src/app/api/requestDispatch.js`
-- Mounted route-family order lives in `src/api/guiServerRuntime.js`
+- Mounted route-family order lives in `src/app/api/guiServerRuntime.js`
 - There is no live `/api/v1/storage-settings` or `/api/v1/convergence-settings` endpoint in the current server
 - `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` can return secret-bearing key material when configured
 
@@ -220,7 +220,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServerRuntime.js` | mounted route families include `specSeeds` in the live runtime |
+| source | `src/app/api/guiServerRuntime.js` | mounted route families include `specSeeds` in the live runtime |
 | source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, and route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
 | source | `src/features/settings/api/configRoutes.js` | current settings/config endpoints |

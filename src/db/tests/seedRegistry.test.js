@@ -18,6 +18,7 @@ function makeStubSteps() {
       reconcileComponentDbRows: stub('reconcileComponentDbRows'),
       seedComponents: stub('seedComponents'),
       seedComponentOverrides: stub('seedComponentOverrides'),
+      reconcileComponentOverrideRows: stub('reconcileComponentOverrideRows'),
       reconcileListSeedRows: stub('reconcileListSeedRows'),
       seedListValues: stub('seedListValues'),
       seedProducts: stub('seedProducts'),
@@ -204,6 +205,7 @@ describe('buildCategorySurfaces', () => {
   // Table-driven: before hooks
   const beforeWiring = [
     ['components', 'reconcileComponentDbRows', (ctx) => [ctx.db, ctx.fieldRules]],
+    ['component_overrides', 'reconcileComponentOverrideRows', (ctx) => [ctx.db, ctx.config, ctx.category]],
     ['lists', 'reconcileListSeedRows', (ctx) => [ctx.db, ctx.fieldRules, ctx.config, ctx.category]],
   ];
   for (const [surfaceKey, stepName, argsFn] of beforeWiring) {
@@ -220,7 +222,7 @@ describe('buildCategorySurfaces', () => {
   }
 
   // Table-driven: null hooks
-  const nullBeforeKeys = ['component_overrides', 'products', 'backfill_links', 'source_key_review'];
+  const nullBeforeKeys = ['products', 'backfill_links', 'source_key_review'];
   for (const key of nullBeforeKeys) {
     it(`${key}.before is null`, () => {
       const { steps } = makeStubSteps();

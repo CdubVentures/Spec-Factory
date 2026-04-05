@@ -135,7 +135,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <p>Complete run lifecycle from start to completion. Every phase, every data read/write, every SQL table touched. Validated against <code>pipelinePhaseRegistry.js</code>, <code>buildRuntimeOpsPanels.js</code>, and <code>runtimeStageDefs.js</code>.</p>
   <div class="meta">
     <span>Spec Factory</span>
-    <span>Audited 2026-04-02</span>
+    <span>Audited 2026-04-04</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -289,11 +289,11 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
       <!-- SQL indicator -->
       <circle cx="624" cy="360" r="5" fill="#22c55e"/>
-      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (36 tables) + AppDb (6 tables) = 42 base (+ 4 runtime learning)</text>
+      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (36 tables) + AppDb (6 tables) = 42 base tables</text>
 
       <!-- File indicator -->
       <circle cx="624" cy="384" r="5" fill="#f59e0b"/>
-      <text x="636" y="388" fill="#475569" font-size="11">Files: run.json, product.json, *.html.gz, screenshots/*.jpg, video/*.webm</text>
+      <text x="636" y="388" fill="#475569" font-size="11">Files: run.json, product.json, *.html.gz, screenshots/*.{jpg,png}, video/*.webm</text>
 
       <!-- IPC indicator -->
       <circle cx="624" cy="408" r="5" fill="#8b5cf6"/>
@@ -301,7 +301,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
       <!-- Read indicator -->
       <circle cx="624" cy="432" r="5" fill="#3b82f6"/>
-      <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, component_db/, crawl_ledger</text>
+      <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, query_cooldowns/url_crawl_ledger, prior run artifacts</text>
 
       <!-- Worker pool annotations -->
       <rect x="600" y="460" width="170" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
@@ -376,7 +376,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <li><code>category_authority/{category}/_generated/field_groups.json</code> &mdash; field grouping/ordering</li>
           <li><code>category_authority/{category}/_generated/parse_templates.json</code> &mdash; extraction templates</li>
           <li><code>category_authority/{category}/_generated/key_migrations.json</code> &mdash; field key migration maps</li>
-          <li><code>category_authority/{category}/_generated/component_db/*.json</code> &mdash; encoders, materials, sensors, switches</li>
+          <li><code>category_authority/{category}/_generated/component_db/*.json</code> &mdash; category-specific component dictionaries (varies by category)</li>
           <li><code>item_field_state</code>, <code>component_values</code>, <code>list_values</code> &mdash; current product state for gap analysis</li>
         </ul>
       </div>
@@ -562,6 +562,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
+          <li><code>query_journey_completed</code> &mdash; selected query set, deterministic/LLM split, and reject counts</li>
           <li><code>search_queued</code> (per query) &mdash; emitted for each planned worker slot with <code>worker_id</code>, <code>slot</code>, <code>query</code>, <code>provider</code></li>
         </ul>
       </div>
@@ -602,8 +603,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-sql">SQL Writes</div>
         <ul class="op-list sql">
-          <li><code>INSERT query_cooldowns (SpecDb)</code> &mdash; records executed queries with cooldown state</li>
-          <li><code>INSERT query_index</code> &mdash; indexes query results for deduplication</li>
+          <li><code>UPSERT query_cooldowns</code> (via <code>frontierDb.recordQuery()</code>) &mdash; records executed query cooldown/history state</li>
+          <li><code>INSERT query_index</code> &mdash; stores per-query result-count telemetry when SpecDb is present</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -633,7 +634,6 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       </div>
       <div class="phase-tags">
         <span class="tag tag-read">Reads</span>
-        <span class="tag tag-sql">SQL Write</span>
         <span class="tag tag-ipc">Bridge Events</span>
       </div>
     </summary>
@@ -657,9 +657,9 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         </ul>
       </div>
       <div class="phase-section">
-        <div class="phase-section-label label-sql">SQL Writes</div>
-        <ul class="op-list sql">
-          <li><code>UPSERT url_crawl_ledger</code> &mdash; URL fetch history updated from SERP selection</li>
+        <div class="phase-section-label label-info">Persistence Notes</div>
+        <ul class="op-list">
+          <li>No direct phase-owned SQL artifact is written here; the phase emits selection/classification telemetry and returns <code>discoveryResult</code> for downstream fetch planning</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -689,8 +689,9 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Description</div>
         <ul class="op-list">
           <li>Assembles the final pipeline result by merging discovery output with seed search plan</li>
-          <li>Deterministic heuristic classifier (no LLM call) &mdash; classifies domains by role (manufacturer, review site, retailer) and routes them to fetch queues</li>
-          <li>Returns <code>finalResult</code> with merged <code>discoveryResult</code> + <code>seed_search_plan_output</code> + <code>enqueue_summary</code></li>
+          <li>Final assembly phase only &mdash; merges the selected discovery output with any <code>seedSearchPlan</code> payload from NeedSet</li>
+          <li>Does not build the fetch queue itself; queue ordering happens later in <code>buildOrderedFetchPlan()</code> after the pipeline returns</li>
+          <li>Returns <code>finalResult</code> with merged <code>discoveryResult</code> + optional <code>seed_search_plan_output</code> + empty <code>enqueue_summary</code></li>
           <li>Stage cursor: <code>stage:domain-classifier</code>. Checkpoint: <code>final</code></li>
         </ul>
       </div>
@@ -726,15 +727,15 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <li>Stage-level cursor that runs after pipeline phases complete. Not a pipeline phase itself &mdash; it is a bridge concern (lifecycle timing)</li>
           <li>Parallel fetch workers using Crawlee/Playwright browser automation</li>
           <li>6 fetch plugins operate on every page: <code>stealth</code>, <code>cookie_consent</code>, <code>overlay_dismissal</code>, <code>auto_scroll</code>, <code>dom_expansion</code>, <code>css_override</code></li>
-          <li>2 extraction plugins: <code>screenshot</code> (full-page + targeted), <code>video</code> (WebM recordings)</li>
-          <li>Captures page content, screenshots, and video recordings</li>
+          <li>2 extraction stages: <code>screenshot</code> (full-page + targeted) and <code>video</code> (WebM recordings)</li>
+          <li>Direct artifact persisters write HTML, screenshots, and video to disk while the bridge emits parallel fetch/parse/index telemetry</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-file">File Writes</div>
         <ul class="op-list file">
           <li><code>*.html.gz</code> &mdash; content-addressed compressed HTML snapshots</li>
-          <li><code>screenshots/*.jpg</code> &mdash; page screenshots for visual verification</li>
+          <li><code>screenshots/*.{jpg,png}</code> &mdash; page screenshots for visual verification</li>
           <li><code>video/*.webm</code> &mdash; crawl session video recordings</li>
         </ul>
       </div>
@@ -798,15 +799,15 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Description</div>
         <ul class="op-list">
           <li>Stage-level cursor that runs after <code>stage:crawl</code>. Handles checkpoint persistence and run finalization</li>
-          <li>Builds crawl and product checkpoints for recovery and persistence</li>
-          <li>Constructs all 11 RuntimeOps panels and serializes to <code>run_summary</code> artifact</li>
-          <li>Marks run as completed and broadcasts final status</li>
+          <li>Writes crawl and product checkpoints to disk before bridge finalization so recovery artifacts survive even if the shutdown path crashes later</li>
+          <li>Serializes <code>run_summary</code> telemetry into SQL during <code>bridge.finalize()</code> and optionally embeds pre-built <code>runtime_ops_panels</code> into <code>run.json</code> schema version 3</li>
+          <li>Marks the run completed, advances the stage cursor, and purges per-run <code>bridge_events</code> after <code>run_summary</code> is persisted</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-file">File Writes</div>
         <ul class="op-list file">
-          <li><code>writeCrawlCheckpoint</code> &rarr; writes <code>run.json</code> (schema v2/v3) to <code>.workspace/runs/</code></li>
+          <li><code>writeCrawlCheckpoint</code> &rarr; writes <code>run.json</code> (schema version 2 unless <code>runtime_ops_panels</code> is embedded, then 3) to <code>.workspace/runs/</code></li>
           <li><code>writeProductCheckpoint</code> &rarr; writes/updates <code>product.json</code> in <code>.workspace/products/</code></li>
         </ul>
       </div>
@@ -814,14 +815,14 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-sql">SQL Writes &mdash; Run Finalization</div>
         <ul class="op-list sql">
           <li><code>UPDATE runs</code> &mdash; status=completed, ended_at, final counters</li>
-          <li><code>UPSERT run_artifacts</code> &mdash; <code>run_summary</code> artifact (serialized 11 RuntimeOps panels)</li>
+          <li><code>UPSERT run_artifacts</code> &mdash; <code>run_summary</code> artifact (serialized run telemetry/meta for completed-run readers)</li>
         </ul>
       </div>
       <div class="phase-section">
-        <div class="phase-section-label label-sql">SQL Writes &mdash; Product Lifecycle</div>
-        <ul class="op-list sql">
-          <li><code>UPSERT product_runs</code> &mdash; links run to product for history tracking</li>
-          <li><code>UPDATE product_queue</code> &mdash; status update (queued &rarr; completed)</li>
+        <div class="phase-section-label label-info">Persistence Notes &mdash; Product Lifecycle</div>
+        <ul class="op-list">
+          <li><code>product.json</code> is the durable product-side checkpoint; <code>product_queue</code> is rebuilt from checkpoint seeding, not directly updated by this live finalize path</li>
+          <li><code>query_cooldowns</code> are snapshotted into <code>product.json</code> before finalization so tier progression survives DB rebuilds</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -880,7 +881,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <div class="surface-head">
     <h2>Bridge Event Architecture</h2>
   </div>
-  <p class="surface-desc">Event dispatch flow from pipeline internals to persistent SQL artifacts. The bridge is table-driven: each event type maps to a handler that knows how to persist the data.</p>
+  <p class="surface-desc">Event dispatch flow from raw pipeline/logger events into normalized bridge telemetry. The bridge is table-driven: each incoming event type maps to a handler that may emit <code>bridge_events</code>, advance run metadata, or update specific <code>run_artifacts</code>.</p>
 
   <div class="flow-section">
     <h3>Event Dispatch Flow</h3>
@@ -915,13 +916,13 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
         <rect x="680" y="30" width="130" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
         <text x="745" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">Handlers</text>
-        <text x="745" y="72" text-anchor="middle" fill="#475569" font-size="9">emit() &rarr; SQL</text>
+        <text x="745" y="72" text-anchor="middle" fill="#475569" font-size="9">emit() &rarr; bridge_events / artifacts</text>
 
         <line x1="810" y1="58" x2="850" y2="58" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow2-green)"/>
 
         <rect x="860" y="30" width="120" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
         <text x="920" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">SQL Artifacts</text>
-        <text x="920" y="72" text-anchor="middle" fill="#475569" font-size="9">run_artifacts table</text>
+        <text x="920" y="72" text-anchor="middle" fill="#475569" font-size="9">bridge_events + selected run_artifacts</text>
       </svg>
     </div>
   </div>
@@ -941,110 +942,110 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <tr>
           <td class="event-name">needset_computed</td>
           <td>01 (Discovery)</td>
-          <td>Serializes computed needset to artifact</td>
-          <td class="event-writes">run_artifacts (needset)</td>
+          <td>Normalizes the latest NeedSet snapshot, emits bridge telemetry, and persists the canonical needset artifact</td>
+          <td class="event-writes">bridge_events (needset_computed), run_artifacts (needset), runs (needset summary)</td>
         </tr>
         <tr>
           <td class="event-name">brand_resolved</td>
           <td>01 (Discovery)</td>
-          <td>Records brand domain resolution</td>
-          <td class="event-writes">run_artifacts (brand)</td>
+          <td>Emits normalized brand telemetry, persists <code>brand_resolution</code>, and best-effort seeds the product row if missing</td>
+          <td class="event-writes">bridge_events (brand_resolved), run_artifacts (brand_resolution), products (best-effort create)</td>
         </tr>
         <tr>
           <td class="event-name">search_profile_generated</td>
           <td>03 (Search Profile)</td>
-          <td>Stores search profile with query plan</td>
-          <td class="event-writes">run_artifacts (search_profile)</td>
+          <td>Hydrates deterministic query rows into the planned search-profile artifact and advances the stage cursor</td>
+          <td class="event-writes">run_artifacts (search_profile), runs (stage_cursor)</td>
         </tr>
         <tr>
           <td class="event-name">search_plan_generated</td>
           <td>04 (Search Planner)</td>
-          <td>Signals enhanced plan readiness</td>
-          <td class="event-writes">runs (status update)</td>
+          <td>Emits normalized planner telemetry for the Prefetch/LLM panels and advances the stage cursor</td>
+          <td class="event-writes">bridge_events (search_plan_generated), runs (stage_cursor)</td>
+        </tr>
+        <tr>
+          <td class="event-name">query_journey_completed</td>
+          <td>05 (Query Journey)</td>
+          <td>Persists the selected query-set summary into bridge telemetry and advances the stage cursor</td>
+          <td class="event-writes">bridge_events (query_journey_completed), runs (stage_cursor)</td>
         </tr>
         <tr>
           <td class="event-name">search_queued</td>
           <td>05 (Query Journey)</td>
-          <td>Registers planned worker slot in GUI</td>
-          <td class="event-writes">run_artifacts (telemetry)</td>
+          <td>Pre-populates search worker slots before execution starts so the GUI can render queued workers immediately</td>
+          <td class="event-writes">bridge_events (search_queued)</td>
         </tr>
         <tr>
-          <td class="event-name">search_started</td>
+          <td class="event-name">discovery_query_started</td>
           <td>06 (Search Execution)</td>
-          <td>Tracks worker slot activation</td>
-          <td class="event-writes">run_artifacts (telemetry)</td>
+          <td>Allocates/activates a search slot and emits normalized <code>search_started</code> bridge telemetry</td>
+          <td class="event-writes">bridge_events (search_started), run_artifacts (search_profile query attempts)</td>
         </tr>
         <tr>
-          <td class="event-name">search_finished</td>
+          <td class="event-name">discovery_query_completed</td>
           <td>06 (Search Execution)</td>
-          <td>Records slot completion metrics</td>
-          <td class="event-writes">run_artifacts (telemetry)</td>
+          <td>Releases the search slot, updates executed-query stats, and emits normalized <code>search_finished</code> telemetry</td>
+          <td class="event-writes">bridge_events (search_finished), run_artifacts (search_profile query stats)</td>
         </tr>
         <tr>
           <td class="event-name">search_results_collected</td>
           <td>06 (Search Execution)</td>
-          <td>Ingests raw SERP data, updates crawl ledger</td>
-          <td class="event-writes">query_cooldowns, query_index</td>
+          <td>Emits a normalized raw-results envelope for RuntimeOps search-results and SERP-selector displays</td>
+          <td class="event-writes">bridge_events (search_results_collected)</td>
         </tr>
         <tr>
           <td class="event-name">serp_selector_completed</td>
           <td>07 (Result Processing)</td>
-          <td>Finalizes URL selection pass</td>
-          <td class="event-writes">run_artifacts (serp_selection)</td>
+          <td>Emits the selector funnel/candidate payload and advances the stage cursor</td>
+          <td class="event-writes">bridge_events (serp_selector_completed), runs (stage_cursor)</td>
         </tr>
         <tr>
           <td class="event-name">domains_classified</td>
           <td>07 (Result Processing)</td>
-          <td>Classifies domains by tier</td>
-          <td class="event-writes">&mdash;</td>
+          <td>Emits deterministic domain-health/classification telemetry for selected URLs</td>
+          <td class="event-writes">bridge_events (domains_classified)</td>
         </tr>
         <tr>
           <td class="event-name">source_fetch_queued</td>
           <td>stage:crawl</td>
-          <td>Tracks queue entry</td>
-          <td class="event-writes">run_artifacts (telemetry)</td>
+          <td>Registers fetch-queue intent and emits normalized <code>fetch_queued</code> telemetry</td>
+          <td class="event-writes">bridge_events (fetch_queued)</td>
         </tr>
         <tr>
           <td class="event-name">source_fetch_started</td>
           <td>stage:crawl</td>
-          <td>Records fetch initiation with URL metadata</td>
-          <td class="event-writes">crawl_sources (status=started)</td>
+          <td>Starts the fetch stage/cursor and emits normalized <code>fetch_started</code> telemetry</td>
+          <td class="event-writes">bridge_events (fetch_started), runs (stage_cursor/startup_ms)</td>
         </tr>
         <tr>
-          <td class="event-name">fetch_finished</td>
+          <td class="event-name">source_processed</td>
           <td>stage:crawl</td>
-          <td>Stores crawl result (content hash, timing)</td>
-          <td class="event-writes">crawl_sources (status=finished)</td>
+          <td>Closes fetch state, emits normalized <code>source_processed</code>, <code>parse_finished</code>, and <code>fetch_finished</code> telemetry</td>
+          <td class="event-writes">bridge_events (source_processed, parse_finished, fetch_finished)</td>
         </tr>
         <tr>
           <td class="event-name">source_fetch_failed</td>
           <td>stage:crawl</td>
-          <td>Records failure reason and retry state</td>
-          <td class="event-writes">crawl_sources (status=failed)</td>
+          <td>Closes fetch state on failure and emits normalized <code>fetch_finished</code> error telemetry</td>
+          <td class="event-writes">bridge_events (fetch_finished)</td>
         </tr>
         <tr>
           <td class="event-name">visual_asset_captured</td>
           <td>stage:crawl</td>
-          <td>Links screenshots/video to source</td>
-          <td class="event-writes">source_screenshots, source_videos</td>
+          <td>Emits screenshot/video capture telemetry; asset indexing itself is performed by the extraction persisters</td>
+          <td class="event-writes">bridge_events (visual_asset_captured)</td>
         </tr>
         <tr>
-          <td class="event-name">parse_finished</td>
+          <td class="event-name">fields_filled_from_source</td>
           <td>stage:crawl</td>
-          <td>Document parsing complete</td>
-          <td class="event-writes">run_artifacts (telemetry)</td>
-        </tr>
-        <tr>
-          <td class="event-name">index_finished</td>
-          <td>stage:crawl</td>
-          <td>Stores extraction results with review verdicts</td>
-          <td class="event-writes">item_field_state, component_values, list_values</td>
+          <td>Increments index counters and emits normalized <code>index_finished</code> bridge telemetry</td>
+          <td class="event-writes">bridge_events (index_finished)</td>
         </tr>
         <tr>
           <td class="event-name">run_completed</td>
           <td>stage:finalize</td>
-          <td>Finalizes run record, persists summary</td>
-          <td class="event-writes">runs, run_artifacts (run_summary)</td>
+          <td>Marks the run completed in bridge metadata; <code>run_summary</code> is persisted later by <code>bridge.finalize()</code></td>
+          <td class="event-writes">bridge_events (run_completed), runs (completed state)</td>
         </tr>
       </tbody>
     </table>
@@ -1057,7 +1058,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <h2>RuntimeOps Panels</h2>
     <span class="tag tag-info">11 Panels</span>
   </div>
-  <p class="surface-desc">The GUI's RuntimeOps view is built from 11 panels defined in <code>PANEL_KEYS</code> (<code>buildRuntimeOpsPanels.js</code>). During a live run, panels are built by the single-pass <code>processEventsToPanel()</code> engine (<code>eventProcessingEngine.js</code>). After completion, the <code>run_artifacts.run_summary</code> provides cached panel data. Note: <code>run.json</code> is a separate checkpoint file written by <code>writeCrawlCheckpoint</code>, not the source of panel data.</p>
+  <p class="surface-desc">The GUI's RuntimeOps view is built from 11 panels defined in <code>PANEL_KEYS</code> (<code>buildRuntimeOpsPanels.js</code>). During a live run, panels are built by the single-pass <code>processEventsToPanel()</code> engine (<code>eventProcessingEngine.js</code>). Completed-run readers prefer <code>run_artifacts.run_summary</code> (SQL first), with <code>run-summary.json</code> / <code>run.json</code> fallback for archived or older runs. Note: <code>run.json</code> is a checkpoint/recovery artifact, not the primary live panel source.</p>
 
   <table class="data-table">
     <thead>
@@ -1072,68 +1073,68 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <tr>
         <td class="panel-name">summary</td>
         <td class="panel-desc">Overview KPIs: fields/min, docs/min, error rate, costs</td>
-        <td>SQL re-aggregation from <code>runs</code>, <code>run_artifacts</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events + resolved run meta</td>
+        <td><code>run_summary</code> telemetry meta/events (SQL first, file fallback)</td>
       </tr>
       <tr>
         <td class="panel-name">pipeline_flow</td>
         <td class="panel-desc">Stage progression with phase timing and transitions</td>
-        <td>SQL from <code>run_artifacts</code> (phase telemetry)</td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">metrics_rail</td>
         <td class="panel-desc">Pool meters showing worker utilization and throughput</td>
-        <td>SQL re-aggregation of pool telemetry</td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">documents</td>
         <td class="panel-desc">Document lifecycle with timelines and processing state</td>
-        <td>SQL from <code>crawl_sources</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">prefetch</td>
         <td class="panel-desc">Pre-fetch phases: NeedSet, Brand Resolver, Search Profile, Search Planner, Query Journey, Search Results, SERP Selector, Domain Classifier</td>
-        <td>Event-driven from bridge_events + run meta/artifacts</td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events + run meta + <code>needset</code>/<code>search_profile</code>/<code>brand_resolution</code> artifacts</td>
+        <td><code>run_summary</code> telemetry + persisted run artifacts</td>
       </tr>
       <tr>
         <td class="panel-name">fetch</td>
         <td class="panel-desc">Fetch plugin results and per-URL crawl outcomes</td>
-        <td>SQL from <code>crawl_sources</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events (<code>plugin_hook_completed</code>)</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">extraction_plugins</td>
         <td class="panel-desc">Visual asset capture: screenshots, video, PDFs</td>
-        <td>SQL from <code>source_screenshots</code>, <code>source_videos</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events (<code>extraction_plugin_completed</code>, <code>extraction_artifacts_persisted</code>)</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">workers</td>
         <td class="panel-desc">Search, fetch, and LLM worker pool states</td>
-        <td>SQL re-aggregation of worker telemetry</td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events + source indexing packets + field-rule metadata</td>
+        <td><code>run_summary</code> telemetry events, plus source packet fallback when available</td>
       </tr>
       <tr>
         <td class="panel-name">llm_dashboard</td>
         <td class="panel-desc">LLM calls, token usage, cost tracking per model</td>
-        <td>SQL from <code>llm_calls</code>, <code>llm_token_usage</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events rebuilt through the LLM worker pool</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">fallbacks</td>
         <td class="panel-desc">Timeout rescue events and fallback strategy activations</td>
-        <td>SQL from <code>run_artifacts</code> (fallback telemetry)</td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
       <tr>
         <td class="panel-name">queue</td>
         <td class="panel-desc">Queue state: pending, active, completed, failed items</td>
-        <td>SQL from <code>product_queue</code></td>
-        <td>Cached in <code>run_summary</code> artifact</td>
+        <td>Bridge events (<code>repair_query_enqueued</code>, cooldown events)</td>
+        <td><code>run_summary</code> telemetry events</td>
       </tr>
     </tbody>
   </table>
@@ -1144,7 +1145,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <div class="surface-head">
     <h2>Checkpoint / Recovery Flow</h2>
   </div>
-  <p class="surface-desc">Checkpoint recovery enables resuming from disk-persisted state after restarts. The seeding process is transaction-wrapped and idempotent, using UPSERT semantics to prevent duplication.</p>
+  <p class="surface-desc">Checkpoint recovery rebuilds SQL state from durable disk artifacts after restarts or DB loss. Seeding is hash-gated per file: unchanged checkpoints are skipped, while changed checkpoints are wiped/reseeded inside a transaction.</p>
 
   <div class="flow-section">
     <h3>Recovery Sequence</h3>
@@ -1193,14 +1194,14 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <line x1="250" y1="220" x2="250" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow3-green)"/>
         <rect x="60" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="80" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="80" y="296" fill="#475569" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources</text>
+        <text x="80" y="296" fill="#475569" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources &bull; url_crawl_ledger</text>
         <text x="80" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Product SQL targets -->
         <line x1="700" y1="220" x2="700" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow3-green)"/>
         <rect x="510" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="530" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="530" y="296" fill="#475569" font-size="9.5">products &bull; product_queue</text>
+        <text x="530" y="296" fill="#475569" font-size="9.5">products &bull; product_queue &bull; query_cooldowns</text>
         <text x="530" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Labels -->
@@ -1214,7 +1215,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-title">Crawl Checkpoint Details</span>
-        <span class="tag tag-info">run.json schema v2/v3</span>
+        <span class="tag tag-info">run.json schema version 2 or 3</span>
       </div>
       <div class="phase-tags">
         <span class="tag tag-sql">SQL Upsert</span>
@@ -1225,7 +1226,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-file">Source File</div>
         <ul class="op-list file">
-          <li><code>.workspace/runs/{run_id}/run.json</code> &mdash; full crawl checkpoint (schema v2/v3)</li>
+          <li><code>.workspace/runs/{run_id}/run.json</code> &mdash; full crawl checkpoint (schema version 2, or 3 when <code>runtime_ops_panels</code> is embedded)</li>
           <li>Written by <code>writeCrawlCheckpoint</code> during <code>stage:finalize</code></li>
         </ul>
       </div>
@@ -1234,16 +1235,16 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <ul class="op-list sql">
           <li><code>UPSERT runs</code> &mdash; restores run record (status, timestamps, settings)</li>
           <li><code>UPSERT product_runs</code> &mdash; restores run-to-product linkage</li>
-          <li><code>UPSERT run_artifacts</code> &mdash; restores all artifact types (needset, search_profile, run_summary, etc.)</li>
-          <li><code>UPSERT crawl_sources</code> &mdash; restores per-URL crawl results</li>
+          <li><code>UPSERT run_artifacts</code> &mdash; restores <code>needset</code>, <code>search_profile</code>, <code>run_summary</code>, <code>brand_resolution</code>, optional <code>runtime_ops_panels</code>, and reconstructed <code>run_checkpoint</code></li>
+          <li><code>UPSERT crawl_sources</code> + <code>url_crawl_ledger</code> &mdash; restores per-URL crawl results and crawl-history state</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-info">Guarantees</div>
         <ul class="op-list">
-          <li>Transaction-wrapped: all-or-nothing seeding</li>
-          <li>Idempotent: <code>ON CONFLICT DO UPDATE</code> prevents duplication on re-seed</li>
-          <li>Deterministic: content-addressed artifacts ensure stable IDs</li>
+          <li>Hash-gated: unchanged checkpoint files are skipped without reseeding</li>
+          <li>Transaction-wrapped: changed crawl checkpoints delete affected rows and re-insert atomically</li>
+          <li>Media indexes are rebuilt from disk separately after crawl checkpoint reseed</li>
         </ul>
       </div>
     </div>
@@ -1274,14 +1275,15 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <ul class="op-list sql">
           <li><code>UPSERT products</code> &mdash; restores product master record</li>
           <li><code>UPSERT product_queue</code> &mdash; restores queue position and status</li>
+          <li><code>UPSERT query_cooldowns</code> &mdash; restores cooldown / tier-progression state from <code>product.json</code></li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-info">Guarantees</div>
         <ul class="op-list">
-          <li>Transaction-wrapped: atomic product state restoration</li>
-          <li>Idempotent: safe to re-seed on every startup</li>
-          <li>Created at product add time, grown after each run</li>
+          <li>Hash-gated: unchanged product checkpoints are skipped on reseed</li>
+          <li>Transaction-wrapped: cooldown rows are wiped/reinserted atomically when the checkpoint changes</li>
+          <li>Created at product add time, then read-merge-written after each run</li>
         </ul>
       </div>
     </div>
@@ -1293,7 +1295,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <div class="surface-head">
     <h2>Settings Propagation</h2>
   </div>
-  <p class="surface-desc">How runtime settings flow from the GUI all the way into the active pipeline execution. The chain is fully observable and snapshot-persisted for reproducibility.</p>
+  <p class="surface-desc">How runtime settings move through the current app. <code>PUT /api/v1/runtime-settings</code> persists a validated runtime patch through the settings authority and updates live server config; a separate per-run snapshot file is written later by <code>/process/start</code> for child-process launch reproducibility.</p>
 
   <div class="flow-section">
     <h3>Propagation Chain</h3>
@@ -1302,13 +1304,13 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="prop-arrow">&rarr;</div>
       <div class="prop-node">Validate (schema)</div>
       <div class="prop-arrow">&rarr;</div>
-      <div class="prop-node" style="border-color:rgba(245,158,11,0.4);color:var(--amber)">Persist Snapshot</div>
+      <div class="prop-node" style="border-color:rgba(245,158,11,0.4);color:var(--amber)">mergeRuntimePatch</div>
       <div class="prop-arrow">&rarr;</div>
       <div class="prop-node" style="border-color:rgba(139,92,246,0.4);color:var(--violet)">broadcastWs</div>
       <div class="prop-arrow">&rarr;</div>
-      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">syncRuntimeOverrides</div>
+      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">process/start snapshot</div>
       <div class="prop-arrow">&rarr;</div>
-      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">Merged into Execution</div>
+      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">Child bootstrap</div>
     </div>
 
     <div class="svg-wrap">
@@ -1322,7 +1324,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <!-- Step 1: GUI -->
         <rect x="20" y="20" width="160" height="90" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
         <text x="100" y="45" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700">GUI</text>
-        <text x="100" y="62" text-anchor="middle" fill="#475569" font-size="9">PUT /api/v1/</text>
+        <text x="100" y="62" text-anchor="middle" fill="#475569" font-size="9">PUT/POST /api/v1/</text>
         <text x="100" y="78" text-anchor="middle" fill="#475569" font-size="9">runtime-settings</text>
         <text x="100" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">User modifies settings</text>
 
@@ -1339,41 +1341,41 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
         <!-- Step 3: Persist -->
         <rect x="440" y="20" width="160" height="90" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
-        <text x="520" y="45" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">Persist Snapshot</text>
-        <text x="520" y="62" text-anchor="middle" fill="#475569" font-size="9">.workspace/</text>
-        <text x="520" y="78" text-anchor="middle" fill="#475569" font-size="9">runtime/snapshots/</text>
-        <text x="520" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Capped at 10 files</text>
+        <text x="520" y="45" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">mergeRuntimePatch</text>
+        <text x="520" y="62" text-anchor="middle" fill="#475569" font-size="9">AppDb-backed settings</text>
+        <text x="520" y="78" text-anchor="middle" fill="#475569" font-size="9">+ live server config</text>
+        <text x="520" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Returns full post-persist snapshot</text>
 
         <line x1="600" y1="65" x2="640" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow4)"/>
 
         <!-- Step 4: Broadcast -->
         <rect x="650" y="20" width="160" height="90" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
         <text x="730" y="45" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">broadcastWs</text>
-        <text x="730" y="62" text-anchor="middle" fill="#475569" font-size="9">WebSocket push to</text>
-        <text x="730" y="78" text-anchor="middle" fill="#475569" font-size="9">all connected clients</text>
+        <text x="730" y="62" text-anchor="middle" fill="#475569" font-size="9">runtime-settings-updated</text>
+        <text x="730" y="78" text-anchor="middle" fill="#475569" font-size="9">+ user-settings-updated</text>
         <text x="730" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Real-time GUI update</text>
 
         <line x1="810" y1="65" x2="850" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow4)"/>
 
         <!-- Step 5: Sync to process -->
         <rect x="860" y="20" width="210" height="90" rx="8" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.3)" stroke-width="1.5"/>
-        <text x="965" y="45" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">Active Process</text>
-        <text x="965" y="62" text-anchor="middle" fill="#475569" font-size="9">syncRuntimeOverrides()</text>
-        <text x="965" y="78" text-anchor="middle" fill="#475569" font-size="9">Merged into execution context</text>
-        <text x="965" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Takes effect immediately</text>
+        <text x="965" y="45" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">/process/start</text>
+        <text x="965" y="62" text-anchor="middle" fill="#475569" font-size="9">writeRuntimeSettingsSnapshot()</text>
+        <text x="965" y="78" text-anchor="middle" fill="#475569" font-size="9">RUNTIME_SETTINGS_SNAPSHOT env</text>
+        <text x="965" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Per-run launch snapshot</text>
 
         <!-- Snapshot persistence detail -->
         <rect x="20" y="140" width="1050" height="100" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.06)" stroke-width="1"/>
         <text x="44" y="165" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.08em">SETTINGS LIFECYCLE DETAIL</text>
 
         <circle cx="44" cy="188" r="4" fill="#f59e0b"/>
-        <text x="56" y="192" fill="#475569" font-size="9.5">Snapshot persisted to <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">.workspace/runtime/snapshots/{timestamp}.json</tspan> (max 10, oldest pruned)</text>
+        <text x="56" y="192" fill="#475569" font-size="9.5">Runtime-settings PUT persists through <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">mergeRuntimePatch()</tspan> into the settings authority and immediately refreshes live server config</text>
 
         <circle cx="44" cy="210" r="4" fill="#8b5cf6"/>
-        <text x="56" y="214" fill="#475569" font-size="9.5">WebSocket broadcast ensures all open GUI tabs receive the update in real time</text>
+        <text x="56" y="214" fill="#475569" font-size="9.5">WebSocket broadcasts <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">runtime-settings-updated</tspan> and <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">user-settings-updated</tspan> so all open GUI tabs rehydrate</text>
 
         <circle cx="44" cy="232" r="4" fill="#22c55e"/>
-        <text x="56" y="236" fill="#475569" font-size="9.5">If a pipeline process is actively running, overrides are merged via IPC; otherwise they take effect on next run start</text>
+        <text x="56" y="236" fill="#475569" font-size="9.5">The per-run snapshot file <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">.workspace/runtime/snapshots/{runId}-settings.json</tspan> is written later by <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">/process/start</tspan>; bootstrap then reads it, and runtime override loaders can refresh separately during execution</text>
       </svg>
     </div>
   </div>
@@ -1381,7 +1383,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
 <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
 <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
-  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Audited 2026-04-02</p>
+  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Audited 2026-04-04</p>
   <p style="color:var(--t3);font-size:0.72rem;margin-top:4px">Validated against pipelinePhaseRegistry.js, buildRuntimeOpsPanels.js, runtimeStageDefs.js, and all 8 phaseDescriptor files.</p>
 </footer>
 

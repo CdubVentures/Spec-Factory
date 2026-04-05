@@ -33,7 +33,7 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 - Node builtins (`path`, `fs`)
 - Internal only: store modules import from sibling files within `src/db/`
 
-**Forbidden:** `src/db/` must NOT import from `src/features/`, `src/api/`, or `src/pipeline/`.
+**Forbidden:** `src/db/` must NOT import from `src/features/`, `src/app/api/`, or `src/pipeline/`.
 
 ## Mutation Boundaries
 

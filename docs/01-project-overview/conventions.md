@@ -1,85 +1,116 @@
 # Conventions
 
-> **Purpose:** Record the enforced repository rules, code organization patterns, and notable absences so an LLM edits in-bounds.
+> **Purpose:** Capture the repo rules, extension points, and anti-assumptions an LLM needs before editing.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
-## Non-Negotiable Repo Rules
+## Hard Rules
 
-- Rule sources: `AGENTS.md`, `AGENTS.testing.md`, `AGENTS.testsCleanUp.md`, and `CLAUDE.md`.
-- Backend/core source is JavaScript ESM. Do not add TypeScript syntax to `src/**/*.js`.
-- GUI source under `tools/gui-react/` is TypeScript plus React. New `any`, `@ts-ignore`, and `@ts-nocheck` are forbidden.
-- Feature-first organization is required. Do not create generic dumping-ground modules such as `src/utils` or `src/services` for new feature logic when an existing feature boundary owns the behavior.
-- Tests use Node's built-in runner via `node --test`.
-- `docs/implementation/` and `docs/data-structure/` are excluded from this documentation pass and are not current-state authority here.
+- Rule files: `AGENTS.md`, `AGENTS.testing.md`, `AGENTS.testsCleanUp.md`, `CLAUDE.md`.
+- Backend source under `src/**/*.js` is JavaScript ESM. Do not introduce TypeScript syntax there.
+- GUI source under `tools/gui-react/` is TypeScript + React. Do not add `@ts-ignore`, `@ts-nocheck`, or broad `any` escapes.
+- New feature logic belongs in an existing feature boundary under `src/features/` or `tools/gui-react/src/features/`, not in new generic `utils` or `services` dumping grounds.
+- Current test runner is Node's built-in runner from `package.json`:
 
-## File Placement Rules
+```json
+"test": "node --test --test-force-exit"
+```
 
-| Concern | Live pattern | Avoid |
-|---------|--------------|-------|
-| server composition | `src/api/guiServer.js`, `src/api/guiServerRuntime.js` | feature-specific route logic inside `src/api/guiServer.js` |
-| mounted API route order | `src/api/guiServerRuntime.js` `routeDefinitions` | treating `src/app/api/routeRegistry.js` as the mounted route-order SSOT |
-| backend route handlers | `src/features/<feature>/api/*.js` or `src/app/api/routes/*.js` | ad hoc endpoint branches inside composition roots |
-| backend persistence | `src/db/` plus `category_authority/` | new mutable JSON or CSV side databases |
-| GUI route metadata | `tools/gui-react/src/registries/pageRegistry.ts` | hardcoding new tabbed routes directly in `App.tsx` or `TabNav.tsx` |
-| GUI feature logic | `tools/gui-react/src/features/**` | large stateful logic inside thin page wrappers |
-| GUI shared state | `tools/gui-react/src/stores/*.ts` | duplicating canonical category or runtime settings state in page-local stores |
-| docs | `docs/01-project-overview/` -> `docs/07-patterns/` | reviving unnumbered topic trees as primary current-state docs |
+- Repo-local scratch for tests and one-off tooling should default to `.tmp/`. Do not create temp trees under `test/`.
 
-## Naming and Layout
+## Canonical Ownership
 
-- Backend files use descriptive JS filenames such as `guiServerRuntime.js`, `runtimeOpsRoutes.js`, `specDbSchema.js`.
-- GUI components use PascalCase filenames such as `RuntimeOpsPage.tsx`, `CategoryManager.tsx`, `ReviewPage.tsx`.
-- GUI tabbed routes and labels are registry-driven from `tools/gui-react/src/registries/pageRegistry.ts`.
-- `tools/gui-react/src/pages/**` contains a mix of thin wrappers and still-live page-local implementations. Check whether the real logic lives in `tools/gui-react/src/features/**` before editing.
-- Domain contracts use `DOMAIN.md` where present, for example `src/db/DOMAIN.md`.
+| Concern | Source of truth | Do not assume |
+|---------|-----------------|---------------|
+| Mounted backend route order | `src/app/api/guiServerRuntime.js` `routeDefinitions` | `src/app/api/routeRegistry.js` is only the registry builder, not the mounted-order authority |
+| GUI routed pages | `tools/gui-react/src/registries/pageRegistry.ts` | `tools/gui-react/src/App.tsx` alone is not the page inventory |
+| GUI shell | `tools/gui-react/src/pages/layout/AppShell.tsx` | Page components should not reimplement app shell framing |
+| API calls from GUI | `tools/gui-react/src/api/client.ts` and feature hooks built on top of it | Raw `fetch` scattered through page components |
+| Runtime/config key inventory | `src/shared/settingsRegistry.js` and `src/core/config/manifest.js` | Ad hoc env parsing outside the registry/manifest flow |
+| Storage API surface | `src/features/indexing/api/storageManagerRoutes.js` mounted through `src/features/indexing/api/indexlabRoutes.js` | A separate top-level storage registrar in `routeDefinitions` |
 
-## Imports and Dependency Direction
+## Placement Rules
 
-- Features may import `src/core/` and `src/shared/`.
-- Cross-feature imports should prefer explicit public entrypoints such as `src/features/catalog/index.js` or `src/features/settings-authority/index.js`.
-- GUI network calls go through `tools/gui-react/src/api/client.ts`, `tools/gui-react/src/api/ws.ts`, or feature authority hooks built on top of them.
-- Runtime/config keys must be introduced through `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, and the `src/features/settings-authority/` contract layer.
+| When adding... | Put it here | Pattern source |
+|----------------|------------|----------------|
+| Backend route family | `src/features/<feature>/api/` or `src/app/api/routes/` | `src/features/color-registry/api/colorRoutes.js`, `src/app/api/routes/infraRoutes.js` |
+| Route-context construction | `src/features/<feature>/api/*RouteContext.js` or `src/app/api/*RouteContext.js` | `src/features/color-registry/api/colorRouteContext.js`, `src/features/indexing/api/runtimeOpsRouteContext.js` |
+| CLI command | `src/app/cli/commands/` plus loader wiring in `src/app/cli/spec.js` | `src/app/cli/commands/batchCommand.js` |
+| GUI page | `tools/gui-react/src/features/**` or `tools/gui-react/src/pages/**` with registry entry in `tools/gui-react/src/registries/pageRegistry.ts` | `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx` |
+| Shared backend persistence | `src/db/` or authored files under `category_authority/` | New mutable JSON stores outside established roots |
+| Doc update | `CLAUDE.md` or `docs/01-` through `docs/07-` | Reintroducing unnumbered current-state doc trees |
 
-## Testing Conventions
+## Dependency Direction
 
-- Test runner: `node --test`.
-- Current test roots: `test/`, `src/**/tests/`, `tools/gui-react/**/__tests__/`, and `e2e/`.
-- Prefer behavior-level tests over implementation-coupled file-content tests.
-- Playwright browser coverage is configured in `playwright.config.ts`.
-- Validation snapshot from 2026-03-31:
-  - `npm run gui:build` passed.
-  - `npm test` passed.
-  - `npm run env:check` failed with `Missing keys in config manifest: PORT`.
+- `src/app/api/` composes feature registrars and route contexts; it should stay thin.
+- Feature modules in `src/features/` may depend on `src/core/`, `src/db/`, and `src/shared/`.
+- GUI pages should depend on feature modules, shared UI, stores, and API helpers; they should not embed unrelated backend knowledge directly.
+- Route-context creators are the place to bind infra dependencies like `appDb`, `getSpecDb`, `broadcastWs`, config accessors, and storage adapters.
 
-## Branching, Commit, PR, and Review Conventions
+## Config And Env Rules
 
-- No checked-in branch naming convention was found.
-- No checked-in commit message convention was found.
-- No checked-in PR template or GitHub workflow was found.
-- The strongest review rules live in the repo guidance files above: characterize first, keep documentation traceable, and do not invent architecture that the code does not implement.
+- Default dotenv path is `.env`, loaded by `loadDotEnvFile(args.env || '.env')` in `src/app/cli/spec.js`.
+- `npm run env:check` executes `tools/check-env-example-sync.mjs`, which scans a fixed file list for referenced env keys and compares them with `CONFIG_MANIFEST_KEYS`.
+- The env/config inventory is maintained through:
+  - `src/shared/settingsRegistry.js`
+  - `src/core/config/manifest.js`
+  - `src/features/settings-authority/`
+- `PORT` is currently referenced but missing from the manifest coverage script baseline; `npm run env:check` fails on that mismatch as of 2026-04-04.
+
+## Runtime And Storage Rules
+
+- `/api/v1/storage/*` is handled inside `registerIndexlabRoutes()` in `src/features/indexing/api/indexlabRoutes.js`.
+- Storage deletion flows use `createDeletionStore()` from `src/db/stores/deletionStore.js` when a category-specific SpecDb is available.
+- Current validated storage backend is local filesystem storage. `src/features/indexing/api/storageManagerRoutes.js` returns `storage_backend: "local"` from `resolveBackend()`.
+- Runtime artifact roots come from `src/core/config/runtimeArtifactRoots.js`; do not hardcode alternate workspace roots unless you are intentionally adding a config boundary.
+- `.workspace/` remains the sole runtime data directory. `.tmp/` is allowed only for repo-local throwaway test/tool scratch and must not hold runtime state.
+- Root `tmp/` remains banned.
+- Use `os.tmpdir()` only when a subsystem intentionally depends on OS temp semantics or system-native temp behavior.
+
+## Frontend Routing Rules
+
+- `tools/gui-react/src/App.tsx` derives routed pages from `ROUTE_ENTRIES` in `tools/gui-react/src/registries/pageRegistry.ts`.
+- Tab groups are `global`, `catalog`, `ops`, and `settings`.
+- `test-mode` is intentionally outside the tab registry and is mounted separately in `tools/gui-react/src/App.tsx`.
+- New routable pages require both:
+  - a component module
+  - a registry entry in `tools/gui-react/src/registries/pageRegistry.ts`
+
+## Validation Baseline
+
+| Command / proof | Result | Date |
+|-----------------|--------|------|
+| `npm run gui:build` | pass | 2026-04-04 |
+| `npm test` | pass (`6803` tests, `0` failures) | 2026-04-04 |
+| `npm run env:check` | fail (`Missing keys in config manifest: PORT`) | 2026-04-04 |
+| Runtime smoke against `createGuiServerRuntime()` | pass for `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/storage/overview` | 2026-04-04 |
+
+## Read Next
+
+- [Canonical Examples](../07-patterns/canonical-examples.md)
+- [Anti-Patterns](../07-patterns/anti-patterns.md)
+- [Environment and Config](../02-dependencies/environment-and-config.md)
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `AGENTS.md` | repo-wide editing, testing, and architecture rules |
-| source | `AGENTS.testing.md` | testing-focused repo rules |
-| source | `AGENTS.testsCleanUp.md` | test-cleanup repo rules |
-| source | `CLAUDE.md` | local repo guidance layered on top of AGENTS |
-| source | `src/api/guiServerRuntime.js` | route-order SSOT lives here, not in `routeRegistry.js` |
-| source | `src/db/DOMAIN.md` | local domain-boundary contract pattern |
-| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route/tab registry convention |
-| source | `tools/gui-react/src/App.tsx` | registry-driven HashRouter shell |
-| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tabs derive from the page registry |
-| config | `package.json` | test runner and root toolchain expectations |
-| config | `playwright.config.ts` | Playwright root and base URL |
-| command | `npm run gui:build` | successful March 31 GUI build baseline |
-| command | `npm run env:check` | failing March 31 env-check baseline |
-| command | `npm test` | successful March 31 suite baseline |
+| source | `AGENTS.md` | repo-level operating rules |
+| source | `AGENTS.testing.md` | testing rules |
+| source | `AGENTS.testsCleanUp.md` | test-cleanup rules |
+| source | `CLAUDE.md` | LLM-first repo guidance |
+| source | `src/app/api/guiServerRuntime.js` | mounted route-order authority |
+| source | `src/features/indexing/api/indexlabRoutes.js` | delegated `/storage/*` routing pattern |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | frontend route registry convention |
+| source | `tools/gui-react/src/App.tsx` | registry-driven `HashRouter` assembly |
+| source | `package.json` | Node test runner convention |
+| command | `npm run gui:build` | GUI build validation result on 2026-04-04 |
+| command | `npm run env:check` | env-check failure baseline on 2026-04-04 |
+| command | `npm test` | test-suite validation result on 2026-04-04 |
 
 ## Related Documents
 
-- [Folder Map](./folder-map.md) - Shows where these conventions apply in the repo.
-- [Canonical Examples](../07-patterns/canonical-examples.md) - Concrete examples of compliant additions.
-- [Anti-Patterns](../07-patterns/anti-patterns.md) - Specific patterns the repo expects you to avoid.
+- [Scope](./scope.md) - sets the project boundary these conventions apply to.
+- [Folder Map](./folder-map.md) - shows where each convention applies on disk.
+- [Canonical Examples](../07-patterns/canonical-examples.md) - concrete examples of the approved patterns.
+- [Anti-Patterns](../07-patterns/anti-patterns.md) - explicit examples of what the repo expects you to avoid.

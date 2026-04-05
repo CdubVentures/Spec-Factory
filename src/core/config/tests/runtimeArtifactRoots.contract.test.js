@@ -33,7 +33,7 @@ test('config, runtime bridge, and smoke-local helpers reuse the .workspace artif
   const { loadConfig } = await import('../../../config.js');
   const { defaultIndexLabRoot, defaultLocalOutputRoot } = await import('../runtimeArtifactRoots.js');
   const { IndexLabRuntimeBridge } = await import('../../../indexlab/runtimeBridge.js');
-  const { resolveSmokeLocalOutputPaths } = await import('../../../cli/smokeLocal.js');
+  const { resolveSmokeLocalOutputPaths } = await import('../../../app/cli/smokeLocal.js');
 
   const outputRoot = defaultLocalOutputRoot();
   const indexLabRoot = defaultIndexLabRoot();

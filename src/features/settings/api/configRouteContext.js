@@ -1,7 +1,7 @@
 import {
   llmProviderFromModel, resolveLlmRoleDefaults, resolveLlmKnobDefaults,
   resolvePricingForModel, resolveTokenProfileForModel, collectLlmModels,
-} from '../../../api/helpers/llmHelpers.js';
+} from '../../../core/llm/llmRouteHelpers.js';
 import { llmRoutingSnapshot } from '../../../core/llm/client/routing.js';
 import { buildLlmMetrics } from '../../../billing/costLedger.js';
 import { buildIndexingDomainChecklist } from '../../indexing/api/index.js';

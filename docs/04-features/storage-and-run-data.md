@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified storage-manager inventory and maintenance surface plus the current storage-backend selection behavior.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 The current live storage feature is the `/storage` inventory and maintenance surface. The older storage-settings and relocation flow is not mounted in the current source tree.
 
@@ -36,17 +36,23 @@ The current live storage feature is the `/storage` inventory and maintenance sur
 3. `useStorageOverview()` calls `GET /api/v1/storage/overview`.
 4. `useStorageRuns()` calls `GET /api/v1/storage/runs` and optionally filters by category.
 5. `useStorageActions.ts` calls:
+   - `POST /api/v1/storage/runs/bulk-delete`
    - `DELETE /api/v1/storage/runs/:runId`
+   - `POST /api/v1/storage/urls/delete`
+   - `POST /api/v1/storage/products/:productId/purge-history`
    - `POST /api/v1/storage/prune`
    - `POST /api/v1/storage/purge`
    - `GET /api/v1/storage/export`
-6. `src/features/indexing/api/storageManagerRoutes.js` lists run artifacts from the IndexLab storage tree and executes delete/prune/purge/export operations.
+6. `src/features/indexing/api/storageManagerRoutes.js` lists run artifacts from the IndexLab storage tree and executes delete, URL-history cleanup, product-history purge, prune, purge, and export operations.
 7. The same handler currently reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` from its own `resolveBackend()` helpers.
 8. `src/core/storage/storage.js` provides local filesystem storage; the S3 backend has been retired.
 
 ## Side Effects
 
 - Deletes archived run bundles one at a time.
+- Bulk-deletes archived runs.
+- Deletes one URL and its derived artifacts through the SpecDb-backed deletion store when available.
+- Purges all run history for one product through the same deletion-store boundary.
 - Prunes old runs or failed runs.
 - Purges all archived runs after explicit confirmation.
 - Exports the current inventory as `storage-inventory.json`.
@@ -57,6 +63,8 @@ The current live storage feature is the `/storage` inventory and maintenance sur
 - `GET /storage/runs/:runId` returns `404 run_not_found` when metadata cannot be resolved.
 - `DELETE /storage/runs/:runId` returns `409 run_in_progress` when the run is still active.
 - `POST /storage/purge` returns `400 confirm_token_required` unless the request body contains `confirmToken: "DELETE"`.
+- `POST /storage/urls/delete` returns `501 deletion_store_not_available` when SpecDb-backed deletion cannot be resolved, or `400 url_and_productId_required` when required parameters are missing.
+- `POST /storage/products/:productId/purge-history` returns `400 productId_and_category_required`, `501 deletion_store_not_available`, or `409 product_has_active_run` when history cannot be safely purged.
 - `StorageManagerPanel` shows a warning banner when overview or run-list queries fail.
 
 ## State Transitions
@@ -66,6 +74,8 @@ The current live storage feature is the `/storage` inventory and maintenance sur
 | storage overview | run artifacts on disk -> summarized overview payload |
 | run inventory | archived run tree -> filtered table rows |
 | delete/prune/purge | selected or matched runs -> removed run artifacts -> invalidated queries |
+| URL delete | selected URL + product context -> SpecDb/file-system cascade delete -> invalidated storage queries |
+| product history purge | selected product + category -> all run history removed/reset -> invalidated storage queries |
 | backend label | route-local backend resolution -> `storage_backend` and `backend_detail` in `/storage/overview` |
 
 ## Diagram
@@ -108,8 +118,9 @@ sequenceDiagram
 | source | `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts` | `/storage/runs` client contract |
 | source | `src/features/indexing/api/indexlabRoutes.js` | `/storage/*` delegation path |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | actual inventory and maintenance endpoints |
+| source | `src/db/stores/deletionStore.js` | URL-delete and product-history purge result shapes |
 | source | `src/core/storage/storage.js` | local filesystem storage adapter |
-| runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-03-31 |
+| runtime | `GET /api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-04-04 |
 
 ## Related Documents
 

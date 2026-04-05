@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spec Factory — SQL Migration Status</title>
+<title>Spec Factory &mdash; SQL Surface Status</title>
 <style>
 :root {
   --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
@@ -47,7 +47,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .status-hero h2{font-size:1.5rem;font-weight:700;margin-bottom:8px;color:var(--green)}
 .status-hero p{color:var(--t2);font-size:0.9rem;max-width:600px;margin:0 auto}
 
-/* --- Wave cards --- */
+/* --- Domain cards --- */
 .wave-section{margin-bottom:32px}
 .wave-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden;transition:border-color 0.15s}
 .wave-card:hover{border-color:var(--border-f)}
@@ -79,7 +79,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .section-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
 .section-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
 
-/* --- Killed table --- */
+/* --- Ownership table --- */
 .killed-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:24px}
 .killed-table th{text-align:left;padding:8px 12px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border);background:var(--s1)}
 .killed-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -140,11 +140,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!--  HEADER                                                      -->
 <!-- ============================================================ -->
 <header class="header">
-  <h1>Spec Factory &mdash; SQL Migration Status</h1>
-  <p class="subtitle">Complete SQL migration status verified against the live codebase. 42 base tables across two database surfaces (36 SpecDb + 6 AppDb). All tables verified, no phantoms, no omissions.</p>
+  <h1>Spec Factory &mdash; SQL Surface Status</h1>
+  <p class="subtitle">Current SQL surface verified against the live codebase. 42 base tables across two database surfaces (36 SpecDb + 6 AppDb). Every current table in the app DDL is accounted for.</p>
   <div class="meta">
-    <span>Verified 2026-04-02</span>
-    <span>All Tables Verified</span>
+    <span>Verified 2026-04-04</span>
+    <span>Code-validated</span>
   </div>
 </header>
 
@@ -166,8 +166,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <circle cx="36" cy="36" r="34" stroke="#16a34a" stroke-width="3" fill="rgba(22,163,74,0.08)"/>
     <path d="M22 36l10 10 18-20" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
-  <h2>All Tables Verified</h2>
-  <p>Every table in <code>specDbSchema.js</code> and <code>appDbSchema.js</code> is accounted for. 36 SpecDb tables + 6 AppDb tables = 42 total. Zero phantom tables, zero omissions.</p>
+  <h2>Current SQL Surface Verified</h2>
+  <p>Every table in <code>specDbSchema.js</code> and <code>appDbSchema.js</code> is accounted for. 36 SpecDb tables + 6 AppDb tables = 42 total. No extra documented tables and no current DDL omissions.</p>
 </div>
 
 <!-- ============================================================ -->
@@ -186,8 +186,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <p><strong>36 tables</strong> defined in <code>specDbSchema.js</code> CREATE TABLE statements. These are created on first open of each per-category database.</p>
     </div>
     <div class="perf-card">
-      <h4>SpecDb Migration</h4>
-      <p>Total SpecDb = 36 base tables from <code>specDbSchema.js</code>.</p>
+      <h4>SpecDb Surface</h4>
+      <p>Per-category operational data lives in <code>spec.sqlite</code>: runs, review state, crawl artifacts, telemetry indexes, queue state, and support tables.</p>
     </div>
     <div class="perf-card">
       <h4>AppDb Schema</h4>
@@ -200,80 +200,80 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!--  SVG TIMELINE                                                -->
 <!-- ============================================================ -->
 <div class="timeline-section">
-  <h2>Migration Timeline</h2>
+  <h2>Current SQL Coverage</h2>
   <div class="timeline-wrap">
     <svg viewBox="0 0 1060 210" width="1060" height="210" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">
       <!-- track -->
       <line x1="40" y1="100" x2="1020" y2="100" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
       <line x1="40" y1="100" x2="1020" y2="100" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
 
-      <!-- Wave markers -->
+      <!-- Coverage markers -->
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569" text-anchor="middle">
-        <!-- Wave 1-5.5 -->
+        <!-- Runs -->
         <circle cx="80" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="80" y="104" fill="#22c55e" font-weight="700" font-size="9">1-5</text>
-        <text x="80" y="75" font-weight="600" font-size="9" fill="#0f172a">Core</text>
-        <text x="80" y="130" font-size="8" fill="#94a3b8">Runtime</text>
+        <text x="80" y="104" fill="#22c55e" font-weight="700" font-size="9">3</text>
+        <text x="80" y="75" font-weight="600" font-size="9" fill="#0f172a">Runs</text>
+        <text x="80" y="130" font-size="8" fill="#94a3b8">Meta + Artifacts</text>
 
-        <!-- Wave 6 -->
+        <!-- Billing -->
         <circle cx="180" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="180" y="104" fill="#22c55e" font-weight="700" font-size="10">6</text>
-        <text x="180" y="75" font-weight="600" font-size="9" fill="#0f172a">Learning</text>
-        <text x="180" y="130" font-size="8" fill="#94a3b8">LLM Cache</text>
+        <text x="180" y="104" fill="#22c55e" font-weight="700" font-size="10">1</text>
+        <text x="180" y="75" font-weight="600" font-size="9" fill="#0f172a">Billing</text>
+        <text x="180" y="130" font-size="8" fill="#94a3b8">Ledger</text>
 
-        <!-- Wave 7 -->
+        <!-- Crawl artifacts -->
         <circle cx="280" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="280" y="104" fill="#22c55e" font-weight="700" font-size="10">7</text>
-        <text x="280" y="75" font-weight="600" font-size="9" fill="#0f172a">Evidence</text>
-        <text x="280" y="130" font-size="8" fill="#94a3b8">Pipeline</text>
+        <text x="280" y="104" fill="#22c55e" font-weight="700" font-size="10">3</text>
+        <text x="280" y="75" font-weight="600" font-size="9" fill="#0f172a">Artifacts</text>
+        <text x="280" y="130" font-size="8" fill="#94a3b8">Crawl Media</text>
 
-        <!-- Wave 8 -->
+        <!-- Components -->
         <circle cx="380" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="380" y="104" fill="#22c55e" font-weight="700" font-size="10">8</text>
-        <text x="380" y="75" font-weight="600" font-size="9" fill="#0f172a">Source</text>
-        <text x="380" y="130" font-size="8" fill="#94a3b8">Provenance</text>
+        <text x="380" y="104" fill="#22c55e" font-weight="700" font-size="10">5</text>
+        <text x="380" y="75" font-weight="600" font-size="9" fill="#0f172a">Components</text>
+        <text x="380" y="130" font-size="8" fill="#94a3b8">+ Lists</text>
 
-        <!-- Wave 9 -->
+        <!-- Item state -->
         <circle cx="480" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="480" y="104" fill="#22c55e" font-weight="700" font-size="10">9</text>
+        <text x="480" y="104" fill="#22c55e" font-weight="700" font-size="10">4</text>
         <text x="480" y="75" font-weight="600" font-size="9" fill="#0f172a">Item State</text>
-        <text x="480" y="130" font-size="8" fill="#94a3b8">Components</text>
+        <text x="480" y="130" font-size="8" fill="#94a3b8">Review Links</text>
 
-        <!-- Wave 10 -->
+        <!-- Review queues -->
         <circle cx="560" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="560" y="104" fill="#22c55e" font-weight="700" font-size="10">10</text>
+        <text x="560" y="104" fill="#22c55e" font-weight="700" font-size="10">2</text>
         <text x="560" y="75" font-weight="600" font-size="9" fill="#0f172a">Review</text>
-        <text x="560" y="130" font-size="8" fill="#94a3b8">Workflow</text>
+        <text x="560" y="130" font-size="8" fill="#94a3b8">Queues</text>
 
-        <!-- Wave 11 -->
+        <!-- Key review -->
         <circle cx="640" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="640" y="104" fill="#22c55e" font-weight="700" font-size="10">11</text>
-        <text x="640" y="75" font-weight="600" font-size="9" fill="#0f172a">Key</text>
-        <text x="640" y="130" font-size="8" fill="#94a3b8">Review</text>
+        <text x="640" y="104" fill="#22c55e" font-weight="700" font-size="10">5</text>
+        <text x="640" y="75" font-weight="600" font-size="9" fill="#0f172a">Key Review</text>
+        <text x="640" y="130" font-size="8" fill="#94a3b8">+ Routing</text>
 
-        <!-- Wave 12 -->
+        <!-- Catalog -->
         <circle cx="720" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="720" y="104" fill="#22c55e" font-weight="700" font-size="10">12</text>
+        <text x="720" y="104" fill="#22c55e" font-weight="700" font-size="10">3</text>
         <text x="720" y="75" font-weight="600" font-size="9" fill="#0f172a">Catalog</text>
-        <text x="720" y="130" font-size="8" fill="#94a3b8">Queue</text>
+        <text x="720" y="130" font-size="8" fill="#94a3b8">Products</text>
 
-        <!-- Wave 13 -->
+        <!-- Telemetry -->
         <circle cx="800" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="800" y="104" fill="#22c55e" font-weight="700" font-size="10">13</text>
+        <text x="800" y="104" fill="#22c55e" font-weight="700" font-size="10">4</text>
         <text x="800" y="75" font-weight="600" font-size="9" fill="#0f172a">Telemetry</text>
         <text x="800" y="130" font-size="8" fill="#94a3b8">Indexes</text>
 
-        <!-- Wave 14 -->
+        <!-- Support -->
         <circle cx="880" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="880" y="104" fill="#22c55e" font-weight="700" font-size="10">14</text>
-        <text x="880" y="75" font-weight="600" font-size="9" fill="#0f172a">Brand</text>
-        <text x="880" y="130" font-size="8" fill="#94a3b8">Global</text>
+        <text x="880" y="104" fill="#22c55e" font-weight="700" font-size="10">6</text>
+        <text x="880" y="75" font-weight="600" font-size="9" fill="#0f172a">Support</text>
+        <text x="880" y="130" font-size="8" fill="#94a3b8">Crawl + Authority</text>
 
-        <!-- Wave 15 -->
+        <!-- AppDb -->
         <circle cx="980" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="980" y="104" fill="#22c55e" font-weight="700" font-size="10">15</text>
+        <text x="980" y="104" fill="#22c55e" font-weight="700" font-size="10">6</text>
         <text x="980" y="75" font-weight="600" font-size="9" fill="#0f172a">AppDb</text>
-        <text x="980" y="130" font-size="8" fill="#94a3b8">Settings</text>
+        <text x="980" y="130" font-size="8" fill="#94a3b8">Global Tables</text>
 
       </g>
 
@@ -294,48 +294,48 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
       <!-- Legend -->
       <rect x="40" y="185" width="10" height="10" rx="2" fill="#22c55e"/>
-      <text x="56" y="194" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Complete &mdash; SQL only, no file writes</text>
+      <text x="56" y="194" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Current live DDL bucket &mdash; number inside each marker is the current table count</text>
     </svg>
   </div>
 </div>
 
 <!-- ============================================================ -->
-<!--  WAVE DETAILS                                                -->
+<!--  DOMAIN DETAILS                                              -->
 <!-- ============================================================ -->
 <section class="section">
   <div class="section-head">
-    <h2>Wave Details</h2>
-    <span class="badge badge-complete">All 15 Waves Complete</span>
+    <h2>Current Domain Buckets</h2>
+    <span class="badge badge-complete">42 Tables Mapped</span>
   </div>
-  <p class="section-desc">Complete wave inventory verified against live DDL. All 42 base tables accounted for across migration waves.</p>
+  <p class="section-desc">Current table inventory grouped by the runtime domains they serve. Column counts below are from the current DDL.</p>
 
-  <!-- Wave 1-5.5: 4 tables -->
+  <!-- Runs + Billing -->
   <details class="wave-card" open>
     <summary>
-      <span class="wave-title">Waves 1&ndash;5.5: Core Runtime</span>
+      <span class="wave-title">Runs + Billing</span>
       <span class="wave-desc">bridge_events, runs, run_artifacts, billing_entries</span>
       <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Foundation migration. Replaced event logs, run tracking, artifact storage, and billing ledger with SQL tables. Boundary JSONs eliminated.</p>
+      <p>Operational run state and cost accounting. This is the live SQL surface for run metadata, per-run artifacts, bridge telemetry, and billing rows.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>bridge_events</code><span class="note">8 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>runs</code><span class="note">16 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>run_artifacts</code><span class="note">7 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>runs</code><span class="note">17 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>run_artifacts</code><span class="note">8 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>billing_entries</code><span class="note">21 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 7: 3 tables -->
+  <!-- Crawl artifacts -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 7: Crawl Artifacts</span>
+      <span class="wave-title">Crawl Artifacts</span>
       <span class="wave-desc">crawl_sources, source_screenshots, source_videos</span>
       <span class="tags"><span class="badge badge-complete">3 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Crawl source tracking and media references all SQL-backed.</p>
+      <p>Per-source crawl metadata plus durable media references. HTML, screenshots, and video stay on disk; SQL stores the queryable metadata and paths.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>crawl_sources</code><span class="note">18 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>source_screenshots</code><span class="note">16 cols</span></div>
@@ -344,90 +344,90 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
   </details>
 
-  <!-- Wave 9: 8 tables -->
+  <!-- Components + lists -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 9: Item State + Components</span>
-      <span class="wave-desc">item_field_state, item_component_links, item_list_links, component_identity, component_aliases, component_values, enum_lists, list_values, product_review_state</span>
-      <span class="tags"><span class="badge badge-complete">9 tables</span></span>
+      <span class="wave-title">Components + Lists</span>
+      <span class="wave-desc">component_identity, component_aliases, component_values, enum_lists, list_values</span>
+      <span class="tags"><span class="badge badge-complete">5 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>All item-level state, component identity, aliases, values, and enum/list structures migrated. Product review state fully SQL-backed.</p>
+      <p>Component vocabulary and reusable list structures. These tables define the component graph and allowed list values that review and indexing read from.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>item_field_state</code><span class="note">18 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>item_component_links</code><span class="note">11 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>item_list_links</code><span class="note">6 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_identity</code><span class="note">9 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_aliases</code><span class="note">5 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_values</code><span class="note">15 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>enum_lists</code><span class="note">6 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>list_values</code><span class="note">13 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_review_state</code><span class="note">9 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_identity</code><span class="note">10 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_aliases</code><span class="note">6 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_values</code><span class="note">16 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>enum_lists</code><span class="note">7 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>list_values</code><span class="note">14 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 10: Review Workflow -->
+  <!-- Item state -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 10: Review Workflow</span>
-      <span class="wave-desc">curation_suggestions, component_review_queue</span>
-      <span class="tags"><span class="badge badge-complete">2 tables</span></span>
+      <span class="wave-title">Item State</span>
+      <span class="wave-desc">item_field_state, product_review_state, item_component_links, item_list_links</span>
+      <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Review workflow tables SQL-backed. Curation suggestions and component review queue migrated.</p>
+      <p>Live per-product field state and resolved component/list linkages. Review surfaces query these tables directly instead of reconstructing state from files.</p>
       <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>curation_suggestions</code><span class="note">19 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>component_review_queue</code><span class="note">24 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_field_state</code><span class="note">19 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_review_state</code><span class="note">10 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_component_links</code><span class="note">12 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>item_list_links</code><span class="note">7 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 11: 5 tables -->
+  <!-- Catalog workflow -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 11: Key Review</span>
+      <span class="wave-title">Catalog Workflow</span>
+      <span class="wave-desc">products, product_queue, product_runs, curation_suggestions, component_review_queue</span>
+      <span class="tags"><span class="badge badge-complete">5 tables</span></span>
+    </summary>
+    <div class="wave-body">
+      <p>Product catalog state, queue position, run history, and review intake queues. These are the live operational tables behind catalog and review workflow surfaces.</p>
+      <div class="table-list">
+        <div class="table-item"><span class="dot"></span><code>products</code><span class="note">14 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_queue</code><span class="note">23 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>product_runs</code><span class="note">12 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>curation_suggestions</code><span class="note">20 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>component_review_queue</code><span class="note">25 cols</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Key review -->
+  <details class="wave-card">
+    <summary>
+      <span class="wave-title">Key Review + LLM Routing</span>
       <span class="wave-desc">key_review_state, key_review_runs, key_review_run_sources, key_review_audit, llm_route_matrix</span>
       <span class="tags"><span class="badge badge-complete">5 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Largest single-table migration: key_review_state at 55 columns. LLM route matrix (36 cols) also migrated. Full key review audit chain in SQL.</p>
+      <p>Key review state machine plus the route matrix used to track LLM source routing. <code>key_review_state</code> remains the widest SpecDb table at 55 columns.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>key_review_state</code><span class="note">55 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>key_review_runs</code><span class="note">16 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>key_review_run_sources</code><span class="note">6 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>key_review_audit</code><span class="note">9 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>llm_route_matrix</code><span class="note">36 cols</span></div>
+        <div class="table-item"><span class="dot"></span><code>llm_route_matrix</code><span class="note">37 cols</span></div>
       </div>
     </div>
   </details>
 
-  <!-- Wave 12: 4 tables -->
+  <!-- Telemetry -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 12: Catalog + Queue</span>
-      <span class="wave-desc">products, product_queue, product_runs</span>
-      <span class="tags"><span class="badge badge-complete">3 tables</span></span>
-    </summary>
-    <div class="wave-body">
-      <p>Product catalog, queue management, and run history all SQL-backed.</p>
-      <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>products</code><span class="note">12 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_queue</code><span class="note">22 cols</span></div>
-        <div class="table-item"><span class="dot"></span><code>product_runs</code><span class="note">12 cols</span></div>
-      </div>
-    </div>
-  </details>
-
-  <!-- Wave 13: 4 tables -->
-  <details class="wave-card">
-    <summary>
-      <span class="wave-title">Wave 13: Telemetry Indexes</span>
+      <span class="wave-title">Telemetry Indexes</span>
       <span class="wave-desc">knob_snapshots, query_index, url_index, prompt_index</span>
       <span class="tags"><span class="badge badge-complete">4 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>All telemetry and indexing surfaces migrated. Query, URL, and prompt indexes fully SQL-backed for fast pipeline analytics.</p>
+      <p>Queryable telemetry and indexing surfaces for cross-run analytics. These tables are append/update surfaces for pipeline reporting, not durable content checkpoints.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>knob_snapshots</code><span class="note">8 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>query_index</code><span class="note">11 cols</span></div>
@@ -437,15 +437,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
   </details>
 
-  <!-- Wave 14: 5 tables -->
+  <!-- Support -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 14: Brand / Discovery / Ledger</span>
+      <span class="wave-title">Discovery / Crawl Support</span>
       <span class="wave-desc">data_authority_sync, field_studio_map, field_key_order, color_edition_finder, url_crawl_ledger, query_cooldowns</span>
-      <span class="tags"><span class="badge badge-complete">7 tables</span></span>
+      <span class="tags"><span class="badge badge-complete">6 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Brand domain intelligence, data authority synchronization, field studio mappings, field key ordering, color/edition finder, URL crawl ledger, and query cooldowns migrated to SpecDb.</p>
+      <p>SpecDb support tables for crawl history, cooldown state, studio ordering, and authority synchronization. These tables support runtime behavior but are not themselves reviewable product output.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>data_authority_sync</code><span class="note">5 cols</span></div>
         <div class="table-item"><span class="dot"></span><code>field_studio_map</code><span class="note">4 cols</span></div>
@@ -457,15 +457,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
   </details>
 
-  <!-- Wave 15: 6 AppDb tables -->
+  <!-- AppDb -->
   <details class="wave-card">
     <summary>
-      <span class="wave-title">Wave 15: AppDb</span>
+      <span class="wave-title">AppDb</span>
       <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps, color_registry</span>
       <span class="tags"><span class="badge badge-complete">6 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Global application database fully migrated. Brand management, settings persistence, studio maps, and color registry all SQL-backed in app.sqlite.</p>
+      <p>Global application database. Brand metadata, settings, studio maps, and the color registry all live in the single shared <code>app.sqlite</code> surface.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>brands</code><span class="note">8 cols &mdash; AppDb</span></div>
         <div class="table-item"><span class="dot"></span><code>brand_categories</code><span class="note">2 cols &mdash; AppDb</span></div>
@@ -481,43 +481,43 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 </section>
 
 <!-- ============================================================ -->
-<!--  WHAT WAS KILLED                                             -->
+<!--  PRIMARY OWNERSHIP                                           -->
 <!-- ============================================================ -->
 <section class="section">
   <div class="section-head">
-    <h2>What Was Killed / Replaced</h2>
-    <span class="badge badge-killed">Eliminated</span>
+    <h2>Primary SQL Ownership</h2>
+    <span class="badge badge-info">Current</span>
   </div>
-  <p class="section-desc">File-based persistence patterns and dual-write paths that were removed during the migration.</p>
+  <p class="section-desc">Current mutable surfaces and the SQL tables that own them. Files still exist where checkpoints, media, or published output are intentional parts of the runtime architecture.</p>
 
   <div class="store-wrap">
     <table class="killed-table">
-      <thead><tr><th>Legacy Pattern</th><th>Replaced By</th><th>Status</th></tr></thead>
+      <thead><tr><th>Current Surface</th><th>Primary SQL Owner</th><th>Notes</th></tr></thead>
       <tbody>
         <tr>
-          <td><code>needset.json</code>, <code>search_profile.json</code> <span style="color:var(--t3)">(boundary JSONs)</span></td>
-          <td class="replaced">run_artifacts SQL table</td>
-          <td><span class="badge badge-killed">Killed</span></td>
+          <td><code>Run metadata + live bridge telemetry</code></td>
+          <td class="replaced"><code>runs</code>, <code>bridge_events</code>, <code>run_artifacts</code></td>
+          <td>Completed-run readers use SQL first; <code>run.json</code> remains the checkpoint fallback.</td>
         </tr>
         <tr>
-          <td><code>_billing/ledger/*.jsonl</code></td>
-          <td class="replaced">billing_entries SQL table</td>
-          <td><span class="badge badge-killed">Killed</span></td>
+          <td><code>Billing ledger</code></td>
+          <td class="replaced"><code>billing_entries</code></td>
+          <td>Live cost rows are SQL-backed and queryable by day, month, and product.</td>
         </tr>
         <tr>
-          <td><code>_queue/{cat}/state.json</code></td>
-          <td class="replaced">product_queue SQL table</td>
-          <td><span class="badge badge-killed">Killed</span></td>
+          <td><code>Catalog queue + run history</code></td>
+          <td class="replaced"><code>products</code>, <code>product_queue</code>, <code>product_runs</code></td>
+          <td><code>product.json</code> remains the rebuild checkpoint, not the live query surface.</td>
         </tr>
         <tr>
-          <td><code>run_events.ndjson</code></td>
-          <td class="replaced">bridge_events SQL</td>
-          <td><span class="badge badge-killed">Killed</span></td>
+          <td><code>Review workflow + key review state</code></td>
+          <td class="replaced"><code>curation_suggestions</code>, <code>component_review_queue</code>, <code>key_review_*</code>, <code>llm_route_matrix</code></td>
+          <td>These are the live operational tables behind review and key-review screens.</td>
         </tr>
         <tr>
-          <td>Individual panel JSON files</td>
-          <td class="replaced">run_artifacts SQL table</td>
-          <td><span class="badge badge-killed">Killed</span></td>
+          <td><code>Cross-run telemetry indexes</code></td>
+          <td class="replaced"><code>knob_snapshots</code>, <code>query_index</code>, <code>url_index</code>, <code>prompt_index</code></td>
+          <td>SQL owns the queryable analytics layer; disk files remain only for checkpoints and published outputs.</td>
         </tr>
       </tbody>
     </table>
@@ -540,28 +540,28 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <span class="reason">Checkpoint safety net &mdash; rebuild SSOT from file if DB is lost</span>
     </div>
     <div class="remains-item">
-      <code>product.json</code>
-      <span class="reason">Cross-run accumulator &mdash; persists across multiple pipeline runs</span>
+      <code>.workspace/products/{pid}/product.json</code>
+      <span class="reason">Per-product rebuild checkpoint &mdash; created at add time, then read-merge-written after runs</span>
     </div>
     <div class="remains-item">
-      <code>category_authority/_generated/*.json</code>
+      <code>category_authority/{category}/_generated/*.json</code>
       <span class="reason">Immutable config &mdash; generated from authority sources, read-only at runtime</span>
     </div>
     <div class="remains-item">
-      <code>.workspace/products/{pid}/product.json</code>
-      <span class="reason">Per-product rebuild SSOT &mdash; created at add time, grown after runs. SQL products table is the live queryable index.</span>
+      <code>.workspace/global/user-settings.json</code>
+      <span class="reason">Boot/seed fallback &mdash; app.sqlite is primary, file is the recovery mirror</span>
     </div>
     <div class="remains-item">
-      <code>user-settings.json</code>
-      <span class="reason">Boot fallback &mdash; app.sqlite is primary, file is recovery path</span>
+      <code>.workspace/runtime/snapshots/{runId}-settings.json</code>
+      <span class="reason">Per-run launch snapshot &mdash; reproducibility artifact written by <code>/process/start</code></span>
     </div>
     <div class="remains-item">
-      <code>*.html.gz, screenshots, video</code>
-      <span class="reason">Binary artifacts &mdash; not suitable for SQL storage, referenced by path</span>
+      <code>*.html.gz, screenshots/*.{jpg,png,jpeg,webp}, video/*.webm</code>
+      <span class="reason">Binary artifacts &mdash; SQL stores metadata and paths, not the media bodies</span>
     </div>
     <div class="remains-item">
-      <code>Published output files</code>
-      <span class="reason">Final product specs &mdash; rendered output for external consumption</span>
+      <code>specs/outputs/...</code>
+      <span class="reason">Published output files and latest/final review artifacts remain file-backed by design</span>
     </div>
   </div>
 </section>
@@ -574,7 +574,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <h2>Store Module &rarr; Table Mapping</h2>
     <span class="badge badge-complete">19 Modules</span>
   </div>
-  <p class="section-desc">Actual file names from <code>src/db/stores/</code>. Each store module manages one or more SQL tables.</p>
+  <p class="section-desc">Actual file names from <code>src/db/stores/</code>. Each store module owns one or more SQL tables, or provides a DB-facing read/orchestration boundary over them.</p>
 
   <div class="store-wrap">
     <table class="store-table">
@@ -632,7 +632,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
     <div class="perf-card">
       <h4>Event Lifecycle</h4>
-      <p><code>bridge_events</code> can be purged after run finalize. All data is preserved in <code>run_summary</code> artifacts before cleanup.</p>
+      <p><code>bridge_events</code> can be purged after run finalize. Completed-run readers prefer SQL <code>run_summary</code> artifacts, with file fallbacks only for archived or older runs.</p>
     </div>
     <div class="perf-card">
       <h4>Per-Category Isolation</h4>
@@ -648,7 +648,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="section-head">
     <h2>Database Surface Architecture</h2>
   </div>
-  <p class="section-desc">Two distinct SQLite database surfaces, each serving a specific domain concern.</p>
+  <p class="section-desc">Two distinct SQLite database surfaces, each serving a different runtime boundary: per-category operational state in SpecDb and cross-category shared state in AppDb.</p>
 
   <div style="overflow-x:auto;padding:8px 0 24px">
     <svg viewBox="0 0 960 300" width="960" height="300" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">
@@ -660,26 +660,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <text x="160" y="112" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">tables</text>
       <line x1="40" y1="125" x2="280" y2="125" stroke="#e2e8f0" stroke-width="1"/>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#475569">
-        <text x="40" y="145">Review Workflow</text>
-        <text x="40" y="160">Components &amp; Items</text>
-        <text x="40" y="175">Evidence Pipeline</text>
-        <text x="40" y="190">Source Provenance &amp; Intel</text>
-        <text x="40" y="205">Key Review (55 cols)</text>
-        <text x="40" y="220">Runs &amp; Billing</text>
-        <text x="40" y="235">Telemetry &amp; Discovery</text>
-        <text x="40" y="250">Crawl Ledger &amp; Cooldowns</text>
-        <text x="40" y="265">Brand / Studio / Learning</text>
+        <text x="40" y="145">Runs &amp; Billing</text>
+        <text x="40" y="160">Crawl Artifacts</text>
+        <text x="40" y="175">Components &amp; Lists</text>
+        <text x="40" y="190">Item State</text>
+        <text x="40" y="205">Catalog Workflow</text>
+        <text x="40" y="220">Key Review &amp; Routing</text>
+        <text x="40" y="235">Telemetry Indexes</text>
+        <text x="40" y="250">Discovery / Crawl Support</text>
+        <text x="40" y="265">Total</text>
       </g>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#22c55e" text-anchor="end">
-        <text x="280" y="145">2 tables</text>
-        <text x="280" y="160">9 tables</text>
-        <text x="280" y="175">3 tables</text>
-        <text x="280" y="190">3 tables</text>
+        <text x="280" y="145">4 tables</text>
+        <text x="280" y="160">3 tables</text>
+        <text x="280" y="175">5 tables</text>
+        <text x="280" y="190">4 tables</text>
         <text x="280" y="205">5 tables</text>
-        <text x="280" y="220">4 tables</text>
-        <text x="280" y="235">7 tables</text>
-        <text x="280" y="250">2 tables</text>
-        <text x="280" y="265">7 tables</text>
+        <text x="280" y="220">5 tables</text>
+        <text x="280" y="235">4 tables</text>
+        <text x="280" y="250">6 tables</text>
+        <text x="280" y="265">36 tables</text>
       </g>
 
       <!-- Arrow SpecDb -> AppDb -->
@@ -718,7 +718,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:48px">
   <p style="font-size:0.78rem;color:var(--t3)">
-    Spec Factory SQL Migration Status &mdash; Verified 2026-04-02 &mdash; All tables verified against live codebase
+    Spec Factory SQL Surface Status &mdash; Verified 2026-04-04 &mdash; All current tables verified against live codebase
   </p>
   <p style="font-size:0.72rem;color:var(--t3);margin-top:4px">
     See also: <a href="schema-reference.html" style="color:var(--accent);text-decoration:none">Schema Reference</a>

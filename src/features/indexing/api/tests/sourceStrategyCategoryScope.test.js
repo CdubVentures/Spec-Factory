@@ -3,11 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { registerSourceStrategyRoutes } from '../sourceStrategyRoutes.js';
+import { makeRepoTempDir } from '../../../../shared/tests/helpers/repoTempDir.js';
 
 function makeTempRoot() {
-  const tmpDir = path.join('test', '_tmp_src_strat_scope_' + Date.now());
-  fs.mkdirSync(tmpDir, { recursive: true });
-  return tmpDir;
+  return makeRepoTempDir('spec-factory-src-strat-scope-');
 }
 
 function seedSourcesFile(root, category) {

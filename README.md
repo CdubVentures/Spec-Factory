@@ -1,38 +1,56 @@
 # Spec Factory
 
-> **Purpose:** Point repo-root readers to the current-state documentation authority and the live runtime entrypoints.
-> **Prerequisites:** [docs/README.md](docs/README.md)
-> **Last validated:** 2026-03-31
+> **Purpose:** Point humans and agents at the maintained documentation entrypoints and the live runtime roots.
+> **Prerequisites:** `CLAUDE.md`, `docs/README.md`
+> **Last validated:** 2026-04-04
 
-Spec Factory is a local-first Node.js plus React workbench for crawl-first product-spec indexing, review, category-authority maintenance, and runtime diagnostics. The maintained current-state documentation set lives under [`docs/`](docs/README.md); the old package-style README content previously in this file did not match the live repository.
+Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js GUI/API server in `src/app/api/guiServer.js` plus `src/app/api/guiServerRuntime.js`, a React/Vite GUI in `tools/gui-react/`, a CLI surface in `src/app/cli/spec.js`, SQLite persistence in `.workspace/db/`, and authored category control-plane files in `category_authority/`.
 
 ## Start Here
 
-1. Read [`docs/README.md`](docs/README.md) for the LLM reading order.
-2. Use `src/api/guiServer.js` and `src/api/guiServerRuntime.js` for the local GUI/API runtime.
-3. Use `src/cli/spec.js` for CLI-driven indexing, review, and helper flows.
+1. `CLAUDE.md`
+2. `docs/README.md`
+3. `docs/01-project-overview/scope.md`
+4. `docs/03-architecture/system-map.md`
+5. `docs/06-references/api-surface.md`
+
+## Live Entrypoints
+
+| Surface | Path |
+|--------|------|
+| GUI/API server | `src/app/api/guiServer.js` |
+| Runtime assembly | `src/app/api/guiServerRuntime.js` |
+| CLI | `src/app/cli/spec.js` |
+| GUI route registry | `tools/gui-react/src/registries/pageRegistry.ts` |
 
 ## Current Validation Snapshot
 
-- `npm run gui:build` succeeded on 2026-03-31.
-- `npm test` succeeded on 2026-03-31.
-- `npm run env:check` failed on 2026-03-31 with `Missing keys in config manifest: PORT`.
+- `npm run env:check` failed on 2026-04-04 with `Missing keys in config manifest: PORT`.
+- `npm run gui:build` passed on 2026-04-04.
+- `npm test` passed on 2026-04-04 with `6803` tests and `0` failures.
+- Runtime smoke on 2026-04-04 confirmed:
+  - `GET /health`
+  - `GET /api/v1/categories`
+  - `GET /api/v1/process/status`
+  - `GET /api/v1/storage/overview`
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | primary local GUI/API server entrypoint |
-| source | `src/api/guiServerRuntime.js` | runtime assembly SSOT |
-| source | `src/cli/spec.js` | CLI entrypoint |
-| doc | `docs/README.md` | current-state documentation entrypoint |
-| config | `package.json` | live scripts and package identity |
-| command | `npm run gui:build` | GUI build baseline on 2026-03-31 |
-| command | `npm test` | full-suite green baseline on 2026-03-31 |
-| command | `npm run env:check` | current env-check failure on 2026-03-31 |
+| source | `CLAUDE.md` | primary LLM entrypoint |
+| source | `docs/README.md` | maintained docs index and reading order |
+| source | `src/app/api/guiServer.js` | server entrypoint path |
+| source | `src/app/api/guiServerRuntime.js` | runtime assembly path |
+| source | `src/app/cli/spec.js` | CLI entrypoint |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route registry path |
+| command | `npm run env:check` | env-check result on 2026-04-04 |
+| command | `npm run gui:build` | GUI build result on 2026-04-04 |
+| command | `npm test` | full-suite result on 2026-04-04 |
 
 ## Related Documents
 
-- [docs/README.md](docs/README.md) - master entrypoint for the maintained documentation hierarchy.
-- [docs/01-project-overview/scope.md](docs/01-project-overview/scope.md) - concise live system boundary.
-- [docs/03-architecture/system-map.md](docs/03-architecture/system-map.md) - runtime topology and storage/persistence boundaries.
+- [CLAUDE.md](./CLAUDE.md) - compact repo truth file for LLM agents.
+- [docs/README.md](./docs/README.md) - full documentation table of contents and reading order.
+- [docs/05-operations/known-issues.md](./docs/05-operations/known-issues.md) - active drift and hazards.
+- [docs/05-operations/documentation-audit-ledger.md](./docs/05-operations/documentation-audit-ledger.md) - file-by-file doc audit record.

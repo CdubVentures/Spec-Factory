@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   resolveLlmKnobDefaults,
   collectLlmModels,
-} from '../../../api/helpers/llmHelpers.js';
+} from '../../llm/llmRouteHelpers.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
 } from '../settingsKeyMap.js';

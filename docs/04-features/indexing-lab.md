@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified end-to-end indexing run flow from GUI launch through process orchestration, artifact generation, and run replay APIs.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Entry Points
 
@@ -11,7 +11,7 @@
 | Indexing page | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx` | run creation, run selection, and artifact replay |
 | Process launcher | `src/app/api/routes/infra/processRoutes.js` | `/api/v1/process/start|stop|status` |
 | Process runtime | `src/app/api/processRuntime.js` | spawns CLI runs and tracks active process state |
-| CLI entrypoint | `src/cli/spec.js` | executes `indexlab`, `run-one`, `run-batch`, compile, and daemon flows |
+| CLI entrypoint | `src/app/cli/spec.js` | executes `indexlab`, `run-one`, `run-batch`, compile, and daemon flows |
 | Replay API | `src/features/indexing/api/indexlabRoutes.js` | serves run meta, needset, search profile, extraction, analytics, and live-crawl reference surfaces |
 
 ## Dependencies
@@ -40,17 +40,17 @@
 1. The user fills the run form in `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`.
 2. The page posts a launch request to `/api/v1/process/start`.
 3. `src/app/api/routes/infra/processRoutes.js` builds a launch plan with `buildProcessStartLaunchPlan()` and rejects invalid or incomplete inputs.
-4. `src/app/api/processRuntime.js` spawns `node src/cli/spec.js ...` with the computed CLI args and env overrides.
+4. `src/app/api/processRuntime.js` spawns `node src/app/cli/spec.js ...` with the computed CLI args and env overrides.
 5. `src/pipeline/runProduct.js` bootstraps identity/planner state, creates `frontierDb = createCrawlLedgerAdapter(...)`, warms a crawl session with built-in plugins, and builds `orderedFetchPlan` plus `workerIdMap`.
 6. `session.runFetchPlan({ orderedSources, workerIdMap, frontierDb, ... })` opens URLs in a persistent browser, captures screenshots/video/HTML artifacts, classifies block status, and records results to crawl-ledger / SpecDb surfaces.
 7. The GUI replays run artifacts through `/api/v1/indexlab/run/:runId/*` endpoints in `src/features/indexing/api/indexlabRoutes.js`.
-8. On process exit, `src/api/services/indexLabProcessCompletion.js` reconciles interrupted runs and records the run storage location in SpecDb.
+8. On process exit, `src/app/api/services/indexLabProcessCompletion.js` reconciles interrupted runs and records the run storage location in SpecDb.
 
 ## Side Effects
 
 - Writes IndexLab run folders under the configured IndexLab root.
 - Writes crawl results, screenshots, video, and HTML artifacts to the IndexLab run tree and SpecDb-backed crawl ledger surfaces.
-- Appends runtime telemetry through `EventLogger` to NDJSON.
+- Persists run metadata, run-summary artifacts, and bridge events through the SQL-first runtime artifact path.
 - May update queue and billing tables during a run.
 
 ## Error Paths
@@ -84,10 +84,10 @@ sequenceDiagram
     participant Replay as indexlabRoutes<br/>(src/features/indexing/api/indexlabRoutes.js)
   end
   box Worker
-    participant CLI as spec.js<br/>(src/cli/spec.js)
+    participant CLI as spec.js<br/>(src/app/cli/spec.js)
   end
   IndexingPage->>ProcessRoute: POST /api/v1/process/start
-  ProcessRoute->>Runtime: startProcess('src/cli/spec.js', cliArgs)
+  ProcessRoute->>Runtime: startProcess('src/app/cli/spec.js', cliArgs)
   Runtime->>CLI: spawn child process
   CLI-->>Runtime: stdout/stderr + IPC screencast events
   Runtime-->>IndexingPage: WebSocket process/indexlab-event updates
@@ -102,7 +102,7 @@ sequenceDiagram
 | source | `src/app/api/routes/infra/processRoutes.js` | launch/stop/status endpoints |
 | source | `src/app/api/processRuntime.js` | child process lifecycle |
 | source | `src/features/indexing/api/indexlabRoutes.js` | replay/read endpoints |
-| source | `src/cli/spec.js` | CLI command ownership |
+| source | `src/app/cli/spec.js` | CLI command ownership |
 | source | `src/pipeline/runProduct.js` | crawl-session orchestration and crawl ledger bootstrap |
 | source | `src/features/indexing/orchestration/shared/crawlLedgerAdapter.js` | crawl-ledger persistence path |
 | source | `src/features/crawl/crawlSession.js` | `runFetchPlan()` execution surface |

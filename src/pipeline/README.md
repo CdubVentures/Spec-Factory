@@ -26,7 +26,7 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 - `src/categories/loader.js`, `src/billing/*`, `src/intel/*`
 - `zod` (schema validation)
 
-**Forbidden:** `src/pipeline/` must NOT import from `src/api/`, `src/db/` directly (DB access via injected `specDb`), or `src/cli/`.
+**Forbidden:** `src/pipeline/` must NOT import from `src/app/api/`, `src/db/` directly (DB access via injected `specDb`), or `src/app/cli/`.
 
 ## Domain Invariants
 

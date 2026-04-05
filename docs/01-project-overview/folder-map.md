@@ -1,127 +1,127 @@
 # Folder Map
 
-> **Purpose:** Provide an annotated repo tree so an arriving LLM knows where to look before scanning the entire codebase.
+> **Purpose:** Give the LLM an annotated repo tree before it starts scanning files.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Root Tree
 
 ```text
 .
-|- .claude/                    # local assistant tooling/config
+|- .claude/                    # local Claude/Codex helper config
 |- .git/                       # git metadata
 |- .server-state/              # local runtime state files
-|- .workspace/                 # default runtime workspace: db, runs, output, products, global settings
-|- category_authority/         # authored category control-plane content and generated authority artifacts
-|- data/                       # checked-in support data
-|- debug/                      # manual debug captures and screenshots
-|- docs/                       # maintained docs tree; implementation/data-structure are excluded from this pass
-|- e2e/                        # Playwright E2E tests
-|- fixtures/                   # checked-in fixture inputs for tests and helper flows
-|- gui-dist/                   # packaged GUI asset copy produced by desktop build flows
-|- node_modules/               # installed dependencies; never edit
+|- .tmp/                       # repo-local scratch root for throwaway test/tool artifacts
+|- .workspace/                 # live workspace root: db, runs, output, products, global settings, snapshots
+|- category_authority/         # authored category control-plane content
+|- debug/                      # ad hoc debug captures
+|- docs/                       # maintained documentation set
+|- e2e/                        # Playwright end-to-end tests
+|- gui-dist/                   # packaged GUI copy used by desktop packaging flows
+|- node_modules/               # installed dependencies
 |- scripts/                    # repo utility scripts
-|- src/                        # backend runtime, CLI, persistence, features, and shared infra
-|- test/                       # top-level Node test root
-|- tools/                      # GUI package, packaging, sidecars, launcher, and utilities
-|- .env.example                # partial env bootstrap template
+|- src/                        # backend runtime, CLI, DB, features, shared infra
+|- test/                       # repo-level tests and helpers
+|- tools/                      # GUI package, launchers, sidecars, packaging, utilities
+|- .env                        # observed local dotenv file
 |- AGENTS.md                   # repo-wide operating rules
-|- AGENTS.testing.md           # testing-focused rules
+|- AGENTS.testing.md           # testing rules
 |- AGENTS.testsCleanUp.md      # test-cleanup rules
-|- CLAUDE.md                   # additional local repo guidance
-|- Dockerfile                  # stale container path; not the verified runtime entrypoint
-|- README.md                   # repo-root pointer to the maintained docs tree
-|- package.json                # root scripts and backend dependencies
-|- package-lock.json           # exact resolved backend dependency versions
-`- playwright.config.ts        # Playwright config for e2e/
+|- CLAUDE.md                   # LLM-first repo truth entrypoint
+|- Dockerfile                  # stale container path; not validated as the live runtime path
+|- README.md                   # repo-root docs pointer
+|- package-lock.json           # exact resolved root dependencies
+|- package.json                # root scripts + backend deps
+|- playwright.config.ts        # Playwright config
+|- SpecFactory.bat             # Windows launcher
+`- SpecFactory.exe             # packaged desktop artifact
 ```
 
-## Top-Level Directories
+## Top-Level Boundaries
 
-| Path | Purpose | Key files / notes |
-|------|---------|-------------------|
-| `.workspace/` | default runtime workspace root | `src/core/config/runtimeArtifactRoots.js` resolves `.workspace/output`, `.workspace/runs`, `.workspace/products`, `.workspace/db`, `.workspace/global`, and `.workspace/runtime/snapshots` as the live defaults |
-| `category_authority/` | canonical control-plane content | live directories on disk include `keyboard/`, `monitor/`, `mouse/`, `_global/`, `_test_mouse/`, and `tests/`; the default categories API returns only `keyboard`, `monitor`, and `mouse` |
-| `data/` | checked-in support data | currently includes learning/support payloads consumed by runtime helpers |
-| `debug/` | ad hoc debug captures | not a canonical runtime or config source |
-| `docs/` | maintained documentation tree | `docs/README.md` is the entrypoint; `docs/implementation/` and `docs/data-structure/` are excluded from this pass |
-| `e2e/` | browser E2E tests | governed by `playwright.config.ts` |
-| `fixtures/` | checked-in fixtures | used by tests and local validation helpers |
-| `gui-dist/` | packaged GUI copy | refreshed by desktop packaging flows, not the source GUI |
-| `scripts/` | repo utility scripts | one-off helpers outside the main runtime entrypoints |
-| `src/` | live product code | server runtime, CLI, persistence, features, and shared infrastructure |
-| `test/` | top-level Node test root | suite also includes `src/**/tests/` and `tools/gui-react/**/__tests__/` |
-| `tools/` | GUI app, packaging, launcher, sidecars, and utilities | `gui-react/`, `searxng/`, `build-exe.mjs`, `specfactory-launcher.mjs`, `check-env-example-sync.mjs` |
+| Path | Purpose | Notes |
+|------|---------|-------|
+| `.workspace/` | Runtime-created data root | Default roots come from `src/core/config/runtimeArtifactRoots.js`. |
+| `.tmp/` | Repo-local scratch root | Throwaway test/tool artifacts only; not runtime data. |
+| `category_authority/` | Authored control-plane data | Categories on disk include `_global/`, `_test_mouse/`, `keyboard/`, `monitor/`, `mouse/`, and `tests/`. |
+| `docs/` | Maintained current-state docs | Start at `docs/README.md`. |
+| `e2e/` | Browser-level tests | Controlled by `playwright.config.ts`. |
+| `src/` | Live backend + CLI code | Main entrypoints are under `src/app/api/` and `src/app/cli/`. |
+| `test/` | Shared repo test surface | Separate from feature-local `src/**/tests/`. |
+| `tools/` | GUI app and operational tooling | Contains the only frontend package in `tools/gui-react/`. |
 
-## High-Signal `src/` Subtrees
+## `src/` Tree
 
 | Path | Purpose | Key files |
 |------|---------|-----------|
-| `src/api/` | thin runtime assembly, bootstrap, and server wiring | `guiServer.js`, `guiServerRuntime.js`, `guiServerHttpAssembly.js` |
-| `src/api/bootstrap/` | bootstrap phases for config, storage, DB, realtime, and process runtime | `createBootstrapEnvironment.js`, `createBootstrapSessionLayer.js`, `createBootstrapRealtimeLayer.js`, `createBootstrapProcessLayer.js` |
-| `src/app/api/` | request dispatch, route registration, realtime bridge, and process lifecycle | `requestDispatch.js`, `routeRegistry.js`, `guiRouteRegistration.js`, `realtimeBridge.js`, `processRuntime.js` |
-| `src/cli/` | operator CLI entrypoint | `spec.js` |
-| `src/core/` | config manifest, runtime roots, LLM routing, and event contracts | `config/manifest/index.js`, `config/runtimeArtifactRoots.js`, `events/dataChangeContract.js`, `llm/` |
-| `src/db/` | SQLite boundaries | `appDb.js`, `appDbSchema.js`, `specDb.js`, `specDbSchema.js`, `stores/` |
-| `src/features/` | feature-first backend boundaries | `catalog/`, `crawl/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/` |
-| `src/indexlab/` | run-artifact readers and runtime bridge helpers | `runtimeBridgeEventHandlers.js`, `runtimeBridgePayloads.js` |
-| `src/core/events/` | data-change contract, broadcast counters, and settings persistence counters | `dataChangeContract.js`, `dataPropagationCounters.js`, `settingsPersistenceCounters.js` |
-| `src/pipeline/` | crawl-first run orchestration and seams | `runProduct.js`, `seams/` |
-| `src/shared/` | shared registry/defaults/accessors and generic helpers | `settingsRegistry.js` exports `143` live entries: `136` runtime, `3` bootstrap env, `4` UI |
-| `src/core/storage/` | local filesystem storage adapter | `storage.js` provides key-based artifact I/O over the local filesystem |
+| `src/app/api/` | Server runtime, bootstrap, dispatch, and route registration | `guiServer.js`, `guiServerRuntime.js`, `guiServerHttpAssembly.js`, `routeRegistry.js`, `routes/infraRoutes.js` |
+| `src/app/cli/` | Command factories used by `src/app/cli/spec.js` | `commands/` |
+| `src/core/` | Config manifest, LLM client plumbing, runtime roots, cross-cutting utilities | `config/manifest.js`, `config/runtimeArtifactRoots.js`, `llm/` |
+| `src/db/` | SQLite schemas, migrations, and stores | `appDb.js`, `specDb.js`, `specDbMigrations.js`, `stores/` |
+| `src/features/` | Feature-first backend code | `catalog/`, `category-authority/`, `color-edition/`, `color-registry/`, `crawl/`, `indexing/`, `review/`, `settings/`, `studio/` |
+| `src/indexlab/` | Runtime bridge and run artifact helpers | `runtimeBridge.js`, `runtimeBridgeEventHandlers.js` |
+| `src/pipeline/` | Crawl/run orchestration | `runProduct.js`, `runUntilComplete.js` |
+| `src/shared/` | Shared registries, defaults, generic helpers, tests | `settingsRegistry.js`, `tests/` |
 
-## High-Signal `tools/` Subtrees
+## `tools/` Tree
 
 | Path | Purpose | Key files |
 |------|---------|-----------|
 | `tools/gui-react/` | React/Vite/TypeScript operator GUI | `package.json`, `vite.config.ts`, `src/App.tsx`, `src/registries/pageRegistry.ts` |
-| `tools/gui-react/src/features/` | stateful GUI feature implementations | catalog, indexing, runtime-ops, review, studio, pipeline-settings, llm-config, storage-manager |
-| `tools/gui-react/src/pages/` | route shells and page-local implementations | `layout/AppShell.tsx`, `storage/StoragePage.tsx`, `test-mode/TestModePage.tsx` |
-| `tools/launchers/` | launcher-related assets and helpers | consumed by packaging/setup flows |
-| `tools/searxng/` | optional local SearXNG sidecar | `docker-compose.yml` |
-| `tools/structured-metadata-sidecar/` | sidecar package for structured-metadata helpers | separate utility boundary from the GUI server |
-| `tools/build-exe.mjs` | packaged desktop build pipeline | rebuilds GUI and emits `SpecFactory.exe` |
-| `tools/build-setup-exe.mjs` | packaged launcher build pipeline | emits `Launcher.exe` |
-| `tools/specfactory-launcher.mjs` | setup/bootstrap helper runtime | separate helper server from `src/api/guiServer.js` |
-| `tools/check-env-example-sync.mjs` | env-template drift checker | powers `npm run env:check` |
+| `tools/gui-react/src/features/` | Stateful GUI feature implementations | catalog, color-registry, indexing, llm-config, pipeline-settings, review, runtime-ops, studio, storage-manager |
+| `tools/gui-react/src/pages/` | Route shells and page-local modules | `layout/AppShell.tsx`, `overview/OverviewPage.tsx`, `storage/StoragePage.tsx`, `test-mode/TestModePage.tsx` |
+| `tools/searxng/` | Optional local search sidecar | `docker-compose.yml` |
+| `tools/build-exe.mjs` | Windows packaging flow | Rebuilds GUI and emits `SpecFactory.exe`. |
+| `tools/specfactory-launcher.mjs` | Setup/bootstrap helper | Used by `npm run setup:gui`. |
+| `tools/check-env-example-sync.mjs` | Manifest coverage audit | Scans referenced env keys against `CONFIG_MANIFEST_KEYS`; it does not compare `.env` to `.env.example`. |
 
-## Runtime-Created Or Default Paths
+## Runtime-Created Files And Directories
 
-| Path / concept | Source of truth | Notes |
-|----------------|-----------------|-------|
-| global AppDb | `src/api/bootstrap/createBootstrapSessionLayer.js` | default path `.workspace/db/app.sqlite` |
-| per-category SpecDb | `src/app/api/specDbRuntime.js`, `src/shared/settingsRegistry.js` | default path `.workspace/db/<category>/spec.sqlite` |
-| local output root | `src/core/config/runtimeArtifactRoots.js` | default path `.workspace/output` |
-| local IndexLab root | `src/core/config/runtimeArtifactRoots.js` | default path `.workspace/runs` |
-| product rebuild files | `src/features/catalog/products/writeProductIdentity.js` | default path `.workspace/products/{productId}/product.json` |
-| built GUI assets | `tools/gui-react/dist/` | produced by `npm run gui:build`, served by `src/api/guiServer.js` |
+| Path | Source | Notes |
+|------|--------|-------|
+| `.workspace/db/app.sqlite` | `src/app/api/bootstrap/createBootstrapSessionLayer.js` | Global AppDb. |
+| `.workspace/db/<category>/spec.sqlite` | `src/app/api/specDbRuntime.js` | Per-category SpecDb. |
+| `.workspace/output/` | `src/core/config/runtimeArtifactRoots.js` | Output root. |
+| `.workspace/runs/` | `src/core/config/runtimeArtifactRoots.js` | IndexLab run artifacts. |
+| `.workspace/products/` | `src/core/config/runtimeArtifactRoots.js` | Product checkpoint root. |
+| `.workspace/global/` | `src/core/config/runtimeArtifactRoots.js` | Boot-time user settings fallback root. |
+| `.workspace/runtime/snapshots/` | `src/core/config/runtimeArtifactRoots.js` | GUI-written per-run settings snapshots. |
 
-## Documentation Layout
+## Fast Navigation Hints
 
-| Path | Purpose | Notes |
-|------|---------|-------|
-| `docs/README.md` | master entrypoint | first file for new agents |
-| `docs/01-project-overview/` -> `docs/07-patterns/` | current-state docs hierarchy | maintained authority set for this pass |
-| `docs/05-operations/documentation-audit-ledger.md` | audit record | file-by-file disposition record for this refresh |
-| `docs/implementation/` | excluded subtree | off-limits for this pass |
-| `docs/data-structure/` | excluded subtree | off-limits for this pass |
+| If you need to know... | Go here first |
+|------------------------|---------------|
+| Mounted backend route order | `src/app/api/guiServerRuntime.js` |
+| Frontend routed pages | `tools/gui-react/src/registries/pageRegistry.ts` |
+| API client call pattern | `tools/gui-react/src/api/client.ts` |
+| Config/env key inventory | `src/shared/settingsRegistry.js`, `src/core/config/manifest.js` |
+| DB schema + migrations | `src/db/specDbSchema.js`, `src/db/appDbSchema.js`, `src/db/specDbMigrations.js` |
+| Storage API contract | `src/features/indexing/api/storageManagerRoutes.js` |
+
+## Read Next
+
+- [Conventions](./conventions.md)
+- [System Map](../03-architecture/system-map.md)
+- [Feature Index](../04-features/feature-index.md)
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServerRuntime.js` | runtime assembly, route context ownership, and metadata roots |
-| source | `src/api/bootstrap/createBootstrapSessionLayer.js` | `app.sqlite` location and eager AppDb bootstrap |
-| source | `src/core/config/runtimeArtifactRoots.js` | default `.workspace/output` and `.workspace/runs` roots |
-| source | `src/shared/settingsRegistry.js` | exported registry counts |
-| source | `src/app/api/routes/infra/categoryRoutes.js` | default categories API excludes harness and underscored directories |
-| source | `src/features/catalog/products/writeProductIdentity.js` | `.workspace/products/{productId}/product.json` rebuild path |
-| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route ownership |
-| config | `package.json` | root tooling and top-level files |
-| config | `playwright.config.ts` | E2E ownership |
+| source | `src/app/api/guiServerRuntime.js` | runtime entrypoint location and route-assembly ownership |
+| source | `src/app/api/bootstrap/createBootstrapSessionLayer.js` | AppDb bootstrap path |
+| source | `src/app/api/specDbRuntime.js` | per-category SpecDb path |
+| source | `src/core/config/runtimeArtifactRoots.js` | default `.workspace` runtime roots |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route inventory and feature folders |
+| config | `package.json` | root file list and scripts |
+| config | `playwright.config.ts` | `e2e/` ownership |
+| source | `tools/check-env-example-sync.mjs` | utility script location and actual purpose |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | storage API contract location |
+| filesystem | repo root | current top-level directories and files on disk |
 
 ## Related Documents
 
-- [Conventions](./conventions.md) - Explains how these folders are expected to be used and extended.
-- [System Map](../03-architecture/system-map.md) - Maps the folders onto runtime relationships.
-- [Feature Index](../04-features/feature-index.md) - Maps folder ownership to feature docs.
+- [Scope](./scope.md) - defines which folders belong to the live product boundary.
+- [Conventions](./conventions.md) - explains how these folders are expected to be extended.
+- [System Map](../03-architecture/system-map.md) - maps these paths onto runtime relationships.
+- [Feature Index](../04-features/feature-index.md) - links folder ownership to feature docs.

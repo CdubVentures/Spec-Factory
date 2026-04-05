@@ -17,7 +17,7 @@ import {
   computeCompoundCurve, diffRunPlans, buildFieldMapFromPacket,
   aggregateCrossRunMetrics, aggregateHostHealth,
 } from '../analytics/index.js';
-import { buildRoundSummaryFromEvents } from '../../../api/roundSummary.js';
+import { buildRoundSummaryFromEvents } from '../domain/roundSummary.js';
 
 export function createIndexlabRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {

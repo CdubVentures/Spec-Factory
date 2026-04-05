@@ -32,6 +32,7 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
   let brands_seeded = 0;
   let brands_removed = 0;
   let renames_seeded = 0;
+  let renames_removed = 0;
   let settings_seeded = 0;
   let settings_removed = 0;
   let studio_maps_seeded = 0;
@@ -65,7 +66,16 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
           if (categories.length > 0) {
             appDb.setBrandCategories(brand.identifier, categories);
           }
+          // WHY: Clean-slate per brand — delete existing renames before re-inserting
+          // from JSON. Prevents both stale renames (removed from JSON) and duplicate
+          // rows (plain INSERT on reseed with unchanged renames).
+          const existingRenameCount = appDb.db
+            .prepare('DELETE FROM brand_renames WHERE identifier = ?')
+            .run(brand.identifier).changes || 0;
           const renames = Array.isArray(brand.renames) ? brand.renames : [];
+          if (existingRenameCount > renames.length) {
+            renames_removed += existingRenameCount - renames.length;
+          }
           for (const rename of renames) {
             appDb.insertBrandRename({
               identifier: brand.identifier,
@@ -172,7 +182,7 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
 
   const skipped = !brandRaw && !settingsRaw;
   return {
-    skipped, brands_seeded, brands_removed, renames_seeded,
+    skipped, brands_seeded, brands_removed, renames_seeded, renames_removed,
     settings_seeded, settings_removed, studio_maps_seeded, studio_maps_removed,
   };
 }

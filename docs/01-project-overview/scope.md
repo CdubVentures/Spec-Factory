@@ -1,70 +1,98 @@
 # Scope
 
-> **Purpose:** Define the live system boundary, intended operators, and explicit non-goals so an arriving LLM does not invent missing systems.
+> **Purpose:** Define the live system boundary, entrypoints, and explicit non-goals so an arriving LLM does not invent missing services.
 > **Prerequisites:** [../README.md](../README.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
-Spec Factory is a local-first indexing and review workbench for product-spec discovery, crawl execution, review curation, category-authority maintenance, and runtime diagnostics. The live repo contains a Node.js HTTP/WebSocket server in `src/api/guiServer.js` and `src/api/guiServerRuntime.js`, a React/Vite operator GUI in `tools/gui-react/`, a global `app.sqlite` plus per-category `spec.sqlite` persistence layer in `src/db/`, authored control-plane content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js`.
+## Reality Snapshot
 
-## What This Project Is
+| Concern | Live source of truth |
+|---------|----------------------|
+| Desktop/server entrypoint | `src/app/api/guiServer.js` |
+| Server assembly | `src/app/api/guiServerRuntime.js` |
+| CLI entrypoint | `src/app/cli/spec.js` |
+| GUI source | `tools/gui-react/` |
+| Root dependency manifest | `package.json` |
+| GUI dependency manifest | `tools/gui-react/package.json` |
+| Global SQLite | `.workspace/db/app.sqlite` via `src/app/api/bootstrap/createBootstrapSessionLayer.js` |
+| Per-category SQLite | `.workspace/db/<category>/spec.sqlite` via `src/app/api/specDbRuntime.js` |
+| Authored category control plane | `category_authority/` |
+| Default run artifacts | `.workspace/runs/`, `.workspace/output/`, `.workspace/products/` via `src/core/config/runtimeArtifactRoots.js` |
 
-- A single-repo operator tool for category management, crawl-first indexing, review, studio authoring, runtime telemetry, and maintenance workflows.
-- A local HTTP plus WebSocket runtime that serves a built GUI and exposes `/api/v1/*` plus `/ws`.
-- A crawl-first pipeline centered on `src/features/crawl/`, `src/features/indexing/`, and `src/pipeline/runProduct.js`.
-- A local workstation toolchain with Node launch commands, packaged-desktop build scripts, and optional local helper sidecars such as SearXNG and the GraphQL helper API.
+## What This Repo Is
 
-## What This Project Is Not
+- A local-first operator workbench for category authority, crawl/index runs, review workflows, catalog maintenance, runtime operations, and settings management.
+- A Node.js HTTP plus WebSocket runtime that serves the built GUI and mounts `/api/v1/*` plus `/ws` from `src/app/api/guiServerRuntime.js`.
+- A React/Vite/TypeScript GUI in `tools/gui-react/` rendered through `HashRouter` in `tools/gui-react/src/App.tsx`.
+- A SQLite-backed system with one global app database plus per-category spec databases.
+- A repo that also exposes CLI workflows from `src/app/cli/spec.js` for crawl, review, reporting, authority compilation, ingestion, billing, LLM health, and migration tasks.
 
-- Not a public website, hosted SaaS, or server-rendered web product. No Next.js, Remix, Astro, or hosted edge runtime was verified.
-- Not a multi-user system with accounts, login flows, org tenancy, or operator-role authorization.
-- Not a cloud-first deployment repo with checked-in CI/CD workflows, Kubernetes manifests, Terraform, or hosted environment inventories.
-- Not a repo where `docs/implementation/` or `docs/data-structure/` is current-state authority for this documentation pass.
+## What This Repo Is Not
 
-## Explicit Exclusions
+- Not a hosted SaaS app. No deployment manifests, hosted runtime topology, or CI/CD workflow was verified in the repo.
+- Not an authenticated multi-user system. No request auth middleware, login flow, session issuance, or RBAC layer was verified.
+- Not a Next.js, Remix, Astro, or server-rendered frontend.
+- Not a cloud-storage-first system in the current implementation. The validated storage backend is local filesystem storage reported by `src/features/indexing/api/storageManagerRoutes.js`.
+- Not a repo with a checked-in `.env.example`. The observed bootstrap file is `.env`; `npm run env:check` is a manifest-coverage script, not a template sync check.
 
-- No verified login/logout UI, JWT/session issuance flow, or request-auth middleware in the live GUI server.
-- No live `/api/v1/convergence-settings` or `/api/v1/storage-settings` surface in the current source tree.
-- No verified remote Git workflow, branch naming convention, PR template, or GitHub Actions workflow checked into the repo.
-- No verified production deployment topology beyond local startup, packaging scripts, and optional local sidecars.
+## Operator Surfaces
 
-## Target Operators
+| Operator concern | GUI / CLI surface | Primary files |
+|------------------|-------------------|---------------|
+| Category + catalog setup | `/#/categories`, `/#/catalog`, `review layout`, `discover` | `tools/gui-react/src/features/catalog/components/CategoryManager.tsx`, `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`, `src/app/cli/commands/discoverCommand.js` |
+| Crawl + indexing runs | `/#/indexing`, `run-one`, `indexlab`, `run-batch`, `run-ad-hoc` | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `src/app/cli/commands/pipelineCommands.js`, `src/app/cli/commands/batchCommand.js` |
+| Review workflows | `/#/review`, `/#/review-components`, `review *` commands | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `src/app/cli/commands/reviewCommand.js` |
+| Studio / authority authoring | `/#/studio`, `compile-rules`, `category-compile` | `tools/gui-react/src/features/studio/components/StudioPage.tsx`, `src/app/cli/commands/fieldRulesCommands.js` |
+| Runtime + storage maintenance | `/#/runtime-ops`, `/#/storage`, `gui:api` | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx`, `src/features/indexing/api/storageManagerRoutes.js` |
+| Settings + provider config | `/#/llm-config`, `/#/pipeline-settings` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` |
 
-| Operator | Live entrypoints | Primary responsibilities |
-|----------|------------------|--------------------------|
-| Indexing operator | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `src/cli/spec.js` | launch runs, inspect run artifacts, tune runtime settings |
-| Review curator | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` | resolve scalar, component, and enum review queues |
-| Rule author | `tools/gui-react/src/features/studio/components/StudioPage.tsx` | maintain field rules, maps, tooltips, and component DB projections |
-| Runtime maintainer | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`, `src/app/api/processRuntime.js` | inspect workers, process status, queue state, SearXNG status, and storage inventory |
+## Explicit Non-Goals And Absent Systems
 
-## Current Status
+- No verified `src/middleware/auth.*`, `src/auth/*`, `src/session/*`, or equivalent authenticated request boundary.
+- No verified S3 runtime path in the current storage-manager API. `GET /api/v1/storage/overview` reports `storage_backend: "local"`.
+- No verified top-level `data/` directory in the current checkout.
+- No verified top-level Express/Fastify/Nest app. The live server uses Node `http` directly in `src/app/api/guiServerRuntime.js`.
+- No verified backend route for `POST /api/v1/review/:category/finalize` even though `tools/gui-react/src/features/review/components/ReviewPage.tsx` still references it.
 
-- Status: active internal/local development workbench.
-- Evidence collected on 2026-03-31:
-  - `npm run gui:build` succeeded and produced the current `tools/gui-react/dist/` bundle.
-  - `npm test` succeeded across the current worktree.
-  - `npm run env:check` still failed with `Missing keys in config manifest: PORT`.
-  - Runtime validation confirmed `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/runtime-settings`, `/api/v1/llm-policy`, and `/api/v1/storage/overview`.
-  - `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]` even though `category_authority/` also contains `_global/`, `_test_mouse/`, and `tests/`.
-  - `Dockerfile` still points at `src/cli/run-batch.js`, which does not exist in the current repo.
+## Validation Snapshot
+
+| Proof | Result | Notes |
+|------|--------|-------|
+| `npm run gui:build` | pass | Completed on 2026-04-04. |
+| `npm test` | pass | Completed on 2026-04-04 with `6803` tests and `0` failures. |
+| `npm run env:check` | fail | Reported `Missing keys in config manifest: PORT` on 2026-04-04. |
+| `GET /health` | pass | Returned `200` with `service: "gui-server"` during runtime smoke on 2026-04-04. |
+| `GET /api/v1/categories` | pass | Returned `["keyboard","monitor","mouse"]` during runtime smoke on 2026-04-04. |
+| `GET /api/v1/process/status` | pass | Returned `200` with `running: false` during runtime smoke on 2026-04-04. |
+| `GET /api/v1/storage/overview` | pass | Returned `200` with `storage_backend: "local"` and `total_runs: 15` during runtime smoke on 2026-04-04. |
+
+## Read Next
+
+- [Folder Map](./folder-map.md)
+- [Conventions](./conventions.md)
+- [System Map](../03-architecture/system-map.md)
+- [Known Issues](../05-operations/known-issues.md)
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | local GUI/API runtime entrypoint |
-| source | `src/api/guiServerRuntime.js` | runtime assembly and mounted route families |
-| source | `src/cli/spec.js` | CLI workflow surface |
+| source | `src/app/api/guiServer.js` | live desktop/server entrypoint |
+| source | `src/app/api/guiServerRuntime.js` | runtime assembly and mounted route families |
+| source | `src/app/cli/spec.js` | CLI command surface |
+| source | `tools/gui-react/src/App.tsx` | SPA router model |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | operator-facing GUI page inventory |
-| source | `src/app/api/routes/infra/categoryRoutes.js` | default categories API excludes the `tests` harness directory |
-| config | `package.json` | scripts and local run surfaces |
-| config | `Dockerfile` | stale batch entrypoint mismatch |
-| command | `npm run env:check` | failing March 31 env-parity baseline |
-| command | `npm run gui:build` | successful March 31 GUI build baseline |
-| command | `npm test` | successful March 31 suite baseline |
-| runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | local storage backend reporting |
+| source | `tools/check-env-example-sync.mjs` | env-check behavior and limitations |
+| config | `package.json` | scripts, Node engine, primary entrypoint metadata |
+| runtime | `GET /health` | server identity during runtime smoke on 2026-04-04 |
+| runtime | `GET /api/v1/categories` | live category API result on 2026-04-04 |
+| runtime | `GET /api/v1/process/status` | runtime process status contract on 2026-04-04 |
+| runtime | `GET /api/v1/storage/overview` | storage backend result on 2026-04-04 |
 
 ## Related Documents
 
-- [Folder Map](./folder-map.md) - Shows where each boundary lives on disk.
-- [Conventions](./conventions.md) - Lists repo rules before editing.
-- [Known Issues](../05-operations/known-issues.md) - Carries the current validation failures and live operational drift.
+- [Folder Map](./folder-map.md) - shows where each boundary in this scope statement lives on disk.
+- [Conventions](./conventions.md) - defines the repo rules that constrain changes inside this scope.
+- [System Map](../03-architecture/system-map.md) - expands this scope statement into runtime topology.
+- [Known Issues](../05-operations/known-issues.md) - captures the live defects and drift discovered during validation.

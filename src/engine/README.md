@@ -18,7 +18,7 @@ Field validation, normalization, and rule enforcement engine. Validates individu
 
 ## Dependencies
 - Allowed: `src/field-rules/` (rule loading, consumer gates, migrations), `src/shared/`, `src/utils/` (transitional).
-- Forbidden: `src/features/`, `src/api/`, `src/db/`, `src/pipeline/`.
+- Forbidden: `src/features/`, `src/app/api/`, `src/db/`, `src/pipeline/`.
 
 ## Domain Invariants
 - Field rules are loaded once and treated as immutable during a validation session.

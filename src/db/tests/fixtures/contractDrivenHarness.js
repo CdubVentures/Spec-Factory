@@ -8,7 +8,7 @@ import {
   buildSeedComponentDB,
   buildTestProducts,
   buildDeterministicSourceResults,
-} from '../../../testing/testDataProvider.js';
+} from '../../../tests/testDataProvider.js';
 import {
   buildReviewLayout,
   buildProductReviewPayload,

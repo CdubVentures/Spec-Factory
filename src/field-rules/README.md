@@ -16,7 +16,7 @@ Field rule compilation, loading, session caching, and consumer gating. Compiles 
 ## Dependencies
 - Allowed: `src/ingest/` (categoryCompile for authority path resolution), `src/shared/`.
 - External: `ajv` (schema validation), `semver` (version comparison).
-- Forbidden: `src/features/`, `src/api/`, `src/engine/` (engine depends on field-rules, not the reverse).
+- Forbidden: `src/features/`, `src/app/api/`, `src/engine/` (engine depends on field-rules, not the reverse).
 
 ## Domain Invariants
 - Compiled rules are versioned with content hashes. Re-compilation is idempotent for the same input.

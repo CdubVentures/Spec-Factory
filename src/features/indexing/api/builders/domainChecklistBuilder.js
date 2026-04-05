@@ -9,7 +9,7 @@ import {
   ensureUrlStat, bumpUrlStatEvent, choosePreferredSiteKind, cooldownSecondsRemaining,
   resolveHostBudget, resolveDomainChecklistStatus, classifyFetchOutcomeFromEvent,
   SITE_KIND_RANK, inferSiteKindByDomain,
-} from '../../../../api/helpers/domainBucketHelpers.js';
+} from '../../domain/domainBucketHelpers.js';
 
 export function createDomainChecklistBuilder({
   readGzipJsonlEvents,

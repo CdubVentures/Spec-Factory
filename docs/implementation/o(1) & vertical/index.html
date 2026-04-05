@@ -224,7 +224,7 @@
         <article class="panel">
           <h3>Structural Debt Satellites</h3>
           <ul class="callout-list">
-            <li><code>src/testing</code></li>
+            <li><code>src/tests</code></li>
             <li><code>src/queue</code></li>
             <li><code>src/publish</code></li>
             <li><code>src/intel</code></li>
@@ -389,7 +389,7 @@
         <article class="issue major">
           <div class="issue-top">
             <div>
-              <h3><code>src/testing</code></h3>
+              <h3><code>src/tests</code></h3>
               <div class="sub">Huge harness files form a cross-cutting maintenance choke point.</div>
             </div>
             <span class="severity major">Major</span>
@@ -655,7 +655,7 @@
                 <td>0</td>
               </tr>
               <tr>
-                <td class="mono">src/testing</td>
+                <td class="mono">src/tests</td>
                 <td>1</td>
                 <td>0</td>
               </tr>
@@ -682,7 +682,7 @@
         <tbody>
           <tr>
             <td class="mono">GUI routes</td>
-            <td><code>src/api/guiServerRuntime.js</code> plus <code>src/app/api/routeRegistry.js</code></td>
+            <td><code>src/app/api/guiServerRuntime.js</code> plus <code>src/app/api/routeRegistry.js</code></td>
             <td>The mounted route list and exported route order are not the same SSOT, so route work can require multiple edits and drift review.</td>
           </tr>
           <tr>
@@ -753,7 +753,7 @@
             <td>Large and non-canonical, but currently less fragmented than pipeline or API assembly.</td>
           </tr>
           <tr>
-            <td class="mono">src/testing</td>
+            <td class="mono">src/tests</td>
             <td>10</td>
             <td>256.6 KB</td>
             <td>None</td>
@@ -821,7 +821,7 @@
         </thead>
         <tbody>
           <tr>
-            <td class="mono">src/testing/testDataProvider.js</td>
+            <td class="mono">src/tests/testDataProvider.js</td>
             <td class="danger">2964</td>
             <td>Test harness monolith and a direct drag on test-surface evolution.</td>
           </tr>
@@ -831,7 +831,7 @@
             <td>Large system bootstrap surface; not counted as a top blocker, but still expensive to change safely.</td>
           </tr>
           <tr>
-            <td class="mono">src/testing/testRunnerPipeline.js</td>
+            <td class="mono">src/tests/testRunner.js</td>
             <td class="danger">1628</td>
             <td>Another test choke point that centralizes too much flow logic.</td>
           </tr>

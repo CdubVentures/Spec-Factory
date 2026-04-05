@@ -123,7 +123,7 @@ test('findOrphanIndexLabPids parses PID output on non-win32 platforms', async ()
   assert.equal(commandCalls.length, 1);
   assert.equal(commandCalls[0].cmd, 'sh');
   assert.equal(commandCalls[0].args[0], '-lc');
-  assert.ok(commandCalls[0].args[1].includes('src/cli/(spec|indexlab)\\.js'));
+  assert.ok(commandCalls[0].args[1].includes('src/app/cli/(spec|indexlab)\\.js'));
   assert.ok(commandCalls[0].args[1].includes('--mode indexlab'));
   assert.deepEqual(commandCalls[0].opts, { timeoutMs: 8_000 });
 });

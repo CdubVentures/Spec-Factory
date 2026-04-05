@@ -200,12 +200,35 @@ function seedProductCheckpoint(specDb, cp) {
     }
   }
 
+  // WHY: Rebuild crawl_sources from product.json.sources so URL index survives
+  // DB deletion even when run.json files are missing. Does NOT seed url_crawl_ledger
+  // because its additive counters would double-count when run.json is also present.
+  const sources = Array.isArray(cp.sources) ? cp.sources : [];
+  let sourcesSeeded = 0;
+  for (const src of sources) {
+    if (!src.content_hash) continue;
+    specDb.insertCrawlSource({
+      content_hash: src.content_hash,
+      category: cp.category || '',
+      product_id: cp.product_id || '',
+      run_id: src.last_seen_run_id || cp.latest_run_id || '',
+      source_url: src.url || '',
+      final_url: src.final_url || '',
+      host: src.host || extractHost(src.url),
+      http_status: src.status || 0,
+      file_path: src.html_file || '',
+      has_screenshot: (src.screenshot_count || 0) > 0,
+      crawled_at: cp.updated_at || '',
+    });
+    sourcesSeeded++;
+  }
+
   return {
     type: 'product',
     product_id: cp.product_id || '',
     category: cp.category || '',
     runs_seeded: 0,
-    sources_seeded: 0,
+    sources_seeded: sourcesSeeded,
     artifacts_seeded: 0,
     cooldowns_seeded: cooldownsSeeded,
     product_seeded: true,
@@ -256,6 +279,7 @@ export function seedFromCheckpoint({ specDb, checkpoint, rawJson }) {
         const pid = checkpoint.product_id || '';
         if (pid) {
           specDb.db.prepare('DELETE FROM query_cooldowns WHERE product_id = ?').run(pid);
+          specDb.db.prepare('DELETE FROM crawl_sources WHERE product_id = ?').run(pid);
         }
       }
       return seed(specDb, checkpoint);

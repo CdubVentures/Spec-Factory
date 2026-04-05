@@ -5,7 +5,7 @@
 // Global surfaces are documented here as metadata only (not dispatched).
 //
 // IMPORT RULES: This file imports NOTHING from seed.js, seedEngine.js,
-// src/features/, src/pipeline/, or src/api/. Zero external imports.
+// src/features/, src/pipeline/, or src/app/api/. Zero external imports.
 // Category and reseed surfaces use factory + DI to avoid circular deps.
 
 // ── Global surfaces (metadata only — not engine-dispatched) ─────────────────
@@ -21,7 +21,7 @@ export const GLOBAL_SURFACES = Object.freeze([
     dataFlow: 'json-authoritative → SQL cache on boot; SQL-primary at runtime',
     hashGated: true,
     hashKey: 'brand_registry',
-    calledFrom: 'src/api/bootstrap/createBootstrapSessionLayer.js',
+    calledFrom: 'src/app/api/bootstrap/createBootstrapSessionLayer.js',
     seederFile: 'src/db/appDbSeed.js',
   },
   {
@@ -34,7 +34,7 @@ export const GLOBAL_SURFACES = Object.freeze([
     dataFlow: 'json → SQL on boot; SQL-primary at runtime; JSON is fallback mirror',
     hashGated: true,
     hashKey: 'user_settings',
-    calledFrom: 'src/api/bootstrap/createBootstrapSessionLayer.js',
+    calledFrom: 'src/app/api/bootstrap/createBootstrapSessionLayer.js',
     seederFile: 'src/db/appDbSeed.js',
   },
   {
@@ -47,7 +47,7 @@ export const GLOBAL_SURFACES = Object.freeze([
     dataFlow: 'json → SQL (with fallback to EG_DEFAULT_COLORS, 77 entries)',
     hashGated: true,
     hashKey: 'color_registry',
-    calledFrom: 'src/api/bootstrap/createBootstrapSessionLayer.js',
+    calledFrom: 'src/app/api/bootstrap/createBootstrapSessionLayer.js',
     seederFile: 'src/features/color-registry/colorRegistrySeed.js',
   },
 ]);
@@ -80,11 +80,14 @@ export function buildCategorySurfaces(steps) {
       scope: 'category',
       dependsOn: ['components'],
       tables: ['component_identity', 'component_values'],
-      before: null,
+      before: (ctx) => steps.reconcileComponentOverrideRows(ctx.db, ctx.config, ctx.category),
       execute: (ctx) => steps.seedComponentOverrides(ctx.db, ctx.config, ctx.category),
       after: null,
-      summarize: (result) => ({
+      summarize: (result, beforeResult) => ({
         component_overrides_seeded: result.overrideCount,
+        removed_override_value_rows: beforeResult?.removed_override_value_rows ?? 0,
+        removed_alias_rows: beforeResult?.removed_alias_rows ?? 0,
+        reset_review_status_rows: beforeResult?.reset_review_status_rows ?? 0,
       }),
     },
     {

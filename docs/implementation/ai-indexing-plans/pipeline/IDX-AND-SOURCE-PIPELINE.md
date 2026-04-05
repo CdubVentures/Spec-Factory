@@ -73,9 +73,6 @@ The following should now be read as historical observations only:
 | source | `src/features/indexing/discovery/searchDiscovery.js` | discovery path and deterministic search profile generation |
 | source | `src/features/indexing/runtime/idxRuntimeMetadata.js` | current runtime IDX badge surface definitions |
 | source | `src/publish/publishingPipeline.js` | `block_publish_when_unk` publish-time behavior |
-| test | `test/searchDiscoveryPhase06Runtime.test.js` | discovery pipeline exercised under registry-backed discovery |
-| test | `test/publishingPipeline.test.js` | publish blocker behavior remains covered |
-| test | `test/llmCallsDashboard.test.js` | dashboard-specific `input_summary` / `output_summary` omission remains intentional |
 
 ## Related Documents
 

@@ -30,7 +30,7 @@ export async function findOrphanIndexLabPids({ platform, runCommandCapture }) {
       '  )',
       '  -and $_.CommandLine',
       '  -and (',
-      "    $_.CommandLine -match 'src[\\\\/]cli[\\\\/](spec|indexlab)\\.js'",
+      "    $_.CommandLine -match 'src[\\\\/]app[\\\\/]cli[\\\\/](spec|indexlab)\\.js'",
       '  )',
       '  -and (',
       "    $_.CommandLine -match '\\bindexlab\\b'",
@@ -51,7 +51,7 @@ export async function findOrphanIndexLabPids({ platform, runCommandCapture }) {
 
   const listed = await runCommandCapture(
     'sh',
-    ['-lc', "ps -eo pid=,args= | grep -E \"(node|sh|bash).*(src/cli/(spec|indexlab)\\.js).*(indexlab|--mode indexlab|--local)\" | grep -v grep | awk '{print $1}'"],
+    ['-lc', "ps -eo pid=,args= | grep -E \"(node|sh|bash).*(src/app/cli/(spec|indexlab)\\.js).*(indexlab|--mode indexlab|--local)\" | grep -v grep | awk '{print $1}'"],
     { timeoutMs: 8_000 },
   );
   if (!listed.ok && !String(listed.stdout || '').trim()) return [];

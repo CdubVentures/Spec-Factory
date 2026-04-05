@@ -98,12 +98,12 @@ table.ref tr:hover{background:var(--s2)}
 </header>
 
 <div class="stats">
-  <div class="stat"><div class="n">15</div><div class="l">Durable File Surfaces</div></div>
+  <div class="stat"><div class="n">13</div><div class="l">Durable File Surfaces</div></div>
   <div class="stat"><div class="n">2</div><div class="l">Databases</div></div>
   <div class="stat"><div class="n">42</div><div class="l">Runtime Tables</div></div>
   <div class="stat"><div class="n">24</div><div class="l">Spec Tables With File-Backed Rebuild Paths</div></div>
   <div class="stat"><div class="n">11</div><div class="l">Spec Tables With No Durable Rebuild Source</div></div>
-  <div class="stat"><div class="n">7</div><div class="l">Confirmed Gap Classes</div></div>
+  <div class="stat"><div class="n">4</div><div class="l">Remaining Gap Classes</div></div>
 </div>
 
 <div class="legend">
@@ -144,8 +144,8 @@ table.ref tr:hover{background:var(--s2)}
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
       <span class="tree-name tree-file">brand_registry.json</span>
       <span class="tree-spacer"></span>
-      <span class="tree-flow flow-gap">partial</span>
-      <span class="tree-note">hash-gated boot seed -&gt; brands / brand_categories / brand_renames | brand CRUD writes JSON, but existing-DB rename-row prune is not lossless</span>
+      <span class="tree-flow flow-roundtrip">&harr; round-trip</span>
+      <span class="tree-note">hash-gated boot seed -&gt; brands / brand_categories / brand_renames | brand CRUD writes JSON, clean-slate-per-brand rename reconcile</span>
     </div>
     <div class="tree-line">
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
@@ -243,24 +243,6 @@ table.ref tr:hover{background:var(--s2)}
 
     <div class="tree-divider"></div>
 
-    <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">out/{cat}/{pid}/latest/</span></div>
-    <div class="tree-line">
-      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
-      <span class="tree-name tree-file">normalized.json</span>
-      <span class="tree-spacer"></span>
-      <span class="tree-flow flow-gap">partial</span>
-      <span class="tree-note">full sync -&gt; item_field_state / item_component_links / item_list_links | not an explicit boot hash-gated surface</span>
-    </div>
-    <div class="tree-line">
-      <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
-      <span class="tree-name tree-file">provenance.json</span>
-      <span class="tree-spacer"></span>
-      <span class="tree-flow flow-gap">partial</span>
-      <span class="tree-note">full sync -&gt; item_field_state confidence/provenance fields | not an explicit boot hash-gated surface</span>
-    </div>
-
-    <div class="tree-divider"></div>
-
     <div class="tree-line"><span class="tree-indent">&ensp;&ensp;</span><span class="tree-name tree-dir">.workspace/runs/{runId}/</span></div>
     <div class="tree-line">
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
@@ -278,7 +260,7 @@ table.ref tr:hover{background:var(--s2)}
       <span class="tree-name tree-file">product.json</span>
       <span class="tree-spacer"></span>
       <span class="tree-flow flow-gap">partial</span>
-      <span class="tree-note">checkpoint reseed -&gt; products / product_queue / query_cooldowns | product.json.sources is currently ignored on rebuild</span>
+      <span class="tree-note">checkpoint reseed -&gt; products / product_queue / query_cooldowns / crawl_sources (baseline) | url_crawl_ledger not seeded (run.json is authoritative for overlapping rows)</span>
     </div>
     <div class="tree-line">
       <span class="tree-indent">&ensp;&ensp;&ensp;&ensp;</span>
@@ -290,14 +272,14 @@ table.ref tr:hover{background:var(--s2)}
   </div>
 
   <div class="note">
-    <strong>Bottom line:</strong> a deleted-DB rebuild is stronger than existing-DB JSON propagation. The main losses today are SQL-first component review edits, SQL-first enum/list review edits, key-review history tables, and the ignored <code>product.json.sources</code> path.
+    <strong>Bottom line:</strong> a deleted-DB rebuild is stronger than existing-DB JSON propagation. The main losses today are SQL-first component review edits, SQL-first enum/list review edits, and key-review history tables.
   </div>
 </section>
 
 <section class="surface">
   <div class="surface-head">
     <h2>JSON File Inventory</h2>
-    <span class="tag tag-hash">15 audited surfaces</span>
+    <span class="tag tag-hash">13 audited surfaces</span>
   </div>
   <p class="surface-desc">Durable files that matter to rebuilds, grouped the same way as the older page, but with the current recovery behavior and caveats.</p>
 
@@ -306,7 +288,7 @@ table.ref tr:hover{background:var(--s2)}
     <table class="ref">
       <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
       <tbody>
-        <tr><td class="fp">category_authority/_global/brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Brand CRUD writes JSON, but existing-DB rename removal does not fully prune old SQL rows.</td></tr>
+        <tr><td class="fp">category_authority/_global/brand_registry.json</td><td>brands, brand_categories, brand_renames</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Brand CRUD writes JSON. Clean-slate-per-brand rename reconcile on reseed.</td></tr>
         <tr><td class="fp">category_authority/_global/color_registry.json</td><td>color_registry</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Color CRUD writes JSON. Missing file falls back to default palette.</td></tr>
         <tr><td class="fp">.workspace/global/user-settings.json</td><td>settings, studio_maps</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Runtime settings saves write JSON mirror.</td></tr>
       </tbody>
@@ -354,16 +336,6 @@ table.ref tr:hover{background:var(--s2)}
     </table>
   </div>
 
-  <div class="domain-group">
-    <div class="domain-label">Pipeline Output (Per-Product Latest)</div>
-    <table class="ref">
-      <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
-      <tbody>
-        <tr><td class="fp">out/{cat}/{pid}/latest/normalized.json</td><td>item_field_state, item_component_links, item_list_links</td><td><span class="tag tag-seed">full sync</span></td><td>Fresh rebuild / sync only. Not its own boot hash-gated surface.</td></tr>
-        <tr><td class="fp">out/{cat}/{pid}/latest/provenance.json</td><td>item_field_state confidence / provenance fields</td><td><span class="tag tag-seed">full sync</span></td><td>Fresh rebuild / sync only. Not its own boot hash-gated surface.</td></tr>
-      </tbody>
-    </table>
-  </div>
 
   <div class="domain-group">
     <div class="domain-label">Checkpoint Files (.workspace/)</div>
@@ -371,7 +343,7 @@ table.ref tr:hover{background:var(--s2)}
       <thead><tr><th>Path</th><th>Feeds SQL</th><th>Recovery Path</th><th>Write-Back / Caveat</th></tr></thead>
       <tbody>
         <tr><td class="fp">.workspace/runs/{runId}/run.json</td><td>runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, source_screenshots, source_videos</td><td><span class="tag tag-reseed">checkpoint reseed</span></td><td>Source rows come from <code>run.json.sources</code>. Media index rows are rebuilt by disk scan.</td></tr>
-        <tr><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns</td><td><span class="tag tag-reseed">checkpoint reseed</span></td><td><code>sources</code> is stored in JSON but currently ignored by <code>seedFromCheckpoint()</code>.</td></tr>
+        <tr><td class="fp">.workspace/products/{pid}/product.json</td><td>products, product_queue, query_cooldowns, crawl_sources</td><td><span class="tag tag-reseed">checkpoint reseed</span></td><td>Sources seed <code>crawl_sources</code> as baseline (not <code>url_crawl_ledger</code> — run.json is authoritative for overlapping rows).</td></tr>
         <tr><td class="fp">.workspace/products/{pid}/color_edition.json</td><td>color_edition_finder</td><td><span class="tag tag-reseed">reseed phase</span></td><td>Round-trip. Rebuild path is verified.</td></tr>
       </tbody>
     </table>
@@ -389,7 +361,7 @@ table.ref tr:hover{background:var(--s2)}
     <tbody>
       <tr><td class="fp">brands</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Fresh rebuild and existing-DB JSON edit both reconcile correctly.</td></tr>
       <tr><td class="fp">brand_categories</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Fresh rebuild and existing-DB JSON edit both reconcile correctly.</td></tr>
-      <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td><span class="tag tag-gap">partial</span> Rebuild from scratch is correct, but existing-DB reseed inserts new rename rows without pruning removed ones.</td></tr>
+      <tr><td class="fp">brand_renames</td><td class="fp">brand_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Clean-slate-per-brand: DELETE all renames for each brand before re-inserting from JSON. Handles both stale removal and duplicate prevention.</td></tr>
       <tr><td class="fp">settings</td><td class="fp">.workspace/global/user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Delete reconcile is implemented.</td></tr>
       <tr><td class="fp">studio_maps</td><td class="fp">.workspace/global/user-settings.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Delete reconcile is implemented.</td></tr>
       <tr><td class="fp">color_registry</td><td class="fp">color_registry.json</td><td><span class="tag tag-hash">hash-gated</span> app boot</td><td>Missing file falls back to default palette; CRUD writes JSON mirror.</td></tr>
@@ -409,10 +381,10 @@ table.ref tr:hover{background:var(--s2)}
     <table class="ref">
       <thead><tr><th>Table</th><th>Durable Source</th><th>Deleted DB Rebuild</th><th>Existing DB JSON Edit</th><th>Note</th></tr></thead>
       <tbody>
-        <tr><td class="fp">item_field_state</td><td class="fp">latest/normalized.json + latest/provenance.json + overrides.json</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>No explicit boot hash gate for latest outputs.</td></tr>
+        <tr><td class="fp">item_field_state</td><td class="fp">overrides.json (override columns only)</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Field values not yet produced in production (no validation stage). Test harnesses seed via fixture files. Override columns rebuild from overrides.json.</td></tr>
         <tr><td class="fp">product_review_state</td><td class="fp">_overrides/overrides.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-gap">partial</span></td><td>Existing-DB path clears SQL and relies on follow-up category sync.</td></tr>
-        <tr><td class="fp">item_component_links</td><td class="fp">latest/normalized.json + component tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from normalized fields plus component catalog.</td></tr>
-        <tr><td class="fp">item_list_links</td><td class="fp">latest/normalized.json + list tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from normalized fields plus enum/list data.</td></tr>
+        <tr><td class="fp">item_component_links</td><td class="fp">derived from item_field_state + component tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from field values plus component catalog. Empty until validation stage produces field data.</td></tr>
+        <tr><td class="fp">item_list_links</td><td class="fp">derived from item_field_state + list tables</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Derived from field values plus enum/list data. Empty until validation stage produces field data.</td></tr>
         <tr><td class="fp">key_review_state</td><td class="fp">derived from current item / component / list state</td><td><span class="tag tag-gap">partial</span></td><td><span class="tag tag-seed">full sync</span></td><td>Only the state shell is rebuilt; detailed AI run and audit history is not.</td></tr>
       </tbody>
     </table>
@@ -444,7 +416,7 @@ table.ref tr:hover{background:var(--s2)}
         <tr><td class="fp">product_runs</td><td class="fp">run.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Recovered with <code>is_latest</code> and summary data.</td></tr>
         <tr><td class="fp">run_artifacts</td><td class="fp">run.json artifacts</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Needset, search profile, run summary, brand resolution, runtime ops panels, and synthetic run_checkpoint are restored.</td></tr>
         <tr><td class="fp">crawl_sources</td><td class="fp">run.json.sources</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td>Only sources with content hashes are seeded.</td></tr>
-        <tr><td class="fp">url_crawl_ledger</td><td class="fp">run.json.sources</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td><code>product.json.sources</code> is ignored today.</td></tr>
+        <tr><td class="fp">url_crawl_ledger</td><td class="fp">run.json.sources</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot hash</span></td><td><code>product.json.sources</code> seeds <code>crawl_sources</code> as baseline (not <code>url_crawl_ledger</code> — additive counters).</td></tr>
         <tr><td class="fp">source_screenshots</td><td class="fp">run checkpoints + media files on disk</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Recovered by media index rebuild.</td></tr>
         <tr><td class="fp">source_videos</td><td class="fp">run checkpoints + media files on disk</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Recovered by media index rebuild.</td></tr>
         <tr><td class="fp">color_edition_finder</td><td class="fp">.workspace/products/{pid}/color_edition.json</td><td><span class="tag tag-auto">yes</span></td><td><span class="tag tag-reseed">boot scan</span></td><td>Round-trip and rebuild path are verified.</td></tr>
@@ -529,7 +501,7 @@ table.ref tr:hover{background:var(--s2)}
   <table class="ref">
     <thead><tr><th>Surface</th><th>Durable Source</th><th>Tables</th><th>Important Caveat</th></tr></thead>
     <tbody>
-      <tr><td class="fp">checkpoint</td><td class="fp">run.json + product.json + media files</td><td>products, product_queue, runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, source_screenshots, source_videos</td><td><code>product.json.sources</code> is not consumed by <code>seedFromCheckpoint()</code>.</td></tr>
+      <tr><td class="fp">checkpoint</td><td class="fp">run.json + product.json + media files</td><td>products, product_queue, runs, product_runs, run_artifacts, crawl_sources, url_crawl_ledger, query_cooldowns, source_screenshots, source_videos</td><td><code>product.json.sources</code> seeds <code>crawl_sources</code> as baseline. <code>url_crawl_ledger</code> not seeded from product.json (additive counters).</td></tr>
       <tr><td class="fp">color_edition</td><td class="fp">color_edition.json</td><td>color_edition_finder</td><td>Verified rebuild path.</td></tr>
       <tr><td class="fp">llm_route_matrix</td><td class="fp">llm_route_matrix.json</td><td>llm_route_matrix</td><td>Empty <code>rows</code> means reset to defaults, not "leave SQL untouched".</td></tr>
       <tr><td class="fp">overrides</td><td class="fp">overrides.json</td><td>override-derived review / field state</td><td>Indirect path: clears override-derived SQL and invalidates full sync rather than directly reimporting every derived row.</td></tr>
@@ -550,7 +522,7 @@ table.ref tr:hover{background:var(--s2)}
       <tr><td class="fp">components</td><td class="fp">component_db/*.json</td><td>component_identity, component_aliases, component_values</td><td>Base component catalog rebuilds, but runtime component review edits are not mirrored back out.</td></tr>
       <tr><td class="fp">component_overrides</td><td class="fp">_overrides/components/*.json</td><td>component_identity, component_values</td><td>Upsert-only JSON import; removed override-file content does not fully prune all previously-seeded user rows from an existing DB.</td></tr>
       <tr><td class="fp">lists</td><td class="fp">known_values.json + field_studio_map.json.manual_enum_values</td><td>enum_lists, list_values</td><td>Runtime enum review edits are SQL-first and not auto-exported.</td></tr>
-      <tr><td class="fp">products</td><td class="fp">latest/normalized.json + latest/provenance.json + overrides.json</td><td>item_field_state, item_component_links, item_list_links</td><td>These files are not independent boot hash-gated surfaces.</td></tr>
+      <tr><td class="fp">products</td><td class="fp">overrides.json (override columns)</td><td>item_field_state, item_component_links, item_list_links</td><td>Field values not yet produced in production (no validation stage). Override columns rebuild from overrides.json.</td></tr>
       <tr><td class="fp">backfill_links</td><td class="fp">derived from current SQL rows</td><td>item_component_links</td><td>Repair step, not a durable source on its own.</td></tr>
       <tr><td class="fp">source_key_review</td><td class="fp">derived from current SQL rows</td><td>key_review_state</td><td>Only <code>key_review_state</code> is rebuilt; run/source/audit history is not.</td></tr>
     </tbody>
@@ -565,11 +537,11 @@ table.ref tr:hover{background:var(--s2)}
   <table class="ref">
     <thead><tr><th>Surface</th><th>Stored Meta</th><th>What Changes Trigger</th><th>Current Caveat</th></tr></thead>
     <tbody>
-      <tr><td class="fp">brand_registry.json</td><td class="fp">app._seed_hashes.brand_registry</td><td>brands, brand_categories, brand_renames</td><td>Rename-row prune is partial on existing DBs.</td></tr>
+      <tr><td class="fp">brand_registry.json</td><td class="fp">app._seed_hashes.brand_registry</td><td>brands, brand_categories, brand_renames</td><td>Clean-slate-per-brand rename reconcile. Stale rows and duplicates are both handled.</td></tr>
       <tr><td class="fp">user-settings.json</td><td class="fp">app._seed_hashes.user_settings</td><td>settings, studio_maps</td><td>Delete reconcile is implemented.</td></tr>
       <tr><td class="fp">color_registry.json</td><td class="fp">app._seed_hashes.color_registry</td><td>color_registry</td><td>Fallback palette exists if file is missing.</td></tr>
       <tr><td class="fp">run.json</td><td class="fp">spec.file_seed_hash(run:{runId})</td><td>checkpoint-backed run rows</td><td>Only run checkpoint sources feed crawl tables.</td></tr>
-      <tr><td class="fp">product.json</td><td class="fp">spec.file_seed_hash(product:{pid})</td><td>products, product_queue, query_cooldowns</td><td><code>sources</code> payload is stored but ignored on rebuild.</td></tr>
+      <tr><td class="fp">product.json</td><td class="fp">spec.file_seed_hash(product:{pid})</td><td>products, product_queue, query_cooldowns, crawl_sources</td><td>Sources seed <code>crawl_sources</code> as baseline (<code>url_crawl_ledger</code> not seeded — additive counters).</td></tr>
       <tr><td class="fp">llm_route_matrix.json</td><td class="fp">spec.file_seed_hash(llm_route_matrix)</td><td>llm_route_matrix</td><td>Round-trip is verified.</td></tr>
       <tr><td class="fp">field_key_order.json</td><td class="fp">spec.file_seed_hash(field_key_order)</td><td>field_key_order</td><td>Round-trip is verified.</td></tr>
       <tr><td class="fp">field_studio_map.json</td><td class="fp">spec.file_seed_hash(field_studio_map)</td><td>field_studio_map, manual enum list_values</td><td>Compile may still be needed after some direct edits.</td></tr>
@@ -590,10 +562,10 @@ table.ref tr:hover{background:var(--s2)}
       <tr><td>Component review mutations are SQL-first runtime edits.</td><td>Deleting <code>spec.sqlite</code> can lose reviewed component aliases, review status, links, and user property overrides unless they were separately mirrored into <code>_overrides/components/*.json</code>.</td></tr>
       <tr><td>Enum/list review mutations are SQL-first runtime edits.</td><td>Accepted enum promotions and manual enum additions can be lost unless they were separately encoded in durable JSON such as <code>field_studio_map.json</code>.</td></tr>
       <tr><td><code>key_review_runs</code>, <code>key_review_run_sources</code>, and <code>key_review_audit</code> are SQL-only.</td><td><code>key_review_state</code> can be reconstructed, but run/source/audit history cannot.</td></tr>
-      <tr><td><code>latest/normalized.json</code> and <code>latest/provenance.json</code> are not explicit boot hash-gated surfaces.</td><td>They participate through full category sync, not through narrow boot reseed the way control-plane files do.</td></tr>
-      <tr><td><code>product.json.sources</code> is ignored during product-checkpoint rebuild.</td><td>Source rows in product checkpoints do not currently restore crawl-source tables.</td></tr>
+      <tr><td><code>latest/normalized.json</code> and <code>latest/provenance.json</code> do not exist in production.</td><td>No validation stage yet. The seed path reads them for test harnesses only. Not a rebuild gap &mdash; no production data to lose.</td></tr>
+      <tr><td><code>product.json.sources</code> seeds <code>crawl_sources</code> as baseline only.</td><td><strong>Closed.</strong> <code>url_crawl_ledger</code> is not seeded from product.json (additive counters). <code>run.json</code> remains authoritative for overlapping rows. Accepted limitation.</td></tr>
       <tr><td>Direct <code>field_studio_map.json</code> edits can require compile.</td><td>The stored map reseeds SQL, but generated artifacts may be stale until compile runs.</td></tr>
-      <tr><td>Existing-DB reconcile is weaker than deleted-DB rebuild.</td><td><code>brand_renames</code> is insert-only on existing-DB reseed, and component-override JSON deletions do not fully prune all previously-seeded user rows.</td></tr>
+      <tr><td>Existing-DB reconcile for brand_renames and component overrides.</td><td><strong>Closed.</strong> <code>brand_renames</code> now uses clean-slate-per-brand DELETE before INSERT (prevents stale rows and duplicates). Component overrides now have a <code>reconcileComponentOverrideRows</code> before hook that prunes stale override values, resets review_status, and cleans user aliases.</td></tr>
     </tbody>
   </table>
 </section>

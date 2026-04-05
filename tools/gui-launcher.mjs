@@ -433,7 +433,7 @@ console.log('');
   try {
     const targetPort = getPortFromArgv(DEFAULT_PORT);
     await killPortOccupant(targetPort);
-    await import('../src/api/guiServer.js');
+    await import('../src/app/api/guiServer.js');
   } catch (error) {
     console.error('');
     console.error('  Failed to start server:', error?.message || error);

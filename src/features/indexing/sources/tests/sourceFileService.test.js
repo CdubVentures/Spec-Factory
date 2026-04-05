@@ -13,11 +13,10 @@ import {
   removeSourceEntry,
   DISCOVERY_DEFAULTS,
 } from '../sourceFileService.js';
+import { makeRepoTempDir } from '../../../../shared/tests/helpers/repoTempDir.js';
 
 function makeTempRoot() {
-  const tmpDir = path.join('test', '_tmp_source_file_' + Date.now());
-  fs.mkdirSync(tmpDir, { recursive: true });
-  return tmpDir;
+  return makeRepoTempDir('spec-factory-source-file-');
 }
 
 const MINIMAL_SOURCE = {

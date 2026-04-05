@@ -22,14 +22,14 @@ function parseJsonOutput(text = '') {
 
 function runCli(args) {
   const startedAt = Date.now();
-  const proc = spawnSync('node', ['src/cli/spec.js', ...args], {
+  const proc = spawnSync('node', ['src/app/cli/spec.js', ...args], {
     cwd: process.cwd(),
     encoding: 'utf8'
   });
   const durationMs = Date.now() - startedAt;
   if (proc.status !== 0) {
     throw new Error(
-      `Command failed (${proc.status}): node src/cli/spec.js ${args.join(' ')}\n${proc.stderr || proc.stdout}`
+      `Command failed (${proc.status}): node src/app/cli/spec.js ${args.join(' ')}\n${proc.stderr || proc.stdout}`
     );
   }
   return {

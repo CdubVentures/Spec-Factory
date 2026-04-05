@@ -391,7 +391,7 @@ export function registerTestModeRoutes(ctx) {
           if (!body.productId) {
             purgeTestModeCategoryState(runtimeSpecDb, category);
           }
-          const { syncSpecDbForCategory } = await import('../../../api/services/specDbSyncService.js');
+          const { syncSpecDbForCategory } = await import('../services/specDbSyncService.js');
           await syncSpecDbForCategory({
             category,
             config,

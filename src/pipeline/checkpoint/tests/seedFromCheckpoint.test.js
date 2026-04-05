@@ -279,7 +279,7 @@ describe('seedFromCheckpoint: product', () => {
     assert.equal(result.product_seeded, true);
     assert.equal(result.queue_seeded, true);
     assert.equal(result.runs_seeded, 0);
-    assert.equal(result.sources_seeded, 0);
+    assert.equal(result.sources_seeded, 1);
     assert.equal(result.artifacts_seeded, 0);
     assert.equal(result.product_id, 'mouse-razer-viper');
     assert.equal(result.category, 'mouse');
@@ -394,5 +394,94 @@ describe('seedFromCheckpoint: query_cooldowns via product checkpoint', () => {
     const db = createHarness();
     const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
     assert.equal(result.cooldowns_seeded, 0);
+  });
+});
+
+// ── Product checkpoint source seeding tests ─────────────────────────────────
+
+describe('seedFromCheckpoint: product sources', () => {
+  const TWO_SOURCES = [
+    { url: 'https://razer.com/page', final_url: 'https://razer.com/page', host: 'razer.com', content_hash: 'a'.repeat(64), html_file: 'aaaaaaaaaaaa.html.gz', screenshot_count: 2, status: 200, first_seen_run_id: 'run-seed-001', last_seen_run_id: 'run-seed-001' },
+    { url: 'https://rtings.com/review', final_url: 'https://rtings.com/review', host: 'rtings.com', content_hash: 'b'.repeat(64), html_file: 'bbbbbbbbbbbb.html.gz', screenshot_count: 0, status: 200, first_seen_run_id: 'run-seed-001', last_seen_run_id: 'run-seed-001' },
+  ];
+
+  test('sources with content_hash seed crawl_sources rows', () => {
+    const db = createHarness();
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint({ sources: TWO_SOURCES }) });
+    assert.equal(result.sources_seeded, 2);
+    const sources = db.getCrawlSourcesByProduct('mouse-razer-viper');
+    assert.equal(sources.length, 2);
+    const byHash = new Map(sources.map((s) => [s.content_hash, s]));
+    const razer = byHash.get('a'.repeat(64));
+    assert.ok(razer);
+    assert.equal(razer.source_url, 'https://razer.com/page');
+    assert.equal(razer.host, 'razer.com');
+    assert.equal(razer.http_status, 200);
+    assert.equal(razer.has_screenshot, 1);
+    assert.equal(razer.file_path, 'aaaaaaaaaaaa.html.gz');
+    const rtings = byHash.get('b'.repeat(64));
+    assert.ok(rtings);
+    assert.equal(rtings.host, 'rtings.com');
+    assert.equal(rtings.has_screenshot, 0);
+  });
+
+  test('empty sources array → sources_seeded=0, no crash', () => {
+    const db = createHarness();
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint({ sources: [] }) });
+    assert.equal(result.sources_seeded, 0);
+    const sources = db.getCrawlSourcesByProduct('mouse-razer-viper');
+    assert.equal(sources.length, 0);
+  });
+
+  test('missing sources key → sources_seeded=0, no crash (backward compat)', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint();
+    delete cp.sources;
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    assert.equal(result.sources_seeded, 0);
+  });
+
+  test('sources without content_hash are skipped', () => {
+    const db = createHarness();
+    const sources = [
+      ...TWO_SOURCES,
+      { url: 'https://blocked.com', final_url: 'https://blocked.com', host: 'blocked.com', content_hash: null, html_file: null, screenshot_count: 0, status: 403, first_seen_run_id: 'run-seed-001', last_seen_run_id: 'run-seed-001' },
+    ];
+    const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint({ sources }) });
+    assert.equal(result.sources_seeded, 2);
+    assert.equal(db.getCrawlSourcesByProduct('mouse-razer-viper').length, 2);
+  });
+
+  test('run_id uses last_seen_run_id, falls back to latest_run_id', () => {
+    const db = createHarness();
+    const sources = [
+      { url: 'https://a.com', final_url: 'https://a.com', host: 'a.com', content_hash: 'c'.repeat(64), html_file: null, screenshot_count: 0, status: 200, first_seen_run_id: 'run-old', last_seen_run_id: 'run-specific' },
+      { url: 'https://b.com', final_url: 'https://b.com', host: 'b.com', content_hash: 'd'.repeat(64), html_file: null, screenshot_count: 0, status: 200, first_seen_run_id: 'run-old' },
+    ];
+    seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint({ sources, latest_run_id: 'run-latest' }) });
+    const rows = db.getCrawlSourcesByProduct('mouse-razer-viper');
+    const byHash = new Map(rows.map((s) => [s.content_hash, s]));
+    assert.equal(byHash.get('c'.repeat(64)).run_id, 'run-specific');
+    assert.equal(byHash.get('d'.repeat(64)).run_id, 'run-latest');
+  });
+
+  test('hash-gated re-seed deletes old crawl_sources then reseeds', () => {
+    const db = createHarness();
+    const cp1 = makeProductCheckpoint({ sources: TWO_SOURCES });
+    const raw1 = JSON.stringify(cp1);
+    seedFromCheckpoint({ specDb: db, checkpoint: cp1, rawJson: raw1 });
+    assert.equal(db.getCrawlSourcesByProduct('mouse-razer-viper').length, 2);
+
+    const cp2 = makeProductCheckpoint({ sources: [TWO_SOURCES[0]] });
+    const raw2 = JSON.stringify(cp2);
+    seedFromCheckpoint({ specDb: db, checkpoint: cp2, rawJson: raw2 });
+    assert.equal(db.getCrawlSourcesByProduct('mouse-razer-viper').length, 1);
+  });
+
+  test('url_crawl_ledger is NOT seeded from product checkpoint', () => {
+    const db = createHarness();
+    seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint({ sources: TWO_SOURCES }) });
+    const count = db.db.prepare('SELECT COUNT(*) as c FROM url_crawl_ledger').get().c;
+    assert.equal(count, 0);
   });
 });

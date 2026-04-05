@@ -43,7 +43,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 
 ## Dependencies
 - Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`.
-- Forbidden: `src/api/` (all HTTP handling is self-contained), deep imports into other feature internals.
+- Forbidden: `src/app/api/` (all HTTP handling is self-contained), deep imports into other feature internals.
 - Legacy: `src/review/*.js` shims re-export from `domain/` for backward compatibility. New consumers should use `src/features/review/index.js`.
 
 ## Domain Invariants

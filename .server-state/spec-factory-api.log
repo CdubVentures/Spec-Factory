@@ -111,3 +111,23 @@
 [auto-seed] mouse: 15 runs re-seeded from checkpoints
 [auto-seed] keyboard field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
 [auto-seed] monitor field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\api\serverBootstrap.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\api\guiServerRuntime.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:866:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:719:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:736:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:765:52)
+    at #resolve (node:internal/modules/esm/loader:701:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:621:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js'
+}
+
+Node.js v24.13.1

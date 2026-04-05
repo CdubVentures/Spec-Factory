@@ -6,8 +6,7 @@ const REPO_ROOT = process.cwd();
 
 const FILES_TO_SCAN = [
   'src/config.js',
-  'src/api/guiServer.js',
-  'src/api/routes/configRoutes.js',
+  'src/app/api/guiServer.js',
   'src/catalog/activeFilteringLoader.js',
   'tools/gui-launcher.mjs',
 ];

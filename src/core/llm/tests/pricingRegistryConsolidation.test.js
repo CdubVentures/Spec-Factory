@@ -5,7 +5,7 @@ import {
   llmProviderFromModel,
   resolvePricingForModel,
   resolveTokenProfileForModel,
-} from '../../../api/helpers/llmHelpers.js';
+} from '../llmRouteHelpers.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

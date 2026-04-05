@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildValidationChecks } from '../../testing/testDataProvider.js';
+import { buildValidationChecks } from '../../tests/testDataProvider.js';
 import { createContractDrivenAnalysisHarness } from './fixtures/contractDrivenHarness.js';
 
 test('contract-driven scenario artifacts preserve the behavior exercised by downstream review flows', async (t) => {

@@ -41,8 +41,8 @@ const PHASES = [
     primaryFiles: [
       'src/core/config/runtimeArtifactRoots.js',
       'src/shared/settingsRegistry.js',
-      'src/api/bootstrap/createBootstrapEnvironment.js',
-      'src/api/bootstrap/createBootstrapSessionLayer.js',
+      'src/app/api/bootstrap/createBootstrapEnvironment.js',
+      'src/app/api/bootstrap/createBootstrapSessionLayer.js',
     ],
     patterns: [
       { label: '.workspace', regex: /\.workspace(?:\/|\\|')/ },
@@ -69,7 +69,7 @@ const PHASES = [
       'src/app/cli/commands/pipelineCommands.js',
       'src/app/cli/commands/migrateToSqliteCommand.js',
       'src/features/indexing/orchestration/shared/runtimeHelpers.js',
-      'src/api/guiServerRuntimeConfig.js',
+      'src/app/api/guiServerRuntimeConfig.js',
       'SpecFactory.bat',
       'scripts/verify-wave4.js',
     ],
@@ -94,7 +94,7 @@ const PHASES = [
       'src/features/indexing/api/builders/runArtifactReaders.js',
       'src/features/indexing/api/builders/indexlabDataBuilders.js',
       'src/pipeline/checkpoint/seedFromCheckpoint.js',
-      'src/api/services/indexLabProcessCompletion.js',
+      'src/app/api/services/indexLabProcessCompletion.js',
     ],
     patterns: [
       { label: 'INDEXLAB_ROOT', regex: /\bINDEXLAB_ROOT\b/ },
@@ -165,7 +165,7 @@ const PHASES = [
     target: 'Add bounded retention for runs, snapshots, and temporary runtime state.',
     primaryFiles: [
       'src/features/crawl/videoCleanup.js',
-      'src/api/bootstrap/createBootstrapEnvironment.js',
+      'src/app/api/bootstrap/createBootstrapEnvironment.js',
       'src/features/settings-authority/userSettingsService.js',
     ],
     patterns: [
@@ -233,7 +233,7 @@ const ROOT_CONCERNS = [
     title: 'Storage Relocation and Runtime-Ops Surface',
     summary: 'Routes, runtime state, and UI files that expose storage origin/state and relocation behavior.',
     primaryFiles: [
-      'src/api/services/indexLabProcessCompletion.js',
+      'src/app/api/services/indexLabProcessCompletion.js',
       'src/features/indexing/api/runtimeOpsRoutes.js',
       'tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts',
       'tools/gui-react/src/features/storage-manager/state/useRunDetail.ts',

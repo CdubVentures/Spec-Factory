@@ -1,7 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
 import {
   readSourcesFile,
   writeSourcesFile,
@@ -11,11 +10,10 @@ import {
   updateSourceEntry,
   removeSourceEntry,
 } from '../sourceFileService.js';
+import { makeRepoTempDir } from '../../../../shared/tests/helpers/repoTempDir.js';
 
 function makeTempRoot() {
-  const tmpDir = path.join('test', '_tmp_source_strategy_' + Date.now());
-  fs.mkdirSync(tmpDir, { recursive: true });
-  return tmpDir;
+  return makeRepoTempDir('spec-factory-source-strategy-');
 }
 
 const ENTRY = {

@@ -1,18 +1,19 @@
 # Setup and Installation
 
-> **Purpose:** Document the exact local setup path from install to verified GUI runtime using only repo-backed commands and files.
+> **Purpose:** Document the verified local setup path from install to a running GUI/API server.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Prerequisites
 
-- Node.js `>=20` required by `package.json`; audit used `v24.13.1`.
-- npm available; audit used `11.8.0`.
-- Windows launcher scripts exist, but the runtime itself is Node-based and can be started from the shell directly.
-- Optional:
-  - Docker for the local SearXNG stack under `tools/searxng/docker-compose.yml`
+| Requirement | Version / note | Evidence |
+|-------------|----------------|----------|
+| Node.js | `>=20` required; audit used `v24.13.1` | `package.json`, `node -v` |
+| npm | audit used `11.8.0` | `npm -v` |
+| OS tooling | repo contains Windows launchers, but the verified runtime path is plain Node + npm | `SpecFactory.bat`, `package.json` |
+| Optional Docker | needed only for local SearXNG flows | `tools/searxng/docker-compose.yml`, `src/app/api/processRuntime.js` |
 
-## Local Setup
+## Verified Local Setup
 
 1. Install root dependencies.
 
@@ -28,41 +29,54 @@
    Set-Location ../..
    ```
 
-3. Create or update your local `.env`.
+3. Create or update a local dotenv file if you need provider keys or non-default paths.
 
-   ```powershell
-   Copy-Item .env.example .env
+   ```text
+   .env
    ```
 
-4. Optionally run the env-template drift check.
+   Notes:
+   - `.env` is the observed default file.
+   - No checked-in `.env.example` was found in the current repo.
+   - The key inventory lives in `src/shared/settingsRegistry.js` and `src/core/config/manifest/index.js`.
+
+4. Optional: run the manifest coverage check.
 
    ```powershell
    npm run env:check
    ```
 
-   Current observed behavior on 2026-03-31: this command fails with `Missing keys in config manifest: PORT`. Treat it as a narrow helper, not a complete manifest audit.
+   Current observed result on 2026-04-04:
 
-5. Build the GUI.
+   ```text
+   Missing keys in config manifest: PORT
+   ```
+
+5. Build the GUI bundle.
 
    ```powershell
    npm run gui:build
    ```
 
-   Current observed behavior on 2026-03-31: this command succeeds and writes the served assets to `tools/gui-react/dist/`.
+   Output path:
 
-6. Start the GUI API server.
+   ```text
+   tools/gui-react/dist/
+   ```
+
+6. Start the GUI/API server.
 
    ```powershell
    npm run gui:api
    ```
 
-   If port `8788` is already occupied, run the server manually on another port:
+   Script target:
 
-   ```powershell
-   node src/api/guiServer.js --port 8790 --local
+   ```text
+   node src/app/api/guiServer.js --port 8788 --local
    ```
 
-7. Optional helper launcher.
+7. Optional: use the helper launcher instead of starting the server directly.
 
    ```powershell
    node tools/specfactory-launcher.mjs
@@ -70,66 +84,85 @@
 
 ## Verification
 
-1. Confirm the build output exists:
+1. Confirm the GUI build output exists.
 
    ```text
    tools/gui-react/dist/index.html
    ```
 
-2. Open the local GUI server:
+2. Open the local GUI.
 
    ```text
    http://localhost:8788/#/
    ```
 
-3. Verify the health surface:
+3. Verify the health endpoint.
 
    ```powershell
-   Invoke-WebRequest http://localhost:8788/api/v1/health
+   Invoke-WebRequest http://localhost:8788/health
    ```
 
-4. Verify the live category inventory:
+4. Verify the default category list.
 
    ```powershell
    Invoke-WebRequest http://localhost:8788/api/v1/categories
    ```
 
-5. Optional test verification:
+5. Verify process status and storage inventory if you need broader smoke coverage.
+
+   ```powershell
+   Invoke-WebRequest http://localhost:8788/api/v1/process/status
+   Invoke-WebRequest http://localhost:8788/api/v1/storage/overview
+   ```
+
+6. Run the test suite if you need a validation baseline after setup.
 
    ```powershell
    npm test
    ```
 
-   Observed on 2026-03-31: `npm test` passed.
-
-## Useful Local Commands
+## Useful Commands
 
 | Command | Effect |
 |---------|--------|
-| `npm run gui:build` | build the GUI package |
-| `npm run gui:api` | start the Node GUI/API runtime on port `8788` |
-| `npm run gui:start` | build GUI then start API server |
-| `npm test` | run the Node built-in test suite |
-| `node src/cli/spec.js --help` | show CLI usage surface |
-| `node tools/specfactory-launcher.mjs` | launch the setup/bootstrap helper |
+| `npm run gui:build` | builds the GUI package in `tools/gui-react/` |
+| `npm run gui:api` | starts the Node GUI/API runtime |
+| `npm run gui:start` | builds the GUI and then starts the API runtime |
+| `npm test` | runs the Node built-in test suite |
+| `npm run env:check` | scans for env keys referenced in selected files but missing from the manifest |
+| `node src/app/cli/spec.js` | entrypoint for CLI workflows |
+| `node tools/specfactory-launcher.mjs` | launches the setup/bootstrap helper |
+
+## Current Validation Snapshot
+
+| Proof | Result |
+|------|--------|
+| `npm run gui:build` | pass on 2026-04-04 |
+| `npm test` | pass on 2026-04-04 with `6803` tests and `0` failures |
+| `npm run env:check` | fail on 2026-04-04 with `Missing keys in config manifest: PORT` |
+| Runtime smoke | `/health`, `/api/v1/categories`, `/api/v1/process/status`, and `/api/v1/storage/overview` all returned `200` on 2026-04-04 |
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | config | `package.json` | install/build/run/test commands |
-| config | `tools/gui-react/package.json` | GUI build commands |
-| config | `.env.example` | local env bootstrap starting point |
-| source | `src/api/guiServer.js` | default GUI/API server runtime |
-| source | `tools/specfactory-launcher.mjs` | launcher-based setup path |
-| command | `npm run env:check` | failing March 31 env-check result |
-| command | `npm run gui:build` | successful March 31 GUI build result |
-| command | `npm test` | successful March 31 suite result |
-| runtime | `http://127.0.0.1:8788/api/v1/health` | live server health endpoint responded |
-| runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory returned `keyboard`, `monitor`, and `mouse` |
+| config | `tools/gui-react/package.json` | GUI install/build commands |
+| source | `src/app/api/guiServer.js` | server startup path and default port usage |
+| source | `src/app/cli/spec.js` | CLI entrypoint |
+| source | `tools/specfactory-launcher.mjs` | helper launcher path |
+| source | `tools/check-env-example-sync.mjs` | env-check implementation |
+| command | `npm run gui:build` | successful build on 2026-04-04 |
+| command | `npm test` | successful test-suite run on 2026-04-04 |
+| command | `npm run env:check` | current manifest coverage failure on 2026-04-04 |
+| runtime | `GET /health` | live server health contract on 2026-04-04 |
+| runtime | `GET /api/v1/categories` | category API response on 2026-04-04 |
+| runtime | `GET /api/v1/process/status` | process-status response on 2026-04-04 |
+| runtime | `GET /api/v1/storage/overview` | storage inventory response on 2026-04-04 |
 
 ## Related Documents
 
-- [Environment and Config](./environment-and-config.md) - Required before adding or changing config keys.
-- [Deployment](../05-operations/deployment.md) - Documents the checked-in launch/build/deployment surfaces.
-- [Known Issues](../05-operations/known-issues.md) - Captures the current operational gotchas.
+- [Environment and Config](./environment-and-config.md) - lists the config keys and persistence surfaces that affect local startup.
+- [Stack and Toolchain](./stack-and-toolchain.md) - lists the exact runtime and build dependencies required for setup.
+- [Deployment](../05-operations/deployment.md) - documents the checked-in build and packaging flows beyond local startup.
+- [Known Issues](../05-operations/known-issues.md) - captures setup and runtime traps discovered during validation.

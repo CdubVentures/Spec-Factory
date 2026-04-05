@@ -174,7 +174,7 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'compile' && method === 'POST') {
       const category = parts[1];
       try {
-        const status = startProcess('src/cli/spec.js', ['compile-rules', '--category', category, '--local']);
+        const status = startProcess('src/app/cli/spec.js', ['compile-rules', '--category', category, '--local']);
         return jsonRes(res, 200, status);
       } catch (err) {
         return jsonRes(res, 409, { error: err.message });
@@ -185,7 +185,7 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'validate-rules' && method === 'POST') {
       const category = parts[1];
       try {
-        const status = startProcess('src/cli/spec.js', ['validate-rules', '--category', category, '--local']);
+        const status = startProcess('src/app/cli/spec.js', ['validate-rules', '--category', category, '--local']);
         return jsonRes(res, 200, status);
       } catch (err) {
         return jsonRes(res, 409, { error: err.message });

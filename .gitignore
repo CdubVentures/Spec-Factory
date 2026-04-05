@@ -21,6 +21,8 @@ __pycache__/
 
 # Local runtime/cache data
 .specfactory_tmp/
+.tmp/*
+!.tmp/.gitkeep
 .workspace/
 .server-state/
 artifacts/
@@ -36,7 +38,6 @@ gui-dist/
 tools/gui-react/dist/
 
 # Test artifacts
-/test/
 test-results/
 
 # Local temporary scratch files

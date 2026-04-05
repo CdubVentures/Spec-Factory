@@ -61,7 +61,7 @@
 
 | File | What was corrected |
 |------|--------------------|
-| `docs/03-architecture/system-map.md` | Rebased runtime topology on `src/api/guiServer.js`, `src/api/guiServerRuntime.js`, local storage, AppDb, and per-category SpecDb. |
+| `docs/03-architecture/system-map.md` | Rebased runtime topology on `src/app/api/guiServer.js`, `src/app/api/guiServerRuntime.js`, local storage, AppDb, and per-category SpecDb. |
 | `docs/03-architecture/backend-architecture.md` | Corrected mounted route families, settings boundaries, storage-manager scope, and persistence flow. |
 | `docs/03-architecture/frontend-architecture.md` | Corrected `HashRouter`, page registry ownership, hydration path, and storage-page role. |
 | `docs/03-architecture/data-model.md` | Refreshed schema, data-shape, and migration notes to match the current SQLite-backed model. |
@@ -116,7 +116,7 @@
 |------|----------------------|---------------------|
 | Documentation entrypoint | Root `README.md` still read like a package scaffold. | `README.md` now needs to point directly into `docs/README.md` and the maintained reading order. |
 | Historical audit material | Historical audit files were still present in the maintained docs tree and linked from current-state docs. | Those files were stale residue and were removed from the maintained surface. |
-| Mounted backend route authority | Older docs relied on stale route-order assumptions. | The live mounted route order is the `routeDefinitions` array in `src/api/guiServerRuntime.js`. |
+| Mounted backend route authority | Older docs relied on stale route-order assumptions. | The live mounted route order is the `routeDefinitions` array in `src/app/api/guiServerRuntime.js`. |
 | GUI route authority | `tools/gui-react/src/App.tsx` was treated as the complete routed-page inventory. | `tools/gui-react/src/registries/pageRegistry.ts` is the routed page/tab SSOT; `App.tsx` mounts from it plus standalone `/test-mode`. |
 | Storage runtime state | Older docs described a disabled run-data storage stub and active relocation semantics. | `src/features/indexing/api/storageManagerRoutes.js` currently reports `storage_backend: "local"`; current source docs should not describe a disabled backend as live behavior. |
 | Crawl execution path | Older docs referenced `src/pipeline/runCrawlProcessingLifecycle.js`. | The current crawl flow is driven by `src/features/crawl/crawlSession.js`, `createCrawlLedgerAdapter`, and `session.runFetchPlan(...)`; the old file does not exist. |
@@ -163,8 +163,8 @@
 |--------|------|-------------------|
 | source | `README.md` | repo-root documentation entrypoint required current-state correction |
 | source | `docs/README.md` | current reading order and cross-links across the maintained docs tree |
-| source | `src/api/guiServer.js` | live server entrypoint |
-| source | `src/api/guiServerRuntime.js` | live mounted route order and route-family ownership |
+| source | `src/app/api/guiServer.js` | live server entrypoint |
+| source | `src/app/api/guiServerRuntime.js` | live mounted route order and route-family ownership |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | routed GUI page/tab SSOT |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | storage manager endpoint set and local-backend reporting |
 | source | `src/features/crawl/crawlSession.js` | current crawl execution path replacing the removed lifecycle file |

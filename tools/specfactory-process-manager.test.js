@@ -69,7 +69,7 @@ test('buildProcessRows marks tracked API listener on 8788 as safe to kill and re
       {
         pid: 4321,
         name: 'node.exe',
-        commandLine: `${path.join(ROOT, 'src', 'api', 'guiServer.js')} --port 8788 --local`,
+        commandLine: `${path.join(ROOT, 'src', 'app', 'api', 'guiServer.js')} --port 8788 --local`,
         executablePath: 'C:\\Program Files\\nodejs\\node.exe',
         parentPid: 4000,
       },

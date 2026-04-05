@@ -1,12 +1,12 @@
 import { buildTrafficLight } from '../../../features/indexing/validation/index.js';
-import { deriveTrafficLightCounts } from '../../../api/helpers/llmHelpers.js';
+import { deriveTrafficLightCounts } from '../../../core/llm/llmRouteHelpers.js';
 import { readLatestArtifacts } from '../../../features/review-curation/index.js';
 import {
   generateTestSourceResults, buildDeterministicSourceResults, buildSeedComponentDB,
   analyzeContract, buildTestProducts, buildValidationChecks,
   loadComponentIdentityPools,
-} from '../../../testing/testDataProvider.js';
-import { runTestProduct } from '../../../testing/testRunner.js';
+} from '../../../tests/testDataProvider.js';
+import { runTestProduct } from '../../../tests/testRunner.js';
 import { addBrand } from '../../../features/catalog/index.js';
 
 export function createTestModeRouteContext(options = {}) {

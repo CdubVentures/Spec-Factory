@@ -1,0 +1,97 @@
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { loadFieldStudioMap } from '../../../ingest/categoryCompile.js';
+import { hashJson } from '../../../ingest/compileUtils.js';
+
+function categoryFromCliArgs(cliArgs) {
+  if (!Array.isArray(cliArgs)) return '';
+  const idx = cliArgs.indexOf('--category');
+  if (idx < 0 || !cliArgs[idx + 1]) return '';
+  return String(cliArgs[idx + 1]).trim();
+}
+
+function isCompileCommand(cliArgs) {
+  if (!Array.isArray(cliArgs)) return false;
+  return cliArgs.includes('category-compile') || cliArgs.includes('compile-rules');
+}
+
+export async function handleCompileProcessCompletion({
+  exitCode,
+  cliArgs,
+  sessionCache,
+  invalidateFieldRulesCache,
+  reviewLayoutByCategory,
+  syncSpecDbForCategory,
+  getSpecDb,
+  broadcastWs,
+  logError = console.error,
+}) {
+  if (Number(exitCode) !== 0) return null;
+
+  const category = categoryFromCliArgs(cliArgs);
+  if (!category) return null;
+
+  sessionCache?.invalidateSessionCache?.(category);
+  invalidateFieldRulesCache?.(category);
+  reviewLayoutByCategory?.delete?.(category);
+
+  // WHY: Compile normalizes the map and writes it back to JSON.
+  // Re-sync SQL so runtime reads get the compile-normalized version.
+  if (isCompileCommand(cliArgs) && typeof getSpecDb === 'function') {
+    try {
+      const specDb = getSpecDb(category);
+      if (specDb) {
+        const loaded = await loadFieldStudioMap({ category }).catch(() => null);
+        if (loaded?.map && typeof loaded.map === 'object') {
+          const json = JSON.stringify(loaded.map);
+          specDb.upsertFieldStudioMap(json, hashJson(loaded.map));
+        }
+      }
+    } catch (err) {
+      logError?.(`[compile-sync] field_studio_map SQL re-sync failed for ${category}:`, err?.message || err);
+    }
+  }
+
+  let specDbSync = null;
+  if (isCompileCommand(cliArgs) && typeof syncSpecDbForCategory === 'function') {
+    try {
+      const syncResult = await syncSpecDbForCategory({ category });
+      specDbSync = { ok: true, ...syncResult };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const syncVersion = Number.parseInt(String(err?.specdb_sync_version ?? ''), 10);
+      const syncUpdatedAt = String(err?.specdb_sync_updated_at || '').trim();
+      const syncStatus = String(err?.specdb_sync_status || '').trim();
+      specDbSync = {
+        ok: false,
+        error: message,
+        ...(Number.isFinite(syncVersion) && syncVersion >= 0
+          ? { specdb_sync_version: syncVersion }
+          : {}),
+        ...(syncUpdatedAt ? { specdb_sync_updated_at: syncUpdatedAt } : {}),
+        ...(syncStatus ? { specdb_sync_status: syncStatus } : {}),
+      };
+      logError?.(`[compile-sync] ${category} failed`, err);
+    }
+  }
+
+  const syncVersion = Number.parseInt(String(specDbSync?.specdb_sync_version ?? ''), 10);
+  const syncVersionPayload = Number.isFinite(syncVersion) && syncVersion > 0
+    ? {
+      specdb_sync_version: syncVersion,
+      updated_at: String(specDbSync?.specdb_sync_updated_at || '').trim() || null,
+    }
+    : null;
+
+  emitDataChange({
+    broadcastWs,
+    event: 'process-completed',
+    category,
+    version: syncVersionPayload,
+    meta: specDbSync ? { specDbSync } : {},
+  });
+
+  return {
+    category,
+    specDbSync: specDbSync || undefined,
+  };
+}

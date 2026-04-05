@@ -134,7 +134,7 @@ Allowed inbound callers:
 - `src/pipeline/**`
 - `src/runner/**`
 - `src/app/**`
-- `src/api/**` (only through stable feature exports)
+- `src/app/api/**` (only through stable feature exports)
 Allowed outbound dependencies:
 - `src/core/**`
 - `src/shared/**`

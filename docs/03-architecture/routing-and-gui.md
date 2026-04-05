@@ -1,86 +1,108 @@
 # Routing and GUI
 
-> **Purpose:** Map the live GUI route table, shared layouts, and client/server boundaries with exact file ownership.
-> **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-31
+> **Purpose:** Map the live GUI routes, shared layouts, navigation groups, and client/server boundaries with exact file ownership.
+> **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md), [backend-architecture.md](./backend-architecture.md)
+> **Last validated:** 2026-04-04
 
 ## Route Source Of Truth
 
-- `tools/gui-react/src/registries/pageRegistry.ts` is the single source of truth for tabbed GUI route paths, labels, lazy loaders, and disabled-state metadata.
+- `tools/gui-react/src/registries/pageRegistry.ts` is the SSOT for all tabbed GUI routes.
 - `tools/gui-react/src/App.tsx` derives `<Route>` elements from `ROUTE_ENTRIES`.
-- `tools/gui-react/src/pages/layout/TabNav.tsx` derives the operator tab strip from `CATALOG_TABS`, `OPS_TABS`, and `SETTINGS_TABS`.
-- `/test-mode` is the deliberate exception: it is mounted directly in `tools/gui-react/src/App.tsx` and does not participate in the tab registry.
+- `tools/gui-react/src/pages/layout/TabNav.tsx` derives the visible tab groups from `GLOBAL_TABS`, `CATALOG_TABS`, `OPS_TABS`, and `SETTINGS_TABS`.
+- `/test-mode` is not in `PAGE_REGISTRY`; it is mounted directly in `tools/gui-react/src/App.tsx`.
+- There are no React Router guards and no React Router data loaders in the current GUI.
 
 ## Route Map
 
+`Loader` below means the lazy module import source plus the first page-local data authority. It does not mean a React Router data loader.
+
 | Path | Component/Page | Guard | Loader | Layout | Purpose |
 |------|---------------|-------|--------|--------|---------|
-| `/` | `OverviewPage` | none | page-local queries | `AppShell` | high-level catalog and billing overview |
-| `/categories` | `CategoryManager` | none | client query and mutation hooks | `AppShell` | create and select categories |
-| `/catalog` | `CatalogPage` | none | catalog queries and mutations | `AppShell` | brand and product catalog management |
-| `/product` | `ProductPage` | none | page-level query | `AppShell` | selected product detail |
-| `/llm-settings` | `LlmSettingsPage` | none | `useLlmSettingsAuthority()` | `AppShell` | category-scoped `llm_route_matrix` editor |
-| `/indexing` | `IndexingPage` | none | heavy React Query surface | `AppShell` | launch runs and inspect run artifacts |
-| `/llm-config` | `LlmConfigPage` | none | `useLlmPolicyAuthority()` plus `GET /api/v1/indexing/llm-config` | `AppShell` | global LLM policy, provider registry, budgets, and phase overrides |
-| `/pipeline-settings` | `PipelineSettingsPage` | none | runtime settings authority, source-strategy authority, spec seeds authority, and `GET /api/v1/indexing/llm-config` | `AppShell` | runtime settings, source strategy, and deterministic spec seeds |
-| `/billing` | `BillingPage` | none | page-level queries | `AppShell` | billing rollups and learning artifacts |
-| `/studio` | `StudioPage` | none | studio queries and mutations | `AppShell` | field-rules studio |
-| `/review` | `ReviewPage` | none | review queries and mutations | `AppShell` | scalar review workflow |
-| `/review-components` | `ComponentReviewPage` | none | component review queries and mutations | `AppShell` | component and enum review workflow |
-| `/runtime-ops` | `RuntimeOpsPage` | none | runtime-ops query surface | `AppShell` | live worker/runtime diagnostics |
-| `/storage` | `StoragePage` | none | `useStorageOverview()` and `useStorageRuns()` | `AppShell` | storage inventory and maintenance actions |
-| `/test-mode` | `TestModePage` | none | page-level queries and mutations | `AppShell` | synthetic fixture generation and validation |
+| `/` | `OverviewPage` | none | lazy import from `tools/gui-react/src/pages/overview/OverviewPage.tsx`; page-local queries | `AppShell` | high-level overview of current catalog and runtime state |
+| `/categories` | `CategoryManager` | none | lazy import from `tools/gui-react/src/features/catalog/components/CategoryManager.tsx`; feature-local queries/mutations | `AppShell` | category creation and selection |
+| `/brands` | `BrandManager` | none | lazy import from `tools/gui-react/src/features/studio/components/BrandManager.tsx`; brand management hooks | `AppShell` | global brand registry management |
+| `/colors` | `ColorRegistryPage` | none | lazy import from `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx`; color registry hooks | `AppShell` | global color registry management |
+| `/billing` | `BillingPage` | none | lazy import from `tools/gui-react/src/pages/billing/BillingPage.tsx`; billing queries | `AppShell` | billing summaries and learning cost views |
+| `/product` | `ProductPage` | none | lazy import from `tools/gui-react/src/pages/product/ProductPage.tsx`; selected-product queries | `AppShell` | currently selected product detail |
+| `/catalog` | `CatalogPage` | none | lazy import from `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`; catalog queries/mutations | `AppShell` | product catalog management |
+| `/studio` | `StudioPage` | none | lazy import from `tools/gui-react/src/features/studio/components/StudioPage.tsx`; studio data hooks | `AppShell` | field rules studio |
+| `/indexing` | `IndexingPage` | none | lazy import from `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`; heavy React Query surface | `AppShell` | IndexLab runs, artifacts, and analytics |
+| `/runtime-ops` | `RuntimeOpsPage` | none | lazy import from `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`; runtime ops queries | `AppShell` | live runtime diagnostics and process telemetry |
+| `/review` | `ReviewPage` | none | lazy import from `tools/gui-react/src/features/review/components/ReviewPage.tsx`; review queries/mutations | `AppShell` | scalar review workflow |
+| `/review-components` | `ComponentReviewPage` | none | lazy import from `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`; component review queries/mutations | `AppShell` | component and enum review workflow |
+| `/llm-settings` | `LlmSettingsPage` | none | lazy import from `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`; `useLlmSettingsAuthority()` | `AppShell` | category-scoped `llm_route_matrix` editing |
+| `/storage` | `StoragePage` | none | lazy import from `tools/gui-react/src/pages/storage/StoragePage.tsx`; `useStorageOverview()` and `useStorageRuns()` | `AppShell` | storage inventory and destructive maintenance actions |
+| `/llm-config` | `LlmConfigPage` | none | lazy import from `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`; `useLlmPolicyAuthority()` plus `/indexing/llm-config` queries | `AppShell` | global LLM policy, provider, and budget configuration |
+| `/pipeline-settings` | `PipelineSettingsPage` | none | lazy import from `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`; runtime settings, source strategy, and spec seed authorities | `AppShell` | runtime and pipeline control surface |
+| `/test-mode` | `TestModePage` | none | lazy import from `tools/gui-react/src/pages/test-mode/TestModePage.tsx`; page-local test-mode queries/mutations | `AppShell` | synthetic fixture generation and validation |
 
-## Shared Layouts and Navigation
+## Navigation Groups
+
+| Group | Source | Routes |
+|------|--------|--------|
+| global | `GLOBAL_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/categories`, `/brands`, `/colors`, `/billing` |
+| catalog | `CATALOG_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/`, `/product`, `/catalog`, `/studio` |
+| ops | `OPS_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/indexing`, `/runtime-ops`, `/review`, `/review-components`, `/llm-settings`, `/storage` |
+| settings | `SETTINGS_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/llm-config`, `/pipeline-settings` |
+| standalone | `tools/gui-react/src/App.tsx` only | `/test-mode` |
+
+## Shared Layouts And Wrappers
 
 | File | Role |
 |------|------|
-| `tools/gui-react/src/registries/pageRegistry.ts` | tabbed route and tab metadata SSOT |
-| `tools/gui-react/src/pages/layout/AppShell.tsx` | top-level shell, product/category context, and route outlet |
-| `tools/gui-react/src/pages/layout/Sidebar.tsx` | side navigation and category/product controls |
-| `tools/gui-react/src/pages/layout/TabNav.tsx` | top tab strip derived from registry tab groups |
-| `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | page-local left-nav shell for `/llm-config` phases |
+| `tools/gui-react/src/App.tsx` | wraps every route in `ErrorBoundary`, `Suspense`, and `QueryClientProvider` |
+| `tools/gui-react/src/pages/layout/AppShell.tsx` | global shell, hydration gate, top header, sidebar, tab nav, and route outlet |
+| `tools/gui-react/src/pages/layout/TabNav.tsx` | group-aware tab navigation and key-status chips |
+| `tools/gui-react/src/pages/layout/Sidebar.tsx` | category/product selection and supporting controls |
+| `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | nested shell specific to the `/llm-config` surface |
 
-## Client/Server Boundary
+## Client / Server Boundaries
 
-- Client-rendered SPA: all GUI routes render in the browser after the backend serves built assets.
-- Server-rendered HTML routes: none verified.
-- Client transport:
-  - REST: `tools/gui-react/src/api/client.ts`
-  - WebSocket: `tools/gui-react/src/api/ws.ts`
-  - GraphQL proxy client: `tools/gui-react/src/api/graphql.ts`
-- Sensitive settings pages:
-  - `/llm-config` reads unauthenticated `/api/v1/llm-policy` and `/api/v1/indexing/llm-config`, both of which can return secret-bearing fields when configured.
-  - `/pipeline-settings` reads unauthenticated `/api/v1/runtime-settings`, `/api/v1/source-strategy`, and `/api/v1/spec-seeds`; `/api/v1/runtime-settings` can return secret-bearing provider key fields when configured.
-  - `/pipeline-settings` does not call a live `/api/v1/storage-settings` or `/api/v1/convergence-settings` route.
-  - `/storage` uses `/api/v1/storage/*` only; it does not render a storage-settings form in the current code.
+| Boundary | Files | Notes |
+|----------|-------|-------|
+| REST | `tools/gui-react/src/api/client.ts` | all standard API calls go through `/api/v1/*` |
+| GraphQL | `tools/gui-react/src/api/graphql.ts` | posts to `/api/v1/graphql` |
+| realtime | `tools/gui-react/src/api/ws.ts` | connects to `/ws` |
+| static shell delivery | `src/app/api/staticFileServer.js` | serves the built SPA |
 
-## Component Ownership Notes
+## Verified GUI Constraints
 
-- `tools/gui-react/src/registries/pageRegistry.ts` points most tabbed routes directly at feature-owned components under `tools/gui-react/src/features/**`.
-- `tools/gui-react/src/App.tsx` no longer hardcodes the tabbed route inventory; it mounts registry-derived routes plus standalone `/test-mode`.
-- `tools/gui-react/src/pages/storage/StoragePage.tsx` is now a thin wrapper around `StorageManagerPanel`.
-- `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` owns runtime, source-strategy, and deterministic-spec-seed editing.
-- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` owns the composite LLM policy editor, while `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` owns category route-matrix editing.
+- No auth guard layer exists in the route tree.
+- No route-level data loader or action API from React Router is used.
+- `/pipeline-settings` does not call a live `/api/v1/storage-settings` or `/api/v1/convergence-settings` endpoint.
+- `/storage` calls `/api/v1/storage/*` only and renders a storage-manager surface, not a storage-settings form.
+- `/llm-config` and `/pipeline-settings` both read unauthenticated configuration surfaces from the backend.
+
+## Component Hierarchy
+
+```text
+tools/gui-react/src/main.tsx
+  -> tools/gui-react/src/App.tsx
+    -> tools/gui-react/src/pages/layout/AppShell.tsx
+      -> tools/gui-react/src/pages/layout/TabNav.tsx
+      -> tools/gui-react/src/pages/layout/Sidebar.tsx
+      -> Outlet
+        -> route-selected page component from tools/gui-react/src/registries/pageRegistry.ts
+```
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `tools/gui-react/src/registries/pageRegistry.ts` | route registry, tab labels, and disabled-state metadata |
-| source | `tools/gui-react/src/App.tsx` | registry-driven route mounting plus standalone `test-mode` route |
-| source | `tools/gui-react/src/pages/layout/AppShell.tsx` | shell ownership |
-| source | `tools/gui-react/src/pages/layout/Sidebar.tsx` | sidebar ownership |
-| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | operator-facing tab derivation from the registry |
-| source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | runtime/source strategy/spec seeds ownership |
-| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | `/llm-config` ownership and metadata reads |
-| source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage page now wraps inventory-only panel |
-| source | `tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts` | `/storage/overview` client contract |
-| source | `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts` | `/storage/runs` client contract |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | route inventory, tab groups, and lazy route module sources |
+| source | `tools/gui-react/src/App.tsx` | registry-derived routing and standalone `/test-mode` mounting |
+| source | `tools/gui-react/src/pages/layout/AppShell.tsx` | shared layout structure and hydration gate |
+| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab-group navigation and status-chip behavior |
+| source | `tools/gui-react/src/api/client.ts` | REST boundary |
+| source | `tools/gui-react/src/api/graphql.ts` | GraphQL boundary |
+| source | `tools/gui-react/src/api/ws.ts` | websocket boundary |
+| source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage page ownership |
+| source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | runtime/source-strategy/spec-seed ownership |
+| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite LLM policy ownership |
 
 ## Related Documents
 
-- [Frontend Architecture](./frontend-architecture.md) - Broader GUI framework, state, and fetch context.
-- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - Deep dive on `/llm-config`.
+- [Frontend Architecture](./frontend-architecture.md) - GUI framework, state, and fetch architecture.
+- [Backend Architecture](./backend-architecture.md) - Backend handlers that these routes call.
+- [Auth and Sessions](./auth-and-sessions.md) - Confirms that no route guards or user sessions exist.
 - [Feature Index](../04-features/feature-index.md) - Route-to-feature lookup table.
-- [API Surface](../06-references/api-surface.md) - Server endpoints called by these routes.

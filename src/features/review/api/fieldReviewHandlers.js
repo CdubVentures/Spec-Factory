@@ -404,7 +404,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     const body = await readJsonBody(req);
     const { type, field, value, evidenceUrl, evidenceQuote, canonical, reason, reviewer, productId } = body;
     if (!type || !field || !value) return jsonRes(res, 400, { error: 'type, field, and value required' });
-    const cliArgs = ['src/cli/spec.js', 'review', 'suggest', '--category', category, '--type', type, '--field', field, '--value', String(value)];
+    const cliArgs = ['src/app/cli/spec.js', 'review', 'suggest', '--category', category, '--type', type, '--field', field, '--value', String(value)];
     if (evidenceUrl) cliArgs.push('--evidence-url', String(evidenceUrl));
     if (evidenceQuote) cliArgs.push('--evidence-quote', String(evidenceQuote));
     if (canonical) cliArgs.push('--canonical', String(canonical));

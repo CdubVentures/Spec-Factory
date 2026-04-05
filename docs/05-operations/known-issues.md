@@ -2,33 +2,33 @@
 
 > **Purpose:** Record verified bugs, drift, and operator gotchas so arriving agents do not mistake them for newly introduced regressions.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Current Issues
 
 | Issue | Impact | Workaround | Tracked in |
 |-------|--------|------------|------------|
-| `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` are unauthenticated and can return secret-bearing fields when configured | trusted-network assumption is currently part of the runtime contract; exposing the server outside that boundary leaks configuration secrets | keep the server on a trusted local network only until auth hardening is explicitly commissioned | `src/features/settings/api/configRuntimeSettingsHandler.js`, `src/features/settings-authority/llmPolicyHandler.js`, `src/features/settings/api/configIndexingMetricsHandler.js`, `src/core/config/settingsKeyMap.js` |
-| `npm run env:check` currently fails because `.env.example` does not define `PORT`, and the checker still only scans a narrow fixed file list | the env-parity check is both failing and easy to over-read as broader coverage than it provides | use `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, and `src/config.js` as the config SSOT chain | `tools/check-env-example-sync.mjs`, `.env.example`, `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, `src/config.js` |
-| `Dockerfile` launches `src/cli/run-batch.js`, which does not exist | container build is not a valid deployment path as written | use `npm run gui:start` for the local runtime or `node src/cli/spec.js run-batch ...` for CLI batching | `Dockerfile`, `src/cli/spec.js` |
-| `ReviewPage` still posts `POST /api/v1/review/:category/finalize`, but no audited handler serves that route | Ctrl+S/finalize actions on the scalar review page can hit a stale client path instead of a live mutation | use the live scalar review mutations (`override`, `manual-override`, `key-review-confirm`, `key-review-accept`) and treat `finalize` as client drift | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `src/features/review/api/reviewRoutes.js`, `src/features/review/api/itemMutationRoutes.js` |
-| `src/app/api/routeRegistry.js` still exports `GUI_API_ROUTE_ORDER`, but the constant omits the live `specSeeds` route and is not the mounted route authority | tools or docs derived from the stale constant drift from the real server surface | treat `src/api/guiServerRuntime.js` `routeDefinitions` as the route-order SSOT | `src/app/api/routeRegistry.js`, `src/api/guiServerRuntime.js`, `src/features/indexing/api/specSeedsRoutes.js` |
-| The current source tree mounts no `/api/v1/storage-settings` route, but older tests and assumptions still reference that surface | docs or tests that assume a storage-settings API will drift from the live server | treat `/api/v1/storage/*` as the active storage surface and `src/features/settings/api/configRoutes.js` as the route authority | `src/features/settings/api/configRoutes.js`, `src/features/settings/api/tests/settingsEnvelopeContract.test.js`, `tools/gui-react/src/stores/__tests__/settingsUnloadGuardContracts.test.js` |
-| Many review, studio, and runtime-ops endpoints return `503 specdb_not_ready` until a category has been compiled and seeded into SQLite | fresh categories can look broken until authority artifacts are compiled and synced | compile the category, seed/sync SpecDb, or use a pre-seeded category before using these surfaces | `src/features/studio/api/studioRoutes.js`, `src/features/review/api/routeSharedHelpers.js`, `src/features/indexing/api/runtimeOpsRoutes.js` |
+| `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` are unauthenticated and can return secret-bearing fields when configured | trusted-network placement is currently part of the runtime contract; exposing the server outside that boundary leaks configuration secrets | keep the server on a trusted local network only until auth hardening is explicitly commissioned | `src/features/settings/api/configRuntimeSettingsHandler.js`, `src/features/settings-authority/llmPolicyHandler.js`, `src/features/settings/api/configIndexingMetricsHandler.js`, `src/core/config/settingsKeyMap.js` |
+| `npm run env:check` still fails with `Missing keys in config manifest: PORT`, and `tools/check-env-example-sync.mjs` is narrower than its name suggests | easy to misread the command as a full env-parity audit when it is a manifest-coverage check over a fixed file set | use `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, and `src/config.js` as the config SSOT chain; treat `npm run env:check` as partial proof only until the manifest gap is fixed | `tools/check-env-example-sync.mjs`, `.env`, `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, `src/config.js` |
+| `ReviewPage` still posts `POST /api/v1/review/:category/finalize`, but no audited handler serves that route | Ctrl+S / finalize actions on the scalar review page can hit a stale client path instead of a live mutation | use the live scalar review mutations (`override`, `manual-override`, `key-review-confirm`, `key-review-accept`) and treat `finalize` as client drift | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `src/features/review/api/reviewRoutes.js`, `src/features/review/api/itemMutationRoutes.js` |
+| `src/app/api/routeRegistry.js` still exports `GUI_API_ROUTE_ORDER`, but the constant is not the mounted route authority | tools or docs derived from the stale constant drift from the real server surface | treat `src/app/api/guiServerRuntime.js` `routeDefinitions` as the route-order SSOT | `src/app/api/routeRegistry.js`, `src/app/api/guiServerRuntime.js` |
+| Auto-seed can log `field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id` during startup | fresh boots can emit warning noise even while the API still comes up and serves requests | treat the warning as a known startup defect; validate the runtime via `/health`, `/categories`, and `/storage/overview` before assuming boot failure | `src/app/api/specDbRuntime.js` |
+| Many review, studio, color-edition-finder, and runtime-ops endpoints return `503 specdb_not_ready` until a category has been compiled and seeded into SQLite | fresh categories can look broken until authority artifacts are compiled and synced | compile the category, let auto-seed/sync complete, or use a pre-seeded category before using these surfaces | `src/features/studio/api/studioRoutes.js`, `src/features/review/api/routeSharedHelpers.js`, `src/features/color-edition/api/colorEditionFinderRoutes.js`, `src/features/indexing/api/runtimeOpsRoutes.js` |
 | `category_authority/tests/` exists on disk, but the default categories API intentionally filters it out | scripts or docs that infer live categories from the filesystem can drift from the HTTP contract | use `GET /api/v1/categories` for the live category list; treat `tests/` as harness-only repo content | `category_authority/tests/`, `src/app/api/routes/infra/categoryRoutes.js` |
 
 ## Notes
 
-- Validation snapshot collected on 2026-03-31:
+- Validation snapshot collected on 2026-04-04:
   - `npm run gui:build` passed.
   - `npm test` passed.
   - `npm run env:check` failed with `Missing keys in config manifest: PORT`.
-  - `GET http://127.0.0.1:8788/api/v1/health` responded successfully.
+  - `GET http://127.0.0.1:8788/health` responded successfully.
   - `GET http://127.0.0.1:8788/api/v1/categories` returned `["keyboard","monitor","mouse"]`.
-  - `GET http://127.0.0.1:8788/api/v1/process/status` returned `running: false` while retaining the last-run metadata and `storage_destination: "local"`.
-  - `GET http://127.0.0.1:8788/api/v1/storage/overview` returned a live payload with `storage_backend: "local"`.
+  - `GET http://127.0.0.1:8788/api/v1/process/status` returned `running: false`.
+  - `GET http://127.0.0.1:8788/api/v1/storage/overview` returned a live payload with `storage_backend: "local"` and `total_runs: 15`.
+  - Startup emitted warning lines of the form `[auto-seed] <category> field_studio_map re-seed failed: NOT NULL constraint failed: list_values.list_id`.
 - No verified login/session middleware protects the live GUI/API server.
-- Removed modules from the older storage-settings and relocation path should be treated as deleted unless a current file path in this doc set says otherwise.
+- `Dockerfile` defines a batch CLI image path, not the verified GUI deployment path. It is not itself a current runtime defect, but it also was not executed during this audit.
 
 ## Validated Against
 
@@ -38,27 +38,29 @@
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | unauthenticated `/runtime-settings` response surface |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | unauthenticated `/llm-policy` response surface |
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | unauthenticated `/indexing/llm-config` resolved-key exposure |
+| source | `tools/check-env-example-sync.mjs` | env-check script scope and current manifest comparison behavior |
+| source | `.env` | repo keeps a checked-in env file; no `.env.example` was verified in the current checkout |
 | source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | stale client `finalize` mutation path |
 | source | `src/features/review/api/reviewRoutes.js` | review route families do not expose a live `finalize` HTTP mutation |
 | source | `src/features/review/api/itemMutationRoutes.js` | live scalar review mutation actions |
-| source | `src/app/api/routeRegistry.js` | stale exported route-order constant omits `specSeeds` |
-| source | `src/api/guiServerRuntime.js` | live mounted route list includes `specSeeds` |
-| source | `src/features/settings/api/configRoutes.js` | no live `storage-settings` route is mounted |
+| source | `src/app/api/routeRegistry.js` | stale exported route-order constant persists |
+| source | `src/app/api/guiServerRuntime.js` | live mounted route list is driven by `routeDefinitions` |
+| source | `src/app/api/specDbRuntime.js` | auto-seed warning logging path |
 | source | `src/app/api/routes/infra/categoryRoutes.js` | default categories API excludes `tests` |
-| source | `src/features/studio/api/studioRoutes.js` | `specdb_not_ready` route behavior |
+| source | `src/features/studio/api/studioRoutes.js` | `specdb_not_ready` route behavior for studio surfaces |
 | source | `src/features/review/api/routeSharedHelpers.js` | review routes emit `503 specdb_not_ready` before SpecDb is ready |
+| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition-finder requires ready SpecDb and returns `503` when unavailable |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | runtime-ops endpoints depend on seeded SpecDb state |
-| source | `tools/check-env-example-sync.mjs` | fixed-scope env-check behavior |
-| command | `npm run env:check` | failing March 31 env-check result |
-| command | `npm run gui:build` | successful March 31 GUI build result |
-| command | `npm test` | successful March 31 suite result |
-| runtime | `http://127.0.0.1:8788/api/v1/health` | live health endpoint responded |
+| command | `npm run env:check` | failing April 4 env-check result |
+| command | `npm run gui:build` | successful April 4 GUI build result |
+| command | `npm test` | successful April 4 suite result |
+| runtime | `http://127.0.0.1:8788/health` | live health endpoint responded |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory excludes the harness directory |
-| runtime | `http://127.0.0.1:8788/api/v1/process/status` | live idle process-status payload retained last-run metadata |
-| runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live storage overview payload responded |
+| runtime | `http://127.0.0.1:8788/api/v1/process/status` | live idle process-status payload |
+| runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live storage overview payload responded with local backend state |
 
 ## Related Documents
 
-- [Environment and Config](../02-dependencies/environment-and-config.md) - Config surface behind the env and LLM issues.
-- [Deployment](./deployment.md) - Explains why Docker is not the verified runtime path.
+- [Environment and Config](../02-dependencies/environment-and-config.md) - Config surface behind the env and LLM-policy issues.
+- [Deployment](./deployment.md) - Explains the verified local runtime and the non-primary Docker path.
 - [API Surface](../06-references/api-surface.md) - Endpoint contract details for the affected surfaces.

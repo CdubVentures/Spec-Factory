@@ -2,47 +2,63 @@
 
 > **Purpose:** Inventory the verified long-running loops, child-process jobs, and batch workers used by the live runtime.
 > **Prerequisites:** [../05-operations/deployment.md](../05-operations/deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 ## Job Inventory
 
 | Job | Trigger | Schedule | File | Purpose |
 |-----|---------|----------|------|---------|
-| GUI process child run | `POST /api/v1/process/start` | on demand | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/processRoutes.js` | spawn `src/cli/spec.js` commands such as IndexLab or compile-rules |
-| Test-mode run | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js`, `src/testing/testRunner.js` | run synthetic products through consensus, normalization, and validation pipeline |
-| Intel Graph API server | CLI `intel-graph-api` | long-running local process | `src/api/intelGraphApi.js`, `src/cli/spec.js` | local GraphQL helper API on port `8787` |
+| GUI IndexLab child run | `POST /api/v1/process/start` | on demand | `src/app/api/routes/infra/processRoutes.js`, `src/features/indexing/api/builders/processStartLaunchPlan.js`, `src/app/api/processRuntime.js` | starts `node src/app/cli/spec.js indexlab ...` for the selected category / product |
+| Studio compile-rules child run | `POST /api/v1/studio/:category/compile` | on demand | `src/features/studio/api/studioRoutes.js`, `src/app/api/processRuntime.js`, `src/app/api/services/compileProcessCompletion.js` | runs `compile-rules`, then invalidates caches, re-syncs field-studio-map SQL, syncs SpecDb, and emits `process-completed` |
+| Studio validate-rules child run | `POST /api/v1/studio/:category/validate-rules` | on demand | `src/features/studio/api/studioRoutes.js`, `src/app/api/processRuntime.js` | runs `validate-rules` for one category |
+| Test-mode synthetic batch | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js`, `src/tests/testRunner.js` | runs synthetic products through consensus, normalization, validation, and optional SpecDb re-sync |
+| CLI batch scheduler | `node src/app/cli/spec.js run-batch --category <category>` | on demand | `src/app/cli/spec.js`, `src/app/cli/commands/batchCommand.js`, `src/pipeline/runProduct.js` | iterates SQL product catalog rows, ranks them, and runs product crawls concurrently |
+| Intel Graph helper API server | `node src/app/cli/spec.js intel-graph-api --category <category>` | long-running until stopped | `src/app/cli/spec.js`, `src/app/api/intelGraphApi.js` | local GraphQL helper API on default port `8787` |
+| SearXNG local sidecar | `POST /api/v1/searxng/start` or manual Docker Compose start | long-running until stopped | `src/app/api/routes/infra/searxngRoutes.js`, `src/app/api/processRuntime.js`, `tools/searxng/docker-compose.yml` | optional local search sidecar used by search workflows |
 
 ## Scheduling Reality
 
-- No external queue broker, cron service, or job orchestrator was verified.
+- No external queue broker, cron service, or hosted job orchestrator was verified.
 - Every background activity is one of:
   - an on-demand child process spawned from the GUI API,
   - a batch worker called directly from an API route,
-  - a standalone local helper server started from the CLI.
+  - a CLI command launched by an operator,
+  - a local sidecar process started on demand.
 
-## Inputs, Outputs, And State
+## Execution Boundaries
 
 | Job family | Reads | Writes |
 |------------|-------|--------|
-| GUI child process | HTTP request body + live config | child stdout/stderr broadcasts, runtime artifacts, process status |
-| Review/component batches | SpecDb, authority artifacts, review queues | SpecDb review tables, suggestions, component review outputs |
-| Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs (normalized/summary/provenance), suggestions, optional SpecDb sync |
+| GUI IndexLab child run | request body -> runtime settings snapshot, generated field rules, category authority, SpecDb | child stdout/stderr WS, `process-status`, `indexlab-event`, runtime artifacts, SpecDb telemetry |
+| Studio compile / validate | category authority inputs, compiled rules, SpecDb | process status, cache invalidation, optional SpecDb sync, `data-change` `process-completed` on successful compile |
+| Test mode | `_test_*` authority categories, synthetic fixtures, AppDb / SpecDb | synthetic output artifacts, suggestions, validation summaries, optional SpecDb resync, `test-import-progress` / `data-change` |
+| CLI batch scheduler | SQL product catalog, category config, source intel, product jobs | repeated `runProduct()` outputs and telemetry |
+| Intel Graph API | storage, config, optional SpecDb | local HTTP `/health` and `/graphql` responses |
 
-## Worker Boundaries
+## Constraints
 
 - `src/app/api/processRuntime.js` is the only verified GUI-side child-process manager.
-- The default imports root is still `imports/` via `src/shared/settingsDefaults.js` and `src/config.js`, but that directory is created or supplied by operators as needed and is not currently checked into the repo root.
+- `POST /api/v1/process/start` only supports `mode === 'indexlab'`; it is not a generic arbitrary-command launcher.
+- The compile endpoints do not use `/api/v1/process/start`; they call `startProcess()` directly from `src/features/studio/api/studioRoutes.js`.
+- No time-based schedule was verified for any job in this repo.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/cli/spec.js` | CLI command entrypoints for `intel-graph-api` and other commands |
-| source | `src/app/api/processRuntime.js` | GUI child-process lifecycle manager |
+| source | `src/app/api/processRuntime.js` | GUI child-process lifecycle manager, WS broadcasts, and sidecar integration |
 | source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status HTTP endpoints |
+| source | `src/features/indexing/api/builders/processStartLaunchPlan.js` | GUI `/process/start` supports IndexLab only and writes runtime snapshot env |
+| source | `src/features/studio/api/studioRoutes.js` | compile-rules and validate-rules process triggers |
+| source | `src/app/api/services/compileProcessCompletion.js` | compile completion invalidation and SpecDb sync side effects |
 | source | `src/app/api/routes/testModeRoutes.js` | test-mode run lifecycle |
-| source | `src/testing/testRunner.js` | `runTestProduct` pipeline used by the route |
-| source | `src/api/intelGraphApi.js` | local GraphQL helper server |
+| source | `src/tests/testRunner.js` | `runTestProduct` pipeline used by the route |
+| source | `src/app/cli/spec.js` | CLI command entrypoints for `run-batch` and `intel-graph-api` |
+| source | `src/app/cli/commands/batchCommand.js` | batch scheduling and concurrent run orchestration |
+| source | `src/pipeline/runProduct.js` | IndexLab product-run execution path |
+| source | `src/app/api/intelGraphApi.js` | local GraphQL helper server |
+| source | `src/app/api/routes/infra/searxngRoutes.js` | SearXNG start/status route surface |
+| config | `tools/searxng/docker-compose.yml` | local SearXNG sidecar definition |
 
 ## Related Documents
 

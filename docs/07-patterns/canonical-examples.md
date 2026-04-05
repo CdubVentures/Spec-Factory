@@ -6,7 +6,7 @@
 
 ## Adding A New API Endpoint
 
-Based on `src/features/settings/api/configRoutes.js`, `src/app/api/routes/infra/categoryRoutes.js`, and `src/api/guiServerRuntime.js`.
+Based on `src/features/settings/api/configRoutes.js`, `src/app/api/routes/infra/categoryRoutes.js`, and `src/app/api/guiServerRuntime.js`.
 
 Use the existing route-family registrar pattern: dependency injection at the top, `parts` matching inside the returned handler, `jsonRes()` for responses, and `return false` when the route does not match.
 
@@ -59,8 +59,8 @@ If you are extending an existing route family, add the branch inside that family
 
 If you are creating a brand-new route family, wire it through the live runtime assembly:
 
-1. Add `<key>RouteContext` creation to `src/api/guiServerRuntime.js`.
-2. Add `{ key, registrar }` to the `routeDefinitions` array in `src/api/guiServerRuntime.js`.
+1. Add `<key>RouteContext` creation to `src/app/api/guiServerRuntime.js`.
+2. Add `{ key, registrar }` to the `routeDefinitions` array in `src/app/api/guiServerRuntime.js`.
 3. Let `src/app/api/guiRouteRegistration.js` and `src/app/api/routeRegistry.js` consume that `routeDefinitions` array; do not treat `GUI_API_ROUTE_ORDER` as the mounted SSOT.
 
 ## Adding A New Page Or View
@@ -177,9 +177,9 @@ test('publishExampleArtifacts writes one current artifact', async () => {
 
 ## Adding A New Background Job
 
-Based on `src/app/cli/commands/batchCommand.js` and `src/cli/spec.js`.
+Based on `src/app/cli/commands/batchCommand.js` and `src/app/cli/spec.js`.
 
-Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/cli/spec.js` wires that handler into the dispatcher; the worker stays separately testable.
+Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/app/cli/spec.js` wires that handler into the dispatcher; the worker stays separately testable.
 
 ```js
 // src/features/example/exampleBatch.js
@@ -219,18 +219,15 @@ export function createExampleCommand({ runExampleBatch }) {
 ```
 
 ```js
-// src/cli/spec.js
-import { createExampleCommand } from '../app/cli/commands/exampleCommand.js';
-
-const example = createExampleCommand({
-  runExampleBatch,
+// src/app/cli/spec.js  —  wiring a command into the entrypoint switch
+const loadExampleCommand = createLazyLoader(async () => {
+  const { createExampleCommand } = await import('./commands/exampleCommand.js');
+  return createExampleCommand({ runExampleBatch });
 });
 
-const dispatchCliCommand = createCliCommandDispatcher({
-  handlers: {
-    'run-example': ({ config, storage, args }) => example.commandRunExample(config, storage, args),
-  },
-});
+// inside executeCommand()
+case 'run-example':
+  return (await loadExampleCommand()).commandRunExample(config, storage, args);
 ```
 
 ## Adding A New Service Function
@@ -275,19 +272,18 @@ export async function addExampleItem({ config, name, tags = [] }) {
 |--------|------|-------------------|
 | source | `src/app/api/routes/infra/categoryRoutes.js` | injected route-factory shape and `return false` non-match contract |
 | source | `src/features/settings/api/configRoutes.js` | live route-family registrar pattern |
-| source | `src/api/guiServerRuntime.js` | route-context assembly and `routeDefinitions` mounting pattern |
+| source | `src/app/api/guiServerRuntime.js` | route-context assembly and `routeDefinitions` mounting pattern |
 | source | `src/app/api/guiRouteRegistration.js` | routeDefinitions consumption path |
 | source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` is not the live mounted SSOT |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | page registry, tab metadata, and derived route pattern |
 | source | `tools/gui-react/src/App.tsx` | HashRouter shell and registry-driven route mounting |
 | source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab derivation from the page registry |
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
-| source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
+| source | `tools/gui-react/src/app/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |
 | source | `src/core/events/dataChangeContract.js` | canonical `emitDataChange` import path for route examples |
 | source | `src/app/cli/commands/batchCommand.js` | thin CLI command factory pattern |
-| source | `src/cli/spec.js` | CLI command wrapper and dispatcher registration pattern |
-| source | `src/app/cli/commandDispatch.js` | handler-dispatch contract |
+| source | `src/app/cli/spec.js` | CLI command wrapper and lazy-loader registration pattern |
 | source | `src/features/catalog/identity/brandRegistry.js` | service-function options object and structured return pattern |
 | test | `src/publish/tests/publishingPipeline.publish.test.js` | Node `node:test` structure with local fixtures and public-API assertions |
 

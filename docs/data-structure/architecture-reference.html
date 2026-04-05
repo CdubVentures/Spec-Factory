@@ -94,8 +94,8 @@ svg text{font-family:var(--sans)}
   <h1>Spec Factory &mdash; Architecture Reference</h1>
   <p>Complete system architecture. SQLite as durable store. JSON as config + checkpoint safety net. This documents the completed state of the system, not plans.</p>
   <div class="meta">
-    <span>Audited 2026-04-02</span>
-    <span>Live-validated</span>
+    <span>Audited 2026-04-04</span>
+    <span>Code-validated</span>
   </div>
 </header>
 
@@ -108,7 +108,7 @@ svg text{font-family:var(--sans)}
   <div class="stat"><div class="n" style="color:var(--violet)">136</div><div class="l">Runtime Settings</div></div>
   <div class="stat"><div class="n" style="color:var(--amber)">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n" style="color:var(--cyan)">19</div><div class="l">Store Modules</div></div>
-  <div class="stat"><div class="n" style="color:var(--rose)">80&ndash;111</div><div class="l">Field Definitions</div></div>
+  <div class="stat"><div class="n" style="color:var(--rose)">81&ndash;111</div><div class="l">Field Definitions</div></div>
 </div>
 
 <!-- ================================================================== -->
@@ -159,7 +159,7 @@ svg text{font-family:var(--sans)}
 
       <!-- Features -->
       <rect x="540" y="20" width="200" height="64" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.5"/>
-      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules (13)</text>
+      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules (12)</text>
       <text x="640" y="64" text-anchor="middle" fill="#475569" font-size="10">Indexing / Catalog / Review / Settings</text>
 
       <!-- Core -->
@@ -329,7 +329,7 @@ svg text{font-family:var(--sans)}
     <details class="card" data-search="run.json crawl checkpoint">
       <summary><span class="tname">run.json</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/run.json</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Crawl checkpoint &mdash; records run metadata, phase cursor, and product-level results. Schema v2/v3. Written by the pipeline at each phase transition. SQL (runs + run_artifacts tables) is the SSOT; this file is the rebuild safety net.</p>
+        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Crawl checkpoint &mdash; records run metadata, phase cursor, counters, and checkpoint paths. Written by the pipeline at each phase transition. SQL (runs + run_artifacts tables) is the SSOT; this file is the rebuild safety net.</p>
         <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/writeCrawlCheckpoint.js<br><strong>Mutable?</strong> Yes (updated each phase)<br><strong>In SQL?</strong> Yes &mdash; runs + run_artifacts tables are authoritative</p>
       </div>
     </details>
@@ -350,9 +350,9 @@ svg text{font-family:var(--sans)}
     </details>
 
     <details class="card" data-search="screenshots jpeg visual proof">
-      <summary><span class="tname">screenshots/*.jpg</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/screenshots/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <summary><span class="tname">screenshots/*.{jpg,png}</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/screenshots/</span><span class="tag tag-immutable">Immutable</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Visual proof screenshots of spec tables on crawled pages. Referenced by source_screenshots table.<br><strong>Written by:</strong> Screenshot capture plugin<br><strong>Mutable?</strong> No</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Visual proof screenshots of crawled pages and extracted surfaces. Stored as JPEG or PNG and referenced by the source_screenshots table.<br><strong>Written by:</strong> Screenshot capture plugin<br><strong>Mutable?</strong> No</p>
       </div>
     </details>
 
@@ -369,9 +369,9 @@ svg text{font-family:var(--sans)}
     <div class="domain-label">B. Category Authority (_generated/)</div>
 
     <details class="card" data-search="field_rules.json field definitions constraints">
-      <summary><span class="tname">field_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">80&ndash;111 defs</span></span></summary>
+      <summary><span class="tname">field_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">81&ndash;111 defs</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Field definitions with constraints, types, validation rules, display metadata. Compiled from category authority source sheets. Count varies by category: mouse 80, keyboard 101, monitor 111.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No (recompiled, not edited)</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Field definitions with constraints, types, validation rules, display metadata. Compiled from category authority source sheets. Count varies by category: mouse 81, keyboard 101, monitor 111.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No (recompiled, not edited)</p>
       </div>
     </details>
 
@@ -453,10 +453,10 @@ svg text{font-family:var(--sans)}
   <div class="domain-group">
     <div class="domain-label">C. Control Plane</div>
 
-    <details class="card" data-search="product_catalog.json product inventory retired">
-      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-dead">RETIRED</span></span></summary>
+    <details class="card" data-search="product_catalog.json product inventory control plane seed">
+      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-mutable">Mutable</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Status:</strong> RETIRED. No longer read by the seed path.<br><strong>Replaced by:</strong> <code>.workspace/products/{pid}/product.json</code> is now the sole SSOT for product identity (brand, base_model, model, variant, category). Rebuilt via checkpoint reseed.<br><strong>Historical note:</strong> Was a read-only boot seed for mouse category only. File may still exist on disk but is not consumed by any active code path.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Control-plane seed catalog for product identities. Read by <code>seedFromCatalog()</code>, catalog ingest helpers, and test-mode scaffolds; in full seed mode it also contributes canonical field values via overrides.<br><strong>Written by:</strong> Test-mode product generator and manual/control-plane maintenance<br><strong>Mutable?</strong> Yes<br><strong>Runtime role:</strong> Not the live runtime SSOT. Product CRUD/listing runs through SpecDb; <code>.workspace/products/{pid}/product.json</code> remains the rebuild artifact for app-created products.</p>
       </div>
     </details>
 
@@ -564,7 +564,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn" style="color:var(--amber)">misc</td><td class="ct">53</td><td class="cc">maxRunSeconds, serperEnabled, googleSearchTimeoutMs, domainClassifierUrlCap, searchProfileQueryCap, autoScrollEnabled, geminiApiKey</td></tr>
         <tr><td class="cn" style="color:var(--accent)">llm</td><td class="ct">21</td><td class="cc">llmProvider, llmModelPlan, llmModelReasoning, llmMaxOutputTokens, llmCostInputPer1M, anthropicApiKey, deepseekApiKey, llmBaseUrl</td></tr>
         <tr><td class="cn" style="color:var(--violet)">paths</td><td class="ct">3</td><td class="cc">categoryAuthorityRoot, localInputRoot, specDbDir</td></tr>
-        <tr><td class="cn" style="color:var(--cyan)">discovery</td><td class="ct">1</td><td class="cc">frontierRepairSearchEnabled (retired/inactive)</td></tr>
+        <tr><td class="cn" style="color:var(--cyan)">discovery</td><td class="ct">1</td><td class="cc">searxngBaseUrl</td></tr>
       </tbody>
     </table>
     <p style="color:var(--t3);font-size:0.78rem;margin-top:8px">Note: 3 entries (llmPhaseOverridesJson, llmProviderRegistryJson, localOutputRoot) have no explicit group field. Total with group: 133. Total entries: 136.</p>
@@ -635,9 +635,9 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="api-routes" data-search="api routes endpoints http rest">
   <div class="surface-head">
     <h2>API Routes</h2>
-    <span class="tag tag-cols">13 route registrars</span>
+    <span class="tag tag-cols">15 route registrars</span>
   </div>
-  <p class="surface-desc">All API routes are registered via the GUI server runtime (<code>src/api/guiServerRuntime.js</code>). Each registrar receives a context object with database accessors, config, and helpers. Routes are prefixed with <code>/api/v1/</code>.</p>
+  <p class="surface-desc">All API routes are registered via the GUI server runtime (<code>src/app/api/guiServerRuntime.js</code>). Each registrar receives a context object with database accessors, config, and helpers. Most routes are prefixed with <code>/api/v1/</code>; <code>/health</code> is also accepted as a top-level alias.</p>
 
   <div class="domain-group">
     <div class="domain-label">Route Registrar Map</div>
@@ -650,6 +650,8 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">runtimeOps</td><td class="ct">registerRuntimeOpsRoutes</td><td class="cc">src/features/indexing/api/runtimeOpsRoutes.js</td></tr>
         <tr><td class="cn">catalog</td><td class="ct">registerCatalogRoutes</td><td class="cc">src/features/catalog/api/catalogRoutes.js</td></tr>
         <tr><td class="cn">brand</td><td class="ct">registerBrandRoutes</td><td class="cc">src/features/catalog/api/brandRoutes.js</td></tr>
+        <tr><td class="cn">color</td><td class="ct">registerColorRoutes</td><td class="cc">src/features/color-registry/api/colorRoutes.js</td></tr>
+        <tr><td class="cn">colorEditionFinder</td><td class="ct">registerColorEditionFinderRoutes</td><td class="cc">src/features/color-edition/api/colorEditionFinderRoutes.js</td></tr>
         <tr><td class="cn">studio</td><td class="ct">registerStudioRoutes</td><td class="cc">src/features/studio/api/studioRoutes.js</td></tr>
         <tr><td class="cn">dataAuthority</td><td class="ct">registerDataAuthorityRoutes</td><td class="cc">src/features/category-authority/api/dataAuthorityRoutes.js</td></tr>
         <tr><td class="cn">queueBillingLearning</td><td class="ct">registerQueueBillingLearningRoutes</td><td class="cc">src/features/indexing/api/queueBillingLearningRoutes.js</td></tr>
@@ -666,23 +668,24 @@ svg text{font-family:var(--sans)}
     <table class="col-table">
       <thead><tr><th>Endpoint</th><th>Method</th><th>Data Source</th></tr></thead>
       <tbody>
-        <tr><td class="cn">/indexlab/runs</td><td class="ct">GET</td><td class="cc">specDb.listRuns()</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}</td><td class="ct">GET</td><td class="cc">SQL runs + run_artifacts + events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/events</td><td class="ct">GET</td><td class="cc">SQL bridge_events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/needset</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (needset)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/search-profile</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (search_profile)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/rounds</td><td class="ct">GET</td><td class="cc">Aggregated from bridge_events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/serp</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (serp_explorer)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/learning</td><td class="ct">GET</td><td class="cc">Filtered bridge_events</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/source-indexing-packets</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/item-indexing-packet</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/automation-queue</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/source-provenance</td><td class="ct">GET</td><td class="cc">SQL item_field_state + assertions</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/key-review-summary</td><td class="ct">GET</td><td class="cc">SQL key_review_state aggregate</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/field-summary</td><td class="ct">GET</td><td class="cc">SQL item_field_state</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/component-summary</td><td class="ct">GET</td><td class="cc">SQL component_identity + values</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/crawl-media</td><td class="ct">GET</td><td class="cc">SQL crawl_sources + source_screenshots + source_videos</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/billing</td><td class="ct">GET</td><td class="cc">SQL billing_entries for run</td></tr>
+        <tr><td class="cn">/indexlab/runs</td><td class="ct">GET</td><td class="cc">listIndexLabRuns() over the runs surface</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}</td><td class="ct">GET</td><td class="cc">Resolved run meta + bridge events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/events</td><td class="ct">GET</td><td class="cc">Bridge-event replay for the run</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/needset</td><td class="ct">GET</td><td class="cc">run_artifacts / checkpoint payload (needset)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/search-profile</td><td class="ct">GET</td><td class="cc">run_artifacts / executed search-profile payload</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/prime-sources</td><td class="ct">GET</td><td class="cc">run_artifacts / prime-sources payload</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/dynamic-fetch-dashboard</td><td class="ct">GET</td><td class="cc">run_artifacts / dynamic fetch dashboard</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/source-indexing-packets</td><td class="ct">GET</td><td class="cc">run_artifacts / source indexing packets</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/item-indexing-packet</td><td class="ct">GET</td><td class="cc">run_artifacts / item indexing packet</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/run-meta-packet</td><td class="ct">GET</td><td class="cc">run_artifacts / run-meta packet</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/serp</td><td class="ct">GET</td><td class="cc">run_artifacts / SERP explorer payload</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/automation-queue</td><td class="ct">GET</td><td class="cc">run_artifacts / automation queue payload</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/rounds</td><td class="ct">GET</td><td class="cc">Aggregated round summary from bridge_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/learning</td><td class="ct">GET</td><td class="cc">Learning-only slice of bridge_events</td></tr>
+        <tr><td class="cn">/indexlab/product-history</td><td class="ct">GET</td><td class="cc">SpecDb history from runs, billing_entries, crawl_sources, query_index</td></tr>
+        <tr><td class="cn">/indexlab/indexes/*</td><td class="ct">GET</td><td class="cc">query_index, url_index, prompt_index, knob_snapshots summaries</td></tr>
+        <tr><td class="cn">/indexlab/analytics/*</td><td class="ct">GET</td><td class="cc">Cross-run analytics and host health rollups</td></tr>
+        <tr><td class="cn">/indexlab/live-crawl/*</td><td class="ct">GET</td><td class="cc">Validation checklist, evaluator, and effective settings snapshot</td></tr>
       </tbody>
     </table>
   </div>
@@ -702,14 +705,15 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/plugins</td><td class="ct">GET</td><td class="cc">buildExtractionPluginPhases</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/fallbacks</td><td class="ct">GET</td><td class="cc">buildFallbackEvents</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/queue</td><td class="ct">GET</td><td class="cc">buildQueueState</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/crawl-ledger</td><td class="ct">GET</td><td class="cc">SpecDb crawl ledger + query cooldown view</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/pipeline</td><td class="ct">GET</td><td class="cc">buildPipelineFlow</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/prefetch</td><td class="ct">GET</td><td class="cc">buildPreFetchPhases</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/fetch</td><td class="ct">GET</td><td class="cc">buildFetchPhases</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/llm-dashboard</td><td class="ct">GET</td><td class="cc">buildLlmCallsDashboard</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/screencast/{wid}/last</td><td class="ct">GET</td><td class="cc">Live frame or synthetic proof</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/video/{wid}</td><td class="ct">GET</td><td class="cc">Stream .webm file (range support)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/runtime/assets/{file}</td><td class="ct">GET</td><td class="cc">Static file serve (screenshots)</td></tr>
-        <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/open-folder</td><td class="ct">POST</td><td class="cc">Open extraction output folder in OS</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/assets/{file}</td><td class="ct">GET</td><td class="cc">Static asset/file serve for screenshots and exported artifacts</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/open-folder</td><td class="ct">GET</td><td class="cc">Open extraction output folder in the OS shell</td></tr>
         <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/resolve-folder</td><td class="ct">GET</td><td class="cc">Resolve extraction folder path</td></tr>
       </tbody>
     </table>
@@ -720,11 +724,15 @@ svg text{font-family:var(--sans)}
     <table class="col-table">
       <thead><tr><th>Endpoint</th><th>Method</th><th>Handler</th></tr></thead>
       <tbody>
-        <tr><td class="cn">/config/runtime-settings</td><td class="ct">GET/PUT</td><td class="cc">createRuntimeSettingsHandler &mdash; RUNTIME_SETTINGS_REGISTRY</td></tr>
-        <tr><td class="cn">/config/ui-settings</td><td class="ct">GET/PUT</td><td class="cc">createUiSettingsHandler &mdash; user settings (dual-write)</td></tr>
-        <tr><td class="cn">/config/llm-settings</td><td class="ct">GET/PUT</td><td class="cc">createLlmSettingsHandler &mdash; LLM routing config</td></tr>
-        <tr><td class="cn">/config/llm-policy</td><td class="ct">GET/PUT</td><td class="cc">createLlmPolicyHandler &mdash; LLM policy groups</td></tr>
-        <tr><td class="cn">/config/indexing</td><td class="ct">GET</td><td class="cc">createIndexingMetricsHandler &mdash; domain checklist + LLM metrics</td></tr>
+        <tr><td class="cn">/runtime-settings</td><td class="ct">GET/PUT/POST</td><td class="cc">createRuntimeSettingsHandler &mdash; RUNTIME_SETTINGS_REGISTRY</td></tr>
+        <tr><td class="cn">/ui-settings</td><td class="ct">GET/PUT</td><td class="cc">createUiSettingsHandler &mdash; persisted UI autosave toggles</td></tr>
+        <tr><td class="cn">/llm-settings/{category}/routes</td><td class="ct">GET/PUT</td><td class="cc">createLlmSettingsHandler &mdash; llm_route_matrix overrides</td></tr>
+        <tr><td class="cn">/llm-settings/{category}/routes/reset</td><td class="ct">POST</td><td class="cc">Reset llm_route_matrix to category defaults</td></tr>
+        <tr><td class="cn">/llm-policy</td><td class="ct">GET/PUT/POST</td><td class="cc">createLlmPolicyHandler &mdash; assembled LLM policy object</td></tr>
+        <tr><td class="cn">/indexing/llm-config</td><td class="ct">GET</td><td class="cc">createIndexingMetricsHandler &mdash; LLM defaults, pricing, schemas</td></tr>
+        <tr><td class="cn">/indexing/llm-metrics</td><td class="ct">GET</td><td class="cc">LLM usage rollup over historical runs</td></tr>
+        <tr><td class="cn">/indexing/domain-checklist/{category}</td><td class="ct">GET</td><td class="cc">Domain checklist + manufacturer milestone metrics</td></tr>
+        <tr><td class="cn">/indexing/review-metrics/{category}</td><td class="ct">GET</td><td class="cc">Human review throughput metrics</td></tr>
       </tbody>
     </table>
   </div>
@@ -734,12 +742,12 @@ svg text{font-family:var(--sans)}
     <table class="col-table">
       <thead><tr><th>Endpoint</th><th>Method</th><th>Handler</th></tr></thead>
       <tbody>
-        <tr><td class="cn">/infra/health</td><td class="ct">GET</td><td class="cc">healthRoutes &mdash; server identity + dist root</td></tr>
-        <tr><td class="cn">/infra/categories</td><td class="ct">GET</td><td class="cc">categoryRoutes &mdash; available categories</td></tr>
-        <tr><td class="cn">/infra/process/*</td><td class="ct">GET/POST</td><td class="cc">processRoutes &mdash; pipeline lifecycle (start/stop/status)</td></tr>
-        <tr><td class="cn">/infra/searxng/*</td><td class="ct">GET</td><td class="cc">searxngRoutes &mdash; SearXNG proxy</td></tr>
-        <tr><td class="cn">/infra/serper/*</td><td class="ct">GET</td><td class="cc">serperRoutes &mdash; Serper credit balance</td></tr>
-        <tr><td class="cn">/infra/graphql</td><td class="ct">POST</td><td class="cc">graphqlRoutes &mdash; GraphQL endpoint</td></tr>
+        <tr><td class="cn">/health</td><td class="ct">GET</td><td class="cc">healthRoutes &mdash; server identity + dist root (+ <code>/api/v1/health</code> alias)</td></tr>
+        <tr><td class="cn">/categories</td><td class="ct">GET/POST</td><td class="cc">categoryRoutes &mdash; list or scaffold categories</td></tr>
+        <tr><td class="cn">/process/start|stop|status</td><td class="ct">GET/POST</td><td class="cc">processRoutes &mdash; pipeline lifecycle control</td></tr>
+        <tr><td class="cn">/searxng/*</td><td class="ct">GET</td><td class="cc">searxngRoutes &mdash; SearXNG proxy + status</td></tr>
+        <tr><td class="cn">/serper/*</td><td class="ct">GET</td><td class="cc">serperRoutes &mdash; Serper credit balance</td></tr>
+        <tr><td class="cn">/graphql</td><td class="ct">POST</td><td class="cc">graphqlRoutes &mdash; proxy to the Intel Graph API</td></tr>
       </tbody>
     </table>
   </div>
@@ -765,12 +773,19 @@ svg text{font-family:var(--sans)}
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">Additional Routes</div>
+    <div class="domain-label">Additional Route Families</div>
     <table class="col-table">
       <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
       <tbody>
+        <tr><td class="cn">/colors</td><td class="ct">GET/POST</td><td class="cc">List or create global color registry entries</td></tr>
+        <tr><td class="cn">/colors/{name}</td><td class="ct">PUT/DELETE</td><td class="cc">Update or delete a color registry entry</td></tr>
+        <tr><td class="cn">/color-edition-finder/{category}[/{productId}]</td><td class="ct">GET/POST/DELETE</td><td class="cc">Color/edition finder list, run, and cleanup surface</td></tr>
         <tr><td class="cn">/source-strategy</td><td class="ct">GET/POST/PUT/DELETE</td><td class="cc">Source strategy CRUD</td></tr>
         <tr><td class="cn">/spec-seeds?category=</td><td class="ct">GET/PUT</td><td class="cc">Per-category spec seed templates</td></tr>
+        <tr><td class="cn">/data-authority/{category}/snapshot</td><td class="ct">GET</td><td class="cc">Authority version token + SpecDb sync snapshot</td></tr>
+        <tr><td class="cn">/studio/{category}/*</td><td class="ct">GET/POST/PUT</td><td class="cc">Studio payload, compile, validation, maps, known values, component DB</td></tr>
+        <tr><td class="cn">/review/{category}/*</td><td class="ct">GET/POST/PUT</td><td class="cc">Field review layouts, products, candidates, and mutations</td></tr>
+        <tr><td class="cn">/review-components/{category}/*</td><td class="ct">GET/POST/PUT</td><td class="cc">Component + enum review layouts, queues, and mutations</td></tr>
         <tr><td class="cn">/storage/*</td><td class="ct">GET/POST/DELETE</td><td class="cc">Storage manager (runs, cleanup, archival)</td></tr>
         <tr><td class="cn">/test-mode/*</td><td class="ct">GET/POST/DELETE</td><td class="cc">Test mode (create, run, validate, cleanup)</td></tr>
       </tbody>
@@ -791,14 +806,14 @@ svg text{font-family:var(--sans)}
   <span class="dir">db/</span>
     <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps, color registry (6 tables)</span>
     <span class="dir">{category}/</span>
-      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 36 base tables (+ 4 learning runtime)</span>
+      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 36 base tables</span>
   <span class="dir">runs/</span>
     <span class="dir">{runId}/</span>
       <span class="file">run.json</span>                         <span class="comment">-- Crawl checkpoint (rebuild safety net)</span>
       <span class="dir">html/</span>
         <span class="file">*.html.gz</span>                      <span class="comment">-- Content-addressed crawled pages</span>
       <span class="dir">screenshots/</span>
-        <span class="file">*.jpg</span>                          <span class="comment">-- Visual proof screenshots</span>
+        <span class="file">*.jpg, *.png</span>                   <span class="comment">-- Visual proof screenshots</span>
       <span class="dir">video/</span>
         <span class="file">*.webm</span>                         <span class="comment">-- Page session recordings</span>
   <span class="dir">global/</span>
@@ -813,7 +828,7 @@ svg text{font-family:var(--sans)}
   <div class="tree-block"><span class="dir">category_authority/</span>
   <span class="dir">{category}/</span>
     <span class="dir">_generated/</span>                          <span class="comment">-- Compiled authority files (immutable)</span>
-      <span class="file">field_rules.json</span>                 <span class="comment">-- 80-111 field definitions (varies by category)</span>
+      <span class="file">field_rules.json</span>                 <span class="comment">-- 81-111 field definitions (varies by category)</span>
       <span class="file">known_values.json</span>                <span class="comment">-- Enumerated values per field</span>
       <span class="file">field_groups.json</span>                <span class="comment">-- 10-12 semantic field groupings (varies)</span>
       <span class="file">ui_field_catalog.json</span>            <span class="comment">-- UI rendering metadata</span>
@@ -823,17 +838,15 @@ svg text{font-family:var(--sans)}
       <span class="file">manifest.json</span>                    <span class="comment">-- SHA256 integrity hashes</span>
       <span class="file">_compile_report.json</span>             <span class="comment">-- Compilation metadata</span>
       <span class="dir">component_db/</span>
-        <span class="file">encoders.json</span>                  <span class="comment">-- 40 encoder components</span>
-        <span class="file">sensors.json</span>                   <span class="comment">-- 116 sensor components</span>
-        <span class="file">switches.json</span>                  <span class="comment">-- 106 switch components</span>
-        <span class="file">materials.json</span>                 <span class="comment">-- 3 material types</span>
+        <span class="file">*.json</span>                         <span class="comment">-- Category-specific component authority files (mouse: encoders/sensors/switches/materials; keyboard: switches; monitor: panel)</span>
     <span class="file">sources.json</span>                       <span class="comment">-- Source strategy (mutable SSOT, not in SQL)</span>
     <span class="dir">_control_plane/</span>                      <span class="comment">-- Control plane files (varies by category)</span>
-      <span class="file">product_catalog.json</span>             <span class="comment">-- RETIRED &mdash; product.json is sole SSOT</span>
+      <span class="file">product_catalog.json</span>             <span class="comment">-- Control-plane import/feed for seedFromCatalog and test-mode scaffolds; not the runtime SSOT</span>
       <span class="file">field_studio_map.json</span>            <span class="comment">-- Sheet-to-field mapping (all categories)</span>
       <span class="file">rename_log.json</span>                  <span class="comment">-- Rename audit trail (mouse only)</span>
   <span class="dir">_global/</span>
     <span class="file">brand_registry.json</span>                <span class="comment">-- Brand definitions (seed + GUI write-back)</span>
+    <span class="file">color_registry.json</span>                <span class="comment">-- Color definitions (seed + GUI write-back)</span>
 </div>
 </section>
 
@@ -899,7 +912,7 @@ svg text{font-family:var(--sans)}
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">Feature Modules (13)</div>
+    <div class="domain-label">Feature Modules (12)</div>
     <table class="col-table">
       <thead><tr><th>Module</th><th>Path</th></tr></thead>
       <tbody>

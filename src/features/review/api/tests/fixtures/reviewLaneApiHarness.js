@@ -304,7 +304,7 @@ export async function createReviewLaneApiHarness(t) {
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
-    const guiServerPath = path.resolve('src/api/guiServer.js');
+    const guiServerPath = path.resolve('src/app/api/guiServer.js');
 
     try {
       child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {

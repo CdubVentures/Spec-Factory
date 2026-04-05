@@ -33,7 +33,7 @@ describe('Spec Factory dev stack control contract', () => {
 
     assert.equal(contract.api.command, process.execPath);
     assert.deepEqual(contract.api.args, [
-      path.join(root, 'src', 'api', 'guiServer.js'),
+      path.join(root, 'src', 'app', 'api', 'guiServer.js'),
       '--port',
       '8788',
       '--local',

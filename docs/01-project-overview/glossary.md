@@ -1,52 +1,55 @@
 # Glossary
 
-> **Purpose:** Define project-specific domain terms and overloaded words that would otherwise cause an arriving LLM to hallucinate generic meanings.
-> **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-31
+> **Purpose:** Define project-specific terms and overloaded names so an arriving LLM does not substitute generic meanings.
+> **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
+> **Last validated:** 2026-04-04
 
-| Term | Meaning in this repo | Primary evidence |
-|------|----------------------|------------------|
-| Spec Factory | The overall local workbench: GUI, API, CLI, SQLite, and authority content | `package.json`, `src/api/guiServerRuntime.js` |
-| AppDb | Global cross-category SQLite database at `.workspace/db/app.sqlite` for brands, settings, and studio maps | `src/db/appDb.js`, `src/db/appDbSchema.js`, `src/api/bootstrap/createBootstrapSessionLayer.js` |
-| SpecDb | Per-category SQLite database at `.workspace/db/<category>/spec.sqlite` used by review, studio, indexing, and runtime queries | `src/db/specDb.js`, `src/app/api/specDbRuntime.js` |
-| IndexLab | Run-centric indexing workflow and run-artifact API family | `src/features/indexing/api/indexlabRoutes.js`, `src/indexlab/` |
-| Runtime Ops | GUI/API surface for worker, document, prefetch, queue, and screencast telemetry for a run | `src/features/indexing/api/runtimeOpsRoutes.js`, `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` |
-| NeedSet | Missing/required-field planning data derived for an indexing run | `src/features/indexing/api/indexlabRoutes.js`, `src/indexlab/` |
-| Search Profile | Query-planning profile exposed from run artifacts and Runtime Ops panels | `src/features/indexing/api/indexlabRoutes.js`, `tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx` |
-| Field Rules Studio | Authoring surface for field rules, studio maps, tooltips, and component DB projections | `src/features/studio/api/studioRoutes.js`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
-| Category authority | Authored control-plane content stored under `category_authority/` | `src/categories/loader.js`, `category_authority/` |
-| Authority snapshot | API payload summarizing category compile, sync, and observability state | `src/features/category-authority/api/dataAuthorityRoutes.js` |
-| Source strategy | Per-category source-entry records stored in `category_authority/<category>/sources.json` and exposed via `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js`, `src/features/indexing/sources/sourceFileService.js` |
-| Spec seeds | Per-category deterministic query templates stored in `category_authority/<category>/spec_seeds.json` and exposed via `/api/v1/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js`, `src/features/indexing/sources/specSeedsFileService.js` |
-| Review grid | Scalar product-field review workflow | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/features/review/components/ReviewPage.tsx` |
-| Component review | Review workflow for component identities and component-linked fields | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` |
-| Enum review | Review workflow for enum catalogs and enum-consistency suggestions | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/EnumSubTab.tsx` |
-| Runtime settings | Flat operator-editable settings exposed at `/api/v1/runtime-settings` | `src/features/settings/api/configRuntimeSettingsHandler.js` |
-| UI settings | Persisted GUI autosave toggles exposed at `/api/v1/ui-settings` | `src/features/settings/api/configUiSettingsHandler.js` |
-| LLM Settings | Category-scoped `llm_route_matrix` editor persisted through `/api/v1/llm-settings/:category/routes` | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `src/features/settings/api/configLlmSettingsHandler.js` |
-| LLM Config | Global composite `LlmPolicy` editor persisted through `/api/v1/llm-policy`; the page also reads `/api/v1/indexing/llm-config` metadata | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `src/features/settings-authority/llmPolicyHandler.js`, `src/features/settings/api/configIndexingMetricsHandler.js` |
-| Storage Manager | GUI/API surface for run inventory, delete, prune, purge, and export under `/api/v1/storage/*` | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx`, `src/features/indexing/api/storageManagerRoutes.js` |
-| Test mode | GUI/API surface for creating `_test_*` categories, generating fixtures, attempting runs, and validating results | `src/app/api/routes/testModeRoutes.js`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
-| Crawl module | Plugin-based browser automation subsystem that replaced the older extraction-heavy pipeline | `src/features/crawl/index.js`, `src/features/crawl/README.md` |
-| Frontier DB / Crawl ledger | URL-level crawl state persistence adapter used during crawl execution; currently built through `createCrawlLedgerAdapter()` and consumed by `session.runFetchPlan()` | `src/features/indexing/orchestration/shared/crawlLedgerAdapter.js`, `src/pipeline/runProduct.js`, `src/features/crawl/crawlSession.js` |
+| Term | Meaning in this repo | Primary files |
+|------|----------------------|---------------|
+| Spec Factory | The full local workbench: Node GUI/API server, React GUI, CLI, SQLite stores, and authored category authority content | `package.json`, `src/app/api/guiServer.js`, `src/app/cli/spec.js` |
+| AppDb | Global SQLite database at `.workspace/db/app.sqlite` for shared state such as settings, brands, colors, and studio maps | `src/db/appDb.js`, `src/db/appDbSchema.js`, `src/app/api/bootstrap/createBootstrapSessionLayer.js` |
+| SpecDb | Per-category SQLite database at `.workspace/db/<category>/spec.sqlite` used by review, indexing, authority reseed, and category-scoped settings | `src/db/specDb.js`, `src/db/specDbSchema.js`, `src/app/api/specDbRuntime.js` |
+| IndexLab | Run-centric indexing surface: `/api/v1/indexlab/*` plus the GUI/CLI workflows that inspect and launch crawl runs | `src/features/indexing/api/indexlabRoutes.js`, `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `src/app/cli/commands/pipelineCommands.js` |
+| Storage Manager | The `/api/v1/storage/*` inventory and deletion surface mounted inside the IndexLab route family | `src/features/indexing/api/indexlabRoutes.js`, `src/features/indexing/api/storageManagerRoutes.js`, `tools/gui-react/src/features/storage-manager/` |
+| Runtime Ops | The GUI/API surface for process status, run telemetry, screencasts, and runtime diagnostics | `src/features/indexing/api/runtimeOpsRoutes.js`, `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` |
+| Category authority | Authored control-plane files under `category_authority/` that define category-specific sources, seeds, maps, and helper content | `category_authority/`, `src/categories/loader.js` |
+| Source strategy | Per-category source-entry configuration stored in `category_authority/<category>/sources.json` and exposed by `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js`, `src/features/indexing/sources/sourceFileService.js` |
+| Spec seeds | Per-category deterministic seed-query configuration stored in `category_authority/<category>/spec_seeds.json` and exposed by `/api/v1/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js`, `src/features/indexing/sources/specSeedsFileService.js` |
+| Field Rules Studio | The authoring surface for field rules, maps, tooltips, component projections, and related authority artifacts | `src/features/studio/api/studioRoutes.js`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
+| Review grid | Product-field review workflow for scalar field decisions | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/features/review/components/ReviewPage.tsx` |
+| Component review | Review workflow for shared/component-backed review items | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` |
+| Enum review | Review workflow for enum-backed review items and catalog suggestions | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/EnumSubTab.tsx` |
+| LLM policy | The composite global provider/model policy returned by `/api/v1/llm-policy` and edited in the GUI LLM config surface | `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
+| LLM settings | Category-scoped route-matrix settings persisted through `/api/v1/llm-settings/:category/routes` | `src/features/settings/api/configLlmSettingsHandler.js`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` |
+| Runtime settings | Flat operator-editable runtime settings returned by `/api/v1/runtime-settings` | `src/features/settings/api/configRuntimeSettingsHandler.js` |
+| UI settings | Persisted GUI autosave/settings toggles returned by `/api/v1/ui-settings` | `src/features/settings/api/configUiSettingsHandler.js` |
+| NeedSet | Missing/required-field planning payload for an IndexLab run | `src/features/indexing/api/indexlabRoutes.js` |
+| Search profile | Search-planning payload recorded per run and surfaced through IndexLab APIs and runtime panels | `src/features/indexing/api/indexlabRoutes.js`, `tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSearchProfilePanel.tsx` |
+| Test mode | Isolated test-category tooling exposed through the standalone `/test-mode` GUI route and matching backend routes | `tools/gui-react/src/pages/test-mode/TestModePage.tsx`, `src/app/api/routes/testModeRoutes.js` |
+| Color registry | Shared global color registry backed by AppDb and a JSON mirror under `_global` authority content | `src/features/color-registry/api/colorRoutes.js`, `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx` |
+| Color edition finder | LLM-assisted color-edition lookup surface embedded alongside color workflows | `src/features/color-edition/api/colorEditionFinderRoutes.js`, `tools/gui-react/src/features/color-edition-finder/components/ColorEditionFinderPanel.tsx` |
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/db/appDb.js` | AppDb meaning and location |
-| source | `src/db/specDb.js` | SpecDb meaning |
-| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab, NeedSet, and Search Profile terminology |
-| source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops naming |
+| source | `src/app/api/guiServer.js` | project-level runtime meaning of Spec Factory |
+| source | `src/app/api/bootstrap/createBootstrapSessionLayer.js` | AppDb bootstrap path |
+| source | `src/app/api/specDbRuntime.js` | SpecDb path and lifecycle |
+| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab, NeedSet, Search Profile, and Storage Manager terminology |
+| source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops terminology |
+| source | `src/features/indexing/api/sourceStrategyRoutes.js` | Source strategy terminology |
+| source | `src/features/indexing/api/specSeedsRoutes.js` | Spec seeds terminology |
 | source | `src/features/studio/api/studioRoutes.js` | Field Rules Studio terminology |
-| source | `src/features/review/api/reviewRoutes.js` | review-grid, component-review, and enum-review naming |
-| source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy terminology |
-| source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed terminology |
-| source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy terminology |
-| source | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | Storage Manager naming |
+| source | `src/features/review/api/reviewRoutes.js` | review-grid, component-review, and enum-review terminology |
+| source | `src/features/settings-authority/llmPolicyHandler.js` | LLM policy terminology |
+| source | `src/features/settings/api/configLlmSettingsHandler.js` | LLM settings terminology |
+| source | `src/features/color-registry/api/colorRoutes.js` | Color Registry terminology |
+| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | Color Edition Finder terminology |
 
 ## Related Documents
 
-- [Feature Index](../04-features/feature-index.md) - Maps these terms to concrete feature docs.
-- [Data Model](../03-architecture/data-model.md) - Maps the DB-related glossary terms to actual tables.
-- [Routing and GUI](../03-architecture/routing-and-gui.md) - Shows where these terms surface in the GUI.
+- [Feature Index](../04-features/feature-index.md) - maps these terms to concrete feature docs.
+- [Data Model](../03-architecture/data-model.md) - expands the database-related terms into actual schemas and tables.
+- [Routing and GUI](../03-architecture/routing-and-gui.md) - shows where these terms appear in the routed UI.
+- [API Surface](../06-references/api-surface.md) - maps glossary terms to concrete endpoints.

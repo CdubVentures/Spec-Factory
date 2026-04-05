@@ -600,7 +600,7 @@ export async function createReviewLaneGuiHarness(t) {
     seedStrictLaneCandidates(db, CATEGORY);
     seedKeyReviewState(db, componentIdentifier);
 
-    const guiServerPath = path.join(REPO_ROOT, 'src', 'api', 'guiServer.js');
+    const guiServerPath = path.join(REPO_ROOT, 'src', 'app', 'api', 'guiServer.js');
     try {
       child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
         cwd: tempRoot,

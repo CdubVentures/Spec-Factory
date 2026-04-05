@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { SETTINGS_DEFAULTS } from '../settingsDefaults.js';
-import { startInProcessGuiServer } from '../../api/tests/helpers/inProcessGuiServerHarness.js';
+import { startInProcessGuiServer } from '../../app/api/tests/helpers/inProcessGuiServerHarness.js';
 
 async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();

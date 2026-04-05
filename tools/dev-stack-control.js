@@ -30,7 +30,7 @@ export function getSpecFactoryServerContract(root) {
       workingDirectory: root,
       command: process.execPath,
       args: [
-        path.join(root, 'src', 'api', 'guiServer.js'),
+        path.join(root, 'src', 'app', 'api', 'guiServer.js'),
         '--port',
         String(SPEC_FACTORY_PORTS.api),
         '--local',

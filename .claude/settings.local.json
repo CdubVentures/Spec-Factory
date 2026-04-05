@@ -3,8 +3,8 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(node --test:*)",
-      "Bash(node -e \"import\\(''../src/cli/spec.js''\\)\")",
-      "Bash(node -e \"import\\(''./src/cli/spec.js''\\)\")",
+      "Bash(node -e \"import\\(''../src/app/cli/spec.js''\\)\")",
+      "Bash(node -e \"import\\(''./src/app/cli/spec.js''\\)\")",
       "Bash(ls:*)",
       "Bash(xargs cat:*)",
       "Bash(npm install:*)",

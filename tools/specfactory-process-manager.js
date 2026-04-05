@@ -17,7 +17,7 @@ const DEFAULT_ROOT = path.resolve(SCRIPT_DIR, '..');
 const AGENT_MARKERS = Object.freeze(['claude', 'codex']);
 const SPEC_FACTORY_MARKERS = Object.freeze([
   'specfactory.exe',
-  'src\\api\\guiserver.js',
+  'src\\app\\api\\guiserver.js',
   'tools\\dev-stack-control.js',
   'tools\\gui-launcher.mjs',
 ]);

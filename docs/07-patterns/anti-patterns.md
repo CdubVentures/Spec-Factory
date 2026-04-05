@@ -2,9 +2,9 @@
 
 > **Purpose:** Identify the repository patterns that new work must not introduce, even if legacy code still contains examples of them.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [./canonical-examples.md](./canonical-examples.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
-## Route Logic Or New Route Families Wired Outside `src/api/guiServerRuntime.js`
+## Route Logic Or New Route Families Wired Outside `src/app/api/guiServerRuntime.js`
 
 Wrong:
 
@@ -17,14 +17,14 @@ if (req.url === '/api/v1/example-items') {
 
 Why it is wrong:
 
-- `src/api/guiServer.js` is only a launcher entrypoint; the live runtime assembly happens in `src/api/guiServerRuntime.js`.
+- `src/app/api/guiServer.js` is only a launcher entrypoint; the live runtime assembly happens in `src/app/api/guiServerRuntime.js`.
 - Bypassing the registered route families skips the audited dispatch order and makes endpoint ownership hard to trace.
-- Adding a new family to `GUI_API_ROUTE_ORDER` alone does not mount it; the live mounted SSOT is `routeDefinitions` in `src/api/guiServerRuntime.js`.
+- Adding a new family to `GUI_API_ROUTE_ORDER` alone does not mount it; the live mounted SSOT is `routeDefinitions` in `src/app/api/guiServerRuntime.js`.
 
 Do instead:
 
 - Add or extend a family registrar such as `src/features/settings/api/configRoutes.js` or `src/app/api/routes/infra/categoryRoutes.js`.
-- If a new family is required, add its route context and `{ key, registrar }` entry in `src/api/guiServerRuntime.js`.
+- If a new family is required, add its route context and `{ key, registrar }` entry in `src/app/api/guiServerRuntime.js`.
 
 ## Adding GUI Routes Directly In `tools/gui-react/src/App.tsx`
 
@@ -97,7 +97,7 @@ await fs.writeFile('data/example-items.json', JSON.stringify(rows));
 
 Why it is wrong:
 
-- The repo already has canonical mutable stores: SQLite via `src/db/specDb.js`/AppDb and authored control-plane JSON under `category_authority/`.
+- The repo already has canonical mutable stores: SQLite via `src/db/specDb.js` / AppDb and authored control-plane JSON under `category_authority/`.
 - New ad hoc state files create a second source of truth that the GUI, CLI, and tests will drift from.
 
 Do instead:
@@ -164,7 +164,7 @@ Why it is wrong:
 Do instead:
 
 - Treat workstation access as the current operator boundary.
-- If auth work is ever explicitly commissioned, re-audit `src/api/guiServerRuntime.js`, `src/features/settings/api/configRoutes.js`, and the DB schema files as part of that boundary change.
+- If auth work is ever explicitly commissioned, re-audit `src/app/api/guiServerRuntime.js`, `src/features/settings/api/configRoutes.js`, and the DB schema files as part of that boundary change.
 
 ## Implementation-Coupled Tests
 
@@ -184,16 +184,16 @@ Why it is wrong:
 
 Do instead:
 
-- Test through public behavior the way `src/publish/tests/publishingPipeline.publish.test.js` does: build local fixtures, call the public function, and assert on outputs, written artifacts, or returned summaries.
+- Test through public behavior the way `src/features/settings/api/tests/uiSettingsRoutes.test.js` does: create an in-memory `AppDb`, invoke the registered route handler, and assert on returned envelopes plus persisted rows.
 - For one-time cleanup audits, use a temporary script or checklist instead of a permanent brittle test.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `AGENTS.md` | repo-level bans on new mutable JSON databases, GUI `any`/`@ts-ignore`, and implementation-coupled test patterns |
-| source | `src/api/guiServerRuntime.js` | runtime assembly and routeDefinitions mounting pattern |
-| source | `src/api/guiServer.js` | thin launcher role only |
+| source | `AGENTS.md` | repo-level bans on new mutable JSON databases, GUI `any` / `@ts-ignore`, and implementation-coupled test patterns |
+| source | `src/app/api/guiServerRuntime.js` | runtime assembly and `routeDefinitions` mounting pattern |
+| source | `src/app/api/guiServer.js` | thin launcher role only |
 | source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` exists but is not the mounted route SSOT |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route/tab SSOT |
 | source | `tools/gui-react/src/App.tsx` | registry-driven route mounting |
@@ -210,7 +210,7 @@ Do instead:
 | source | `src/features/indexing/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `src/features/review/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `docs/03-architecture/auth-and-sessions.md` | verified absence of a current auth/session subsystem |
-| test | `src/publish/tests/publishingPipeline.publish.test.js` | public-behavior test structure |
+| test | `src/features/settings/api/tests/uiSettingsRoutes.test.js` | public-behavior test structure using route handler invocation and persistence assertions |
 
 ## Related Documents
 

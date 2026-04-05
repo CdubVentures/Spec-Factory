@@ -2,12 +2,13 @@
 
 > **Purpose:** Provide the verified lookup table of first-class product, authoring, runtime, and review features in the live system.
 > **Prerequisites:** [../03-architecture/system-map.md](../03-architecture/system-map.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-04
 
 | Feature | Description | Doc link | Key files |
 |---------|-------------|----------|-----------|
 | Category Authority Snapshot | Exposes authority/version state for a category and drives downstream cache invalidation. | [category-authority.md](./category-authority.md) | `src/features/category-authority/api/dataAuthorityRoutes.js`, `tools/gui-react/src/hooks/authoritySnapshotHelpers.js` |
 | Catalog and Product Selection | Manages categories, products, brands, queue seeding, and product identity surfaces. | [catalog-and-product-selection.md](./catalog-and-product-selection.md) | `src/features/catalog/api/catalogRoutes.js`, `src/features/catalog/api/brandRoutes.js`, `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` |
+| Color Registry | Manages the global AppDb-backed color registry and the per-product color-edition finder history surfaced from the Indexing page. | [color-registry.md](./color-registry.md) | `src/features/color-registry/api/colorRoutes.js`, `src/features/color-edition/api/colorEditionFinderRoutes.js`, `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx`, `tools/gui-react/src/features/color-edition-finder/components/ColorEditionFinderPanel.tsx` |
 | Field Rules Studio | Authors and validates field studio maps, known values, component DB views, and compile actions. | [field-rules-studio.md](./field-rules-studio.md) | `src/features/studio/api/studioRoutes.js`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
 | Indexing Lab | Starts indexing runs, replays run artifacts, and exposes crawl/search/runtime telemetry for a run. | [indexing-lab.md](./indexing-lab.md) | `src/features/indexing/api/indexlabRoutes.js`, `src/app/api/processRuntime.js`, `tools/gui-react/src/features/indexing/components/IndexingPage.tsx` |
 | LLM Policy and Provider Config | Edits the global composite LLM policy, provider registry, phase overrides, and budget/token settings through `/llm-policy` plus `/indexing/llm-config` metadata. | [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md) | `src/features/settings-authority/llmPolicyHandler.js`, `src/core/llm/llmPolicySchema.js`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
@@ -22,6 +23,7 @@
 
 - There is no verified standalone auth feature. Auth/session behavior is absent from the current runtime.
 - `pageRegistry.ts` is the tabbed GUI feature map; `/test-mode` is the only first-class route mounted outside that registry.
+- `/colors` is a global registry page, but color-edition discovery is product-scoped and currently embedded on `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`.
 - `LlmSettingsPage` and `LlmConfigPage` are separate feature surfaces:
   - `LlmSettingsPage` edits category-scoped route matrices in SpecDb.
   - `LlmConfigPage` edits the global composite policy backed by managed runtime keys.
@@ -33,7 +35,9 @@
 |--------|------|-------------------|
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | first-class tabbed GUI pages and route ownership |
 | source | `tools/gui-react/src/App.tsx` | standalone `test-mode` route plus registry mounting |
-| source | `src/api/guiServerRuntime.js` | live mounted route families and feature ownership |
+| source | `src/app/api/guiServerRuntime.js` | live mounted route families and feature ownership |
+| source | `src/features/color-registry/api/colorRoutes.js` | global color CRUD feature surface |
+| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | product-scoped color-edition finder feature surface |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed feature surface |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | storage-manager feature surface |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy feature surface |

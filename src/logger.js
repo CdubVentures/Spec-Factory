@@ -12,18 +12,10 @@ export class EventLogger {
   constructor(options = {}) {
     this.events = [];
     this.echoStdout = options.echoStdout ?? parseBool(process.env.LOG_STDOUT, false);
-    this.storage = options.storage || null;
     this.baseContext = {
       ...(options.context || {})
     };
-    this.writeQueue = Promise.resolve();
     this._onEventQueue = Promise.resolve();
-
-    // SQLite-backed event storage
-    this.specDb = options.specDb || null;
-    this.category = options.category || '';
-    this.runId = options.runId || '';
-    const config = options.config || {};
     this.onEvent = typeof options.onEvent === 'function' ? options.onEvent : null;
   }
 
@@ -75,6 +67,5 @@ export class EventLogger {
 
   async flush() {
     await this._onEventQueue;
-    await this.writeQueue;
   }
 }

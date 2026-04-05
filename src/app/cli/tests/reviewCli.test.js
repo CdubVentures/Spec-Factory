@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCliJsonHarness } from '../../../cli/tests/helpers/cliJsonHarness.js';
+import { createCliJsonHarness } from './helpers/cliJsonHarness.js';
 import { createLocalCliWorkspace } from './helpers/localCliWorkspaceHarness.js';
 
 test('review CLI suggest appends a suggestion through the top-level command surface', async (t) => {

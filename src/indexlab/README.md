@@ -21,7 +21,7 @@ IndexLab runtime bridge and orchestration support. Translates pipeline events in
 
 ## Dependencies
 - Allowed: `src/core/config/`, `src/core/llm/`, `src/pipeline/`, `src/shared/`.
-- Forbidden: `src/features/` (indexlab is consumed BY features, not the reverse), `src/api/`, `src/db/`.
+- Forbidden: `src/features/` (indexlab is consumed BY features, not the reverse), `src/app/api/`, `src/db/`.
 
 ## Domain Invariants
 - Every runtime event maps to exactly one handler (or is silently ignored). No event triggers multiple handlers.
