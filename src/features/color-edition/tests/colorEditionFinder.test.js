@@ -161,6 +161,64 @@ describe('runColorEditionFinder', () => {
     assert.equal(row.default_color, 'black');
   });
 
+  it('SQL run row inserted with correct data after LLM run', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-sqlrun' },
+      appDb,
+      specDb,
+      config: { llmModelPlan: 'gpt-5.4' },
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'white'],
+        editions: { 'launch': { colors: ['black'] } },
+        default_color: 'black',
+      }),
+    });
+
+    const runs = specDb.listColorEditionFinderRuns('mouse-sqlrun');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].run_number, 1);
+    assert.equal(runs[0].model, 'gpt-5.4');
+    assert.equal(runs[0].fallback_used, false);
+    assert.deepEqual(runs[0].selected.colors, ['black', 'white']);
+    assert.ok(runs[0].prompt.system.length > 0, 'prompt captured in SQL');
+    assert.deepEqual(runs[0].response.colors, ['black', 'white']);
+  });
+
+  it('second run inserts second SQL run row', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-sqlrun2' },
+      appDb, specDb, config: { llmModelPlan: 'model-a' },
+      logger: null, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black'], editions: {}, default_color: 'black' }),
+    });
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-sqlrun2' },
+      appDb, specDb, config: { llmModelPlan: 'model-b' },
+      logger: null, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'red'], editions: {}, default_color: 'black' }),
+    });
+
+    const runs = specDb.listColorEditionFinderRuns('mouse-sqlrun2');
+    assert.equal(runs.length, 2);
+    assert.equal(runs[0].run_number, 1);
+    assert.equal(runs[0].model, 'model-a');
+    assert.equal(runs[1].run_number, 2);
+    assert.equal(runs[1].model, 'model-b');
+    assert.deepEqual(runs[1].selected.colors, ['black', 'red']);
+  });
+
   it('empty colors/editions handled gracefully', async () => {
     const appDb = makeAppDbStub([]);
 

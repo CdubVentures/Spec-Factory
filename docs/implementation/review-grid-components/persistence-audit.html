@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Grid — Persistence Audit</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --green: #22c55e; --amber: #f59e0b;
+  --violet: #8b5cf6; --rose: #f43f5e; --cyan: #06b6d4;
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1100px;margin:0 auto;padding:48px 24px 96px}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:6px}
+.subtitle{color:var(--t2);font-size:0.88rem;margin-bottom:32px;max-width:720px}
+.meta{font-size:0.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:24px}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:40px}
+.summary-cell{background:var(--s1);padding:18px 20px;display:flex;flex-direction:column;gap:3px}
+.summary-n{font-size:1.6rem;font-weight:700;letter-spacing:-0.02em}
+.summary-l{font-size:0.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+
+.group{margin-bottom:48px}
+.group-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.group-head h2{font-size:1.2rem;font-weight:700;letter-spacing:-0.02em}
+.tag{font-size:0.65rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-a{background:rgba(244,63,94,0.15);color:var(--rose);border:1px solid rgba(244,63,94,0.25)}
+.tag-b{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.25)}
+.tag-deferred{background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.25)}
+.group-desc{color:var(--t2);font-size:0.84rem;margin-bottom:20px;max-width:800px}
+
+table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:12px}
+thead th{text-align:left;padding:8px 12px;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border);background:var(--s2)}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+.tn{font-family:var(--mono);font-weight:600;font-size:0.82rem;white-space:nowrap}
+.route{font-family:var(--mono);font-size:0.76rem;color:var(--accent);word-break:break-all}
+.yes{color:var(--green);font-weight:600}
+.no{color:var(--rose);font-weight:600}
+.partial{color:var(--amber);font-weight:600}
+.note{color:var(--t2);font-size:0.78rem;line-height:1.5}
+
+.callout{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:32px}
+.callout-title{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.callout-body{color:var(--t2);font-size:0.84rem;line-height:1.6}
+.callout-body strong{color:var(--text)}
+.callout-body code{font-family:var(--mono);font-size:0.78rem;background:var(--s2);padding:1px 5px;border-radius:4px}
+
+.gap{background:linear-gradient(135deg,rgba(244,63,94,0.06),rgba(168,85,247,0.06));border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 18px;margin-top:32px}
+.gap-title{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--rose);margin-bottom:8px}
+.gap-body{color:var(--t2);font-size:0.84rem;line-height:1.6}
+.gap-body strong{color:var(--text)}
+.gap-body ul{margin:8px 0 0 18px}
+.gap-body li{margin-bottom:4px}
+
+@media(max-width:768px){.page{padding:24px 16px 64px}h1{font-size:1.3rem}.summary-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Review Grid — Persistence Audit</h1>
+<p class="subtitle">Runtime edit paths for the 11 review-grid tables. Classifies each table by whether SQL edits are written back to JSON (Group B: dual-write) or are SQL-only (Group A: no write-back). All tables are stamped <strong>deferred</strong> in the schema reference — review grid workflows are pre-wired but not fully scoped.</p>
+<div class="meta">Generated 2026-04-04 &bull; Deferred scope &bull; CQRS audit</div>
+
+<div class="summary-grid">
+  <div class="summary-cell"><div class="summary-n">11</div><div class="summary-l">Deferred Tables</div></div>
+  <div class="summary-cell"><div class="summary-n" style="color:var(--rose)">5</div><div class="summary-l">Group A: SQL-only</div></div>
+  <div class="summary-cell"><div class="summary-n" style="color:var(--green)">5</div><div class="summary-l">Group B: Dual-write</div></div>
+  <div class="summary-cell"><div class="summary-n" style="color:var(--amber)">1</div><div class="summary-l">Pre-wired (no workflow)</div></div>
+</div>
+
+<!-- ─── GROUP A ───────────────────────────────────────────────── -->
+<div class="group">
+  <div class="group-head">
+    <h2>Group A — SQL-only (no JSON write-back)</h2>
+    <span class="tag tag-a">edits lost on db delete</span>
+    <span class="tag tag-deferred">deferred</span>
+  </div>
+  <p class="group-desc">These 5 tables accept runtime review edits that live only in SQL. If the database is deleted and rebuilt, all review work stored here vanishes. When the review grid is scoped, these will need a JSON write-back path to satisfy the CQRS rebuild contract.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Table</th>
+        <th>Store</th>
+        <th>What edits it</th>
+        <th>API route</th>
+        <th>JSON write-back</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tn">component_identity</td>
+        <td>componentStore</td>
+        <td>Rename, merge, update links, set review_status</td>
+        <td class="route">/review/review-components/component-override</td>
+        <td class="no">NO</td>
+      </tr>
+      <tr>
+        <td class="tn">component_aliases</td>
+        <td>componentStore</td>
+        <td>Replace/add aliases via <code>__aliases</code> property</td>
+        <td class="route">/review/review-components/component-override</td>
+        <td class="no">NO</td>
+      </tr>
+      <tr>
+        <td class="tn">component_values</td>
+        <td>componentStore</td>
+        <td>Override properties, accept candidates, clear acceptance</td>
+        <td class="route">/review/review-components/component-override</td>
+        <td class="no">NO</td>
+      </tr>
+      <tr>
+        <td class="tn">enum_lists</td>
+        <td>enumListStore</td>
+        <td>Ensure list exists when adding enum values</td>
+        <td class="route">/review/review-components/enum-override</td>
+        <td class="no">NO</td>
+      </tr>
+      <tr>
+        <td class="tn">key_review_state</td>
+        <td>keyReviewStore</td>
+        <td>AI confirm (primary + shared lane), user accept, user override AI, candidate selection</td>
+        <td class="route">item/component/enum mutation routes</td>
+        <td class="no">NO</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="callout-title">When scoped — required work</div>
+    <div class="callout-body">Each Group A table needs a <strong>JSON write-back path</strong> that mirrors SQL edits to a durable JSON surface (e.g., <code>category_authority/{cat}/_overrides/components/*.json</code>). The rebuild seeder must then read those JSON files to restore state on a fresh DB. This brings them from <code>rebuild partial</code> → <code>rebuild yes</code>.</div>
+  </div>
+</div>
+
+<!-- ─── GROUP B ───────────────────────────────────────────────── -->
+<div class="group">
+  <div class="group-head">
+    <h2>Group B — Dual-write (SQL + JSON mirror)</h2>
+    <span class="tag tag-b">survives db delete</span>
+    <span class="tag tag-deferred">deferred</span>
+  </div>
+  <p class="group-desc">These 5 tables already write edits back to JSON via consolidation or cascade paths. Data survives a deleted-DB rebuild. They are <code>rebuild partial</code> / <code>strict no</code> only because of edge cases (review metadata timestamps, AI review flags) not covered by the JSON mirror.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Table</th>
+        <th>Store</th>
+        <th>What edits it</th>
+        <th>API route</th>
+        <th>JSON write-back</th>
+        <th>Write-back target</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tn">item_field_state</td>
+        <td>itemStateStore</td>
+        <td>Manual override, candidate acceptance, component/enum cascade</td>
+        <td class="route">/review/review/manual-override<br>/review/review/override</td>
+        <td class="yes">YES</td>
+        <td class="note"><code>_overrides/{pid}.overrides.json</code> via consolidation</td>
+      </tr>
+      <tr>
+        <td class="tn">product_review_state</td>
+        <td>itemStateStore</td>
+        <td>Override workflow sets review status on accept</td>
+        <td class="route">(triggered by override acceptance)</td>
+        <td class="yes">YES</td>
+        <td class="note"><code>_overrides/{pid}.overrides.json</code> via consolidation</td>
+      </tr>
+      <tr>
+        <td class="tn">list_values</td>
+        <td>enumListStore</td>
+        <td>Add/remove/rename enum values, cascades</td>
+        <td class="route">/review/review-components/enum-override</td>
+        <td class="yes">YES</td>
+        <td class="note"><code>normalized.json</code> via <code>cascadeEnumChange()</code></td>
+      </tr>
+      <tr>
+        <td class="tn">item_component_links</td>
+        <td>itemStateStore</td>
+        <td>Component linking, rename cascade</td>
+        <td class="route">(component mutation routes)</td>
+        <td class="yes">YES</td>
+        <td class="note"><code>normalized.json</code> via <code>cascadeComponentChange()</code></td>
+      </tr>
+      <tr>
+        <td class="tn">item_list_links</td>
+        <td>itemStateStore</td>
+        <td>List value linking, enum cascade</td>
+        <td class="route">(enum mutation routes)</td>
+        <td class="yes">YES</td>
+        <td class="note"><code>normalized.json</code> via <code>cascadeEnumChange()</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="callout-title">When scoped — remaining work</div>
+    <div class="callout-body">Group B tables are mostly covered. The remaining gap is that <strong>review metadata</strong> (AI review flags, review timestamps, <code>needs_ai_review</code>, <code>ai_review_complete</code>) is not included in the JSON mirror. When scoped, either extend the consolidation JSON to include this metadata, or accept it as ephemeral runtime state that resets on rebuild.</div>
+  </div>
+</div>
+
+<!-- ─── ORPHAN ────────────────────────────────────────────────── -->
+<div class="group">
+  <div class="group-head">
+    <h2>Pre-wired — No active workflow</h2>
+    <span class="tag tag-deferred">deferred</span>
+  </div>
+  <p class="group-desc">Schema and some frontend/backend wiring exist, but no scoped review workflow drives this table yet.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Table</th>
+        <th>Store</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tn">component_review_queue</td>
+        <td>queueProductStore</td>
+        <td><span class="tag tag-a">no rebuild, no source</span></td>
+        <td class="note">Schema exists in DDL, has AI decision columns and human review timestamps. Frontend has some wiring. No active workflow populates or consumes it.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── RESOLVED GAP ──────────────────────────────────────────── -->
+<div class="callout">
+  <div class="callout-title">Resolved — field_studio_map compile-before-rebuild</div>
+  <div class="callout-body">
+    <code>specDbSyncService</code> now detects when <code>field_studio_map.json</code> changed since last compile (via <code>_compile_report.json</code> hash comparison) and auto-compiles before seeding. The <code>buildFieldRulesSignature</code> also includes <code>field_studio_map.json</code> so map-only edits trigger hash-gated reconcile on existing DBs. <code>field_studio_map</code> is now <strong><code>rebuild yes</code> / <code>strict yes</code></strong>.
+  </div>
+</div>
+
+</div>
+</body>
+</html>

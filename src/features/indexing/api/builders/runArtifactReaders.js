@@ -197,70 +197,6 @@ export function createRunArtifactReaders({
     return null;
   }
 
-  async function readIndexLabRunItemIndexingPacket(runId) {
-    const token = String(runId || '').trim();
-    if (!token) return null;
-    const runDir = await resolveRunDir(token);
-    if (!runDir) return null;
-
-    const directPath = path.join(runDir, 'item_indexing_extraction_packet.json');
-    const direct = await safeReadJson(directPath);
-    if (direct && typeof direct === 'object') {
-      return direct;
-    }
-
-    const meta = await readMeta(token);
-    const category = String(meta?.category || '').trim();
-    const resolvedRunId = String(meta?.run_id || token).trim();
-    if (!category || !resolvedRunId) {
-      return null;
-    }
-    const eventRows = await readEvents(token, 3000, { category });
-    const productId = resolveProductId(meta, eventRows);
-    if (!productId) return null;
-
-    const storage = getStorage();
-    const runKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'item_indexing_extraction_packet.json');
-    const runPayload = await storage.readJsonOrNull(runKey);
-    if (runPayload && typeof runPayload === 'object') {
-      return runPayload;
-    }
-
-    return null;
-  }
-
-  async function readIndexLabRunRunMetaPacket(runId) {
-    const token = String(runId || '').trim();
-    if (!token) return null;
-    const runDir = await resolveRunDir(token);
-    if (!runDir) return null;
-
-    const directPath = path.join(runDir, 'run_meta_packet.json');
-    const direct = await safeReadJson(directPath);
-    if (direct && typeof direct === 'object') {
-      return direct;
-    }
-
-    const meta = await readMeta(token);
-    const category = String(meta?.category || '').trim();
-    const resolvedRunId = String(meta?.run_id || token).trim();
-    if (!category || !resolvedRunId) {
-      return null;
-    }
-    const eventRows = await readEvents(token, 3000, { category });
-    const productId = resolveProductId(meta, eventRows);
-    if (!productId) return null;
-
-    const storage = getStorage();
-    const runKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'run_meta_packet.json');
-    const runPayload = await storage.readJsonOrNull(runKey);
-    if (runPayload && typeof runPayload === 'object') {
-      return runPayload;
-    }
-
-    return null;
-  }
-
   async function readIndexLabRunSerpExplorer(runId) {
     const token = String(runId || '').trim();
     if (!token) return null;
@@ -350,8 +286,6 @@ export function createRunArtifactReaders({
   return {
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
-    readIndexLabRunItemIndexingPacket,
-    readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
   };
 }

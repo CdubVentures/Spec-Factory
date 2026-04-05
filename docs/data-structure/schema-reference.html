@@ -60,6 +60,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .tag-strict-yes{background:rgba(13,148,136,0.12);color:var(--teal)}
 .tag-strict-no{background:rgba(244,63,94,0.12);color:var(--rose)}
 .tag-strict-na{background:var(--s2);color:var(--t2)}
+.tag-strict-ext{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.25)}
+.tag-persist-json{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.25)}
+.tag-persist-db{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.25)}
+.tag-persist-deferred{background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.25)}
+.tag-persist-system{background:rgba(6,182,212,0.18);color:#22d3ee;border:1px solid rgba(6,182,212,0.25)}
+.tag-cqrs-pass{background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:0.78rem;min-width:22px;text-align:center}
+.tag-cqrs-fail{background:rgba(244,63,94,0.2);color:#f87171;border:1px solid rgba(244,63,94,0.3);font-size:0.78rem;min-width:22px;text-align:center}
 .card-body{border-top:1px solid var(--border);padding:16px}
 .legend{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:24px;color:var(--t2);font-size:0.84rem}
 .legend p{margin:0 0 10px}
@@ -113,10 +120,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 </header>
 
 <div class="stats">
-  <div class="stat"><div class="n">36</div><div class="l">SpecDb Tables</div></div>
+  <div class="stat"><div class="n">37</div><div class="l">SpecDb Tables</div></div>
   <div class="stat"><div class="n">6</div><div class="l">AppDb Tables</div></div>
   <div class="stat"><div class="n">17</div><div class="l">Store Modules</div></div>
-  <div class="stat"><div class="n">42</div><div class="l">Total Tables</div></div>
+  <div class="stat"><div class="n">43</div><div class="l">Total Tables</div></div>
+  <div class="stat"><div class="n">21</div><div class="l">JSON-backed</div></div>
+  <div class="stat"><div class="n">10</div><div class="l">DB-only</div></div>
+  <div class="stat"><div class="n">11</div><div class="l">Deferred</div></div>
+  <div class="stat"><div class="n">31</div><div class="l">CQRS ✓</div></div>
+  <div class="stat"><div class="n">12</div><div class="l">CQRS ✗</div></div>
 </div>
 
 <div class="audit-callout">
@@ -178,6 +190,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <td>Not a missing audit.</td>
       </tr>
       <tr>
+        <td><code>strict ext-dep</code></td>
+        <td>Rebuild logic is correct and seeds from JSON, but the table references external artifacts (files on disk, S3 objects) that must survive independently for rows to be fully usable.</td>
+        <td>Not a code-level rebuild defect; the SQL+JSON contract is honored. The caveat is an operational dependency on external storage.</td>
+      </tr>
+      <tr>
         <td><code>source edit yes</code></td>
         <td>Direct add/remove edits in the authoritative durable source set are expected to show up on a fresh deleted-DB rebuild.</td>
         <td>Not a promise that runtime SQL edits write back out, or that non-authoritative mirrors also control the row.</td>
@@ -197,6 +214,36 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <td>No user-editable durable source applies to that table.</td>
         <td>Not a missing audit; the concept does not apply there.</td>
       </tr>
+      <tr>
+        <td><code>json</code></td>
+        <td>Table is backed by a durable JSON source and can be rebuilt from it on a deleted-DB rebuild.</td>
+        <td>Not a promise that every column round-trips perfectly; partial-rebuild caveats may still apply.</td>
+      </tr>
+      <tr>
+        <td><code>db-only</code></td>
+        <td>Table lives only in SQL with no durable JSON backing. Data is lost on a deleted-DB rebuild.</td>
+        <td>Not necessarily a bug; some tables (telemetry, audit trails) are intentionally ephemeral.</td>
+      </tr>
+      <tr>
+        <td><code>deferred</code></td>
+        <td>Schema and some frontend/backend wiring exist, but the feature is not scoped or fully implemented yet.</td>
+        <td>Not dead code; it is pre-wired for a planned feature.</td>
+      </tr>
+      <tr>
+        <td><code>system</code></td>
+        <td>System-managed operational metadata, auto-recreated by the runtime.</td>
+        <td>Not a user-editable persistence surface.</td>
+      </tr>
+      <tr>
+        <td><code>✓</code></td>
+        <td>CQRS compliant: table meets the Dual-State Architecture Mandate. Either JSON-backed with verified dual-write (edits propagate both ways and rebuild is correct), or intentionally ephemeral per the db-only carve-out (telemetry, runtime queues, audit trails).</td>
+        <td>Not a guarantee of zero bugs; it means the architectural contract is satisfied.</td>
+      </tr>
+      <tr>
+        <td><code>✗</code></td>
+        <td>Not CQRS compliant: table has a known gap — deferred scope with missing write-back paths, or a durability concern that has not been addressed.</td>
+        <td>Not necessarily broken; deferred tables are pre-wired for planned features.</td>
+      </tr>
     </tbody>
   </table>
   <p>This generator now enforces lifecycle coverage for every live table. If a schema table is added without rebuild metadata, generation fails.</p>
@@ -210,13 +257,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="surface-head">
     <h2>SpecDb</h2>
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
-    <span class="tag tag-cols">36 tables (36 schema + 0 migration)</span>
+    <span class="tag tag-cols">37 tables (37 schema + 0 migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 36 tables from DDL (36 in specDbSchema.js + 0 migration-created). Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 37 tables from DDL (37 in specDbSchema.js + 0 migration-created). Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   <div class="domain-group">
   <div class="domain-label">Component Identity</div>
   <details class="table-card" data-table="component_identity">
-  <summary><span class="tname">component_identity</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">component_identity</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -260,7 +307,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="component_aliases">
-  <summary><span class="tname">component_aliases</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">component_aliases</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -298,7 +345,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="component_values">
-  <summary><span class="tname">component_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">component_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">componentStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -350,7 +397,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Enum / List Management</div>
   <details class="table-card" data-table="enum_lists">
-  <summary><span class="tname">enum_lists</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">enumListStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">enum_lists</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">enumListStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -389,7 +436,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="list_values">
-  <summary><span class="tname">list_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">enumListStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">list_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">enumListStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -439,7 +486,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Item State</div>
   <details class="table-card" data-table="item_field_state">
-  <summary><span class="tname">item_field_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">item_field_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -490,7 +537,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="item_component_links">
-  <summary><span class="tname">item_component_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">item_component_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -534,7 +581,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="item_list_links">
-  <summary><span class="tname">item_list_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">item_list_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -573,7 +620,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="product_review_state">
-  <summary><span class="tname">product_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">product_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">itemStateStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -618,7 +665,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Catalog &amp; Queue</div>
   <details class="table-card" data-table="products">
-  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -658,7 +705,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="product_queue">
-  <summary><span class="tname">product_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">product_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -702,7 +749,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="product_runs">
-  <summary><span class="tname">product_runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">product_runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -746,7 +793,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="curation_suggestions">
-  <summary><span class="tname">curation_suggestions</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">curation_suggestions</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -789,7 +836,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="component_review_queue">
-  <summary><span class="tname">component_review_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">component_review_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -836,7 +883,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">LLM Route Configuration</div>
   <details class="table-card" data-table="llm_route_matrix">
-  <summary><span class="tname">llm_route_matrix</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">36 cols</span><span class="tag tag-store">llmRouteSourceStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">llm_route_matrix</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">36 cols</span><span class="tag tag-store">llmRouteSourceStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -908,7 +955,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Key Review</div>
   <details class="table-card" data-table="key_review_state">
-  <summary><span class="tname">key_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">55 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">key_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">55 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-partial">rebuild partial</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-deferred">deferred</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -996,7 +1043,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="key_review_runs">
-  <summary><span class="tname">key_review_runs</span><span class="tags"><span class="tag tag-pk">PK: run_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">key_review_runs</span><span class="tags"><span class="tag tag-pk">PK: run_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1045,7 +1092,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="key_review_run_sources">
-  <summary><span class="tname">key_review_run_sources</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">key_review_run_sources</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1084,7 +1131,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="key_review_audit">
-  <summary><span class="tname">key_review_audit</span><span class="tags"><span class="tag tag-pk">PK: event_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">key_review_audit</span><span class="tags"><span class="tag tag-pk">PK: event_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">keyReviewStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1129,7 +1176,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Billing</div>
   <details class="table-card" data-table="billing_entries">
-  <summary><span class="tname">billing_entries</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">21 cols</span><span class="tag tag-store">billingStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-no">source edit no</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">billing_entries</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">21 cols</span><span class="tag tag-store">billingStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-no">source edit no</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1186,7 +1233,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Bridge Events</div>
   <details class="table-card" data-table="bridge_events">
-  <summary><span class="tname">bridge_events</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">sourceIntelStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">bridge_events</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">sourceIntelStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1230,7 +1277,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Runs &amp; Artifacts</div>
   <details class="table-card" data-table="runs">
-  <summary><span class="tname">runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">runMetaStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">runMetaStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1279,7 +1326,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="run_artifacts">
-  <summary><span class="tname">run_artifacts</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">runArtifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">run_artifacts</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">runArtifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1322,7 +1369,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Data Sync</div>
   <details class="table-card" data-table="data_authority_sync">
-  <summary><span class="tname">data_authority_sync</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">specDb (direct)</span><span class="tag tag-life-system">system</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-na">strict n/a</span></span></summary>
+  <summary><span class="tname">data_authority_sync</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">specDb (direct)</span><span class="tag tag-life-system">system</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-system">system</span><span class="tag tag-strict-na">strict n/a</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1363,7 +1410,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Crawl Artifacts</div>
   <details class="table-card" data-table="crawl_sources">
-  <summary><span class="tname">crawl_sources</span><span class="tags"><span class="tag tag-pk">PK: content_hash, product_id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">crawl_sources</span><span class="tags"><span class="tag tag-pk">PK: content_hash, product_id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1414,7 +1461,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="source_screenshots">
-  <summary><span class="tname">source_screenshots</span><span class="tags"><span class="tag tag-pk">PK: screenshot_id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-partial">source edit partial</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">source_screenshots</span><span class="tags"><span class="tag tag-pk">PK: screenshot_id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-partial">source edit partial</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-ext">strict ext-dep</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1433,11 +1480,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </div>
       <div class="life-item">
         <div class="life-k">No-known-caveat audit</div>
-        <div class="life-v"><span class="tag tag-strict-no">strict no</span></div>
+        <div class="life-v"><span class="tag tag-strict-ext">strict ext-dep</span></div>
       </div>
       <div class="life-item life-item-wide">
         <div class="life-k">Audit note</div>
-        <div class="life-v">Rebuild requires both checkpoint metadata and the screenshot files still being present on disk.</div>
+        <div class="life-v">Rebuild from JSON is correct, but rows are only usable if the referenced screenshot files remain on disk.</div>
       </div>
     </div>
   </div>
@@ -1463,7 +1510,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="source_videos">
-  <summary><span class="tname">source_videos</span><span class="tags"><span class="tag tag-pk">PK: video_id</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-partial">source edit partial</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">source_videos</span><span class="tags"><span class="tag tag-pk">PK: video_id</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">artifactStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-partial">source edit partial</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-ext">strict ext-dep</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1482,11 +1529,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </div>
       <div class="life-item">
         <div class="life-k">No-known-caveat audit</div>
-        <div class="life-v"><span class="tag tag-strict-no">strict no</span></div>
+        <div class="life-v"><span class="tag tag-strict-ext">strict ext-dep</span></div>
       </div>
       <div class="life-item life-item-wide">
         <div class="life-k">Audit note</div>
-        <div class="life-v">Rebuild requires both checkpoint metadata and the video files still being present on disk.</div>
+        <div class="life-v">Rebuild from JSON is correct, but rows are only usable if the referenced video files remain on disk.</div>
       </div>
     </div>
   </div>
@@ -1514,7 +1561,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Telemetry Indexes</div>
   <details class="table-card" data-table="knob_snapshots">
-  <summary><span class="tname">knob_snapshots</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">knob_snapshots</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1555,7 +1602,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="query_index">
-  <summary><span class="tname">query_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">query_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1599,7 +1646,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="url_index">
-  <summary><span class="tname">url_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">url_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1643,7 +1690,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="prompt_index">
-  <summary><span class="tname">prompt_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">prompt_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">telemetryIndexStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1688,7 +1735,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Field Studio</div>
   <details class="table-card" data-table="field_studio_map">
-  <summary><span class="tname">field_studio_map</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">fieldStudioMapStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-no">strict no</span></span></summary>
+  <summary><span class="tname">field_studio_map</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">fieldStudioMapStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1707,11 +1754,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </div>
       <div class="life-item">
         <div class="life-k">No-known-caveat audit</div>
-        <div class="life-v"><span class="tag tag-strict-no">strict no</span></div>
+        <div class="life-v"><span class="tag tag-strict-yes">strict yes</span></div>
       </div>
       <div class="life-item life-item-wide">
         <div class="life-k">Audit note</div>
-        <div class="life-v">Fresh rebuild honors the current stored map, but some direct edits still require compile to refresh generated artifacts.</div>
+        <div class="life-v">Fresh rebuild auto-compiles if the map changed since last compile, then seeds from fresh generated artifacts.</div>
       </div>
     </div>
   </div>
@@ -1725,7 +1772,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="field_key_order">
-  <summary><span class="tname">field_key_order</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">3 cols</span><span class="tag tag-store">fieldStudioMapStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">field_key_order</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">3 cols</span><span class="tag tag-store">fieldStudioMapStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1764,7 +1811,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Crawl Ledger</div>
   <details class="table-card" data-table="url_crawl_ledger">
-  <summary><span class="tname">url_crawl_ledger</span><span class="tags"><span class="tag tag-pk">PK: canonical_url, product_id</span><span class="tag tag-cols">24 cols</span><span class="tag tag-store">crawlLedgerStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">url_crawl_ledger</span><span class="tags"><span class="tag tag-pk">PK: canonical_url, product_id</span><span class="tag tag-cols">24 cols</span><span class="tag tag-store">crawlLedgerStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1821,7 +1868,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="query_cooldowns">
-  <summary><span class="tname">query_cooldowns</span><span class="tags"><span class="tag tag-pk">PK: query_hash, product_id</span><span class="tag tag-cols">13 cols</span><span class="tag tag-store">crawlLedgerStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">query_cooldowns</span><span class="tags"><span class="tag tag-pk">PK: query_hash, product_id</span><span class="tag tag-cols">13 cols</span><span class="tag tag-store">crawlLedgerStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1870,7 +1917,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Color &amp; Edition</div>
   <details class="table-card" data-table="color_edition_finder">
-  <summary><span class="tname">color_edition_finder</span><span class="tags"><span class="tag tag-pk">PK: category, product_id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">color_edition_finder</span><span class="tags"><span class="tag tag-pk">PK: category, product_id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1910,6 +1957,49 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_cef_cooldown (cooldown_until)</div></div>
   </div>
 </details>
+<details class="table-card" data-table="color_edition_finder_runs">
+  <summary><span class="tname">color_edition_finder_runs</span><span class="tags"><span class="tag tag-pk">PK: —</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <div class="card-body">
+    <div class="life-section">
+    <div class="idx-label">Rebuild Audit</div>
+    <div class="life-grid">
+      <div class="life-item">
+        <div class="life-k">Durable source</div>
+        <div class="life-v">.workspace/products/{pid}/color_edition.json</div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Deleted-DB rebuild</div>
+        <div class="life-v"><span class="tag tag-life-yes">rebuild yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Source add/remove honored</div>
+        <div class="life-v"><span class="tag tag-sync-yes">source edit yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">No-known-caveat audit</div>
+        <div class="life-v"><span class="tag tag-strict-yes">strict yes</span></div>
+      </div>
+      <div class="life-item life-item-wide">
+        <div class="life-k">Audit note</div>
+        <div class="life-v">Per-run LLM discovery detail rebuilds from the per-product JSON mirror.</div>
+      </div>
+    </div>
+  </div>
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_number</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">ran_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'unknown'</td></tr>
+<tr><td class="cn">fallback_used</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">cooldown_until</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">selected_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">prompt_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">response_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, run_number)</div><div class="idx-item">idx_cefr_product (category, product_id)</div></div>
+  </div>
+</details>
 </div>
 
 </section>
@@ -1924,7 +2014,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="domain-group">
   <div class="domain-label">Global State</div>
   <details class="table-card" data-table="brands">
-  <summary><span class="tname">brands</span><span class="tags"><span class="tag tag-pk">PK: identifier</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">brands</span><span class="tags"><span class="tag tag-pk">PK: identifier</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1965,7 +2055,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="brand_categories">
-  <summary><span class="tname">brand_categories</span><span class="tags"><span class="tag tag-pk">PK: identifier, category</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">2 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">brand_categories</span><span class="tags"><span class="tag tag-pk">PK: identifier, category</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">2 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2000,7 +2090,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="brand_renames">
-  <summary><span class="tname">brand_renames</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">brand_renames</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2040,7 +2130,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="settings">
-  <summary><span class="tname">settings</span><span class="tags"><span class="tag tag-pk">PK: section, key</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">settings</span><span class="tags"><span class="tag tag-pk">PK: section, key</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2078,7 +2168,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="studio_maps">
-  <summary><span class="tname">studio_maps</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">studio_maps</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2115,7 +2205,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="color_registry">
-  <summary><span class="tname">color_registry</span><span class="tags"><span class="tag tag-pk">PK: name</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-strict-yes">strict yes</span></span></summary>
+  <summary><span class="tname">color_registry</span><span class="tags"><span class="tag tag-pk">PK: name</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>

@@ -203,17 +203,6 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
     });
   });
 
-  describe('Panel 05 — Dynamic Fetch Dashboard', () => {
-    it('GET /run/{id}/dynamic-fetch-dashboard returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/dynamic-fetch-dashboard`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
-      if (status === 200) {
-        assert.ok(data.run_id || data.host_count !== undefined, 'should have fetch dashboard data');
-      }
-    });
-  });
-
   describe('Panel 06A — Evidence Index', () => {
     it('GET /run/{id}/evidence-index returns evidence data or 404', async () => {
       if (!serverUp || !richRunId) return;
@@ -248,17 +237,6 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
     });
   });
 
-  describe('Prime Sources Retrieval', () => {
-    it('GET /run/{id}/prime-sources returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/prime-sources`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
-      if (status === 200) {
-        assert.ok(data.run_id);
-      }
-    });
-  });
-
   describe('Panel 09 — Round Summary', () => {
     it('GET /run/{id}/rounds returns round summary', async () => {
       if (!serverUp || !richRunId) return;
@@ -267,26 +245,6 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
       assert.ok(data.run_id);
       assert.ok(typeof data.round_count === 'number');
       assert.ok(Array.isArray(data.rounds));
-    });
-  });
-
-  describe('Indexing Packets', () => {
-    it('GET /run/{id}/source-indexing-packets returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/source-indexing-packets`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
-    });
-
-    it('GET /run/{id}/item-indexing-packet returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/item-indexing-packet`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
-    });
-
-    it('GET /run/{id}/run-meta-packet returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/run-meta-packet`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
     });
   });
 

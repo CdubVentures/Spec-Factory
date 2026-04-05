@@ -7,9 +7,7 @@ function buildRunScopedQueryKeyMatrix(runId: string): Array<{ queryKey: QueryKey
     { queryKey: ['indexlab', 'run', runId, 'needset'], exact: true },
     { queryKey: ['indexlab', 'run', runId, 'search-profile'], exact: true },
     { queryKey: ['indexlab', 'run', runId, 'serp'], exact: true },
-{ queryKey: ['indexlab', 'run', runId, 'prime-sources'], exact: true },
-    { queryKey: ['indexlab', 'run', runId, 'dynamic-fetch-dashboard'], exact: true },
-    { queryKey: ['indexlab', 'run', runId, 'rounds'], exact: true },
+{ queryKey: ['indexlab', 'run', runId, 'rounds'], exact: true },
   ];
 }
 

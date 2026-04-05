@@ -25,6 +25,11 @@ SQL store (wired through specDb, not imported directly):
 - `specDb.listColorEditionFinderByCategory(category)` — List all for category
 - `specDb.getColorEditionFinderIfOnCooldown(productId)` — Returns row if cooldown active, null otherwise
 - `specDb.deleteColorEditionFinder(productId)` — Delete summary row
+- `specDb.insertColorEditionFinderRun(row)` — Insert/upsert a single run row (SQL projection)
+- `specDb.listColorEditionFinderRuns(productId)` — All runs for product (ASC order, hydrated)
+- `specDb.getLatestColorEditionFinderRun(productId)` — Latest run only
+- `specDb.deleteColorEditionFinderRunByNumber(productId, runNumber)` — Delete one run
+- `specDb.deleteAllColorEditionFinderRuns(productId)` — Delete all runs for product
 
 ## Dependencies
 
@@ -36,7 +41,7 @@ SQL store (wired through specDb, not imported directly):
 
 ## Domain Invariants
 
-- **JSON is rebuild SSOT**: SQL table is derived and rebuildable from JSON files
+- **Dual-state CQRS**: JSON is durable memory (write-first, audit/recovery SSOT). SQL is frontend projection (UI reads only from DB). Both tables (`color_edition_finder`, `color_edition_finder_runs`) rebuildable from JSON
 - **Latest-wins**: top-level `selected` always reflects the latest run's output
 - **colors[0] IS the default**: first color in array = default variant. `default_color` must equal `colors[0]`
 - **Edition-color pairing**: editions are keyed by slug, each has its own `colors` subset

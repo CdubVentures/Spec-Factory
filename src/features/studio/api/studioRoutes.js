@@ -41,7 +41,6 @@ export function registerStudioRoutes(ctx) {
     fs,
     path,
     sessionCache,
-    loadFieldStudioMap,
     saveFieldStudioMap,
     validateFieldStudioMap,
     invalidateFieldRulesCache,
@@ -58,8 +57,7 @@ export function registerStudioRoutes(ctx) {
     appDb,
   } = ctx;
   const hasStudioMapHandlers = (
-    typeof loadFieldStudioMap === 'function'
-    && typeof saveFieldStudioMap === 'function'
+    typeof saveFieldStudioMap === 'function'
     && typeof validateFieldStudioMap === 'function'
   );
 
@@ -76,9 +74,10 @@ export function registerStudioRoutes(ctx) {
       const catConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
       const session = await sessionCache.getSessionRules(category);
 
-      // WHY: Read eg_toggles from the studio map to determine which keys are actively locked.
-      const mapData = hasStudioMapHandlers ? await loadFieldStudioMap(category).catch(() => null) : null;
-      const egToggles = mapData?.map?.eg_toggles || { ...EG_DEFAULT_TOGGLES };
+      // WHY: Read eg_toggles from the studio map (SQL) to determine which keys are actively locked.
+      const payloadMapRow = typeof getSpecDb === 'function' ? getSpecDb(category)?.getFieldStudioMap?.() ?? null : null;
+      const payloadMap = payloadMapRow ? (() => { try { return JSON.parse(payloadMapRow.map_json); } catch { return null; } })() : null;
+      const egToggles = payloadMap?.eg_toggles || { ...EG_DEFAULT_TOGGLES };
       const activeLockedKeys = resolveEgLockedKeys(egToggles);
 
       // WHY: Dynamic color list from color_registry DB — the SSOT for valid atoms.
@@ -110,8 +109,8 @@ export function registerStudioRoutes(ctx) {
 
       // WHY: Write-on-read migration — persist so next load doesn't need backfill.
       // Fire-and-forget; does not block the response.
-      if (needsMigrate && mapData?.map && hasStudioMapHandlers) {
-        const patched = { ...mapData.map };
+      if (needsMigrate && payloadMap && hasStudioMapHandlers) {
+        const patched = { ...payloadMap };
         const overrides = { ...(patched.field_overrides || {}) };
         for (const k of EG_LOCKED_KEYS) {
           if (!overrides[k]) overrides[k] = getEgPresetForKey(k, egCtx);
@@ -382,7 +381,7 @@ export function registerStudioRoutes(ctx) {
       });
     }
 
-    // Studio map GET — reads from SQL (primary), falls back to JSON file (pre-migration)
+    // Studio map GET — reads from SQL (SSOT). Reseed handles JSON→SQL on boot.
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'GET') {
       if (!hasStudioMapHandlers) {
         return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
@@ -394,16 +393,9 @@ export function registerStudioRoutes(ctx) {
         try {
           const map = JSON.parse(sqlRow.map_json);
           return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: `specDb:${category}`, map }));
-        } catch { /* fall through to JSON */ }
+        } catch { /* parse failed — return empty */ }
       }
-      // Fallback: control-plane JSON file (pre-migration)
-      let controlPlaneMap = null;
-      try {
-        controlPlaneMap = await loadFieldStudioMap({ category, config });
-      } catch {
-        return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: '', map: {} }));
-      }
-      return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(controlPlaneMap || { file_path: '', map: {} }));
+      return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: '', map: {} }));
     }
 
     // Studio map PUT (save)
@@ -439,11 +431,10 @@ export function registerStudioRoutes(ctx) {
       try {
         const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
         if (params.get('allowEmptyOverwrite') !== 'true') {
-          // WHY: Read existing map from SQL (primary), fall back to JSON file for pre-migration.
+          // WHY: Read existing map from SQL (SSOT). Reseed handles JSON→SQL on boot.
           const specDbForGuard = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
           const guardRow = specDbForGuard?.getFieldStudioMap?.() ?? null;
-          const existingMapData = guardRow ? (() => { try { return JSON.parse(guardRow.map_json); } catch { return null; } })() : null;
-          const existingMap = existingMapData || (await loadFieldStudioMap({ category, config }).catch(() => null))?.map || null;
+          const existingMap = guardRow ? (() => { try { return JSON.parse(guardRow.map_json); } catch { return null; } })() : null;
           const existingSummary = summarizeStudioMapPayload(existingMap);
           if (!incomingSummary.has_mapping_payload && existingSummary.has_mapping_payload) {
             return jsonRes(res, 409, {
@@ -540,12 +531,12 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'tooltip-bank' && method === 'GET') {
       const category = parts[1];
       const catRoot = path.join(HELPER_ROOT, category);
-      // WHY: SQL is primary source for field_studio_map. JSON fallback for pre-migration.
+      // WHY: SQL is the SSOT for field_studio_map. Reseed handles JSON→SQL on boot.
       const tooltipSpecDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
       const tooltipRow = tooltipSpecDb?.getFieldStudioMap?.() ?? null;
       const mapData = tooltipRow
         ? (() => { try { return JSON.parse(tooltipRow.map_json); } catch { return null; } })()
-        : await safeReadJson(path.join(catRoot, '_control_plane', 'field_studio_map.json'));
+        : null;
       const tooltipPath = mapData?.tooltip_source?.path || '';
       const tooltipFiles = [];
       const tooltipEntries = {};

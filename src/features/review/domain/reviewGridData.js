@@ -27,7 +27,6 @@ import {
   hasKnownValue,
   resolveOverrideFilePath,
   readOverrideFile,
-  readJsonIfExists,
   parseFieldStudioRowFromCell,
   extractFieldStudioHints,
   reviewKeys,
@@ -81,10 +80,9 @@ export async function buildReviewLayout({
     : compiledFields;
   const projected = projectFieldRulesForConsumer({ fields: mergedFields }, 'review');
   const fields = isObject(projected?.fields) ? projected.fields : mergedFields;
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
-  // WHY: SQL is the primary source for studioMap. JSON file fallback for pre-migration.
-  const studioMap = studioMapOverride || await readJsonIfExists(mapPath);
+  // WHY: SQL is the SSOT for studioMap. Callers pass it from specDb; null means no map.
+  const studioMap = studioMapOverride || null;
+  const mapPath = '';
 
   const compiledFieldList = categoryConfig.fieldOrder || Object.keys(fields || {});
   const fieldSource = Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0

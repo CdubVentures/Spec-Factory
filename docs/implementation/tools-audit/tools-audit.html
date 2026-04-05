@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory Tools Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --surface: rgba(255, 251, 244, 0.92);
+    --surface-strong: rgba(255, 255, 255, 0.95);
+    --ink: #151a1e;
+    --muted: #616a72;
+    --border: rgba(36, 31, 20, 0.12);
+    --border-strong: rgba(36, 31, 20, 0.22);
+    --shadow: 0 22px 60px rgba(40, 26, 10, 0.12);
+    --teal: #0f766e;
+    --teal-dim: rgba(15, 118, 110, 0.12);
+    --red: #b14639;
+    --red-dim: rgba(177, 70, 57, 0.12);
+    --gold: #b7791f;
+    --gold-dim: rgba(183, 121, 31, 0.13);
+    --blue: #275d8a;
+    --blue-dim: rgba(39, 93, 138, 0.11);
+    --amber: #9a6700;
+    --amber-dim: rgba(154, 103, 0, 0.13);
+    --slate: #475569;
+    --slate-dim: rgba(71, 85, 105, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 34%),
+      radial-gradient(circle at top right, rgba(183, 121, 31, 0.08), transparent 30%),
+      linear-gradient(180deg, #faf6ee 0%, #f4eee2 58%, #efe6d8 100%);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(30, 20, 8, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 20, 8, 0.018) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 94%);
+  }
+
+  .shell {
+    max-width: 1520px;
+    margin: 0 auto;
+    padding: 30px 22px 80px;
+  }
+
+  .mono, .chip, .eyebrow, .status-pill, .small-label, input, select, th {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .hero, .panel, .stat, .callout, .card {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero {
+    padding: 30px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -100px -140px auto;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.16), rgba(15, 118, 110, 0));
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 12px;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+
+  h1, h2, h3, p {
+    margin: 0;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 3vw, 3.6rem);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+
+  p {
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .hero-meta, .legend, .stats, .findings, .triptych, .split {
+    display: grid;
+    gap: 16px;
+  }
+
+  .hero-meta {
+    margin-top: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 9px 12px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(36, 31, 20, 0.12);
+  }
+
+  .callout, .panel {
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+
+  .callout strong {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 18px;
+  }
+
+  .stat {
+    padding: 18px;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    margin: 8px 0 10px;
+  }
+
+  .stat-note {
+    font-size: 13px;
+  }
+
+  .small-label {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .split {
+    grid-template-columns: 1.1fr 0.9fr;
+    margin-bottom: 18px;
+  }
+
+  .triptych {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 18px;
+  }
+
+  .legend {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .findings {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .path-list { display: grid; gap: 8px; }
+
+  .path-pill {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.58);
+    padding: 6px 10px;
+    word-break: break-word;
+  }
+
+  .path-pill code, td code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-ACTIVE { color: var(--teal); background: var(--teal-dim); border-color: rgba(15, 118, 110, 0.2); }
+  .status-ACTIVE_SUPPORT { color: var(--blue); background: var(--blue-dim); border-color: rgba(39, 93, 138, 0.18); }
+  .status-FUTURE_PREWIRED { color: var(--amber); background: var(--amber-dim); border-color: rgba(154, 103, 0, 0.24); }
+  .status-MANUAL_OR_GENERATED { color: var(--slate); background: var(--slate-dim); border-color: rgba(71, 85, 105, 0.22); }
+  .status-DEFER { color: var(--gold); background: var(--gold-dim); border-color: rgba(183, 121, 31, 0.22); }
+  .status-DEAD_CANDIDATE { color: var(--red); background: var(--red-dim); border-color: rgba(177, 70, 57, 0.22); }
+  .status-MIXED { color: var(--ink); background: rgba(37, 47, 56, 0.08); border-color: rgba(37, 47, 56, 0.16); }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .filters label {
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--ink);
+    font-size: 13px;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: rgba(15, 118, 110, 0.38);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  }
+
+  .results { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+  .table-wrap {
+    overflow: auto;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+  }
+
+  th, td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(36, 31, 20, 0.08);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: rgba(248, 241, 230, 0.98);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .note strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+
+  .empty {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(26, 32, 37, 0.04);
+    color: var(--muted);
+  }
+
+  @media (max-width: 1080px) {
+    .split, .triptych { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 720px) {
+    .shell { padding: 18px 14px 56px; }
+    .hero, .panel, .card, .stat, .callout { border-radius: 18px; }
+    .hero, .panel { padding: 20px; }
+    .filters label { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Manual Tools Audit</div>
+      <h1>Spec Factory `tools/**` Audit</h1>
+      <p id="hero-copy"></p>
+      <div class="hero-meta" id="hero-meta"></div>
+    </section>
+
+    <section class="callout">
+      <strong>Scope Discipline</strong>
+      <p>
+        This report is only for <code>tools/**</code>. The audited inventory excludes the installed package tree under <code>tools/gui-react/node_modules/**</code>, but keeps handwritten tooling, checked-in GUI code, launchers, sidecars, build outputs, generated baselines, and sample outputs that still live in the repo.
+        The inventory files only guarantee every in-scope current path is present; the status calls and exceptions below are written by hand in this report.
+      </p>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="split">
+      <article class="panel">
+        <h2>Method</h2>
+        <ul>
+          <li>Separated active handwritten tooling from build outputs, generated type files, sample validation output, and the excluded <code>tools/gui-react/node_modules/**</code> package install.</li>
+          <li>Protected the disabled review-grid and component-review surfaces as <code>FUTURE_PREWIRED</code>, while keeping Review LLM marked active because its route and taxonomy helpers are still live.</li>
+          <li>Marked only high-confidence dead GUI residue where files exist in the tree but have no current imports or route registration.</li>
+          <li>Counted LOC as physical lines for in-scope text-like files; the two <code>.ico</code> launcher assets are kept in file counts but do not contribute LOC.</li>
+          <li>Treat the primary LOC number as live production tool code: GUI runtime source plus launcher/runtime entrypoints, excluding dist/build output, generated baselines, tests, docs, configs/assets, hidden test-mode support, and dead-candidate residue.</li>
+          <li>Kept tests, docs, launch assets, config files, and helper seams as support unless there was stronger dead or future evidence.</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Status Guide</h2>
+        <div class="legend" id="legend"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Key Findings</h2>
+      <div class="findings" id="findings"></div>
+    </section>
+
+    <section class="triptych">
+      <article class="panel">
+        <div class="small-label">Dead Calls</div>
+        <div id="dead-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Future Prewired</div>
+        <div id="future-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Generated / Excluded Scope</div>
+        <div id="generated-calls"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Top-Level Domain Verdicts</h2>
+      <div class="findings" id="top-level-domains"></div>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Focused Subdomain Notes</h2>
+      <div class="findings" id="subdomain-focus"></div>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Folder Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="folder-search" type="search" placeholder="Filter folder path or note">
+        </label>
+        <label>
+          Status
+          <select id="folder-status"></select>
+        </label>
+      </div>
+      <div class="results" id="folder-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Folder</th>
+              <th>Status</th>
+              <th>Default File Status</th>
+              <th>LOC</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="folder-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>File Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="file-search" type="search" placeholder="Filter file path or note">
+        </label>
+        <label>
+          Status
+          <select id="file-status"></select>
+        </label>
+      </div>
+      <div class="results" id="file-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Status</th>
+              <th>LOC</th>
+              <th>Rule Source</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="file-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="./tools-audit.data.js"></script>
+  <script>
+    const inventory = window.TOOLS_AUDIT_INVENTORY;
+    if (!inventory) throw new Error('Missing tools-audit inventory.');
+    const fileLocByPath = new Map(Object.entries(inventory.fileLoc || {}));
+
+    const STATUS_GLOSSARY = {
+      ACTIVE: 'Current handwritten runtime / orchestration / launcher / tool code that still belongs to the repo.',
+      ACTIVE_SUPPORT: 'Tests, docs, icons, configs, manifests, and support helpers intentionally kept around active tool surfaces.',
+      FUTURE_PREWIRED: 'Real code retained because a currently disabled review-grid or component-review surface is intentionally prewired for later hookup.',
+      MANUAL_OR_GENERATED: 'Build outputs, generated type files, tsbuildinfo, sample/output artifacts, or explicitly excluded package-install material.',
+      DEFER: 'Suspicious seam worth another pass, but not proven dead enough to retire in this audit.',
+      DEAD_CANDIDATE: 'High-confidence dead surface with direct current-tree evidence.',
+      MIXED: 'Folder contains a meaningful combination of active, future-prewired, generated, or dead residue.',
+    };
+
+    const EXPLICIT_FOLDER_RULES = [
+      { path: 'tools', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Top-level tooling umbrella: handwritten scripts plus GUI code, launchers, helper/support assets, and checked-in generated outputs.' },
+      { path: 'tools/architecture', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Architecture audit/build scripts and their tests.' },
+      { path: 'tools/dist', status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Built launcher/runtime artifacts.' },
+      { path: 'tools/gui-react', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Primary GUI workspace: mostly handwritten app code plus build outputs, helper scripts, and a small dead residue pocket. Installed packages are present on disk but excluded from audited counts.' },
+      { path: 'tools/gui-react/dist', status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Built Vite output for the GUI.' },
+      { path: 'tools/gui-react/node_modules', status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Excluded installed third-party dependency tree.' },
+      { path: 'tools/gui-react/scripts', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'GUI codegen/build helper scripts and related tests.' },
+      { path: 'tools/gui-react/src', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Handwritten GUI source tree with active pages, future-prewired review surfaces, and a small dead residue pocket.' },
+      { path: 'tools/gui-react/src/api', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'HTTP/WS client layer is active overall, but graphql.ts looks stranded.' },
+      { path: 'tools/gui-react/src/features', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Feature layer is mostly active, with one future-prewired review domain and a few dead components/hooks.' },
+      { path: 'tools/gui-react/src/features/catalog', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active catalog GUI surface.' },
+      { path: 'tools/gui-react/src/features/color-edition-finder', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active color-edition finder GUI surface.' },
+      { path: 'tools/gui-react/src/features/color-registry', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active color registry GUI surface.' },
+      { path: 'tools/gui-react/src/features/data-change', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active data-change wiring.' },
+      { path: 'tools/gui-react/src/features/indexing', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active indexing GUI domain.' },
+      { path: 'tools/gui-react/src/features/llm-config', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Active LLM config surface with one apparently unused section component.' },
+      { path: 'tools/gui-react/src/features/pipeline-settings', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active pipeline settings GUI surface.' },
+      { path: 'tools/gui-react/src/features/review', status: 'FUTURE_PREWIRED', defaultFileStatus: 'FUTURE_PREWIRED', note: 'Review-grid GUI surface intentionally kept prewired for later hookup.' },
+      { path: 'tools/gui-react/src/features/runtime-ops', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active runtime-ops surface.' },
+      { path: 'tools/gui-react/src/features/storage-manager', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Active storage manager overall, with one orphan-looking hook.' },
+      { path: 'tools/gui-react/src/features/studio', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Active studio surface overall, with one apparently unused editor component.' },
+      { path: 'tools/gui-react/src/hooks', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Mostly active GUI hooks, including a future-prewired component-review mutation hook.' },
+      { path: 'tools/gui-react/src/pages', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Routable pages plus a dead runtime pocket, future-prewired component-review pages, and an active Review LLM page.' },
+      { path: 'tools/gui-react/src/pages/billing', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active billing page.' },
+      { path: 'tools/gui-react/src/pages/component-review', status: 'FUTURE_PREWIRED', defaultFileStatus: 'FUTURE_PREWIRED', note: 'Component-review GUI surface intentionally prewired for later hookup.' },
+      { path: 'tools/gui-react/src/pages/layout', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active shell/navigation layout surface.' },
+      { path: 'tools/gui-react/src/pages/llm-settings', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Review-LLM GUI surface remains routable, and its domain helpers are reused by active taxonomy code.' },
+      { path: 'tools/gui-react/src/pages/overview', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active overview page.' },
+      { path: 'tools/gui-react/src/pages/product', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Active product page plus several now-unused view fragments.' },
+      { path: 'tools/gui-react/src/pages/runtime', status: 'DEAD_CANDIDATE', defaultFileStatus: 'DEAD_CANDIDATE', note: 'Detached runtime page fragments with no current page registration or imports.' },
+      { path: 'tools/gui-react/src/pages/storage', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active storage page.' },
+      { path: 'tools/gui-react/src/pages/test-mode', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Hidden test-mode page/support surface.' },
+      { path: 'tools/gui-react/src/registries', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Page/field registry surface that still drives routing and derived maps.' },
+      { path: 'tools/gui-react/src/shared', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Shared GUI primitives and utilities remain active.' },
+      { path: 'tools/gui-react/src/stores', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Active stores overall, with one future-prewired bridge store.' },
+      { path: 'tools/gui-react/src/types', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Type surface mixes generated baselines and handwritten wrappers, including future review/component-review types plus active LLM route baselines.' },
+      { path: 'tools/gui-react/src/utils', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Active utility helpers.' },
+      { path: 'tools/launchers', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Operational launcher/process-manager surface.' },
+      { path: 'tools/launchers/icons', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Launcher icon assets.' },
+      { path: 'tools/searxng', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Search sidecar config and tests.' },
+      { path: 'tools/structured-metadata-sidecar', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Auxiliary Python sidecar and run scripts.' },
+      { path: 'tools/validation-output', status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Sample validation/output artifacts.' },
+    ];
+
+    const EXPLICIT_FILE_OVERRIDES = new Map([
+      ['tools/gui-react/src/api/graphql.ts', { status: 'DEAD_CANDIDATE', note: 'Standalone GraphQL helper with no current imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/features/llm-config/sections/LlmModelCatalogSection.tsx', { status: 'DEAD_CANDIDATE', note: 'Section component has no current imports from the GUI tree.', source: 'exact-file' }],
+      ['tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts', { status: 'DEAD_CANDIDATE', note: 'Storage overview hook exists but has no current consumers.', source: 'exact-file' }],
+      ['tools/gui-react/src/features/studio/components/MappingConstraintEditor.tsx', { status: 'DEAD_CANDIDATE', note: 'Studio editor component is present in the tree but not imported anywhere current.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/product/AvailabilityGuidance.tsx', { status: 'DEAD_CANDIDATE', note: 'Detached product-page helper component with no current imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/product/HelperLlmStatus.tsx', { status: 'DEAD_CANDIDATE', note: 'Detached product-page helper component with no current imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/product/PipelineProgress.tsx', { status: 'DEAD_CANDIDATE', note: 'Detached product-page helper component with no current imports; ProductPage now renders progress inline.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/runtime/EventLog.tsx', { status: 'DEAD_CANDIDATE', note: 'Runtime fragment with no current page registration or imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/runtime/ProcessOutput.tsx', { status: 'DEAD_CANDIDATE', note: 'Runtime fragment with no current page registration or imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/pages/runtime/QueueSnapshot.tsx', { status: 'DEAD_CANDIDATE', note: 'Runtime fragment with no current page registration or imports.', source: 'exact-file' }],
+      ['tools/gui-react/src/stores/componentReviewStore.ts', { status: 'FUTURE_PREWIRED', note: 'Bridge store kept for the future component-review GUI surface.', source: 'exact-file' }],
+      ['tools/gui-react/src/hooks/useRunComponentReviewBatchMutation.ts', { status: 'FUTURE_PREWIRED', note: 'Active support hook for the future component-review batch workflow.', source: 'exact-file' }],
+      ['tools/gui-react/src/types/componentReview.generated.ts', { status: 'FUTURE_PREWIRED', note: 'Generated baseline for the future component-review surface.', source: 'exact-file' }],
+      ['tools/gui-react/src/types/componentReview.ts', { status: 'FUTURE_PREWIRED', note: 'Handwritten component-review type wrapper around the generated baseline.', source: 'exact-file' }],
+      ['tools/gui-react/src/types/review.generated.ts', { status: 'FUTURE_PREWIRED', note: 'Generated baseline for the future review-grid surface.', source: 'exact-file' }],
+      ['tools/gui-react/src/types/review.ts', { status: 'FUTURE_PREWIRED', note: 'Handwritten review-grid type wrapper used by the prewired review GUI.', source: 'exact-file' }],
+      ['tools/gui-react/src/types/llmRouteTypes.generated.ts', { status: 'MANUAL_OR_GENERATED', note: 'Generated LLM route type baseline used by the active Review LLM surface.', source: 'exact-file' }],
+      ['tools/gui-react/tsconfig.tsbuildinfo', { status: 'MANUAL_OR_GENERATED', note: 'TypeScript incremental build output.', source: 'exact-file' }],
+    ]);
+
+    const DEAD_CANDIDATE_PATHS = [
+      'tools/gui-react/src/pages/runtime',
+      'tools/gui-react/src/pages/runtime/EventLog.tsx',
+      'tools/gui-react/src/pages/runtime/ProcessOutput.tsx',
+      'tools/gui-react/src/pages/runtime/QueueSnapshot.tsx',
+      'tools/gui-react/src/api/graphql.ts',
+      'tools/gui-react/src/features/llm-config/sections/LlmModelCatalogSection.tsx',
+      'tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts',
+      'tools/gui-react/src/features/studio/components/MappingConstraintEditor.tsx',
+      'tools/gui-react/src/pages/product/AvailabilityGuidance.tsx',
+      'tools/gui-react/src/pages/product/HelperLlmStatus.tsx',
+      'tools/gui-react/src/pages/product/PipelineProgress.tsx',
+    ];
+
+    const FUTURE_PREWIRED_PATHS = [
+      'tools/gui-react/src/features/review',
+      'tools/gui-react/src/pages/component-review',
+      'tools/gui-react/src/stores/componentReviewStore.ts',
+      'tools/gui-react/src/hooks/useRunComponentReviewBatchMutation.ts',
+      'tools/gui-react/src/types/componentReview.generated.ts',
+      'tools/gui-react/src/types/componentReview.ts',
+      'tools/gui-react/src/types/review.generated.ts',
+      'tools/gui-react/src/types/review.ts',
+    ];
+
+    const GENERATED_BULK_PATHS = [
+      'tools/gui-react/node_modules',
+      'tools/gui-react/dist',
+      'tools/dist',
+      'tools/gui-react/src/types/llmRouteTypes.generated.ts',
+      'tools/gui-react/tsconfig.tsbuildinfo',
+      'tools/validation-output',
+    ];
+
+    const PRODUCTION_EXACT_FILES = new Set([
+      'tools/specfactory-launcher.mjs',
+      'tools/specfactory-process-manager.js',
+      'tools/gui-launcher.mjs',
+      'tools/nativeModulePreflight.js',
+      'tools/launchers/OpenSpecFactoryProcessManager.pyw',
+      'tools/launchers/ReStartSearXng.bat',
+      'tools/structured-metadata-sidecar/app.py',
+    ]);
+
+    const KEY_FINDINGS = [
+      { status: 'ACTIVE', title: 'Audited tools surface is mostly handwritten GUI code', note: 'With tools/gui-react/node_modules excluded from scope, 649 of the 765 in-scope files now sit under tools/gui-react/src rather than package-install bulk.', paths: ['tools/gui-react/src', 'tools/gui-react/scripts', 'tools/gui-react/dist'] },
+      { status: 'MANUAL_OR_GENERATED', title: 'Installed GUI packages are present but excluded from counts', note: 'The tools/gui-react/node_modules tree still exists on disk, but this audit treats it as package-install bulk rather than audited production tooling. Checked-in build outputs and generated artifacts stay visible separately.', paths: ['tools/gui-react/node_modules', 'tools/gui-react/dist', 'tools/dist', 'tools/validation-output'] },
+      { status: 'DEAD_CANDIDATE', title: 'One dead GUI folder is clear', note: 'tools/gui-react/src/pages/runtime is detached from the route registry and its components have no current imports.', paths: ['tools/gui-react/src/pages/runtime'] },
+      { status: 'DEAD_CANDIDATE', title: 'Seven standalone dead GUI files remain outside that folder', note: 'graphql.ts, LlmModelCatalogSection, useStorageOverview, MappingConstraintEditor, and three product helper fragments all look stranded in the current tree.', paths: ['tools/gui-react/src/api/graphql.ts', 'tools/gui-react/src/features/llm-config/sections/LlmModelCatalogSection.tsx', 'tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts', 'tools/gui-react/src/features/studio/components/MappingConstraintEditor.tsx', 'tools/gui-react/src/pages/product/AvailabilityGuidance.tsx', 'tools/gui-react/src/pages/product/HelperLlmStatus.tsx', 'tools/gui-react/src/pages/product/PipelineProgress.tsx'] },
+      { status: 'FUTURE_PREWIRED', title: 'Disabled review surfaces stay protected', note: 'Review Grid and Component Review remain intentionally parked behind disabled routes, so they stay future-prewired rather than dead.', paths: ['tools/gui-react/src/features/review', 'tools/gui-react/src/pages/component-review'] },
+      { status: 'ACTIVE', title: 'Review LLM surface is still live', note: 'pages/llm-settings is still routed, and its llmRouteDomain helpers are reused by active taxonomy code, so it is not a future-only surface.', paths: ['tools/gui-react/src/pages/llm-settings', 'tools/gui-react/src/registries/pageRegistry.ts', 'tools/gui-react/src/registries/fieldRuleTaxonomy.ts'] },
+    ];
+
+    const TOP_LEVEL_DOMAIN_NOTES = [
+      { path: 'tools/architecture', title: 'Architecture tooling', note: 'Boundary-validation and dependency-graph helpers with their own tests. Active support, not dead code.', focus: ['tools/architecture/archivePaths.mjs', 'tools/architecture/build-dependency-graph.mjs', 'tools/architecture/validate-boundaries.mjs'] },
+      { path: 'tools/dist', title: 'Built launcher output', note: 'Compiled/bundled artifacts. Keep as manual/generated, not as handwritten runtime source.', focus: ['tools/dist/launcher.cjs', 'tools/dist/specfactory-launcher.cjs', 'tools/dist/auto-rebuild-specfactory.ps1'] },
+      { path: 'tools/gui-react', title: 'GUI workspace', note: 'Largest audited tools surface by far. Mostly handwritten app code plus limited checked-in build output, helper scripts, and a small dead residue pocket. The package install under tools/gui-react/node_modules is intentionally excluded from counts.', focus: ['tools/gui-react/src', 'tools/gui-react/dist', 'tools/gui-react/scripts', 'tools/gui-react/node_modules'] },
+      { path: 'tools/launchers', title: 'Launchers', note: 'Operational launcher/process-manager scripts and assets remain active.', focus: ['tools/launchers/OpenSpecFactoryProcessManager.pyw', 'tools/launchers/ReStartSearXng.bat'] },
+      { path: 'tools/searxng', title: 'SearXNG sidecar', note: 'Config and tests for the local search sidecar. Support surface, not dead.', focus: ['tools/searxng/docker-compose.yml', 'tools/searxng/searxng/settings.yml'] },
+      { path: 'tools/structured-metadata-sidecar', title: 'Structured metadata sidecar', note: 'Auxiliary Python app/run surface retained as active support.', focus: ['tools/structured-metadata-sidecar/app.py', 'tools/structured-metadata-sidecar/run.ps1'] },
+      { path: 'tools/validation-output', title: 'Validation outputs', note: 'Sample output artifacts. Manual/generated bucket, not source code.', focus: ['tools/validation-output/mouse-cooler-master-mm712-30th-anniversary-edition.json'] },
+    ];
+
+    const SUBDOMAIN_FOCUS_NOTES = [
+      { path: 'tools', title: 'Top-level tool scripts', note: 'Root-level setup, launcher, process-manager, native-module, and crawl-probe scripts stay active or support-active. This report does not call any of them dead.', focus: ['tools/build-exe.mjs', 'tools/build-setup-exe.mjs', 'tools/dev-stack-control.js', 'tools/gui-launcher.mjs', 'tools/nativeModulePreflight.js', 'tools/setup-core.mjs', 'tools/setup-deps.mjs', 'tools/specfactory-launcher.mjs', 'tools/specfactory-process-manager.js'] },
+      { path: 'tools/gui-react/src/api', title: 'GUI client API layer', note: 'client.ts, ws.ts, and teardownFetch remain active. graphql.ts appears fully stranded and is the only dead call here.', focus: ['tools/gui-react/src/api/client.ts', 'tools/gui-react/src/api/ws.ts', 'tools/gui-react/src/api/teardownFetch.ts', 'tools/gui-react/src/api/graphql.ts'] },
+      { path: 'tools/gui-react/src/features/review', title: 'Review Grid GUI', note: 'Future-prewired review-grid GUI surface. Protected from dead-code calls even though the route remains disabled in the registry.', focus: ['tools/gui-react/src/features/review/components/ReviewPage.tsx', 'tools/gui-react/src/features/review/components/ReviewMatrix.tsx', 'tools/gui-react/src/features/review/state/reviewStore.ts'] },
+      { path: 'tools/gui-react/src/pages/component-review', title: 'Component Review GUI', note: 'Future-prewired component-review surface with real page, drawer, enum, and pending-AI flow code.', focus: ['tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx', 'tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx', 'tools/gui-react/src/pages/component-review/PendingAIReviewSection.tsx'] },
+      { path: 'tools/gui-react/src/pages/llm-settings', title: 'Review LLM GUI', note: 'Active Review-LLM page and domain helpers remain in use: the route is still registered and llmRouteDomain is imported by active taxonomy code.', focus: ['tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx', 'tools/gui-react/src/pages/llm-settings/llmRouteDomain.ts', 'tools/gui-react/src/pages/llm-settings/llmRoutePresentation.ts'] },
+      { path: 'tools/gui-react/src/pages/runtime', title: 'Detached runtime fragments', note: 'EventLog, ProcessOutput, and QueueSnapshot are no longer referenced by page routing or by other GUI components. This is the clearest dead folder in tools.', focus: ['tools/gui-react/src/pages/runtime/EventLog.tsx', 'tools/gui-react/src/pages/runtime/ProcessOutput.tsx', 'tools/gui-react/src/pages/runtime/QueueSnapshot.tsx'] },
+      { path: 'tools/gui-react/src/pages/product', title: 'Product page residue', note: 'ProductPage remains active, but AvailabilityGuidance, HelperLlmStatus, and PipelineProgress now look like detached fragments.', focus: ['tools/gui-react/src/pages/product/ProductPage.tsx', 'tools/gui-react/src/pages/product/AvailabilityGuidance.tsx', 'tools/gui-react/src/pages/product/HelperLlmStatus.tsx', 'tools/gui-react/src/pages/product/PipelineProgress.tsx'] },
+      { path: 'tools/gui-react/src/features/llm-config', title: 'LLM config feature', note: 'The feature remains active overall, but LlmModelCatalogSection currently has no GUI consumers.', focus: ['tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx', 'tools/gui-react/src/features/llm-config/sections/LlmModelCatalogSection.tsx'] },
+      { path: 'tools/gui-react/src/features/storage-manager', title: 'Storage manager feature', note: 'Feature remains active overall, but useStorageOverview appears orphaned.', focus: ['tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts'] },
+      { path: 'tools/gui-react/src/features/studio', title: 'Studio feature', note: 'Studio remains active overall, but MappingConstraintEditor currently has no imports.', focus: ['tools/gui-react/src/features/studio/components/StudioPage.tsx', 'tools/gui-react/src/features/studio/components/MappingConstraintEditor.tsx'] },
+      { path: 'tools/gui-react/src/types', title: 'Review and generated types', note: 'The type layer mixes generated baselines with handwritten wrappers. Review/component-review types stay future-prewired, while llmRouteTypes.generated.ts remains manual/generated because the active Review LLM surface imports it.', focus: ['tools/gui-react/src/types/componentReview.generated.ts', 'tools/gui-react/src/types/componentReview.ts', 'tools/gui-react/src/types/review.generated.ts', 'tools/gui-react/src/types/review.ts', 'tools/gui-react/src/types/llmRouteTypes.generated.ts'] },
+    ];
+
+    const numberFmt = new Intl.NumberFormat('en-US');
+    const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+    function escapeHtml(value) {
+      return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function statusPill(status) {
+      return `<span class="status-pill status-${status}">${escapeHtml(status.replaceAll('_', ' '))}</span>`;
+    }
+
+    function pathList(paths) {
+      if (!paths || paths.length === 0) return '<div class="empty">None.</div>';
+      return `<div class="path-list">${paths.map((item) => `<span class="path-pill"><code>${escapeHtml(item)}</code></span>`).join('')}</div>`;
+    }
+
+    function countFoldersUnder(path) {
+      return inventory.folders.filter((folder) => folder === path || folder.startsWith(`${path}/`)).length;
+    }
+
+    function countFilesUnder(path) {
+      return inventory.files.filter((file) => file.startsWith(`${path}/`)).length;
+    }
+
+    function countLocUnder(path) {
+      let total = 0;
+      for (const file of inventory.files) {
+        if (!file.startsWith(`${path}/`)) continue;
+        if (!fileLocByPath.has(file)) continue;
+        total += Number(fileLocByPath.get(file));
+      }
+      return total;
+    }
+
+    function locForFile(path) {
+      return fileLocByPath.has(path) ? Number(fileLocByPath.get(path)) : null;
+    }
+
+    function formatLoc(value) {
+      return Number.isFinite(value) ? numberFmt.format(value) : '\u2014';
+    }
+
+    function genericFolderRule(folder) {
+      if (folder === 'tools/gui-react/node_modules' || folder.startsWith('tools/gui-react/node_modules/')) {
+        return { path: 'tools/gui-react/node_modules', status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Excluded third-party dependency tree.', source: 'generic-vendor' };
+      }
+      if (folder === 'tools/dist' || folder.startsWith('tools/dist/') || folder === 'tools/gui-react/dist' || folder.startsWith('tools/gui-react/dist/')) {
+        return { path: folder, status: 'MANUAL_OR_GENERATED', defaultFileStatus: 'MANUAL_OR_GENERATED', note: 'Built output folder.', source: 'generic-dist' };
+      }
+      if (/(^|\/)(__tests__|tests|test)(\/|$)/.test(folder)) {
+        return { path: folder, status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Test coverage / fixture / characterization folder.', source: 'generic-tests' };
+      }
+      if (/(^|\/)(icons|fixtures|helpers)(\/|$)/.test(folder)) {
+        return { path: folder, status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Asset/helper support folder.', source: 'generic-support' };
+      }
+      return null;
+    }
+
+    function nearestFolderRule(folder) {
+      const generic = genericFolderRule(folder);
+      if (generic) return generic;
+      const matches = EXPLICIT_FOLDER_RULES.filter((rule) => folder === rule.path || folder.startsWith(`${rule.path}/`));
+      if (matches.length === 0) return { path: 'tools', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Inherited root fallback.', source: 'fallback' };
+      const best = matches.sort((a, b) => b.path.length - a.path.length)[0];
+      return { ...best, source: 'folder-rule' };
+    }
+
+    function isTestFile(file) {
+      return /(^|\/)(__tests__|tests|test)(\/|$)|\.(test|spec)\.[^.]+$/i.test(file);
+    }
+
+    function isNonProductionArtifact(file) {
+      return file.endsWith('.generated.ts')
+        || file.endsWith('.md')
+        || file.endsWith('.json')
+        || file.endsWith('.yml')
+        || file.endsWith('.yaml')
+        || file.endsWith('.css')
+        || file.endsWith('.ico')
+        || file.endsWith('.txt')
+        || file.endsWith('.tsbuildinfo');
+    }
+
+    function deriveFileAudit(file) {
+      const exact = EXPLICIT_FILE_OVERRIDES.get(file);
+      if (exact) return { path: file, ...exact };
+      if (file.startsWith('tools/gui-react/node_modules/')) {
+        return { path: file, status: 'MANUAL_OR_GENERATED', note: 'Excluded third-party dependency file.', source: 'generic-vendor' };
+      }
+      if (file.startsWith('tools/dist/') || file.startsWith('tools/gui-react/dist/') || file.startsWith('tools/validation-output/')) {
+        return { path: file, status: 'MANUAL_OR_GENERATED', note: 'Built or output artifact.', source: 'generic-generated' };
+      }
+      if (isTestFile(file)) {
+        return { path: file, status: 'ACTIVE_SUPPORT', note: 'Test coverage / fixture / audit note.', source: 'generic-tests' };
+      }
+      if (file.endsWith('.generated.ts')) {
+        return { path: file, status: 'MANUAL_OR_GENERATED', note: 'Generated TypeScript baseline.', source: 'generic-generated' };
+      }
+      if (file.endsWith('.audit.md') || file.endsWith('README.md') || file.endsWith('.md')) {
+        return { path: file, status: 'ACTIVE_SUPPORT', note: 'Documentation / audit note.', source: 'generic-doc' };
+      }
+      if (file.endsWith('.d.ts') || file.endsWith('.json') || file.endsWith('.yml') || file.endsWith('.yaml') || file.endsWith('.ico')) {
+        return { path: file, status: 'ACTIVE_SUPPORT', note: 'Typed contract, static config, or asset file.', source: 'generic-support' };
+      }
+      const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : 'tools';
+      const folderRule = nearestFolderRule(folder);
+      return { path: file, status: folderRule.defaultFileStatus, note: folderRule.note, source: folderRule.path };
+    }
+
+    function deriveFolderAudit(folder) {
+      const generic = genericFolderRule(folder);
+      if (generic) return generic;
+      const exact = EXPLICIT_FOLDER_RULES.find((rule) => rule.path === folder);
+      if (exact) return { ...exact, source: 'exact-folder' };
+      const inherited = nearestFolderRule(folder);
+      const inheritedStatus = inherited.status === 'MIXED' ? 'ACTIVE' : inherited.status;
+      return { path: folder, status: inheritedStatus, defaultFileStatus: inherited.defaultFileStatus, note: `Inherited from ${inherited.path}: ${inherited.note}`, source: inherited.path };
+    }
+
+    const folderRows = inventory.folders.map((folder) => deriveFolderAudit(folder));
+    const fileRows = inventory.files.map((file) => ({ ...deriveFileAudit(file), loc: locForFile(file) }));
+
+    function isProductionCodeFile(row) {
+      const file = row.path;
+      if (row.loc == null) return false;
+      if (DEAD_CANDIDATE_PATHS.includes(file)) return false;
+      if (isTestFile(file) || isNonProductionArtifact(file)) return false;
+      if (file.startsWith('tools/gui-react/src/pages/test-mode/')) return false;
+      if (PRODUCTION_EXACT_FILES.has(file)) return true;
+      if (file.startsWith('tools/gui-react/src/')) return true;
+      return false;
+    }
+
+    const productionFileRows = fileRows.filter((row) => isProductionCodeFile(row));
+
+    function countBy(rows) {
+      const counts = new Map();
+      for (const row of rows) counts.set(row.status, (counts.get(row.status) || 0) + 1);
+      return Object.fromEntries([...counts.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+    }
+
+    function renderManualCards(elId, rows) {
+      document.getElementById(elId).innerHTML = rows.map((row) => {
+        const audit = deriveFolderAudit(row.path);
+        const fileCount = countFilesUnder(row.path);
+        const folderCount = countFoldersUnder(row.path);
+        const locCount = countLocUnder(row.path);
+        const chips = [
+          `<span class="chip">${escapeHtml(numberFmt.format(fileCount))} files</span>`,
+          `<span class="chip">${escapeHtml(numberFmt.format(folderCount))} folders</span>`,
+          `<span class="chip">${escapeHtml(numberFmt.format(locCount))} LOC</span>`,
+        ].join('');
+        return `<article class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;"><div><div class="small-label">${escapeHtml(row.title)}</div><h3 style="margin:8px 0 0;"><code>${escapeHtml(row.path)}</code></h3></div>${statusPill(audit.status)}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">${chips}</div><p>${escapeHtml(row.note)}</p>${pathList(row.focus || [])}</article>`;
+      }).join('');
+    }
+
+    function renderSummary() {
+      const productionLoc = productionFileRows.reduce((sum, row) => sum + (row.loc || 0), 0);
+      document.getElementById('hero-copy').textContent = `Manual audit of the current tools tree only. Every in-scope tools folder and file is listed here; the installed package tree under tools/gui-react/node_modules is explicitly excluded from the inventory counts. Primary LOC is live production tool code, while the larger in-scope LOC still reflects checked-in build/generated/support material elsewhere under tools/**.`;
+      document.getElementById('hero-meta').innerHTML = [`Generated ${dateFmt.format(new Date(inventory.generatedAt))}`, `${numberFmt.format(inventory.folderCount)} folders`, `${numberFmt.format(inventory.fileCount)} files`, `${numberFmt.format(productionFileRows.length)} production files`, `${numberFmt.format(productionLoc)} production LOC`].map((text) => `<span class="chip">${escapeHtml(text)}</span>`).join('');
+      const counts = countBy(fileRows);
+      const locNote = inventory.skippedLocFileCount
+        ? `Physical line count across ${numberFmt.format(inventory.locFileCount || 0)} text-like files; ${numberFmt.format(inventory.skippedLocFileCount)} binary asset${inventory.skippedLocFileCount === 1 ? '' : 's'} do not contribute LOC.`
+        : `Physical line count across all ${numberFmt.format(inventory.locFileCount || 0)} in-scope files.`;
+      document.getElementById('stats').innerHTML = [
+        ['Files', numberFmt.format(inventory.fileCount), 'Every in-scope tools file is listed in the file appendix below.'],
+        ['Folders', numberFmt.format(inventory.folderCount), 'Every in-scope tools folder is listed in the folder appendix below.'],
+        ['Production Files', numberFmt.format(productionFileRows.length), 'Live launcher/runtime GUI tool files after excluding generated output, tests, docs/config/assets, hidden test-mode support, and dead-candidate residue.'],
+        ['Production LOC', numberFmt.format(productionLoc), 'Live tool/runtime/launcher LOC only. This is the primary size metric for the code you care about.'],
+        ['In-Scope LOC', numberFmt.format(inventory.totalLoc || 0), locNote],
+        ['Generated / Excluded', numberFmt.format(counts.MANUAL_OR_GENERATED || 0), 'Build output, generated types, tsbuildinfo, validation-output artifacts, and any explicitly excluded package-install material.'],
+        ['Future Prewired', numberFmt.format(counts.FUTURE_PREWIRED || 0), 'Protected review-grid and component-review surfaces kept for later hookup.'],
+        ['Dead Files', numberFmt.format(fileRows.filter((row) => row.status === 'DEAD_CANDIDATE').length), 'Only high-confidence dead calls made in this pass.'],
+        ['Dead Folders', numberFmt.format(folderRows.filter((row) => row.status === 'DEAD_CANDIDATE').length), 'Current dead folder calls inside tools.'],
+      ].map(([label, value, note]) => `<article class="stat"><div class="small-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div><div class="stat-note">${escapeHtml(note)}</div></article>`).join('');
+      document.getElementById('legend').innerHTML = Object.entries(STATUS_GLOSSARY).map(([status, desc]) => `<div class="card">${statusPill(status)}<p style="margin-top:10px;">${escapeHtml(desc)}</p></div>`).join('');
+      document.getElementById('findings').innerHTML = KEY_FINDINGS.map((row) => `<article class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;"><h3>${escapeHtml(row.title)}</h3>${statusPill(row.status)}</div><p>${escapeHtml(row.note)}</p>${pathList(row.paths)}</article>`).join('');
+      document.getElementById('dead-calls').innerHTML = pathList(DEAD_CANDIDATE_PATHS);
+      document.getElementById('future-calls').innerHTML = pathList(FUTURE_PREWIRED_PATHS);
+      document.getElementById('generated-calls').innerHTML = pathList(GENERATED_BULK_PATHS);
+      renderManualCards('top-level-domains', TOP_LEVEL_DOMAIN_NOTES);
+      renderManualCards('subdomain-focus', SUBDOMAIN_FOCUS_NOTES);
+    }
+
+    function populateSelect(el, values) {
+      el.innerHTML = ['<option value="ALL">ALL</option>', ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join('');
+    }
+
+    function folderRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${statusPill(row.status)}</td><td>${statusPill(row.defaultFileStatus)}</td><td>${escapeHtml(formatLoc(countLocUnder(row.path)))}</td><td class="note"><strong>${escapeHtml(row.note)}</strong><div>${escapeHtml(`Source: ${row.source}`)}</div></td></tr>`;
+    }
+
+    function fileRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${statusPill(row.status)}</td><td>${escapeHtml(formatLoc(row.loc))}</td><td><code>${escapeHtml(row.source)}</code></td><td class="note"><strong>${escapeHtml(row.note)}</strong></td></tr>`;
+    }
+
+    function setupFolderTable() {
+      const searchEl = document.getElementById('folder-search');
+      const statusEl = document.getElementById('folder-status');
+      const bodyEl = document.getElementById('folder-body');
+      const resultsEl = document.getElementById('folder-results');
+      populateSelect(statusEl, [...new Set(folderRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const status = statusEl.value;
+        const rows = folderRows.filter((row) => (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.note}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(folderRows.length)} folders shown`;
+        bodyEl.innerHTML = rows.map(folderRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    function setupFileTable() {
+      const searchEl = document.getElementById('file-search');
+      const statusEl = document.getElementById('file-status');
+      const bodyEl = document.getElementById('file-body');
+      const resultsEl = document.getElementById('file-results');
+      populateSelect(statusEl, [...new Set(fileRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const status = statusEl.value;
+        const rows = fileRows.filter((row) => (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.note} ${row.source}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(fileRows.length)} files shown`;
+        bodyEl.innerHTML = rows.map(fileRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    renderSummary();
+    setupFolderTable();
+    setupFileTable();
+  </script>
+</body>
+</html>

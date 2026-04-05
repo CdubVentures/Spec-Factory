@@ -39,6 +39,11 @@ test('studio field-studio-map PUT emits data-change event for live propagation',
 
 test('studio field-studio-map PUT rejects destructive empty overwrite by default', async () => {
   let saveCalled = false;
+  const existingMap = {
+    version: 2,
+    component_sources: [{ component_type: 'sensor' }],
+    data_lists: [{ field: 'dpi', values: ['3200'] }],
+  };
   const result = await invokeStudioRoute({
     readJsonBody: async () => ({
       version: 1,
@@ -46,15 +51,14 @@ test('studio field-studio-map PUT rejects destructive empty overwrite by default
       data_lists: [],
       enum_lists: [],
     }),
-    // WHY: overwrite guard reads SQL first, falls back to loadFieldStudioMap (JSON).
-    // In tests without specDb, the JSON fallback is used.
-    loadFieldStudioMap: async () => ({
-      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
-      map: {
-        version: 2,
-        component_sources: [{ component_type: 'sensor' }],
-        data_lists: [{ field: 'dpi', values: ['3200'] }],
-      },
+    // WHY: overwrite guard reads existing map from SQL (SSOT).
+    getSpecDb: () => ({
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(existingMap),
+        map_hash: 'test-hash',
+        updated_at: '2026-03-29T00:00:00',
+      }),
+      upsertFieldStudioMap: () => {},
     }),
     saveFieldStudioMap: async () => {
       saveCalled = true;
@@ -81,9 +85,6 @@ test('studio field-studio-map GET reads from SQL when specDb has data', async ()
         updated_at: '2026-03-29T00:00:00',
       }),
     }),
-    loadFieldStudioMap: async () => {
-      throw new Error('should not read JSON when SQL has data');
-    },
   }, ['studio', 'mouse', 'field-studio-map'], 'GET');
 
   assert.equal(result.status, 200);
@@ -93,24 +94,16 @@ test('studio field-studio-map GET reads from SQL when specDb has data', async ()
   assert.equal(result.body.map.component_sources[0].component_type, 'sensor');
 });
 
-test('studio field-studio-map GET falls back to JSON when SQL is empty', async () => {
+test('studio field-studio-map GET returns empty map when SQL has no data', async () => {
   const result = await invokeStudioRoute({
     getSpecDb: () => ({
       getFieldStudioMap: () => null,
     }),
-    loadFieldStudioMap: async () => ({
-      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
-      map: {
-        version: 2,
-        component_sources: [{ component_type: 'sensor' }],
-      },
-    }),
-    validateFieldStudioMap: (map) => ({ valid: true, errors: [], warnings: [], normalized: map }),
   }, ['studio', 'mouse', 'field-studio-map'], 'GET');
 
   assert.equal(result.status, 200);
-  assert.equal(result.body.map.version, 2);
-  assert.equal(result.body.map.component_sources[0].component_type, 'sensor');
+  assert.deepEqual(result.body.map, {});
+  assert.equal(result.body.file_path, '');
 });
 
 test('studio field-studio-map PUT writes to SQL when specDb is available', async () => {

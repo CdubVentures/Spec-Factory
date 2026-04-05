@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-04-05T04:08:57.963Z",
+  "scope": "scripts",
+  "folderCount": 2,
+  "fileCount": 30,
+  "folders": [
+    "scripts",
+    "scripts/live-audits"
+  ],
+  "files": [
+    "scripts/chatmock-ctl.bat",
+    "scripts/demo-improvements.js",
+    "scripts/eloshapes_fetch.py",
+    "scripts/extract_pdf_any.py",
+    "scripts/extract_pdf_kv.py",
+    "scripts/full_validation.js",
+    "scripts/generate_review_button_color_matrix.py",
+    "scripts/generate-llm-route-field-usage-audit.js",
+    "scripts/generate-studio-types.js",
+    "scripts/generateAstKnobInventory.js",
+    "scripts/generateFullTestSuiteAudit.mjs",
+    "scripts/generateMissingKnobsAudit.js",
+    "scripts/generatePanelStyleDriftMatrix.js",
+    "scripts/generatePanelStyleRemediationQueue.js",
+    "scripts/generateSchemaReference.js",
+    "scripts/generateSchemaTouchAudit.js",
+    "scripts/generateStorageChangeAudit.js",
+    "scripts/injectLlmAndSearchWorkerEvents.js",
+    "scripts/live-audits/50-site-audit.js",
+    "scripts/live-audits/cookie-audit.js",
+    "scripts/live-audits/dom-expansion-live.js",
+    "scripts/live-audits/full-suite-live.js",
+    "scripts/live-audits/overlay-dismissal-live.js",
+    "scripts/live-audits/README.md",
+    "scripts/llmRouteFieldUsageAudit.js",
+    "scripts/pdf_extract_tables.py",
+    "scripts/searxng-health.js",
+    "scripts/testGoogleCrawlee.js",
+    "scripts/validate_methods.js",
+    "scripts/verify-wave4.js"
+  ]
+}

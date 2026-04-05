@@ -3,7 +3,6 @@ import {
   readRunSummaryEvents,
   readIndexLabRunSearchProfile,
   readIndexLabRunMeta,
-  readIndexLabRunSourceIndexingPackets,
   resolveIndexLabRunDirectory,
 } from './index.js';
 
@@ -22,7 +21,7 @@ export function createRuntimeOpsRouteContext(options = {}) {
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
     getIndexLabRoot, getSpecDbReady,
     readIndexLabRunEvents, readRunSummaryEvents, readIndexLabRunSearchProfile, readIndexLabRunMeta,
-    readIndexLabRunSourceIndexingPackets, resolveIndexLabRunDirectory,
+    resolveIndexLabRunDirectory,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
   };
 }

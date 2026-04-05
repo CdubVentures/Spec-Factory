@@ -60,12 +60,15 @@ test('studio payload response has exact StudioPayload shape', async () => {
 
 // Shape 2: FieldStudioMapResponse (GET /studio/:category/field-studio-map)
 test('studio field-studio-map GET response has file_path and map', async () => {
+  const mapData = { version: 2, component_sources: [{ component_type: 'sensor' }] };
   const result = await invokeStudioRoute({
-    loadFieldStudioMap: async () => ({
-      file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
-      map: { version: 2, component_sources: [{ component_type: 'sensor' }] },
+    getSpecDb: () => ({
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(mapData),
+        map_hash: 'test-hash',
+        updated_at: '2026-03-29T00:00:00',
+      }),
     }),
-    validateFieldStudioMap: (map) => ({ valid: true, errors: [], warnings: [], normalized: map }),
   }, ['studio', 'mouse', 'field-studio-map'], 'GET');
 
   assert.equal(result.status, 200);
@@ -79,13 +82,15 @@ test('studio field-studio-map GET response has file_path and map', async () => {
 
 // Shape 3: TooltipBankResponse (GET /studio/:category/tooltip-bank)
 test('studio tooltip-bank response has exact TooltipBankResponse shape', async () => {
+  const tooltipMap = { tooltip_source: { path: '/tooltips' } };
   const result = await invokeStudioRoute({
-    safeReadJson: async (p) => {
-      if (String(p).includes('field_studio_map.json')) {
-        return { tooltip_source: { path: '/tooltips' } };
-      }
-      return null;
-    },
+    getSpecDb: () => ({
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(tooltipMap),
+        map_hash: 'test-hash',
+        updated_at: '2026-03-29T00:00:00',
+      }),
+    }),
     fs: {
       mkdir: async () => {},
       writeFile: async () => {},

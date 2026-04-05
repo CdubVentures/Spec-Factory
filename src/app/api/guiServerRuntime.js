@@ -50,7 +50,7 @@ const MODULE_FILENAME = typeof __filename === 'string'
   : fileURLToPath(import.meta.url);
 const MODULE_DIRNAME = path.dirname(MODULE_FILENAME);
 
-export const PROJECT_ROOT = path.resolve(MODULE_DIRNAME, '..', '..');
+export const PROJECT_ROOT = path.resolve(MODULE_DIRNAME, '..', '..', '..');
 
 function withProcessBootstrapOverrides({ env = null, argv = null, cwd = null }, factory) {
   const previousArgv = process.argv;

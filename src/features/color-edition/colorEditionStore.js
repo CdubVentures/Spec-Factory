@@ -194,7 +194,7 @@ export function deleteColorEditionFinderAll({ productId, productRoot }) {
  */
 export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
   const root = productRoot || defaultProductRoot();
-  const stats = { found: 0, seeded: 0, skipped: 0 };
+  const stats = { found: 0, seeded: 0, skipped: 0, runs_seeded: 0 };
 
   let entries;
   try {
@@ -227,9 +227,11 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       || data.default_color
       || '';
 
+    const productId = data.product_id || entry.name;
+
     specDb.upsertColorEditionFinder({
       category: data.category,
-      product_id: data.product_id || entry.name,
+      product_id: productId,
       colors,
       editions,
       default_color: defaultColor,
@@ -237,6 +239,24 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,
     });
+
+    // Seed per-run history into SQL projection
+    const runs = Array.isArray(data.runs) ? data.runs : [];
+    for (const run of runs) {
+      specDb.insertColorEditionFinderRun({
+        category: data.category,
+        product_id: productId,
+        run_number: run.run_number,
+        ran_at: run.ran_at || '',
+        model: run.model || 'unknown',
+        fallback_used: Boolean(run.fallback_used),
+        cooldown_until: run.cooldown_until || '',
+        selected: run.selected || {},
+        prompt: run.prompt || {},
+        response: run.response || {},
+      });
+    }
+    stats.runs_seeded += runs.length;
     stats.seeded++;
   }
 

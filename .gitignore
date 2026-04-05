@@ -25,6 +25,7 @@ __pycache__/
 !.tmp/.gitkeep
 .workspace/
 .claude/
+*.claude
 .server-state/
 artifacts/
 debug/

@@ -96,10 +96,8 @@ export function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
 
   const { manualRemoved } = tx();
 
-  // WHY: If field_overrides changed, generated artifacts may be stale.
-  if (map.field_overrides && Object.keys(map.field_overrides).length > 0) {
-    console.warn(`[reseed] field_studio_map.json changed for ${category} — run compile if field_overrides affect generated output`);
-  }
+  // WHY: Compile-before-seed is handled by specDbSyncService.isCompileStale().
+  // Reseed runs after seed, so generated artifacts are already fresh.
 
   specDb.setFileSeedHash('field_studio_map', currentHash);
   return { reseeded: true, manualRemoved };

@@ -22,9 +22,16 @@ function makeDeps({
   manifest = null,
   mapMtimeIso = '2026-02-20T12:00:00.000Z',
   keyMigrations = null,
-  sqlRow = null,
+  sqlRow = undefined,
   fieldKeyOrderRow = null,
 } = {}) {
+  // WHY: SQL is the SSOT. Auto-derive sqlRow from mapDoc when not explicitly provided.
+  const effectiveSqlRow = sqlRow !== undefined
+    ? sqlRow
+    : mapDoc
+      ? { map_json: JSON.stringify(mapDoc), map_hash: 'test-hash', updated_at: mapMtimeIso }
+      : null;
+
   let readCount = 0;
 
   const readJsonIfExists = async (filePath) => {
@@ -34,9 +41,6 @@ function makeDeps({
     }
     if (String(filePath).includes('key_migrations.json')) {
       return keyMigrations ? JSON.parse(JSON.stringify(keyMigrations)) : null;
-    }
-    if (String(filePath).includes('field_studio_map.json')) {
-      return mapDoc ? JSON.parse(JSON.stringify(mapDoc)) : null;
     }
     return null;
   };
@@ -50,15 +54,12 @@ function makeDeps({
     mtime: new Date(mapMtimeIso),
   });
 
-  // WHY: getSpecDb stub returns a minimal specDb mock with field studio map methods.
-  const getSpecDb = () => {
-    if (sqlRow === null && fieldKeyOrderRow === null) return null;
-    return {
-      getFieldStudioMap: () => sqlRow,
-      upsertFieldStudioMap: () => {},
-      getFieldKeyOrder: () => fieldKeyOrderRow,
-    };
-  };
+  // WHY: specDb always returns a mock so SQL-only read paths are exercised.
+  const getSpecDb = () => ({
+    getFieldStudioMap: () => effectiveSqlRow,
+    upsertFieldStudioMap: () => {},
+    getFieldKeyOrder: () => fieldKeyOrderRow,
+  });
 
   return {
     readJsonIfExists,
@@ -246,33 +247,25 @@ describe('sessionCache', () => {
     );
   });
 
-  it('falls back to field_key_order.json when SQL is empty and JSON exists', async () => {
-    const savedOrder = ['__grp::Custom', 'weight', '__grp::Sensor', 'dpi_max'];
+  it('uses computed order when field_key_order SQL row is empty', async () => {
     const baseDeps = makeDeps({
       sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
       fieldKeyOrderRow: null,
     });
-    // Override readJsonIfExists to serve the field_key_order.json fallback
-    const readJsonIfExists = async (filePath) => {
-      if (String(filePath).includes('field_key_order.json')) {
-        return { order: savedOrder };
-      }
-      return baseDeps.readJsonIfExists(filePath);
-    };
-    const setFieldKeyOrderCalls = [];
     const getSpecDb = () => ({
       getFieldStudioMap: () => baseDeps.getSpecDb().getFieldStudioMap(),
       upsertFieldStudioMap: () => {},
       getFieldKeyOrder: () => null,
-      setFieldKeyOrder: (cat, json) => setFieldKeyOrderCalls.push({ cat, json }),
     });
-    const cache = await createCache({ ...baseDeps, readJsonIfExists, getSpecDb });
+    const cache = await createCache({ ...baseDeps, getSpecDb });
     const result = await cache.getSessionRules('mouse');
 
-    assert.deepEqual(result.mergedFieldOrder, savedOrder);
-    // WHY: sessionCache no longer auto-persists to SQL — the field_key_order reseed
-    // surface in seedRegistry.js handles JSON→SQL migration. sessionCache is read-only.
-    assert.equal(setFieldKeyOrderCalls.length, 0, 'sessionCache should not persist to SQL (reseed surface handles it)');
+    // WHY: SQL is the SSOT. When field_key_order SQL is empty, computed order from
+    // field_groups/compiled order is used. Reseed handles JSON→SQL on boot.
+    assert.deepEqual(
+      result.mergedFieldOrder,
+      ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
+    );
   });
 
   it('falls back to computed order when both SQL and JSON are empty', async () => {
@@ -335,15 +328,17 @@ describe('sessionCache', () => {
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
   });
 
-  it('falls back to JSON file when SQL is empty (seed migration)', async () => {
+  it('uses compiled defaults when field_studio_map SQL is empty', async () => {
     const deps = makeDeps({
       sqlRow: null,
     });
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
-    assert.equal(result.mergedFields.dpi_max.ui.label, 'Maximum DPI');
-    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
+    // WHY: SQL is the SSOT. When SQL is empty, compiled field defaults are used.
+    // Reseed handles JSON→SQL projection on boot.
+    assert.equal(result.mergedFields.dpi_max.ui.label, 'Max DPI');
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
   });
 
   it('compileStale is true when map was saved after compile', async () => {

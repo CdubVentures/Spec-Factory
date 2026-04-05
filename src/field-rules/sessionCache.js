@@ -135,39 +135,12 @@ export function createSessionCache({
 }) {
   const cache = new Map();
 
-  function fieldStudioMapPath(category) {
-    return path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
-  }
-
-  function fieldKeyOrderPath(category) {
-    return path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
-  }
-
   function manifestPath(category) {
     return path.join(helperRoot, category, '_generated', 'manifest.json');
   }
 
   function keyMigrationsPath(category) {
     return path.join(helperRoot, category, '_generated', 'key_migrations.json');
-  }
-
-  // WHY: JSON fallback for seed migration — reads from file when SQL is empty.
-  async function readStudioMapSnapshot(category) {
-    const candidate = fieldStudioMapPath(category);
-    const map = await readJsonIfExists(candidate);
-    if (isObject(map)) {
-      let savedAt = null;
-      if (typeof statFile === 'function') {
-        try {
-          const stat = await statFile(candidate);
-          savedAt = stat?.mtime ? new Date(stat.mtime).toISOString() : null;
-        } catch {
-          savedAt = null;
-        }
-      }
-      return { path: candidate, map, savedAt };
-    }
-    return { path: fieldStudioMapPath(category), map: {}, savedAt: null };
   }
 
   async function loadAndMerge(category) {
@@ -184,16 +157,10 @@ export function createSessionCache({
     let savedMap = {};
     let mapSavedAt = null;
 
+    // WHY: SQL is the SSOT for field_studio_map. Reseed handles JSON→SQL on boot.
     if (sqlRow) {
       try { savedMap = JSON.parse(sqlRow.map_json); } catch { savedMap = {}; }
       mapSavedAt = sqlRow.updated_at || null;
-    } else {
-      // WHY: JSON→SQL migration is now handled by the field_studio_map reseed surface
-      // in seedRegistry.js. sessionCache only reads SQL. If SQL is empty after reseed,
-      // fall back to reading JSON directly (read-only, no persist).
-      const studioMapSnapshot = await readStudioMapSnapshot(category);
-      savedMap = isObject(studioMapSnapshot.map) ? studioMapSnapshot.map : {};
-      mapSavedAt = studioMapSnapshot.savedAt;
     }
 
     const keyMigrations = await readJsonIfExists(keyMigrationsPath(category));
@@ -217,23 +184,11 @@ export function createSessionCache({
 
     const savedFieldGroups = Array.isArray(savedMap.field_groups) ? savedMap.field_groups : [];
     // WHY: field_key_order table is the fast-path for instant order persistence.
-    // When populated, it IS the full mergedFieldOrder (already has __grp:: markers).
-    // Fallback chain: SQL → JSON file → computed from field_groups/compiled order.
+    // Reseed handles JSON→SQL on boot. Computed order is the fallback.
     const fieldKeyOrderRow = specDb?.getFieldKeyOrder?.(category) ?? null;
-    let mergedFieldOrder;
-    if (fieldKeyOrderRow) {
-      mergedFieldOrder = JSON.parse(fieldKeyOrderRow.order_json);
-    } else {
-      // WHY: JSON→SQL migration is now handled by the field_key_order reseed surface.
-      // sessionCache reads SQL. If SQL is empty after reseed, fall back to JSON (read-only)
-      // then to computed order.
-      const fieldKeyOrderJson = await readJsonIfExists(fieldKeyOrderPath(category));
-      if (fieldKeyOrderJson && Array.isArray(fieldKeyOrderJson.order) && fieldKeyOrderJson.order.length > 0) {
-        mergedFieldOrder = fieldKeyOrderJson.order;
-      } else {
-        mergedFieldOrder = buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
-      }
-    }
+    const mergedFieldOrder = fieldKeyOrderRow
+      ? JSON.parse(fieldKeyOrderRow.order_json)
+      : buildGroupedFieldOrder(baseFieldOrder, mergedFields, savedFieldGroups);
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 

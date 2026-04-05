@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory Src Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --surface: rgba(255, 251, 244, 0.92);
+    --surface-strong: rgba(255, 255, 255, 0.95);
+    --ink: #151a1e;
+    --muted: #616a72;
+    --border: rgba(36, 31, 20, 0.12);
+    --border-strong: rgba(36, 31, 20, 0.22);
+    --shadow: 0 22px 60px rgba(40, 26, 10, 0.12);
+    --teal: #0f766e;
+    --teal-dim: rgba(15, 118, 110, 0.12);
+    --red: #b14639;
+    --red-dim: rgba(177, 70, 57, 0.12);
+    --gold: #b7791f;
+    --gold-dim: rgba(183, 121, 31, 0.13);
+    --blue: #275d8a;
+    --blue-dim: rgba(39, 93, 138, 0.11);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 34%),
+      radial-gradient(circle at top right, rgba(183, 121, 31, 0.08), transparent 30%),
+      linear-gradient(180deg, #faf6ee 0%, #f4eee2 58%, #efe6d8 100%);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(30, 20, 8, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 20, 8, 0.018) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 94%);
+  }
+
+  .shell {
+    max-width: 1520px;
+    margin: 0 auto;
+    padding: 30px 22px 80px;
+  }
+
+  .mono, .chip, .eyebrow, .status-pill, .small-label, input, select, th {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .hero, .panel, .stat, .callout, .card {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero {
+    padding: 30px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -10% -40px 42%;
+    height: 180px;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.14), transparent 64%);
+    pointer-events: none;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+
+  h1, h2, h3 {
+    margin: 0;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 0.96;
+    max-width: 980px;
+    margin-bottom: 10px;
+  }
+
+  .hero p {
+    margin: 0;
+    max-width: 980px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.68;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.58);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .callout {
+    margin-bottom: 18px;
+    padding: 18px 22px;
+    border-left: 5px solid var(--teal);
+    background: linear-gradient(90deg, var(--teal-dim), rgba(255, 255, 255, 0.42));
+  }
+
+  .callout strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+
+  .callout p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .stat {
+    padding: 18px;
+    background: var(--surface-strong);
+  }
+
+  .small-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-size: 33px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-note {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .panel { padding: 22px; }
+  .panel h2 { font-size: 19px; margin-bottom: 14px; }
+  .panel p, .panel li, .panel td { color: var(--muted); line-height: 1.6; font-size: 14px; }
+  .panel ul { margin: 0; padding-left: 18px; }
+  .panel li + li { margin-top: 8px; }
+
+  .legend, .findings, .triptych {
+    display: grid;
+    gap: 14px;
+  }
+
+  .legend { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .findings { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); margin-bottom: 18px; }
+  .triptych { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; }
+
+  .card {
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.68);
+  }
+
+  .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .card p { margin: 0 0 12px; color: var(--muted); }
+
+  .path-list { display: grid; gap: 8px; }
+
+  .path-pill {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.58);
+    padding: 6px 10px;
+    word-break: break-word;
+  }
+
+  .path-pill code, td code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .kind-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-ACTIVE { color: var(--teal); background: var(--teal-dim); border-color: rgba(15, 118, 110, 0.2); }
+  .status-ACTIVE_SUPPORT { color: var(--blue); background: var(--blue-dim); border-color: rgba(39, 93, 138, 0.18); }
+  .status-DEFER { color: var(--gold); background: var(--gold-dim); border-color: rgba(183, 121, 31, 0.22); }
+  .status-DEAD_CANDIDATE { color: var(--red); background: var(--red-dim); border-color: rgba(177, 70, 57, 0.22); }
+  .status-MIXED { color: var(--ink); background: rgba(37, 47, 56, 0.08); border-color: rgba(37, 47, 56, 0.16); }
+  .kind-PRODUCTION { color: var(--blue); background: rgba(39, 93, 138, 0.1); border-color: rgba(39, 93, 138, 0.18); }
+  .kind-TEST { color: var(--gold); background: rgba(183, 121, 31, 0.12); border-color: rgba(183, 121, 31, 0.22); }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .filters label {
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--ink);
+    font-size: 13px;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: rgba(15, 118, 110, 0.38);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  }
+
+  .results { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+  .table-wrap {
+    overflow: auto;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1220px;
+  }
+
+  th, td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(36, 31, 20, 0.08);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: rgba(248, 241, 230, 0.98);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .note strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+
+  .empty {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(26, 32, 37, 0.04);
+    color: var(--muted);
+  }
+
+  @media (max-width: 1080px) {
+    .split, .triptych { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 720px) {
+    .shell { padding: 18px 14px 56px; }
+    .hero, .panel, .card, .stat, .callout { border-radius: 18px; }
+    .hero, .panel { padding: 20px; }
+    .filters label { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Manual Src Audit</div>
+      <h1>Spec Factory `src/**` Audit</h1>
+      <p id="hero-copy"></p>
+      <div class="hero-meta" id="hero-meta"></div>
+    </section>
+
+    <section class="callout">
+      <strong>Scope Discipline</strong>
+      <p>
+        This report is only for <code>src/**</code>. Tools, scripts, docs, and GUI-react code are intentionally out of scope for this pass.
+        Inventory and LOC totals were checked mechanically, but the dead/defer calls were revalidated manually from current file contents plus current import and route wiring evidence instead of relying on an autogenerated classifier.
+      </p>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Production vs Test Split</h2>
+      <div class="findings" id="surface-breakdown"></div>
+    </section>
+
+    <section class="split">
+      <article class="panel">
+        <h2>Method</h2>
+        <ul>
+          <li>Walked the full current `src` inventory and then rechecked every explicit dead/defer exception against current imports, runtime wiring, and README/domain notes.</li>
+          <li>Split the appendix and summary into production/support files versus test files so the test surface is visible separately from the non-test surface.</li>
+          <li>Marked only high-confidence residue as `DEAD_CANDIDATE`: the stale API contracts folder and the one-time catalog backfill file.</li>
+          <li>Kept documented but currently weak/test-only seams in `DEFER` instead of overstating dead-code certainty, including planned review prewiring that is not dead but not fully settled yet.</li>
+          <li>Treated tests, fixtures, audit notes, JSON manifests, and `.d.ts` files as `ACTIVE_SUPPORT` unless a stronger exact call existed.</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Status Guide</h2>
+        <div class="legend" id="legend"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Key Findings</h2>
+      <div class="findings" id="findings"></div>
+    </section>
+
+    <section class="triptych">
+      <article class="panel">
+        <div class="small-label">Dead Calls</div>
+        <div id="dead-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Deferred Seams</div>
+        <div id="defer-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Protected / Active</div>
+        <div id="protected-calls"></div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Top-Level Domain Verdicts</h2>
+      <div class="findings" id="top-level-domains"></div>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Focused Subdomain Notes</h2>
+      <div class="findings" id="subdomain-focus"></div>
+    </section>
+
+    <section class="panel" style="margin-bottom: 18px;">
+      <h2>Folder Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="folder-search" type="search" placeholder="Filter folder path or note">
+        </label>
+        <label>
+          Status
+          <select id="folder-status"></select>
+        </label>
+      </div>
+      <div class="results" id="folder-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Folder</th>
+              <th>Status</th>
+              <th>Default File Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="folder-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>File Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="file-search" type="search" placeholder="Filter file path or note">
+        </label>
+        <label>
+          Kind
+          <select id="file-kind"></select>
+        </label>
+        <label>
+          Status
+          <select id="file-status"></select>
+        </label>
+      </div>
+      <div class="results" id="file-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Kind</th>
+              <th>Status</th>
+              <th>Source</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="file-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="./src-audit.data.js"></script>
+  <script>
+    const inventory = window.SRC_AUDIT_INVENTORY;
+    if (!inventory) throw new Error('Missing src-audit inventory.');
+
+    const STATUS_GLOSSARY = {
+      ACTIVE: 'Live runtime or domain logic that still belongs to the current application surface.',
+      ACTIVE_SUPPORT: 'Tests, fixtures, docs, typed contracts, manifests, and support seams kept intentionally.',
+      DEFER: 'Suspicious, deprecated, or test-only seam that is not proven dead enough to retire in this audit.',
+      DEAD_CANDIDATE: 'High-confidence dead surface with direct current-tree evidence.',
+      MIXED: 'Folder contains active code plus deferred or dead-candidate residue.',
+    };
+
+    const FILE_KIND_GLOSSARY = {
+      PRODUCTION: 'Non-test files under src. This bucket includes runtime code plus adjacent manifests, contracts, and docs that live with the product surface.',
+      TEST: 'Files under test folders or matching *.test.* / *.spec.*. This includes harnesses, fixtures, and audit notes kept inside test areas.',
+    };
+
+    const SURFACE_TOTALS = {
+      PRODUCTION: { files: 576, loc: 83911 },
+      TEST: { files: 775, loc: 97772 },
+    };
+
+    const EXPLICIT_FOLDER_RULES = [
+      { path: 'src', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Root of the src tree. Mixed because dead and deferred residue exists inside otherwise active domains.' },
+      { path: 'src/app', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Current application entry surface.' },
+      { path: 'src/app/api', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live server/runtime boundary under src/app/api, with one stale contracts pocket.' },
+      { path: 'src/app/api/contracts', status: 'DEAD_CANDIDATE', defaultFileStatus: 'DEAD_CANDIDATE', note: 'Legacy shape constants with no current consumers.' },
+      { path: 'src/app/cli', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live CLI entry surface and command dispatch layer.' },
+      { path: 'src/billing', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live billing/cost accounting domain.' },
+      { path: 'src/build', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Build/codegen support, not runtime product behavior.' },
+      { path: 'src/categories', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Category loading support boundary.' },
+      { path: 'src/core', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Repo-wide infrastructure: config, events, llm, storage.' },
+      { path: 'src/db', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Canonical SQLite persistence layer.' },
+      { path: 'src/engine', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Core field-rules engine is live, but a couple of documented seams are only test-reachable today.' },
+      { path: 'src/features', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Feature boundary umbrella. Mostly active, with a few deferred and dead pockets.' },
+      { path: 'src/features/catalog', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live catalog boundary with one obvious one-time backfill residue file.' },
+      { path: 'src/features/catalog/contracts', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Contract/support seam for catalog.' },
+      { path: 'src/features/catalog/products', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live product catalog runtime code plus one old backfill helper that now looks retired.' },
+      { path: 'src/features/category-authority', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Narrow authority-snapshot feature; root marker file is intentionally lightweight.' },
+      { path: 'src/features/category-authority/api', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live authority route surface.' },
+      { path: 'src/features/color-edition', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live color-edition finder feature.' },
+      { path: 'src/features/color-registry', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live color registry feature.' },
+      { path: 'src/features/crawl', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live crawl session/plugin runtime, but crawlPage.js currently looks like a test-only seam with public-API drift.' },
+      { path: 'src/features/extraction', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live extraction plugin pipeline.' },
+      { path: 'src/features/indexing', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live indexing control-plane and pipeline domain.' },
+      { path: 'src/features/indexing/api/contracts', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Runtime/indexing route-contract support surface.' },
+      { path: 'src/features/indexing/pipeline/shared/contracts', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Shared contract seam for indexing pipeline phases.' },
+      { path: 'src/features/review', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Pre-wired in-progress review backend/domain surface. It supports review-grid, component-review, and review-LLM work and should not be called dead.' },
+      { path: 'src/features/review/contracts', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Pre-enforcement review payload contracts kept intentionally as forward contract anchors.' },
+      { path: 'src/features/review-curation', status: 'DEFER', defaultFileStatus: 'DEFER', note: 'Deprecated compatibility facade kept in defer because planned review work still straddles old and new imports. Not dead until those consumers move.' },
+      { path: 'src/features/settings', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live settings route layer.' },
+      { path: 'src/features/settings-authority', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Canonical settings schema/persistence authority.' },
+      { path: 'src/features/studio', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live studio route/schema boundary and reseed support.' },
+      { path: 'src/field-rules', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Live field-rules compiler/runtime loading boundary.' },
+      { path: 'src/indexlab', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live runtime bridge/output summary layer, with one orphan-looking history builder still unresolved.' },
+      { path: 'src/ingest', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live field-studio compile pipeline, with catalogSeed.js now looking test-only.' },
+      { path: 'src/pipeline', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Live run/checkpoint orchestration, with urlQualityGate.js now looking test-only.' },
+      { path: 'src/shared', status: 'MIXED', defaultFileStatus: 'ACTIVE', note: 'Shared generic helpers remain active, but validationHelpers.js now looks like a stranded helper seam.' },
+      { path: 'src/tests', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Test-mode synthetic data and runner support.' },
+      { path: 'src/utils', status: 'ACTIVE', defaultFileStatus: 'ACTIVE', note: 'Low-level reusable utilities still referenced across active code.' },
+    ];
+
+    const EXPLICIT_FILE_OVERRIDES = new Map([
+      ['src/app/api/contracts/processStatusShape.js', { status: 'DEAD_CANDIDATE', note: 'Legacy process-status shape constant with no current importers.', source: 'exact-file' }],
+      ['src/app/api/contracts/runtimeTypeShapes.js', { status: 'DEAD_CANDIDATE', note: 'Legacy runtime trace/frontier shape constants with no current importers.', source: 'exact-file' }],
+      ['src/features/catalog/products/backfillProductJsons.js', { status: 'DEAD_CANDIDATE', note: 'One-time backfill helper. The file says so explicitly, and no current code imports it.', source: 'exact-file' }],
+      ['src/engine/constraintEvaluator.js', { status: 'DEFER', note: 'Documented engine seam, but only test-reachable in the current tree. Not dead enough to retire without checking external expectations.', source: 'exact-file' }],
+      ['src/engine/curationSuggestions.js', { status: 'DEFER', note: 'Documented engine seam, but only test-reachable in the current tree. Hold until consumer expectations are clarified.', source: 'exact-file' }],
+      ['src/features/crawl/crawlPage.js', { status: 'DEFER', note: 'Still documented as public API in README, but not exported from the current crawl barrel and only directly covered by tests.', source: 'exact-file' }],
+      ['src/indexlab/buildFieldHistories.js', { status: 'DEFER', note: 'Looks orphaned in the current tree even though its header describes a real use. Needs a narrower follow-up before deletion.', source: 'exact-file' }],
+      ['src/ingest/catalogSeed.js', { status: 'DEFER', note: 'Large helper surface now appears test-only. Keep for now until its intended runtime owner is confirmed.', source: 'exact-file' }],
+      ['src/pipeline/urlQualityGate.js', { status: 'DEFER', note: 'Only test/README reachable today. Keep out of dead bucket until pipeline callers are checked more directly.', source: 'exact-file' }],
+      ['src/shared/validationHelpers.js', { status: 'DEFER', note: 'Only the rejectUnknownKeys tests currently reach this helper. Suspicious, but not strong enough for retirement yet.', source: 'exact-file' }],
+      ['src/features/review-curation/index.js', { status: 'DEFER', note: 'Deprecated compatibility facade, but current consumers still import it from app/api, settings, indexing, and review route context while planned review work is still pre-wired.', source: 'exact-file' }],
+      ['src/features/category-authority/index.js', { status: 'ACTIVE_SUPPORT', note: 'Intentional marker barrel documenting that the old runtime authority modules were removed.', source: 'exact-file' }],
+      ['src/tests/testRunner.js', { status: 'ACTIVE_SUPPORT', note: 'Intentional future stub kept so test-mode imports do not break while validation stage wiring is unfinished.', source: 'exact-file' }],
+    ]);
+
+    const KEY_FINDINGS = [
+      { status: 'DEAD_CANDIDATE', title: 'Dead folder inside src/app/api', note: 'The current server/runtime boundary is live, but src/app/api/contracts is stale residue: two constants files, no current importers.', paths: ['src/app/api/contracts'] },
+      { status: 'DEAD_CANDIDATE', title: 'One clear dead single-file residue in catalog products', note: 'src/features/catalog/products/backfillProductJsons.js is explicitly a one-time backfill helper and no current code imports it.', paths: ['src/features/catalog/products/backfillProductJsons.js'] },
+      { status: 'DEFER', title: 'Compatibility facade still present, but not dead yet', note: 'src/features/review-curation/index.js is scheduled for retirement, but current route/context code still imports it while review-grid, component-review, and review-LLM work is still pre-wired.', paths: ['src/features/review-curation/index.js'] },
+      { status: 'DEFER', title: 'Several documented seams are only test-reachable today', note: 'constraintEvaluator.js, curationSuggestions.js, crawlPage.js, buildFieldHistories.js, catalogSeed.js, urlQualityGate.js, and validationHelpers.js need a narrower follow-up before any retirement call.', paths: ['src/engine/constraintEvaluator.js', 'src/engine/curationSuggestions.js', 'src/features/crawl/crawlPage.js', 'src/indexlab/buildFieldHistories.js', 'src/ingest/catalogSeed.js', 'src/pipeline/urlQualityGate.js', 'src/shared/validationHelpers.js'] },
+      { status: 'ACTIVE', title: 'Review backend is pre-wired, not dead', note: 'The review domain is still in progress, but runtime routes, bootstrap wiring, and public exports already exist. Review-grid, component-review, and review-LLM support should stay active/support or defer, not dead.', paths: ['src/features/review'] },
+    ];
+
+    const TOP_LEVEL_DOMAIN_NOTES = [
+      { path: 'src/app', title: 'Application entry surface', note: 'Current app boundary. api stays live; cli stays live; only the nested contracts pocket is called dead in this pass.' },
+      { path: 'src/billing', title: 'Billing', note: 'Small live accounting/cost boundary. No dead calls made here.' },
+      { path: 'src/build', title: 'Build support', note: 'Support-only surface: codegen/build helpers, not product runtime.' },
+      { path: 'src/categories', title: 'Categories', note: 'Loader/support boundary retained as active support.' },
+      { path: 'src/core', title: 'Core infrastructure', note: 'Config, events, llm, and storage are active repo-wide infrastructure and remain live.' },
+      { path: 'src/db', title: 'Database layer', note: 'Canonical persistence surface. Tests are heavy here, but the runtime layer is active.' },
+      { path: 'src/engine', title: 'Engine', note: 'Field-rules engine is active. Two documented seams stay deferred rather than dead.' },
+      { path: 'src/features', title: 'Feature umbrella', note: 'Largest runtime area. Mostly active, with one dead file, one dead folder pocket, a few deferred seams, and a large separately-counted test surface.' },
+      { path: 'src/field-rules', title: 'Field rules', note: 'Compiler/runtime load boundary remains active.' },
+      { path: 'src/indexlab', title: 'Indexlab', note: 'Mostly active bridge/output layer. buildFieldHistories.js stays deferred.' },
+      { path: 'src/ingest', title: 'Ingest', note: 'Active compile/seed pipeline. catalogSeed.js stays deferred until ownership is clearer.' },
+      { path: 'src/pipeline', title: 'Pipeline', note: 'Run/checkpoint orchestration remains active. urlQualityGate.js is suspicious but not retired here.' },
+      { path: 'src/shared', title: 'Shared helpers', note: 'Generic helpers remain active overall. validationHelpers.js is the only deferred seam here.' },
+      { path: 'src/tests', title: 'Test-mode support', note: 'Intentional support surface for synthetic runs and test-mode integration.' },
+      { path: 'src/utils', title: 'Utilities', note: 'Still referenced broadly across live runtime code.' },
+    ];
+
+    const SUBDOMAIN_FOCUS_NOTES = [
+      { path: 'src/app/api', title: 'src/app/api', note: 'Live HTTP/runtime boundary. bootstrap, routes, services, and tests remain active; only contracts is called dead.', focus: ['src/app/api/bootstrap', 'src/app/api/routes', 'src/app/api/services', 'src/app/api/contracts'] },
+      { path: 'src/core', title: 'src/core', note: 'Reviewed as active infrastructure. config and llm dominate the surface; tests/docs stay support-only.', focus: ['src/core/config', 'src/core/events', 'src/core/llm', 'src/core/storage'] },
+      { path: 'src/db', title: 'src/db', note: 'SQLite-backed stores and DB tests remain live support for current runtime behavior.', focus: ['src/db/stores', 'src/db/tests'] },
+      { path: 'src/features/catalog', title: 'src/features/catalog', note: 'Active catalog runtime. The only dead call here is the explicit one-time backfill helper under products.', focus: ['src/features/catalog/contracts', 'src/features/catalog/products'] },
+      { path: 'src/features/crawl', title: 'src/features/crawl', note: 'Session/plugin runtime is active. crawlPage.js is left deferred because documentation and exports drift.', focus: ['src/features/crawl/index.js', 'src/features/crawl/crawlPage.js'] },
+      { path: 'src/features/indexing', title: 'src/features/indexing', note: 'Largest live domain in src. api, orchestration, pipeline, validation, and runtime/search support all stay active.', focus: ['src/features/indexing/api', 'src/features/indexing/orchestration', 'src/features/indexing/pipeline', 'src/features/indexing/validation', 'src/features/indexing/search'] },
+      { path: 'src/features/review', title: 'src/features/review', note: 'Review backend/domain surface is pre-wired and still in progress, but it remains active because runtime routes, CLI access, and public exports already exist for review-grid, component-review, and review-LLM work.', focus: ['src/features/review/api', 'src/features/review/contracts', 'src/features/review/domain', 'src/features/review/services'] },
+      { path: 'src/features/review-curation', title: 'src/features/review-curation', note: 'Deprecated re-export facade. Deferred, not dead, because the documented 4 consumers still exist and the review migration is not finished.', focus: ['src/features/review-curation/index.js'] },
+      { path: 'src/features/settings-authority', title: 'src/features/settings-authority', note: 'Canonical settings schema/persistence authority remains active and should stay out of any dead-code sweep.', focus: ['src/features/settings-authority'] },
+      { path: 'src/features/studio', title: 'src/features/studio', note: 'Studio schema and reseed support remain active; reseed files are imported by specDbRuntime.', focus: ['src/features/studio'] },
+      { path: 'src/indexlab', title: 'src/indexlab', note: 'Output-summary/runtime bridge stays live, with only buildFieldHistories.js kept in defer.', focus: ['src/indexlab/buildFieldHistories.js'] },
+      { path: 'src/ingest', title: 'src/ingest', note: 'Compile/validate/load/save map pipeline stays active. catalogSeed.js remains unresolved, not retired.', focus: ['src/ingest/index.js', 'src/ingest/catalogSeed.js'] },
+      { path: 'src/pipeline', title: 'src/pipeline', note: 'Checkpoint flow remains active. urlQualityGate.js is suspicious, but there is not enough proof yet to call it dead.', focus: ['src/pipeline/checkpoint', 'src/pipeline/urlQualityGate.js'] },
+      { path: 'src/shared', title: 'src/shared', note: 'General helpers remain live. validationHelpers.js is the only helper seam called out for follow-up.', focus: ['src/shared/validationHelpers.js'] },
+    ];
+
+    const numberFmt = new Intl.NumberFormat('en-US');
+    const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+    function escapeHtml(value) {
+      return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function statusPill(status) {
+      return `<span class="status-pill status-${status}">${escapeHtml(status.replaceAll('_', ' '))}</span>`;
+    }
+
+    function kindPill(kind) {
+      return `<span class="kind-pill kind-${kind}">${escapeHtml(kind === 'PRODUCTION' ? 'PRODUCTION / SUPPORT' : 'TEST')}</span>`;
+    }
+
+    function pathList(paths) {
+      if (!paths || paths.length === 0) return '<div class="empty">None.</div>';
+      return `<div class="path-list">${paths.map((item) => `<span class="path-pill"><code>${escapeHtml(item)}</code></span>`).join('')}</div>`;
+    }
+
+    function countFoldersUnder(path) {
+      return inventory.folders.filter((folder) => folder === path || folder.startsWith(`${path}/`)).length;
+    }
+
+    function countFilesUnder(path) {
+      return inventory.files.filter((file) => file.startsWith(`${path}/`)).length;
+    }
+
+    function genericSupportFolderRule(folder) {
+      if (/(^|\/)(tests|test)(\/|$)/.test(folder)) return { path: folder, status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Test coverage / fixture / characterization folder.', source: 'generic-tests' };
+      if (/(^|\/)(fixtures|helpers)(\/|$)/.test(folder) && folder.includes('/tests')) return { path: folder, status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Test support helper/fixture folder.', source: 'generic-tests' };
+      return null;
+    }
+
+    function nearestFolderRule(folder) {
+      const generic = genericSupportFolderRule(folder);
+      if (generic) return generic;
+      const matches = EXPLICIT_FOLDER_RULES.filter((rule) => folder === rule.path || folder.startsWith(`${rule.path}/`));
+      if (matches.length === 0) return { path: 'src', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Inherited root fallback.', source: 'fallback' };
+      const best = matches.sort((a, b) => b.path.length - a.path.length)[0];
+      return { ...best, source: 'folder-rule' };
+    }
+
+    function isTestFile(file) {
+      return /(^|\/)(tests|test)(\/|$)|\.(test|spec)\.[^.]+$/i.test(file);
+    }
+
+    function deriveFileKind(file) {
+      return isTestFile(file) ? 'TEST' : 'PRODUCTION';
+    }
+
+    function deriveFileAudit(file) {
+      const exact = EXPLICIT_FILE_OVERRIDES.get(file);
+      if (exact) return { path: file, ...exact };
+      if (isTestFile(file)) return { path: file, status: 'ACTIVE_SUPPORT', note: 'Test coverage / fixture / audit note.', source: 'generic-tests' };
+      if (file.endsWith('.audit.md') || file.endsWith('README.md') || file.endsWith('DOMAIN.md')) return { path: file, status: 'ACTIVE_SUPPORT', note: 'Documentation or audit note for a live boundary.', source: 'generic-doc' };
+      if (file.endsWith('.d.ts') || file.endsWith('.json')) return { path: file, status: 'ACTIVE_SUPPORT', note: 'Typed contract, manifest, or static support artifact.', source: 'generic-support' };
+      const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : 'src';
+      const folderRule = nearestFolderRule(folder);
+      return { path: file, status: folderRule.defaultFileStatus, note: folderRule.note, source: folderRule.path };
+    }
+
+    function deriveFolderAudit(folder) {
+      const generic = genericSupportFolderRule(folder);
+      if (generic) return generic;
+      const exact = EXPLICIT_FOLDER_RULES.find((rule) => rule.path === folder);
+      if (exact) return { ...exact, source: 'exact-folder' };
+      const inherited = nearestFolderRule(folder);
+      return { path: folder, status: inherited.status === 'MIXED' ? 'ACTIVE' : inherited.status, defaultFileStatus: inherited.defaultFileStatus, note: `Inherited from ${inherited.path}: ${inherited.note}`, source: inherited.path };
+    }
+
+    const folderRows = inventory.folders.map((folder) => deriveFolderAudit(folder));
+    const fileRows = inventory.files.map((file) => ({ ...deriveFileAudit(file), kind: deriveFileKind(file) }));
+
+    function countBy(rows) {
+      const counts = new Map();
+      for (const row of rows) counts.set(row.status, (counts.get(row.status) || 0) + 1);
+      return Object.fromEntries([...counts.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+    }
+
+    function countByKind(rows) {
+      const counts = new Map();
+      for (const row of rows) counts.set(row.kind, (counts.get(row.kind) || 0) + 1);
+      return Object.fromEntries([...counts.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+    }
+
+    function countFilesUnderByKind(path, kind) {
+      return fileRows.filter((row) => row.path.startsWith(`${path}/`) && row.kind === kind).length;
+    }
+
+    function renderManualCards(elId, rows) {
+      document.getElementById(elId).innerHTML = rows.map((row) => {
+        const audit = deriveFolderAudit(row.path);
+        const fileCount = countFilesUnder(row.path);
+        const folderCount = countFoldersUnder(row.path);
+        const productionCount = countFilesUnderByKind(row.path, 'PRODUCTION');
+        const testCount = countFilesUnderByKind(row.path, 'TEST');
+        const chips = [
+          `<span class="chip">${escapeHtml(numberFmt.format(productionCount))} prod/support</span>`,
+          `<span class="chip">${escapeHtml(numberFmt.format(testCount))} test</span>`,
+          `<span class="chip">${escapeHtml(numberFmt.format(fileCount))} total files</span>`,
+          `<span class="chip">${escapeHtml(numberFmt.format(folderCount))} folders</span>`,
+        ].join('');
+        return `<article class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;"><div><div class="small-label">${escapeHtml(row.title)}</div><h3 style="margin:8px 0 0;"><code>${escapeHtml(row.path)}</code></h3></div>${statusPill(audit.status)}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">${chips}</div><p>${escapeHtml(row.note)}</p>${pathList(row.focus || [])}</article>`;
+      }).join('');
+    }
+
+    function renderSurfaceBreakdown() {
+      const counts = countByKind(fileRows);
+      const rows = [
+        {
+          title: 'Production / Support Surface',
+          pill: kindPill('PRODUCTION'),
+          note: FILE_KIND_GLOSSARY.PRODUCTION,
+          chips: [
+            `${numberFmt.format(counts.PRODUCTION || 0)} files`,
+            `${numberFmt.format(SURFACE_TOTALS.PRODUCTION.loc)} LOC`,
+          ],
+        },
+        {
+          title: 'Test Surface',
+          pill: kindPill('TEST'),
+          note: FILE_KIND_GLOSSARY.TEST,
+          chips: [
+            `${numberFmt.format(counts.TEST || 0)} files`,
+            `${numberFmt.format(SURFACE_TOTALS.TEST.loc)} LOC`,
+          ],
+        },
+        {
+          title: 'Planned Review Rule',
+          pill: statusPill('DEFER'),
+          note: 'Review-grid, component-review, and review-LLM prewiring is not called dead here. Those files stay active/support or defer until the backend and consumer migration is actually finished.',
+          chips: [
+            'Keep prewiring out of dead bucket',
+            'Compatibility facade remains defer-only',
+          ],
+        },
+      ];
+
+      document.getElementById('surface-breakdown').innerHTML = rows.map((row) => `<article class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;"><h3>${escapeHtml(row.title)}</h3>${row.pill}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">${row.chips.map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join('')}</div><p>${escapeHtml(row.note)}</p></article>`).join('');
+    }
+
+    function renderSummary() {
+      const counts = countBy(fileRows);
+      const kindCounts = countByKind(fileRows);
+      document.getElementById('hero-copy').textContent = `Manual audit of the current src tree only. The appendix covers all ${numberFmt.format(inventory.fileCount)} current src files, split into ${numberFmt.format(kindCounts.PRODUCTION || 0)} production/support files (${numberFmt.format(SURFACE_TOTALS.PRODUCTION.loc)} LOC) and ${numberFmt.format(kindCounts.TEST || 0)} test files (${numberFmt.format(SURFACE_TOTALS.TEST.loc)} LOC). Explicit dead/defer calls were then revalidated from current file contents plus current import and runtime wiring evidence.`;
+      document.getElementById('hero-meta').innerHTML = [`Inventory generated ${dateFmt.format(new Date(inventory.generatedAt))}`, `${numberFmt.format(inventory.folderCount)} folders`, `${numberFmt.format(inventory.fileCount)} files`, `${numberFmt.format(kindCounts.PRODUCTION || 0)} prod/support`, `${numberFmt.format(kindCounts.TEST || 0)} test`].map((text) => `<span class="chip">${escapeHtml(text)}</span>`).join('');
+      document.getElementById('stats').innerHTML = [
+        ['Files', numberFmt.format(inventory.fileCount), 'Every src file is listed in the file appendix below.'],
+        ['Folders', numberFmt.format(inventory.folderCount), 'Every src folder is listed in the folder appendix below.'],
+        ['Production / Support Files', numberFmt.format(kindCounts.PRODUCTION || 0), 'Non-test src files: runtime code plus nearby support artifacts that live with the product surface.'],
+        ['Production / Support LOC', numberFmt.format(SURFACE_TOTALS.PRODUCTION.loc), 'Total lines across the non-test src surface reviewed in this pass.'],
+        ['Test Files', numberFmt.format(kindCounts.TEST || 0), 'Files under test folders or matching *.test.* / *.spec.*.'],
+        ['Test LOC', numberFmt.format(SURFACE_TOTALS.TEST.loc), 'Total lines across the current src test surface.'],
+        ['Dead Files', numberFmt.format(fileRows.filter((row) => row.status === 'DEAD_CANDIDATE').length), 'Only high-confidence dead calls made in this pass.'],
+        ['Dead Folders', numberFmt.format(folderRows.filter((row) => row.status === 'DEAD_CANDIDATE').length), 'Current dead folder calls inside src.'],
+        ['Deferred Files', numberFmt.format(fileRows.filter((row) => row.status === 'DEFER').length), 'Suspicious seams kept out of the dead bucket pending follow-up.'],
+        ['Active Files', numberFmt.format((counts.ACTIVE || 0) + (counts.ACTIVE_SUPPORT || 0)), 'Files retained as live runtime or intentional support surface.'],
+      ].map(([label, value, note]) => `<article class="stat"><div class="small-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div><div class="stat-note">${escapeHtml(note)}</div></article>`).join('');
+      renderSurfaceBreakdown();
+      document.getElementById('legend').innerHTML = Object.entries(STATUS_GLOSSARY).map(([status, desc]) => `<div class="card">${statusPill(status)}<p style="margin-top:10px;">${escapeHtml(desc)}</p></div>`).join('');
+      document.getElementById('findings').innerHTML = KEY_FINDINGS.map((row) => `<article class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;"><h3>${escapeHtml(row.title)}</h3>${statusPill(row.status)}</div><p>${escapeHtml(row.note)}</p>${pathList(row.paths)}</article>`).join('');
+      document.getElementById('dead-calls').innerHTML = pathList(['src/app/api/contracts', 'src/app/api/contracts/processStatusShape.js', 'src/app/api/contracts/runtimeTypeShapes.js', 'src/features/catalog/products/backfillProductJsons.js']);
+      document.getElementById('defer-calls').innerHTML = pathList(['src/features/review-curation/index.js', 'src/engine/constraintEvaluator.js', 'src/engine/curationSuggestions.js', 'src/features/crawl/crawlPage.js', 'src/indexlab/buildFieldHistories.js', 'src/ingest/catalogSeed.js', 'src/pipeline/urlQualityGate.js', 'src/shared/validationHelpers.js']);
+      document.getElementById('protected-calls').innerHTML = pathList(['src/features/review', 'src/features/indexing', 'src/features/settings-authority', 'src/app/api', 'src/db']);
+      renderManualCards('top-level-domains', TOP_LEVEL_DOMAIN_NOTES);
+      renderManualCards('subdomain-focus', SUBDOMAIN_FOCUS_NOTES);
+    }
+
+    function populateSelect(el, values) {
+      el.innerHTML = ['<option value="ALL">ALL</option>', ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join('');
+    }
+
+    function folderRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${statusPill(row.status)}</td><td>${statusPill(row.defaultFileStatus)}</td><td class="note"><strong>${escapeHtml(row.note)}</strong><div>${escapeHtml(`Source: ${row.source}`)}</div></td></tr>`;
+    }
+
+    function fileRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${kindPill(row.kind)}</td><td>${statusPill(row.status)}</td><td><code>${escapeHtml(row.source)}</code></td><td class="note"><strong>${escapeHtml(row.note)}</strong></td></tr>`;
+    }
+
+    function setupFolderTable() {
+      const searchEl = document.getElementById('folder-search');
+      const statusEl = document.getElementById('folder-status');
+      const bodyEl = document.getElementById('folder-body');
+      const resultsEl = document.getElementById('folder-results');
+      populateSelect(statusEl, [...new Set(folderRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const status = statusEl.value;
+        const rows = folderRows.filter((row) => (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.note}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(folderRows.length)} folders shown`;
+        bodyEl.innerHTML = rows.map(folderRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    function setupFileTable() {
+      const searchEl = document.getElementById('file-search');
+      const kindEl = document.getElementById('file-kind');
+      const statusEl = document.getElementById('file-status');
+      const bodyEl = document.getElementById('file-body');
+      const resultsEl = document.getElementById('file-results');
+      populateSelect(kindEl, [...new Set(fileRows.map((row) => row.kind))].sort());
+      populateSelect(statusEl, [...new Set(fileRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const kind = kindEl.value;
+        const status = statusEl.value;
+        const rows = fileRows.filter((row) => (kind === 'ALL' || row.kind === kind) && (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.kind} ${row.note} ${row.source}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(fileRows.length)} files shown`;
+        bodyEl.innerHTML = rows.map(fileRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      kindEl.addEventListener('change', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    renderSummary();
+    setupFolderTable();
+    setupFileTable();
+  </script>
+</body>
+</html>

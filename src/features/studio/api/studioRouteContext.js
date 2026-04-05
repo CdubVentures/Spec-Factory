@@ -1,4 +1,4 @@
-import { loadFieldStudioMap, saveFieldStudioMap, validateFieldStudioMap } from '../../../ingest/categoryCompile.js';
+import { saveFieldStudioMap, validateFieldStudioMap } from '../../../ingest/categoryCompile.js';
 import { buildFieldLabelsMap } from '../../review/domain/index.js';
 import { cleanVariant } from '../../catalog/index.js';
 import { runEnumConsistencyReview } from '../../indexing/index.js';
@@ -17,7 +17,7 @@ export function createStudioRouteContext(options = {}) {
 
   return {
     jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
-    listFiles, fs, path, sessionCache, loadFieldStudioMap, saveFieldStudioMap,
+    listFiles, fs, path, sessionCache, saveFieldStudioMap,
     validateFieldStudioMap, invalidateFieldRulesCache, buildFieldLabelsMap,
     getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
     reviewLayoutByCategory, cleanVariant,

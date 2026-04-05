@@ -128,6 +128,7 @@ export async function buildFieldRulesSignature(helperRoot, category) {
   const generatedRoot = path.join(helperRoot, category, '_generated');
   const componentRoot = path.join(generatedRoot, 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
+  const controlPlane = path.join(helperRoot, category, '_control_plane');
 
   const [
     fieldRulesSig,
@@ -136,7 +137,8 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     crossRulesSig,
     uiCatalogSig,
     componentDbSig,
-    overridesSig
+    overridesSig,
+    studioMapSig,
   ] = await Promise.all([
     statSignature(path.join(generatedRoot, 'field_rules.json'), 'field_rules'),
     statSignature(path.join(generatedRoot, 'known_values.json'), 'known_values'),
@@ -144,7 +146,8 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     statSignature(path.join(generatedRoot, 'cross_validation_rules.json'), 'cross_validation_rules'),
     statSignature(path.join(generatedRoot, 'ui_field_catalog.json'), 'ui_field_catalog'),
     dirJsonSignature(componentRoot, 'component_db'),
-    dirJsonSignature(overrideDir, 'component_overrides')
+    dirJsonSignature(overrideDir, 'component_overrides'),
+    statSignature(path.join(controlPlane, 'field_studio_map.json'), 'studio_map'),
   ]);
 
   return [
@@ -154,7 +157,8 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     crossRulesSig,
     uiCatalogSig,
     componentDbSig,
-    overridesSig
+    overridesSig,
+    studioMapSig,
   ].join('|');
 }
 

@@ -526,7 +526,7 @@ export async function persistUserSettingsSections(options = {}) {
     }
   }
 
-  // JSON fallback (no appDb — test environment or early boot)
+  // JSON fallback (no appDb — test-only path; production callers always pass appDb)
   const prev = userSettingsPersistQueue;
   const next = (async () => {
     await prev.catch(() => {});

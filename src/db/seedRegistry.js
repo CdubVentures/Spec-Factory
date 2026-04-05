@@ -176,7 +176,7 @@ export function buildReseedSurfaces(deps) {
       key: 'color_edition',
       label: 'Color Edition',
       scope: 'reseed',
-      tables: ['color_edition_finder'],
+      tables: ['color_edition_finder', 'color_edition_finder_runs'],
       shouldRun: null,
       execute: (ctx) => deps.rebuildColorEditionFinderFromJson({
         specDb: ctx.db,

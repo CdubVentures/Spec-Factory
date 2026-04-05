@@ -673,5 +673,33 @@ export function prepareStatements(db) {
     _deleteColorEditionFinder: db.prepare(
       'DELETE FROM color_edition_finder WHERE category = ? AND product_id = ?'
     ),
+
+    // --- Color & Edition Finder Runs ---
+    _insertColorEditionFinderRun: db.prepare(`
+      INSERT INTO color_edition_finder_runs (
+        category, product_id, run_number, ran_at, model,
+        fallback_used, cooldown_until, selected_json, prompt_json, response_json
+      ) VALUES (
+        @category, @product_id, @run_number, @ran_at, @model,
+        @fallback_used, @cooldown_until, @selected_json, @prompt_json, @response_json
+      )
+      ON CONFLICT(category, product_id, run_number) DO UPDATE SET
+        ran_at = excluded.ran_at, model = excluded.model,
+        fallback_used = excluded.fallback_used, cooldown_until = excluded.cooldown_until,
+        selected_json = excluded.selected_json, prompt_json = excluded.prompt_json,
+        response_json = excluded.response_json
+    `),
+    _listColorEditionFinderRuns: db.prepare(
+      'SELECT * FROM color_edition_finder_runs WHERE category = ? AND product_id = ? ORDER BY run_number ASC'
+    ),
+    _getLatestColorEditionFinderRun: db.prepare(
+      'SELECT * FROM color_edition_finder_runs WHERE category = ? AND product_id = ? ORDER BY run_number DESC LIMIT 1'
+    ),
+    _deleteColorEditionFinderRunByNumber: db.prepare(
+      'DELETE FROM color_edition_finder_runs WHERE category = ? AND product_id = ? AND run_number = ?'
+    ),
+    _deleteAllColorEditionFinderRuns: db.prepare(
+      'DELETE FROM color_edition_finder_runs WHERE category = ? AND product_id = ?'
+    ),
   };
 }

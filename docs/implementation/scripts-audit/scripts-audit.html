@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory Scripts Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --surface: rgba(255, 251, 244, 0.92);
+    --ink: #151a1e;
+    --muted: #616a72;
+    --border: rgba(36, 31, 20, 0.12);
+    --border-strong: rgba(36, 31, 20, 0.22);
+    --shadow: 0 22px 60px rgba(40, 26, 10, 0.12);
+    --teal: #0f766e;
+    --teal-dim: rgba(15, 118, 110, 0.12);
+    --red: #b14639;
+    --red-dim: rgba(177, 70, 57, 0.12);
+    --gold: #b7791f;
+    --gold-dim: rgba(183, 121, 31, 0.13);
+    --blue: #275d8a;
+    --blue-dim: rgba(39, 93, 138, 0.11);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 34%),
+      radial-gradient(circle at top right, rgba(183, 121, 31, 0.08), transparent 30%),
+      linear-gradient(180deg, #faf6ee 0%, #f4eee2 58%, #efe6d8 100%);
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(30, 20, 8, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 20, 8, 0.018) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 94%);
+  }
+  .shell {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 30px 22px 80px;
+  }
+  .mono, .chip, .eyebrow, .status-pill, .small-label, input, select, th {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .hero, .panel, .stat, .callout, .card {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+  }
+  .hero, .panel, .callout, .card, .stat { padding: 24px; }
+  .hero { margin-bottom: 18px; position: relative; overflow: hidden; }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -100px -140px auto;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.16), rgba(15, 118, 110, 0));
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 12px;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: clamp(2rem, 3vw, 3.4rem); line-height: 1; margin-bottom: 14px; }
+  h2 { font-size: 1.2rem; margin-bottom: 14px; }
+  h3 { font-size: 1rem; }
+  p { line-height: 1.5; color: var(--muted); }
+  .hero-meta, .legend, .stats, .findings, .triptych, .split {
+    display: grid;
+    gap: 16px;
+  }
+  .hero-meta {
+    margin-top: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 9px 12px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(36, 31, 20, 0.12);
+  }
+  .callout, .panel { margin-bottom: 18px; }
+  .callout strong { display: block; margin-bottom: 10px; }
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 18px;
+  }
+  .stat-value { font-size: 2rem; margin: 8px 0 10px; }
+  .stat-note { font-size: 13px; color: var(--muted); }
+  .small-label {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .split { grid-template-columns: 1.1fr 0.9fr; margin-bottom: 18px; }
+  .triptych { grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; }
+  .legend, .findings { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .path-list { display: grid; gap: 8px; }
+  .path-pill {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.58);
+    padding: 6px 10px;
+    word-break: break-word;
+  }
+  .path-pill code, td code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .status-ACTIVE { color: var(--teal); background: var(--teal-dim); border-color: rgba(15, 118, 110, 0.2); }
+  .status-ACTIVE_SUPPORT { color: var(--blue); background: var(--blue-dim); border-color: rgba(39, 93, 138, 0.18); }
+  .status-DEFER { color: var(--gold); background: var(--gold-dim); border-color: rgba(183, 121, 31, 0.22); }
+  .status-DEAD_CANDIDATE { color: var(--red); background: var(--red-dim); border-color: rgba(177, 70, 57, 0.22); }
+  .status-MIXED { color: var(--ink); background: rgba(37, 47, 56, 0.08); border-color: rgba(37, 47, 56, 0.16); }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .filters label {
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--ink);
+    font-size: 13px;
+    outline: none;
+  }
+  .results { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .table-wrap {
+    overflow: auto;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.62);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1040px;
+  }
+  th, td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(36, 31, 20, 0.08);
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    position: sticky;
+    top: 0;
+    background: rgba(248, 241, 230, 0.98);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .note strong { display: block; margin-bottom: 6px; color: var(--ink); }
+  .empty {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(26, 32, 37, 0.04);
+    color: var(--muted);
+  }
+  @media (max-width: 1080px) {
+    .split, .triptych { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .shell { padding: 18px 14px 56px; }
+    .hero, .panel, .card, .stat, .callout { border-radius: 18px; }
+    .hero, .panel, .callout, .card, .stat { padding: 20px; }
+    .filters label { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Manual Scripts Audit</div>
+      <h1>Spec Factory `scripts/**` Audit</h1>
+      <p id="hero-copy"></p>
+      <div class="hero-meta" id="hero-meta"></div>
+    </section>
+
+    <section class="callout">
+      <strong>Scope Discipline</strong>
+      <p>
+        This report is only for <code>scripts/**</code>. The inventory files only guarantee every current path is present;
+        every status and note in this report is hand-authored after reviewing the actual script contents, outputs, and repo drift.
+      </p>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="split">
+      <article class="panel">
+        <h2>Method</h2>
+        <ul>
+          <li>Reviewed every file directly because the scripts surface is small enough to classify one by one.</li>
+          <li>Marked only one high-confidence dead file: the EloShapes wrapper that points at a missing module.</li>
+          <li>Used <code>DEFER</code> for scripts that still look potentially useful but currently drift through missing output roots, hardcoded run IDs, or milestone-specific assumptions.</li>
+          <li>Kept live browser audits, codegen, schema docs, health checks, and generic extraction utilities in the active/support buckets.</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Status Guide</h2>
+        <div class="legend" id="legend"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Key Findings</h2>
+      <div class="findings" id="findings"></div>
+    </section>
+
+    <section class="triptych">
+      <article class="panel">
+        <div class="small-label">Dead Calls</div>
+        <div id="dead-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Deferred Follow-Up</div>
+        <div id="defer-calls"></div>
+      </article>
+      <article class="panel">
+        <div class="small-label">Protected / Active</div>
+        <div id="protected-calls"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Top-Level Verdicts</h2>
+      <div class="findings" id="top-level-domains"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Focused Groups</h2>
+      <div class="findings" id="subdomain-focus"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Folder Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="folder-search" type="search" placeholder="Filter folder path or note">
+        </label>
+        <label>
+          Status
+          <select id="folder-status"></select>
+        </label>
+      </div>
+      <div class="results" id="folder-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Folder</th>
+              <th>Status</th>
+              <th>Default File Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="folder-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>File Audit</h2>
+      <div class="filters">
+        <label>
+          Search
+          <input id="file-search" type="search" placeholder="Filter file path or note">
+        </label>
+        <label>
+          Status
+          <select id="file-status"></select>
+        </label>
+      </div>
+      <div class="results" id="file-results"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Status</th>
+              <th>Rule Source</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="file-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="./scripts-audit.data.js"></script>
+  <script>
+    const inventory = window.SCRIPTS_AUDIT_INVENTORY;
+    if (!inventory) throw new Error('Missing scripts-audit inventory.');
+
+    const STATUS_GLOSSARY = {
+      ACTIVE: 'Current script that is directly tied to an active workflow or build path.',
+      ACTIVE_SUPPORT: 'Useful manual utility, health check, doc generator, extraction helper, or live audit retained intentionally.',
+      DEFER: 'Potentially useful script that currently drifts through stale output roots, hardcoded run IDs, or historical assumptions.',
+      DEAD_CANDIDATE: 'High-confidence dead or broken script in the current repo shape.',
+      MIXED: 'Folder contains a mix of active, support, deferred, and dead surfaces.',
+    };
+
+    const EXPLICIT_FOLDER_RULES = [
+      { path: 'scripts', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Small manual-scripts surface containing one active workflow script, several useful support utilities, and a meaningful deferred/historical residue pocket.' },
+      { path: 'scripts/live-audits', status: 'ACTIVE_SUPPORT', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Manual Playwright live-audit suite retained as on-demand crawl/browser proof tooling.' },
+    ];
+
+    const EXPLICIT_FILE_OVERRIDES = new Map([
+      ['scripts/chatmock-ctl.bat', { status: 'ACTIVE_SUPPORT', note: 'Operational helper for a local ChatMock docker-compose stack outside this repo.', source: 'exact-file' }],
+      ['scripts/demo-improvements.js', { status: 'DEFER', note: 'Demo-specific CLI benchmark/report script. Still potentially useful, but not wired into current repo workflows.', source: 'exact-file' }],
+      ['scripts/eloshapes_fetch.py', { status: 'DEAD_CANDIDATE', note: 'Thin wrapper imports fetch_eloshapes_supabase, but that module is not present anywhere in the current repo.', source: 'exact-file' }],
+      ['scripts/extract_pdf_any.py', { status: 'ACTIVE_SUPPORT', note: 'Generic PDF line-pair extraction utility.', source: 'exact-file' }],
+      ['scripts/extract_pdf_kv.py', { status: 'ACTIVE_SUPPORT', note: 'Generic PDF key/value extraction backend with parser/ocr options.', source: 'exact-file' }],
+      ['scripts/full_validation.js', { status: 'DEFER', note: 'Manual validation mega-script with a hardcoded default run ID and historical “96-check” assumptions. Keep for follow-up, not current-proof use.', source: 'exact-file' }],
+      ['scripts/generate_review_button_color_matrix.py', { status: 'DEFER', note: 'Review-color matrix generator still writes to a stale top-level implementation/ path instead of docs/implementation.', source: 'exact-file' }],
+      ['scripts/generate-llm-route-field-usage-audit.js', { status: 'DEFER', note: 'Thin wrapper around llmRouteFieldUsageAudit.js; inherits its stale implementation/gui-persistence output path.', source: 'exact-file' }],
+      ['scripts/generate-studio-types.js', { status: 'ACTIVE', note: 'Current GUI build/dev codegen script. tools/gui-react/package.json runs this on dev and build.', source: 'exact-file' }],
+      ['scripts/generateAstKnobInventory.js', { status: 'DEFER', note: 'Useful inventory logic, but its snapshot write path still targets missing implementation/ai-indexing-plans instead of docs/implementation/ai-indexing-plans.', source: 'exact-file' }],
+      ['scripts/generateFullTestSuiteAudit.mjs', { status: 'DEFER', note: 'Historical full-suite test audit generator with hardcoded proof strings and old test-count assumptions.', source: 'exact-file' }],
+      ['scripts/generateMissingKnobsAudit.js', { status: 'DEFER', note: 'Workbook generator includes hardcoded summary numbers and writes to a missing docs/config output root.', source: 'exact-file' }],
+      ['scripts/generatePanelStyleDriftMatrix.js', { status: 'DEFER', note: 'Panel-style drift generator still points at missing implementation/ui-styling-system-standardization paths.', source: 'exact-file' }],
+      ['scripts/generatePanelStyleRemediationQueue.js', { status: 'DEFER', note: 'Panel-style remediation queue generator still points at missing implementation/ui-styling-system-standardization paths.', source: 'exact-file' }],
+      ['scripts/generateSchemaReference.js', { status: 'ACTIVE_SUPPORT', note: 'Current schema-reference HTML generator writing to docs/data-structure/schema-reference.html.', source: 'exact-file' }],
+      ['scripts/generateSchemaTouchAudit.js', { status: 'DEFER', note: 'Touch-audit logic is still valuable, but its current output root docs/implementation/sql-full-migration is absent and the script does not create that directory.', source: 'exact-file' }],
+      ['scripts/generateStorageChangeAudit.js', { status: 'ACTIVE_SUPPORT', note: 'Current storage-audit HTML generator; it creates its output directory on write.', source: 'exact-file' }],
+      ['scripts/injectLlmAndSearchWorkerEvents.js', { status: 'DEFER', note: 'Manual runtime proof injector hardcodes a specific run/category/product and belongs to a historical debugging flow.', source: 'exact-file' }],
+      ['scripts/live-audits/50-site-audit.js', { status: 'ACTIVE_SUPPORT', note: 'On-demand real-browser crawl audit across many live domains.', source: 'exact-file' }],
+      ['scripts/live-audits/cookie-audit.js', { status: 'ACTIVE_SUPPORT', note: 'On-demand real-browser cookie-banner audit.', source: 'exact-file' }],
+      ['scripts/live-audits/dom-expansion-live.js', { status: 'ACTIVE_SUPPORT', note: 'On-demand real-browser DOM expansion proof script.', source: 'exact-file' }],
+      ['scripts/live-audits/full-suite-live.js', { status: 'ACTIVE_SUPPORT', note: 'On-demand full browser-proof script for the live plugin suite.', source: 'exact-file' }],
+      ['scripts/live-audits/overlay-dismissal-live.js', { status: 'ACTIVE_SUPPORT', note: 'On-demand real-browser overlay dismissal proof script.', source: 'exact-file' }],
+      ['scripts/live-audits/README.md', { status: 'ACTIVE_SUPPORT', note: 'Current usage contract for the live-audits folder.', source: 'exact-file' }],
+      ['scripts/llmRouteFieldUsageAudit.js', { status: 'DEFER', note: 'Field-usage audit helper still defaults to a missing implementation/gui-persistence output path.', source: 'exact-file' }],
+      ['scripts/pdf_extract_tables.py', { status: 'ACTIVE_SUPPORT', note: 'Compatibility alias into extract_pdf_kv.py main.', source: 'exact-file' }],
+      ['scripts/searxng-health.js', { status: 'ACTIVE_SUPPORT', note: 'Reusable local SearXNG health/search probe.', source: 'exact-file' }],
+      ['scripts/testGoogleCrawlee.js', { status: 'ACTIVE_SUPPORT', note: 'Manual fetch/browser probe for searchGoogle/Crawlee behavior.', source: 'exact-file' }],
+      ['scripts/validate_methods.js', { status: 'ACTIVE_SUPPORT', note: 'Generic NDJSON method-coverage validator for run artifacts.', source: 'exact-file' }],
+      ['scripts/verify-wave4.js', { status: 'DEFER', note: 'Milestone-specific billing verification script with legacy “wave 4” naming and old NDJSON cleanup assumptions.', source: 'exact-file' }],
+    ]);
+
+    const KEY_FINDINGS = [
+      { status: 'DEAD_CANDIDATE', title: 'One clear broken wrapper', note: 'scripts/eloshapes_fetch.py imports a module that does not exist anywhere in the current repo.', paths: ['scripts/eloshapes_fetch.py'] },
+      { status: 'DEFER', title: 'Path drift affects several audit generators', note: 'A cluster of scripts still writes to the old top-level implementation/ tree instead of the current docs/implementation layout.', paths: ['scripts/generateAstKnobInventory.js', 'scripts/generatePanelStyleDriftMatrix.js', 'scripts/generatePanelStyleRemediationQueue.js', 'scripts/generate_review_button_color_matrix.py', 'scripts/llmRouteFieldUsageAudit.js', 'scripts/generate-llm-route-field-usage-audit.js'] },
+      { status: 'DEFER', title: 'Historical proof scripts remain, but are not current turnkey tools', note: 'Several scripts hardcode old run IDs, milestone labels, or summary assumptions and need a refresh before they should be treated as current proof commands.', paths: ['scripts/demo-improvements.js', 'scripts/full_validation.js', 'scripts/generateFullTestSuiteAudit.mjs', 'scripts/generateMissingKnobsAudit.js', 'scripts/injectLlmAndSearchWorkerEvents.js', 'scripts/verify-wave4.js'] },
+      { status: 'ACTIVE', title: 'One script is in the active build path', note: 'generate-studio-types.js is still directly invoked by the GUI build/dev scripts and must stay current.', paths: ['scripts/generate-studio-types.js'] },
+      { status: 'ACTIVE_SUPPORT', title: 'Live browser audits remain intentional support', note: 'The live-audits folder is still a real on-demand proof surface for crawl/browser behavior.', paths: ['scripts/live-audits'] },
+    ];
+
+    const TOP_LEVEL_DOMAIN_NOTES = [
+      { path: 'scripts', title: 'Root scripts surface', note: 'The root folder is mixed: one active build-path script, many useful support scripts, a sizable deferred historical pocket, and one broken wrapper.', focus: ['scripts/generate-studio-types.js', 'scripts/generateSchemaReference.js', 'scripts/generateStorageChangeAudit.js', 'scripts/eloshapes_fetch.py'] },
+      { path: 'scripts/live-audits', title: 'Live browser audits', note: 'This folder is coherent and current as support tooling: Playwright-based live proofs plus a README describing when to run them.', focus: ['scripts/live-audits/50-site-audit.js', 'scripts/live-audits/cookie-audit.js', 'scripts/live-audits/dom-expansion-live.js', 'scripts/live-audits/full-suite-live.js', 'scripts/live-audits/overlay-dismissal-live.js'] },
+    ];
+
+    const SUBDOMAIN_FOCUS_NOTES = [
+      { path: 'scripts/generate-studio-types.js', title: 'Current codegen anchor', note: 'This is the only script in this folder that is directly wired into an active package build/dev command.', focus: ['tools/gui-react/package.json', 'tools/gui-react/src/types/studio.ts'] },
+      { path: 'scripts/live-audits', title: 'Live proof suite', note: 'Manual, real-browser proof scripts for cookie banners, overlay dismissal, DOM expansion, and combined crawl behavior.', focus: ['scripts/live-audits/README.md'] },
+      { path: 'scripts/generateSchemaReference.js', title: 'Current schema doc generator', note: 'Still targets a valid docs output path and reads current db schema sources.', focus: ['scripts/generateSchemaReference.js'] },
+      { path: 'scripts/generateStorageChangeAudit.js', title: 'Current storage audit generator', note: 'Still useful and creates its output directory on write, unlike some of the deferred audit generators.', focus: ['scripts/generateStorageChangeAudit.js'] },
+      { path: 'scripts/generateAstKnobInventory.js', title: 'Path-drift audit generator', note: 'Logic still looks useful, but it writes snapshots to the old implementation/ root.', focus: ['scripts/generateAstKnobInventory.js'] },
+      { path: 'scripts/generatePanelStyleDriftMatrix.js', title: 'Path-drift styling audit generator', note: 'Still useful as analysis logic, but its output root no longer matches the current docs layout.', focus: ['scripts/generatePanelStyleDriftMatrix.js', 'scripts/generatePanelStyleRemediationQueue.js', 'scripts/generate_review_button_color_matrix.py'] },
+      { path: 'scripts/generateSchemaTouchAudit.js', title: 'Broken-by-output-root follow-up', note: 'The generator logic still looks valuable, but the destination folder is absent and this script does not create it.', focus: ['scripts/generateSchemaTouchAudit.js'] },
+      { path: 'scripts/full_validation.js', title: 'Historical run-proof script', note: 'This is a manual proof helper with a hardcoded default run ID and era-specific reporting language, so it stays deferred.', focus: ['scripts/full_validation.js', 'scripts/injectLlmAndSearchWorkerEvents.js', 'scripts/verify-wave4.js'] },
+      { path: 'scripts/eloshapes_fetch.py', title: 'Dead wrapper', note: 'Only a thin trampoline to a missing module. High-confidence dead in the current repo.', focus: ['scripts/eloshapes_fetch.py'] },
+    ];
+
+    const numberFmt = new Intl.NumberFormat('en-US');
+    const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+    function escapeHtml(value) {
+      return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function statusPill(status) {
+      return `<span class="status-pill status-${status}">${escapeHtml(status.replaceAll('_', ' '))}</span>`;
+    }
+
+    function pathList(paths) {
+      if (!paths || paths.length === 0) return '<div class="empty">None.</div>';
+      return `<div class="path-list">${paths.map((item) => `<span class="path-pill"><code>${escapeHtml(item)}</code></span>`).join('')}</div>`;
+    }
+
+    function countFoldersUnder(path) {
+      return inventory.folders.filter((folder) => folder === path || folder.startsWith(`${path}/`)).length;
+    }
+
+    function countFilesUnder(path) {
+      return inventory.files.filter((file) => file.startsWith(`${path}/`)).length;
+    }
+
+    function nearestFolderRule(folder) {
+      const matches = EXPLICIT_FOLDER_RULES.filter((rule) => folder === rule.path || folder.startsWith(`${rule.path}/`));
+      if (matches.length === 0) return { path: 'scripts', status: 'MIXED', defaultFileStatus: 'ACTIVE_SUPPORT', note: 'Inherited root fallback.', source: 'fallback' };
+      const best = matches.sort((a, b) => b.path.length - a.path.length)[0];
+      return { ...best, source: 'folder-rule' };
+    }
+
+    function deriveFileAudit(file) {
+      const exact = EXPLICIT_FILE_OVERRIDES.get(file);
+      if (exact) return { path: file, ...exact };
+      const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : 'scripts';
+      const folderRule = nearestFolderRule(folder);
+      return { path: file, status: folderRule.defaultFileStatus, note: folderRule.note, source: folderRule.path };
+    }
+
+    function deriveFolderAudit(folder) {
+      const exact = EXPLICIT_FOLDER_RULES.find((rule) => rule.path === folder);
+      if (exact) return { ...exact, source: 'exact-folder' };
+      const inherited = nearestFolderRule(folder);
+      return { path: folder, status: inherited.status === 'MIXED' ? 'ACTIVE_SUPPORT' : inherited.status, defaultFileStatus: inherited.defaultFileStatus, note: `Inherited from ${inherited.path}: ${inherited.note}`, source: inherited.path };
+    }
+
+    const folderRows = inventory.folders.map((folder) => deriveFolderAudit(folder));
+    const fileRows = inventory.files.map((file) => deriveFileAudit(file));
+
+    function countBy(rows) {
+      const counts = new Map();
+      for (const row of rows) counts.set(row.status, (counts.get(row.status) || 0) + 1);
+      return Object.fromEntries([...counts.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+    }
+
+    function renderManualCards(elId, rows) {
+      document.getElementById(elId).innerHTML = rows.map((row) => {
+        const isFolderPath = inventory.folders.includes(row.path);
+        const audit = isFolderPath ? deriveFolderAudit(row.path) : deriveFileAudit(row.path);
+        const fileCount = isFolderPath ? countFilesUnder(row.path) : 1;
+        const folderCount = isFolderPath ? countFoldersUnder(row.path) : 0;
+        const chips = [
+          `<span class="chip">${escapeHtml(numberFmt.format(fileCount))} file${fileCount === 1 ? '' : 's'}</span>`,
+          isFolderPath ? `<span class="chip">${escapeHtml(numberFmt.format(folderCount))} folder${folderCount === 1 ? '' : 's'}</span>` : '',
+        ].filter(Boolean).join('');
+        return `<article class="card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;"><div><div class="small-label">${escapeHtml(row.title)}</div><h3 style="margin:8px 0 0;"><code>${escapeHtml(row.path)}</code></h3></div>${statusPill(audit.status)}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">${chips}</div><p>${escapeHtml(row.note)}</p>${pathList(row.focus || [])}</article>`;
+      }).join('');
+    }
+
+    function renderSummary() {
+      document.getElementById('hero-copy').textContent = `Manual audit of the current scripts tree only. Every current scripts file is explicitly classified in this report, with only folder inheritance used as a fallback.`;
+      document.getElementById('hero-meta').innerHTML = [`Generated ${dateFmt.format(new Date(inventory.generatedAt))}`, `${numberFmt.format(inventory.folderCount)} folders`, `${numberFmt.format(inventory.fileCount)} files`].map((text) => `<span class="chip">${escapeHtml(text)}</span>`).join('');
+      const counts = countBy(fileRows);
+      document.getElementById('stats').innerHTML = [
+        ['Files', numberFmt.format(inventory.fileCount), 'Every scripts file is listed in the file appendix below.'],
+        ['Folders', numberFmt.format(inventory.folderCount), 'Every scripts folder is listed in the folder appendix below.'],
+        ['Active', numberFmt.format(counts.ACTIVE || 0), 'Currently wired directly into an active workflow.'],
+        ['Support', numberFmt.format(counts.ACTIVE_SUPPORT || 0), 'Utilities, docs generators, health checks, and live proof scripts kept intentionally.'],
+        ['Deferred', numberFmt.format(counts.DEFER || 0), 'Useful-looking but currently drifted or historically frozen scripts.'],
+        ['Dead', numberFmt.format(counts.DEAD_CANDIDATE || 0), 'High-confidence dead or broken scripts in the current tree.'],
+      ].map(([label, value, note]) => `<article class="stat"><div class="small-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div><div class="stat-note">${escapeHtml(note)}</div></article>`).join('');
+      document.getElementById('legend').innerHTML = Object.entries(STATUS_GLOSSARY).map(([status, desc]) => `<div class="card">${statusPill(status)}<p style="margin-top:10px;">${escapeHtml(desc)}</p></div>`).join('');
+      document.getElementById('findings').innerHTML = KEY_FINDINGS.map((row) => `<article class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;"><h3>${escapeHtml(row.title)}</h3>${statusPill(row.status)}</div><p>${escapeHtml(row.note)}</p>${pathList(row.paths)}</article>`).join('');
+      document.getElementById('dead-calls').innerHTML = pathList(['scripts/eloshapes_fetch.py']);
+      document.getElementById('defer-calls').innerHTML = pathList([
+        'scripts/demo-improvements.js',
+        'scripts/full_validation.js',
+        'scripts/generate_review_button_color_matrix.py',
+        'scripts/generate-llm-route-field-usage-audit.js',
+        'scripts/generateAstKnobInventory.js',
+        'scripts/generateFullTestSuiteAudit.mjs',
+        'scripts/generateMissingKnobsAudit.js',
+        'scripts/generatePanelStyleDriftMatrix.js',
+        'scripts/generatePanelStyleRemediationQueue.js',
+        'scripts/generateSchemaTouchAudit.js',
+        'scripts/injectLlmAndSearchWorkerEvents.js',
+        'scripts/llmRouteFieldUsageAudit.js',
+        'scripts/verify-wave4.js',
+      ]);
+      document.getElementById('protected-calls').innerHTML = pathList([
+        'scripts/generate-studio-types.js',
+        'scripts/generateSchemaReference.js',
+        'scripts/generateStorageChangeAudit.js',
+        'scripts/live-audits',
+        'scripts/searxng-health.js',
+        'scripts/testGoogleCrawlee.js',
+      ]);
+      renderManualCards('top-level-domains', TOP_LEVEL_DOMAIN_NOTES);
+      renderManualCards('subdomain-focus', SUBDOMAIN_FOCUS_NOTES);
+    }
+
+    function populateSelect(el, values) {
+      el.innerHTML = ['<option value="ALL">ALL</option>', ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join('');
+    }
+
+    function folderRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${statusPill(row.status)}</td><td>${statusPill(row.defaultFileStatus)}</td><td class="note"><strong>${escapeHtml(row.note)}</strong><div>${escapeHtml(`Source: ${row.source}`)}</div></td></tr>`;
+    }
+
+    function fileRowHtml(row) {
+      return `<tr><td><code>${escapeHtml(row.path)}</code></td><td>${statusPill(row.status)}</td><td><code>${escapeHtml(row.source)}</code></td><td class="note"><strong>${escapeHtml(row.note)}</strong></td></tr>`;
+    }
+
+    function setupFolderTable() {
+      const searchEl = document.getElementById('folder-search');
+      const statusEl = document.getElementById('folder-status');
+      const bodyEl = document.getElementById('folder-body');
+      const resultsEl = document.getElementById('folder-results');
+      populateSelect(statusEl, [...new Set(folderRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const status = statusEl.value;
+        const rows = folderRows.filter((row) => (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.note}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(folderRows.length)} folders shown`;
+        bodyEl.innerHTML = rows.map(folderRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    function setupFileTable() {
+      const searchEl = document.getElementById('file-search');
+      const statusEl = document.getElementById('file-status');
+      const bodyEl = document.getElementById('file-body');
+      const resultsEl = document.getElementById('file-results');
+      populateSelect(statusEl, [...new Set(fileRows.map((row) => row.status))].sort());
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const status = statusEl.value;
+        const rows = fileRows.filter((row) => (status === 'ALL' || row.status === status) && (!search || `${row.path} ${row.note} ${row.source}`.toLowerCase().includes(search)));
+        resultsEl.textContent = `${numberFmt.format(rows.length)} / ${numberFmt.format(fileRows.length)} files shown`;
+        bodyEl.innerHTML = rows.map(fileRowHtml).join('');
+      }
+      searchEl.addEventListener('input', render);
+      statusEl.addEventListener('change', render);
+      render();
+    }
+
+    renderSummary();
+    setupFolderTable();
+    setupFileTable();
+  </script>
+</body>
+</html>

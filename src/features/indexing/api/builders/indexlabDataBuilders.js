@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createPhaseDataReaders } from './phaseDataReaders.js';
 import { createRunArtifactReaders } from './runArtifactReaders.js';
 import { createDomainChecklistBuilder } from './domainChecklistBuilder.js';
 import { createAutomationQueueBuilder } from './automationQueueBuilder.js';
@@ -20,7 +19,6 @@ let _config = null;
 let _getSpecDbReady = null;
 let _isProcessRunning = null;
 let _processStatus = null;
-let _phaseReaders = null;
 let _artifactReaders = null;
 let _domainChecklistBuilder = null;
 let _automationQueueBuilder = null;
@@ -249,14 +247,6 @@ export function initIndexLabDataBuilders({
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;
   _processStatus = processStatus;
-  _phaseReaders = createPhaseDataReaders({
-    resolveRunDir: resolveIndexLabRunDirectory,
-    readMeta: readIndexLabRunMeta,
-    readEvents: readIndexLabRunEvents,
-    resolveProductId: resolveRunProductId,
-    getStorage: () => _storage,
-    readOutputRootJson,
-  });
   _artifactReaders = createRunArtifactReaders({
     resolveRunDir: resolveIndexLabRunDirectory,
     readMeta: readIndexLabRunMeta,
@@ -396,26 +386,6 @@ export async function readIndexLabRunNeedSet(runId) {
 
 export async function readIndexLabRunSearchProfile(runId) {
   return _artifactReaders.readIndexLabRunSearchProfile(runId);
-}
-
-export async function readIndexLabRunPrimeSources(runId) {
-  return _phaseReaders.readIndexLabRunPrimeSources(runId);
-}
-
-export async function readIndexLabRunDynamicFetchDashboard(runId) {
-  return _phaseReaders.readIndexLabRunDynamicFetchDashboard(runId);
-}
-
-export async function readIndexLabRunSourceIndexingPackets(runId) {
-  return _phaseReaders.readIndexLabRunSourceIndexingPackets(runId);
-}
-
-export async function readIndexLabRunItemIndexingPacket(runId) {
-  return _artifactReaders.readIndexLabRunItemIndexingPacket(runId);
-}
-
-export async function readIndexLabRunRunMetaPacket(runId) {
-  return _artifactReaders.readIndexLabRunRunMetaPacket(runId);
 }
 
 export async function readIndexLabRunSerpExplorer(runId) {

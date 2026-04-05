@@ -23,7 +23,14 @@ export function createReviewCommand({
     }
 
     if (action === 'layout') {
-      const layout = await buildReviewLayout({ storage, config, category });
+      const specDb = await openSpecDbForCategory(config, category);
+      let studioMap = null;
+      try {
+        const row = specDb?.getFieldStudioMap?.();
+        studioMap = row ? JSON.parse(row.map_json) : null;
+      } catch { /* no studio map available */ }
+      const layout = await buildReviewLayout({ storage, config, category, studioMap });
+      try { specDb?.close(); } catch { /* no-op */ }
       return {
         command: 'review',
         action,

@@ -99,8 +99,8 @@ export async function runColorEditionFinder({
     seed_urls: product.seed_urls || [],
   });
 
-  // Merge into JSON with run entry
-  mergeColorEditionDiscovery({
+  // Merge into JSON (durable memory — write first)
+  const merged = mergeColorEditionDiscovery({
     productId: product.product_id,
     productRoot,
     newDiscovery: {
@@ -115,6 +115,21 @@ export async function runColorEditionFinder({
       prompt: { system: systemPrompt, user: userMessage },
       response: { colors, editions, default_color: defaultColor },
     },
+  });
+
+  // Project run into SQL (frontend reads from DB, not JSON)
+  const latestRun = merged.runs[merged.runs.length - 1];
+  specDb.insertColorEditionFinderRun({
+    category: product.category,
+    product_id: product.product_id,
+    run_number: latestRun.run_number,
+    ran_at: ranAt,
+    model: String(config.llmModelPlan || 'unknown'),
+    fallback_used: fallbackUsed,
+    cooldown_until: cooldownUntil,
+    selected,
+    prompt: { system: systemPrompt, user: userMessage },
+    response: { colors, editions, default_color: defaultColor },
   });
 
   // Upsert SQL summary

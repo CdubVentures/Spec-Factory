@@ -692,76 +692,6 @@ export interface IndexLabEvidenceIndexResponse {
   };
 }
 
-export interface IndexLabPrimeSourceHitRow {
-  rank?: number;
-  score?: number;
-  url?: string;
-  host?: string;
-  source_key?: string;
-  tier?: number | null;
-  tier_name?: string | null;
-  doc_kind?: string;
-  method?: string;
-  key_path?: string | null;
-  snippet_id?: string;
-  snippet_hash?: string | null;
-  source_id?: string | null;
-  quote_preview?: string;
-  retrieved_at?: string | null;
-  evidence_refs?: string[];
-  reason_badges?: string[];
-  ranking_features?: {
-    tier_weight?: number;
-    doc_kind_weight?: number;
-    method_weight?: number;
-    anchor_matches?: string[];
-    identity_matches?: string[];
-    unit_match?: boolean;
-    direct_field_match?: boolean;
-    total_score?: number;
-  };
-}
-
-export interface IndexLabPrimeSourceFieldRow {
-  field_key: string;
-  required_level?: string;
-  need_score?: number;
-  min_refs_required?: number;
-  distinct_sources_required?: boolean;
-  refs_selected?: number;
-  distinct_sources_selected?: number;
-  min_refs_satisfied?: boolean;
-  hits_count?: number;
-  tier_preference?: number[];
-  anchors?: string[];
-  unit_hint?: string | null;
-  parse_template_hint?: string | null;
-  component_hint?: string | null;
-  doc_hints?: string[];
-  retrieval_query?: string;
-  hits?: IndexLabPrimeSourceHitRow[];
-  prime_sources?: IndexLabPrimeSourceHitRow[];
-}
-
-export interface IndexLabPrimeSourceResponse {
-  run_id?: string;
-  category?: string;
-  product_id?: string;
-  generated_at?: string;
-  summary_only?: boolean;
-  summary?: {
-    fields_attempted?: number;
-    fields_with_hits?: number;
-    fields_satisfied_min_refs?: number;
-    fields_unsatisfied_min_refs?: number;
-    refs_selected_total?: number;
-    distinct_sources_selected?: number;
-    avg_hits_per_field?: number;
-    evidence_pool_size?: number;
-  };
-  fields?: IndexLabPrimeSourceFieldRow[];
-}
-
 export interface IndexLabPhase08BatchRow {
   batch_id?: string;
   status?: string;
@@ -834,46 +764,6 @@ export interface IndexLabPhase08Response {
   prime_sources?: {
     rows?: IndexLabPhase08PrimeRow[];
   };
-}
-
-export interface IndexLabDynamicFetchDashboardHostRow {
-  host?: string;
-  request_count?: number;
-  success_count?: number;
-  failure_count?: number;
-  status_2xx_count?: number;
-  status_4xx_count?: number;
-  status_5xx_count?: number;
-  parse_error_count?: number;
-  screenshot_count?: number;
-  network_payload_rows_total?: number;
-  graphql_replay_rows_total?: number;
-  fetcher_kind_counts?: Record<string, number>;
-  attempts_total?: number;
-  retry_count_total?: number;
-  avg_attempts_per_request?: number;
-  avg_retry_per_request?: number;
-  avg_fetch_ms?: number;
-  avg_parse_ms?: number;
-  avg_host_wait_ms?: number;
-  avg_navigation_ms?: number;
-  avg_network_idle_wait_ms?: number;
-  avg_interactive_wait_ms?: number;
-  avg_graphql_replay_ms?: number;
-  avg_content_capture_ms?: number;
-  avg_screenshot_capture_ms?: number;
-}
-
-export interface IndexLabDynamicFetchDashboardResponse {
-  run_id?: string;
-  category?: string;
-  product_id?: string;
-  generated_at?: string | null;
-  host_count?: number;
-  hosts?: IndexLabDynamicFetchDashboardHostRow[];
-  summary_only?: boolean;
-  key?: string | null;
-  latest_key?: string | null;
 }
 
 export interface RoundSummaryRow {

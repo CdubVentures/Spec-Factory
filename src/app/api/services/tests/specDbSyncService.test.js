@@ -63,6 +63,87 @@ function createSyncHarness(overrides = {}) {
   };
 }
 
+// ── Compile-gate tests ──────────────────────────────────────────────────────
+
+test('syncSpecDbForCategory calls compileCategory when isCompileStale returns true', async () => {
+  let compileCalled = false;
+  let compileCalledBeforeSeed = false;
+  let seedCalled = false;
+
+  const harness = createSyncHarness({
+    seedSpecDb: async () => { seedCalled = true; return { components_seeded: 5, list_values_seeded: 8 }; },
+  });
+
+  await harness.sync('mouse', {
+    isCompileStale: async () => true,
+    compileCategory: async () => { compileCalled = true; compileCalledBeforeSeed = !seedCalled; },
+    invalidateFieldRulesCache: () => {},
+  });
+
+  assert.ok(compileCalled, 'compileCategory should be called when isCompileStale returns true');
+  assert.ok(compileCalledBeforeSeed, 'compileCategory should run before seedSpecDb');
+});
+
+test('syncSpecDbForCategory does NOT call compileCategory when isCompileStale returns false', async () => {
+  let compileCalled = false;
+
+  const harness = createSyncHarness();
+
+  await harness.sync('mouse', {
+    isCompileStale: async () => false,
+    compileCategory: async () => { compileCalled = true; },
+    invalidateFieldRulesCache: () => {},
+  });
+
+  assert.ok(!compileCalled, 'compileCategory should NOT be called when isCompileStale returns false');
+});
+
+test('syncSpecDbForCategory calls invalidateFieldRulesCache after compile', async () => {
+  let cacheInvalidated = false;
+  let cacheInvalidatedCategory = null;
+
+  const harness = createSyncHarness();
+
+  await harness.sync('mouse', {
+    isCompileStale: async () => true,
+    compileCategory: async () => {},
+    invalidateFieldRulesCache: (cat) => { cacheInvalidated = true; cacheInvalidatedCategory = cat; },
+  });
+
+  assert.ok(cacheInvalidated, 'invalidateFieldRulesCache should be called after compile');
+  assert.equal(cacheInvalidatedCategory, 'mouse');
+});
+
+test('syncSpecDbForCategory still seeds when compileCategory throws', async () => {
+  let seedCalled = false;
+
+  const harness = createSyncHarness({
+    seedSpecDb: async () => { seedCalled = true; return { components_seeded: 5, list_values_seeded: 8 }; },
+  });
+
+  await harness.sync('mouse', {
+    isCompileStale: async () => true,
+    compileCategory: async () => { throw new Error('compile boom'); },
+    invalidateFieldRulesCache: () => {},
+  });
+
+  assert.ok(seedCalled, 'seedSpecDb should still be called even when compile fails');
+});
+
+test('syncSpecDbForCategory skips compile gate entirely when isCompileStale is not provided', async () => {
+  let seedCalled = false;
+
+  const harness = createSyncHarness({
+    seedSpecDb: async () => { seedCalled = true; return { components_seeded: 5, list_values_seeded: 8 }; },
+  });
+
+  await harness.sync('mouse');
+
+  assert.ok(seedCalled, 'seedSpecDb should be called normally without compile gate');
+});
+
+// ── Original tests ──────────────────────────────────────────────────────────
+
 test('syncSpecDbForCategory returns the sync summary for the resolved category', async () => {
   const harness = createSyncHarness();
 

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dead JSON Artifacts — Cleanup Plan</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --red: #f85149;
+    --red-bg: rgba(248,81,73,0.1);
+    --orange: #d29922;
+    --orange-bg: rgba(210,153,34,0.1);
+    --blue: #58a6ff;
+    --blue-bg: rgba(88,166,255,0.1);
+    --green: #3fb950;
+    --green-bg: rgba(63,185,80,0.1);
+    --purple: #bc8cff;
+    --purple-bg: rgba(188,140,255,0.1);
+    --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
+
+  /* ── Summary table ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .stat-card .count {
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+  }
+  .stat-card .label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .stat-card.dead .count { color: var(--red); }
+  .stat-card.migrated .count { color: var(--blue); }
+  .stat-card.legacy .count { color: var(--orange); }
+  .stat-card.alive .count { color: var(--green); }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .badge-dead { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .badge-sql  { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+  .badge-legacy { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+  .badge-alive { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .badge-phase { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
+
+  /* ── Artifact cards ── */
+  .artifact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .artifact-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .artifact-header:hover { background: var(--surface-2); }
+  .artifact-header h3 {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    flex: 1;
+  }
+  .artifact-body {
+    padding: 1.25rem;
+    display: none;
+  }
+  .artifact.open .artifact-body { display: block; }
+  .artifact-header .chevron {
+    transition: transform 0.15s;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .artifact.open .artifact-header .chevron { transform: rotate(90deg); }
+
+  /* ── Detail sections ── */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.5rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+  .detail-grid dt {
+    color: var(--text-muted);
+    font-weight: 600;
+    text-align: right;
+  }
+  .detail-grid dd { font-family: var(--mono); font-size: 0.8rem; word-break: break-all; }
+
+  .file-list {
+    list-style: none;
+    margin: 0.75rem 0;
+  }
+  .file-list li {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.5rem;
+    border-left: 3px solid var(--border);
+    margin-bottom: 0.25rem;
+    background: var(--surface-2);
+    border-radius: 0 4px 4px 0;
+  }
+  .file-list li.kill { border-left-color: var(--red); }
+  .file-list li.keep { border-left-color: var(--green); }
+  .file-list li.check { border-left-color: var(--orange); }
+
+  .action-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+  }
+  .action-box h4 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .checklist { list-style: none; }
+  .checklist li {
+    font-size: 0.85rem;
+    padding: 0.35rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .checklist input[type="checkbox"] {
+    margin-top: 0.25rem;
+    accent-color: var(--green);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.5rem;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: var(--surface-2);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+
+  .dep-chain {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    padding: 0.5rem 0;
+  }
+  .dep-chain span { color: var(--text); }
+  .dep-chain .arrow { color: var(--text-muted); margin: 0 0.25rem; }
+
+  /* ── Phase grouping ── */
+  .phase-box {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--surface);
+  }
+  .phase-box h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .phase-box p { font-size: 0.85rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<h1>Dead JSON Artifacts &mdash; Cleanup Plan</h1>
+<p class="subtitle">Generated 2026-04-04 &middot; Updated 2026-04-04 &middot; Phase 1 COMPLETED &middot; Working document for orphan JSON removal across Spec Factory</p>
+
+<!-- ════════════════ SUMMARY ════════════════ -->
+<div class="summary-grid">
+  <div class="stat-card alive">
+    <span class="count">5</span>
+    <span class="label">Dead / REMOVED</span>
+  </div>
+  <div class="stat-card migrated">
+    <span class="count">1</span>
+    <span class="label">SQL Migrated</span>
+  </div>
+  <div class="stat-card legacy">
+    <span class="count">2</span>
+    <span class="label">Legacy Dual-Write</span>
+  </div>
+  <div class="stat-card alive">
+    <span class="count">1</span>
+    <span class="label">Alive (No Action)</span>
+  </div>
+</div>
+
+<!-- ════════════════ PHASED PLAN ════════════════ -->
+<h2 class="section-title"><span class="badge badge-phase">Execution Order</span> Phased Cleanup</h2>
+
+<div class="phase-box">
+  <h3><span class="badge badge-phase">Phase 1</span> Kill the 5 dead orphan readers</h3>
+  <p>These files have <strong>no production writer</strong>. Readers, routes, tests, and schemas can be deleted outright. Lowest risk &mdash; nothing produces these anymore.</p>
+  <p style="margin-top:0.5rem;">Artifacts: <code>prime_sources_retrieval.json</code>, <code>dynamic_fetch_dashboard.json</code>, <code>source_indexing_extraction_packets.json</code>, <code>item_indexing_extraction_packet.json</code>, <code>run_meta_packet.json</code></p>
+</div>
+
+<div class="phase-box">
+  <h3><span class="badge badge-phase">Phase 2</span> Clean vestigial run-summary.json file references</h3>
+  <p>The file write was already killed in Wave 5.5. Remaining work: remove the disk-fallback read path in <code>indexlabDataBuilders.js</code> and any <code>runListBuilder.js</code> stat checks that look for the <code>.json</code> on disk.</p>
+</div>
+
+<div class="phase-box">
+  <h3><span class="badge badge-phase">Phase 3</span> Remove legacy dual-write paths</h3>
+  <p>Both <code>candidates.json</code> and <code>review_queue.json</code> write to a modern <code>final/</code> path AND a legacy path. Remove the legacy write + legacy read fallback after confirming no consumers use the old path.</p>
+</div>
+
+
+<!-- ════════════════ PHASE 1: DEAD ARTIFACTS ════════════════ -->
+<h2 class="section-title"><span class="badge badge-dead">Dead</span> Phase 1 &mdash; Orphan Readers (No Writer)</h2>
+
+<!-- ── 1. prime_sources_retrieval.json ── -->
+<div class="artifact open" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>prime_sources_retrieval.json</h3>
+    <span class="badge badge-dead">Dead</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Expected path</dt>
+      <dd>.workspace/output/{cat}/{pid}/runs/{runId}/analysis/prime_sources_retrieval.json</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--red)">NONE &mdash; no production code writes this file</dd>
+      <dt>API route</dt>
+      <dd>GET /api/v1/indexlab/run/{runId}/prime-sources</dd>
+    </dl>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Dependency chain</h4>
+    <div class="dep-chain">
+      <span>indexlabRoutes.js</span> <span class="arrow">&rarr;</span>
+      <span>indexlabRouteContext.js</span> <span class="arrow">&rarr;</span>
+      <span>phaseDataReaders.js::readIndexLabRunPrimeSources()</span> <span class="arrow">&rarr;</span>
+      <span style="color:var(--red)">disk / storage (no writer)</span>
+    </div>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Files to modify / delete</h4>
+    <ul class="file-list">
+      <li class="kill">src/features/indexing/api/builders/phaseDataReaders.js &mdash; delete readIndexLabRunPrimeSources()</li>
+      <li class="kill">src/features/indexing/api/indexlabRoutes.js &mdash; delete /prime-sources route handler (~L215-225)</li>
+      <li class="kill">src/features/indexing/api/indexlabRouteContext.js &mdash; remove import + export of reader</li>
+      <li class="kill">src/app/api/tests/indexlabRunPayloadApi.test.js &mdash; remove prime_sources seed + assertions</li>
+      <li class="check">src/indexlab/runtimeBridgeEventHandlers.js &mdash; check handlePrimeSourcesBuilt() &mdash; may emit events that feed nothing now</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Delete reader function from phaseDataReaders.js</li>
+        <li><input type="checkbox"> Delete route from indexlabRoutes.js</li>
+        <li><input type="checkbox"> Remove re-export from indexlabRouteContext.js</li>
+        <li><input type="checkbox"> Remove re-export from indexlabDataBuilders.js (if present)</li>
+        <li><input type="checkbox"> Clean test seeds from indexlabRunPayloadApi.test.js</li>
+        <li><input type="checkbox"> Audit handlePrimeSourcesBuilt() &mdash; does the event go anywhere else?</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. dynamic_fetch_dashboard.json ── -->
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>dynamic_fetch_dashboard.json</h3>
+    <span class="badge badge-dead">Dead</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Expected path</dt>
+      <dd>{runDir}/dynamic_fetch_dashboard.json</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--red)">NONE</dd>
+      <dt>API route</dt>
+      <dd>GET /api/v1/indexlab/run/{runId}/dynamic-fetch-dashboard</dd>
+    </dl>
+
+    <div class="dep-chain">
+      <span>indexlabRoutes.js</span> <span class="arrow">&rarr;</span>
+      <span>indexlabRouteContext.js</span> <span class="arrow">&rarr;</span>
+      <span>phaseDataReaders.js::readIndexLabRunDynamicFetchDashboard()</span> <span class="arrow">&rarr;</span>
+      <span style="color:var(--red)">disk / storage / summary.json fallback (no writer)</span>
+    </div>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Files to modify / delete</h4>
+    <ul class="file-list">
+      <li class="kill">src/features/indexing/api/builders/phaseDataReaders.js &mdash; delete readIndexLabRunDynamicFetchDashboard() (~L64-110)</li>
+      <li class="kill">src/features/indexing/api/indexlabRoutes.js &mdash; delete /dynamic-fetch-dashboard route (~L227-237)</li>
+      <li class="kill">src/features/indexing/api/indexlabRouteContext.js &mdash; remove import + export</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Delete reader function from phaseDataReaders.js</li>
+        <li><input type="checkbox"> Delete route from indexlabRoutes.js</li>
+        <li><input type="checkbox"> Remove re-export from indexlabRouteContext.js</li>
+        <li><input type="checkbox"> Remove re-export from indexlabDataBuilders.js (if present)</li>
+        <li><input type="checkbox"> Check if summary.json fallback extraction is used elsewhere</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── 3. source_indexing_extraction_packets.json ── -->
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>source_indexing_extraction_packets.json</h3>
+    <span class="badge badge-dead">Dead</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Expected path</dt>
+      <dd>{runDir}/source_indexing_extraction_packets.json (+ 4 fallback paths)</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--red)">NONE &mdash; designed to be written by IndexLab pipeline, writer never implemented</dd>
+      <dt>API route</dt>
+      <dd>GET /api/v1/indexlab/run/{runId}/source-indexing-packets</dd>
+    </dl>
+
+    <div class="dep-chain">
+      <span>indexlabRoutes.js</span> <span class="arrow">&rarr;</span>
+      <span>phaseDataReaders.js::readIndexLabRunSourceIndexingPackets()</span> <span class="arrow">&rarr;</span>
+      <span style="color:var(--red)">5 fallback paths (none ever populated)</span>
+    </div>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Files to modify / delete</h4>
+    <ul class="file-list">
+      <li class="kill">src/features/indexing/api/builders/phaseDataReaders.js &mdash; delete readIndexLabRunSourceIndexingPackets() (~L112-167)</li>
+      <li class="kill">src/features/indexing/api/indexlabRoutes.js &mdash; delete route handler</li>
+      <li class="kill">src/features/indexing/api/builders/tests/indexlabDataBuildersSourcePackets.test.js &mdash; delete entire file</li>
+      <li class="kill">src/app/api/tests/indexlabRunPayloadApi.test.js &mdash; remove source packet seed + assertions</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/source-indexing-extraction-schema.v1.json &mdash; archive or delete</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/source-indexing-extraction-schema.simple.json &mdash; archive or delete</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Delete reader function from phaseDataReaders.js</li>
+        <li><input type="checkbox"> Delete route from indexlabRoutes.js</li>
+        <li><input type="checkbox"> Delete indexlabDataBuildersSourcePackets.test.js entirely</li>
+        <li><input type="checkbox"> Clean test seeds from indexlabRunPayloadApi.test.js</li>
+        <li><input type="checkbox"> Remove re-exports from indexlabDataBuilders.js / indexlabRouteContext.js</li>
+        <li><input type="checkbox"> Decide: keep schema docs for future reference or delete</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── 4. item_indexing_extraction_packet.json ── -->
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>item_indexing_extraction_packet.json</h3>
+    <span class="badge badge-dead">Dead</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Expected path</dt>
+      <dd>{runDir}/item_indexing_extraction_packet.json</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--red)">NONE &mdash; designed to be written by IndexLab pipeline, writer never implemented</dd>
+      <dt>API route</dt>
+      <dd>GET /api/v1/indexlab/run/{runId}/item-indexing-packet</dd>
+    </dl>
+
+    <div class="dep-chain">
+      <span>indexlabRoutes.js</span> <span class="arrow">&rarr;</span>
+      <span>runArtifactReaders.js::readIndexLabRunItemIndexingPacket()</span> <span class="arrow">&rarr;</span>
+      <span style="color:var(--red)">disk / storage (no writer)</span>
+    </div>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Files to modify / delete</h4>
+    <ul class="file-list">
+      <li class="kill">src/features/indexing/api/builders/runArtifactReaders.js &mdash; delete readIndexLabRunItemIndexingPacket() (~L200-230)</li>
+      <li class="kill">src/features/indexing/api/indexlabRoutes.js &mdash; delete route handler</li>
+      <li class="kill">src/app/api/tests/indexlabRunPayloadApi.test.js &mdash; remove item packet seed + assertions</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/item-indexing-extraction-schema.v1.json &mdash; archive or delete</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/item-indexing-extraction-schema.simple.json &mdash; archive or delete</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Delete reader function from runArtifactReaders.js</li>
+        <li><input type="checkbox"> Delete route from indexlabRoutes.js</li>
+        <li><input type="checkbox"> Clean test seeds from indexlabRunPayloadApi.test.js</li>
+        <li><input type="checkbox"> Remove re-exports from indexlabDataBuilders.js</li>
+        <li><input type="checkbox"> Decide: keep schema docs for future reference or delete</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── 5. run_meta_packet.json ── -->
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>run_meta_packet.json</h3>
+    <span class="badge badge-dead">Dead</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Expected path</dt>
+      <dd>{runDir}/run_meta_packet.json</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--red)">NONE &mdash; schema defined but writer never built</dd>
+      <dt>API route</dt>
+      <dd>GET /api/v1/indexlab/run/{runId}/run-meta-packet</dd>
+    </dl>
+
+    <div class="dep-chain">
+      <span>indexlabRoutes.js</span> <span class="arrow">&rarr;</span>
+      <span>runArtifactReaders.js::readIndexLabRunRunMetaPacket()</span> <span class="arrow">&rarr;</span>
+      <span style="color:var(--red)">disk / storage (no writer)</span>
+    </div>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Files to modify / delete</h4>
+    <ul class="file-list">
+      <li class="kill">src/features/indexing/api/builders/runArtifactReaders.js &mdash; delete readIndexLabRunRunMetaPacket() (~L232-262)</li>
+      <li class="kill">src/features/indexing/api/indexlabRoutes.js &mdash; delete /run-meta-packet route (~L257-263)</li>
+      <li class="kill">src/app/api/tests/indexlabRunPayloadApi.test.js &mdash; remove run_meta_packet seed + assertions</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/run-meta-schema.v1.json &mdash; archive or delete</li>
+      <li class="check">docs/implementation/ai-indexing-plans/schema/run-meta-schema.simple.json &mdash; archive or delete</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Delete reader function from runArtifactReaders.js</li>
+        <li><input type="checkbox"> Delete route from indexlabRoutes.js</li>
+        <li><input type="checkbox"> Clean test seeds from indexlabRunPayloadApi.test.js</li>
+        <li><input type="checkbox"> Remove re-exports from indexlabDataBuilders.js</li>
+        <li><input type="checkbox"> Decide: keep schema docs for future reference or delete</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════ PHASE 2: SQL MIGRATED ════════════════ -->
+<h2 class="section-title"><span class="badge badge-sql">SQL Migrated</span> Phase 2 &mdash; Vestigial File References</h2>
+
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>run-summary.json</h3>
+    <span class="badge badge-sql">SQL Migrated</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Old path</dt>
+      <dd>{runDir}/run-summary.json &mdash; file write killed in Wave 5.5</dd>
+      <dt>Current writer</dt>
+      <dd style="color:var(--blue)">SQL ONLY &mdash; specDb.upsertRunArtifact({artifact_type: 'run_summary'})</dd>
+      <dt>Writer code</dt>
+      <dd>src/indexlab/runtimeBridgeArtifacts.js::writeRunSummaryArtifact()</dd>
+    </dl>
+
+    <p style="font-size:0.85rem;margin:0.75rem 0;">
+      The file write is dead. What remains are <strong>disk-fallback read paths</strong> that check for a <code>.json</code> file that will never exist for new runs. These fallbacks only matter for pre-Wave-5.5 archived runs.
+    </p>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Vestigial references to clean</h4>
+    <ul class="file-list">
+      <li class="check">src/features/indexing/api/builders/indexlabDataBuilders.js &mdash; remove disk fallback tier (Tier 2) that reads {runDir}/run-summary.json</li>
+      <li class="check">src/features/indexing/api/builders/runListBuilder.js &mdash; remove fs.stat() check for run-summary.json mtime (~L195)</li>
+      <li class="check">src/features/indexing/api/builders/phaseDataReaders.js &mdash; check for any summary.json disk reads</li>
+      <li class="check">src/features/indexing/api/builders/runArtifactReaders.js &mdash; check for legacy summary.json reads</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Decide: do any pre-Wave-5.5 archived runs still need disk fallback?</li>
+        <li><input type="checkbox"> If no: remove Tier 2 disk read from indexlabDataBuilders.js</li>
+        <li><input type="checkbox"> Remove stat() check in runListBuilder.js</li>
+        <li><input type="checkbox"> Audit phaseDataReaders.js and runArtifactReaders.js for legacy summary.json reads</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+      <p class="note">Lower priority than Phase 1 &mdash; these fallbacks are harmless (just silently fail), but they add dead code weight.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════ PHASE 3: LEGACY DUAL-WRITE ════════════════ -->
+<h2 class="section-title"><span class="badge badge-legacy">Legacy Dual</span> Phase 3 &mdash; Remove Legacy Write Paths</h2>
+
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>candidates.json</h3>
+    <span class="badge badge-legacy">Legacy Dual</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Modern path</dt>
+      <dd style="color:var(--green)">final/{cat}/{pid}/review/candidates.json</dd>
+      <dt>Legacy path</dt>
+      <dd style="color:var(--orange)">{cat}/{pid}/review/candidates.json (via resolveOutputKey)</dd>
+      <dt>Writer</dt>
+      <dd>src/features/review/domain/reviewGridData.js::writeProductReviewArtifacts()</dd>
+    </dl>
+
+    <p style="font-size:0.85rem;margin:0.75rem 0;">
+      Currently writes to <strong>both</strong> paths (L765-766). The legacy path exists for backward compat with old run data. Modern readers use <code>final/</code> first.
+    </p>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Key code locations</h4>
+    <ul class="file-list">
+      <li class="check">src/features/review/domain/reviewGridHelpers.js &mdash; reviewKeys() defines both candidatesKey + legacyCandidatesKey</li>
+      <li class="check">src/features/review/domain/overrideHelpers.js &mdash; duplicate reviewKeys() with legacy paths</li>
+      <li class="check">src/features/review/domain/reviewGridData.js &mdash; writeJson to legacyCandidatesKey (L766)</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Confirm: are any consumers still reading from the non-final/ legacy path?</li>
+        <li><input type="checkbox"> Grep for resolveOutputKey(category, productId, 'review') usage</li>
+        <li><input type="checkbox"> Remove legacyCandidatesKey write from writeProductReviewArtifacts()</li>
+        <li><input type="checkbox"> Remove legacy key definitions from reviewKeys() in both helpers</li>
+        <li><input type="checkbox"> Remove legacy read fallback from buildProductReviewPayload()</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>review_queue.json</h3>
+    <span class="badge badge-legacy">Legacy Dual</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Modern path</dt>
+      <dd style="color:var(--green)">final/{cat}/{pid}/review/review_queue.json</dd>
+      <dt>Legacy path</dt>
+      <dd style="color:var(--orange)">{cat}/{pid}/review/review_queue.json (via resolveOutputKey)</dd>
+      <dt>Writer</dt>
+      <dd>src/features/review/domain/reviewGridData.js::writeProductReviewArtifacts()</dd>
+    </dl>
+
+    <p style="font-size:0.85rem;margin:0.75rem 0;">
+      Same dual-write pattern as <code>candidates.json</code> &mdash; same function, same cleanup path.
+    </p>
+
+    <h4 style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem;">Key code locations</h4>
+    <ul class="file-list">
+      <li class="check">src/features/review/domain/reviewGridHelpers.js &mdash; reviewKeys() defines reviewQueueKey + legacyReviewQueueKey</li>
+      <li class="check">src/features/review/domain/overrideHelpers.js &mdash; duplicate reviewKeys() with legacy paths</li>
+      <li class="check">src/features/review/domain/overrideWorkflow.js &mdash; reads queue (check which path it uses)</li>
+    </ul>
+
+    <div class="action-box">
+      <h4>Cleanup Checklist</h4>
+      <ul class="checklist">
+        <li><input type="checkbox"> Confirm: are any consumers still reading from the non-final/ legacy path?</li>
+        <li><input type="checkbox"> Remove legacyReviewQueueKey write from writeProductReviewArtifacts()</li>
+        <li><input type="checkbox"> Remove legacy key definitions from reviewKeys() in both helpers</li>
+        <li><input type="checkbox"> Audit overrideWorkflow.js to confirm it reads modern path</li>
+        <li><input type="checkbox"> Run full test suite, confirm green</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════ ALIVE ════════════════ -->
+<h2 class="section-title"><span class="badge badge-alive">Alive</span> No Action Required</h2>
+
+<div class="artifact" onclick="this.classList.toggle('open')">
+  <div class="artifact-header">
+    <span class="chevron">&#9654;</span>
+    <h3>spec_seeds.json</h3>
+    <span class="badge badge-alive">Alive</span>
+  </div>
+  <div class="artifact-body" onclick="event.stopPropagation()">
+    <dl class="detail-grid">
+      <dt>Path</dt>
+      <dd>category_authority/{category}/spec_seeds.json</dd>
+      <dt>Writer</dt>
+      <dd style="color:var(--green)">specSeedsFileService.js::writeSpecSeedsFile() (atomic write)</dd>
+      <dt>Reader</dt>
+      <dd style="color:var(--green)">specSeedsFileService.js::readSpecSeedsFile()</dd>
+      <dt>API</dt>
+      <dd>GET/PUT /api/v1/spec-seeds?category=&lt;cat&gt;</dd>
+      <dt>Frontend</dt>
+      <dd>PipelineDeterministicStrategySection.tsx</dd>
+    </dl>
+    <p style="font-size:0.85rem;margin-top:0.75rem;color:var(--green);">
+      Fully wired: writer, reader, API, frontend UI, data-change broadcast. No cleanup needed.
+    </p>
+  </div>
+</div>
+
+
+<!-- ════════════════ CROSS-CUTTING CONCERNS ════════════════ -->
+<h2 class="section-title">Cross-Cutting Cleanup Targets</h2>
+
+<div class="action-box" style="margin-bottom:1rem;">
+  <h4>Shared files touched by multiple dead artifacts</h4>
+  <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem;">These files will need edits for multiple artifact removals. Plan edits together to avoid merge conflicts.</p>
+  <ul class="file-list">
+    <li class="kill"><strong>src/features/indexing/api/indexlabRoutes.js</strong> &mdash; 5 dead routes to remove (prime-sources, dynamic-fetch-dashboard, source-indexing-packets, item-indexing-packet, run-meta-packet)</li>
+    <li class="kill"><strong>src/features/indexing/api/builders/phaseDataReaders.js</strong> &mdash; 3 dead reader functions (prime_sources, dynamic_fetch, source_packets)</li>
+    <li class="kill"><strong>src/features/indexing/api/builders/runArtifactReaders.js</strong> &mdash; 2 dead reader functions (item_packet, run_meta_packet)</li>
+    <li class="kill"><strong>src/features/indexing/api/indexlabRouteContext.js</strong> &mdash; remove dead imports/exports for all 5</li>
+    <li class="kill"><strong>src/features/indexing/api/builders/indexlabDataBuilders.js</strong> &mdash; remove dead re-exports + run-summary disk fallback</li>
+    <li class="kill"><strong>src/app/api/tests/indexlabRunPayloadApi.test.js</strong> &mdash; remove all dead artifact seeds + assertions (likely gut most of this file)</li>
+    <li class="check"><strong>docs/data-structure/storage-reference.html</strong> &mdash; remove dead artifact entries from directory tree</li>
+  </ul>
+</div>
+
+<div class="action-box">
+  <h4>Schema docs to decide on</h4>
+  <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem;">These schema files describe artifacts that were never implemented. Keep for historical reference or delete?</p>
+  <ul class="file-list">
+    <li class="check">docs/implementation/ai-indexing-plans/schema/source-indexing-extraction-schema.v1.json</li>
+    <li class="check">docs/implementation/ai-indexing-plans/schema/source-indexing-extraction-schema.simple.json</li>
+    <li class="check">docs/implementation/ai-indexing-plans/schema/item-indexing-extraction-schema.v1.json</li>
+    <li class="check">docs/implementation/ai-indexing-plans/schema/item-indexing-extraction-schema.simple.json</li>
+    <li class="check">docs/implementation/ai-indexing-plans/schema/run-meta-schema.v1.json</li>
+    <li class="check">docs/implementation/ai-indexing-plans/schema/run-meta-schema.simple.json</li>
+  </ul>
+</div>
+
+<script>
+  // All cards start collapsed except the first one
+  // Click handling is on the artifact div via onclick
+</script>
+
+</body>
+</html>

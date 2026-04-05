@@ -1,11 +1,32 @@
-import { loadFieldRules as loadFieldRulesDefault, buildFieldRulesSignature as buildSignatureDefault } from '../../../field-rules/loader.js';
+import path from 'node:path';
+import { loadFieldRules as loadFieldRulesDefault, buildFieldRulesSignature as buildSignatureDefault, invalidateFieldRulesCache as invalidateFieldRulesCacheDefault } from '../../../field-rules/loader.js';
 import { seedSpecDb as seedSpecDbDefault } from '../../../db/seed.js';
+import { compileCategoryFieldStudio as compileCategoryDefault, loadFieldStudioMap } from '../../../ingest/categoryCompile.js';
+import { readJsonIfExists } from '../../../ingest/compileFileIo.js';
+import { hashJson } from '../../../ingest/compileUtils.js';
 
 function normalizeCategory(category, resolveCategoryAlias) {
   const raw = String(category || '').trim();
   if (!raw) return '';
   if (typeof resolveCategoryAlias !== 'function') return raw;
   return String(resolveCategoryAlias(raw) || raw).trim();
+}
+
+// WHY: Detect when field_studio_map.json changed since last compile.
+// Precedence: no map → false; map exists, no report → true; hash mismatch → true.
+async function isCompileStaleDefault(category, helperRoot) {
+  const loaded = await loadFieldStudioMap({
+    category, config: { categoryAuthorityRoot: helperRoot },
+  }).catch(() => null);
+  if (!loaded?.map || typeof loaded.map !== 'object') return false;
+
+  const generatedRoot = path.join(helperRoot, category, '_generated');
+  const report = await readJsonIfExists(
+    path.join(generatedRoot, '_compile_report.json'),
+  );
+  if (!report?.field_studio_map_hash) return true;
+
+  return hashJson(loaded.map) !== String(report.field_studio_map_hash);
 }
 
 export async function syncSpecDbForCategory({
@@ -15,6 +36,9 @@ export async function syncSpecDbForCategory({
   getSpecDbReady,
   loadFieldRules = loadFieldRulesDefault,
   seedSpecDb = seedSpecDbDefault,
+  isCompileStale = isCompileStaleDefault,
+  compileCategory = compileCategoryDefault,
+  invalidateFieldRulesCache = invalidateFieldRulesCacheDefault,
 }) {
   const resolvedCategory = normalizeCategory(category, resolveCategoryAlias);
   if (!resolvedCategory) {
@@ -29,6 +53,22 @@ export async function syncSpecDbForCategory({
     db = await getSpecDbReady(resolvedCategory);
     if (!db) {
       throw new Error(`specdb_unavailable:${resolvedCategory}`);
+    }
+
+    // WHY: If field_studio_map.json changed since last compile, auto-compile
+    // so downstream seed tables get fresh generated artifacts.
+    const helperRoot = config.categoryAuthorityRoot || 'category_authority';
+    if (typeof isCompileStale === 'function') {
+      try {
+        if (await isCompileStale(resolvedCategory, helperRoot)) {
+          await compileCategory({ category: resolvedCategory, config });
+          if (typeof invalidateFieldRulesCache === 'function') {
+            invalidateFieldRulesCache(resolvedCategory);
+          }
+        }
+      } catch (err) {
+        console.error(`[sync] auto-compile failed for ${resolvedCategory}:`, err?.message || err);
+      }
     }
 
     const fieldRules = await loadFieldRules(resolvedCategory, { config });

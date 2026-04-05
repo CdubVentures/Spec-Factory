@@ -28,7 +28,6 @@ export function makeCtx(overrides = {}) {
       }),
       invalidateSessionCache: () => {},
     },
-    loadFieldStudioMap: async () => ({ file_path: '', map: {} }),
     saveFieldStudioMap: async () => ({ ok: true }),
     validateFieldStudioMap: (map) => ({ valid: true, errors: [], warnings: [], normalized: map }),
     invalidateFieldRulesCache: () => {},

@@ -153,9 +153,44 @@ const storeMap = {
   billing_entries: 'billingStore', field_studio_map: 'fieldStudioMapStore',
   knob_snapshots: 'telemetryIndexStore', query_index: 'telemetryIndexStore', url_index: 'telemetryIndexStore', prompt_index: 'telemetryIndexStore',
   data_authority_sync: 'specDb (direct)',
-  field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore',
+  field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore', color_edition_finder_runs: 'colorEditionFinderStore',
   brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
+};
+
+// ── Persistence classification map ──
+const persistenceMap = {
+  // JSON-backed
+  products: 'json', product_queue: 'json', product_runs: 'json',
+  runs: 'json', run_artifacts: 'json', crawl_sources: 'json',
+  url_crawl_ledger: 'json', query_cooldowns: 'json',
+  color_edition_finder: 'json', color_edition_finder_runs: 'json',
+  llm_route_matrix: 'json', field_key_order: 'json', field_studio_map: 'json',
+  brands: 'json', brand_categories: 'json', brand_renames: 'json',
+  settings: 'json', studio_maps: 'json', color_registry: 'json',
+  source_screenshots: 'json', source_videos: 'json',
+  // Deferred (review grid + partial rebuild)
+  component_identity: 'deferred', component_aliases: 'deferred',
+  component_values: 'deferred', enum_lists: 'deferred',
+  list_values: 'deferred', item_field_state: 'deferred',
+  item_component_links: 'deferred', item_list_links: 'deferred',
+  product_review_state: 'deferred', key_review_state: 'deferred',
+  component_review_queue: 'deferred',
+  // DB-only
+  curation_suggestions: 'db-only', billing_entries: 'db-only',
+  bridge_events: 'db-only', key_review_runs: 'db-only',
+  key_review_run_sources: 'db-only', key_review_audit: 'db-only',
+  knob_snapshots: 'db-only', query_index: 'db-only',
+  url_index: 'db-only', prompt_index: 'db-only',
+  // System
+  data_authority_sync: 'system',
+};
+
+const persistenceStatus = {
+  json: { label: 'json', className: 'tag-persist-json' },
+  'db-only': { label: 'db-only', className: 'tag-persist-db' },
+  deferred: { label: 'deferred', className: 'tag-persist-deferred' },
+  system: { label: 'system', className: 'tag-persist-system' },
 };
 
 function life(source, rebuild, sourceEdit, note, strict = 'no') {
@@ -325,13 +360,15 @@ const lifecycleMap = {
     '.workspace/runs/{runId}/run.json + screenshot files on disk',
     'yes',
     'partial',
-    'Rebuild requires both checkpoint metadata and the screenshot files still being present on disk.'
+    'Rebuild from JSON is correct, but rows are only usable if the referenced screenshot files remain on disk.',
+    'ext-dep'
   ),
   source_videos: life(
     '.workspace/runs/{runId}/run.json + video files on disk',
     'yes',
     'partial',
-    'Rebuild requires both checkpoint metadata and the video files still being present on disk.'
+    'Rebuild from JSON is correct, but rows are only usable if the referenced video files remain on disk.',
+    'ext-dep'
   ),
   knob_snapshots: life(
     'none',
@@ -375,7 +412,8 @@ const lifecycleMap = {
     'category_authority/{cat}/_control_plane/field_studio_map.json',
     'yes',
     'yes',
-    'Fresh rebuild honors the current stored map, but some direct edits still require compile to refresh generated artifacts.'
+    'Fresh rebuild auto-compiles if the map changed since last compile, then seeds from fresh generated artifacts.',
+    'yes'
   ),
   field_key_order: life(
     'category_authority/{cat}/_control_plane/field_key_order.json',
@@ -389,6 +427,13 @@ const lifecycleMap = {
     'yes',
     'yes',
     'Color edition state rebuilds from the per-product JSON mirror.',
+    'yes'
+  ),
+  color_edition_finder_runs: life(
+    '.workspace/products/{pid}/color_edition.json',
+    'yes',
+    'yes',
+    'Per-run LLM discovery detail rebuilds from the per-product JSON mirror.',
     'yes'
   ),
   brands: life(
@@ -451,7 +496,7 @@ const specDbGroups = [
   { label: 'Telemetry Indexes', tables: ['knob_snapshots', 'query_index', 'url_index', 'prompt_index'] },
   { label: 'Field Studio', tables: ['field_studio_map', 'field_key_order'] },
   { label: 'Crawl Ledger', tables: ['url_crawl_ledger', 'query_cooldowns'] },
-  { label: 'Color & Edition', tables: ['color_edition_finder'] },
+  { label: 'Color & Edition', tables: ['color_edition_finder', 'color_edition_finder_runs'] },
 ];
 
 const appDbGroups = [
@@ -509,6 +554,37 @@ const strictStatus = {
   yes: { label: 'strict yes', className: 'tag-strict-yes' },
   no: { label: 'strict no', className: 'tag-strict-no' },
   na: { label: 'strict n/a', className: 'tag-strict-na' },
+  'ext-dep': { label: 'strict ext-dep', className: 'tag-strict-ext' },
+};
+
+// ── CQRS compliance indicator ──
+// ✓ = verified compliant with CQRS dual-state mandate (dual-write confirmed in code, or intentionally ephemeral)
+// ✗ = not compliant (deferred scope, missing write-back, or durability gap)
+const cqrsCompliance = {
+  // JSON-backed strict yes — full dual-write, rebuild both ways
+  products: true, product_queue: true, product_runs: true,
+  runs: true, run_artifacts: true, crawl_sources: true,
+  url_crawl_ledger: true, query_cooldowns: true,
+  color_edition_finder: true, color_edition_finder_runs: true,
+  llm_route_matrix: true, field_key_order: true, field_studio_map: true,
+  brands: true, brand_categories: true, brand_renames: true,
+  settings: true, studio_maps: true, color_registry: true,
+  // JSON-backed ext-dep — rebuild correct, external fs dependency
+  source_screenshots: true, source_videos: true,
+  // DB-only intentionally ephemeral (telemetry / runtime queues / audit trails)
+  key_review_runs: true, key_review_run_sources: true, key_review_audit: true,
+  knob_snapshots: true, query_index: true, url_index: true, prompt_index: true,
+  bridge_events: true, curation_suggestions: true,
+  // System-managed — auto-recreated
+  data_authority_sync: true,
+  // Deferred — not scoped, missing write-back paths
+  component_identity: false, component_aliases: false, component_values: false,
+  enum_lists: false, list_values: false,
+  item_field_state: false, item_component_links: false, item_list_links: false,
+  product_review_state: false, key_review_state: false,
+  component_review_queue: false,
+  // DB-only with durability gap
+  billing_entries: false,
 };
 
 const schemaTableNames = new Set(allTables.map((t) => t.name));
@@ -575,7 +651,15 @@ function renderTableCard(t) {
   tagsHtml += `<span class="tag tag-store">${esc(store)}</span>`;
   tagsHtml += renderAuditTag(rebuildStatus, lifecycle.rebuild);
   tagsHtml += renderAuditTag(sourceEditStatus, lifecycle.sourceEdit);
+  const persist = persistenceMap[t.name];
+  if (persist) tagsHtml += renderAuditTag(persistenceStatus, persist);
   tagsHtml += renderAuditTag(strictStatus, lifecycle.strict);
+  const cqrsPass = cqrsCompliance[t.name];
+  if (cqrsPass === true) {
+    tagsHtml += `<span class="tag tag-cqrs-pass">\u2713</span>`;
+  } else if (cqrsPass === false) {
+    tagsHtml += `<span class="tag tag-cqrs-fail">\u2717</span>`;
+  }
 
   let colRows = '';
   for (const c of t.columns) {
@@ -688,6 +772,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .tag-strict-yes{background:rgba(13,148,136,0.12);color:var(--teal)}
 .tag-strict-no{background:rgba(244,63,94,0.12);color:var(--rose)}
 .tag-strict-na{background:var(--s2);color:var(--t2)}
+.tag-strict-ext{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.25)}
+.tag-persist-json{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.25)}
+.tag-persist-db{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.25)}
+.tag-persist-deferred{background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.25)}
+.tag-persist-system{background:rgba(6,182,212,0.18);color:#22d3ee;border:1px solid rgba(6,182,212,0.25)}
+.tag-cqrs-pass{background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:0.78rem;min-width:22px;text-align:center}
+.tag-cqrs-fail{background:rgba(244,63,94,0.2);color:#f87171;border:1px solid rgba(244,63,94,0.3);font-size:0.78rem;min-width:22px;text-align:center}
 .card-body{border-top:1px solid var(--border);padding:16px}
 .legend{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:24px;color:var(--t2);font-size:0.84rem}
 .legend p{margin:0 0 10px}
@@ -745,6 +836,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="stat"><div class="n">${appTables.length}</div><div class="l">AppDb Tables</div></div>
   <div class="stat"><div class="n">${new Set(Object.values(storeMap)).size}</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n">${allTables.length}</div><div class="l">Total Tables</div></div>
+  <div class="stat"><div class="n">${Object.values(persistenceMap).filter(v => v === 'json').length}</div><div class="l">JSON-backed</div></div>
+  <div class="stat"><div class="n">${Object.values(persistenceMap).filter(v => v === 'db-only').length}</div><div class="l">DB-only</div></div>
+  <div class="stat"><div class="n">${Object.values(persistenceMap).filter(v => v === 'deferred').length}</div><div class="l">Deferred</div></div>
+  <div class="stat"><div class="n">${Object.values(cqrsCompliance).filter(v => v === true).length}</div><div class="l">CQRS \u2713</div></div>
+  <div class="stat"><div class="n">${Object.values(cqrsCompliance).filter(v => v === false).length}</div><div class="l">CQRS \u2717</div></div>
 </div>
 
 <div class="audit-callout">
@@ -806,6 +902,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <td>Not a missing audit.</td>
       </tr>
       <tr>
+        <td><code>strict ext-dep</code></td>
+        <td>Rebuild logic is correct and seeds from JSON, but the table references external artifacts (files on disk, S3 objects) that must survive independently for rows to be fully usable.</td>
+        <td>Not a code-level rebuild defect; the SQL+JSON contract is honored. The caveat is an operational dependency on external storage.</td>
+      </tr>
+      <tr>
         <td><code>source edit yes</code></td>
         <td>Direct add/remove edits in the authoritative durable source set are expected to show up on a fresh deleted-DB rebuild.</td>
         <td>Not a promise that runtime SQL edits write back out, or that non-authoritative mirrors also control the row.</td>
@@ -824,6 +925,36 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <td><code>source edit n/a</code></td>
         <td>No user-editable durable source applies to that table.</td>
         <td>Not a missing audit; the concept does not apply there.</td>
+      </tr>
+      <tr>
+        <td><code>json</code></td>
+        <td>Table is backed by a durable JSON source and can be rebuilt from it on a deleted-DB rebuild.</td>
+        <td>Not a promise that every column round-trips perfectly; partial-rebuild caveats may still apply.</td>
+      </tr>
+      <tr>
+        <td><code>db-only</code></td>
+        <td>Table lives only in SQL with no durable JSON backing. Data is lost on a deleted-DB rebuild.</td>
+        <td>Not necessarily a bug; some tables (telemetry, audit trails) are intentionally ephemeral.</td>
+      </tr>
+      <tr>
+        <td><code>deferred</code></td>
+        <td>Schema and some frontend/backend wiring exist, but the feature is not scoped or fully implemented yet.</td>
+        <td>Not dead code; it is pre-wired for a planned feature.</td>
+      </tr>
+      <tr>
+        <td><code>system</code></td>
+        <td>System-managed operational metadata, auto-recreated by the runtime.</td>
+        <td>Not a user-editable persistence surface.</td>
+      </tr>
+      <tr>
+        <td><code>\u2713</code></td>
+        <td>CQRS compliant: table meets the Dual-State Architecture Mandate. Either JSON-backed with verified dual-write (edits propagate both ways and rebuild is correct), or intentionally ephemeral per the db-only carve-out (telemetry, runtime queues, audit trails).</td>
+        <td>Not a guarantee of zero bugs; it means the architectural contract is satisfied.</td>
+      </tr>
+      <tr>
+        <td><code>\u2717</code></td>
+        <td>Not CQRS compliant: table has a known gap — deferred scope with missing write-back paths, or a durability concern that has not been addressed.</td>
+        <td>Not necessarily broken; deferred tables are pre-wired for planned features.</td>
       </tr>
     </tbody>
   </table>

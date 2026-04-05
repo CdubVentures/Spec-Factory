@@ -3,7 +3,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 export function registerColorEditionFinderRoutes(ctx) {
   const {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    logger, runColorEditionFinder, readColorEdition,
+    logger, runColorEditionFinder,
     deleteColorEditionFinderRun, deleteColorEditionFinderAll,
   } = ctx;
 
@@ -28,14 +28,13 @@ export function registerColorEditionFinderRoutes(ctx) {
       const row = specDb.getColorEditionFinder(productId);
       if (!row) return jsonRes(res, 404, { error: 'not found' });
 
-      const jsonData = readColorEdition({ productId }) || {};
       const now = new Date().toISOString();
       const onCooldown = Boolean(row.cooldown_until && row.cooldown_until > now);
 
-      // Support new format (selected) and legacy (colors/editions objects)
-      const selected = jsonData.selected || null;
-      const colorDetails = selected ? {} : (jsonData.colors || {});
-      const editionDetails = selected ? {} : (jsonData.editions || {});
+      // Runs from SQL projection (frontend never reads JSON)
+      const runs = specDb.listColorEditionFinderRuns(productId);
+      const latestRun = runs.length > 0 ? runs[runs.length - 1] : null;
+      const selected = latestRun?.selected || { colors: row.colors, editions: {}, default_color: row.default_color };
 
       return jsonRes(res, 200, {
         product_id: row.product_id,
@@ -47,10 +46,10 @@ export function registerColorEditionFinderRoutes(ctx) {
         on_cooldown: onCooldown,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
-        selected: selected || { colors: row.colors, editions: {}, default_color: row.default_color },
-        runs: Array.isArray(jsonData.runs) ? jsonData.runs : [],
-        color_details: colorDetails,
-        edition_details: editionDetails,
+        selected,
+        runs,
+        color_details: {},
+        edition_details: {},
       });
     }
 
@@ -115,10 +114,11 @@ export function registerColorEditionFinderRoutes(ctx) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
+      specDb.deleteColorEditionFinderRunByNumber(productId, runNumber);
       const updated = deleteColorEditionFinderRun({ productId, runNumber });
 
       if (updated) {
-        // Sync SQL from recalculated state
+        // Sync SQL summary from recalculated state
         specDb.upsertColorEditionFinder({
           category,
           product_id: productId,
@@ -130,7 +130,8 @@ export function registerColorEditionFinderRoutes(ctx) {
           run_count: updated.run_count || 0,
         });
       } else {
-        // No runs left — delete SQL row
+        // No runs left — delete SQL rows
+        specDb.deleteAllColorEditionFinderRuns(productId);
         specDb.deleteColorEditionFinder(productId);
       }
 
@@ -154,6 +155,7 @@ export function registerColorEditionFinderRoutes(ctx) {
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
       deleteColorEditionFinderAll({ productId });
+      specDb.deleteAllColorEditionFinderRuns(productId);
       specDb.deleteColorEditionFinder(productId);
 
       emitDataChange({

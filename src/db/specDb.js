@@ -161,6 +161,12 @@ export class SpecDb {
         _getColorEditionFinder: this._getColorEditionFinder,
         _listColorEditionFinderByCategory: this._listColorEditionFinderByCategory,
         _getColorEditionFinderOnCooldown: this._getColorEditionFinderOnCooldown,
+        _deleteColorEditionFinder: this._deleteColorEditionFinder,
+        _insertColorEditionFinderRun: this._insertColorEditionFinderRun,
+        _listColorEditionFinderRuns: this._listColorEditionFinderRuns,
+        _getLatestColorEditionFinderRun: this._getLatestColorEditionFinderRun,
+        _deleteColorEditionFinderRunByNumber: this._deleteColorEditionFinderRunByNumber,
+        _deleteAllColorEditionFinderRuns: this._deleteAllColorEditionFinderRuns,
       },
     });
   }
@@ -681,7 +687,8 @@ export class SpecDb {
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries',
-      'color_edition_finder'
+      'color_edition_finder',
+      'color_edition_finder_runs'
     ];
     const result = {};
     for (const table of tables) {
@@ -743,6 +750,13 @@ export class SpecDb {
   listColorEditionFinderByCategory(cat) { return this._colorEditionFinderStore.listByCategory(cat); }
   getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
   deleteColorEditionFinder(pid) { return this._colorEditionFinderStore.remove(pid); }
+
+  // --- Color & Edition Finder Runs ---
+  insertColorEditionFinderRun(row) { this._colorEditionFinderStore.insertRun(row); }
+  listColorEditionFinderRuns(pid) { return this._colorEditionFinderStore.listRuns(pid); }
+  getLatestColorEditionFinderRun(pid) { return this._colorEditionFinderStore.getLatestRun(pid); }
+  deleteColorEditionFinderRunByNumber(pid, runNum) { return this._colorEditionFinderStore.removeRun(pid, runNum); }
+  deleteAllColorEditionFinderRuns(pid) { return this._colorEditionFinderStore.removeAllRuns(pid); }
 
   // --- Runtime Events ---
 

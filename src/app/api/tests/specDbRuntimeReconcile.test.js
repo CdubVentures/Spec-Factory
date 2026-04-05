@@ -182,4 +182,50 @@ describe('specDbRuntime hash-gated reconcile', () => {
 
     try { await fs.rm(tempRoot, { recursive: true, force: true }); } catch { /* EBUSY on Windows — SQLite file lock */ }
   });
+
+  test('stores post-sync signature from syncResult, not pre-computed signature', async () => {
+    const { tempRoot, indexLabRoot, productRoot, dbDir } = await makeTempRoots();
+
+    // WHY: If sync triggers a compile, generated artifacts change and the
+    // pre-computed signature is stale. The stored meta must use the post-sync
+    // signature returned by syncSpecDbForCategory, not the one computed before sync.
+    const runtime = createRuntime({
+      indexLabRoot,
+      productRoot,
+      dbDir,
+      buildFieldRulesSignature: async () => 'sig-before-compile',
+      syncSpecDbForCategory: async () => createSyncResult({
+        field_rules_signature: 'sig-after-compile',
+      }),
+    });
+
+    // First call: auto-seed.
+    const db = await runtime.getSpecDbReady('mouse');
+    assert.ok(db);
+
+    // Mark seeded with a DIFFERENT signature to trigger reconcile.
+    db.db.exec("INSERT OR IGNORE INTO products (product_id, category, brand) VALUES ('test-001', 'mouse', 'Test')");
+    db.recordSpecDbSync({
+      category: 'mouse',
+      status: 'ok',
+      meta: { field_rules_signature: 'sig-old' },
+    });
+
+    // Clear cache to trigger hash-gated reconcile.
+    runtime.specDbCache.clear();
+    await runtime.getSpecDbReady('mouse');
+
+    // Verify the STORED signature is the post-sync one, not pre-computed.
+    const state = db.getSpecDbSyncState('mouse');
+    assert.ok(state);
+    const meta = typeof state.last_sync_meta === 'string'
+      ? JSON.parse(state.last_sync_meta) : state.last_sync_meta;
+    assert.equal(
+      meta.field_rules_signature,
+      'sig-after-compile',
+      'should store post-sync signature from syncResult, not pre-computed "sig-before-compile"'
+    );
+
+    try { await fs.rm(tempRoot, { recursive: true, force: true }); } catch { /* EBUSY on Windows — SQLite file lock */ }
+  });
 });

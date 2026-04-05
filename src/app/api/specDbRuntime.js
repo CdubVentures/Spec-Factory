@@ -128,10 +128,12 @@ export function createSpecDbRuntime({
           getSpecDbReady: async () => db,
         });
 
-        // Store the new signature in sync meta so next open can skip.
+        // WHY: Use post-sync signature from syncResult, not pre-computed currentSignature.
+        // If sync triggered an auto-compile, generated artifacts changed and
+        // currentSignature (computed before sync) is stale.
         if (typeof db.recordSpecDbSync === 'function') {
           const meta = syncResult && typeof syncResult === 'object' ? { ...syncResult } : {};
-          meta.field_rules_signature = currentSignature;
+          meta.field_rules_signature = syncResult?.field_rules_signature || currentSignature;
           db.recordSpecDbSync({ category: resolvedCategory, status: 'ok', meta });
         }
 

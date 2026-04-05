@@ -11,14 +11,18 @@ function makeJsonCapture() {
   return { jsonRes, calls };
 }
 
-function makeSpecDbStub(finderRow = null, listRows = [], productRow = null) {
+function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runRows = []) {
   return {
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
+    listColorEditionFinderRuns: () => runRows,
     getColorEditionFinderIfOnCooldown: () => null,
     getProduct: () => productRow ?? { product_id: 'mouse-001', category: 'mouse', brand: 'Corsair', model: 'M75 Air Wireless', variant: '', seed_urls: '[]' },
     upsertColorEditionFinder: () => {},
     deleteColorEditionFinder: () => {},
+    deleteColorEditionFinderRunByNumber: () => {},
+    deleteAllColorEditionFinderRuns: () => {},
+    insertColorEditionFinderRun: () => {},
     category: 'mouse',
   };
 }
@@ -39,13 +43,12 @@ function makeCtx(overrides = {}) {
       readJsonBody: async () => ({}),
       config: {},
       appDb: makeAppDbStub(),
-      getSpecDb: () => makeSpecDbStub(overrides.finderRow, overrides.listRows),
+      getSpecDb: () => makeSpecDbStub(overrides.finderRow, overrides.listRows, null, overrides.runRows),
       broadcastWs: () => {},
       logger: { info: () => {}, warn: () => {}, error: () => {} },
       runColorEditionFinder: overrides.runFn || (async () => ({
         colors: ['black'], editions: {}, default_color: 'black', fallbackUsed: false,
       })),
-      readColorEdition: overrides.readFn || (() => null),
       deleteColorEditionFinderRun: overrides.deleteRunFn || (() => null),
       deleteColorEditionFinderAll: overrides.deleteAllFn || (() => ({ deleted: true })),
     },
@@ -76,24 +79,28 @@ describe('colorEditionFinderRoutes', () => {
   });
 
   describe('GET /color-edition-finder/:category/:productId', () => {
-    it('returns finder result with runs array', async () => {
+    it('returns finder result with runs from SQL', async () => {
       const finderRow = {
         category: 'mouse', product_id: 'mouse-001',
         colors: ['black', 'white'], editions: ['launch-edition'],
         default_color: 'black', cooldown_until: '', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 2,
       };
-      const jsonData = {
+      const runRows = [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+        fallback_used: false, cooldown_until: '',
         selected: { colors: ['black', 'white'], editions: { 'launch-edition': { colors: ['black'] } }, default_color: 'black' },
-        runs: [{ run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' }],
-      };
-      const { ctx, calls } = makeCtx({ finderRow, readFn: () => jsonData });
+        prompt: { system: 'test', user: '{}' }, response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      }];
+      const { ctx, calls } = makeCtx({ finderRow, runRows });
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
       assert.ok(calls[0].body.selected);
+      assert.deepEqual(calls[0].body.selected.colors, ['black', 'white']);
       assert.ok(Array.isArray(calls[0].body.runs));
       assert.equal(calls[0].body.runs.length, 1);
+      assert.equal(calls[0].body.runs[0].model, 'gpt-5.4');
     });
 
     it('returns 404 for unknown product', async () => {

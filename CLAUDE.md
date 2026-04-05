@@ -339,6 +339,26 @@ UI drift and one-off styling are forbidden.
 
 ---
 
+## The Dual-State Architecture Mandate (CQRS & Rebuild Contract)
+
+All new features, data models, and LLM outputs MUST adhere to a strictly separated Read/Write architectural pattern. We treat JSON as our durable memory and SQLite as our high-speed UI projection.
+
+  **1. The System of Record (JSON = Durable Memory):**
+    - All authoritative state, cumulative LLM outputs, and source configurations must be written to disk as JSON (e.g., `.workspace/products/`, `category_authority/`).
+    - The JSON layer is the ultimate source of truth for *recovery* and *auditing*. 
+
+  **2. The Runtime SSOT (SQLite = Frontend Projection):**
+    - The frontend and UI components MUST NEVER read, parse, or compute state directly from JSON files. 
+    - All JSON data required by the UI must be projected (parsed and normalized) into the appropriate SQLite  database (`app.sqlite` or `specDb`).
+    - The UI strictly queries the DB for fast O(1) lookups, complex filtering, and relational joins.
+
+  **3. The Rebuild Contract:**
+    - Any new SQL table added to the schema MUST support a "Deleted-DB Rebuild." 
+    - If the `.sqlite` file is deleted, the system must be able to reconstruct the table entirely from the   underlying JSON authoritative sources. 
+    - When generating new tables, always aim for the audit status of `rebuild yes` and `source edit yes`. Do not create `db-only` tables unless they are strictly for ephemeral telemetry or runtime queues.
+
+---
+
 ## O(1) Feature Scaling & Registry-Driven Architecture
 
 For all code generation, architecture design, and refactoring, you must strictly adhere to the **O(1) Feature Scaling Rule**.

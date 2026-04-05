@@ -45,11 +45,6 @@ function createMockCtx(overrides = {}) {
     readRunSummaryEvents: async () => [],
     readIndexLabRunNeedSet: async () => null,
     readIndexLabRunSearchProfile: async () => null,
-    readIndexLabRunPrimeSources: async () => null,
-    readIndexLabRunDynamicFetchDashboard: async () => null,
-    readIndexLabRunSourceIndexingPackets: async () => null,
-    readIndexLabRunItemIndexingPacket: async () => null,
-    readIndexLabRunRunMetaPacket: async () => null,
     readIndexLabRunSerpExplorer: async () => null,
     readIndexLabRunAutomationQueue: async () => null,
     listIndexLabRuns: async () => [],
@@ -120,31 +115,6 @@ test('analytics API — compound-curve: valid → 200', async () => {
   assert.equal(r.statusCode, 200);
   assert.equal(r.body.category, 'mouse');
   assert.equal(r.body.verdict, 'NOT_PROVEN');
-});
-
-test('analytics API — plan-diff: missing run IDs → 400', async () => {
-  const handler = registerIndexlabRoutes(createMockCtx());
-  const r = res();
-  await handler(
-    ['indexlab', 'analytics', 'plan-diff'],
-    new URLSearchParams(),
-    'GET', null, r,
-  );
-  assert.equal(r.statusCode, 400);
-  assert.equal(r.body.error, 'missing_run_ids');
-});
-
-test('analytics API — plan-diff: packet not found → 404', async () => {
-  const handler = registerIndexlabRoutes(createMockCtx({
-    readIndexLabRunItemIndexingPacket: async () => null,
-  }));
-  const r = res();
-  await handler(
-    ['indexlab', 'analytics', 'plan-diff'],
-    new URLSearchParams('run1=r1&run2=r2'),
-    'GET', null, r,
-  );
-  assert.equal(r.statusCode, 404);
 });
 
 test('analytics API — cross-run-metrics: valid → 200', async () => {

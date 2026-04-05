@@ -24,11 +24,6 @@ export function registerIndexlabRoutes(ctx) {
     readIndexLabRunEvents,
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
-    readIndexLabRunPrimeSources,
-    readIndexLabRunDynamicFetchDashboard,
-    readIndexLabRunSourceIndexingPackets,
-    readIndexLabRunItemIndexingPacket,
-    readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
     readIndexLabRunAutomationQueue,
     listIndexLabRuns,
@@ -42,8 +37,6 @@ export function registerIndexlabRoutes(ctx) {
     buildScreenshotManifestFromEvents,
     // Cross-run analytics (Phase 4B)
     computeCompoundCurve,
-    diffRunPlans,
-    buildFieldMapFromPacket,
     aggregateCrossRunMetrics,
     aggregateHostHealth,
   } = ctx;
@@ -210,57 +203,6 @@ export function registerIndexlabRoutes(ctx) {
         run_id: runId,
         ...searchProfile
       });
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'prime-sources' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunPrimeSources(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'prime_sources_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, {
-        run_id: runId,
-        ...payload
-      });
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'dynamic-fetch-dashboard' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunDynamicFetchDashboard(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'dynamic_fetch_dashboard_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, {
-        run_id: runId,
-        ...payload
-      });
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'source-indexing-packets' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunSourceIndexingPackets(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'source_indexing_packets_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, payload);
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'item-indexing-packet' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunItemIndexingPacket(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'item_indexing_packet_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, payload);
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'run-meta-packet' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunRunMetaPacket(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'run_meta_packet_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, payload);
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'serp' && method === 'GET') {
@@ -511,24 +453,6 @@ export function registerIndexlabRoutes(ctx) {
         runSummaries: runs,
         queryRows: _ccSpecDb ? _ccSpecDb.getQueryIndexByCategory(effectiveCategory) : [],
         urlRows: _ccSpecDb ? _ccSpecDb.getUrlIndexByCategory(effectiveCategory) : [],
-      });
-      return jsonRes(res, 200, result);
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'analytics' && parts[2] === 'plan-diff' && method === 'GET') {
-      const run1Id = String(params.get('run1') || '').trim();
-      const run2Id = String(params.get('run2') || '').trim();
-      if (!run1Id || !run2Id) return jsonRes(res, 400, { error: 'missing_run_ids' });
-      const [packet1, packet2] = await Promise.all([
-        readIndexLabRunItemIndexingPacket(run1Id),
-        readIndexLabRunItemIndexingPacket(run2Id),
-      ]);
-      if (!packet1 || !packet2) {
-        return jsonRes(res, 404, { error: 'packet_not_found', run1_found: Boolean(packet1), run2_found: Boolean(packet2) });
-      }
-      const result = diffRunPlans({
-        run1Summary: { run_id: run1Id, fields: buildFieldMapFromPacket(packet1) },
-        run2Summary: { run_id: run2Id, fields: buildFieldMapFromPacket(packet2) },
       });
       return jsonRes(res, 200, result);
     }

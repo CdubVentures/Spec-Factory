@@ -1,9 +1,6 @@
 import {
   readIndexLabRunEvents, readIndexLabRunMeta, resolveIndexLabRunDirectory,
   readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-  readIndexLabRunPrimeSources,
-  readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
-  readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
   readIndexLabRunSerpExplorer,
   readIndexLabRunAutomationQueue,
   listIndexLabRuns,
@@ -14,7 +11,7 @@ import {
   buildScreenshotManifestFromEvents,
 } from '../validation/index.js';
 import {
-  computeCompoundCurve, diffRunPlans, buildFieldMapFromPacket,
+  computeCompoundCurve,
   aggregateCrossRunMetrics, aggregateHostHealth,
 } from '../analytics/index.js';
 import { buildRoundSummaryFromEvents } from '../domain/roundSummary.js';
@@ -37,15 +34,12 @@ export function createIndexlabRouteContext(options = {}) {
     getIndexLabRoot, getSpecDb,
     readIndexLabRunMeta, resolveIndexLabRunDirectory,
     readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-    readIndexLabRunPrimeSources,
-    readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
-    readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
     readIndexLabRunAutomationQueue,
     listIndexLabRuns, buildRoundSummaryFromEvents, buildSearchHints,
     buildAnchorsSuggestions, buildKnownValuesSuggestions,
     evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,
-    buildScreenshotManifestFromEvents, computeCompoundCurve, diffRunPlans,
-    buildFieldMapFromPacket, aggregateCrossRunMetrics, aggregateHostHealth,
+    buildScreenshotManifestFromEvents, computeCompoundCurve,
+    aggregateCrossRunMetrics, aggregateHostHealth,
   };
 }

@@ -73,11 +73,6 @@
 | GET | `/api/v1/indexlab/run/:runId/events` | replay run events | none | none | `{ run_id, count, events }` |
 | GET | `/api/v1/indexlab/run/:runId/needset` | read run needset | none | none | needset payload |
 | GET | `/api/v1/indexlab/run/:runId/search-profile` | read run search profile | none | none | search profile payload |
-| GET | `/api/v1/indexlab/run/:runId/prime-sources` | read prime sources packet | none | none | prime sources payload |
-| GET | `/api/v1/indexlab/run/:runId/dynamic-fetch-dashboard` | read dynamic-fetch dashboard | none | none | dynamic-fetch payload |
-| GET | `/api/v1/indexlab/run/:runId/source-indexing-packets` | read source packet collection | none | none | source packet payload |
-| GET | `/api/v1/indexlab/run/:runId/item-indexing-packet` | read item packet | none | none | item packet payload |
-| GET | `/api/v1/indexlab/run/:runId/run-meta-packet` | read run-meta packet | none | none | run-meta packet payload |
 | GET | `/api/v1/indexlab/run/:runId/serp` | read SERP explorer payload | none | none | SERP payload |
 | GET | `/api/v1/indexlab/run/:runId/automation-queue` | read automation queue | none | none | automation queue payload |
 | GET | `/api/v1/indexlab/run/:runId/rounds` | summarize run rounds from events | none | none | round summary |
@@ -88,7 +83,6 @@
 | GET | `/api/v1/indexlab/indexes/prompt-summary` | summarize prompt index by category | none | none | summary payload |
 | GET | `/api/v1/indexlab/indexes/knob-snapshots` | read knob snapshots by category | none | none | `{ category, snapshots }` |
 | GET | `/api/v1/indexlab/analytics/compound-curve` | compound learning curve | none | none | analytics payload |
-| GET | `/api/v1/indexlab/analytics/plan-diff` | diff two run plans | none | none | plan diff payload |
 | GET | `/api/v1/indexlab/analytics/cross-run-metrics` | cross-run aggregation | none | none | aggregated metrics |
 | GET | `/api/v1/indexlab/analytics/host-health` | host-health aggregation | none | none | `{ category, hosts }` |
 | GET | `/api/v1/indexlab/live-crawl/check-catalog` | read live-crawl validation catalog | none | none | validation section catalog |

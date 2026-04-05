@@ -683,6 +683,23 @@ CREATE TABLE IF NOT EXISTS color_edition_finder (
   PRIMARY KEY (category, product_id)
 );
 CREATE INDEX IF NOT EXISTS idx_cef_cooldown ON color_edition_finder(cooldown_until);
+
+-- Color & Edition Finder Runs (per-run LLM discovery detail, rebuildable from product JSON)
+CREATE TABLE IF NOT EXISTS color_edition_finder_runs (
+  category        TEXT NOT NULL,
+  product_id      TEXT NOT NULL,
+  run_number      INTEGER NOT NULL,
+  ran_at          TEXT DEFAULT '',
+  model           TEXT DEFAULT 'unknown',
+  fallback_used   INTEGER DEFAULT 0,
+  cooldown_until  TEXT DEFAULT '',
+  selected_json   TEXT DEFAULT '{}',
+  prompt_json     TEXT DEFAULT '{}',
+  response_json   TEXT DEFAULT '{}',
+  UNIQUE(category, product_id, run_number)
+);
+CREATE INDEX IF NOT EXISTS idx_cefr_product
+  ON color_edition_finder_runs(category, product_id);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

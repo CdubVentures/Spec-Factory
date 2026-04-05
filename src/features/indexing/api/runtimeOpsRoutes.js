@@ -161,7 +161,6 @@ export function registerRuntimeOpsRoutes(ctx) {
     readRunSummaryEvents,
     readIndexLabRunSearchProfile,
     readIndexLabRunMeta,
-    readIndexLabRunSourceIndexingPackets,
     resolveIndexLabRunDirectory,
     processStatus,
     getLastScreencastFrame,
@@ -289,9 +288,7 @@ export function registerRuntimeOpsRoutes(ctx) {
         safeReadJson,
         path,
       });
-      const sourceIndexingPacketCollection = typeof readIndexLabRunSourceIndexingPackets === 'function'
-        ? await readIndexLabRunSourceIndexingPackets(runId).catch(() => null)
-        : null;
+      const sourceIndexingPacketCollection = null;
       const workers = buildRuntimeOpsWorkers(events, {
         sourceIndexingPacketCollection,
         crawleeRequestHandlerTimeoutSecs: config?.crawleeRequestHandlerTimeoutSecs,
@@ -325,9 +322,7 @@ export function registerRuntimeOpsRoutes(ctx) {
 
     if (subPath === 'extraction' && parts[5] === 'fields') {
       const round = params.has('round') ? toInt(params.get('round'), null) : null;
-      const sourceIndexingPacketCollection = typeof readIndexLabRunSourceIndexingPackets === 'function'
-        ? await readIndexLabRunSourceIndexingPackets(runId).catch(() => null)
-        : null;
+      const sourceIndexingPacketCollection = null;
       const sourcePackets = Array.isArray(sourceIndexingPacketCollection)
         ? sourceIndexingPacketCollection
         : (sourceIndexingPacketCollection?.packets || []);
@@ -370,9 +365,7 @@ export function registerRuntimeOpsRoutes(ctx) {
 
     if (subPath === 'workers' && parts[5]) {
       const workerIdParam = decodeURIComponent(String(parts[5]));
-      const sourceIndexingPacketCollection = typeof readIndexLabRunSourceIndexingPackets === 'function'
-        ? await readIndexLabRunSourceIndexingPackets(runId).catch(() => null)
-        : null;
+      const sourceIndexingPacketCollection = null;
       const detail = buildWorkerDetail(events, workerIdParam, {
         resolveScreenshotMetadata,
         sourceIndexingPacketCollection,
@@ -391,9 +384,7 @@ export function registerRuntimeOpsRoutes(ctx) {
           ? workers.find((row) => String(row?.worker_id || '').trim() === workerIdParam)
           : null;
         if (worker && shouldSynthesizeRuntimeProofFrame(worker)) {
-          const sourceIndexingPacketCollection = typeof readIndexLabRunSourceIndexingPackets === 'function'
-            ? await readIndexLabRunSourceIndexingPackets(runId).catch(() => null)
-            : null;
+          const sourceIndexingPacketCollection = null;
           const detail = buildWorkerDetail(events, workerIdParam, {
             resolveScreenshotMetadata,
             sourceIndexingPacketCollection,

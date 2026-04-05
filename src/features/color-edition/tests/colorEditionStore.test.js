@@ -392,4 +392,45 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
     const row = specDb.getColorEditionFinder('rebuild-wrong-cat');
     assert.equal(row, null);
   });
+
+  it('rebuild seeds runs table from JSON runs array', () => {
+    writeColorEdition({
+      productId: 'rebuild-runs', productRoot: REBUILD_ROOT,
+      data: {
+        product_id: 'rebuild-runs', category: 'mouse',
+        selected: { colors: ['black', 'red'], editions: {}, default_color: 'black' },
+        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-02T00:00:00Z', run_count: 2,
+        runs: [
+          {
+            run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'model-a',
+            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            selected: { colors: ['black'], editions: {}, default_color: 'black' },
+            prompt: { system: 'sys1', user: 'usr1' },
+            response: { colors: ['black'], editions: {}, default_color: 'black' },
+          },
+          {
+            run_number: 2, ran_at: '2026-04-02T00:00:00Z', model: 'model-b',
+            fallback_used: true, cooldown_until: '2026-05-01T00:00:00Z',
+            selected: { colors: ['black', 'red'], editions: {}, default_color: 'black' },
+            prompt: { system: 'sys2', user: 'usr2' },
+            response: { colors: ['black', 'red'], editions: {}, default_color: 'black' },
+          },
+        ],
+      },
+    });
+
+    const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
+    assert.equal(stats.runs_seeded >= 2, true);
+
+    const runs = specDb.listColorEditionFinderRuns('rebuild-runs');
+    assert.equal(runs.length, 2);
+    assert.equal(runs[0].run_number, 1);
+    assert.equal(runs[0].model, 'model-a');
+    assert.equal(runs[0].fallback_used, false);
+    assert.deepEqual(runs[0].prompt.system, 'sys1');
+    assert.equal(runs[1].run_number, 2);
+    assert.equal(runs[1].model, 'model-b');
+    assert.equal(runs[1].fallback_used, true);
+    assert.deepEqual(runs[1].selected.colors, ['black', 'red']);
+  });
 });
