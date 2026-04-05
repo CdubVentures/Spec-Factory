@@ -1,8 +1,0 @@
-{
-  "effortLevel": "high",
-  "statusLine": {
-    "type": "command",
-    "command": "node C:/Users/Chris/.claude/statusline.mjs",
-    "padding": 0
-  }
-}
