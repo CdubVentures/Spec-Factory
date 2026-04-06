@@ -155,7 +155,7 @@ describe('V4 - buildNormalizedKeyQueue', () => {
         alias_shards: [['battery life', 'battery runtime']],
         domains_tried_for_key: ['rtings.com'],
         content_types_tried_for_key: ['review'],
-        idx: { domain_hints: ['rtings.com', 'mousespecs.org'], preferred_content_types: ['review', 'product_page'] },
+        idx: { domain_hints: ['rtings.com', 'mousespecs.org'], content_types: ['review', 'product_page'] },
       },
     ];
     const queue = buildNormalizedKeyQueue(fields);
@@ -166,7 +166,7 @@ describe('V4 - buildNormalizedKeyQueue', () => {
     assert.equal(entry.repeat_count, 2);
     assert.deepStrictEqual(entry.all_aliases, ['battery life', 'battery runtime']);
     assert.deepStrictEqual(entry.domain_hints, ['rtings.com', 'mousespecs.org']);
-    assert.deepStrictEqual(entry.preferred_content_types, ['review', 'product_page']);
+    assert.deepStrictEqual(entry.content_types, ['review', 'product_page']);
     assert.deepStrictEqual(entry.domains_tried_for_key, ['rtings.com']);
   });
 });

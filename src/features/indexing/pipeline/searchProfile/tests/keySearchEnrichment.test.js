@@ -33,7 +33,7 @@ function makeFocusGroupsWithKeys(repeatCount = 0) {
           all_aliases: ['report rate', 'Hz'],
           domain_hints: ['razer.com', 'rtings.com'],
           domains_tried_for_key: [],
-          preferred_content_types: ['spec_sheet', 'review'],
+          content_types: ['spec_sheet', 'review'],
           content_types_tried_for_key: [],
         },
       ],

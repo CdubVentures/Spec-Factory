@@ -192,7 +192,7 @@ describe('V4 - Schema 2 field entries carry V4 fields', () => {
         display_name: 'Weight',
         aliases: ['mass'],
         min_evidence_refs: 1,
-        search_hints: { query_terms: ['weight', 'grams'], preferred_content_types: ['spec'], domain_hints: [] },
+        search_hints: { query_terms: ['weight', 'grams'], content_types: ['spec'], domain_hints: [] },
       },
     };
     const result = computeNeedSet(makeBaseInput({ fieldOrder: ['weight'], fieldRules: rules }));

@@ -133,7 +133,7 @@ test('buildPreFetchPhases: extracts search_profile from artifacts', () => {
         weight: {
           query_terms: { value_count: 2, status: 'active' },
           domain_hints: { value_count: 1, status: 'active' },
-          preferred_content_types: { value_count: 1, status: 'active' },
+          content_types: { value_count: 1, status: 'active' },
         },
       },
     },

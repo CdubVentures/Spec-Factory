@@ -80,16 +80,16 @@ describe('buildSearchPlanningContext', () => {
       assert.deepStrictEqual(grp.domain_hints_union, ['example.com', 'other.com', 'razer.com']);
     });
 
-    it('preferred_content_types unioned from idx', () => {
+    it('content_types unioned from idx', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({
             field_key: 'f1', group_key: 'grp', state: 'unknown',
-            idx: { ...makeField().idx, preferred_content_types: ['spec_sheet', 'review'] }
+            idx: { ...makeField().idx, content_types: ['spec_sheet', 'review'] }
           }),
           makeField({
             field_key: 'f2', group_key: 'grp', state: 'unknown',
-            idx: { ...makeField().idx, preferred_content_types: ['review', 'product_page'] }
+            idx: { ...makeField().idx, content_types: ['review', 'product_page'] }
           })
         ]
       });
@@ -98,7 +98,7 @@ describe('buildSearchPlanningContext', () => {
         runContext: makeRunContext()
       });
       const grp = result.focus_groups.find(g => g.key === 'grp');
-      assert.deepStrictEqual(grp.preferred_content_types_union, ['product_page', 'review', 'spec_sheet']);
+      assert.deepStrictEqual(grp.content_types_union, ['product_page', 'review', 'spec_sheet']);
     });
 
     it('existing_queries unioned from history', () => {

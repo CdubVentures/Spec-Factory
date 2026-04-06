@@ -40,7 +40,7 @@ export function makeFocusGroup(overrides = {}) {
     query_count: 0,
     query_terms_union: ['sensor', 'dpi', 'cpi'],
     domain_hints_union: ['razer.com', 'techpowerup.com'],
-    preferred_content_types_union: ['spec_sheet'],
+    content_types_union: ['spec_sheet'],
     existing_queries_union: [],
     domains_tried_union: [],
     host_classes_tried_union: [],

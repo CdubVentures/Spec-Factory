@@ -183,28 +183,11 @@ export function buildSearchHints({
   enumSource = null
 } = {}) {
   const fieldLabel = titleFromKey(key);
-  const templates = [
-    '{brand} {model} {field}',
-    '{brand} {model} specifications {field}',
-    '{brand} {model} manual pdf {field}',
-    '{brand} {model} datasheet {field}'
-  ];
   const hints = {
     preferred_tiers: ['tier1', 'tier2', 'tier3'],
-    preferred_content_types: ['support', 'manual', 'spec', 'pdf', 'product_page'],
     query_terms: [fieldLabel],
-    query_templates: templates,
     domain_hints: ['manufacturer', 'support', 'manual', 'pdf']
   };
-  if (requiredLevel === 'identity' || requiredLevel === 'required' || requiredLevel === 'critical') {
-    hints.preferred_content_types = ['support', 'spec', 'manual', 'pdf', 'product_page'];
-  }
-  if (difficulty === 'hard' || availability === 'rare') {
-    hints.preferred_content_types = ['spec', 'manual', 'pdf', 'support', 'product_page'];
-  }
-  if (isObject(enumSource) && normalizeText(enumSource.type) === 'component_db') {
-    hints.preferred_content_types = ['support', 'spec', 'manual', 'pdf', 'lab'];
-  }
   if (canonicalParseTemplate(parseTemplate) === 'component_reference') {
     hints.query_terms = [fieldLabel, 'component'];
   }

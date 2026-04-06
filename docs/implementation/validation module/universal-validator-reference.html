@@ -127,6 +127,13 @@ tr:last-child td { border-bottom: none; }
     <li><span class="num">13</span><a href="#dim-pipeline">Full Pipeline Order &amp; Short-Circuit Rules</a></li>
     <li><span class="num">14</span><a href="#prompts">LLM Repair Prompt Catalog (all prompt templates)</a></li>
     <li><span class="num">15</span><a href="#hallucination">Hallucination Detection &amp; Rejection Patterns</a></li>
+    <li><span class="num">16</span><a href="#null-semantics">Universal Null / Empty / Unknown Semantics</a></li>
+    <li><span class="num">17</span><a href="#template-contract">Parse Template Extension Contract</a></li>
+    <li><span class="num">18</span><a href="#unit-registry">Universal Unit Registry &amp; Conversion Contract</a></li>
+    <li><span class="num">19</span><a href="#crossrule-dsl">Cross-Rule DSL &amp; Conflict Resolution</a></li>
+    <li><span class="num">20</span><a href="#category-onboarding">Category Onboarding Checklist</a></li>
+    <li><span class="num">21</span><a href="#edge-cases">Remaining Edge Cases &amp; Defensive Contracts</a></li>
+    <li><span class="num">22</span><a href="#live-gaps">Live Engine Gap Analysis (Audit 2026-04-05)</a></li>
   </ul>
 </div>
 
@@ -137,8 +144,13 @@ tr:last-child td { border-bottom: none; }
 <div class="panel" id="dim-overview">
   <h2>1. Validation Dimensions Overview Matrix</h2>
   <div class="small muted" style="margin-bottom:16px;">
-    Every field in the system is governed by these dimensions. The validator reads the field's rule definition and runs <strong>only</strong> the applicable checks.
-    A dimension is "applicable" when the field rule contains the corresponding key (e.g. a field with <code>unit: "mm"</code> triggers the Unit check).
+    <strong>Proven against live data:</strong> 297 fields across 3 categories (mouse: 81, keyboard: 103, monitor: 113).
+    <strong>100%</strong> of fields have <code>contract.type</code>, <code>contract.shape</code>, <code>parse.template</code>, and <code>enum.policy</code> defined.
+    <strong>Zero ambiguous fields.</strong> Every field is deterministically validatable from its rule definition alone.
+    <br/><br/>
+    <strong>Design principle:</strong> The validator's job is <strong>verification and repair</strong>, not transformation.
+    Unit conversion is the LLM's responsibility. The validator REJECTS wrong units, doesn't convert them.
+    <code>normalization_fn</code> is dead weight (zero fields use it) &mdash; dispatch is by <code>parse.template</code> directly.
   </div>
 
   <table>
@@ -245,68 +257,94 @@ tr:last-child td { border-bottom: none; }
   </table>
 
   <div class="card" style="margin-top:16px;">
-    <h3>Parse Template &rarr; Dimensions Mapping</h3>
-    <div class="small muted" style="margin-bottom:8px;">Each parse template activates a specific subset of dimensions. The validator reads <code>parse_templates[fieldKey].template</code> to know which checks to run.</div>
+    <h3>Proven Template &rarr; Deterministic Check Matrix (297 fields, 3 categories)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Each template maps to exactly one shape/type signature. The validator dispatches by <code>parse.template</code> directly (no <code>normalization_fn</code> indirection).
+      <strong>Data source:</strong> <code>category_authority/{mouse,keyboard,monitor}/_generated/field_rules.json</code>, queried 2026-04-06.
+    </div>
     <table>
-      <thead><tr><th>Parse Template</th><th>Shape</th><th>Type</th><th>Unit</th><th>Norm</th><th>Format</th><th>Enum</th><th>List</th><th>Round</th><th>Fields Using It</th></tr></thead>
+      <thead><tr><th>Parse Template</th><th>Fields</th><th>Shape</th><th>Type</th><th>Deterministic Check</th><th>Unit Verify</th><th>Enum</th><th>List Rules</th><th>Round</th></tr></thead>
       <tbody>
         <tr>
-          <td class="mono tiny">text_field</td>
-          <td>scalar</td><td>string</td><td>—</td><td>trim</td><td>non-empty</td><td>if policy</td><td>—</td><td>—</td>
-          <td class="tiny muted">sku, price_range, cable_type, mcu, shape, hump, form_factor, etc.</td>
+          <td class="mono tiny">text_field</td><td class="mono bold">140</td>
+          <td>scalar</td><td>string</td>
+          <td class="tiny"><code>typeof === 'string'</code>, non-empty or <code>'unk'</code></td>
+          <td class="tiny muted">&mdash;</td><td class="tiny">if policy</td><td>&mdash;</td><td>&mdash;</td>
         </tr>
         <tr>
-          <td class="mono tiny">boolean_yes_no_unk</td>
-          <td>scalar</td><td>string</td><td>—</td><td>lowercase</td><td>/^(yes|no|unk)$/</td><td>closed</td><td>—</td><td>—</td>
-          <td class="tiny muted">discontinued, bluetooth, paracord, rgb, onboard_memory, etc.</td>
+          <td class="mono tiny">number_with_unit</td><td class="mono bold">78</td>
+          <td>scalar</td><td>number</td>
+          <td class="tiny"><code>typeof === 'number'</code>, <code>isFinite</code>, strip same-unit suffix</td>
+          <td class="tiny"><span class="chip chip-danger">REJECT</span> wrong unit</td><td>&mdash;</td><td>&mdash;</td><td class="tiny">yes</td>
         </tr>
         <tr>
-          <td class="mono tiny">number_with_unit</td>
-          <td>scalar</td><td>number</td><td>convert</td><td>strip unit str</td><td>/^\d+(\.\d+)?$/</td><td>—</td><td>—</td><td>yes</td>
-          <td class="tiny muted">weight, height, width, lngth, dpi, ips, battery_hours, etc.</td>
+          <td class="mono tiny">boolean_yes_no_unk</td><td class="mono bold">35</td>
+          <td>scalar</td><td>string</td>
+          <td class="tiny">value &isin; <code>{yes, no, unk}</code></td>
+          <td class="tiny muted">&mdash;</td><td class="tiny">closed(3)</td><td>&mdash;</td><td>&mdash;</td>
         </tr>
         <tr>
-          <td class="mono tiny">integer_field</td>
-          <td>scalar</td><td>number</td><td>—</td><td>strip non-digit</td><td>/^\d+$/</td><td>—</td><td>—</td><td>floor</td>
-          <td class="tiny muted">encoder_life_span, encoder_steps</td>
+          <td class="mono tiny">list_of_tokens_delimited</td><td class="mono bold">21</td>
+          <td>list</td><td>string[]</td>
+          <td class="tiny"><code>Array&lt;string&gt;</code>, each non-empty, dedupe per list_rules</td>
+          <td class="tiny muted">&mdash;</td><td class="tiny">if policy</td><td class="tiny">yes</td><td>&mdash;</td>
         </tr>
         <tr>
-          <td class="mono tiny">list_of_tokens_delimited</td>
-          <td>list</td><td>string[]</td><td>—</td><td>full chain</td><td>per-token</td><td>if policy</td><td>yes</td><td>—</td>
-          <td class="tiny muted">colors, editions, design, lighting, coating, connectivity, grip, etc.</td>
+          <td class="mono tiny">integer_field</td><td class="mono bold">7</td>
+          <td>scalar</td><td>number</td>
+          <td class="tiny"><code>Number.isInteger(value)</code></td>
+          <td class="tiny muted">&mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="tiny">floor</td>
         </tr>
         <tr>
-          <td class="mono tiny">list_of_numbers_with_unit</td>
-          <td>list</td><td>number[]</td><td>convert</td><td>strip unit str</td><td>/^\d+(\.\d+)?$/</td><td>—</td><td>yes</td><td>yes</td>
-          <td class="tiny muted">polling_rate</td>
+          <td class="mono tiny">component_reference</td><td class="mono bold">4</td>
+          <td>scalar</td><td>string</td>
+          <td class="tiny">string, resolves in component_db (exact &rarr; alias &rarr; fuzzy)</td>
+          <td class="tiny muted">&mdash;</td><td class="tiny">closed(db)</td><td>&mdash;</td><td>&mdash;</td>
         </tr>
         <tr>
-          <td class="mono tiny">list_numbers_or_ranges</td>
-          <td>list</td><td>{min,max}[]</td><td>convert</td><td>—</td><td>/^\d+(-\d+)?$/</td><td>—</td><td>yes</td><td>yes</td>
-          <td class="tiny muted">lift</td>
+          <td class="mono tiny">url_field</td><td class="mono bold">4</td>
+          <td>scalar</td><td>string</td>
+          <td class="tiny">valid <code>new URL()</code> parse or <code>'unk'</code></td>
+          <td class="tiny muted">&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td>
         </tr>
         <tr>
-          <td class="mono tiny">component_reference</td>
-          <td>scalar</td><td>string</td><td>—</td><td>alias match</td><td>—</td><td>closed(db)</td><td>—</td><td>—</td>
-          <td class="tiny muted">sensor, switch, encoder, material</td>
+          <td class="mono tiny">date_field</td><td class="mono bold">3</td>
+          <td>scalar</td><td>string</td>
+          <td class="tiny"><code>/^\d{4}-\d{2}-\d{2}$/</code> or <code>'unk'</code></td>
+          <td class="tiny muted">&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td>
+        </tr>
+        <tr style="background:var(--sf-warning-bg);">
+          <td class="mono tiny">latency_list_modes_ms</td><td class="mono bold">2</td>
+          <td>list</td><td>object[]</td>
+          <td class="tiny"><code>Array&lt;{ms: number, mode: string}&gt;</code>, mode &isin; allowed enum</td>
+          <td class="tiny">ms</td><td class="tiny">mode: closed</td><td class="tiny">yes</td><td class="tiny">ms: 2dp</td>
         </tr>
         <tr>
-          <td class="mono tiny">date_field</td>
-          <td>scalar</td><td>string</td><td>—</td><td>ISO parse</td><td>/^\d{4}-\d{2}-\d{2}$/</td><td>—</td><td>—</td><td>—</td>
-          <td class="tiny muted">release_date, sensor_date</td>
+          <td class="mono tiny">list_numbers_or_ranges</td><td class="mono bold">1</td>
+          <td>list</td><td>number[]</td>
+          <td class="tiny"><code>Array&lt;number&gt;</code>, each <code>isFinite</code></td>
+          <td class="tiny">mm</td><td>&mdash;</td><td class="tiny">yes</td><td class="tiny">yes</td>
         </tr>
         <tr>
-          <td class="mono tiny">url_field</td>
-          <td>scalar</td><td>string</td><td>—</td><td>scheme prefix</td><td>URL regex</td><td>—</td><td>—</td><td>—</td>
-          <td class="tiny muted">sensor_link, encoder_link, mcu_link, switches_link</td>
+          <td class="mono tiny">list_of_numbers_with_unit</td><td class="mono bold">1</td>
+          <td>list</td><td>number[]</td>
+          <td class="tiny"><code>Array&lt;number&gt;</code>, each <code>isFinite</code></td>
+          <td class="tiny">Hz</td><td>&mdash;</td><td class="tiny">yes</td><td class="tiny">yes</td>
         </tr>
         <tr>
-          <td class="mono tiny">latency_list_modes_ms</td>
-          <td>list</td><td>object[]</td><td>ms</td><td>—</td><td>{mode,value}</td><td>—</td><td>yes</td><td>yes</td>
-          <td class="tiny muted">click_latency_list, sensor_latency_list</td>
+          <td class="mono tiny">integer_with_unit</td><td class="mono bold">1</td>
+          <td>scalar</td><td>number</td>
+          <td class="tiny"><code>Number.isInteger</code>, strip same-unit suffix</td>
+          <td class="tiny"><span class="chip chip-danger">REJECT</span> wrong unit</td><td>&mdash;</td><td>&mdash;</td><td class="tiny">floor</td>
         </tr>
       </tbody>
     </table>
+
+    <div class="small muted" style="margin-top:8px;">
+      <strong>Unit verification policy:</strong> The LLM outputs values in the correct unit. The validator strips same-unit suffixes deterministically
+      (e.g. <code>"120 mm"</code> for a mm field &rarr; <code>120</code>). If a <strong>different</strong> unit is detected (e.g. <code>"4.5 in"</code> for a mm field),
+      the validator <span class="fail">REJECTS</span> with <code>reason_code: 'wrong_unit'</code> and includes <code>expected_unit</code> + <code>detected_unit</code> for the repair LLM.
+    </div>
   </div>
 </div>
 
@@ -1678,6 +1716,1222 @@ RULES:
         Feed back: "these values failed: [...]"<br/>
         If still fails → <strong>manual review</strong>.
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 16: NULL / EMPTY / UNKNOWN SEMANTICS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="null-semantics">
+  <div class="check-header">
+    <span class="check-number">16</span>
+    <span class="check-title">Universal Null / Empty / Unknown Semantics</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every shape &times; absence combination must have a single defined behavior. No undefined states.
+    The validator normalizes all absence variants to the canonical form <strong>before</strong> any other check runs.
+  </div>
+
+  <table>
+    <thead><tr><th>Shape</th><th>Input</th><th>Canonical Form</th><th>Meaning</th><th>Passes Shape?</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">null</td><td class="mono repair">"unk"</td><td class="tiny">Unknown &mdash; not provided</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">undefined</td><td class="mono repair">"unk"</td><td class="tiny">Field missing entirely</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">""</td><td class="mono repair">"unk"</td><td class="tiny">Empty string = unknown</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">"N/A"</td><td class="mono repair">"unk"</td><td class="tiny">Explicit not-applicable</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">"unknown"</td><td class="mono repair">"unk"</td><td class="tiny">Verbose unknown</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">scalar/string</td><td class="mono tiny">"none"</td><td class="mono tiny">"none"</td><td class="tiny">Semantic value, NOT unknown (e.g. lighting: "none")</td><td><span class="chip chip-success">YES</span></td></tr>
+      <tr><td class="mono">scalar/number</td><td class="mono tiny">null</td><td class="mono repair">"unk"</td><td class="tiny">Unknown number</td><td><span class="chip chip-success">YES</span> (typed as unk-string)</td></tr>
+      <tr><td class="mono">scalar/number</td><td class="mono tiny">0</td><td class="mono tiny">0</td><td class="tiny">Valid zero (weight: 0 is suspicious but valid shape)</td><td><span class="chip chip-success">YES</span></td></tr>
+      <tr><td class="mono">scalar/number</td><td class="mono tiny">""</td><td class="mono repair">"unk"</td><td class="tiny">Empty for number = unknown</td><td><span class="chip chip-success">YES</span></td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">null</td><td class="mono repair">[]</td><td class="tiny">Null list = empty list</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">undefined</td><td class="mono repair">[]</td><td class="tiny">Missing list = empty list</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">[]</td><td class="mono tiny">[]</td><td class="tiny">Empty list (valid if min_items: 0)</td><td><span class="chip chip-success">YES</span></td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">[null, "black"]</td><td class="mono repair">["black"]</td><td class="tiny">Filter null elements from arrays</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">["", "black", ""]</td><td class="mono repair">["black"]</td><td class="tiny">Filter empty-string elements</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">["unk"]</td><td class="mono tiny">["unk"]</td><td class="tiny">Single unk in list = the list is unknown (not empty)</td><td><span class="chip chip-success">YES</span></td></tr>
+      <tr><td class="mono">record</td><td class="mono tiny">null</td><td class="mono repair">{}</td><td class="tiny">Null record = empty record</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">record</td><td class="mono tiny">undefined</td><td class="mono repair">{}</td><td class="tiny">Missing record = empty record</td><td><span class="chip chip-success">YES</span> (after norm)</td></tr>
+      <tr><td class="mono">record</td><td class="mono tiny">{}</td><td class="mono tiny">{}</td><td class="tiny">Empty record (e.g. no editions)</td><td><span class="chip chip-success">YES</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="code-block" style="margin-top:16px;"><span style="color:var(--sf-teal-fg);">// Universal absence normalizer &mdash; runs BEFORE shape check (Step 0)</span>
+const UNK_TOKENS = new Set(['unk', 'unknown', 'n/a', 'na', 'not available',
+  'not applicable', 'tbd', 'tba', 'unspecified', '-', '—', '–']);
+
+function normalizeAbsence(value, shape) {
+  // Null/undefined &rarr; canonical empty
+  if (value === null || value === undefined) {
+    if (shape === 'list') return [];
+    if (shape === 'record') return {};
+    return 'unk';
+  }
+  // String empties
+  if (typeof value === 'string') {
+    const lower = value.trim().toLowerCase();
+    if (lower === '' || UNK_TOKENS.has(lower)) return 'unk';
+  }
+  // List cleanup
+  if (Array.isArray(value)) {
+    return value.filter(v =&gt; v !== null &amp;&amp; v !== undefined &amp;&amp; v !== '');
+  }
+  return value;
+}</div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Unknown Reason Taxonomy</h3>
+    <div class="small muted" style="margin-bottom:8px;">When a value is set to "unk", the validator MUST record the reason. These are the valid reason codes.</div>
+    <table>
+      <thead><tr><th>Reason Code</th><th>Meaning</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">not_found_after_search</td><td class="tiny">LLM searched but couldn't find the value</td><td class="tiny muted">LLM extraction</td></tr>
+        <tr><td class="mono">not_applicable</td><td class="tiny">Field doesn't apply to this product</td><td class="tiny muted">LLM / human</td></tr>
+        <tr><td class="mono">validation_rejected</td><td class="tiny">Value existed but was rejected as invalid</td><td class="tiny muted">Validator</td></tr>
+        <tr><td class="mono">hallucination_detected</td><td class="tiny">Repair LLM identified as hallucinated</td><td class="tiny muted">Repair LLM</td></tr>
+        <tr><td class="mono">conditional_requirement_unmet</td><td class="tiny">Conditional rule requires field but it's missing</td><td class="tiny muted">Cross-field check</td></tr>
+        <tr><td class="mono">source_missing</td><td class="tiny">No source material contained this field</td><td class="tiny muted">Pipeline</td></tr>
+        <tr><td class="mono">type_coercion_failed</td><td class="tiny">Value could not be converted to required type</td><td class="tiny muted">Type check</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 17: TEMPLATE EXTENSION CONTRACT
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="template-contract">
+  <div class="check-header">
+    <span class="check-number">17</span>
+    <span class="check-title">Parse Template Extension Contract</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+    <span class="chip chip-purple">O(1) SCALING</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    When a new category introduces a field type not covered by existing templates, a new parse template must be registered.
+    This section defines <strong>exactly</strong> what a new template must declare to be valid for the universal validator.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// REQUIRED: Every parse template must declare this interface</span>
+{
+  template_id: string,              // unique kebab-case identifier
+  description: string,              // human-readable purpose
+
+  // Shape &amp; Type contract
+  output_shape: 'scalar' | 'list',  // what shape the validated value takes
+  output_type: 'string' | 'number' | 'boolean' | 'object',  // JS type of each element
+  element_schema: ZodSchema | null, // if output_type=object, Zod schema for each element
+
+  // Normalization
+  normalization_chain: string[],    // ordered list of normalizer IDs to apply
+                                    // e.g. ['trim', 'lowercase', 'hyphens', 'token_map']
+                                    // validators: 'trim' | 'lowercase' | 'hyphens' | 'underscores_to_hyphens'
+                                    //           | 'collapse_hyphens' | 'token_map' | 'strip_unit' | 'si_prefix'
+                                    //           | 'iso_date_parse' | 'url_scheme' | 'boolean_coerce'
+
+  // Format
+  format_regex: RegExp | null,      // post-normalization format check (null = no format check)
+  format_description: string,       // human-readable format for LLM prompts
+
+  // Unit (if numeric)
+  unit: string | null,              // target unit (null = no unit)
+  allowed_source_units: string[],   // units the parser can convert FROM (empty = no conversion)
+  sanity_bounds: { min: number, max: number } | null,  // physical range for hallucination check
+
+  // Enum
+  enum_source: 'known_values' | 'component_db' | null,  // where to find the vocabulary
+  default_enum_policy: 'closed' | 'open_prefer_known' | 'open' | null,  // fallback if field rule doesn't specify
+
+  // Rounding
+  default_decimals: number | null,  // fallback if field catalog doesn't specify
+
+  // Tests (REQUIRED for registration)
+  tests: [{ raw: any, expected: any }],  // at least 3 test cases proving template behavior
+}</div>
+
+  <h3>Template Registration Rules</h3>
+  <table>
+    <thead><tr><th>Rule</th><th>Enforcement</th></tr></thead>
+    <tbody>
+      <tr><td class="bold">Unique template_id</td><td class="tiny">Compile-time error if duplicate template_id exists in template_library</td></tr>
+      <tr><td class="bold">Tests required</td><td class="tiny">At least 3 test cases. Must include: happy path, edge case, unk handling</td></tr>
+      <tr><td class="bold">Normalization chain must use registered normalizers</td><td class="tiny">Unknown normalizer IDs are compile-time errors</td></tr>
+      <tr><td class="bold">format_regex must be provided if output_type is string</td><td class="tiny">String outputs without format checks are not allowed</td></tr>
+      <tr><td class="bold">sanity_bounds required if output_type is number</td><td class="tiny">Numeric fields without bounds cannot catch hallucinated magnitudes</td></tr>
+      <tr><td class="bold">element_schema required if output_type is object</td><td class="tiny">Object outputs without schemas bypass structural validation</td></tr>
+      <tr><td class="bold">No behavioral overlap with existing templates</td><td class="tiny">Human review required to confirm the new template is not a variant of an existing one</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Adding a New Template: Checklist</h3>
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// 1. Add template definition to parse_templates.json template_library{}</span>
+// 2. Implement normalization chain (reuse existing normalizers if possible)
+// 3. Write format regex
+// 4. Define sanity bounds (if numeric)
+// 5. Write ≥3 test cases in template_library.tests[]
+// 6. Run _compile_report to regenerate
+// 7. Verify validator picks up new template automatically (O(1) scaling)
+// 8. NO changes to validator source code should be needed
+//    If validator source must change → the template contract is incomplete → fix contract first</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 18: UNIVERSAL UNIT REGISTRY
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="unit-registry">
+  <div class="check-header">
+    <span class="check-number">18</span>
+    <span class="check-title">Universal Unit Registry &amp; Conversion Contract</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Units are not hard-coded in the validator. They live in a <strong>unit registry</strong> that any category can extend.
+    The validator reads the registry at runtime. New categories add entries; no validator code changes needed.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Unit Registry Schema (source of truth for all unit handling)</span>
+{
+  unit_id: string,              // canonical unit identifier: "mm", "g", "Hz", etc.
+  dimension: string,            // physical dimension: "length", "mass", "frequency", "time", "force", "speed", "resolution", "none"
+  display_label: string,        // e.g. "mm", "grams", "Hz"
+
+  conversions: [                // list of units that can be converted TO this unit
+    {
+      from_unit: string,        // source unit id: "cm", "in", "oz"
+      from_patterns: string[],  // regex patterns to detect this unit in strings: ["cm", "centimeters?"]
+      factor: number,           // multiply source value by this to get target
+      operation: 'multiply' | 'divide',  // usually multiply; divide for min→h, μs→ms
+    }
+  ],
+
+  sanity_bounds: {              // per-category overrides allowed
+    default: { min: number, max: number },  // fallback bounds
+    overrides: {                // category-specific bounds
+      // "mouse": { min: 0.1, max: 500 },
+      // "keyboard": { min: 1, max: 600 },
+    }
+  },
+
+  non_convertible: boolean,     // true for semantic pseudo-units like "none", "steps"
+                                // these pass through without conversion
+}
+
+<span style="color:var(--sf-teal-fg);">// Example entries</span>
+[
+  { unit_id: "mm", dimension: "length", conversions: [
+    { from_unit: "cm", from_patterns: ["cm", "centimeters?"], factor: 10, operation: "multiply" },
+    { from_unit: "in", from_patterns: ["in", "inches?", "\""], factor: 25.4, operation: "multiply" },
+    { from_unit: "m",  from_patterns: ["m", "meters?"], factor: 1000, operation: "multiply" },
+  ], sanity_bounds: { default: { min: 0.01, max: 10000 }, overrides: { mouse: { min: 0.1, max: 500 } } } },
+
+  { unit_id: "none", dimension: "none", conversions: [], non_convertible: true,
+    sanity_bounds: { default: { min: 0, max: 1000000 } } },
+]</div>
+
+  <h3>Unit Handling Rules</h3>
+  <table>
+    <thead><tr><th>Rule</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr><td class="bold">Unknown source unit</td><td class="tiny">If the value contains a unit string not in any <code>from_patterns</code>, mark as UNKNOWN &rarr; LLM repair. Do NOT guess conversion factors.</td></tr>
+      <tr><td class="bold">Non-convertible units</td><td class="tiny">Units marked <code>non_convertible: true</code> (e.g. "none", "steps") strip the unit text but do not multiply. Value passes through as-is.</td></tr>
+      <tr><td class="bold">Ambiguous units</td><td class="tiny">"mil" (0.001 inch or milliliter?), "cd/m²" &mdash; must be disambiguated by <code>dimension</code> matching. If ambiguous &rarr; LLM repair.</td></tr>
+      <tr><td class="bold">Marketing/vendor units</td><td class="tiny">"G-Shift DPI", "Lightning Speed" &mdash; not real units. Strip and flag as UNKNOWN if numeric value can't be extracted.</td></tr>
+      <tr><td class="bold">Category-specific bounds</td><td class="tiny">Sanity bounds are looked up by <code>overrides[category]</code> first, then <code>default</code>. A keyboard "width" has different valid ranges than a mouse "width".</td></tr>
+      <tr><td class="bold">Compound units</td><td class="tiny">e.g. "mm/s", "kg/m²" &mdash; future categories may need these. Handled by registering the compound as its own <code>unit_id</code> with explicit conversion rules.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 19: CROSS-RULE DSL
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="crossrule-dsl">
+  <div class="check-header">
+    <span class="check-number">19</span>
+    <span class="check-title">Cross-Rule DSL &amp; Conflict Resolution</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Cross-validation rules use a formal grammar. Every rule must be expressible in this DSL.
+    When multiple rules fire on the same field, conflict resolution follows a strict precedence model.
+  </div>
+
+  <h3>Rule Operators (complete grammar)</h3>
+  <table>
+    <thead><tr><th>Operator</th><th>Syntax</th><th>Example</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr><td class="mono bold">IN</td><td class="mono tiny">field IN [val1, val2, ...]</td><td class="mono tiny">connection IN ['wireless','hybrid']</td><td class="tiny">True if field value is in the list</td></tr>
+      <tr><td class="mono bold">NOT_IN</td><td class="mono tiny">field NOT_IN [val1, ...]</td><td class="mono tiny">connection NOT_IN ['wired']</td><td class="tiny">True if field value is NOT in the list</td></tr>
+      <tr><td class="mono bold">==</td><td class="mono tiny">field == value</td><td class="mono tiny">connection == 'wireless'</td><td class="tiny">Exact equality</td></tr>
+      <tr><td class="mono bold">!=</td><td class="mono tiny">field != value</td><td class="mono tiny">connection != 'wired'</td><td class="tiny">Not equal</td></tr>
+      <tr><td class="mono bold">&lt;=</td><td class="mono tiny">field &lt;= expression</td><td class="mono tiny">dpi &lt;= sensors[sensor].max_dpi</td><td class="tiny">Less than or equal (numeric)</td></tr>
+      <tr><td class="mono bold">&gt;=</td><td class="mono tiny">field &gt;= expression</td><td class="mono tiny">weight &gt;= 5</td><td class="tiny">Greater than or equal (numeric)</td></tr>
+      <tr><td class="mono bold">EXISTS</td><td class="mono tiny">field EXISTS</td><td class="mono tiny">battery_hours EXISTS</td><td class="tiny">Field is present and not "unk"</td></tr>
+      <tr><td class="mono bold">SUBSET_OF</td><td class="mono tiny">fieldA SUBSET_OF fieldB</td><td class="mono tiny">edition.colors SUBSET_OF colors</td><td class="tiny">All values in A exist in B</td></tr>
+      <tr><td class="mono bold">MEMBER_OF</td><td class="mono tiny">fieldA MEMBER_OF fieldB</td><td class="mono tiny">default_color MEMBER_OF colors</td><td class="tiny">Scalar A exists in list B</td></tr>
+      <tr><td class="mono bold">DB_LOOKUP</td><td class="mono tiny">field DB_LOOKUP db.entity.prop</td><td class="mono tiny">dpi DB_LOOKUP sensors[sensor].max_dpi</td><td class="tiny">Compare against component DB property</td></tr>
+      <tr><td class="mono bold">GROUP_COMPLETE</td><td class="mono tiny">GROUP_COMPLETE(fields, min)</td><td class="mono tiny">GROUP_COMPLETE([width,height,lngth], 3)</td><td class="tiny">At least min fields present from group</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">On-Fail Actions (complete list)</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Behavior</th><th>Deterministic?</th></tr></thead>
+    <tbody>
+      <tr><td class="mono bold">auto_repair</td><td class="tiny">Validator fixes the value deterministically (e.g. set default_color = colors[0])</td><td><span class="chip chip-teal">YES</span></td></tr>
+      <tr><td class="mono bold">set_unknown_with_reason</td><td class="tiny">Set field to "unk" + reason code</td><td><span class="chip chip-teal">YES</span></td></tr>
+      <tr><td class="mono bold">flag_for_review</td><td class="tiny">Pass the value through but flag it in the audit log for human review</td><td><span class="chip chip-teal">YES</span></td></tr>
+      <tr><td class="mono bold">reject_value</td><td class="tiny">Remove the value (from list) or set to "unk" (scalar)</td><td><span class="chip chip-teal">YES</span></td></tr>
+      <tr><td class="mono bold">escalate_to_llm</td><td class="tiny">Send to repair LLM with context from the failing rule</td><td><span class="chip chip-warning">NO (LLM)</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Conflict Resolution (when multiple rules fire on same field)</h3>
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// Precedence order (highest to lowest)</span>
+1. REJECT / SET_UNKNOWN   → if any rule says reject, the field is rejected
+2. AUTO_REPAIR            → if no reject, apply all auto-repairs in rule order
+3. FLAG_FOR_REVIEW        → flags accumulate (multiple flags = multiple audit entries)
+4. ESCALATE_TO_LLM        → batched into a single LLM call with all failing contexts
+
+<span style="color:var(--sf-teal-fg);">// Conflicting repairs (two rules want to set different values)</span>
+→ This is a schema design error. The _compile_report MUST catch this at compile time.
+→ At runtime: log both, apply NEITHER, escalate to LLM with both proposed repairs.
+→ The LLM prompt includes: "Two rules conflict: Rule A wants {x}, Rule B wants {y}.
+   Choose the correct value or set to 'unk' if unresolvable."</div>
+
+  <h3 style="margin-top:16px;">Future Operator Registration</h3>
+  <div class="small muted">
+    New cross-rule operators follow the same extension pattern as parse templates:
+    define the operator in <code>cross_validation_rules.json</code>, implement a pure function with the same name,
+    write &ge;2 test cases. The validator dispatches by operator name &mdash; no switch/case changes needed.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 20: CATEGORY ONBOARDING
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="category-onboarding">
+  <div class="check-header">
+    <span class="check-number">20</span>
+    <span class="check-title">Category Onboarding Checklist</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+    <span class="chip chip-purple">O(1) SCALING</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Before the universal validator can safely operate on a new category (e.g. "keyboard", "monitor", "headset"),
+    the category authority must supply these artifacts. Missing items = the validator REFUSES to run (fail-safe).
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Required Artifact</th><th>File</th><th>Purpose</th><th>Validator Refuses Without?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold">1</td>
+        <td>UI Field Catalog</td>
+        <td class="mono tiny">_generated/ui_field_catalog.json</td>
+        <td class="tiny">Defines every field: key, type, shape, display_decimals, group, input_control</td>
+        <td><span class="chip chip-danger">YES</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold">2</td>
+        <td>Parse Templates</td>
+        <td class="mono tiny">_generated/parse_templates.json</td>
+        <td class="tiny">Maps each field_key to a template + unit. Drives which dimension checks apply.</td>
+        <td><span class="chip chip-danger">YES</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold">3</td>
+        <td>Known Values / Enums</td>
+        <td class="mono tiny">_generated/known_values.json</td>
+        <td class="tiny">Enum policies + registered values per field</td>
+        <td><span class="chip chip-danger">YES</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold">4</td>
+        <td>Cross-Validation Rules</td>
+        <td class="mono tiny">_generated/cross_validation_rules.json</td>
+        <td class="tiny">Inter-field constraints using the DSL operators</td>
+        <td><span class="chip chip-warning">OPTIONAL</span> (empty rules[] is valid)</td>
+      </tr>
+      <tr>
+        <td class="mono bold">5</td>
+        <td>Field Groups</td>
+        <td class="mono tiny">_generated/field_groups.json</td>
+        <td class="tiny">Logical grouping for UI + GROUP_COMPLETE checks</td>
+        <td><span class="chip chip-warning">OPTIONAL</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold">6</td>
+        <td>Component DB (if any)</td>
+        <td class="mono tiny">_generated/component_db/*.json</td>
+        <td class="tiny">Entity databases for component_reference templates</td>
+        <td><span class="chip chip-warning">OPTIONAL</span> (only if template uses component_reference)</td>
+      </tr>
+      <tr>
+        <td class="mono bold">7</td>
+        <td>Manifest</td>
+        <td class="mono tiny">_generated/manifest.json</td>
+        <td class="tiny">Lists all generated files + versions + generation timestamp</td>
+        <td><span class="chip chip-danger">YES</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold">8</td>
+        <td>Compile Report</td>
+        <td class="mono tiny">_generated/_compile_report.json</td>
+        <td class="tiny">Reports errors/warnings from compilation. Validator checks for blocking errors.</td>
+        <td><span class="chip chip-danger">YES</span> (must have 0 blocking errors)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Onboarding Validation (runs before first use)</h3>
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// The validator runs these checks on first load of a new category</span>
+function validateCategoryOnboarding(categoryPath) {
+  const checks = [];
+
+  // 1. All required files exist
+  checks.push(fileExists(`${categoryPath}/_generated/ui_field_catalog.json`));
+  checks.push(fileExists(`${categoryPath}/_generated/parse_templates.json`));
+  checks.push(fileExists(`${categoryPath}/_generated/known_values.json`));
+  checks.push(fileExists(`${categoryPath}/_generated/manifest.json`));
+  checks.push(fileExists(`${categoryPath}/_generated/_compile_report.json`));
+
+  // 2. Every field in ui_field_catalog has a matching parse_template
+  for (const field of catalog.fields) {
+    checks.push(templates[field.key] !== undefined,
+      `Field '${field.key}' has no parse template`);
+  }
+
+  // 3. Every template references a registered template_id in template_library
+  for (const [key, tmpl] of Object.entries(templates)) {
+    checks.push(templateLibrary[tmpl.template] !== undefined,
+      `Template '${tmpl.template}' for field '${key}' is not in template_library`);
+  }
+
+  // 4. Every enum field in known_values has a declared policy
+  for (const [key, enumDef] of Object.entries(knownValues.enums)) {
+    checks.push(['closed', 'open_prefer_known', 'open'].includes(enumDef.policy),
+      `Enum '${key}' has invalid policy: ${enumDef.policy}`);
+  }
+
+  // 5. Compile report has 0 blocking errors
+  checks.push(compileReport.blocking_errors === 0,
+    `Compile report has ${compileReport.blocking_errors} blocking errors`);
+
+  // 6. Cross-validation rules use only registered operators
+  for (const rule of crossRules) {
+    checks.push(isRegisteredOperator(rule), `Unknown operator in rule ${rule.rule_id}`);
+  }
+
+  return checks;
+}</div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Category-Specific Exceptions</h3>
+    <div class="small muted">
+      Category-specific exceptions to universal rules are <strong>allowed but must be declared</strong>.
+      They live in <code>category_authority/{category}/_control_plane/validator_overrides.json</code>.
+      The file is optional. If present, it can override:
+    </div>
+    <table style="margin-top:8px;">
+      <thead><tr><th>Override</th><th>Example</th><th>Scope</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">sanity_bounds</td><td class="tiny">keyboard width max = 600mm (vs mouse 500mm)</td><td class="tiny">Per field per category</td></tr>
+        <tr><td class="mono">normalization_chain</td><td class="tiny">Keyboard switches preserve case ("Cherry MX Red")</td><td class="tiny">Per template per category</td></tr>
+        <tr><td class="mono">format_regex</td><td class="tiny">Monitor resolution format "3840x2160" not kebab-case</td><td class="tiny">Per template per category</td></tr>
+      </tbody>
+    </table>
+    <div class="small muted" style="margin-top:8px;">
+      Overrides are <strong>strictly additive</strong>. They cannot disable a dimension entirely.
+      They cannot change the pipeline order or skip steps.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 21: REMAINING EDGE CASES
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="edge-cases">
+  <div class="check-header">
+    <span class="check-number">21</span>
+    <span class="check-title">Remaining Edge Cases &amp; Defensive Contracts</span>
+    <span class="chip chip-accent">UNIVERSAL CONTRACT</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every edge case from the audit, with its defined behavior. No undefined states.
+  </div>
+
+  <table>
+    <thead><tr><th>Edge Case</th><th>Defined Behavior</th><th>Deterministic?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Mixed-type arrays</td>
+        <td class="small">e.g. <code>["125", 500, null]</code> &mdash; For list&lt;number&gt;: coerce each element individually through the type check. <code>"125"</code>&rarr;125, <code>500</code>&rarr;pass, <code>null</code>&rarr;filtered out. For list&lt;string&gt;: coerce numbers to strings, filter nulls.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">list&lt;object&gt; normalization</td>
+        <td class="small">e.g. latency_list_modes_ms: <code>[{mode:"wired",value:1.2}]</code>. Each element validated against <code>element_schema</code> (Zod). Dedupe by identity key (e.g. <code>mode</code>). Sort by schema-defined sort key if specified.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">list&lt;object&gt; equality for dedupe</td>
+        <td class="small">Two objects are "equal" for dedupe if their <strong>identity key</strong> (declared in template) matches. If no identity key declared, use deep-equal on all properties.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Nested record validation</td>
+        <td class="small">Records (e.g. editions) have their keys validated (format check) and their values recursively validated against the value schema. The validator recurses with the same pipeline for each nested value.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Locale-specific number formats</td>
+        <td class="small"><code>"1.234,5"</code> (European) &mdash; Detect by: if string has comma AND period, and comma appears after period, treat comma as decimal separator. Strip periods as thousands separators. Produces <code>1234.5</code>. If ambiguous (e.g. "1,234" could be 1234 or 1.234) &rarr; UNKNOWN &rarr; LLM.</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Locale-specific date formats</td>
+        <td class="small"><code>"31/12/2024"</code> (DD/MM/YYYY) vs <code>"12/31/2024"</code> (MM/DD/YYYY) &mdash; If day &gt; 12, unambiguous (must be DD/MM). If both &le; 12, ambiguous &rarr; default to ISO (YYYY-MM-DD) and UNKNOWN &rarr; LLM with both interpretations offered.</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Ambiguous / vendor units</td>
+        <td class="small">"mil", "cd/m²", "G-Shift DPI" &mdash; If not in <code>unit_registry.from_patterns</code>, strip non-numeric chars, extract number, flag as UNKNOWN with extracted number as candidate. LLM decides if the number is valid in context.</td>
+        <td><span class="chip chip-warning">PARTIAL</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Non-convertible semantic units</td>
+        <td class="small">Units like "steps", "zones", "profiles" that look numeric but are semantic labels. Registered with <code>non_convertible: true</code>. Value passes through, unit text stripped, no conversion applied.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Conflicting repairs from multiple dimensions</td>
+        <td class="small">e.g. Token map says "gray" but enum check says "unknown" &mdash; impossible if pipeline order is correct (normalization runs before enum). If somehow both fire: <strong>earlier step wins</strong>. The pipeline is sequential, not parallel.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Multiple cross-field failures with conflicting fixes</td>
+        <td class="small">e.g. Rule A wants to set field X to value 1, Rule B wants value 2. Precedence: reject &gt; auto_repair (first declared wins) &gt; flag. If two auto_repairs conflict, apply neither, escalate to LLM with both contexts.</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Prompt injection in field values</td>
+        <td class="small">Malicious content in values passed to repair LLM (e.g. <code>"black; ignore previous instructions"</code>). Defense: all field values are JSON-stringified and placed inside a clearly delimited data block. The system prompt instructs the LLM to treat the data block as opaque data, never as instructions. Values are length-capped (max 500 chars per value, max 50 values per prompt).</td>
+        <td><span class="chip chip-teal">YES</span> (pre-LLM sanitization)</td>
+      </tr>
+      <tr>
+        <td class="bold">LLM returns malformed JSON</td>
+        <td class="small">Response fails JSON.parse. Behavior: retry once with explicit "respond with valid JSON only" append. If second attempt fails &rarr; treat as <code>rerun_recommended</code> with reason <code>"llm_json_parse_failure"</code>.</td>
+        <td><span class="chip chip-teal">YES</span> (deterministic fallback)</td>
+      </tr>
+      <tr>
+        <td class="bold">LLM returns partial/incomplete decisions</td>
+        <td class="small">LLM returns decisions for 2 of 3 unknowns. Missing unknowns are treated as <code>{ decision: "set_unk", reason: "llm_omitted" }</code>. All unknowns must have a decision or the gap is filled with unk.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">LLM returns duplicate decisions</td>
+        <td class="small">Two decisions for the same value. Take the <strong>first</strong> decision, ignore duplicates. Log a warning.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Multiple unknowns with interdependence</td>
+        <td class="small">e.g. Unknown color "midnight-blue" AND unknown edition that references it. All unknowns for a single product are batched into ONE repair prompt so the LLM sees the full context. After repair, cross-field invariants are re-checked.</td>
+        <td><span class="chip chip-warning">LLM aware</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Open enums with noisy vocabulary</td>
+        <td class="small">Known values like "eqwe", "yay", "help", "A" in the authoritative data. These are data quality issues in the seed data. The validator does NOT treat noisy known values as "always valid" &mdash; it passes the full list to the LLM prompt and lets the LLM decide if a new value is legitimate by comparing against the <em>pattern</em> of known values, not just membership.</td>
+        <td><span class="chip chip-warning">LLM for new values</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Schema / rule format versioning</td>
+        <td class="small">All generated files include <code>"version": N</code>. The validator checks version compatibility on load. If <code>version</code> is newer than the validator understands, it REFUSES to run (fail-safe). Version bumps require explicit validator updates + migration.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Shape correction: repair or source rerun?</td>
+        <td class="small"><strong>Always source rerun, never repair.</strong> Shape failures indicate the source LLM fundamentally misunderstood the contract. The repair LLM cannot reconstruct structured data from a wrong shape. P8 prompt is fed back to the source LLM, not the repair LLM.</td>
+        <td><span class="chip chip-teal">YES</span> (defined policy)</td>
+      </tr>
+      <tr>
+        <td class="bold">Object canonicalization</td>
+        <td class="small">For record/object values: keys are normalized (lowercase, hyphens). Values within records are recursively validated through the same pipeline. Key order is not significant (objects are unordered by definition).</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Priority: deterministic repair vs rule-driven rejection</td>
+        <td class="small"><strong>Rejection always wins.</strong> If step 5 (format) produces an UNKNOWN and step 8 (enum) would reject it, the rejection takes effect. Deterministic repairs (steps 2-4, 6-7) run first and transform the value; subsequent checks operate on the repaired value.</td>
+        <td><span class="chip chip-teal">YES</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Unified Response Schema (all paths)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Every repair path &mdash; deterministic or LLM &mdash; produces the same output shape. No inconsistent return types.
+    </div>
+    <div class="code-block">{
+  // === Always present ===
+  fieldKey: string,
+  valid: boolean,              // true if value is publishable
+  value: any,                  // the final validated/repaired value (or "unk")
+  confidence: number,          // 1.0 for deterministic, 0.0-1.0 for LLM-repaired
+  shape: 'scalar' | 'list' | 'record',
+
+  // === Repair audit trail ===
+  repairs: [{
+    step: number,              // pipeline step that applied the repair (1-12)
+    dimension: string,         // which dimension: 'normalization', 'type_coerce', etc.
+    original: any,             // value before repair
+    resolved: any,             // value after repair
+    rule: string,              // specific rule applied (e.g. 'token_map:grey→gray')
+    source: 'deterministic' | 'llm',
+    llmConfidence: number | null,  // only if source=llm
+  }],
+
+  // === Rejection/unknown audit ===
+  rejections: [{
+    value: any,                // the rejected value
+    reason: string,            // reason code from taxonomy
+    dimension: string,         // which dimension rejected it
+    step: number,
+  }],
+
+  // === LLM metadata ===
+  llmCalled: boolean,
+  llmModel: string | null,     // model used for repair (if called)
+  llmPromptId: string | null,  // P1-P8 prompt ID used
+  llmRetries: number,          // 0 if no LLM, 1+ if retried
+
+  // === Cross-field flags ===
+  crossFieldFlags: [{
+    rule_id: string,
+    constraint: string,
+    action: string,            // auto_repair | flag_for_review | escalate_to_llm
+    repaired: boolean,
+  }],
+
+  // === Unknown reason (if value = "unk") ===
+  unknownReason: string | null, // from reason taxonomy (Section 16)
+}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 22: LIVE ENGINE GAP ANALYSIS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="live-gaps">
+  <div class="check-header">
+    <span class="check-title" style="font-size:16px; color:var(--sf-danger-fg);">22. Live Engine Gap Analysis (Audit 2026-04-05)</span>
+    <span class="chip chip-danger">11 GAPS FOUND</span>
+    <span class="chip chip-neutral">READINESS: 4/10</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Verified by running all existing tests (engine 161/161, field-rules 93/93, review-gate 8/8 &mdash; all pass) and then
+    live-testing against real mouse/keyboard/monitor generated artifacts. These are <strong>real runtime misses</strong>, not just missing tests.
+    Categories with live generated artifacts: <code>mouse</code>, <code>keyboard</code>, <code>monitor</code>.
+  </div>
+
+  <!-- GAP 1 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-danger">GAP 1</span>
+      <span class="bold" style="font-size:14px;">Structured Object-List Fields Silently Corrupted</span>
+      <span class="chip chip-danger">SEVERITY: CRITICAL</span>
+    </div>
+
+    <h3>What the contract claims (Section 21)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      list&lt;object&gt; elements validated against <code>element_schema</code> (Zod). Dedupe by identity key.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-danger-fg);">// fieldRulesEngine.js:342 — shape=list always calls parseList()</span>
+if (shape === 'list') {
+  value = parseList(rawCandidate);  // splits strings on , ; | / → flat string[]
+}
+
+<span style="color:var(--sf-danger-fg);">// fieldRulesEngine.js:498-500 — else branch for non-typed fields</span>
+if (Array.isArray(value)) {
+  value = value.map((item) => normalizeText(item)).filter(Boolean);
+  // normalizeText() calls .toString() on objects → "[object Object]"
+  attempts.push('type:string_list');
+}
+
+<span style="color:var(--sf-danger-fg);">// runtimeGate.js:109-110 — comment explicitly states:</span>
+// "contract guarantees values are scalars or flat arrays of scalars (no nested objects)"</div>
+
+    <h3>Live failure</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      <code>click_latency_list</code> and <code>sensor_latency_list</code> (template: <code>latency_list_modes_ms</code>, type: object, shape: list)
+      <br/>&bull; Input: <code>"1.1 wired, 1.3 wireless"</code> &rarr; became <code>["1.1 wired", "1.3 wireless"]</code> (flat strings, not <code>[{mode, value}]</code>)
+      <br/>&bull; Input: <code>[{mode: "wired", value: 1.1}]</code> &rarr; became <code>["[object Object]"]</code> with <strong>no failure</strong>
+    </div>
+
+    <h3>Affected fields</h3>
+    <div class="small mono" style="color:var(--sf-danger-fg);">click_latency_list, sensor_latency_list (mouse) + any future list&lt;object&gt; field in any category</div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      1. Add <code>object</code> type branch in <code>normalizeCandidate()</code> after the boolean/date/url/component branches.
+      <br/>2. When <code>type === 'object'</code> AND <code>shape === 'list'</code>: validate each element against <code>element_schema</code> from the template.
+      <br/>3. Remove the "scalars only" assumption from <code>runtimeGate.js:109</code> shallow-compare.
+      <br/>4. Add <code>latency_list_modes_ms</code> parser in <code>normalizationFunctions.js</code> that parses <code>"1.1 wired, 1.3 wireless"</code> into structured objects.
+    </div>
+
+    <h3>Files to change</h3>
+    <table>
+      <tbody>
+        <tr><td class="mono tiny">src/engine/fieldRulesEngine.js</td><td class="tiny">:342 (parseList gate), :498-500 (else branch)</td></tr>
+        <tr><td class="mono tiny">src/engine/normalizationFunctions.js</td><td class="tiny">Add object-list parsers</td></tr>
+        <tr><td class="mono tiny">src/engine/runtimeGate.js</td><td class="tiny">:109-117 (shallow compare)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GAP 2 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-danger">GAP 2</span>
+      <span class="bold" style="font-size:14px;">Field-Level Constraints Loaded But Never Enforced</span>
+      <span class="chip chip-danger">SEVERITY: CRITICAL</span>
+    </div>
+
+    <h3>What the contract claims (Section 10, 19)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Cross-field constraints evaluated via DSL operators. <code>sensor_date &le; release_date</code> is enforced.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-teal-fg);">// constraintEvaluator.js:229 — evaluateAllConstraints() EXISTS and works</span>
+function evaluateAllConstraints(propertyMappings, componentProps, productValues) { ... }
+
+<span style="color:var(--sf-danger-fg);">// BUT: runtimeGate.js Pass 2 (line 192-225) calls engine.crossValidate()</span>
+// engine.crossValidate() validates cross_validation_rules.json rules
+// (sensor_dpi_consistency, dimensions_consistency, wireless_battery_required)
+
+<span style="color:var(--sf-danger-fg);">// NOWHERE does runtimeGate or fieldRulesEngine call evaluateAllConstraints()</span>
+// The per-property constraints from field_studio_map (like "sensor_date &lt;= release_date")
+// are loaded into the compiled rules but never evaluated at runtime.</div>
+
+    <h3>Live failure</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      <code>sensor_date: "2025-01-01"</code> with <code>release_date: "2024-01-01"</code> &rarr; <strong>passed with no failures</strong>.
+      The constraint <code>sensor_date &lt;= release_date</code> exists in <code>field_rules.json:8658</code> but was never checked.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      Add a Pass 2.5 in <code>runtimeGate.js</code> after cross-validation (line 225) that calls <code>evaluateAllConstraints()</code>
+      for each field that has <code>constraints[]</code> in its property mapping. Wire the constraint evaluator into the pipeline.
+    </div>
+
+    <h3>Files to change</h3>
+    <table>
+      <tbody>
+        <tr><td class="mono tiny">src/engine/runtimeGate.js</td><td class="tiny">Add constraint evaluation pass after line 225</td></tr>
+        <tr><td class="mono tiny">src/engine/fieldRulesEngine.js</td><td class="tiny">Expose constraint data via public accessor</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GAP 3 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-warning">GAP 3</span>
+      <span class="bold" style="font-size:14px;">Review Path Disables Per-Field Evidence Enforcement</span>
+      <span class="chip chip-warning">SEVERITY: HIGH</span>
+    </div>
+
+    <h3>What the contract claims</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Fields with <code>evidence_required: true</code> or <code>min_evidence_refs</code> are enforced.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-danger-fg);">// qaJudge.js:74</span>
+gateResult = applyRuntimeFieldRules({ ..., respectPerFieldEvidence: false });
+
+<span style="color:var(--sf-danger-fg);">// overrideWorkflow.js:630</span>
+runtimeGateResult = applyRuntimeFieldRules({ ..., respectPerFieldEvidence: false });
+
+<span style="color:var(--sf-teal-fg);">// runtimeGate.js:241 — this is where the flag is checked</span>
+const shouldAuditQuality = enforceEvidence
+  || (respectPerFieldEvidence &amp;&amp; (rule?.evidence_required || minRefs > 0));
+// When respectPerFieldEvidence=false, per-field checks are COMPLETELY skipped</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      User overrides can pass finalization with missing/incomplete evidence even if the field rule requires it.
+      QA judge never catches missing evidence per field studio rules.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      Decision required: Is <code>respectPerFieldEvidence: false</code> intentional for the review path (post-harvest diagnostic
+      where evidence is checked separately) or a bug? If intentional, document it as a known design decision.
+      If a bug, change both callers to <code>respectPerFieldEvidence: true</code>.
+    </div>
+  </div>
+
+  <!-- GAP 4 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-danger">GAP 4</span>
+      <span class="bold" style="font-size:14px;">Rule-Authored Unit Conversions Ignored</span>
+      <span class="chip chip-danger">SEVERITY: CRITICAL</span>
+    </div>
+
+    <h3>What the contract claims (Section 18)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Unit registry is the source of truth. Categories can extend it. New conversions without code changes.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-danger-fg);">// normalizationFunctions.js:46-58 — HARD-CODED conversion table (only 6 pairs)</span>
+function convertUnit(value, fromUnit, toUnit) {
+  if (from === 'oz'  &amp;&amp; to === 'g')  return value * 28.3495;
+  if (from === 'lbs' &amp;&amp; to === 'g')  return value * 453.592;
+  if (from === 'in'  &amp;&amp; to === 'mm') return value * 25.4;
+  if (from === 'cm'  &amp;&amp; to === 'mm') return value * 10;
+  if (from === 'g'   &amp;&amp; to === 'oz') return value / 28.3495;
+  if (from === 'g'   &amp;&amp; to === 'lbs') return value / 453.592;
+  return value;  // ← SILENTLY RETURNS UNCONVERTED
+}
+
+<span style="color:var(--sf-danger-fg);">// keyboard field_rules.json defines unit_conversions for:</span>
+// weight: lb → kg (not in hard-coded table)
+// cable_length: in → m, cm → m (not in hard-coded table)
+// These are NEVER read by the engine.</div>
+
+    <h3>Live failure</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      &bull; Keyboard <code>weight: "2.65 lb"</code> &rarr; normalized to <code>2.65</code> (raw number, no conversion). Should be ~1201g or ~1.20kg.
+      <br/>&bull; Keyboard <code>cable_length: "72 in"</code> &rarr; rejected as out of range instead of converting to ~1.83m.
+      <br/>&bull; Keyboard <code>cable_length: "180 cm"</code> &rarr; rejected instead of converting to 1.8m.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      1. Read <code>rule.unit_conversions</code> (or <code>unit_registry</code> per Section 18) at normalize time.
+      <br/>2. Replace the hard-coded <code>convertUnit()</code> if/else chain with a registry lookup.
+      <br/>3. Fallback to hard-coded table for backwards compat, but prefer rule-authored conversions.
+    </div>
+
+    <h3>Files to change</h3>
+    <table>
+      <tbody>
+        <tr><td class="mono tiny">src/engine/normalizationFunctions.js</td><td class="tiny">:46-58 (convertUnit) — make registry-driven</td></tr>
+        <tr><td class="mono tiny">src/engine/fieldRulesEngine.js</td><td class="tiny">:405-408 — pass rule.unit_conversions to convertUnit</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GAP 5 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-danger">GAP 5</span>
+      <span class="bold" style="font-size:14px;">Template Library Not Used for Runtime Dispatch</span>
+      <span class="chip chip-danger">SEVERITY: CRITICAL</span>
+    </div>
+
+    <h3>What the contract claims (Section 17)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Parse templates drive normalization. New templates require zero validator code changes.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-teal-fg);">// fieldRulesEngine.js:202-228 — applyParseTemplate() EXISTS</span>
+// It only matches regex patterns from template.patterns[]
+// Most templates have patterns: [] (empty) — so it always returns { matched: false }
+
+<span style="color:var(--sf-danger-fg);">// fieldRulesEngine.js:336-512 — normalizeCandidate() uses HARD-CODED type branches:</span>
+if (type === 'number' || type === 'integer') { ... parseNumberAndUnit ... }
+else if (type === 'boolean') { ... parseBoolean ... }
+else if (type === 'date') { ... parseDate ... }
+else if (type === 'url') { ... URL constructor ... }
+else if (type === 'component_ref') { ... resolveComponentRef ... }
+else { ... normalizeText → string/string_list ... }  // ← FALLBACK FOR EVERYTHING ELSE
+
+<span style="color:var(--sf-danger-fg);">// Templates NEVER dispatched:</span>
+// latency_list_modes_ms, integer_with_unit, list_numbers_or_ranges_with_unit
+// Adding a new template TODAY would require adding a new type branch — NOT O(1)</div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      The normalization_fn seam (line 359-388) exists and works: if <code>rule.normalization_fn</code> is set, it calls a named function.
+      The fix is to register template-specific normalizers (e.g. <code>latency_list_modes_ms</code>) in the
+      <code>NORMALIZATION_FUNCTIONS</code> map and wire the template name to the normalizer.
+      This achieves O(1) scaling: new template → new normalizer function in the map → no dispatcher changes.
+    </div>
+  </div>
+
+  <!-- GAP 6 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-warning">GAP 6</span>
+      <span class="bold" style="font-size:14px;">open_prefer_known Not Distinctly Enforced</span>
+      <span class="chip chip-info">SEVERITY: MEDIUM</span>
+    </div>
+
+    <h3>What the contract claims (Section 7)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Three distinct policies: <code>closed</code> (reject unknowns), <code>open_prefer_known</code> (flag unknowns, confirm via LLM), <code>open</code> (accept all).
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-teal-fg);">// engineFieldValidators.js:87</span>
+const isClosedPolicy = policy === 'closed' || policy === 'closed_with_curation';
+
+<span style="color:var(--sf-danger-fg);">// For non-closed (including open_prefer_known):</span>
+// Line 123-125: unknown values are pushed through with needsCuration=true
+canonicalized.push(rawValue);
+needsCuration = true;
+
+// open_prefer_known behaves IDENTICALLY to open at the validation gate.
+// The only difference is needsCuration=true, but this is also true for open.</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Fields like <code>connection</code>, <code>coating</code>, <code>switch_type</code>, <code>lighting</code> (all <code>open_prefer_known</code>)
+      accept any value without flagging for LLM review. A hallucinated value like <code>connection: "magical"</code> would pass validation.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      Add a distinct <code>open_prefer_known</code> branch that: (1) passes the value through validation but (2) adds it to a
+      dedicated <code>curationQueue</code> with flag <code>needs_vocabulary_review: true</code> and (3) logs a warning.
+      The difference from <code>open</code>: <code>open</code> doesn't flag at all; <code>open_prefer_known</code> flags for curation.
+    </div>
+  </div>
+
+  <!-- GAP 7 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-warning">GAP 7</span>
+      <span class="bold" style="font-size:14px;">Tests Only Prove Mouse Synthetic Fixtures</span>
+      <span class="chip chip-warning">SEVERITY: HIGH</span>
+    </div>
+
+    <h3>What exists</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      &bull; Engine: 161 tests &mdash; scalar normalization, range, enum, evidence, list rules, cross-validation. All use synthetic mouse harness.
+      <br/>&bull; Field-rules: 93 tests &mdash; loader/projection behavior. Structural only.
+      <br/>&bull; Review-gate: 8 tests &mdash; basic override rejection + draft path.
+      <br/>&bull; Category contracts: keyboard + monitor have schema tests (group structure) but <strong>zero runtime gate tests</strong>.
+    </div>
+
+    <h3>What is NOT tested</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      &bull; No keyboard/monitor values through <code>normalizeCandidate()</code> or <code>applyRuntimeFieldRules()</code>
+      <br/>&bull; No object-list fields (latency_list_modes_ms)
+      <br/>&bull; No template-specific parsing behavior
+      <br/>&bull; No per-rule unit conversion (lb→kg, in→m)
+      <br/>&bull; No constraint evaluation (sensor_date &le; release_date)
+      <br/>&bull; No open_prefer_known vs open distinction
+      <br/>&bull; No multi-category runtime validation in a single test
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      1. Add characterization tests loading <strong>real</strong> keyboard + monitor artifacts through FieldRulesEngine.
+      <br/>2. Add runtime gate tests with real category rules for each gap above.
+      <br/>3. Add latency_list_modes_ms parsing tests with structured object input.
+      <br/>4. Add constraint evaluation integration tests.
+    </div>
+  </div>
+
+  <!-- GAP 8 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-danger">GAP 8</span>
+      <span class="bold" style="font-size:14px;">Format Regex Validation Completely Missing</span>
+      <span class="chip chip-danger">SEVERITY: CRITICAL</span>
+    </div>
+
+    <h3>What the contract claims (Section 6)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      After normalization, each value is checked against the format regex for its template type
+      (e.g. <code>/^[a-z][a-z0-9-]*(\+[a-z][a-z0-9-]*)*$/</code> for color tokens, <code>/^(yes|no|unk)$/</code> for booleans).
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-danger-fg);">// No regex validation anywhere in:</span>
+// - normalizationFunctions.js (no format_regex concept)
+// - fieldRulesEngine.js normalizeCandidate() (no regex check after normalization)
+// - engineFieldValidators.js (only range + shape + enum checks)
+// - runtimeGate.js (no format pass exists)
+
+<span style="color:var(--sf-danger-fg);">// Result: A value like "black red" (space instead of hyphen) passes normalization</span>
+// as a string, passes enum check if not closed, and is published as-is.</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Malformed tokens survive the full pipeline: values with illegal characters, wrong separators,
+      trailing hyphens, digit-first tokens. The format regex is the safety net after normalization &mdash; without it,
+      the only guard is the enum check, which only fires for fields with known_values.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      Add format_regex to each parse template definition. After the type-branch normalization in <code>normalizeCandidate()</code>
+      (line ~512), check the normalized value against the template's <code>format_regex</code>. If it fails, return
+      <code>{ ok: false, reason_code: 'format_mismatch' }</code>.
+    </div>
+  </div>
+
+  <!-- GAP 9 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-warning">GAP 9</span>
+      <span class="bold" style="font-size:14px;">Rounding / display_decimals Never Applied</span>
+      <span class="chip chip-info">SEVERITY: MEDIUM</span>
+    </div>
+
+    <h3>What the contract claims (Section 9)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Numeric values are rounded to <code>display_decimals</code> from <code>ui_field_catalog</code> (0, 1, or 2).
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-danger-fg);">// fieldRulesEngine.js:437 — numeric values get toFixed(6)</span>
+value = Number.parseFloat(numeric.toFixed(6));
+// This preserves 6 decimal places — never rounds to display_decimals
+
+<span style="color:var(--sf-danger-fg);">// No display_decimals read anywhere in:</span>
+// - normalizeCandidate()
+// - normalizationFunctions.js
+// - runtimeGate.js</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      A weight field with <code>display_decimals: 0</code> can store <code>42.567</code> instead of <code>43</code>.
+      Not a data corruption issue but violates the contract and produces inconsistent display.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      After the numeric toFixed(6) (line 437), read <code>ui_field_catalog[field].display_decimals</code> and apply
+      <code>Math.round(value * 10^decimals) / 10^decimals</code>. Requires the engine to load ui_field_catalog or the
+      display_decimals to be projected into field_rules.
+    </div>
+  </div>
+
+  <!-- GAP 10 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-warning">GAP 10</span>
+      <span class="bold" style="font-size:14px;">Enum Alias Resolution Missing Before Rejection</span>
+      <span class="chip chip-warning">SEVERITY: HIGH</span>
+    </div>
+
+    <h3>What the contract claims (Section 5, 7)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Token map + alias resolution runs before enum membership check. <code>"grey"</code> &rarr; <code>"gray"</code> via token_map,
+      then enum check passes because <code>"gray"</code> is registered.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-teal-fg);">// engineFieldValidators.js:111 — direct Set lookup</span>
+if (enumSpec.index.has(token)) {
+  canonicalized.push(canonical);
+  continue;
+}
+<span style="color:var(--sf-danger-fg);">// If not found → immediately fails for closed policy (line 117-122)</span>
+// No token_map lookup attempt
+// No alias resolution attempt
+// No fuzzy/similarity match attempt
+
+<span style="color:var(--sf-danger-fg);">// Token map is only applied IF rule has normalization_fn AND that fn applies it</span>
+// fieldRulesEngine.js:359-388 checks normalizationFnName
+// If no normalization_fn is wired for a field, token_map is silently ignored</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      A closed-enum field without a <code>normalization_fn</code> that has a <code>token_map</code> defined:
+      the token_map entries are loaded but never applied. Variant spellings that should map to canonical forms
+      are rejected as <code>enum_value_not_allowed</code>.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      1. Make token_map application a universal normalization step (not dependent on normalization_fn).
+      <br/>2. In <code>enforceEnumPolicy()</code>, before rejecting a closed-enum value, attempt a token_map lookup.
+      <br/>3. Optionally: add a fuzzy-match step (already exists as <code>fuzzyMatchComponent()</code>) for near-miss aliases.
+    </div>
+  </div>
+
+  <!-- GAP 11 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="chip chip-info">GAP 11</span>
+      <span class="bold" style="font-size:14px;">List Rules Split Asymmetrically Across Two Passes</span>
+      <span class="chip chip-info">SEVERITY: LOW-MEDIUM</span>
+    </div>
+
+    <h3>What the contract claims (Section 8)</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Dedupe + sort + min/max all enforced in a single deterministic step.
+    </div>
+
+    <h3>What actually happens</h3>
+    <div class="code-block" style="margin-bottom:8px;"><span style="color:var(--sf-teal-fg);">// fieldRulesEngine.js:559-577 — normalizeCandidate() does ONLY dedupe</span>
+// Dedupe is applied inside normalizeCandidate after enum check
+
+<span style="color:var(--sf-warning-fg);">// runtimeGate.js:129-190 — Pass 1.5 does sort + min/max</span>
+// This runs AFTER normalizeCandidate, in a separate pass
+
+<span style="color:var(--sf-danger-fg);">// fieldRulesEngine.js:633-702 — normalizeFullRecord() calls normalizeCandidate()</span>
+// but NEVER goes through runtimeGate
+// → sort + min/max are NEVER applied via normalizeFullRecord()</div>
+
+    <h3>Impact</h3>
+    <div class="small muted" style="margin-bottom:8px;">
+      Code paths that call <code>normalizeCandidate()</code> or <code>normalizeFullRecord()</code> directly
+      (without going through <code>applyRuntimeFieldRules()</code>) get incomplete list enforcement:
+      deduped but unsorted and uncapped. This breaks determinism &mdash; the same value normalizes differently
+      depending on the code path.
+    </div>
+
+    <h3>Fix path</h3>
+    <div class="small muted">
+      Move sort + min/max into <code>normalizeCandidate()</code> after dedupe, so all code paths get full list rules.
+      Or: ensure all public entry points route through <code>applyRuntimeFieldRules()</code>.
+    </div>
+  </div>
+
+  <!-- SUMMARY TABLE -->
+  <h3 style="margin-top:20px;">Fix Priority Order (11 gaps total)</h3>
+  <table>
+    <thead><tr><th>#</th><th>Gap</th><th>Severity</th><th>Files</th><th>Effort</th><th>Order</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">1</td>
+        <td>Object-list corruption</td>
+        <td><span class="chip chip-danger">CRITICAL</span></td>
+        <td class="mono tiny">fieldRulesEngine, normalizationFunctions, runtimeGate</td>
+        <td class="tiny">Medium</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">1st</td>
+      </tr>
+      <tr>
+        <td class="mono">5</td>
+        <td>Template dispatch not wired</td>
+        <td><span class="chip chip-danger">CRITICAL</span></td>
+        <td class="mono tiny">fieldRulesEngine (normalization_fn seam)</td>
+        <td class="tiny">Medium</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">2nd</td>
+      </tr>
+      <tr>
+        <td class="mono">4</td>
+        <td>Unit conversion hard-coded</td>
+        <td><span class="chip chip-danger">CRITICAL</span></td>
+        <td class="mono tiny">normalizationFunctions, fieldRulesEngine</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">3rd</td>
+      </tr>
+      <tr>
+        <td class="mono">2</td>
+        <td>Constraints not enforced</td>
+        <td><span class="chip chip-danger">CRITICAL</span></td>
+        <td class="mono tiny">runtimeGate, fieldRulesEngine</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">4th</td>
+      </tr>
+      <tr>
+        <td class="mono">3</td>
+        <td>Evidence disabled in review</td>
+        <td><span class="chip chip-warning">HIGH</span></td>
+        <td class="mono tiny">qaJudge, overrideWorkflow</td>
+        <td class="tiny">Decision first</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">5th</td>
+      </tr>
+      <tr>
+        <td class="mono">8</td>
+        <td>Format regex missing</td>
+        <td><span class="chip chip-danger">CRITICAL</span></td>
+        <td class="mono tiny">fieldRulesEngine, parse_templates</td>
+        <td class="tiny">Medium</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">5th</td>
+      </tr>
+      <tr>
+        <td class="mono">10</td>
+        <td>Enum alias before reject</td>
+        <td><span class="chip chip-warning">HIGH</span></td>
+        <td class="mono tiny">engineFieldValidators</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">6th</td>
+      </tr>
+      <tr>
+        <td class="mono">3</td>
+        <td>Evidence disabled in review</td>
+        <td><span class="chip chip-warning">HIGH</span></td>
+        <td class="mono tiny">qaJudge, overrideWorkflow</td>
+        <td class="tiny">Decision first</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">7th</td>
+      </tr>
+      <tr>
+        <td class="mono">6</td>
+        <td>open_prefer_known = open</td>
+        <td><span class="chip chip-info">MEDIUM</span></td>
+        <td class="mono tiny">engineFieldValidators</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">8th</td>
+      </tr>
+      <tr>
+        <td class="mono">9</td>
+        <td>Rounding not applied</td>
+        <td><span class="chip chip-info">MEDIUM</span></td>
+        <td class="mono tiny">fieldRulesEngine, normalizationFunctions</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">9th</td>
+      </tr>
+      <tr>
+        <td class="mono">11</td>
+        <td>List rules split across passes</td>
+        <td><span class="chip chip-info">LOW-MED</span></td>
+        <td class="mono tiny">fieldRulesEngine, runtimeGate</td>
+        <td class="tiny">Small</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">10th</td>
+      </tr>
+      <tr>
+        <td class="mono">7</td>
+        <td>Mouse-only test coverage</td>
+        <td><span class="chip chip-warning">HIGH</span></td>
+        <td class="mono tiny">All test files</td>
+        <td class="tiny">Large (ongoing)</td>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">Parallel</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px; text-align:center;">
+    <div class="small muted">
+      <strong>Current readiness: 4/10</strong> &mdash; scalar/list basic validation solid; universal rule-language coverage incomplete.
+      <br/><br/>
+      <strong>After fixing CRITICAL gaps (1,2,4,5,8): ~6/10</strong> &mdash; object-list, constraints, units, templates, format all wired.
+      <br/><br/>
+      <strong>After fixing HIGH gaps (+3,7,10): ~8/10</strong> &mdash; evidence, aliases, multi-category tests proven.
+      <br/><br/>
+      <strong>After fixing all 11: ~9/10</strong> &mdash; universal contract fully enforced. Remaining 1/10 is real-world soak time.
     </div>
   </div>
 </div>

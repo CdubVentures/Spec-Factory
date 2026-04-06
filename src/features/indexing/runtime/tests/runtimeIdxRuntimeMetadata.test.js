@@ -57,15 +57,14 @@ test('buildRuntimeIdxBadgesBySurface returns active and gray IDX badges for all 
   const needsetBadges = surfaces.needset.map((badge) => [badge.field_path, badge.state]);
   // Verify the real fields are present with correct active/off state
   assert.ok(needsetBadges.some(([p, s]) => p === 'priority.required_level' && s === 'active'));
-  assert.ok(needsetBadges.some(([p, s]) => p === 'evidence.min_evidence_refs' && s === 'active'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'aliases' && s === 'active'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.query_terms' && s === 'active'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.domain_hints' && s === 'active'));
-  assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.preferred_content_types' && s === 'off'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.content_types' && s === 'off'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'ui.tooltip_md' && s === 'off'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'group' && s === 'off'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'contract.exact_match' && s === 'off'));
-  assert.equal(needsetBadges.length, 12, 'NeedSet should expose all 12 IDX keys the NeedSet engine reads');
+  assert.equal(needsetBadges.length, 13, 'NeedSet should expose all 13 IDX keys from the badge registry');
 
   const searchBadges = surfaces.search_profile.map((badge) => [badge.field_path, badge.state]);
   assert.ok(searchBadges.some(([p, s]) => p === 'aliases' && s === 'active'));

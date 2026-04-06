@@ -1,4 +1,5 @@
 import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
+import { IDX_FIELD_PATHS } from './idxBadgeRegistry.js';
 
 const SYSTEM_ALIASES = new Map([
   ['seed', 'seed'],
@@ -9,21 +10,18 @@ const SYSTEM_ALIASES = new Map([
 ]);
 
 // WHY: O(1) SSOT — maps field rule paths to downstream system consumers.
-// IDX entries are reference-only (non-toggleable) — only paths the needset
-// engine / search pipeline actually reads at runtime are listed.
-// Aspirational IDX entries were removed 2026-04-05 (19 paths had zero
-// pipeline consumers). Re-add when extraction phase is built.
-export const FIELD_SYSTEM_MAP = {
-  'contract.type': ['seed', 'review'],
+// IDX entries are derived from idxBadgeRegistry.js (single definition point).
+// Seed consumers are limited to the 4 paths buildFieldMeta() actually reads.
+const _SEED_REVIEW_MAP = {
+  'contract.type': ['review'],
   'contract.shape': ['seed', 'review'],
   'contract.unit': ['review'],
-  // contract.range, contract.list_rules, contract.unknown_token — removed (were IDX-only, no pipeline consumer)
-  'priority.required_level': ['seed', 'indexlab', 'review'],
-  'priority.availability': ['seed', 'indexlab', 'review'],
-  'priority.difficulty': ['seed', 'indexlab', 'review'],
-  'priority.effort': ['seed', 'review'],
-  'priority.block_publish_when_unk': ['indexlab', 'review'],
-  'ai_assist.mode': ['seed', 'review'],
+  'priority.required_level': ['review'],
+  'priority.availability': ['review'],
+  'priority.difficulty': ['review'],
+  'priority.effort': ['review'],
+  'priority.block_publish_when_unk': ['review'],
+  'ai_assist.mode': ['review'],
   'ai_assist.model_strategy': ['review'],
   'ai_assist.max_tokens': ['review'],
   'ai_assist.reasoning_note': ['review'],
@@ -34,15 +32,10 @@ export const FIELD_SYSTEM_MAP = {
   'enum.match.format_hint': ['review'],
   'enum.match.fuzzy_threshold': ['review'],
   'enum.additional_values': ['review'],
-  'evidence.required': ['seed', 'review'],
-  'evidence.min_evidence_refs': ['seed', 'indexlab', 'review'],
+  'evidence.required': ['review'],
+  'evidence.min_evidence_refs': ['review'],
   'evidence.conflict_policy': ['review'],
   'evidence.tier_preference': ['review'],
-  'search_hints.domain_hints': ['indexlab'],
-  'search_hints.preferred_content_types': ['indexlab'],
-  'search_hints.query_terms': ['indexlab'],
-  group: ['indexlab'],
-  'contract.exact_match': ['indexlab'],
   constraints: ['review'],
   'component.type': ['seed', 'review'],
   'component.match.fuzzy_threshold': ['review'],
@@ -50,9 +43,25 @@ export const FIELD_SYSTEM_MAP = {
   'component.match.auto_accept_score': ['review'],
   'component.match.flag_review_score': ['review'],
   'component.match.property_weight': ['review'],
-  aliases: ['seed', 'indexlab', 'review'],
-  'ui.tooltip_md': ['indexlab', 'review']
+  aliases: ['review'],
+  'ui.tooltip_md': ['review'],
 };
+
+// WHY: IDX entries injected from the badge registry SSOT.
+// Adding a new IDX badge = one entry in idxBadgeRegistry.js. No edits here.
+function _buildFieldSystemMap() {
+  const map = {};
+  for (const [path, systems] of Object.entries(_SEED_REVIEW_MAP)) {
+    map[path] = [...systems];
+  }
+  for (const path of IDX_FIELD_PATHS) {
+    if (!map[path]) map[path] = [];
+    map[path].push('indexlab');
+  }
+  return map;
+}
+
+export const FIELD_SYSTEM_MAP = _buildFieldSystemMap();
 
 const FIELD_PATH_ALIAS_DELETE_MAP = {
   'contract.type': [['contract', 'type'], ['data_type'], ['type']],
@@ -88,10 +97,9 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'evidence.conflict_policy': [['evidence', 'conflict_policy']],
   'evidence.tier_preference': [['evidence', 'tier_preference']],
   'search_hints.domain_hints': [['search_hints', 'domain_hints']],
-  'search_hints.preferred_content_types': [['search_hints', 'preferred_content_types']],
+  'search_hints.content_types': [['search_hints', 'content_types']],
   'search_hints.query_terms': [['search_hints', 'query_terms']],
   group: [['group']],
-  'contract.exact_match': [['contract', 'exact_match']],
   constraints: [['constraints']],
   'component.type': [['component', 'type'], ['component_db_ref']],
   'component.match.fuzzy_threshold': [['component', 'match', 'fuzzy_threshold']],

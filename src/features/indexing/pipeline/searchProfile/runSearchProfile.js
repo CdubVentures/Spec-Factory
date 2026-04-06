@@ -82,7 +82,7 @@ export function runSearchProfile({
       repeat_count: Number.isFinite(Number(row?.repeat_count)) ? Number(row.repeat_count) : 0,
       all_aliases: Array.isArray(row?.all_aliases) ? row.all_aliases : [],
       domain_hints: Array.isArray(row?.domain_hints) ? row.domain_hints : [],
-      preferred_content_types: Array.isArray(row?.preferred_content_types) ? row.preferred_content_types : [],
+      content_types: Array.isArray(row?.content_types) ? row.content_types : [],
       domains_tried_for_key: Array.isArray(row?.domains_tried_for_key) ? row.domains_tried_for_key : [],
       content_types_tried_for_key: Array.isArray(row?.content_types_tried_for_key) ? row.content_types_tried_for_key : [],
     })),

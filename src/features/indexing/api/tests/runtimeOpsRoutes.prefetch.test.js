@@ -53,14 +53,14 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
           search_hints: {
             query_terms: ['connection', 'connectivity'],
             domain_hints: ['razer.com', 'support.razer.com'],
-            preferred_content_types: ['support'],
+            content_types: ['support'],
           },
         },
         dpi: {
           search_hints: {
             query_terms: ['dpi'],
             domain_hints: [],
-            preferred_content_types: [],
+            content_types: [],
           },
         },
       },
@@ -91,9 +91,9 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
     assert.equal(body.search_profile.field_rule_gate_counts['search_hints.domain_hints']?.value_count, 2);
     assert.equal(body.search_profile.field_rule_gate_counts['search_hints.domain_hints']?.total_value_count, 2);
     assert.equal(body.search_profile.field_rule_gate_counts['search_hints.domain_hints']?.effective_value_count, 2);
-    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.preferred_content_types']?.value_count, 1);
-    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.preferred_content_types']?.total_value_count, 1);
-    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.preferred_content_types']?.effective_value_count, 1);
+    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.content_types']?.value_count, 1);
+    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.content_types']?.total_value_count, 1);
+    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.content_types']?.effective_value_count, 1);
     assert.ok(body?.search_profile?.field_rule_hint_counts_by_field);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.query_terms?.value_count, 2);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.query_terms?.total_value_count, 2);
@@ -101,9 +101,9 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.domain_hints?.value_count, 2);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.domain_hints?.total_value_count, 2);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.domain_hints?.effective_value_count, 2);
-    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.preferred_content_types?.value_count, 1);
-    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.preferred_content_types?.total_value_count, 1);
-    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.preferred_content_types?.effective_value_count, 1);
+    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.content_types?.value_count, 1);
+    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.content_types?.total_value_count, 1);
+    assert.equal(body.search_profile.field_rule_hint_counts_by_field.connection?.content_types?.effective_value_count, 1);
   } finally {
     await cleanupTempRoot(tempRoot);
   }
@@ -148,7 +148,7 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
           search_hints: {
             query_terms: ['weight'],
             domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
-            preferred_content_types: ['spec'],
+            content_types: ['spec'],
           },
         },
       },
@@ -180,12 +180,12 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.domain_hints?.effective_value_count, 0);
     assert.equal(body.search_profile.field_rule_gate_counts['search_hints.query_terms']?.total_value_count, 1);
     assert.equal(body.search_profile.field_rule_gate_counts['search_hints.query_terms']?.effective_value_count, 1);
-    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.preferred_content_types']?.total_value_count, 1);
-    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.preferred_content_types']?.effective_value_count, 1);
+    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.content_types']?.total_value_count, 1);
+    assert.equal(body.search_profile.field_rule_gate_counts['search_hints.content_types']?.effective_value_count, 1);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.query_terms?.total_value_count, 1);
     assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.query_terms?.effective_value_count, 1);
-    assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.preferred_content_types?.total_value_count, 1);
-    assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.preferred_content_types?.effective_value_count, 1);
+    assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.content_types?.total_value_count, 1);
+    assert.equal(body.search_profile.field_rule_hint_counts_by_field.weight?.content_types?.effective_value_count, 1);
   } finally {
     await cleanupTempRoot(tempRoot);
   }

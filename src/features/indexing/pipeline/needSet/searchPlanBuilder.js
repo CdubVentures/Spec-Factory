@@ -266,7 +266,7 @@ export async function buildSearchPlan({
       domain_hints_union: (g.domain_hints_union || []).slice(0, groupCap),
       existing_queries_union: (g.existing_queries_union || []).slice(0, groupCap),
       aliases_union: (g.aliases_union || []).slice(0, groupCap),
-      preferred_content_types_union: (g.preferred_content_types_union || []).slice(0, groupCap),
+      content_types_union: (g.content_types_union || []).slice(0, groupCap),
       domains_tried_union: (g.domains_tried_union || []).slice(0, groupCap),
       host_classes_tried_union: g.host_classes_tried_union || [],
       evidence_classes_tried_union: g.evidence_classes_tried_union || [],

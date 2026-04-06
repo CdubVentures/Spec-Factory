@@ -160,11 +160,11 @@ describe('Phase 01 â€” Bundle Formation', () => {
       fieldRules: {
         weight: {
           required_level: 'required',
-          search_hints: { query_terms: ['weight'], preferred_content_types: ['spec_sheet'], domain_hints: [] }
+          search_hints: { query_terms: ['weight'], content_types: ['spec_sheet'], domain_hints: [] }
         },
         dpi_max: {
           required_level: 'required',
-          search_hints: { query_terms: ['dpi'], preferred_content_types: ['spec_sheet'], domain_hints: [] }
+          search_hints: { query_terms: ['dpi'], content_types: ['spec_sheet'], domain_hints: [] }
         }
       }
     }));
@@ -180,11 +180,11 @@ describe('Phase 01 â€” Bundle Formation', () => {
       fieldRules: {
         sensor: {
           required_level: 'critical',
-          search_hints: { query_terms: ['sensor'], preferred_content_types: ['spec_sheet'], domain_hints: [] }
+          search_hints: { query_terms: ['sensor'], content_types: ['spec_sheet'], domain_hints: [] }
         },
         rgb: {
           required_level: 'optional',
-          search_hints: { query_terms: ['rgb'], preferred_content_types: ['spec_sheet'], domain_hints: [] }
+          search_hints: { query_terms: ['rgb'], content_types: ['spec_sheet'], domain_hints: [] }
         }
       }
     }));
@@ -204,7 +204,7 @@ describe('Phase 01 â€” Bundle Formation', () => {
       assert.ok(bundle.priority_bucket, 'bundle must have priority_bucket');
       assert.ok(Array.isArray(bundle.fields), 'bundle must have fields array');
       assert.ok(bundle.fields.length > 0, 'bundle must have at least one field');
-      assert.ok(Array.isArray(bundle.preferred_content_types), 'bundle must have preferred_content_types');
+      assert.ok(Array.isArray(bundle.content_types), 'bundle must have content_types');
       assert.ok(Array.isArray(bundle.query_terms), 'bundle must have query_terms');
       assert.ok(Array.isArray(bundle.domain_hints), 'bundle must have domain_hints');
       assert.ok(Array.isArray(bundle.planned_query_families), 'bundle must have planned_query_families');

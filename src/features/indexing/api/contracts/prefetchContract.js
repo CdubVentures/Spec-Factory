@@ -163,7 +163,7 @@ export const SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE = Object.freeze([
   { key: 'repeat_count', coerce: 'int' },
   { key: 'all_aliases', coerce: 'array', itemType: 'string' },
   { key: 'domain_hints', coerce: 'array', itemType: 'string' },
-  { key: 'preferred_content_types', coerce: 'array', itemType: 'string' },
+  { key: 'content_types', coerce: 'array', itemType: 'string' },
   { key: 'domains_tried_for_key', coerce: 'array', itemType: 'string' },
   { key: 'content_types_tried_for_key', coerce: 'array', itemType: 'string' },
   // LLM-added (post-enhancement)

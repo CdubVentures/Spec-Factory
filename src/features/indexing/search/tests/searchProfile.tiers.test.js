@@ -335,7 +335,7 @@ describe('Phase 02 - buildTier3Queries progressive enrichment', () => {
         key: 'connectivity',
         group_search_worthy: false,
         normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 0, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
+          { normalized_key: 'battery hours', repeat_count: 0, all_aliases: ['battery life'], domain_hints: ['rtings.com'], content_types: ['review'], domains_tried_for_key: [] },
         ],
       }),
     ];
@@ -352,7 +352,7 @@ describe('Phase 02 - buildTier3Queries progressive enrichment', () => {
         key: 'connectivity',
         group_search_worthy: false,
         normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 1, all_aliases: ['battery life', 'battery runtime'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
+          { normalized_key: 'battery hours', repeat_count: 1, all_aliases: ['battery life', 'battery runtime'], domain_hints: ['rtings.com'], content_types: ['review'], domains_tried_for_key: [] },
         ],
       }),
     ];
@@ -367,7 +367,7 @@ describe('Phase 02 - buildTier3Queries progressive enrichment', () => {
         key: 'connectivity',
         group_search_worthy: false,
         normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 2, all_aliases: ['battery life'], domain_hints: ['rtings.com', 'mousespecs.org'], preferred_content_types: ['review'], domains_tried_for_key: ['rtings.com'] },
+          { normalized_key: 'battery hours', repeat_count: 2, all_aliases: ['battery life'], domain_hints: ['rtings.com', 'mousespecs.org'], content_types: ['review'], domains_tried_for_key: ['rtings.com'] },
         ],
       }),
     ];
@@ -382,7 +382,7 @@ describe('Phase 02 - buildTier3Queries progressive enrichment', () => {
         key: 'connectivity',
         group_search_worthy: false,
         normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 3, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review', 'spec sheet'], domains_tried_for_key: ['rtings.com'] },
+          { normalized_key: 'battery hours', repeat_count: 3, all_aliases: ['battery life'], domain_hints: ['rtings.com'], content_types: ['review', 'spec sheet'], domains_tried_for_key: ['rtings.com'] },
         ],
       }),
     ];

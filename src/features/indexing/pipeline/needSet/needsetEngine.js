@@ -155,10 +155,8 @@ function extractSearchHints(rule = {}) {
   const hints = isObject(rule.search_hints) ? rule.search_hints : {};
   return {
     query_terms: normalizeStringArray(hints.query_terms),
-    preferred_content_types: normalizeStringArray(hints.preferred_content_types),
+    content_types: normalizeStringArray(hints.content_types),
     domain_hints: normalizeDomainHints(hints.domain_hints),
-    query_templates: Array.isArray(hints.query_templates) ? hints.query_templates : [],
-    content_types: normalizeStringArray(hints.content_types)
   };
 }
 
@@ -213,7 +211,7 @@ function formBundles(eligibleFields, bundleAssignmentNotes) {
   for (const [bucket, fields] of bucketGroups) {
     const contentGroups = new Map();
     for (const field of fields) {
-      const contentKey = field.preferred_content_types.slice().sort().join('|') || '_default';
+      const contentKey = field.content_types.slice().sort().join('|') || '_default';
       if (!contentGroups.has(contentKey)) contentGroups.set(contentKey, []);
       contentGroups.get(contentKey).push(field);
     }
@@ -224,18 +222,18 @@ function formBundles(eligibleFields, bundleAssignmentNotes) {
 
       const allQueryTerms = new Set();
       const allDomainHints = new Set();
-      const allPreferredContentTypes = new Set();
+      const allContentTypes = new Set();
 
       for (const f of groupFields) {
         for (const t of f.query_terms) allQueryTerms.add(t);
         for (const d of f.domain_hints) allDomainHints.add(d);
-        for (const c of f.preferred_content_types) allPreferredContentTypes.add(c);
+        for (const c of f.content_types) allContentTypes.add(c);
       }
 
-      const preferredContentTypes = [...allPreferredContentTypes].sort();
+      const contentTypes = [...allContentTypes].sort();
       const domainHints = [...allDomainHints].sort();
       const queryTerms = [...allQueryTerms].sort();
-      const plannedQueryFamilies = deriveQueryFamilies(preferredContentTypes, domainHints);
+      const plannedQueryFamilies = deriveQueryFamilies(contentTypes, domainHints);
 
       const fieldStates = {};
       for (const f of groupFields) {
@@ -248,7 +246,7 @@ function formBundles(eligibleFields, bundleAssignmentNotes) {
         priority_bucket: bucket,
         fields: groupFields.map((f) => f.field_key).sort(),
         states: fieldStates,
-        preferred_content_types: preferredContentTypes,
+        content_types: contentTypes,
         query_terms: queryTerms,
         domain_hints: domainHints,
         planned_query_families: plannedQueryFamilies
@@ -445,9 +443,7 @@ export function computeNeedSet({
     const priorityBucket = mapRequiredLevelToBucket(requiredLevel);
     const searchHints = extractSearchHints(rule);
 
-    const preferredContentTypes = searchHints.preferred_content_types.length > 0
-      ? searchHints.preferred_content_types
-      : searchHints.content_types;
+    const contentTypes = searchHints.content_types;
 
     // Count totals per bucket
     if (priorityBucket === 'core') coreTotal++;
@@ -462,7 +458,7 @@ export function computeNeedSet({
         required_level: requiredLevel,
         priority_bucket: priorityBucket,
         state: internalState,
-        preferred_content_types: preferredContentTypes,
+        content_types: contentTypes,
         query_terms: searchHints.query_terms,
         domain_hints: searchHints.domain_hints,
         availability: ruleAvailability(rule),
@@ -533,7 +529,7 @@ export function computeNeedSet({
         min_evidence_refs: minEvidenceRefs,
         query_terms: searchHints.query_terms,
         domain_hints: searchHints.domain_hints,
-        preferred_content_types: preferredContentTypes,
+        content_types: contentTypes,
         tooltip_md: tooltipMd,
         aliases: fieldAliases
       },

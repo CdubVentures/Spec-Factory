@@ -83,17 +83,17 @@ describe('buildSearchPlan', () => {
   // ===== LLM response parsing =====
 
   describe('GAP-2: anti-garbage signals in LLM payload', () => {
-    it('sends preferred_content_types_union to LLM', async () => {
+    it('sends content_types_union to LLM', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         focus_groups: [
-          makeFocusGroup({ preferred_content_types_union: ['spec_sheet', 'review'] }),
+          makeFocusGroup({ content_types_union: ['spec_sheet', 'review'] }),
         ],
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
       const payload = extractLlmPayload(fetchMock.calls);
-      assert.deepStrictEqual(payload.focus_groups[0].preferred_content_types_union, ['spec_sheet', 'review']);
+      assert.deepStrictEqual(payload.focus_groups[0].content_types_union, ['spec_sheet', 'review']);
     });
 
     it('sends domains_tried_union to LLM', async () => {

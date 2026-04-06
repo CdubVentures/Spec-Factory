@@ -545,7 +545,7 @@ function applyDomainHintEnrichment(parts, entry) {
 
 function applyContentTypeEnrichment(parts, entry) {
   const triedTypes = new Set((entry.content_types_tried_for_key || []).map((t) => t.toLowerCase()));
-  const availableTypes = (entry.preferred_content_types || []);
+  const availableTypes = (entry.content_types || []);
   const untriedType = availableTypes.find((t) => !triedTypes.has(t.toLowerCase()));
   const contentType = untriedType || availableTypes[0] || '';
   if (contentType) parts.push(contentType);
@@ -610,7 +610,7 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
         repeat_count: repeatCount,
         all_aliases: isEnriched ? (entry.all_aliases || []) : [],
         domain_hints: isEnriched ? (entry.domain_hints || []) : [],
-        preferred_content_types: isEnriched ? (entry.preferred_content_types || []) : [],
+        content_types: isEnriched ? (entry.content_types || []) : [],
         domains_tried_for_key: isEnriched ? (entry.domains_tried_for_key || []) : [],
         content_types_tried_for_key: isEnriched ? (entry.content_types_tried_for_key || []) : [],
       });

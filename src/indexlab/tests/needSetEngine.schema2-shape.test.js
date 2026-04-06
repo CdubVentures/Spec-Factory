@@ -177,7 +177,7 @@ describe('Phase 01 â€” Schema 2 fields[] per-field shape', () => {
     assert.equal(typeof wField.idx.min_evidence_refs, 'number');
     assert.ok(Array.isArray(wField.idx.query_terms));
     assert.ok(Array.isArray(wField.idx.domain_hints));
-    assert.ok(Array.isArray(wField.idx.preferred_content_types));
+    assert.ok(Array.isArray(wField.idx.content_types));
 
     // reasons array
     assert.ok(Array.isArray(wField.reasons));

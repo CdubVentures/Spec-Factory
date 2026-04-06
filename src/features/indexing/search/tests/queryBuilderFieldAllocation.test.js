@@ -90,7 +90,7 @@ function makeFocusGroupsForFields(fields) {
     group_description_long: fields.join(' '),
     query_terms_union: [],
     domain_hints_union: [],
-    preferred_content_types_union: [],
+    content_types_union: [],
     domains_tried_union: [],
     aliases_union: [],
     total_field_count: fields.length,
@@ -257,9 +257,9 @@ describe('Query Diversity — Template Type Distribution', () => {
       categoryConfig: makeCategoryConfig({
         fieldRules: {
           fields: {
-            connection: { search_hints: { query_terms: ['connectivity'], preferred_content_types: ['spec', 'lab_review'] } },
-            polling_rate: { search_hints: { query_terms: ['polling rate'], preferred_content_types: ['manual_pdf', 'benchmark'] } },
-            sensor: { search_hints: { query_terms: ['sensor'], preferred_content_types: ['teardown_review'] } },
+            connection: { search_hints: { query_terms: ['connectivity'], content_types: ['spec', 'lab_review'] } },
+            polling_rate: { search_hints: { query_terms: ['polling rate'], content_types: ['manual_pdf', 'benchmark'] } },
+            sensor: { search_hints: { query_terms: ['sensor'], content_types: ['teardown_review'] } },
             dpi: { search_hints: { query_terms: ['dpi'] } },
             weight: { search_hints: { query_terms: ['weight grams'] } }
           }
@@ -288,7 +288,7 @@ describe('Query Diversity — Template Type Distribution', () => {
             connection: {
               search_hints: {
                 query_terms: ['connectivity', 'wireless', 'wired', 'bluetooth', 'usb receiver'],
-                preferred_content_types: ['spec', 'manual_pdf', 'datasheet']
+                content_types: ['spec', 'manual_pdf', 'datasheet']
               }
             }
           }

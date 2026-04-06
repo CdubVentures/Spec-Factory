@@ -211,7 +211,7 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
       all_aliases: Array.isArray(f.all_aliases) ? f.all_aliases : [],
       alias_shards: Array.isArray(f.alias_shards) ? f.alias_shards : [],
       domain_hints: Array.isArray(idx.domain_hints) ? idx.domain_hints : [],
-      preferred_content_types: Array.isArray(idx.preferred_content_types) ? idx.preferred_content_types : [],
+      content_types: Array.isArray(idx.content_types) ? idx.content_types : [],
       domains_tried_for_key: Array.isArray(f.domains_tried_for_key) ? f.domains_tried_for_key : [],
       content_types_tried_for_key: Array.isArray(f.content_types_tried_for_key) ? f.content_types_tried_for_key : [],
       // Sort keys for ranking
@@ -450,7 +450,7 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
       const idx = field.idx || {};
       queryTermsSets.push(idx.query_terms);
       domainHintsSets.push(idx.domain_hints);
-      preferredContentTypesSets.push(idx.preferred_content_types);
+      preferredContentTypesSets.push(idx.content_types);
       aliasesSets.push(idx.aliases); // GAP-3
       existingQueriesSets.push(hist.existing_queries);
       domainsTriedSets.push(hist.domains_tried);
@@ -518,7 +518,7 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
     query_count: queryCount, // GAP-8
     query_terms_union: unionSorted(queryTermsSets),
     domain_hints_union: unionSorted(domainHintsSets),
-    preferred_content_types_union: unionSorted(preferredContentTypesSets),
+    content_types_union: unionSorted(preferredContentTypesSets),
     existing_queries_union: unionSorted(existingQueriesSets),
     domains_tried_union: unionSorted(domainsTriedSets),
     host_classes_tried_union: unionSorted(hostClassesTriedSets),

@@ -50,7 +50,7 @@ export function makeCategoryConfig(overrides = {}) {
           search_hints: {
             query_terms: ['weight grams'],
             domain_hints: ['razer.com'],
-            preferred_content_types: ['spec'],
+            content_types: ['spec'],
           },
           ui: { tooltip_md: 'Weight in grams without cable' },
         },
@@ -58,7 +58,7 @@ export function makeCategoryConfig(overrides = {}) {
           required_level: 'critical',
           search_hints: {
             query_terms: ['optical sensor model'],
-            preferred_content_types: ['teardown_review', 'lab_review'],
+            content_types: ['teardown_review', 'lab_review'],
           },
         },
         click_latency: {
@@ -66,7 +66,7 @@ export function makeCategoryConfig(overrides = {}) {
           search_hints: {
             query_terms: ['click latency ms', 'end to end latency'],
             domain_hints: ['rtings.com'],
-            preferred_content_types: ['lab_review', 'benchmark'],
+            content_types: ['lab_review', 'benchmark'],
           },
         },
       },
@@ -96,7 +96,7 @@ export function makeFocusGroup(overrides = {}) {
     satisfied_field_keys: overrides.satisfied_field_keys || [],
     query_terms_union: overrides.query_terms_union || [],
     domain_hints_union: overrides.domain_hints_union || [],
-    preferred_content_types_union: overrides.preferred_content_types_union || [],
+    content_types_union: overrides.content_types_union || [],
     domains_tried_union: overrides.domains_tried_union || [],
     aliases_union: overrides.aliases_union || [],
     total_field_count: overrides.total_field_count ?? 3,

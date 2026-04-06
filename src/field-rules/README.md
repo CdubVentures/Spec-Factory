@@ -12,6 +12,7 @@ Field rule compilation, loading, session caching, and consumer gating. Compiles 
 - `compilerCategoryInit.js`: `initCategory()`, `discoverCompileCategories()`, `listFields()`, `fieldReport()` — category discovery and initialization.
 - `compilerFileOps.js`: `stableStringify()`, `writeJsonStable()`, `hashFileWithMeta()`, `sha256Buffer()` — deterministic file I/O and hashing.
 - `compilerPrimitives.js`: `normalizePatterns()`, `auditFieldMetadata()` — low-level compilation primitives.
+- `idxBadgeRegistry.js`: `IDX_BADGE_REGISTRY`, `IDX_FIELD_PATHS`, `buildExtractor(entry)` — O(1) SSOT for IDX badge definitions. Adding a new IDX badge = one entry here.
 
 ## Dependencies
 - Allowed: `src/ingest/` (categoryCompile for authority path resolution), `src/shared/`.

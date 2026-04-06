@@ -32,7 +32,7 @@ export function makeField(overrides = {}) {
       min_evidence_refs: 0,
       query_terms: [],
       domain_hints: [],
-      preferred_content_types: [],
+      content_types: [],
       tooltip_md: null,
       aliases: [],
     },

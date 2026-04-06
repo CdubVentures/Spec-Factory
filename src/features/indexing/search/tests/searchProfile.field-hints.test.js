@@ -67,7 +67,7 @@ describe('Phase 02 - Field Studio Hint Wiring', () => {
     assert.ok(rtingsHostQueries.length > 0, 'rtings.com source seed produces soft host-biased queries');
   });
 
-  it('preferred_content_types bias doc_hint in query rows', () => {
+  it('content_types bias doc_hint in query rows', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),

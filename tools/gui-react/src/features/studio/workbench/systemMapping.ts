@@ -19,7 +19,9 @@
 //   - implementation/ai-implenentation-plans/ai-source-review.md — review route matrix
 
 // WHY: O(1) SSOT — field-to-system mapping owned by backend consumerGate.js.
+// IDX badge tooltips derived from idxBadgeRegistry.js (single definition point).
 import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../../../../../../src/field-rules/consumerGate.js';
+import { IDX_BADGE_REGISTRY } from '../../../../../../src/field-rules/idxBadgeRegistry.js';
 
 export type DownstreamSystem = 'indexlab' | 'seed' | 'review';
 
@@ -64,10 +66,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Data Type' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline creates correctly-typed columns in SpecDb. The database schema matches the declared type.',
-        off: 'Seed Pipeline skips this field during schema creation. The field will not appear in seeded data.',
-      },
       review: {
         on: 'LLM Review validates that candidate values match the expected data type. Type mismatches are flagged for correction.',
         off: 'LLM Review accepts candidates regardless of type format. Misformatted values (e.g., text in a number field) are not caught.',
@@ -103,14 +101,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Priority & Effort', key: 'Required Level' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline classifies fields into critical/expected/deep schema buckets based on required level. Determines which fields are seeded into SpecDb.',
-        off: 'Seed Pipeline skips required-level classification. The field is not categorized into any schema bucket.',
-      },
-      indexlab: {
-        on: 'IndexLab uses the required level (identity → optional) to compute NeedSet priority scores. Higher-priority fields get more search queries and extraction effort.',
-        off: 'IndexLab treats this field as lowest priority. Minimal search and extraction effort is allocated — the field may go unfilled.',
-      },
       review: {
         on: 'LLM Review weights this field by importance during consensus scoring. Identity/required fields get stricter validation.',
         off: 'LLM Review gives this field no priority weighting. Treated as optional during scoring.',
@@ -121,14 +111,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Priority & Effort', key: 'Availability' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline sorts fields into expected-easy vs expected-sometimes buckets based on availability. Affects schema classification.',
-        off: 'Seed Pipeline does not factor availability into schema classification. Fields are bucketed without availability context.',
-      },
-      indexlab: {
-        on: 'IndexLab adjusts search effort based on how commonly this data appears online (always → rare). Rare fields trigger more aggressive search strategies.',
-        off: 'IndexLab assumes default availability. No search effort adjustment — may over-invest on common fields or under-invest on rare ones.',
-      },
       review: {
         on: 'LLM Review factors availability into route matrix lookup for model selection. Rare fields may get stronger models.',
         off: 'LLM Review ignores availability when selecting validation models. Default model tier is used.',
@@ -139,14 +121,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Priority & Effort', key: 'Difficulty' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline sorts fields by difficulty for schema classification. Harder fields are flagged for deeper extraction pipelines.',
-        off: 'Seed Pipeline does not factor difficulty into schema classification.',
-      },
-      indexlab: {
-        on: 'IndexLab selects extraction strategy based on difficulty. Harder fields use more powerful LLM models and deeper source analysis.',
-        off: 'IndexLab uses the default extraction strategy regardless of actual difficulty. Complex fields may get insufficient extraction effort.',
-      },
       review: {
         on: 'LLM Review selects stronger models for harder fields via the route matrix difficulty band.',
         off: 'LLM Review uses the default model tier regardless of field difficulty.',
@@ -157,10 +131,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Priority & Effort', key: 'Effort' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline maps effort to route matrix effort band for key review state seeding. Higher effort fields get larger LLM budgets.',
-        off: 'Seed Pipeline uses default effort band. Key review state is seeded without effort context.',
-      },
       review: {
         on: 'LLM Review determines per-field LLM call budget via the route matrix effort band. Higher effort allows more validation passes.',
         off: 'LLM Review uses default call budget. No per-field effort adjustment.',
@@ -170,10 +140,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'priority.block_publish_when_unk': {
     navigation: { section: 'Priority & Effort', key: 'Block Publish When Unknown' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab blocks publishing if this field value is the unknown token (e.g., "unk"). Even having the placeholder counts as missing.',
-        off: 'IndexLab allows publishing with unknown tokens. Products can export with "unk" values in this field.',
-      },
       review: {
         on: 'LLM Review blocks publishing when the final value equals the unknown token. Flags it as unresolved.',
         off: 'LLM Review allows unknown token values to pass through. "unk" is treated as a valid value.',
@@ -186,10 +152,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'AI Assist', key: 'Mode' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline seeds initial key_review_state AI configuration from this mode. Determines default AI behavior for the review pipeline.',
-        off: 'Seed Pipeline does not seed AI mode into key_review_state. Review starts with no AI configuration.',
-      },
       review: {
         on: 'LLM Review uses the AI mode to control validation rigor. Judge mode enables deep reasoning with the strongest model.',
         off: 'LLM Review skips AI-powered validation. This field is only reviewed by human operators.',
@@ -302,10 +264,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Evidence Requirements', key: 'Evidence Required' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline seeds key_review_state to require evidence backing for this field. Review starts with evidence as mandatory.',
-        off: 'Seed Pipeline does not seed evidence requirement. Key review state starts without evidence mandate.',
-      },
       review: {
         on: 'LLM Review blocks candidates that lack supporting evidence references. Evidence is mandatory for acceptance.',
         off: 'LLM Review accepts candidates regardless of evidence backing.',
@@ -316,14 +274,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Evidence Requirements', key: 'Min Evidence Refs' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline seeds the minimum evidence reference count into key_review_state. Review starts with this threshold enforced.',
-        off: 'Seed Pipeline does not seed a minimum reference count. Key review state starts with no evidence count requirement.',
-      },
-      indexlab: {
-        on: 'IndexLab requires this many independent sources to confirm a value before accepting it. Higher counts increase accuracy but may reduce fill rate.',
-        off: 'IndexLab accepts values with any number of sources. No minimum reference count is enforced.',
-      },
       review: {
         on: 'LLM Review flags candidates that do not meet the minimum source count. Insufficient evidence lowers confidence.',
         off: 'LLM Review does not enforce minimum source requirements. Single-source values are accepted.',
@@ -352,50 +302,12 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   // ── Search ────────────────────────────────────────────────────────────
   'search_hints.domain_hints': {
     navigation: { section: 'Search Hints', key: 'Domain Hints' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab prioritizes these domains in search queries (e.g., manufacturer site, rtings.com). Increases likelihood of finding authoritative sources.',
-        off: 'IndexLab searches all domains with equal priority. No domain preference is applied — results depend entirely on search engine ranking.',
-      },
-    },
-  },
-  'search_hints.preferred_content_types': {
-    navigation: { section: 'Search Hints', key: 'Preferred Content Types' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab preferentially fetches these content types (spec_sheet, datasheet, review) during discovery. Matching pages are crawled first.',
-        off: 'IndexLab fetches all content types with equal priority. No content-type preference is applied.',
-      },
-    },
+    tooltips: {},
   },
   'search_hints.query_terms': {
     navigation: { section: 'Search Hints', key: 'Query Terms' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab includes these extra terms in search queries to improve relevance for this specific field (e.g., "specifications", "tech specs").',
-        off: 'IndexLab constructs queries using only the product name and category. No field-specific search terms are added.',
-      },
-    },
+    tooltips: {},
   },
-  group: {
-    navigation: { section: 'Field Groups', key: 'Group' },
-    tooltips: {
-      indexlab: {
-        on: 'Fields with the same group get ONE shared Tier 2 query (e.g. "Razer Viper V3 Pro sensor_performance"). Also drives group productivity scoring and phase scheduling.',
-        off: 'Field placed in _ungrouped bucket. No shared Tier 2 query generation.',
-      },
-    },
-  },
-  'contract.exact_match': {
-    navigation: { section: 'Contract', key: 'Exact Match' },
-    tooltips: {
-      indexlab: {
-        on: 'Sets search_intent: "exact_match" sent to the LLM planner as a prompt signal. The LLM may generate stricter queries. Indirect effect — pipeline code does not enforce it.',
-        off: 'Default broad search intent. LLM generates standard queries.',
-      },
-    },
-  },
-
   // ── Constraints ───────────────────────────────────────────────────────
   constraints: {
     navigation: { section: 'Cross-Field Constraints', key: 'Constraints' },
@@ -466,14 +378,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Extraction Hints & Aliases', key: 'Aliases' },
     tooltips: {
-      seed: {
-        on: 'Seed Pipeline registers these alternative names as valid aliases for the field key in SpecDb. They can be used for lookups and matching.',
-        off: 'Seed Pipeline does not create alias entries. The field is only findable by its canonical key.',
-      },
-      indexlab: {
-        on: 'IndexLab uses these aliases during search query building and extraction to recognize alternative field names in source pages.',
-        off: 'IndexLab only searches using the canonical field name. Alternate names in source pages may be missed.',
-      },
       review: {
         on: 'LLM Review recognizes these aliases when matching candidates to this field. Helps resolve alternative naming in source data.',
         off: 'LLM Review only matches candidates by the exact canonical field key. Aliases are ignored.',
@@ -485,10 +389,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'ui.tooltip_md': {
     navigation: { section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab includes this guidance text in the LLM extraction prompt. Helps the AI understand field semantics and extraction nuances.',
-        off: 'IndexLab does not send any field-specific guidance text to the LLM. The model relies only on the field name and contract settings.',
-      },
       review: {
         on: 'LLM Review displays this tooltip to human reviewers and includes it in AI validation context. Helps reviewers understand what the field means.',
         off: 'LLM Review hides field guidance. Reviewers see no description — must rely on field name alone.',
@@ -496,6 +396,21 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
 };
+
+// WHY: IDX tooltips auto-derived from idxBadgeRegistry.js (SSOT).
+// Adding a new IDX badge = one entry in idxBadgeRegistry.js. No manual edits here.
+for (const entry of IDX_BADGE_REGISTRY as ReadonlyArray<{ path: string; section?: string; key?: string; on: string; off: string }>) {
+  if (!FIELD_CONSUMER_REGISTRY[entry.path]) {
+    FIELD_CONSUMER_REGISTRY[entry.path] = { tooltips: {} };
+  }
+  if (!FIELD_CONSUMER_REGISTRY[entry.path].tooltips) {
+    FIELD_CONSUMER_REGISTRY[entry.path].tooltips = {};
+  }
+  FIELD_CONSUMER_REGISTRY[entry.path].tooltips.indexlab = { on: entry.on, off: entry.off };
+  if (entry.section && entry.key && !FIELD_CONSUMER_REGISTRY[entry.path].navigation) {
+    FIELD_CONSUMER_REGISTRY[entry.path].navigation = { section: entry.section, key: entry.key };
+  }
+}
 
 // ── Derived exports ─────────────────────────────────────────────────────
 

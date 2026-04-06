@@ -132,7 +132,7 @@ describe('FIELD_RULE_GATE_SPECS', () => {
     const names = FIELD_RULE_GATE_SPECS.map((s) => s.name);
     assert.ok(names.includes('query_terms'));
     assert.ok(names.includes('domain_hints'));
-    assert.ok(names.includes('preferred_content_types'));
+    assert.ok(names.includes('content_types'));
   });
 
   test('each spec has key, name, and path', () => {
@@ -165,7 +165,7 @@ describe('buildFieldRuleGateCountsFromRules', () => {
           search_hints: {
             query_terms: ['cheap', 'price'],
             domain_hints: ['amazon.com'],
-            preferred_content_types: ['product_page'],
+            content_types: ['product_page'],
           },
         },
       },

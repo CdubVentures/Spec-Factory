@@ -6,10 +6,11 @@
 import { loadCategoryConfig } from '../../../categories/loader.js';
 import { buildIndexlabRuntimeCategoryConfig } from '../../indexing/orchestration/shared/indexlabRuntimeFieldRules.js';
 
-// WHY: The pipeline reads exactly these 11 per-field keys. Everything else
-// (min_evidence_refs, contract.shape, ai_assist, component, enum, evidence,
-// field_studio_hints, parse, variance_policy, etc.) is consumed by review/GUI,
-// not by the discovery pipeline. Stripping keeps the cache lean.
+// WHY: The pipeline reads exactly these 10 per-field keys. Everything else
+// (min_evidence_refs, contract.shape, contract.exact_match, ai_assist,
+// component, enum, evidence, field_studio_hints, parse, variance_policy, etc.)
+// is consumed by review/GUI or not produced by Field Studio.
+// Stripping keeps the cache lean.
 function projectFieldRules(fullFieldRules) {
   const fields = fullFieldRules?.fields || fullFieldRules || {};
   const projected = {};
@@ -25,12 +26,7 @@ function projectFieldRules(fullFieldRules) {
       search_hints: {
         query_terms: rule.search_hints?.query_terms || [],
         domain_hints: rule.search_hints?.domain_hints || [],
-        preferred_content_types: rule.search_hints?.preferred_content_types || [],
         content_types: rule.search_hints?.content_types || [],
-        query_templates: rule.search_hints?.query_templates || [],
-      },
-      contract: {
-        exact_match: Boolean(rule.contract?.exact_match),
       },
       ui: {
         tooltip_md: rule.ui?.tooltip_md || '',

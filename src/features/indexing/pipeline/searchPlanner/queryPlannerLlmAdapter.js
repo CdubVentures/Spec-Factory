@@ -38,7 +38,7 @@ export function buildEnhancerSystemPrompt(rowCount) {
     '- Keep the group intent. Do not narrow to a single field.',
     '',
     'TIER 3 — "key_search": Queries targeting a single unresolved field. This is where you add the most value.',
-    '- Each row includes enrichment context: repeat_count, all_aliases, domain_hints, preferred_content_types, domains_tried, content_types_tried.',
+    '- Each row includes enrichment context: repeat_count, all_aliases, domain_hints, content_types, domains_tried, content_types_tried.',
     '- Use the enrichment context to craft a materially different query from the deterministic base.',
     '',
     'TIER 3 SUB-RULES by repeat_count:',

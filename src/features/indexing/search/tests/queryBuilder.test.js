@@ -27,7 +27,7 @@ test('buildSearchProfile emits tier-based provenance and identity aliases', () =
             search_hints: {
               query_terms: ['polling_rate', 'report rate'],
               domain_hints: ['support.dell.com'],
-              preferred_content_types: ['manual_pdf']
+              content_types: ['manual_pdf']
             },
             ui: {
               tooltip_md: 'Polling rate in Hz'
@@ -67,7 +67,7 @@ test('buildSearchProfile falls back to top-level job identity when identityLock 
           connection: {
             search_hints: {
               query_terms: ['connection'],
-              preferred_content_types: ['manual_pdf']
+              content_types: ['manual_pdf']
             }
           }
         }
@@ -132,7 +132,7 @@ test('buildSearchProfile emits field rule gate counts with off vs zero states', 
           },
           dpi: {
             search_hints: {
-              preferred_content_types: []
+              content_types: []
             }
           }
         }
@@ -159,7 +159,7 @@ test('buildSearchProfile emits field rule gate counts with off vs zero states', 
     disabled_field_count: 1,
     status: 'off'
   });
-  assert.deepEqual(counts['search_hints.preferred_content_types'], {
+  assert.deepEqual(counts['search_hints.content_types'], {
     value_count: 0,
     total_value_count: 0,
     effective_value_count: 0,
@@ -180,7 +180,7 @@ test('buildSearchProfile emits field rule gate counts with off vs zero states', 
     effective_value_count: 0,
     status: 'off'
   });
-  assert.deepEqual(byField.dpi?.preferred_content_types, {
+  assert.deepEqual(byField.dpi?.content_types, {
     value_count: 0,
     total_value_count: 0,
     effective_value_count: 0,
@@ -212,7 +212,7 @@ test('buildSearchProfile keeps token-only domain_hints as 0/N effective counts',
             search_hints: {
               query_terms: ['weight'],
               domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
-              preferred_content_types: ['spec']
+              content_types: ['spec']
             }
           }
         }
@@ -286,7 +286,7 @@ test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is
         normalized_key_queue: ['polling_rate'], unresolved_field_keys: ['polling_rate'],
         field_keys: ['polling_rate'], satisfied_field_keys: [], productivity_score: 50,
         group_description_short: 'polling rate', group_description_long: 'polling rate hz',
-        query_terms_union: [], domain_hints_union: [], preferred_content_types_union: [],
+        query_terms_union: [], domain_hints_union: [], content_types_union: [],
         domains_tried_union: [], aliases_union: [], total_field_count: 1,
         resolved_field_count: 0, coverage_ratio: 0, phase: 'now',
         skip_reason: null, desc: 'polling rate' },

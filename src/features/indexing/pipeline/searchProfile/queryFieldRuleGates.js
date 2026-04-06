@@ -41,7 +41,7 @@ const CONTENT_TYPE_SUFFIX = {
 const SEARCH_HINT_GATE_SPECS = [
   { key: 'search_hints.query_terms', name: 'query_terms', path: ['search_hints', 'query_terms'] },
   { key: 'search_hints.domain_hints', name: 'domain_hints', path: ['search_hints', 'domain_hints'] },
-  { key: 'search_hints.preferred_content_types', name: 'preferred_content_types', path: ['search_hints', 'preferred_content_types'] }
+  { key: 'search_hints.content_types', name: 'content_types', path: ['search_hints', 'content_types'] }
 ];
 
 function extractTooltipTerms(value, { tooltipPhraseCap = 4 } = {}) {
@@ -207,7 +207,7 @@ export function buildFieldRuleHintCountsByField(categoryConfig = {}) {
 }
 
 export function contentTypeSuffixes(fieldRule = {}) {
-  const values = toArray(fieldRule?.search_hints?.preferred_content_types)
+  const values = toArray(fieldRule?.search_hints?.content_types)
     .map((value) => String(value || '').trim().toLowerCase())
     .filter(Boolean);
   const out = [];

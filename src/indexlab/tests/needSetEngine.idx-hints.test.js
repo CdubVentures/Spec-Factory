@@ -68,32 +68,32 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
     assert.deepStrictEqual(wField.idx.domain_hints, ['rtings.com']);
   });
 
-  it('preferred_content_types are deduplicated', () => {
+  it('content_types are deduplicated', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
           required_level: 'required',
-          search_hints: { preferred_content_types: ['spec_sheet', 'product_page', 'spec_sheet', 'product_page'] }
+          search_hints: { content_types: ['spec_sheet', 'product_page', 'spec_sheet', 'product_page'] }
         }
       }
     }));
     const wField = result.fields.find((f) => f.field_key === 'weight');
-    assert.deepStrictEqual(wField.idx.preferred_content_types, ['spec_sheet', 'product_page']);
+    assert.deepStrictEqual(wField.idx.content_types, ['spec_sheet', 'product_page']);
   });
 
-  it('preferred_content_types are lowercased and trimmed', () => {
+  it('content_types are lowercased and trimmed', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
           required_level: 'required',
-          search_hints: { preferred_content_types: [' Spec_Sheet ', 'PRODUCT_PAGE'] }
+          search_hints: { content_types: [' Spec_Sheet ', 'PRODUCT_PAGE'] }
         }
       }
     }));
     const wField = result.fields.find((f) => f.field_key === 'weight');
-    assert.deepStrictEqual(wField.idx.preferred_content_types, ['spec_sheet', 'product_page']);
+    assert.deepStrictEqual(wField.idx.content_types, ['spec_sheet', 'product_page']);
   });
 
   it('empty strings are removed from query_terms', () => {

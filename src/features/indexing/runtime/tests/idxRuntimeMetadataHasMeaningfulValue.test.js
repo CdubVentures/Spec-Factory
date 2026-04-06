@@ -43,24 +43,22 @@ const STRING_FIELDS = [
   ['priority.difficulty', { priority: { difficulty: 'easy' } }, { difficulty: 'hard' }, null],
   ['group', { group: 'sensor_performance' }, null, null],
   ['ui.tooltip_md', { ui: { tooltip_md: 'Hover text' } }, { tooltip_md: 'Alt hover' }, null],
-];
-
-const NUMERIC_FIELDS = [
-  ['evidence.min_evidence_refs', { evidence: { min_evidence_refs: 2 } }, { min_evidence_refs: 1 }],
+  ['ui.label', { ui: { label: 'Weight' } }, { label: 'Mass' }, { display_name: 'Gram' }],
 ];
 
 const ARRAY_FIELDS = [
   ['aliases', { aliases: ['alt_name'] }],
+  ['search_hints.query_templates', { search_hints: { query_templates: ['{brand} {model} weight'] } }],
 ];
 
 const ARRAY_FILTERED_FIELDS = [
   ['search_hints.query_terms', { search_hints: { query_terms: ['term1', 'term2'] } }],
   ['search_hints.domain_hints', { search_hints: { domain_hints: ['example.com'] } }],
-  ['search_hints.preferred_content_types', { search_hints: { preferred_content_types: ['datasheet'] } }],
+  ['search_hints.content_types', { search_hints: { content_types: ['datasheet'] } }],
+  ['search_hints.content_types', { search_hints: { content_types: ['spec_sheet', 'review'] } }],
 ];
 
 const BOOL_PRESENCE_FIELDS = [
-  ['priority.block_publish_when_unk', { priority: { block_publish_when_unk: true } }, { block_publish_when_unk: false }],
   ['contract.exact_match', { contract: { exact_match: true } }, null],
 ];
 
@@ -100,41 +98,6 @@ for (const [fieldPath, structured, legacy, altLegacy] of STRING_FIELDS) {
     assert.equal(hasMeaningfulValue({}, fieldPath), false);
     assert.equal(hasMeaningfulValue(null, fieldPath), false);
     assert.equal(hasMeaningfulValue(undefined, fieldPath), false);
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Numeric field tests
-// ---------------------------------------------------------------------------
-
-for (const [fieldPath, structured, legacy] of NUMERIC_FIELDS) {
-  test(`hasMeaningfulValue('${fieldPath}') — numeric value returns true`, () => {
-    if (!canTestDirectly) return;
-    assert.equal(hasMeaningfulValue(structured, fieldPath), true);
-  });
-
-  if (legacy) {
-    test(`hasMeaningfulValue('${fieldPath}') — legacy numeric returns true`, () => {
-      if (!canTestDirectly) return;
-      assert.equal(hasMeaningfulValue(legacy, fieldPath), true);
-    });
-  }
-
-  test(`hasMeaningfulValue('${fieldPath}') — zero is valid finite number`, () => {
-    if (!canTestDirectly) return;
-    const zeroRule = buildRuleWithValue(fieldPath, 0);
-    assert.equal(hasMeaningfulValue(zeroRule, fieldPath), true);
-  });
-
-  test(`hasMeaningfulValue('${fieldPath}') — NaN returns false`, () => {
-    if (!canTestDirectly) return;
-    const nanRule = buildRuleWithValue(fieldPath, 'not-a-number');
-    assert.equal(hasMeaningfulValue(nanRule, fieldPath), false);
-  });
-
-  test(`hasMeaningfulValue('${fieldPath}') — empty rule returns false`, () => {
-    if (!canTestDirectly) return;
-    assert.equal(hasMeaningfulValue({}, fieldPath), false);
   });
 }
 
@@ -216,9 +179,9 @@ test('hasMeaningfulValue returns false for unknown field path', () => {
   assert.equal(hasMeaningfulValue({ foo: 'bar' }, ''), false);
 });
 
-test('hasMeaningfulValue handles block_publish_when_unk with false value (presence check)', () => {
+test('hasMeaningfulValue handles contract.exact_match with true value (presence check)', () => {
   if (!canTestDirectly) return;
-  assert.equal(hasMeaningfulValue({ priority: { block_publish_when_unk: false } }, 'priority.block_publish_when_unk'), true);
+  assert.equal(hasMeaningfulValue({ contract: { exact_match: true } }, 'contract.exact_match'), true);
 });
 
 // ---------------------------------------------------------------------------

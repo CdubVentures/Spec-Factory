@@ -91,7 +91,7 @@ export async function enhanceQueryRows({
         base.repeat_count = row.repeat_count ?? 0;
         base.all_aliases = toArray(row.all_aliases);
         base.domain_hints = toArray(row.domain_hints);
-        base.preferred_content_types = toArray(row.preferred_content_types);
+        base.content_types = toArray(row.content_types);
         base.domains_tried = toArray(row.domains_tried_for_key);
         base.content_types_tried = toArray(row.content_types_tried_for_key);
       }

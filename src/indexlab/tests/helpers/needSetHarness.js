@@ -76,7 +76,7 @@ export function makeBaseRules() {
       evidence: { tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['weight', 'grams'],
-        preferred_content_types: ['spec_sheet', 'product_page'],
+        content_types: ['spec_sheet', 'product_page'],
         domain_hints: ['rtings.com'],
       },
     },
@@ -86,7 +86,7 @@ export function makeBaseRules() {
       evidence: { tier_preference: [1] },
       search_hints: {
         query_terms: ['sensor', 'optical sensor'],
-        preferred_content_types: ['spec_sheet', 'review'],
+        content_types: ['spec_sheet', 'review'],
         domain_hints: ['sensor.fyi', 'techpowerup.com'],
       },
     },
@@ -96,7 +96,7 @@ export function makeBaseRules() {
       evidence: { tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['dpi', 'max dpi', 'cpi'],
-        preferred_content_types: ['spec_sheet'],
+        content_types: ['spec_sheet'],
         domain_hints: [],
       },
     },
@@ -105,7 +105,7 @@ export function makeBaseRules() {
       min_evidence_refs: 1,
       search_hints: {
         query_terms: ['rgb', 'lighting'],
-        preferred_content_types: ['product_page'],
+        content_types: ['product_page'],
         domain_hints: [],
       },
     },
@@ -115,7 +115,7 @@ export function makeBaseRules() {
       evidence: { tier_preference: [1] },
       search_hints: {
         query_terms: ['brand', 'manufacturer'],
-        preferred_content_types: ['product_page'],
+        content_types: ['product_page'],
         domain_hints: [],
       },
     },

@@ -51,7 +51,7 @@ export function countEffectiveDomainRuleValues(value) {
 export const FIELD_RULE_GATE_SPECS = [
   { key: 'search_hints.query_terms', name: 'query_terms', path: ['search_hints', 'query_terms'] },
   { key: 'search_hints.domain_hints', name: 'domain_hints', path: ['search_hints', 'domain_hints'] },
-  { key: 'search_hints.preferred_content_types', name: 'preferred_content_types', path: ['search_hints', 'preferred_content_types'] },
+  { key: 'search_hints.content_types', name: 'content_types', path: ['search_hints', 'content_types'] },
 ];
 
 export function buildFieldRuleGateCountsFromRules(fieldRulesPayload = {}) {
