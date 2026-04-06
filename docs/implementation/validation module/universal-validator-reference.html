@@ -571,57 +571,83 @@ Return: { resolved: &lt;value&gt;, confidence: 0.0-1.0, reasoning: "..." }"</div
 <div class="panel" id="dim-unit">
   <div class="check-header">
     <span class="check-number">4</span>
-    <span class="check-title">Unit Handling &amp; Conversion</span>
+    <span class="check-title">Unit Verification (Not Conversion)</span>
     <span class="chip chip-teal">DETERMINISTIC</span>
-    <span class="chip chip-success">ALWAYS REPAIRABLE</span>
+    <span class="chip chip-danger">WRONG UNIT = REJECT</span>
   </div>
 
   <div style="margin-bottom:12px;">
-    <h3>Rule Sources</h3>
-    <span class="rule-source">parse_templates[].unit: mm|g|dpi|ips|ms|h|Hz|gf|none</span>
-    <span class="rule-source">ui_field_catalog[].suffix</span>
+    <span class="rule-source">contract.unit: the required unit</span>
+    <span class="rule-source">parse.unit: same</span>
+    <span class="rule-source">parse.unit_accepts: [] (allowed source units, if any)</span>
   </div>
 
   <div class="small muted" style="margin-bottom:16px;">
-    When a field has a target unit, the validator strips unit text from the value and converts if needed.
-    This is always deterministic — unit conversion factors are fixed constants.
+    <strong>The LLM's job is to output the correct unit.</strong> The validator's job is to <strong>verify</strong> the unit matches and <strong>reject</strong> mismatches.
+    <br/><br/>
+    <strong>Same-unit text stripping</strong> is the only deterministic repair: <code>"120 mm"</code> for a mm field &rarr; strip <code>"mm"</code> &rarr; <code>120</code>.
+    <br/><strong>Cross-unit values</strong> (e.g. <code>"4.5 in"</code> for a mm field) are <span class="fail">REJECTED</span> with <code>reason_code: 'wrong_unit'</code>.
+    The repair LLM receives <code>expected_unit</code> + <code>detected_unit</code> to fix it.
   </div>
 
+  <div class="card" style="margin-bottom:16px;">
+    <h3>All 20 Units in the System (proven from live data)</h3>
+    <div class="small mono" style="line-height:2;">
+      <span class="chip chip-info">g</span>
+      <span class="chip chip-info">mm</span>
+      <span class="chip chip-info">Hz</span>
+      <span class="chip chip-info">ms</span>
+      <span class="chip chip-info">dpi</span>
+      <span class="chip chip-info">ips</span>
+      <span class="chip chip-info">h</span>
+      <span class="chip chip-info">gf</span>
+      <span class="chip chip-info">none</span>
+      <span class="chip chip-info">mAh</span>
+      <span class="chip chip-info">hours</span>
+      <span class="chip chip-info">m</span>
+      <span class="chip chip-info">kg</span>
+      <span class="chip chip-info">deg</span>
+      <span class="chip chip-info">%</span>
+      <span class="chip chip-info">nits</span>
+      <span class="chip chip-info">ppi</span>
+      <span class="chip chip-info">W</span>
+      <span class="chip chip-info">in</span>
+      <span class="chip chip-info">million keystrokes</span>
+    </div>
+  </div>
+
+  <h3>Scenarios</h3>
   <table>
-    <thead><tr><th>Target Unit</th><th>Known Conversion Sources</th><th>Factor</th><th>Fields</th></tr></thead>
+    <thead><tr><th>Input</th><th>Field Unit</th><th>Output</th><th>Result</th><th>Why</th></tr></thead>
     <tbody>
-      <tr><td class="mono bold">mm</td><td class="mono tiny">cm &rarr; mm</td><td class="mono">× 10</td><td class="tiny muted">height, width, lngth, lift</td></tr>
-      <tr><td class="mono bold">mm</td><td class="mono tiny">in &rarr; mm</td><td class="mono">× 25.4</td><td class="tiny muted">height, width, lngth</td></tr>
-      <tr><td class="mono bold">mm</td><td class="mono tiny">m &rarr; mm</td><td class="mono">× 1000</td><td class="tiny muted">height, width, lngth</td></tr>
-      <tr><td class="mono bold">g</td><td class="mono tiny">kg &rarr; g</td><td class="mono">× 1000</td><td class="tiny muted">weight, acceleration</td></tr>
-      <tr><td class="mono bold">g</td><td class="mono tiny">oz &rarr; g</td><td class="mono">× 28.3495</td><td class="tiny muted">weight</td></tr>
-      <tr><td class="mono bold">g</td><td class="mono tiny">lb &rarr; g</td><td class="mono">× 453.592</td><td class="tiny muted">weight</td></tr>
-      <tr><td class="mono bold">h</td><td class="mono tiny">min &rarr; h</td><td class="mono">÷ 60</td><td class="tiny muted">battery_hours</td></tr>
-      <tr><td class="mono bold">h</td><td class="mono tiny">days &rarr; h</td><td class="mono">× 24</td><td class="tiny muted">battery_hours</td></tr>
-      <tr><td class="mono bold">Hz</td><td class="mono tiny">kHz &rarr; Hz</td><td class="mono">× 1000</td><td class="tiny muted">polling_rate</td></tr>
-      <tr><td class="mono bold">ms</td><td class="mono tiny">s &rarr; ms</td><td class="mono">× 1000</td><td class="tiny muted">click_latency, debounce, sensor_latency</td></tr>
-      <tr><td class="mono bold">ms</td><td class="mono tiny">μs &rarr; ms</td><td class="mono">÷ 1000</td><td class="tiny muted">click_latency</td></tr>
+      <tr><td class="mono">42</td><td>g</td><td class="mono pass">42</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">Bare number, correct unit assumed</td></tr>
+      <tr><td class="mono">"42g"</td><td>g</td><td class="mono pass">42</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip same-unit suffix</td></tr>
+      <tr><td class="mono">"42 g"</td><td>g</td><td class="mono pass">42</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip same-unit suffix (with space)</td></tr>
+      <tr><td class="mono">"120 mm"</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip same-unit suffix</td></tr>
+      <tr><td class="mono">"1000Hz"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip same-unit suffix</td></tr>
+      <tr><td class="mono">"2.65 lb"</td><td>g</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected g, detected lb &rarr; LLM</td></tr>
+      <tr><td class="mono">"4.5 in"</td><td>mm</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected mm, detected in &rarr; LLM</td></tr>
+      <tr><td class="mono">"72 in"</td><td>m</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected m, detected in &rarr; LLM</td></tr>
+      <tr><td class="mono">"180 cm"</td><td>m</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected m, detected cm &rarr; LLM</td></tr>
+      <tr><td class="mono">"1.5 oz"</td><td>g</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected g, detected oz &rarr; LLM</td></tr>
+      <tr><td class="mono">"500 mAh"</td><td>h</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny"><code>wrong_unit</code>: expected h, detected mAh &rarr; LLM</td></tr>
+      <tr><td class="mono">"unk"</td><td>g</td><td class="mono pass">"unk"</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">Unknown token passes through</td></tr>
     </tbody>
   </table>
 
-  <h3 style="margin-top:16px;">Scenarios</h3>
-  <table>
-    <thead><tr><th>Input</th><th>Target</th><th>Output</th><th>Result</th></tr></thead>
-    <tbody>
-      <tr><td class="mono">"120 mm"</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-warning">REPAIR</span> strip unit text</td></tr>
-      <tr><td class="mono">"12 cm"</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-warning">REPAIR</span> convert cm&rarr;mm</td></tr>
-      <tr><td class="mono">"4.5 in"</td><td>mm</td><td class="mono pass">114.3</td><td><span class="chip chip-warning">REPAIR</span> convert in&rarr;mm</td></tr>
-      <tr><td class="mono">"42g"</td><td>g</td><td class="mono pass">42</td><td><span class="chip chip-warning">REPAIR</span> strip unit</td></tr>
-      <tr><td class="mono">"1.5 oz"</td><td>g</td><td class="mono pass">42.52</td><td><span class="chip chip-warning">REPAIR</span> convert oz&rarr;g</td></tr>
-      <tr><td class="mono">120</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-success">PASS</span> already numeric, correct unit assumed</td></tr>
-      <tr><td class="mono">"1000Hz"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> strip Hz</td></tr>
-      <tr><td class="mono">"1kHz"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> convert kHz</td></tr>
-      <tr><td class="mono">"1k"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> SI prefix</td></tr>
-      <tr><td class="mono">"500 mAh"</td><td>h</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">UNKNOWN</span> mAh≠hours, &rarr; LLM</td></tr>
-    </tbody>
-  </table>
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT (P7): Wrong Unit</strong>
+"The field '{fieldKey}' requires unit '{expectedUnit}' but the value
+was given in '{detectedUnit}':
+  Value: {rawValue}
+  Expected unit: {expectedUnit}
+  Detected unit: {detectedUnit}
+
+Convert the value to {expectedUnit} and return the numeric result.
+If the value cannot be meaningfully converted, return 'unk'.
+Return: { resolved: number, confidence: 0.0-1.0, reasoning: '...' }"</div>
 
   <div class="code-block" style="margin-top:16px;"><span style="color:var(--sf-teal-fg);">// Sanity bounds per unit (detect hallucinated magnitudes)</span>
+<span style="color:var(--sf-teal-fg);">// Category-specific: use rule.contract.range.min/max when available</span>
 const SANITY_BOUNDS = {
   mm:  { min: 0.1, max: 500 },    // mouse dimensions
   g:   { min: 5,   max: 500 },    // mouse weight
@@ -631,6 +657,12 @@ const SANITY_BOUNDS = {
   h:   { min: 1,   max: 10000 },  // battery hours
   Hz:  { min: 50,  max: 10000 },  // polling rate
   gf:  { min: 1,   max: 200 },    // click/release force
+  kg:  { min: 0.1, max: 50 },     // keyboard weight
+  m:   { min: 0.1, max: 10 },     // cable length
+  nits:{ min: 50,  max: 5000 },   // monitor brightness
+  W:   { min: 1,   max: 1000 },   // monitor power
+  deg: { min: 1,   max: 360 },    // viewing angle
+  ppi: { min: 50,  max: 1000 },   // pixel density
 };</div>
 </div>
 

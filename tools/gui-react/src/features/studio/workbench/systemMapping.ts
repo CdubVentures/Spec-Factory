@@ -108,94 +108,14 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'priority.availability': {
-
     navigation: { section: 'Priority & Effort', key: 'Availability' },
-    tooltips: {
-      review: {
-        on: 'LLM Review factors availability into route matrix lookup for model selection. Rare fields may get stronger models.',
-        off: 'LLM Review ignores availability when selecting validation models. Default model tier is used.',
-      },
-    },
+    tooltips: {},
   },
   'priority.difficulty': {
-
     navigation: { section: 'Priority & Effort', key: 'Difficulty' },
-    tooltips: {
-      review: {
-        on: 'LLM Review selects stronger models for harder fields via the route matrix difficulty band.',
-        off: 'LLM Review uses the default model tier regardless of field difficulty.',
-      },
-    },
-  },
-  'priority.effort': {
-
-    navigation: { section: 'Priority & Effort', key: 'Effort' },
-    tooltips: {
-      review: {
-        on: 'LLM Review determines per-field LLM call budget via the route matrix effort band. Higher effort allows more validation passes.',
-        off: 'LLM Review uses default call budget. No per-field effort adjustment.',
-      },
-    },
-  },
-  'priority.block_publish_when_unk': {
-    navigation: { section: 'Priority & Effort', key: 'Block Publish When Unknown' },
-    tooltips: {
-      review: {
-        on: 'LLM Review blocks publishing when the final value equals the unknown token. Flags it as unresolved.',
-        off: 'LLM Review allows unknown token values to pass through. "unk" is treated as a valid value.',
-      },
-    },
+    tooltips: {},
   },
 
-  // ── AI Assist ─────────────────────────────────────────────────────────
-  'ai_assist.mode': {
-
-    navigation: { section: 'AI Assist', key: 'Mode' },
-    tooltips: {
-      review: {
-        on: 'LLM Review uses the AI mode to control validation rigor. Judge mode enables deep reasoning with the strongest model.',
-        off: 'LLM Review skips AI-powered validation. This field is only reviewed by human operators.',
-      },
-    },
-  },
-  'ai_assist.model_strategy': {
-    navigation: { section: 'AI Assist', key: 'Model Strategy' },
-    tooltips: {
-      review: {
-        on: 'LLM Review overrides model tier selection from the route ladder based on this strategy. force_deep ensures the strongest model is used.',
-        off: 'LLM Review auto-selects the validation model from the route ladder. No per-field strategy override.',
-      },
-    },
-  },
-  'ai_assist.max_tokens': {
-    navigation: { section: 'AI Assist', key: 'Max Tokens' },
-    tooltips: {
-      review: {
-        on: 'LLM Review caps output tokens per call during validation for this field. Controls response length and cost.',
-        off: 'LLM Review uses the default token cap for the selected model. No per-field limit.',
-      },
-    },
-  },
-  'ai_assist.reasoning_note': {
-    navigation: { section: 'AI Assist', key: 'Reasoning Note' },
-    tooltips: {
-      review: {
-        on: 'LLM Review includes this extraction guidance in the AI validation prompt. Helps the model understand field-specific validation nuances.',
-        off: 'LLM Review uses auto-generated guidance only. No per-field reasoning note is included.',
-      },
-    },
-  },
-
-  // ── Parse ─────────────────────────────────────────────────────────────
-  'parse.template': {
-    navigation: { section: 'Parse Rules', key: 'Parse Template' },
-    tooltips: {
-      review: {
-        on: 'LLM Review validates that candidate values match the expected parse template format. Format violations are flagged.',
-        off: 'LLM Review does not check parse template compliance. Any format is accepted.',
-      },
-    },
-  },
 
   // ── Enum ──────────────────────────────────────────────────────────────
   'enum.policy': {
@@ -242,14 +162,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       },
     },
   },
-  'enum.match.fuzzy_threshold': {
-    tooltips: {
-      review: {
-        on: 'LLM Review uses this threshold (0-1) as the minimum fuzzy similarity for a candidate to match an enum value. Lower = more lenient.',
-        off: 'LLM Review uses the default 0.92 threshold. Only very close matches are accepted.',
-      },
-    },
-  },
   'enum.additional_values': {
     tooltips: {
       review: {
@@ -260,16 +172,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   },
 
   // ── Evidence ──────────────────────────────────────────────────────────
-  'evidence.required': {
-
-    navigation: { section: 'Evidence Requirements', key: 'Evidence Required' },
-    tooltips: {
-      review: {
-        on: 'LLM Review blocks candidates that lack supporting evidence references. Evidence is mandatory for acceptance.',
-        off: 'LLM Review accepts candidates regardless of evidence backing.',
-      },
-    },
-  },
   'evidence.min_evidence_refs': {
 
     navigation: { section: 'Evidence Requirements', key: 'Min Evidence Refs' },
@@ -286,15 +188,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       review: {
         on: 'LLM Review applies the configured conflict resolution policy when multiple candidates disagree.',
         off: 'LLM Review defaults to tier-based resolution without the configured policy override.',
-      },
-    },
-  },
-  'evidence.tier_preference': {
-    navigation: { section: 'Evidence Requirements', key: 'Tier Preference' },
-    tooltips: {
-      review: {
-        on: 'LLM Review weights evidence quality by tier during scoring. Higher-tier sources contribute more confidence to candidate acceptance.',
-        off: 'LLM Review treats all evidence tiers equally during scoring. Source quality does not affect confidence.',
       },
     },
   },
@@ -334,66 +227,15 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       },
     },
   },
-  'component.match.fuzzy_threshold': {
-    tooltips: {
-      review: {
-        on: 'LLM Review uses this threshold (0-1) to control how similar a name must be to count as a component match. Lower = more lenient matching.',
-        off: 'LLM Review uses the default 0.75 fuzzy threshold for component matching.',
-      },
-    },
-  },
-  'component.match.name_weight': {
-    tooltips: {
-      review: {
-        on: 'LLM Review weights component name similarity by this factor (0-1) in the identity score. Higher weight = name matters more than properties.',
-        off: 'LLM Review uses the default 0.4 name weight. Properties contribute more than names to the identity score.',
-      },
-    },
-  },
-  'component.match.auto_accept_score': {
-    tooltips: {
-      review: {
-        on: 'LLM Review auto-accepts component matches scoring above this threshold without requiring human review. Higher = more conservative auto-accept.',
-        off: 'LLM Review uses the default 0.95 auto-accept threshold.',
-      },
-    },
-  },
-  'component.match.flag_review_score': {
-    tooltips: {
-      review: {
-        on: 'LLM Review flags component matches scoring below this threshold for human review. Lower = only very poor matches are flagged.',
-        off: 'LLM Review uses the default 0.65 flag-for-review threshold.',
-      },
-    },
-  },
-  'component.match.property_weight': {
-    tooltips: {
-      review: {
-        on: 'LLM Review weights component property similarity by this factor (0-1) in the identity score. Higher = properties matter more than names.',
-        off: 'LLM Review uses the default 0.6 property weight.',
-      },
-    },
-  },
   aliases: {
-
     navigation: { section: 'Extraction Hints & Aliases', key: 'Aliases' },
-    tooltips: {
-      review: {
-        on: 'LLM Review recognizes these aliases when matching candidates to this field. Helps resolve alternative naming in source data.',
-        off: 'LLM Review only matches candidates by the exact canonical field key. Aliases are ignored.',
-      },
-    },
+    tooltips: {},
   },
 
   // ── Tooltip / UI ──────────────────────────────────────────────────────
   'ui.tooltip_md': {
     navigation: { section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown' },
-    tooltips: {
-      review: {
-        on: 'LLM Review displays this tooltip to human reviewers and includes it in AI validation context. Helps reviewers understand what the field means.',
-        off: 'LLM Review hides field guidance. Reviewers see no description — must rely on field name alone.',
-      },
-    },
+    tooltips: {},
   },
 };
 

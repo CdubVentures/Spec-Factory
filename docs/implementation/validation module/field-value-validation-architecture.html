@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Field Value Validation Module — Architecture &amp; Flow</title>
+<title>Validation Feature — Architecture &amp; Implementation Plan</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
   --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
   --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
@@ -16,780 +15,640 @@
   --sf-surface-panel: #0d1834;
   --sf-text-primary: #ecf1ff;
   --sf-text-muted: #adc2eb;
-  --sf-text-subtle: #94a3b8;
   --sf-text-dim: #6b7fa0;
   --sf-border-soft: #243a65;
   --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
-  --sf-accent: #6366f1;
   --sf-accent-strong: #818cf8;
   --sf-accent-glow: rgba(99, 102, 241, 0.12);
-  --sf-success-fg: #86efac;
-  --sf-success-bg: rgba(34, 197, 94, 0.15);
-  --sf-warning-fg: #fcd34d;
-  --sf-warning-bg: rgba(234, 179, 8, 0.15);
-  --sf-danger-fg: #f87171;
-  --sf-danger-bg: rgba(248, 113, 113, 0.15);
-  --sf-info-fg: #93c5fd;
-  --sf-info-bg: rgba(14, 165, 233, 0.15);
-  --sf-purple-fg: #d8b4fe;
-  --sf-purple-bg: rgba(88, 28, 135, 0.3);
-  --sf-teal-fg: #5eead4;
-  --sf-teal-bg: rgba(19, 78, 74, 0.3);
-  --sf-neutral-fg: #94a3b8;
-  --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe; --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.15);
 }
-
-body {
-  font-family: var(--sf-font-ui);
-  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
-  color: var(--sf-text-primary);
-  min-height: 100vh;
-  padding: 32px;
-  line-height: 1.5;
-}
-
-.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
-
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 32px; line-height: 1.5; }
+.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
 h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
-h2 { font-size: 16px; font-weight: 700; letter-spacing: 0.02em; color: var(--sf-accent-strong); margin-bottom: 8px; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
 h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
-
 .subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
-
-.panel {
-  background: var(--sf-surface-panel);
-  border: 1px solid var(--sf-border-soft);
-  border-radius: 12px;
-  padding: 24px;
-}
-
-.card {
-  background: var(--sf-surface-elevated);
-  border: 1px solid var(--sf-border-soft-alpha);
-  border-radius: 10px;
-  padding: 20px;
-}
-
-.chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 5px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
-}
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
 .chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
 .chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
-.chip-danger  { background: var(--sf-danger-bg);  color: var(--sf-danger-fg);  }
-.chip-purple  { background: var(--sf-purple-bg);  color: var(--sf-purple-fg);  }
-.chip-accent  { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
-.chip-teal    { background: var(--sf-teal-bg);    color: var(--sf-teal-fg);    }
-.chip-info    { background: var(--sf-info-bg);    color: var(--sf-info-fg);    }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
 .chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
-
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
 .mono { font-family: var(--sf-font-mono); }
 .dim { color: var(--sf-text-dim); }
 .muted { color: var(--sf-text-muted); }
 .small { font-size: 11px; }
 .tiny { font-size: 10px; }
 .bold { font-weight: 700; }
-
-.code-block {
-  background: var(--sf-surface-elevated);
-  border: 1px solid var(--sf-border-soft-alpha);
-  border-radius: 8px;
-  padding: 16px;
-  font-family: var(--sf-font-mono);
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--sf-text-muted);
-  white-space: pre-wrap;
-  overflow-x: auto;
-}
-
-.divider { border: none; height: 1px; background: var(--sf-border-soft-alpha); margin: 4px 0; }
-
-/* ── Flow diagram ─────────────────────────────────────── */
-
-.flow { display: flex; flex-direction: column; gap: 0; align-items: center; }
-
-.flow-node {
-  width: 100%; max-width: 800px;
-  border-radius: 10px; padding: 16px 20px;
-  position: relative;
-}
-
-.flow-arrow {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 6px 0; color: var(--sf-text-dim); font-size: 18px; line-height: 1;
-}
-.flow-arrow-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
-  text-transform: uppercase; margin-top: 2px;
-}
-
-.flow-source   { background: var(--sf-purple-bg); border: 1.5px solid rgba(168,85,247,0.4); }
-.flow-pure     { background: var(--sf-teal-bg);   border: 1.5px solid rgba(94,234,212,0.4); }
-.flow-check    { background: var(--sf-info-bg);    border: 1.5px solid rgba(147,197,253,0.4); }
-.flow-llm      { background: var(--sf-warning-bg); border: 1.5px solid rgba(252,211,77,0.4); }
-.flow-publish  { background: var(--sf-success-bg); border: 1.5px solid rgba(134,239,172,0.4); }
-.flow-reject   { background: var(--sf-danger-bg);  border: 1.5px solid rgba(248,113,113,0.4); }
-
-.flow-node-title {
-  font-size: 13px; font-weight: 700; margin-bottom: 4px;
-}
-.flow-node-detail {
-  font-size: 11px; color: var(--sf-text-muted); line-height: 1.5;
-}
-
-.flow-branch {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  width: 100%; max-width: 800px;
-}
-
-/* ── Tables ───────────────────────────────────────────── */
-
+.pass { color: var(--sf-success-fg); }
+.fail { color: var(--sf-danger-fg); }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th {
-  text-align: left; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--sf-text-dim); padding: 8px 12px;
-  border-bottom: 1px solid var(--sf-border-soft);
-}
-td {
-  padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha);
-  color: var(--sf-text-primary); vertical-align: top;
-}
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
 tr:last-child td { border-bottom: none; }
-
-/* ── Grid layouts ─────────────────────────────────────── */
-
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.gap-16 { gap: 16px; }
-.gap-12 { gap: 12px; }
-.flex-col { display: flex; flex-direction: column; }
-.flex-row { display: flex; align-items: center; }
-
-.section-label {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--sf-text-dim); margin-bottom: 10px;
-}
+.flow { display: flex; flex-direction: column; gap: 0; align-items: center; }
+.flow-node { width: 100%; max-width: 800px; border-radius: 10px; padding: 16px 20px; }
+.flow-arrow { display: flex; flex-direction: column; align-items: center; padding: 6px 0; color: var(--sf-text-dim); font-size: 18px; line-height: 1; }
+.flow-arrow-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+.flow-pure { background: var(--sf-teal-bg); border: 1.5px solid rgba(94,234,212,0.4); }
+.flow-check { background: var(--sf-info-bg); border: 1.5px solid rgba(147,197,253,0.4); }
+.flow-llm { background: var(--sf-warning-bg); border: 1.5px solid rgba(252,211,77,0.4); }
+.flow-publish { background: var(--sf-success-bg); border: 1.5px solid rgba(134,239,172,0.4); }
+.flow-reject { background: var(--sf-danger-bg); border: 1.5px solid rgba(248,113,113,0.4); }
+.flow-source { background: var(--sf-purple-bg); border: 1.5px solid rgba(168,85,247,0.4); }
+.flow-node-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.flow-node-detail { font-size: 11px; color: var(--sf-text-muted); line-height: 1.5; }
+.flow-branch { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 800px; }
 </style>
 </head>
 <body>
 <div class="root">
 
-<!-- ═══════════════════════════════════════════════════════════════
-     HEADER
-     ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 
 <div>
-  <h1>Field Value Validation Module</h1>
+  <h1>Validation Feature &mdash; src/features/validation/</h1>
   <div class="subtitle">
-    Architecture for validating LLM-extracted field values against field studio rules before publishing to the product record.
-    <br/>Deterministic normalization first, validate-phase LLM only on mismatch.
+    A new vertical feature module that deterministically validates any LLM-extracted field value against the field studio contract before it reaches the product record.
+    <br/>Independent of <code>src/engine/</code>. Reuses <code>ruleAccessors</code> and <code>normalizationFunctions</code> only. Tested against all 297 fields across 3 live categories.
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 1: PROBLEM STATEMENT
+     SECTION 1: WHY
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>1. The Problem</h2>
-  <div class="grid-2 gap-16">
+<div class="panel">
+  <h2>1. Why This Exists</h2>
+  <div class="grid-2" style="gap:16px;">
     <div class="card">
       <h3>Today</h3>
       <div class="small muted" style="line-height:1.7;">
-        LLM outputs (color finder, pipeline extraction, future sources) go directly to storage with <strong>no validation</strong> against field studio rules.
+        The pipeline (<code>src/pipeline/runProduct.js</code>) has <strong>zero validation</strong>.
+        LLM outputs go directly to storage unvalidated.
         <br/><br/>
-        The color registry is a closed vocabulary of 77+ atoms, but nothing enforces membership.
-        Token maps exist in egPresets (<code>grey&rarr;gray</code>) but are never applied to actual values.
-        The <code>validate</code> LLM phase exists but only handles enum consistency review for the curator UI.
+        <code>src/engine/</code> exists but is only wired to <strong>review</strong> (2 callers: qaJudge + overrideWorkflow).
+        It has 11 proven gaps and is not universal.
+        <br/><br/>
+        Result: hallucinated values, wrong units, wrong types, and malformed tokens reach the product record.
       </div>
     </div>
     <div class="card">
       <h3>Goal</h3>
       <div class="small muted" style="line-height:1.7;">
-        A <strong>single validation gate</strong> between any LLM source and the field publisher.
+        A <strong>single validation gate</strong> that any source calls before publishing.
         <br/><br/>
-        <strong>Deterministic first</strong>: apply token_map, dedupe, enforce list_rules, check registry membership. Free and fast.
+        <strong>Deterministic first:</strong> shape, type, unit, format, enum, list rules, rounding, range, constraints &mdash; all pure functions, zero LLM cost, &lt;1ms.
         <br/><br/>
-        <strong>Validate LLM only on mismatch</strong>: if deterministic checks fail, call the <code>validate</code> phase to repair or recommend re-run.
+        <strong>LLM repair only on mismatch:</strong> unknowns get a targeted repair prompt with the field contract + registered values.
         <br/><br/>
-        Every future source (pipeline extraction, manual, community) validates through the same gate. O(1) scaling.
+        <strong>O(1) scaling:</strong> adding a field or category requires zero code changes. The validator reads <code>parse.template</code> and the field contract from <code>field_rules.json</code>.
       </div>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 2: THE FLOW (MAIN DIAGRAM)
+     SECTION 2: FEATURE BOUNDARY
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>2. Validation Flow</h2>
+<div class="panel">
+  <h2>2. Feature Boundary</h2>
 
-  <div class="flow">
+  <div class="code-block" style="margin-bottom:16px;">src/features/validation/
+  index.js                    <span style="color:var(--sf-teal-fg);"># Public API: validateField(), validateRecord()</span>
+  validateField.js            <span style="color:var(--sf-teal-fg);"># Core: single-field validation pipeline (12 steps)</span>
+  validateRecord.js           <span style="color:var(--sf-teal-fg);"># Orchestrator: validate all fields in a record + cross-field</span>
+  checks/
+    checkShape.js             <span style="color:var(--sf-teal-fg);"># Step 1: scalar / list / record shape gate</span>
+    checkType.js              <span style="color:var(--sf-teal-fg);"># Step 2: type verification + coercion</span>
+    checkUnit.js              <span style="color:var(--sf-teal-fg);"># Step 3: unit verification (reject wrong unit)</span>
+    checkFormat.js            <span style="color:var(--sf-teal-fg);"># Step 4: format regex per template</span>
+    normalize.js              <span style="color:var(--sf-teal-fg);"># Step 5: trim, lowercase, token_map</span>
+    checkEnum.js              <span style="color:var(--sf-teal-fg);"># Step 6: enum policy (closed / open_prefer_known / open)</span>
+    enforceListRules.js       <span style="color:var(--sf-teal-fg);"># Step 7: dedupe, sort, min/max</span>
+    applyRounding.js          <span style="color:var(--sf-teal-fg);"># Step 8: display_decimals rounding</span>
+    checkRange.js             <span style="color:var(--sf-teal-fg);"># Step 9: min/max bounds</span>
+    checkConstraints.js       <span style="color:var(--sf-teal-fg);"># Step 10: cross-field constraint expressions</span>
+    resolveComponent.js       <span style="color:var(--sf-teal-fg);"># Step 11: component_db lookup for component_reference fields</span>
+  templateDispatch.js         <span style="color:var(--sf-teal-fg);"># parse.template → normalizer lookup (O(1) dispatch)</span>
+  formatRegistry.js           <span style="color:var(--sf-teal-fg);"># template → format_regex mapping</span>
+  tests/
+    validateField.test.js     <span style="color:var(--sf-teal-fg);"># Full pipeline: all 12 templates × pass/fail/repair</span>
+    checkShape.test.js
+    checkType.test.js
+    checkUnit.test.js
+    checkFormat.test.js
+    checkEnum.test.js
+    enforceListRules.test.js
+    checkRange.test.js
+    checkConstraints.test.js
+    resolveComponent.test.js
+    realCategories.test.js    <span style="color:var(--sf-teal-fg);"># Loads real mouse/keyboard/monitor artifacts</span>
+  README.md</div>
 
-    <!-- Source -->
-    <div class="flow-node flow-source">
-      <div class="flow-node-title" style="color:var(--sf-purple-fg);">
-        <span class="chip chip-purple" style="margin-right:6px;">SOURCE</span>
-        LLM Output (e.g., Color Edition Finder response)
-      </div>
-      <div class="flow-node-detail">
-        <code>{ colors: ["black", "Grey", "midnight blue"], editions: { "Launch Edition": { colors: ["black"] } }, default_color: "black" }</code>
-      </div>
-    </div>
+  <h3>Public API (the contract)</h3>
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// index.js — the only thing consumers import</span>
+export { validateField } from './validateField.js';
+export { validateRecord } from './validateRecord.js';</div>
 
-    <div class="flow-arrow">&darr;<div class="flow-arrow-label">always runs</div></div>
+  <h3>Dependencies</h3>
+  <table>
+    <thead><tr><th>Allowed Import</th><th>What</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="mono tiny">src/shared/</td><td>primitives, text utilities</td><td class="tiny muted">Universal helpers</td></tr>
+      <tr><td class="mono tiny">src/engine/ruleAccessors.js</td><td>ruleType, ruleShape, ruleUnit, ruleRange, etc.</td><td class="tiny muted">Pure read-only accessors for field rule properties</td></tr>
+      <tr><td class="mono tiny">src/engine/normalizationFunctions.js</td><td>NORMALIZATION_FUNCTIONS map, parseBoolean, parseDate, etc.</td><td class="tiny muted">Reuse existing 22 normalizers (parse_latency_list, etc.)</td></tr>
+      <tr><td class="mono tiny">src/engine/engineTextHelpers.js</td><td>normalizeToken, isUnknownToken, normalizeFieldKey</td><td class="tiny muted">Text normalization utilities</td></tr>
+    </tbody>
+  </table>
 
-    <!-- Step 1: Shape validation -->
-    <div class="flow-node flow-pure">
-      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
-        <span class="chip chip-teal" style="margin-right:6px;">STEP 1</span>
-        Zod Shape Validation
-        <span class="chip chip-success" style="margin-left:8px;">DETERMINISTIC</span>
-      </div>
-      <div class="flow-node-detail">
-        Validates struct: <code>colors</code> is array of strings, <code>editions</code> is record, <code>default_color</code> is string.
-        <br/>Already exists: <code>colorEditionFinderResponseSchema</code>. If shape fails &rarr; reject immediately, no repair possible.
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;<div class="flow-arrow-label">shape ok</div></div>
-
-    <!-- Step 2: Token map normalization -->
-    <div class="flow-node flow-pure">
-      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
-        <span class="chip chip-teal" style="margin-right:6px;">STEP 2</span>
-        Token Map Normalization
-        <span class="chip chip-success" style="margin-left:8px;">DETERMINISTIC</span>
-        <span class="chip chip-neutral" style="margin-left:4px;">NEW</span>
-      </div>
-      <div class="flow-node-detail">
-        Apply <code>fieldRule.parse.token_map</code> from egPresets to each value.
-        <br/><code>"Grey" &rarr; "gray"</code> &middot; <code>"gray-light" &rarr; "light-gray"</code> &middot; <code>"light grey" &rarr; "light-gray"</code>
-        <br/>Editions: lowercase + kebab-case &mdash; <code>"Launch Edition" &rarr; "launch-edition"</code>
-        <br/><strong>Source:</strong> <code>getEgPresetForKey(fieldKey, ctx).parse.token_map</code>
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;<div class="flow-arrow-label">normalized</div></div>
-
-    <!-- Step 3: List rules enforcement -->
-    <div class="flow-node flow-pure">
-      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
-        <span class="chip chip-teal" style="margin-right:6px;">STEP 3</span>
-        List Rules Enforcement
-        <span class="chip chip-success" style="margin-left:8px;">DETERMINISTIC</span>
-      </div>
-      <div class="flow-node-detail">
-        Apply <code>fieldRule.contract.list_rules</code>:
-        &middot; <code>dedupe: true</code> &mdash; remove duplicates after normalization
-        &middot; <code>max_items: 100</code> (colors) / <code>50</code> (editions) &mdash; truncate if over cap
-        &middot; <code>sort: 'none'</code> &mdash; preserve order (colors[0] = default)
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;<div class="flow-arrow-label">deduped &amp; capped</div></div>
-
-    <!-- Step 4: Registry membership check -->
-    <div class="flow-node flow-check">
-      <div class="flow-node-title" style="color:var(--sf-info-fg);">
-        <span class="chip chip-info" style="margin-right:6px;">STEP 4</span>
-        Registry Membership Check
-        <span class="chip chip-success" style="margin-left:8px;">DETERMINISTIC</span>
-        <span class="chip chip-neutral" style="margin-left:4px;">NEW</span>
-      </div>
-      <div class="flow-node-detail">
-        <strong>Colors</strong> (<code>enum_policy: 'open'</code> but registry is closed vocabulary):
-        <br/>Each color atom checked against <code>appDb.listColors()</code> (77+ registered names).
-        Multi-color: split on <code>+</code>, check each atom. e.g. <code>"black+red"</code> &rarr; check <code>"black"</code> &check; and <code>"red"</code> &check;
-        <br/><br/>
-        <strong>Editions</strong> (<code>enum_policy: 'open'</code>): no registry check needed. Any kebab-case slug is valid.
-        <br/><br/>
-        <strong>Cross-field invariants:</strong>
-        <br/>&middot; <code>default_color &isin; colors</code>
-        &middot; every edition's <code>colors &sube; top-level colors</code>
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;</div>
-
-    <!-- Branch: Pass / Fail -->
-    <div class="flow-branch">
-      <div class="flow-node flow-publish" style="text-align:center;">
-        <div class="flow-node-title" style="color:var(--sf-success-fg);">
-          <span class="chip chip-success">ALL PASS</span>
-        </div>
-        <div class="flow-node-detail" style="margin-top:8px;">
-          All values are registered atoms.<br/>
-          Cross-field invariants hold.<br/>
-          <strong>&darr; Publish to product record</strong>
-          <br/><span class="chip chip-success" style="margin-top:6px;">confidence: 1.0</span>
-        </div>
-      </div>
-      <div class="flow-node flow-llm" style="text-align:center;">
-        <div class="flow-node-title" style="color:var(--sf-warning-fg);">
-          <span class="chip chip-warning">UNKNOWNS EXIST</span>
-        </div>
-        <div class="flow-node-detail" style="margin-top:8px;">
-          e.g. <code>"midnight blue"</code> not in registry.
-          <br/>Deterministic repair failed.
-          <br/><strong>&darr; Call validate-phase LLM</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;<div class="flow-arrow-label">unknowns only</div></div>
-
-    <!-- Step 5: Validate LLM -->
-    <div class="flow-node flow-llm">
-      <div class="flow-node-title" style="color:var(--sf-warning-fg);">
-        <span class="chip chip-warning" style="margin-right:6px;">STEP 5</span>
-        Validate Phase LLM Call
-        <span class="chip chip-purple" style="margin-left:8px;">phase: validate</span>
-      </div>
-      <div class="flow-node-detail">
-        <strong>Only called when unknowns exist.</strong> Small, cheap prompt &mdash; just the failing values + full registry + field rules.
-        <br/><br/>
-        <strong>Input:</strong> unknown values, full color registry (names + hex), field formatting rules from egPresets
-        <br/><strong>Task:</strong> For each unknown: map to registered value, confirm as new (open enum), or flag as hallucination
-        <br/><strong>Model:</strong> Uses existing <code>validate</code> phase model deck (base + fallback, configurable per-phase in GUI)
-      </div>
-    </div>
-
-    <div class="flow-arrow">&darr;</div>
-
-    <!-- Branch: Repaired / Rerun -->
-    <div class="flow-branch">
-      <div class="flow-node flow-publish" style="text-align:center;">
-        <div class="flow-node-title" style="color:var(--sf-success-fg);">
-          <span class="chip chip-success">status: "repaired"</span>
-        </div>
-        <div class="flow-node-detail" style="margin-top:8px;">
-          LLM mapped unknowns to registered values.
-          <br/><code>"midnight blue" &rarr; "dark-blue"</code>
-          <br/>Apply repairs, re-run deterministic check.
-          <br/><strong>&darr; Publish with repair log</strong>
-        </div>
-      </div>
-      <div class="flow-node flow-reject" style="text-align:center;">
-        <div class="flow-node-title" style="color:var(--sf-danger-fg);">
-          <span class="chip chip-danger">status: "rerun_recommended"</span>
-        </div>
-        <div class="flow-node-detail" style="margin-top:8px;">
-          LLM says values look hallucinated.
-          <br/><code>"sparkle-unicorn" &rarr; no match</code>
-          <br/><strong>&darr; Return to orchestrator</strong>
-          <br/>Orchestrator retries with escalation model.
-          <br/>3 strikes max &rarr; flag for manual review.
-        </div>
-      </div>
-    </div>
-
+  <h3 style="margin-top:12px;">Forbidden</h3>
+  <div class="small muted">
+    <code>src/engine/fieldRulesEngine.js</code>, <code>src/engine/runtimeGate.js</code>, <code>src/features/review/</code>, <code>src/db/</code>, <code>src/pipeline/</code>, any other feature.
+    <br/>This module is a <strong>pure function boundary</strong>. No DB access, no LLM calls, no side effects.
+    The LLM repair prompt is returned as data &mdash; the caller decides whether to call an LLM.
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 3: DATA CONTRACTS
+     SECTION 3: PUBLIC API
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>3. Data Contracts</h2>
+<div class="panel">
+  <h2>3. Public API</h2>
 
-  <div class="grid-2 gap-16">
-    <!-- Input -->
+  <div class="grid-2" style="gap:16px;">
     <div class="card">
-      <h3>Validator Input</h3>
+      <h3>validateField() &mdash; single field</h3>
       <div class="code-block">{
-  fieldKey: 'colors',
-  rawValue: ['black', 'Grey', 'midnight blue'],
-  fieldRule: getEgPresetForKey('colors', ctx),
-  registry: appDb.listColors(),
-  // registry = [{ name: 'black', hex: '#000' }, ...]
-}</div>
-    </div>
-
-    <!-- Output -->
-    <div class="card">
-      <h3>Validator Output</h3>
-      <div class="code-block">{
-  valid: true,
-  value: ['black', 'gray', 'dark-blue'],
-  confidence: 1.0,
-  repairs: [
-    { original: 'Grey', resolved: 'gray',
-      rule: 'token_map' },
-    { original: 'midnight blue', resolved: 'dark-blue',
-      rule: 'validate_llm', llmConfidence: 0.95 }
-  ],
-  rejections: [],
-  llmCalled: true,
-  llmModel: 'gpt-4.1'
-}</div>
-    </div>
-  </div>
-
-  <hr class="divider" />
-
-  <!-- Validate LLM contracts -->
-  <div class="grid-2 gap-16">
-    <div class="card">
-      <h3>Validate LLM Prompt (sent only on mismatch)</h3>
-      <div class="code-block"><strong>System:</strong>
-You validate field values against a registered
-vocabulary. For each unknown value:
-
-1. If it maps to a registered value, return the
-   mapping with confidence.
-2. If it appears to be a genuine new value and the
-   field allows open enum, confirm it.
-3. If it looks hallucinated or nonsensical, flag it
-   and recommend re-running the source.
-
-Field rules:
-- Registered atoms only (closed color vocabulary)
-- Modifier-first: "light-blue" not "blue-light"
-- Normalize "grey" to "gray"
-- kebab-case for editions
-
-<strong>User:</strong>
-{
-  "field_key": "colors",
-  "unknown_values": ["midnight blue"],
-  "registered_values": [
-    "black (#000000)", "white (#ffffff)",
-    "dark-blue (#1e3a5f)", "navy (#1e3a8a)", ...
-  ],
-  "formatting_rules": "lowercase, hyphens, ..."
-}</div>
-    </div>
-
-    <div class="card">
-      <h3>Validate LLM Response Schema</h3>
-      <div class="code-block">{
-  status: "repaired" | "rerun_recommended",
-  reason: string | null,
-  decisions: [
-    {
-      value: "midnight blue",
-      decision: "map_to_existing"
-               | "keep_new"
-               | "reject",
-      resolved_to: "dark-blue" | null,
-      confidence: 0.95,
-      reasoning: "hex #191970 closest to
-                  dark-blue #1e3a5f"
-    }
-  ]
+  <span style="color:var(--sf-teal-fg);">// Input</span>
+  fieldKey: string,
+  value: any,           <span style="color:var(--sf-text-dim);">// raw LLM output</span>
+  fieldRule: object,    <span style="color:var(--sf-text-dim);">// from field_rules.json fields[key]</span>
+  knownValues?: object, <span style="color:var(--sf-text-dim);">// from known_values.json enums[key]</span>
+  componentDb?: object, <span style="color:var(--sf-text-dim);">// for component_reference fields</span>
 }
 
-<span style="color:var(--sf-text-dim);">// status = "repaired" when all decisions
-// are map_to_existing or keep_new.
-//
-// status = "rerun_recommended" when any
-// decision is "reject" AND the LLM believes
-// the source data is fundamentally wrong.</span></div>
+<span style="color:var(--sf-teal-fg);">// Output</span>
+{
+  valid: boolean,
+  value: any,           <span style="color:var(--sf-text-dim);">// validated + repaired value (or 'unk')</span>
+  confidence: 1.0,      <span style="color:var(--sf-text-dim);">// always 1.0 (deterministic)</span>
+  repairs: [{
+    step: string,       <span style="color:var(--sf-text-dim);">// 'normalize', 'dedupe', 'round', etc.</span>
+    before: any,
+    after: any,
+    rule: string,       <span style="color:var(--sf-text-dim);">// 'token_map:grey→gray'</span>
+  }],
+  rejections: [{
+    reason_code: string,<span style="color:var(--sf-text-dim);">// 'wrong_shape', 'wrong_unit', etc.</span>
+    detail: object,     <span style="color:var(--sf-text-dim);">// e.g. { expected: 'g', detected: 'lb' }</span>
+  }],
+  unknownReason: string | null,
+  repairPrompt: object | null, <span style="color:var(--sf-text-dim);">// if unknowns, the LLM prompt payload</span>
+}</div>
+    </div>
+    <div class="card">
+      <h3>validateRecord() &mdash; full product</h3>
+      <div class="code-block">{
+  <span style="color:var(--sf-teal-fg);">// Input</span>
+  fields: Record&lt;string, any&gt;,
+  fieldRules: object,    <span style="color:var(--sf-text-dim);">// field_rules.json.fields</span>
+  knownValues?: object,
+  componentDbs?: object,
+  crossRules?: object[], <span style="color:var(--sf-text-dim);">// cross_validation_rules</span>
+}
+
+<span style="color:var(--sf-teal-fg);">// Output</span>
+{
+  valid: boolean,
+  fields: Record&lt;string, any&gt;,  <span style="color:var(--sf-text-dim);">// all validated</span>
+  perField: Record&lt;string, {
+    valid, value, repairs,
+    rejections, unknownReason,
+    repairPrompt,
+  }&gt;,
+  crossFieldFailures: [{
+    rule_id: string,
+    constraint: string,
+    pass: boolean,
+    message: string,
+  }],
+}</div>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 4: WHAT EXISTS vs WHAT'S NEW
+     SECTION 4: VALIDATION PIPELINE
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>4. Build vs Reuse</h2>
+<div class="panel">
+  <h2>4. Validation Pipeline (12 deterministic steps)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every step is a pure function. Steps run in order. Each receives the output of the previous.
+    The pipeline short-circuits on shape failure (Step 1). All other steps accumulate repairs + rejections.
+  </div>
+
+  <div class="flow">
+    <div class="flow-node flow-source">
+      <div class="flow-node-title" style="color:var(--sf-purple-fg);">
+        <span class="chip chip-purple">INPUT</span> Raw LLM value + field rule
+      </div>
+      <div class="flow-node-detail">
+        <code>validateField({ fieldKey, value, fieldRule, knownValues?, componentDb? })</code>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">1</span> Template Dispatch
+      </div>
+      <div class="flow-node-detail">
+        Read <code>fieldRule.parse.template</code> (e.g. <code>"latency_list_modes_ms"</code>).
+        Look up in NORMALIZATION_FUNCTIONS map. If found, call the template normalizer FIRST.
+        If it handles the value, skip to Step 6 (enum). If no template match, continue to Step 2.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">2</span> Shape Check
+        <span class="chip chip-danger" style="margin-left:8px;">REJECT if wrong</span>
+      </div>
+      <div class="flow-node-detail">
+        Verify <code>contract.shape</code>: scalar &rarr; not array/object. list &rarr; must be array. record &rarr; must be object.
+        <br/><strong>Short-circuits entire pipeline on failure.</strong>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">3</span> Type Verification
+      </div>
+      <div class="flow-node-detail">
+        Verify <code>contract.type</code>: string &rarr; typeof === 'string'. number &rarr; typeof === 'number' + isFinite.
+        integer &rarr; isInteger. Auto-coerce where safe: <code>"42"</code>&rarr;42, <code>true</code>&rarr;<code>"yes"</code>.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-check">
+      <div class="flow-node-title" style="color:var(--sf-info-fg);">
+        <span class="chip chip-info">4</span> Unit Verification
+        <span class="chip chip-danger" style="margin-left:8px;">REJECT wrong unit</span>
+      </div>
+      <div class="flow-node-detail">
+        If <code>contract.unit</code> exists: parse value for unit suffix. Same unit &rarr; strip text (<code>"120 mm"</code>&rarr;120).
+        Different unit &rarr; <strong>REJECT</strong> with <code>wrong_unit</code> + include expected/detected for repair prompt.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">5</span> Normalize + Format
+      </div>
+      <div class="flow-node-detail">
+        Strings: trim &rarr; lowercase &rarr; hyphens &rarr; token_map. Then check format regex per template.
+        <code>"DARK GREEN"</code> &rarr; <code>"dark-green"</code>. <code>"grey"</code> &rarr; <code>"gray"</code> (via token_map).
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-check">
+      <div class="flow-node-title" style="color:var(--sf-info-fg);">
+        <span class="chip chip-info">6</span> Enum Check
+      </div>
+      <div class="flow-node-detail">
+        <code>closed</code>: value must be in known_values. Apply token_map before rejecting.
+        <code>open_prefer_known</code>: pass but flag for curation review.
+        <code>open</code>: pass.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">7</span> List Rules
+      </div>
+      <div class="flow-node-detail">
+        For <code>shape: list</code>: dedupe &rarr; sort &rarr; enforce min_items / max_items.
+        All in one pass. <code>sort: 'none'</code> preserves order (critical for colors[0] = default).
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">8</span> Rounding
+      </div>
+      <div class="flow-node-detail">
+        For numbers: round to <code>ui.display_decimals</code> or <code>contract.rounding.decimals</code>.
+        <code>display_decimals: 0</code> &rarr; round to integer. <code>2</code> &rarr; two decimal places.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-check">
+      <div class="flow-node-title" style="color:var(--sf-info-fg);">
+        <span class="chip chip-info">9</span> Range Check
+      </div>
+      <div class="flow-node-detail">
+        For numbers with <code>contract.range</code>: verify min &le; value &le; max.
+        Out of range &rarr; REJECT with <code>out_of_range</code>.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <div class="flow-node flow-publish">
+      <div class="flow-node-title" style="color:var(--sf-success-fg);">
+        <span class="chip chip-success">PASS</span> Value is valid
+      </div>
+      <div class="flow-node-detail">
+        Return <code>{ valid: true, value, confidence: 1.0, repairs[], rejections: [] }</code>
+        <br/>Caller publishes to product record.
+      </div>
+    </div>
+  </div>
+
+  <div class="small muted" style="margin-top:16px; text-align:center;">
+    <strong>Steps 10-11</strong> (constraints + component resolution) run at <strong>record level</strong> via <code>validateRecord()</code>,
+    not per-field, because they need access to other field values.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5: TEMPLATE DISPATCH (O(1))
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>5. Template Dispatch (O(1) Scaling)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every field has <code>parse.template</code> in its rule. The validator looks it up in a normalizer map.
+    Adding a new template = add one function to the map. Zero changes to the pipeline.
+    <br/><br/>
+    <strong>No <code>normalization_fn</code>.</strong> That seam is dead (0 fields use it). Template name IS the dispatch key.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// templateDispatch.js</span>
+import { NORMALIZATION_FUNCTIONS } from '../../engine/normalizationFunctions.js';
+
+<span style="color:var(--sf-teal-fg);">// Map template names to normalizer keys in the existing NORMALIZATION_FUNCTIONS map.</span>
+<span style="color:var(--sf-teal-fg);">// If the template name IS already a key in the map, it dispatches directly.</span>
+<span style="color:var(--sf-teal-fg);">// Otherwise, alias it here.</span>
+const TEMPLATE_NORMALIZERS = {
+  latency_list_modes_ms:            'parse_latency_list',    <span style="color:var(--sf-text-dim);">// already in map</span>
+  list_of_numbers_with_unit:        'parse_polling_list',    <span style="color:var(--sf-text-dim);">// already in map</span>
+  list_of_tokens_delimited:         'normalize_color_list',  <span style="color:var(--sf-text-dim);">// already in map (for colors)</span>
+  boolean_yes_no_unk:               'normalize_boolean',     <span style="color:var(--sf-text-dim);">// already in map</span>
+  date_field:                       'parseDate',             <span style="color:var(--sf-text-dim);">// already in map</span>
+  <span style="color:var(--sf-text-dim);">// Templates handled by the type-branch fallback (no special normalizer needed):</span>
+  <span style="color:var(--sf-text-dim);">// text_field, number_with_unit, integer_field, integer_with_unit,</span>
+  <span style="color:var(--sf-text-dim);">// url_field, component_reference, list_numbers_or_ranges_with_unit</span>
+};
+
+export function dispatchTemplate(templateName, value, context) {
+  const normalizerKey = TEMPLATE_NORMALIZERS[templateName] || templateName;
+  const fn = NORMALIZATION_FUNCTIONS[normalizerKey];
+  if (typeof fn !== 'function') return null; <span style="color:var(--sf-text-dim);">// no match → fall through to type branch</span>
+  return fn(value, context);
+}</div>
+
+  <h3>Proven Template Coverage (297 fields, 3 categories)</h3>
   <table>
-    <thead>
-      <tr><th>Capability</th><th>Status</th><th>Source</th><th>Action</th></tr>
-    </thead>
+    <thead><tr><th>Template</th><th>Fields</th><th>Normalizer</th><th>Dispatch</th></tr></thead>
+    <tbody>
+      <tr><td class="mono tiny">text_field</td><td class="mono">140</td><td class="tiny muted">type-branch: trim string</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">number_with_unit</td><td class="mono">78</td><td class="tiny muted">type-branch: parseNumberAndUnit</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">boolean_yes_no_unk</td><td class="mono">35</td><td class="mono tiny">normalize_boolean</td><td><span class="chip chip-teal">DISPATCH</span></td></tr>
+      <tr><td class="mono tiny">list_of_tokens_delimited</td><td class="mono">21</td><td class="mono tiny">normalize_color_list</td><td><span class="chip chip-teal">DISPATCH</span></td></tr>
+      <tr><td class="mono tiny">integer_field</td><td class="mono">7</td><td class="tiny muted">type-branch: parseInt</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">component_reference</td><td class="mono">4</td><td class="tiny muted">type-branch: component lookup</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">url_field</td><td class="mono">4</td><td class="tiny muted">type-branch: URL parse</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">date_field</td><td class="mono">3</td><td class="mono tiny">parseDate</td><td><span class="chip chip-teal">DISPATCH</span></td></tr>
+      <tr><td class="mono tiny">latency_list_modes_ms</td><td class="mono">2</td><td class="mono tiny">parse_latency_list</td><td><span class="chip chip-teal">DISPATCH</span></td></tr>
+      <tr><td class="mono tiny">list_numbers_or_ranges</td><td class="mono">1</td><td class="tiny muted">type-branch: parseList + number</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+      <tr><td class="mono tiny">list_of_numbers_with_unit</td><td class="mono">1</td><td class="mono tiny">parse_polling_list</td><td><span class="chip chip-teal">DISPATCH</span></td></tr>
+      <tr><td class="mono tiny">integer_with_unit</td><td class="mono">1</td><td class="tiny muted">type-branch: parseInt + unit</td><td><span class="chip chip-neutral">FALLTHROUGH</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6: DATA SURFACE
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>6. Data Surface (what the validator reads)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The validator reads from generated artifacts only. It never writes. All data is loaded before validation starts.
+  </div>
+
+  <table>
+    <thead><tr><th>Artifact</th><th>Path</th><th>What the validator reads</th></tr></thead>
     <tbody>
       <tr>
-        <td>Zod shape validation</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">colorEditionSchema.js</td>
-        <td class="small muted">Reuse as-is</td>
+        <td class="bold">field_rules.json</td>
+        <td class="mono tiny">category_authority/{cat}/_generated/</td>
+        <td class="small">Per-field: <code>contract.type</code>, <code>contract.shape</code>, <code>contract.unit</code>, <code>contract.range</code>, <code>contract.list_rules</code>, <code>contract.rounding</code>, <code>contract.object_schema</code>, <code>parse.template</code>, <code>parse.token_map</code>, <code>parse.unit_accepts</code>, <code>enum.policy</code>, <code>ui.display_decimals</code></td>
       </tr>
       <tr>
-        <td>Field rules (token_map, list_rules, enum)</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">egPresets.js &rarr; getEgPresetForKey()</td>
-        <td class="small muted">Consume via public API</td>
+        <td class="bold">known_values.json</td>
+        <td class="mono tiny">category_authority/{cat}/_generated/</td>
+        <td class="small">Per-field enum: <code>enums[fieldKey].policy</code>, <code>enums[fieldKey].values[]</code></td>
       </tr>
       <tr>
-        <td>Color registry (closed vocabulary)</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">appDb.listColors()</td>
-        <td class="small muted">Pass as registry param</td>
+        <td class="bold">cross_validation_rules.json</td>
+        <td class="mono tiny">category_authority/{cat}/_generated/</td>
+        <td class="small"><code>rules[]</code> with trigger_field, condition, check type, on_fail action</td>
       </tr>
       <tr>
-        <td>Token normalization (lowercase, trim)</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">shared/primitives.js</td>
-        <td class="small muted">Reuse normalizeToken()</td>
-      </tr>
-      <tr>
-        <td>Enum consistency LLM call</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">validateEnumConsistency.js</td>
-        <td class="small muted">Reference pattern; adapt prompt</td>
-      </tr>
-      <tr>
-        <td>Validate phase (model deck, routing)</td>
-        <td><span class="chip chip-success">EXISTS</span></td>
-        <td class="mono tiny muted">llmPhaseDefs.js &rarr; phase: 'validate'</td>
-        <td class="small muted">Route through existing phase</td>
-      </tr>
-      <tr>
-        <td><strong>Token map application</strong></td>
-        <td><span class="chip chip-warning">NEW</span></td>
-        <td class="mono tiny muted">&mdash;</td>
-        <td class="small">Apply fieldRule.parse.token_map to values</td>
-      </tr>
-      <tr>
-        <td><strong>Registry membership gate</strong></td>
-        <td><span class="chip chip-warning">NEW</span></td>
-        <td class="mono tiny muted">&mdash;</td>
-        <td class="small">Check each atom against registry Set</td>
-      </tr>
-      <tr>
-        <td><strong>Cross-field invariant check</strong></td>
-        <td><span class="chip chip-warning">NEW</span></td>
-        <td class="mono tiny muted">&mdash;</td>
-        <td class="small">default_color &isin; colors, edition colors &sube; colors</td>
-      </tr>
-      <tr>
-        <td><strong>Validation orchestrator</strong></td>
-        <td><span class="chip chip-warning">NEW</span></td>
-        <td class="mono tiny muted">&mdash;</td>
-        <td class="small">Composes steps 1-5, decides pass/LLM/reject</td>
-      </tr>
-      <tr>
-        <td><strong>Validate LLM prompt (field-aware)</strong></td>
-        <td><span class="chip chip-warning">NEW</span></td>
-        <td class="mono tiny muted">&mdash;</td>
-        <td class="small">Registry + unknowns + field rules &rarr; repair/reject</td>
+        <td class="bold">component_db/*.json</td>
+        <td class="mono tiny">category_authority/{cat}/_generated/</td>
+        <td class="small">Entity names + aliases for component_reference resolution (sensor, switch, encoder, material)</td>
       </tr>
     </tbody>
   </table>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 5: MODULE STRUCTURE
+     SECTION 7: INTEGRATION POINTS
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>5. Module Structure</h2>
+<div class="panel">
+  <h2>7. Integration Points (future wiring)</h2>
 
-  <div class="code-block">src/core/validation/
-  fieldValueValidator.js       <span style="color:var(--sf-teal-fg);"># Main entry: validate({ fieldKey, rawValue, fieldRule, registry })</span>
-  normalizeTokenMap.js         <span style="color:var(--sf-teal-fg);"># Apply fieldRule.parse.token_map to value list</span>
-  enforceListRules.js          <span style="color:var(--sf-teal-fg);"># Dedupe, max_items, sort per fieldRule.contract.list_rules</span>
-  checkRegistryMembership.js   <span style="color:var(--sf-teal-fg);"># Check each atom against registry Set, split unknowns</span>
-  checkCrossFieldInvariants.js <span style="color:var(--sf-teal-fg);"># default_color in colors, edition colors subset, etc.</span>
-  validateLlmRepair.js         <span style="color:var(--sf-teal-fg);"># Build prompt + call validate phase + parse response</span>
-  tests/
-    fieldValueValidator.test.js
-    normalizeTokenMap.test.js
-    enforceListRules.test.js
-    checkRegistryMembership.test.js
-    checkCrossFieldInvariants.test.js
-    validateLlmRepair.test.js</div>
-
-  <div class="small muted" style="margin-top:8px;">
-    Lives in <code>src/core/validation/</code> &mdash; infrastructure, not a feature. Every source imports it.
-    Pure functions except <code>validateLlmRepair.js</code> which calls the validate phase LLM.
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 6: COLOR EDITION FINDER INTEGRATION
-     ═══════════════════════════════════════════════════════════════ -->
-
-<div class="panel flex-col gap-16">
-  <h2>6. Integration: Color Edition Finder</h2>
-
-  <div class="card">
-    <h3>Current Flow (no validation)</h3>
-    <div class="code-block" style="color:var(--sf-danger-fg); opacity:0.7;">runColorEditionFinder()
-  &rarr; LLM call (colorFinder phase)
-  &rarr; store raw response in color_edition.json    <span style="color:var(--sf-danger-fg);">&larr; unvalidated!</span>
-  &rarr; upsert SQL summary                          <span style="color:var(--sf-danger-fg);">&larr; unvalidated!</span></div>
+  <div class="small muted" style="margin-bottom:16px;">
+    The module is built and tested standalone first. Integration is Phase 2. These are the future callers.
   </div>
 
-  <div class="card" style="margin-top:12px;">
-    <h3>New Flow (with validation gate)</h3>
-    <div class="code-block" style="color:var(--sf-success-fg);">runColorEditionFinder()
-  &rarr; LLM call (colorFinder phase)
-  &rarr; Zod shape check                              <span style="color:var(--sf-teal-fg);"># existing</span>
-  &rarr; <strong>fieldValueValidator.validate({</strong>             <span style="color:var(--sf-warning-fg);"># NEW GATE</span>
-      <strong>fieldKey: 'colors',</strong>
-      <strong>rawValue: response.colors,</strong>
-      <strong>fieldRule: getEgPresetForKey('colors', ctx),</strong>
-      <strong>registry: appDb.listColors(),</strong>
-    <strong>})</strong>
-  &rarr; if valid:
-      store validated response in color_edition.json
-      upsert SQL summary
-      <strong>fieldPublisher.publish()</strong>                    <span style="color:var(--sf-success-fg);"># FUTURE: to product.json</span>
-  &rarr; if rerun_recommended:
-      retry with escalation model (max 3 strikes)
-  &rarr; if 3 strikes exhausted:
-      store partial, flag for manual review</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 7: ENUM REGISTRY WIRING
-     ═══════════════════════════════════════════════════════════════ -->
-
-<div class="panel flex-col gap-16">
-  <h2>7. Registry Wiring Per Field</h2>
-  <div class="small muted" style="margin-bottom:12px;">
-    The validator is generic. Each field key provides its own registry. For colors, the registry is the full color_registry table.
-    For editions (open enum), no registry is needed &mdash; any kebab-case slug passes.
-  </div>
   <table>
-    <thead>
-      <tr><th>Field Key</th><th>Enum Policy</th><th>Registry Source</th><th>Membership Check</th><th>Token Map</th></tr>
-    </thead>
+    <thead><tr><th>Caller</th><th>When</th><th>How</th></tr></thead>
     <tbody>
       <tr>
-        <td class="mono bold">colors</td>
-        <td><span class="chip chip-info">open (but closed vocab)</span></td>
-        <td class="mono tiny muted">appDb.listColors() &rarr; 77+ atoms with hex</td>
-        <td>Every atom must be in registry. Multi-color: split on <code>+</code>, check each.</td>
-        <td class="mono tiny">grey&rarr;gray, gray-light&rarr;light-gray, +15 rules</td>
+        <td class="bold">Pipeline (runProduct.js)</td>
+        <td class="small">After LLM extraction, before writing to product.json</td>
+        <td class="small">Call <code>validateRecord(extractedFields, fieldRules, knownValues)</code>. If <code>valid: false</code>, trigger repair LLM or flag for review.</td>
       </tr>
       <tr>
-        <td class="mono bold">editions</td>
-        <td><span class="chip chip-teal">open</span></td>
-        <td class="mono tiny muted">None (any slug valid)</td>
-        <td>Format check only: kebab-case, lowercase, no spaces</td>
-        <td class="mono tiny">None (slugify only)</td>
+        <td class="bold">Review (qaJudge.js)</td>
+        <td class="small">Replace <code>applyRuntimeFieldRules()</code> call</td>
+        <td class="small">Call <code>validateRecord()</code> instead of the engine's runtimeGate. Drop <code>src/engine/</code> dependency.</td>
       </tr>
       <tr>
-        <td class="mono bold">default_color</td>
-        <td><span class="chip chip-info">derived</span></td>
-        <td class="mono tiny muted">Must equal colors[0]</td>
-        <td>Cross-field invariant, not standalone registry check</td>
-        <td class="mono tiny">Same as colors</td>
+        <td class="bold">CLI (manual entry)</td>
+        <td class="small">Before inserting a user-provided value</td>
+        <td class="small">Call <code>validateField()</code> for the single field being set.</td>
       </tr>
       <tr>
-        <td class="mono dim" style="font-style:italic;">future fields...</td>
-        <td class="dim">per field rule</td>
-        <td class="mono tiny dim">per field &mdash; could be DB table, static list, or none</td>
-        <td class="dim">driven by fieldRule.enum.policy</td>
-        <td class="dim">driven by fieldRule.parse.token_map</td>
+        <td class="bold">Color Edition Finder</td>
+        <td class="small">After LLM returns colors/editions</td>
+        <td class="small">Call <code>validateField()</code> for colors + editions + default_color.</td>
       </tr>
     </tbody>
   </table>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     SECTION 8: ESCALATION CHAIN
+     SECTION 8: IMPLEMENTATION PHASES (TDD)
      ═══════════════════════════════════════════════════════════════ -->
 
-<div class="panel flex-col gap-16">
-  <h2>8. Escalation Chain</h2>
-  <div class="small muted" style="margin-bottom:12px;">Per CLAUDE.md escalation mandate: max 3 attempts before flagging for manual review.</div>
+<div class="panel">
+  <h2>8. Implementation Phases (TDD)</h2>
 
-  <div class="grid-3 gap-12">
-    <div class="card" style="text-align:center;">
-      <div class="chip chip-success" style="margin-bottom:8px;">ATTEMPT 1</div>
-      <div class="tiny bold muted" style="margin-bottom:4px;">DETERMINISTIC CHECK</div>
-      <div class="small muted">
-        Token map + list rules + registry check.
-        <br/>If all pass &rarr; <strong>publish</strong>.
-        <br/>If unknowns &rarr; go to attempt 2.
-      </div>
-    </div>
-    <div class="card" style="text-align:center;">
-      <div class="chip chip-warning" style="margin-bottom:8px;">ATTEMPT 2</div>
-      <div class="tiny bold muted" style="margin-bottom:4px;">VALIDATE LLM REPAIR</div>
-      <div class="small muted">
-        Send unknowns + registry to validate phase.
-        <br/>If <code>repaired</code> &rarr; apply + re-check + <strong>publish</strong>.
-        <br/>If <code>rerun_recommended</code> &rarr; go to attempt 3.
-      </div>
-    </div>
-    <div class="card" style="text-align:center;">
-      <div class="chip chip-danger" style="margin-bottom:8px;">ATTEMPT 3</div>
-      <div class="tiny bold muted" style="margin-bottom:4px;">RE-RUN SOURCE</div>
-      <div class="small muted">
-        Orchestrator re-runs the source LLM call
-        (with escalation model if configured).
-        <br/>Feeds back: "These values were invalid: [...]"
-        <br/>If still fails &rarr; <strong>flag for manual review</strong>.
-      </div>
-    </div>
+  <div class="small muted" style="margin-bottom:16px;">
+    Each phase is one boundary with its own contract + test matrix. RED &rarr; GREEN &rarr; REFACTOR.
+    Tests load real <code>category_authority/</code> artifacts to prove universal behavior.
   </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 9: TDD IMPLEMENTATION ORDER
-     ═══════════════════════════════════════════════════════════════ -->
-
-<div class="panel flex-col gap-16">
-  <h2>9. Implementation Order (TDD)</h2>
   <table>
-    <thead>
-      <tr><th>#</th><th>Step</th><th>State</th><th>Tests</th><th>Dependencies</th></tr>
-    </thead>
+    <thead><tr><th>#</th><th>Phase</th><th>File</th><th>State</th><th>Tests</th></tr></thead>
     <tbody>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
-        <td><code>normalizeTokenMap(values, tokenMap)</code></td>
+        <td>checkShape + checkType</td>
+        <td class="mono tiny">checks/checkShape.js, checks/checkType.js</td>
         <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
-        <td class="small muted">token_map application, passthrough for missing map, multi-color split</td>
-        <td class="mono tiny muted">egPresets.parse.token_map</td>
+        <td class="small">scalar/list/record &times; all input types. Auto-coercion. Null/undefined/empty.</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
-        <td><code>enforceListRules(values, listRules)</code></td>
+        <td>templateDispatch + normalize</td>
+        <td class="mono tiny">templateDispatch.js, checks/normalize.js</td>
         <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
-        <td class="small muted">dedupe, max_items, sort, preserves order when sort=none</td>
-        <td class="mono tiny muted">egPresets.contract.list_rules</td>
+        <td class="small">All 12 templates dispatched. Token map applied. trim+lowercase+hyphens.</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
-        <td><code>checkRegistryMembership(values, registry)</code></td>
+        <td>checkUnit + checkFormat</td>
+        <td class="mono tiny">checks/checkUnit.js, checks/checkFormat.js, formatRegistry.js</td>
         <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
-        <td class="small muted">exact match, multi-color split, unknown separation, empty registry passthrough</td>
-        <td class="mono tiny muted">appDb.listColors()</td>
+        <td class="small">All 20 units verified. Same-unit strip. Wrong-unit reject. Format regex per template.</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
-        <td><code>checkCrossFieldInvariants(result)</code></td>
+        <td>checkEnum + enforceListRules</td>
+        <td class="mono tiny">checks/checkEnum.js, checks/enforceListRules.js</td>
         <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
-        <td class="small muted">default_color &isin; colors, edition colors &sube; colors, colors[0]=default</td>
-        <td class="mono tiny muted">none (pure)</td>
+        <td class="small">closed/open_prefer_known/open. token_map before reject. dedupe+sort+min/max.</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">5</td>
-        <td><code>validateLlmRepair(unknowns, registry, fieldRule)</code></td>
-        <td><span class="chip chip-warning">CONTRACT &rarr; RED &rarr; GREEN</span></td>
-        <td class="small muted">prompt building, response parsing, repaired/rerun status, LLM seam for testing</td>
-        <td class="mono tiny muted">validate phase, callLlmWithRouting</td>
+        <td>applyRounding + checkRange</td>
+        <td class="mono tiny">checks/applyRounding.js, checks/checkRange.js</td>
+        <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
+        <td class="small">display_decimals rounding. min/max range enforcement.</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">6</td>
-        <td><code>fieldValueValidator.validate(opts)</code></td>
-        <td><span class="chip chip-accent">COMPOSE</span></td>
-        <td class="small muted">full pipeline integration, happy path, repair path, rerun path, 3-strike limit</td>
-        <td class="mono tiny muted">Steps 1-5</td>
+        <td>resolveComponent + checkConstraints</td>
+        <td class="mono tiny">checks/resolveComponent.js, checks/checkConstraints.js</td>
+        <td><span class="chip chip-teal">CONTRACT &rarr; RED &rarr; GREEN</span></td>
+        <td class="small">Component DB lookup (exact &rarr; alias). Constraint expressions (sensor_date &le; release_date).</td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">7</td>
-        <td>Wire into Color Edition Finder</td>
-        <td><span class="chip chip-purple">INTEGRATE</span></td>
-        <td class="small muted">orchestrator calls validator before store, handles rerun signal</td>
-        <td class="mono tiny muted">colorEditionFinder.js</td>
+        <td>validateField (compose)</td>
+        <td class="mono tiny">validateField.js</td>
+        <td><span class="chip chip-accent">COMPOSE</span></td>
+        <td class="small">Full pipeline. All 12 templates &times; pass/fail/repair. Load real category artifacts.</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">8</td>
+        <td>validateRecord (orchestrate)</td>
+        <td class="mono tiny">validateRecord.js</td>
+        <td><span class="chip chip-accent">COMPOSE</span></td>
+        <td class="small">All fields in a product. Cross-field constraints. Cross-validation rules.</td>
       </tr>
     </tbody>
   </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 9: WHAT THIS REPLACES
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>9. Relationship to src/engine/</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    This feature does NOT modify or replace <code>src/engine/</code>. It builds alongside it.
+    <code>src/engine/</code> continues serving review as-is. Future: review can migrate to this module.
+  </div>
+
+  <table>
+    <thead><tr><th>Concern</th><th>src/engine/ (current)</th><th>src/features/validation/ (new)</th></tr></thead>
+    <tbody>
+      <tr><td class="bold">Purpose</td><td class="small">Review-phase normalization + evidence gating</td><td class="small">Universal field validation for any source</td></tr>
+      <tr><td class="bold">Callers</td><td class="small">qaJudge, overrideWorkflow (2 callers)</td><td class="small">Pipeline, review, CLI, color finder (any)</td></tr>
+      <tr><td class="bold">Side effects</td><td class="small">Modifies fields, builds curation queues</td><td class="small">Pure function. Returns result. Caller decides.</td></tr>
+      <tr><td class="bold">Template dispatch</td><td class="small">Type branches + dead normalization_fn seam</td><td class="small">parse.template &rarr; normalizer map (O(1))</td></tr>
+      <tr><td class="bold">Unit handling</td><td class="small">Converts (oz&rarr;g, in&rarr;mm) via hardcoded table</td><td class="small">Verifies. Rejects wrong unit. Does not convert.</td></tr>
+      <tr><td class="bold">Constraints</td><td class="small">constraintEvaluator exists but is dead code</td><td class="small">Wired into record-level validation</td></tr>
+      <tr><td class="bold">Format regex</td><td class="small">Missing entirely</td><td class="small">Per-template format validation</td></tr>
+      <tr><td class="bold">open_prefer_known</td><td class="small">Treated same as open</td><td class="small">Distinct: pass but flag for curation</td></tr>
+      <tr><td class="bold">Object-list fields</td><td class="small">Corrupted to "[object Object]"</td><td class="small">Template dispatch handles structured parsing</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Reused from src/engine/ (import, don't copy)</h3>
+  <div class="small muted">
+    <code>ruleAccessors.js</code> &mdash; pure read-only accessors (ruleType, ruleShape, ruleUnit, etc.)
+    <br/><code>normalizationFunctions.js</code> &mdash; NORMALIZATION_FUNCTIONS map (22 normalizers)
+    <br/><code>engineTextHelpers.js</code> &mdash; normalizeToken, isUnknownToken, normalizeFieldKey
+  </div>
 </div>
 
 </div><!-- /root -->

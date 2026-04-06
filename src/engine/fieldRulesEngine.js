@@ -9,8 +9,16 @@ import {
   parseDate,
   parseList,
   parseNumberAndUnit,
+  parseBooleanTemplate,
+  parseDateField,
+  parseIntegerField,
+  normalizeUrlField,
+  parseNumberListWithUnit,
+  parseNumberOrRangeList,
+  parseLatencyModeList,
   convertUnit,
-  canonicalUnitToken
+  canonicalUnitToken,
+  applyNumericRounding
 } from './normalizationFunctions.js';
 import {
   ruleRequiredLevel as requiredLevel,
@@ -18,7 +26,8 @@ import {
   ruleDifficulty as difficultyLevel,
   ruleType as parseRuleType,
   ruleShape as parseRuleShape,
-  ruleUnit as parseRuleUnit
+  ruleUnit as parseRuleUnit,
+  ruleParseTemplate as parseRuleTemplate
 } from './ruleAccessors.js';
 import {
   isObject,
@@ -38,6 +47,7 @@ import {
 } from './engineFieldValidators.js';
 import { simpleSimilarity, resolveComponentRef } from './engineComponentResolver.js';
 import { crossValidate as _crossValidate } from './engineCrossValidator.js';
+import { evaluateAllConstraints as _evaluateAllConstraints } from './constraintEvaluator.js';
 
 function parseRuleNormalizationFn(rule = {}) {
   const contract = isObject(rule.contract) ? rule.contract : {};
@@ -48,6 +58,30 @@ function parseRuleNormalizationFn(rule = {}) {
     parseBlock.normalization_fn ||
     ''
   );
+}
+
+function buildTokenMap(rule = {}) {
+  const parseBlock = isObject(rule.parse) ? rule.parse : {};
+  const tokenMap = isObject(parseBlock.token_map) ? parseBlock.token_map : {};
+  const out = new Map();
+  for (const [rawKey, rawValue] of Object.entries(tokenMap)) {
+    const key = normalizeToken(rawKey);
+    const value = normalizeText(rawValue);
+    if (key && value) {
+      out.set(key, value);
+    }
+  }
+  return out;
+}
+
+function applyTokenMapToString(value, tokenMap) {
+  const text = normalizeText(value);
+  if (!text || !(tokenMap instanceof Map) || tokenMap.size === 0) {
+    return text;
+  }
+  const parts = text.split('+').map((part) => normalizeText(part));
+  const mapped = parts.map((part) => tokenMap.get(normalizeToken(part)) || part);
+  return mapped.join('+');
 }
 
 export class FieldRulesEngine {
@@ -67,6 +101,9 @@ export class FieldRulesEngine {
     this.componentDBs = isObject(projectedLoaded?.componentDBs) ? projectedLoaded.componentDBs : {};
     this.uiFieldCatalog = projectedLoaded?.uiFieldCatalog || { fields: [] };
     this.uiGroupByField = buildUiGroupIndex(this.uiFieldCatalog);
+    this.uiFieldByKey = new Map(
+      toArray(this.uiFieldCatalog?.fields).map((row) => [normalizeFieldKey(row?.key), row])
+    );
     this.keyMigrations = isObject(keyMigrations) ? keyMigrations : {};
     this.options = options || {};
     this.enumIndex = buildEnumIndex(this.knownValues);
@@ -199,6 +236,11 @@ export class FieldRulesEngine {
     return this.rules[key] || null;
   }
 
+  getUiField(fieldKey) {
+    const key = normalizeFieldKey(fieldKey);
+    return this.uiFieldByKey.get(key) || null;
+  }
+
   applyParseTemplate(fieldKey, text) {
     const template = this.getParseTemplate(fieldKey);
     if (!template) {
@@ -274,6 +316,109 @@ export class FieldRulesEngine {
     };
   }
 
+  _roundNumericForDisplay(fieldKey, value) {
+    const uiField = this.getUiField(fieldKey);
+    const decimals = Number(uiField?.display_decimals);
+    if (!Number.isFinite(decimals)) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((entry) => (
+        typeof entry === 'number' ? applyNumericRounding(entry, decimals) : entry
+      ));
+    }
+    return typeof value === 'number' ? applyNumericRounding(value, decimals) : value;
+  }
+
+  _applyTemplateNormalization(fieldKey, rule, value) {
+    const template = parseRuleTemplate(rule);
+    const parseBlock = isObject(rule.parse) ? rule.parse : {};
+    const contract = isObject(rule.contract) ? rule.contract : {};
+
+    if (!template) {
+      return { applied: false, value };
+    }
+
+    switch (template) {
+      case 'boolean_yes_no_unk': {
+        const normalized = parseBooleanTemplate(value);
+        if (!normalized) {
+          return { ok: false, reason_code: 'boolean_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:boolean_yes_no_unk'] };
+      }
+      case 'date_field': {
+        const normalized = parseDateField(value);
+        if (!normalized) {
+          return { ok: false, reason_code: 'date_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:date_field'] };
+      }
+      case 'url_field': {
+        const normalized = normalizeUrlField(value);
+        if (!normalized) {
+          return { ok: false, reason_code: 'url_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:url_field'] };
+      }
+      case 'integer_field': {
+        const normalized = parseIntegerField(value);
+        if (normalized === null) {
+          return { ok: false, reason_code: 'number_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:integer_field'] };
+      }
+      case 'integer_with_unit': {
+        const normalized = parseIntegerField(value);
+        if (normalized === null) {
+          return { ok: false, reason_code: 'number_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:integer_with_unit'] };
+      }
+      case 'list_of_tokens_delimited': {
+        const normalized = parseList(value).map((entry) => normalizeText(entry)).filter(Boolean);
+        return { applied: true, value: normalized, attempts: ['template:list_of_tokens_delimited'] };
+      }
+      case 'list_of_numbers_with_unit': {
+        const normalized = parseNumberListWithUnit(value, {
+          unit: parseBlock.unit || contract.unit,
+          unitAccepts: parseBlock.unit_accepts,
+          decimals: Number(this.getUiField(fieldKey)?.display_decimals ?? 0)
+        });
+        if (!normalized) {
+          return { ok: false, reason_code: 'number_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:list_of_numbers_with_unit'] };
+      }
+      case 'list_numbers_or_ranges_with_unit': {
+        const normalized = parseNumberOrRangeList(value, {
+          unit: parseBlock.unit || contract.unit,
+          unitAccepts: parseBlock.unit_accepts,
+          rangeSeparators: parseBlock.range_separators,
+          decimals: Number(this.getUiField(fieldKey)?.display_decimals ?? 0)
+        });
+        if (!normalized) {
+          return { ok: false, reason_code: 'number_required' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:list_numbers_or_ranges_with_unit'] };
+      }
+      case 'latency_list_modes_ms': {
+        const decimals = Number(contract?.object_schema?.ms?.rounding?.decimals ?? 2);
+        const normalized = parseLatencyModeList(value, {
+          modeAliases: parseBlock.mode_aliases,
+          defaultMode: parseBlock.accept_bare_numbers_as_mode || 'unknown',
+          decimals
+        });
+        if (!normalized) {
+          return { ok: false, reason_code: 'shape_mismatch' };
+        }
+        return { applied: true, value: normalized, attempts: ['template:latency_list_modes_ms'] };
+      }
+      default:
+        return { applied: false, value };
+    }
+  }
+
   validateRange(fieldKey, numericValue) {
     return _validateRange(fieldKey, numericValue, { rules: this.rules });
   }
@@ -336,12 +481,24 @@ export class FieldRulesEngine {
     const type = parseRuleType(rule);
     const shape = parseRuleShape(rule);
     const unit = parseRuleUnit(rule);
+    const template = parseRuleTemplate(rule);
     const normalizationFnName = parseRuleNormalizationFn(rule);
+    const tokenMap = buildTokenMap(rule);
     let value = rawCandidate;
+    let usedExplicitNormalizer = false;
+
+    const templateHandlesList = new Set([
+      'list_of_tokens_delimited',
+      'list_of_numbers_with_unit',
+      'list_numbers_or_ranges_with_unit',
+      'latency_list_modes_ms'
+    ]);
 
     if (shape === 'list') {
-      value = parseList(rawCandidate);
-      attempts.push('shape:list');
+      if (!Array.isArray(value) && !templateHandlesList.has(template)) {
+        value = parseList(rawCandidate);
+        attempts.push('shape:list');
+      }
     } else if (Array.isArray(value)) {
       const meaningfulValues = value.filter((entry) => !isUnknownToken(entry));
       if (meaningfulValues.length !== 1 || Array.isArray(meaningfulValues[0]) || isObject(meaningfulValues[0])) {
@@ -373,12 +530,13 @@ export class FieldRulesEngine {
               reason_code: 'normalization_fn_failed',
               raw_input: rawCandidate,
               attempted_normalizations: attempts
-            };
-          }
-          value = normalizedValue;
-          attempts.push(`fn:${normalizationFnName}`);
-        } catch {
-          return {
+          };
+        }
+        value = normalizedValue;
+        usedExplicitNormalizer = true;
+        attempts.push(`fn:${normalizationFnName}`);
+      } catch {
+        return {
             ok: false,
             reason_code: 'normalization_fn_failed',
             raw_input: rawCandidate,
@@ -388,7 +546,34 @@ export class FieldRulesEngine {
       }
     }
 
-    if (type === 'number' || type === 'integer') {
+    if (!usedExplicitNormalizer) {
+      const templateResult = this._applyTemplateNormalization(key, rule, value);
+      if (templateResult.ok === false) {
+        return {
+          ok: false,
+          reason_code: templateResult.reason_code || 'normalize_failed',
+          raw_input: rawCandidate,
+          attempted_normalizations: attempts
+        };
+      }
+      if (templateResult.applied) {
+        value = templateResult.value;
+        attempts.push(...(templateResult.attempts || []));
+      }
+    }
+
+    if (type === 'object') {
+      const objectList = shape === 'list' && Array.isArray(value) && value.every((entry) => isObject(entry));
+      const objectScalar = shape === 'scalar' && isObject(value);
+      if (!objectList && !objectScalar) {
+        return {
+          ok: false,
+          reason_code: 'shape_mismatch',
+          raw_input: rawCandidate,
+          attempted_normalizations: attempts
+        };
+      }
+    } else if (type === 'number' || type === 'integer') {
       if (Array.isArray(value)) {
         const normalizedList = [];
         for (const entry of value) {
@@ -413,7 +598,7 @@ export class FieldRulesEngine {
           }
           normalizedList.push(Number.parseFloat(numeric.toFixed(6)));
         }
-        value = normalizedList;
+        value = this._roundNumericForDisplay(key, normalizedList);
       } else {
         const parsed = parseNumberAndUnit(value);
         if (parsed.value === null) {
@@ -434,7 +619,7 @@ export class FieldRulesEngine {
           numeric = Math.round(numeric);
           attempts.push('round:integer');
         }
-        value = Number.parseFloat(numeric.toFixed(6));
+        value = this._roundNumericForDisplay(key, Number.parseFloat(numeric.toFixed(6)));
       }
     } else if (type === 'boolean') {
       const boolValue = parseBoolean(value);
@@ -481,7 +666,11 @@ export class FieldRulesEngine {
         };
       }
       value = urlValue;
-    } else if (type === 'component_ref' || normalizeText(rule?.component_db_ref || rule?.component?.type)) {
+    } else if (
+      type === 'component_ref'
+      || template === 'component_reference'
+      || normalizeText(rule?.component_db_ref || rule?.component?.type || rule?.parse?.component_type)
+    ) {
       const componentResult = resolveComponentRef(value, {
         rule, fieldKey: key, rawCandidate,
         lookupComponent: (db, q) => this.lookupComponent(db, q),
@@ -496,7 +685,7 @@ export class FieldRulesEngine {
       value = componentResult.value;
     } else {
       if (Array.isArray(value)) {
-        value = value.map((item) => normalizeText(item)).filter(Boolean);
+        value = value.map((item) => applyTokenMapToString(item, tokenMap)).filter(Boolean);
         attempts.push('type:string_list');
       } else {
         if (isObject(value)) {
@@ -507,8 +696,14 @@ export class FieldRulesEngine {
             attempted_normalizations: attempts
           };
         }
-        value = normalizeText(value);
+        value = applyTokenMapToString(value, tokenMap);
       }
+    }
+
+    if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+      value = value.map((item) => applyTokenMapToString(item, tokenMap)).filter(Boolean);
+    } else if (typeof value === 'string') {
+      value = applyTokenMapToString(value, tokenMap);
     }
 
     const shapeCheck = this.validateShapeAndUnits(key, value);
@@ -562,9 +757,11 @@ export class FieldRulesEngine {
         const seen = new Set();
         const deduped = [];
         for (const item of finalValue) {
-          const dedupeKey = typeof item === 'number'
-            ? String(item)
-            : normalizeToken(String(item));
+          const dedupeKey = isObject(item)
+            ? JSON.stringify(item)
+            : (typeof item === 'number'
+              ? String(item)
+              : normalizeToken(String(item)));
           if (!seen.has(dedupeKey)) {
             seen.add(dedupeKey);
             deduped.push(item);
@@ -590,6 +787,16 @@ export class FieldRulesEngine {
       rules: this.rules,
       lookupComponent: (db, q) => this.lookupComponent(db, q)
     });
+  }
+
+  evaluateConstraints(allFields = {}) {
+    const mappings = this.getAllFieldKeys().map((fieldKey) => ({
+      field_key: fieldKey,
+      constraints: Array.isArray(this.rules[fieldKey]?.constraints)
+        ? this.rules[fieldKey].constraints
+        : []
+    }));
+    return _evaluateAllConstraints(mappings, {}, allFields);
   }
 
   validateFullRecord(record = {}) {
@@ -622,6 +829,12 @@ export class FieldRulesEngine {
           (violation.severity === 'error' ? errors : warnings).push(`${field}:${violation.rule}`);
         }
       }
+    }
+    for (const result of this.evaluateConstraints(normalized)) {
+      if (result.pass || result.skipped) {
+        continue;
+      }
+      errors.push(`${result.propertyKey}:constraint_failed`);
     }
     return {
       valid: errors.length === 0,
@@ -692,6 +905,24 @@ export class FieldRulesEngine {
           }
         }
       }
+    }
+
+    for (const result of this.evaluateConstraints(normalized)) {
+      if (result.pass || result.skipped) {
+        continue;
+      }
+      const field = normalizeFieldKey(result.propertyKey);
+      if (!field || (isObject(normalized[field]) && normalized[field].value === 'unk')) {
+        continue;
+      }
+      const unknown = this.buildUnknown(field, 'constraint_failed');
+      normalized[field] = unknown;
+      unknowns.push(unknown);
+      failures.push({
+        field_key: field,
+        reason_code: 'constraint_failed',
+        rule: result.expr
+      });
     }
 
     return {

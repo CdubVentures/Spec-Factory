@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-19",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 19",
+    "model": "Scenario 19 missing_required",
+    "variant": "missing_required",
+    "id": 9019,
+    "identifier": "test019a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 19,
+    "name": "missing_required",
+    "description": "Only 3-4 optional fields â†’ 14 required fields missing",
+    "category": "Edge Cases"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-04",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 4",
+    "model": "Scenario 4 new_material",
+    "variant": "new_material",
+    "id": 9004,
+    "identifier": "test004a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 4,
+    "name": "new_material",
+    "description": "Unknown material â†’ new_component suggestion",
+    "category": "Components"
+  }
+}

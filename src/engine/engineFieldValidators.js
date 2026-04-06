@@ -16,6 +16,16 @@ function parseRange(rule = {}) {
 
 export { parseRange };
 
+function coerceCanonicalLikeRaw(rawValue, canonical) {
+  if (typeof rawValue === 'number' && typeof canonical === 'string') {
+    const numeric = asNumber(canonical);
+    if (numeric !== null) {
+      return numeric;
+    }
+  }
+  return canonical;
+}
+
 export function validateRange(fieldKey, numericValue, { rules }) {
   const key = normalizeFieldKey(fieldKey);
   const rule = rules[key];
@@ -56,6 +66,7 @@ export function validateShapeAndUnits(fieldKey, normalized, { rules }) {
   }
   const shape = parseRuleShape(rule);
   const type = parseRuleType(rule);
+  const objectSchema = isObject(rule?.contract?.object_schema) ? rule.contract.object_schema : {};
   if (shape === 'list' && !Array.isArray(normalized)) {
     return { ok: false, reason_code: 'shape_mismatch', expected_shape: 'list', actual_shape: 'scalar' };
   }
@@ -64,6 +75,51 @@ export function validateShapeAndUnits(fieldKey, normalized, { rules }) {
   }
   if (shape === 'scalar' && isObject(normalized)) {
     return { ok: false, reason_code: 'shape_mismatch', expected_shape: 'scalar', actual_shape: 'object' };
+  }
+  if (type === 'object') {
+    const validateObjectEntry = (entry) => {
+      if (!isObject(entry)) {
+        return false;
+      }
+      for (const [property, spec] of Object.entries(objectSchema)) {
+        const expectedType = normalizeToken(spec?.type || '');
+        const optional = Boolean(spec?.optional);
+        const value = entry[property];
+        if ((value === undefined || value === null || value === '') && optional) {
+          continue;
+        }
+        if (value === undefined || value === null || value === '') {
+          return false;
+        }
+        if (expectedType === 'number' && asNumber(value) === null) {
+          return false;
+        }
+        if (expectedType === 'string' && typeof value !== 'string') {
+          return false;
+        }
+        if (Array.isArray(spec?.allowed) && spec.allowed.length > 0) {
+          const token = normalizeToken(value);
+          const allowed = new Set(spec.allowed.map((row) => normalizeToken(row)));
+          if (!allowed.has(token)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    if (shape === 'list') {
+      const values = Array.isArray(normalized) ? normalized : [];
+      if (values.some((entry) => !validateObjectEntry(entry))) {
+        return { ok: false, reason_code: 'shape_mismatch', expected_shape: 'list<object>', actual_shape: typeof normalized };
+      }
+      return { ok: true };
+    }
+
+    if (!validateObjectEntry(normalized)) {
+      return { ok: false, reason_code: 'shape_mismatch', expected_shape: 'object', actual_shape: typeof normalized };
+    }
+    return { ok: true };
   }
   if ((type === 'number' || type === 'integer') && shape === 'list') {
     const values = Array.isArray(normalized) ? normalized : [];
@@ -108,9 +164,21 @@ export function enforceEnumPolicy(fieldKey, normalized, { rules, enumIndex }) {
 
   for (const rawValue of values) {
     const token = normalizeToken(rawValue);
+    if (typeof rawValue === 'string' && rawValue.includes('+')) {
+      const atoms = rawValue
+        .split('+')
+        .map((part) => normalizeToken(part))
+        .filter(Boolean);
+      if (atoms.length > 1 && atoms.every((atom) => enumSpec.index.has(atom))) {
+        const canonicalAtoms = atoms.map((atom) => enumSpec.index.get(atom));
+        canonicalized.push(canonicalAtoms.join('+'));
+        wasAliased = wasAliased || canonicalAtoms.some((canonical, index) => normalizeToken(canonical) !== atoms[index]);
+        continue;
+      }
+    }
     if (enumSpec.index.has(token)) {
       const canonical = enumSpec.index.get(token);
-      canonicalized.push(canonical);
+      canonicalized.push(coerceCanonicalLikeRaw(rawValue, canonical));
       wasAliased = wasAliased || normalizeToken(canonical) !== token;
       continue;
     }

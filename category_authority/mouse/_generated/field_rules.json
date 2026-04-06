@@ -574,13 +574,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -700,13 +693,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -825,13 +811,6 @@
           "rtings.com",
           "eloshapes.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -972,13 +951,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1099,13 +1071,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1225,13 +1190,6 @@
           "rtings.com",
           "eloshapes.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1370,13 +1328,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1509,13 +1460,6 @@
           "sensor.fyi",
           "lttlabs.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1712,13 +1656,6 @@
           "sensor.fyi",
           "lttlabs.com"
         ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1857,13 +1794,6 @@
           "mousespecs.org",
           "rtings.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2015,23 +1945,10 @@
           "amazon.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "colors",
@@ -2142,13 +2059,6 @@
           "rtings.com",
           "techpowerup.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2282,13 +2192,6 @@
           "mousespecs.org",
           "bestbuy.com",
           "pcpartpicker.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2435,13 +2338,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -2570,13 +2466,6 @@
           "mousecompare.com",
           "mousespecs.org",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2709,13 +2598,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -2826,13 +2708,6 @@
           "pcpartpicker.com",
           "eloshapes.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2969,13 +2844,6 @@
           "techpowerup.com",
           "prosettings.net"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3098,23 +2966,10 @@
       "search_hints": {
         "content_types": [],
         "domain_hints": [],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "special edition",
@@ -3251,13 +3106,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "lab"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3373,13 +3221,6 @@
           "eloshapes.com",
           "mousespecs.org",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3612,13 +3453,6 @@
         "domain_hints": [
           "eloshapes.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3990,13 +3824,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4117,13 +3944,6 @@
           "eloshapes.com",
           "techpowerup.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4259,13 +4079,6 @@
           "bestbuy.com",
           "pcpartpicker.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4395,13 +4208,6 @@
         "domain_hints": [
           "eloshapes.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4534,13 +4340,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4672,13 +4471,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4796,13 +4588,6 @@
           "mousespecs.org",
           "techpowerup.com",
           "sensor.fyi"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4944,13 +4729,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -5069,13 +4847,6 @@
           "eloshapes.com",
           "rtings.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5196,13 +4967,6 @@
           "rtings.com",
           "eloshapes.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5331,13 +5095,6 @@
           "eloshapes.com",
           "mousespecs.org",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5473,13 +5230,6 @@
           "eloshapes.com",
           "mousespecs.org",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5636,13 +5386,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -5779,13 +5522,6 @@
           "mousespecs.org",
           "techpowerup.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5928,13 +5664,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6075,13 +5804,6 @@
           "rtings.com",
           "mousespecs.org",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6228,13 +5950,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "lab"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6364,13 +6079,6 @@
           "mousespecs.org",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6485,13 +6193,6 @@
         ],
         "domain_hints": [
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6615,13 +6316,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6738,13 +6432,6 @@
           "rtings.com",
           "techpowerup.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6864,13 +6551,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6987,13 +6667,6 @@
           "rtings.com",
           "techpowerup.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7113,13 +6786,6 @@
           "rtings.com",
           "eloshapes.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7246,13 +6912,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -7369,13 +7028,6 @@
           "rtings.com",
           "techpowerup.com",
           "eloshapes.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7535,13 +7187,6 @@
           "prosettings.net",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -7664,13 +7309,6 @@
           "amazon.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -7787,13 +7425,6 @@
           "mousespecs.org",
           "rtings.com",
           "eloshapes.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7919,13 +7550,6 @@
           "mousespecs.org",
           "eloshapes.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8053,13 +7677,6 @@
           "eloshapes.com",
           "pcpartpicker.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8304,13 +7921,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8470,13 +8080,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "lab"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8599,13 +8202,6 @@
           "eloshapes.com",
           "techpowerup.com",
           "mousespecs.org"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8738,13 +8334,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8873,13 +8462,6 @@
           "techpowerup.com",
           "mousespecs.org",
           "lttlabs.com"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9075,13 +8657,6 @@
           "techpowerup.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9197,13 +8772,6 @@
           "sensor.fyi",
           "techpowerup.com",
           "eloshapes.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9330,13 +8898,6 @@
           "sensor.fyi",
           "eloshapes.com",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9469,13 +9030,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9607,13 +9161,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9738,13 +9285,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9862,13 +9402,6 @@
           "mousespecs.org",
           "rtings.com",
           "eloshapes.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9990,13 +9523,6 @@
           "newegg.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10113,13 +9639,6 @@
           "mousespecs.org",
           "techpowerup.com",
           "sensor.fyi"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -10277,13 +9796,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "lab"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10405,13 +9917,6 @@
           "eloshapes.com",
           "mousespecs.org",
           "techpowerup.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -10671,13 +10176,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10799,13 +10297,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10919,13 +10410,6 @@
           "eloshapes.com",
           "mousespecs.org",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11046,13 +10530,6 @@
           "mousespecs.org",
           "techpowerup.com",
           "eloshapes.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11192,13 +10669,6 @@
           "mousespecs.org",
           "techpowerup.com",
           "lttlabs.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11342,13 +10812,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -11468,13 +10931,6 @@
           "bestbuy.com",
           "eloshapes.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -11512,7 +10968,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-06T02:02:54.599Z",
+  "generated_at": "2026-04-06T07:30:16.577Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

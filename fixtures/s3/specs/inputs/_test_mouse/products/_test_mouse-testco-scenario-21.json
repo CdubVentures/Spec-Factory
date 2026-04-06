@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-21",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 21",
+    "model": "Scenario 21 list_fields_dedup",
+    "variant": "list_fields_dedup",
+    "id": 9021,
+    "identifier": "test021a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 21,
+    "name": "list_fields_dedup",
+    "description": "All 12 list fields with duplicates â†’ dedupe + union",
+    "category": "Edge Cases"
+  }
+}

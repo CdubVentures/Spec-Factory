@@ -11,40 +11,23 @@ const SYSTEM_ALIASES = new Map([
 
 // WHY: O(1) SSOT — maps field rule paths to downstream system consumers.
 // IDX entries are derived from idxBadgeRegistry.js (single definition point).
-// Seed consumers are limited to the 4 paths buildFieldMeta() actually reads.
+// Seed consumers: the 4 paths buildFieldMeta() reads. Review consumers: the 13
+// paths normalizeFieldContract / inferFlags / resolvePropertyFieldMeta read.
+// Review badges are reference-only (non-toggleable) in Field Studio.
 const _SEED_REVIEW_MAP = {
   'contract.type': ['review'],
   'contract.shape': ['seed', 'review'],
   'contract.unit': ['review'],
   'priority.required_level': ['review'],
-  'priority.availability': ['review'],
-  'priority.difficulty': ['review'],
-  'priority.effort': ['review'],
-  'priority.block_publish_when_unk': ['review'],
-  'ai_assist.mode': ['review'],
-  'ai_assist.model_strategy': ['review'],
-  'ai_assist.max_tokens': ['review'],
-  'ai_assist.reasoning_note': ['review'],
-  'parse.template': ['review'],
   'enum.policy': ['seed', 'review'],
   'enum.source': ['seed', 'review'],
   'enum.match.strategy': ['review'],
   'enum.match.format_hint': ['review'],
-  'enum.match.fuzzy_threshold': ['review'],
   'enum.additional_values': ['review'],
-  'evidence.required': ['review'],
   'evidence.min_evidence_refs': ['review'],
   'evidence.conflict_policy': ['review'],
-  'evidence.tier_preference': ['review'],
   constraints: ['review'],
   'component.type': ['seed', 'review'],
-  'component.match.fuzzy_threshold': ['review'],
-  'component.match.name_weight': ['review'],
-  'component.match.auto_accept_score': ['review'],
-  'component.match.flag_review_score': ['review'],
-  'component.match.property_weight': ['review'],
-  aliases: ['review'],
-  'ui.tooltip_md': ['review'],
 };
 
 // WHY: IDX entries injected from the badge registry SSOT.

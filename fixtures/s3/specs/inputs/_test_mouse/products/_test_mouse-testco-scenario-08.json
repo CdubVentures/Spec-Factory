@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-08",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 8",
+    "model": "Scenario 8 new_switch",
+    "variant": "new_switch",
+    "id": 9008,
+    "identifier": "test008a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 8,
+    "name": "new_switch",
+    "description": "Unknown switch â†’ new_component suggestion",
+    "category": "Components"
+  }
+}

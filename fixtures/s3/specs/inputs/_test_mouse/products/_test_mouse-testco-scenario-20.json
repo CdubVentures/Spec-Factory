@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-20",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 20",
+    "model": "Scenario 20 multi_source_consensus",
+    "variant": "multi_source_consensus",
+    "id": 9020,
+    "identifier": "test020a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 20,
+    "name": "multi_source_consensus",
+    "description": "4 sources disagree on key fields â†’ tier-weighted consensus",
+    "category": "Edge Cases"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-17",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 17",
+    "model": "Scenario 17 tier_preference_override",
+    "variant": "tier_preference_override",
+    "id": 9017,
+    "identifier": "test017a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 17,
+    "name": "tier_preference_override",
+    "description": "6 fields prefer tier2 over tier1 â€” conflicting values to verify tier2 wins (click_force, click_latency, click_latency_list, sensor_latency, sensor_latency_list, shift_latency)",
+    "category": "Edge Cases"
+  }
+}

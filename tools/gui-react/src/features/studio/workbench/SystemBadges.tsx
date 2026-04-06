@@ -1,6 +1,6 @@
 // ── SystemBadges: consumer badges per field ──────────────────────────
-// WHY: IDX badges are reference-only (non-toggleable) — the pipeline should
-// always see full field rules. Seed/review remain toggleable for now.
+// WHY: IDX and review badges are reference-only (non-toggleable) — they show
+// where Field Studio rules feed downstream systems. Seed remains toggleable.
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   type DownstreamSystem,
@@ -13,8 +13,8 @@ import {
   parseFormattedStaticConsumerTooltip,
 } from './systemMapping.ts';
 
-// WHY: IDX badges are non-toggleable — pipeline always sees full rules.
-const NON_INTERACTIVE_SYSTEMS: ReadonlySet<DownstreamSystem> = new Set(['indexlab']);
+// WHY: IDX and review badges are non-toggleable — reference-only indicators.
+const NON_INTERACTIVE_SYSTEMS: ReadonlySet<DownstreamSystem> = new Set(['indexlab', 'review']);
 
 interface Props {
   fieldPath: string;

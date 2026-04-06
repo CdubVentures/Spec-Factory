@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-16",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 16",
+    "model": "Scenario 16 min_evidence_refs",
+    "variant": "min_evidence_refs",
+    "id": 9016,
+    "identifier": "test016a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 16,
+    "name": "min_evidence_refs",
+    "description": "Only 1 source for 8 fields requiring 2+ evidence refs (dpi, height, lngth, polling_rate, sensor, switch, weight, width)",
+    "category": "Edge Cases"
+  }
+}
