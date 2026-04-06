@@ -18,6 +18,7 @@ LAUNCHER_DIR = Path(__file__).resolve().parent
 ROOT = LAUNCHER_DIR.parent.parent
 BACKEND_PATH = ROOT / 'tools' / 'specfactory-process-manager.js'
 DEV_STACK_PATH = ROOT / 'tools' / 'dev-stack-control.js'
+SCHEMA_REFERENCE_SCRIPT_PATH = ROOT / 'scripts' / 'generateSchemaReference.js'
 ICON_PATH = LAUNCHER_DIR / 'icons' / 'specfactory-process-manager.ico'
 TARGET_PORT = 8788
 PORT_POLL_INTERVAL = 0.5
@@ -223,7 +224,7 @@ class ProcessManagerApp:
         # ── Quick Actions bar ──────────────────────────────────────────
         actions_bar = ttk.Frame(shell, style='Root.TFrame')
         actions_bar.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(14, 0))
-        for col in range(8):
+        for col in range(9):
             actions_bar.columnconfigure(col, weight=1)
 
         self.btn_start = ttk.Button(
@@ -251,20 +252,25 @@ class ProcessManagerApp:
         )
         self.btn_cleanup.grid(row=0, column=4, sticky='ew', padx=(0, 6))
 
+        self.btn_schema_reference = ttk.Button(
+            actions_bar, text='Build Schema Ref', command=self._on_build_schema_reference, style='QuickAction.TButton',
+        )
+        self.btn_schema_reference.grid(row=0, column=5, sticky='ew', padx=(0, 6))
+
         self.btn_browser = ttk.Button(
             actions_bar, text='Open Browser', command=self.open_browser, style='QuickAction.TButton',
         )
-        self.btn_browser.grid(row=0, column=5, sticky='ew', padx=(0, 6))
+        self.btn_browser.grid(row=0, column=6, sticky='ew', padx=(0, 6))
 
         self.btn_refresh = ttk.Button(
             actions_bar, text='Refresh Status', command=self.refresh_state, style='QuickAction.TButton',
         )
-        self.btn_refresh.grid(row=0, column=6, sticky='ew', padx=(0, 6))
+        self.btn_refresh.grid(row=0, column=7, sticky='ew', padx=(0, 6))
 
         self.btn_kill_all = ttk.Button(
             actions_bar, text='Kill All', command=self._on_kill_all, style='Destructive.QuickAction.TButton',
         )
-        self.btn_kill_all.grid(row=0, column=7, sticky='ew')
+        self.btn_kill_all.grid(row=0, column=8, sticky='ew')
 
         # ── Stats row ──────────────────────────────────────────────────
         stats_row = ttk.Frame(shell, style='Root.TFrame')
@@ -408,6 +414,7 @@ class ProcessManagerApp:
         _ToolTip(self.btn_build_gui, 'Rebuild native modules and Vite GUI bundle')
         _ToolTip(self.btn_build_exe, 'Package Spec Factory as a standalone executable')
         _ToolTip(self.btn_cleanup, 'Remove build artifacts and temp files')
+        _ToolTip(self.btn_schema_reference, 'Regenerate docs/data-structure/schema-reference.html from the live schema')
         _ToolTip(self.btn_browser, 'Open the Spec Factory GUI in your default browser')
         _ToolTip(self.btn_refresh, 'Re-scan running processes and refresh the table')
         _ToolTip(self.btn_kill_all, 'Terminate all killable Spec Factory processes')
@@ -540,6 +547,7 @@ class ProcessManagerApp:
         self.btn_build_gui.configure(state=disabled)
         self.btn_build_exe.configure(state=disabled)
         self.btn_cleanup.configure(state=disabled)
+        self.btn_schema_reference.configure(state=disabled)
         self.btn_browser.configure(state=browser_state)
         self.btn_kill_all.configure(state=kill_all_state)
         self.kill_button.configure(state=kill_state)
@@ -911,6 +919,12 @@ class ProcessManagerApp:
         self._run_streaming(
             'Cleanup Artifacts',
             [str(ROOT / 'SpecFactory.bat'), 'cleanup', '--yes'],
+        )
+
+    def _on_build_schema_reference(self) -> None:
+        self._run_streaming(
+            'Build Schema Reference',
+            ['node', str(SCHEMA_REFERENCE_SCRIPT_PATH)],
         )
 
     # ── Process management ─────────────────────────────────────────────

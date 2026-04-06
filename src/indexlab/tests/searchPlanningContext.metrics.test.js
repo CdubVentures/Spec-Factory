@@ -36,26 +36,6 @@ describe('buildSearchPlanningContext', () => {
     });
   });
 
-  // ===== group_catalog =====
-
-  describe('exact_match_count', () => {
-    it('counts fields with exact_match_required and state !== accepted', () => {
-      const ns = makeNeedSetOutput({
-        fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', exact_match_required: true }),
-          makeField({ field_key: 'f2', group_key: 'grp', state: 'accepted', exact_match_required: true, need_score: 0, reasons: [] }),
-          makeField({ field_key: 'f3', group_key: 'grp', state: 'weak', exact_match_required: true })
-        ]
-      });
-      const result = buildSearchPlanningContext({
-        needSetOutput: ns,
-        runContext: makeRunContext()
-      });
-      const grp = result.focus_groups.find(g => g.key === 'grp');
-      assert.equal(grp.exact_match_count, 2);
-    });
-  });
-
   // ===== Unresolved counts by required_level =====
 
   describe('unresolved counts', () => {

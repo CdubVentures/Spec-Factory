@@ -124,7 +124,7 @@ export interface PrefetchNeedSetData {
   total_fields: number;
   identity_state?: string | null;
   summary?: PrefetchNeedSetSummary;
-  blockers?: { missing: number; weak: number; conflict: number; needs_exact_match?: number; search_exhausted?: number };
+  blockers?: { missing: number; weak: number; conflict: number; search_exhausted?: number };
   focus_fields?: string[];
   fields?: NeedSetField[];
   bundles?: PrefetchSearchPlanBundle[];

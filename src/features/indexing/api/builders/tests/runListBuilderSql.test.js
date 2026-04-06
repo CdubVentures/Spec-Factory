@@ -128,15 +128,14 @@ test('SQL row shape matches expected run list contract', async () => {
     for (const key of [
       'run_id', 'category', 'product_id', 'status', 'started_at', 'ended_at',
       'identity_fingerprint', 'identity_lock_status', 'dedupe_mode', 'stage_cursor',
-      'startup_ms', 'run_dir', 'storage_origin', 'storage_state', 'picker_label',
+      'run_dir', 'storage_origin', 'storage_state', 'picker_label',
       'has_needset', 'has_search_profile', 'counters'
     ]) {
       assert.ok(key in row, `missing key: ${key}`);
     }
     assert.equal(row.identity_fingerprint, 'fp-sql');
-    // WHY: Wave 5.5 — has_needset/has_search_profile default to false from slim
-    // runs table (needset_summary/search_profile_summary columns dropped).
-    // The GUI now gets this from run-summary.json, not from the runs table.
+    // WHY: has_needset/has_search_profile derived from run_artifacts table.
+    // No artifacts seeded in this test → both false.
     assert.equal(row.has_needset, false);
     assert.equal(row.has_search_profile, false);
     assert.equal(row.storage_origin, 'local');

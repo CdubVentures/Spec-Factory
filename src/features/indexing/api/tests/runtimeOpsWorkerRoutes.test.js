@@ -8,6 +8,7 @@ import {
   initIndexLabDataBuilders,
 } from '../builders/indexlabDataBuilders.js';
 import { registerRuntimeOpsRoutes } from '../runtimeOpsRoutes.js';
+import { SpecDb } from '../../../../db/specDb.js';
 
 function createStorageStub() {
   return {
@@ -74,7 +75,25 @@ async function setupFixture(extraEvents = []) {
     ],
   });
 
-  initIndexLabDataBuilders({ indexLabRoot, outputRoot, storage: createStorageStub(), config: {}, getSpecDbReady: () => false, isProcessRunning: () => false });
+  // WHY: readIndexLabRunMeta is SQL-only — seed an in-memory SpecDb so run lookups succeed.
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.upsertRun({
+    run_id: runId,
+    category: 'mouse',
+    product_id: 'mouse-test',
+    status: 'completed',
+    started_at: '2026-02-23T00:00:00.000Z',
+    ended_at: '2026-02-23T00:10:00.000Z',
+    stage_cursor: '',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: {},
+  });
+
+  initIndexLabDataBuilders({ indexLabRoot, outputRoot, storage: createStorageStub(), config: {}, getSpecDbReady: async () => specDb, isProcessRunning: () => false });
   return { tempRoot, indexLabRoot, runId };
 }
 
@@ -84,8 +103,15 @@ function createHandler(indexLabRoot, events) {
     toInt,
     INDEXLAB_ROOT: indexLabRoot,
     config: {},
-    readIndexLabRunEvents: async () => events,
     readRunSummaryEvents: async () => events,
+    // WHY: readIndexLabRunMeta must return meta for the seeded run so routes don't 404.
+    readIndexLabRunMeta: async (runId) => {
+      const token = String(runId || '').trim();
+      if (token === 'run-132-test') {
+        return { run_id: token, category: 'mouse', product_id: 'mouse-test', status: 'completed', started_at: '2026-02-23T00:00:00.000Z', ended_at: '2026-02-23T00:10:00.000Z' };
+      }
+      return null;
+    },
     safeReadJson: async (filePath) => { try { return JSON.parse(await fs.readFile(filePath, 'utf8')); } catch { return null; } },
     safeJoin: (base, sub) => { const s = String(sub || '').trim(); if (!s) return ''; return path.join(base, s); },
     path,
@@ -198,8 +224,8 @@ test('runtimeOps132: all new endpoints return 404 for unknown run', async () => 
       toInt,
       INDEXLAB_ROOT: indexLabRoot,
       config: {},
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
+      readIndexLabRunMeta: async () => null,
       safeReadJson: async () => null,
       safeJoin: (base, sub) => { const s = String(sub || '').trim(); if (!s) return ''; return path.join(base, s); },
       path,

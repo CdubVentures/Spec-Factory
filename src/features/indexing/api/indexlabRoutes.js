@@ -21,7 +21,7 @@ export function registerIndexlabRoutes(ctx) {
     getSpecDb,
     readIndexLabRunMeta,
     resolveIndexLabRunDirectory,
-    readIndexLabRunEvents,
+    readRunSummaryEvents,
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
     readIndexLabRunSerpExplorer,
@@ -165,7 +165,7 @@ export function registerIndexlabRoutes(ctx) {
         : directRunDir;
       const meta = await readIndexLabRunMeta(runId).catch(() => null);
       if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
-      const events = await readIndexLabRunEvents(runId, 2000, { category: meta?.category });
+      const events = await readRunSummaryEvents(runId, 2000, { category: meta?.category });
       return jsonRes(res, 200, resolveInactiveRunMeta(meta, events, runId));
     }
 
@@ -173,7 +173,7 @@ export function registerIndexlabRoutes(ctx) {
       const runId = String(parts[2] || '').trim();
       const limit = Math.max(1, toInt(params.get('limit'), 2000));
       const evtMeta = typeof readIndexLabRunMeta === 'function' ? await readIndexLabRunMeta(runId).catch(() => null) : null;
-      const rows = await readIndexLabRunEvents(runId, limit, { category: evtMeta?.category });
+      const rows = await readRunSummaryEvents(runId, limit, { category: evtMeta?.category });
       return jsonRes(res, 200, {
         run_id: runId,
         count: rows.length,
@@ -229,7 +229,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'rounds' && method === 'GET') {
       const runId = String(parts[2] || '').trim();
       const roundsMeta = typeof readIndexLabRunMeta === 'function' ? await readIndexLabRunMeta(runId).catch(() => null) : null;
-      const events = await readIndexLabRunEvents(runId, 8000, { category: roundsMeta?.category });
+      const events = await readRunSummaryEvents(runId, 8000, { category: roundsMeta?.category });
       const summary = buildRoundSummaryFromEvents(events);
       return jsonRes(res, 200, {
         run_id: runId,
@@ -240,7 +240,7 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'learning' && method === 'GET') {
       const runId = String(parts[2] || '').trim();
       const learningMeta = typeof readIndexLabRunMeta === 'function' ? await readIndexLabRunMeta(runId).catch(() => null) : null;
-      const events = await readIndexLabRunEvents(runId, 8000, { category: learningMeta?.category });
+      const events = await readRunSummaryEvents(runId, 8000, { category: learningMeta?.category });
       const learningEvents = events.filter((e) =>
         e.event === 'learning_update' || e.event === 'learning_gate_result'
         || (e.stage === 'learning')
@@ -509,10 +509,10 @@ export function registerIndexlabRoutes(ctx) {
       const runId = params.get('run_id') || '';
       const runData = {};
 
-      if (runId && typeof readIndexLabRunEvents === 'function') {
+      if (runId && typeof readRunSummaryEvents === 'function') {
         try {
           const evalMeta = typeof readIndexLabRunMeta === 'function' ? await readIndexLabRunMeta(runId).catch(() => null) : null;
-          const events = await readIndexLabRunEvents(runId, 2000, { category: evalMeta?.category });
+          const events = await readRunSummaryEvents(runId, 2000, { category: evalMeta?.category });
           if (Array.isArray(events)) {
             runData.events = events;
             if (typeof buildScreenshotManifestFromEvents === 'function') {

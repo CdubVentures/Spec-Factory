@@ -76,10 +76,6 @@ export {
 } from './runProductContracts.js';
 
 export {
-  buildIndexlabRuntimeCategoryConfig,
-} from './indexlabRuntimeFieldRules.js';
-
-export {
   PASS_TARGET_EXEMPT_FIELDS,
   markSatisfiedLlmFields,
   refreshFieldsBelowPassTarget,

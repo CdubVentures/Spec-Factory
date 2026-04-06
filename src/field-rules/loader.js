@@ -216,7 +216,7 @@ function appendIndexToken(index, indexAll, tokenRaw, entry) {
   indexAll.get(token).push(entry);
 }
 
-function normalizeComponentDbPayload(rawPayload = {}, fallbackName = '') {
+export function normalizeComponentDbPayload(rawPayload = {}, fallbackName = '') {
   const dbName = String(rawPayload.db_name || fallbackName).trim() || fallbackName;
   const entries = {};
 
@@ -274,7 +274,7 @@ function normalizeComponentDbPayload(rawPayload = {}, fallbackName = '') {
   };
 }
 
-function normalizeKnownValues(rawKnownValues = {}) {
+export function normalizeKnownValues(rawKnownValues = {}) {
   if (!isObject(rawKnownValues)) {
     return { enums: {} };
   }
@@ -302,7 +302,7 @@ function normalizeKnownValues(rawKnownValues = {}) {
   };
 }
 
-function normalizeParseTemplates(rawParseTemplates = {}, fieldRules = {}) {
+export function normalizeParseTemplates(rawParseTemplates = {}, fieldRules = {}) {
   if (isObject(rawParseTemplates) && isObject(rawParseTemplates.templates)) {
     return rawParseTemplates;
   }
@@ -329,7 +329,7 @@ function normalizeParseTemplates(rawParseTemplates = {}, fieldRules = {}) {
   };
 }
 
-function normalizeCrossValidation(rawCrossValidation = {}, fieldRules = {}) {
+export function normalizeCrossValidation(rawCrossValidation = {}, fieldRules = {}) {
   if (isObject(rawCrossValidation) && Array.isArray(rawCrossValidation.rules)) {
     return rawCrossValidation;
   }

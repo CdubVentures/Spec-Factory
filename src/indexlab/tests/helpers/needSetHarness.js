@@ -72,8 +72,7 @@ export function makeBaseRules() {
   return {
     weight: {
       required_level: 'required',
-      min_evidence_refs: 2,
-      evidence: { tier_preference: [1, 2] },
+      evidence: { min_evidence_refs: 2, tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['weight', 'grams'],
         content_types: ['spec_sheet', 'product_page'],
@@ -82,8 +81,7 @@ export function makeBaseRules() {
     },
     sensor: {
       required_level: 'critical',
-      min_evidence_refs: 2,
-      evidence: { tier_preference: [1] },
+      evidence: { min_evidence_refs: 2, tier_preference: [1] },
       search_hints: {
         query_terms: ['sensor', 'optical sensor'],
         content_types: ['spec_sheet', 'review'],
@@ -92,8 +90,7 @@ export function makeBaseRules() {
     },
     dpi_max: {
       required_level: 'required',
-      min_evidence_refs: 1,
-      evidence: { tier_preference: [1, 2] },
+      evidence: { min_evidence_refs: 1, tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['dpi', 'max dpi', 'cpi'],
         content_types: ['spec_sheet'],
@@ -102,7 +99,7 @@ export function makeBaseRules() {
     },
     rgb: {
       required_level: 'optional',
-      min_evidence_refs: 1,
+      evidence: { min_evidence_refs: 1 },
       search_hints: {
         query_terms: ['rgb', 'lighting'],
         content_types: ['product_page'],
@@ -111,8 +108,7 @@ export function makeBaseRules() {
     },
     brand: {
       required_level: 'identity',
-      min_evidence_refs: 1,
-      evidence: { tier_preference: [1] },
+      evidence: { min_evidence_refs: 1, tier_preference: [1] },
       search_hints: {
         query_terms: ['brand', 'manufacturer'],
         content_types: ['product_page'],

@@ -42,8 +42,9 @@ test('runtimeOpsRoutes: screencast endpoint returns cached last frame for run wo
       indexLabRoot,
       outputRoot,
       config: {},
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
       getLastScreencastFrame: (requestedRunId, workerId) => (
         requestedRunId === runId && workerId === 'fetch-9'
           ? {
@@ -128,8 +129,9 @@ test('runtimeOpsRoutes: screencast endpoint synthesizes proof frame for ended br
       indexLabRoot,
       outputRoot,
       config: {},
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
       getLastScreencastFrame: () => null,
     });
     const res = createMockRes();
@@ -180,8 +182,9 @@ test('runtimeOpsRoutes: runtime asset route serves output-root screenshot keys r
       outputRoot,
       storage: createOutputRootStorage(outputRoot),
       config: {},
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock in case asset fast path misses.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
     });
 
     const res = createStreamingMockRes();

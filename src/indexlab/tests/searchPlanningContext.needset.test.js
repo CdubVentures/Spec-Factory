@@ -38,7 +38,7 @@ describe('buildSearchPlanningContext', () => {
         optional_total: 20, optional_unresolved: 5,
         conflicts: 2, bundles_planned: 3
       };
-      const blockers = { missing: 10, weak: 3, conflict: 2, needs_exact_match: 1, search_exhausted: 0 };
+      const blockers = { missing: 10, weak: 3, conflict: 2, search_exhausted: 0 };
       const ns = makeNeedSetOutput({ summary, blockers });
       const result = buildSearchPlanningContext({
         needSetOutput: ns,

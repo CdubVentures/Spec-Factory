@@ -21,8 +21,7 @@ function buildTestInput({ fieldKey, value, confidence, evidenceRows, requiredLev
     fieldRules: {
       [fieldKey]: {
         required_level: requiredLevel,
-        min_evidence_refs: 1,
-        tier_preference: [1, 2]
+        evidence: { min_evidence_refs: 1, tier_preference: [1, 2] }
       }
     },
     now: '2026-03-09T12:00:00.000Z'

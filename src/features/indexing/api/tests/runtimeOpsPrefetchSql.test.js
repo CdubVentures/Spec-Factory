@@ -27,6 +27,13 @@ test('prefetch returns SQL artifacts when specDb has data', async () => {
     events: [],
   });
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed the run so meta resolves.
+  specDb.upsertRun({
+    run_id: runId, category: 'mouse', product_id: 'mouse-test', status: 'completed',
+    started_at: '2026-03-26T10:00:00Z', ended_at: '2026-03-26T10:30:00Z',
+    stage_cursor: '', identity_fingerprint: '', identity_lock_status: '',
+    dedupe_mode: '', s3key: '', out_root: '', counters: {},
+  });
   specDb.upsertRunArtifact({ run_id: runId, artifact_type: 'needset', category: 'mouse',
     payload: { total_fields: 12, fields: [], summary: { total: 12, resolved: 8 } } });
   specDb.upsertRunArtifact({ run_id: runId, artifact_type: 'search_profile', category: 'mouse',
@@ -42,10 +49,11 @@ test('prefetch returns SQL artifacts when specDb has data', async () => {
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot, outputRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
       getSpecDbReady: async () => specDb,
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test', status: 'completed' }),
     });
 
     const res = createMockRes();
@@ -75,6 +83,14 @@ test('prefetch returns null needset when specDb has no artifact data (no file fa
     events: [],
   });
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed the run so meta resolves.
+  specDb.upsertRun({
+    run_id: runId, category: 'mouse', product_id: 'mouse-test', status: 'completed',
+    started_at: '2026-03-26T10:00:00Z', ended_at: '2026-03-26T10:30:00Z',
+    stage_cursor: '', identity_fingerprint: '', identity_lock_status: '',
+    dedupe_mode: '', s3key: '', out_root: '', counters: {},
+  });
+
   initIndexLabDataBuilders({
     indexLabRoot, outputRoot, storage: createStorageStub(), config: {},
     getSpecDbReady: async () => specDb, isProcessRunning: () => false,
@@ -83,10 +99,11 @@ test('prefetch returns null needset when specDb has no artifact data (no file fa
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot, outputRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
       getSpecDbReady: async () => specDb,
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test', status: 'completed' }),
     });
 
     const res = createMockRes();
@@ -121,9 +138,10 @@ test('prefetch returns null needset when getSpecDbReady is null (no file fallbac
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot, outputRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
+      // WHY: readIndexLabRunMeta is SQL-only; no specDb available, provide mock so route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test', status: 'completed' }),
     });
 
     const res = createMockRes();

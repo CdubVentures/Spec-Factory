@@ -1,6 +1,5 @@
 import fsSync from 'node:fs';
 import path from 'node:path';
-import { loadCategoryConfig } from '../../../categories/loader.js';
 import { createSessionCache } from '../../../field-rules/sessionCache.js';
 import { createCategoryAliasResolver } from '../categoryAlias.js';
 import { createSpecDbRuntime } from '../specDbRuntime.js';
@@ -46,11 +45,7 @@ export function createBootstrapSessionLayer({
   });
 
   const sessionCache = createSessionCache({
-    loadCategoryConfig: (category) => loadCategoryConfig(category, { storage, config }),
     getSpecDb,
-    readJsonIfExists: safeReadJson,
-    statFile: (filePath) => fsSync.promises.stat(filePath),
-    helperRoot: HELPER_ROOT,
   });
 
   // ── Global AppDb ──

@@ -1,7 +1,6 @@
-// WHY: Verifies the 3-tier fallback chain for reading run events:
-// 1. SQL run_artifacts (artifact_type='run_summary')
-// 2. run-summary.json file on disk
-// 3. bridge_events SQL (existing path for pre-migration runs)
+// WHY: Verifies the 2-tier event reader:
+// 1. SQL run_artifacts (artifact_type='run_summary') — completed runs
+// 2. bridge_events SQL — active runs (not yet finalized)
 
 import { describe, it } from 'node:test';
 import { deepStrictEqual, ok, strictEqual } from 'node:assert';

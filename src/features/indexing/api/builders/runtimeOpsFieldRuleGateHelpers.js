@@ -183,29 +183,11 @@ export async function hydrateFieldRuleGateCounts({
   return searchProfile;
 }
 
-export async function loadRuntimeFieldRulesPayload({
-  category,
-  config,
-  safeReadJson,
-  path,
-}) {
-  const normalizedCategory = normalizeText(category).toLowerCase();
-  if (!normalizedCategory) {
-    return null;
-  }
-  const helperRoot = path.resolve(
-    config?.categoryAuthorityRoot || 'category_authority'
-  );
-  const candidatePaths = [
-    path.join(helperRoot, normalizedCategory, '_generated', 'field_rules.json'),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    const fieldRules = await safeReadJson(candidatePath);
-    if (isObject(fieldRules)) {
-      return projectFieldRulesForConsumer(fieldRules, 'indexlab');
-    }
-  }
-
-  return null;
+// WHY: Reads compiled field rules from field_studio_map (the single SSOT)
+// and projects for the indexlab consumer.
+export async function loadRuntimeFieldRulesPayload({ specDb }) {
+  if (!specDb) return null;
+  const compiledRules = specDb.getCompiledRules();
+  if (!isObject(compiledRules)) return null;
+  return projectFieldRulesForConsumer(compiledRules, 'indexlab');
 }

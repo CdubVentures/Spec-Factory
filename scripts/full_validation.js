@@ -67,8 +67,8 @@ async function main() {
     confidence_avg: p.conf_count > 0 ? p.confidence_avg / p.conf_count : 0,
   }));
 
-  // Events analysis
-  const eventsPath = run?.events_path;
+  // Events analysis (events_path removed — events now in SQL run_summary artifact)
+  const eventsPath = null;
   let eventTypes = {};
   let articleMethods = new Set();
   let candidateMethods = new Set();

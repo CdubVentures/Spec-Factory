@@ -611,7 +611,7 @@ export function prepareStatements(db) {
 
     // Field studio map (per-category control-plane config)
     _getFieldStudioMap: db.prepare(
-      'SELECT map_json, map_hash, updated_at FROM field_studio_map WHERE id = 1'
+      'SELECT map_json, map_hash, compiled_rules, boot_config, updated_at FROM field_studio_map WHERE id = 1'
     ),
     // WHY: only bump updated_at when the hash actually changes — the compile
     // re-sync (compileProcessCompletion) upserts the normalized map after every
@@ -628,6 +628,15 @@ export function prepareStatements(db) {
           ELSE field_studio_map.updated_at
         END
     `),
+    // WHY: Separate statement so compile/reseed can update compiled_rules + boot_config
+    // without touching map_json/map_hash/updated_at (those are studio-edit concerns).
+    _upsertCompiledRules: db.prepare(`
+      INSERT INTO field_studio_map (id, compiled_rules, boot_config)
+      VALUES (1, @compiled_rules, @boot_config)
+      ON CONFLICT(id) DO UPDATE SET
+        compiled_rules = excluded.compiled_rules,
+        boot_config = excluded.boot_config
+    `),
 
     _getFieldKeyOrder: db.prepare(
       'SELECT order_json, updated_at FROM field_key_order WHERE category = ?'
@@ -641,40 +650,6 @@ export function prepareStatements(db) {
     `),
     _deleteFieldKeyOrder: db.prepare(
       'DELETE FROM field_key_order WHERE category = ?'
-    ),
-
-    // --- Pipeline Category Cache ---
-    _getPipelineCategoryCache: db.prepare(
-      'SELECT * FROM pipeline_category_cache WHERE category = ?'
-    ),
-    _upsertPipelineCategoryCache: db.prepare(`
-      INSERT INTO pipeline_category_cache (
-        category, field_rules, field_order, field_groups,
-        required_fields, critical_fields,
-        source_hosts, source_registry, validated_registry, denylist,
-        search_templates, spec_seeds, updated_at
-      ) VALUES (
-        @category, @field_rules, @field_order, @field_groups,
-        @required_fields, @critical_fields,
-        @source_hosts, @source_registry, @validated_registry, @denylist,
-        @search_templates, @spec_seeds, datetime('now')
-      )
-      ON CONFLICT(category) DO UPDATE SET
-        field_rules = excluded.field_rules,
-        field_order = excluded.field_order,
-        field_groups = excluded.field_groups,
-        required_fields = excluded.required_fields,
-        critical_fields = excluded.critical_fields,
-        source_hosts = excluded.source_hosts,
-        source_registry = excluded.source_registry,
-        validated_registry = excluded.validated_registry,
-        denylist = excluded.denylist,
-        search_templates = excluded.search_templates,
-        spec_seeds = excluded.spec_seeds,
-        updated_at = datetime('now')
-    `),
-    _deletePipelineCategoryCache: db.prepare(
-      'DELETE FROM pipeline_category_cache WHERE category = ?'
     ),
 
     // --- Color & Edition Finder ---

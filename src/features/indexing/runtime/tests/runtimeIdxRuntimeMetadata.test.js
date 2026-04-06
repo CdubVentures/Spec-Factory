@@ -63,8 +63,7 @@ test('buildRuntimeIdxBadgesBySurface returns active and gray IDX badges for all 
   assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.content_types' && s === 'off'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'ui.tooltip_md' && s === 'off'));
   assert.ok(needsetBadges.some(([p, s]) => p === 'group' && s === 'off'));
-  assert.ok(needsetBadges.some(([p, s]) => p === 'contract.exact_match' && s === 'off'));
-  assert.equal(needsetBadges.length, 13, 'NeedSet should expose all 13 IDX keys from the badge registry');
+  assert.equal(needsetBadges.length, 10, 'NeedSet should expose all 10 IDX keys from the badge registry');
 
   const searchBadges = surfaces.search_profile.map((badge) => [badge.field_path, badge.state]);
   assert.ok(searchBadges.some(([p, s]) => p === 'aliases' && s === 'active'));

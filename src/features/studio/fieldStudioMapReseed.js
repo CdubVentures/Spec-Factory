@@ -2,18 +2,22 @@
 // On boot, compares SHA256 of JSON file against stored hash. If changed:
 // 1. Wipes and re-imports field_studio_map table
 // 2. Reconciles list_values source='manual' rows from manual_enum_values
+// 3. Populates compiled_rules + boot_config from _generated/ + categoryConfig
 // If field_overrides changed, logs a warning (compile may be needed for
 // generated artifacts to be correct).
 
 import fsSync from 'node:fs';
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { sha256Hex } from '../../shared/contentHash.js';
+import { loadCategoryConfig } from '../../categories/loader.js';
+import { loadFieldRules } from '../../field-rules/loader.js';
 
 function normalizeToken(s) {
   return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-export function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
+export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
   if (!specDb || !helperRoot) return { reseeded: false };
   const category = specDb.category;
   if (!category) return { reseeded: false };
@@ -65,14 +69,13 @@ export function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
 
         const tsKey = `${fieldKey}::${normalizeToken(trimmed)}`;
         specDb.upsertListValue({
-          category,
-          field_key: fieldKey,
+          fieldKey,
           value: trimmed,
-          normalized_value: normalizeToken(trimmed),
+          normalizedValue: normalizeToken(trimmed),
           source: 'manual',
           overridden: 0,
-          needs_review: 0,
-          source_timestamp: manualEnumTimestamps[tsKey] || null,
+          needsReview: 0,
+          sourceTimestamp: manualEnumTimestamps[tsKey] || null,
         });
       }
     }
@@ -100,5 +103,104 @@ export function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
   // Reseed runs after seed, so generated artifacts are already fresh.
 
   specDb.setFileSeedHash('field_studio_map', currentHash);
+
+  // 3. Populate compiled_rules + boot_config from _generated/ + categoryConfig
+  // WHY: field_studio_map is the single SSOT for compiled field rules.
+  // All consumers (pipeline, engine, review) read from here.
+  // Must complete before app serves — sessionCache reads from compiled_rules.
+  try {
+    await reseedCompiledRulesAndBootConfig({ specDb, helperRoot });
+  } catch {
+    // Non-fatal — compiled rules will be populated on next compile
+  }
+
   return { reseeded: true, manualRemoved };
+}
+
+// WHY: Populates compiled_rules and boot_config on field_studio_map.
+// Called from reseed (boot) and can be called standalone after compile.
+export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, storage = null, config = {} }) {
+  if (!specDb) return { reseeded: false };
+  const category = specDb.category;
+  if (!category) return { reseeded: false };
+
+  const effectiveConfig = { ...config, categoryAuthorityRoot: helperRoot };
+
+  let categoryConfig;
+  try {
+    categoryConfig = await loadCategoryConfig(category, { storage, config: effectiveConfig });
+  } catch {
+    return { reseeded: false };
+  }
+
+  // WHY: Load full engine artifacts (known_values, parse_templates, etc.)
+  // so compiled_rules has everything FieldRulesEngine needs.
+  let loaded = null;
+  try {
+    loaded = await loadFieldRules(category, { config: effectiveConfig });
+  } catch {
+    // Non-fatal — engine artifacts populated on next compile
+  }
+
+  const fieldRules = categoryConfig.fieldRules || {};
+  const compiledRules = {
+    fields: fieldRules.fields || fieldRules,
+    field_order: categoryConfig.fieldOrder || [],
+    field_groups: categoryConfig.fieldGroups || {},
+    required_fields: categoryConfig.requiredFields || [],
+    critical_fields: categoryConfig.schema?.critical_fields || [],
+    known_values: loaded?.knownValues || {},
+    parse_templates: loaded?.parseTemplates || {},
+    cross_validation_rules: loaded?.crossValidation || [],
+    ui_field_catalog: loaded?.uiFieldCatalog || categoryConfig.uiFieldCatalog || {},
+    component_dbs: stripComponentDbMaps(loaded?.componentDBs || {}),
+    key_migrations: await readKeyMigrationsJson(helperRoot, category),
+    compiled_at: await readCompiledAt(helperRoot, category),
+  };
+
+  const bootConfig = {
+    source_hosts: categoryConfig.sourceHosts || [],
+    source_registry: categoryConfig.sourceRegistry || {},
+    validated_registry: categoryConfig.validatedRegistry || {},
+    denylist: categoryConfig.denylist || [],
+    search_templates: categoryConfig.searchTemplates || [],
+    spec_seeds: categoryConfig.specSeeds || [],
+  };
+
+  specDb.upsertCompiledRules(JSON.stringify(compiledRules), JSON.stringify(bootConfig));
+  return { reseeded: true };
+}
+
+// WHY: __index and __indexAll are Maps (can't serialize to JSON).
+// Strip them before storing; the engine rebuilds them via normalizeComponentDbPayload on load.
+function stripComponentDbMaps(componentDBs) {
+  const out = {};
+  for (const [key, db] of Object.entries(componentDBs)) {
+    if (!db || typeof db !== 'object') continue;
+    const { __index, __indexAll, ...rest } = db;
+    out[key] = rest;
+  }
+  return out;
+}
+
+async function readKeyMigrationsJson(helperRoot, category) {
+  try {
+    const raw = await fs.readFile(
+      path.join(helperRoot, category, '_generated', 'key_migrations.json'), 'utf8'
+    );
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function readCompiledAt(helperRoot, category) {
+  try {
+    const raw = await fs.readFile(
+      path.join(helperRoot, category, '_generated', 'manifest.json'), 'utf8'
+    );
+    return JSON.parse(raw)?.generated_at || null;
+  } catch {
+    return null;
+  }
 }

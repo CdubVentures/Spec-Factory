@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 import {
   cleanupTempRoot,
@@ -14,7 +12,7 @@ import {
 
 test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from field rules payload', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-prefetch-gates-');
-  const helperRoot = path.join(tempRoot, 'category_authority');
+
   const runId = 'run-ops-prefetch-gates';
   await createRunFixture({
     rootDir: indexLabRoot,
@@ -43,41 +41,38 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
     },
   };
 
-  const generated = path.join(helperRoot, 'mouse', '_generated');
-  await fs.mkdir(generated, { recursive: true });
-  await fs.writeFile(
-    path.join(generated, 'field_rules.json'),
-    JSON.stringify({
-      fields: {
-        connection: {
-          search_hints: {
-            query_terms: ['connection', 'connectivity'],
-            domain_hints: ['razer.com', 'support.razer.com'],
-            content_types: ['support'],
-          },
-        },
-        dpi: {
-          search_hints: {
-            query_terms: ['dpi'],
-            domain_hints: [],
-            content_types: [],
-          },
+  const stubCompiledRules = {
+    fields: {
+      connection: {
+        search_hints: {
+          query_terms: ['connection', 'connectivity'],
+          domain_hints: ['razer.com', 'support.razer.com'],
+          content_types: ['support'],
         },
       },
-    }),
-    'utf8',
-  );
+      dpi: {
+        search_hints: {
+          query_terms: ['dpi'],
+          domain_hints: [],
+          content_types: [],
+        },
+      },
+    },
+  };
 
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-      },
-      readIndexLabRunEvents: async () => [],
+      config: {},
+      getSpecDbReady: async () => ({
+        getCompiledRules: () => stubCompiledRules,
+        getRunArtifactsByRunId: () => [],
+      }),
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => searchProfilePayload,
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
     });
 
     const res = createMockRes();
@@ -111,7 +106,7 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
 
 test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-prefetch-domain-ratio-');
-  const helperRoot = path.join(tempRoot, 'category_authority');
+
   const runId = 'run-ops-prefetch-domain-ratio';
   await createRunFixture({
     rootDir: indexLabRoot,
@@ -138,34 +133,31 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
     },
   };
 
-  const generated = path.join(helperRoot, 'mouse', '_generated');
-  await fs.mkdir(generated, { recursive: true });
-  await fs.writeFile(
-    path.join(generated, 'field_rules.json'),
-    JSON.stringify({
-      fields: {
-        weight: {
-          search_hints: {
-            query_terms: ['weight'],
-            domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
-            content_types: ['spec'],
-          },
+  const stubCompiledRules = {
+    fields: {
+      weight: {
+        search_hints: {
+          query_terms: ['weight'],
+          domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
+          content_types: ['spec'],
         },
       },
-    }),
-    'utf8',
-  );
+    },
+  };
 
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-      },
-      readIndexLabRunEvents: async () => [],
+      config: {},
+      getSpecDbReady: async () => ({
+        getCompiledRules: () => stubCompiledRules,
+        getRunArtifactsByRunId: () => [],
+      }),
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => domainHintsProfile,
+      // WHY: readIndexLabRunMeta is SQL-only; provide mock so the route doesn't 404.
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
     });
 
     const res = createMockRes();

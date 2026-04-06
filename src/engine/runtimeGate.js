@@ -40,22 +40,6 @@ function toEvidenceProvenance(row = {}) {
   };
 }
 
-function valuesEqual(left, right) {
-  if (left === right) {
-    return true;
-  }
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return left.length === right.length && left.every((entry, index) => valuesEqual(entry, right[index]));
-  }
-  if (left && right && typeof left === 'object' && typeof right === 'object') {
-    const leftKeys = Object.keys(left);
-    const rightKeys = Object.keys(right);
-    return leftKeys.length === rightKeys.length
-      && leftKeys.every((key) => valuesEqual(left[key], right[key]));
-  }
-  return false;
-}
-
 export function applyRuntimeFieldRules({
   engine,
   fields = {},
@@ -124,7 +108,14 @@ export function applyRuntimeFieldRules({
     nextFields[field] = normalized.normalized;
     // WHY: Shallow comparison replaces JSON.stringify — contract guarantees
     // values are scalars or flat arrays of scalars (no nested objects).
-    const changed = !valuesEqual(before, normalized.normalized);
+    let changed = false;
+    if (Array.isArray(normalized.normalized)) {
+      changed = !Array.isArray(before)
+        || before.length !== normalized.normalized.length
+        || before.some((v, i) => normalized.normalized[i] !== v);
+    } else {
+      changed = before !== normalized.normalized;
+    }
     if (changed) {
       changes.push({
         field,
@@ -231,32 +222,6 @@ export function applyRuntimeFieldRules({
         });
       }
     }
-  }
-
-  // Pass 2.5: field-level constraints authored directly on field rules.
-  for (const result of engine.evaluateConstraints(nextFields)) {
-    if (result.pass || result.skipped) {
-      continue;
-    }
-    const field = result.propertyKey;
-    const before = nextFields[field];
-    if (!hasKnownValue(before)) {
-      continue;
-    }
-    nextFields[field] = 'unk';
-    failures.push({
-      field,
-      stage: 'constraints',
-      reason_code: 'constraint_failed',
-      expr: result.expr,
-      message: result.message
-    });
-    changes.push({
-      field,
-      stage: 'constraints',
-      before,
-      after: 'unk'
-    });
   }
 
   // Pass 3: evidence gate (global + per-field quality + per-field count).

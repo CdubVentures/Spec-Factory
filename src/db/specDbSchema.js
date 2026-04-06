@@ -656,10 +656,14 @@ CREATE INDEX IF NOT EXISTS idx_qc_product ON query_cooldowns(product_id);
 CREATE INDEX IF NOT EXISTS idx_qc_cooldown ON query_cooldowns(cooldown_until);
 
 -- Field studio map (per-category control-plane config persisted in SQL)
+-- compiled_rules: full compiled field rules from _generated/field_rules.json + derived metadata
+-- boot_config: pipeline boot config (source_hosts, denylist, search_templates, etc.)
 CREATE TABLE IF NOT EXISTS field_studio_map (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   map_json TEXT NOT NULL DEFAULT '{}',
   map_hash TEXT NOT NULL DEFAULT '',
+  compiled_rules TEXT NOT NULL DEFAULT '{}',
+  boot_config TEXT NOT NULL DEFAULT '{}',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -670,25 +674,6 @@ CREATE TABLE IF NOT EXISTS field_key_order (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Pipeline category cache (pre-computed projection for fast pipeline boot)
--- WHY: Pipeline needs 14 properties from categoryConfig but loadCategoryConfig
--- reads ~11 JSON files. This caches the compiled config as JSON columns,
--- populated at server boot reconcile. Rebuild: delete row → reseed from JSON.
-CREATE TABLE IF NOT EXISTS pipeline_category_cache (
-  category TEXT PRIMARY KEY,
-  field_rules TEXT NOT NULL DEFAULT '{}',
-  field_order TEXT NOT NULL DEFAULT '[]',
-  field_groups TEXT NOT NULL DEFAULT '{}',
-  required_fields TEXT NOT NULL DEFAULT '[]',
-  critical_fields TEXT NOT NULL DEFAULT '[]',
-  source_hosts TEXT NOT NULL DEFAULT '[]',
-  source_registry TEXT NOT NULL DEFAULT '{}',
-  validated_registry TEXT NOT NULL DEFAULT '{}',
-  denylist TEXT NOT NULL DEFAULT '[]',
-  search_templates TEXT NOT NULL DEFAULT '[]',
-  spec_seeds TEXT NOT NULL DEFAULT '[]',
-  updated_at TEXT DEFAULT (datetime('now'))
-);
 
 -- Color & Edition Finder (per-product LLM discovery summary, rebuildable from product JSON)
 CREATE TABLE IF NOT EXISTS color_edition_finder (

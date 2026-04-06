@@ -289,40 +289,26 @@ describe('hydrateFieldRuleGateCounts', () => {
 });
 
 describe('loadRuntimeFieldRulesPayload', () => {
-  test('returns null for empty category', async () => {
+  test('returns null for null specDb', async () => {
+    const result = await loadRuntimeFieldRulesPayload({ specDb: null });
+    assert.equal(result, null);
+  });
+
+  test('returns null when no compiled rules in DB', async () => {
     const result = await loadRuntimeFieldRulesPayload({
-      category: '',
-      config: {},
-      safeReadJson: async () => null,
-      path,
+      specDb: { getCompiledRules: () => null },
     });
     assert.equal(result, null);
   });
 
-  test('returns null when no field rules file found', async () => {
-    const result = await loadRuntimeFieldRulesPayload({
-      category: 'mouse',
-      config: {},
-      safeReadJson: async () => null,
-      path,
-    });
-    assert.equal(result, null);
-  });
-
-  test('returns projected field rules when file exists', async () => {
+  test('returns projected field rules from compiled_rules', async () => {
     const fakeRules = {
       fields: {
         price: { search_hints: { query_terms: ['buy'] } },
       },
     };
     const result = await loadRuntimeFieldRulesPayload({
-      category: 'mouse',
-      config: {},
-      safeReadJson: async (p) => {
-        if (p.includes('field_rules.json')) return fakeRules;
-        return null;
-      },
-      path,
+      specDb: { getCompiledRules: () => fakeRules },
     });
     assert.ok(result);
     assert.ok(result.fields);

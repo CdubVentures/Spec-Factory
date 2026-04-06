@@ -317,7 +317,7 @@ function mapIdentityState(identityContext) {
 
 // --- NeedSet assessment: Reasons derivation ---
 
-function deriveFieldReasons({ field, internalState, value, confidence, passTarget, refsFound, minEvidenceRefs, rule, fieldReasoning, constraintAnalysis }) {
+function deriveFieldReasons({ field, internalState, value, confidence, passTarget, rule, fieldReasoning, constraintAnalysis }) {
   const reasons = [];
 
   if (!hasKnownFieldValue(value)) {
@@ -331,17 +331,6 @@ function deriveFieldReasons({ field, internalState, value, confidence, passTarge
   const known = hasKnownFieldValue(value);
   if (known && confidence !== null && confidence < passTarget) {
     reasons.push('low_conf');
-  }
-
-  if (known && minEvidenceRefs > 0 && refsFound < minEvidenceRefs) {
-    reasons.push('min_refs_fail');
-  }
-
-  // tier_pref_unmet: best_tier_seen > preferred tier minimum
-  // Not derivable without tier preferences comparison; reserved for future
-
-  if (rule?.priority?.block_publish_when_unk && internalState !== 'covered') {
-    reasons.push('publish_gate_block');
   }
 
   return reasons;
@@ -469,7 +458,6 @@ export function computeNeedSet({
     // --- Build NeedSet assessment field entry ---
     const evidence = Array.isArray(prov.evidence) ? prov.evidence : [];
     const refsFound = evidence.length || toFloat(prov.confirmations, 0);
-    const minEvidenceRefs = toFloat(rule.min_evidence_refs, 0);
     const effectiveConfidence = clamp01(toFloat(confidence, 0));
     const meetsPassTarget = internalState === 'covered' || (confidence !== null && confidence >= passTarget);
 
@@ -483,8 +471,6 @@ export function computeNeedSet({
       value,
       confidence,
       passTarget,
-      refsFound,
-      minEvidenceRefs,
       rule,
       fieldReasoning,
       constraintAnalysis
@@ -506,7 +492,6 @@ export function computeNeedSet({
     const groupKey = String(rule.group || '').trim() || null;
     const tooltipMd = rule.ui?.tooltip_md || null;
     const fieldAliases = Array.isArray(rule.aliases) ? rule.aliases : [];
-    const exactMatchRequired = Boolean(rule.contract?.exact_match);
 
     // V4: per-field search pack
     const fieldAvailability = ruleAvailability(rule);
@@ -526,7 +511,6 @@ export function computeNeedSet({
       group_key: groupKey,
       required_level: requiredLevel,
       idx: {
-        min_evidence_refs: minEvidenceRefs,
         query_terms: searchHints.query_terms,
         domain_hints: searchHints.domain_hints,
         content_types: contentTypes,
@@ -538,11 +522,9 @@ export function computeNeedSet({
       confidence: toFloat(confidence, 0),
       effective_confidence: effectiveConfidence,
       refs_found: refsFound,
-      min_refs: minEvidenceRefs,
       best_tier_seen: (bestTierSeen !== null && Number.isFinite(bestTierSeen) && bestTierSeen < 99) ? bestTierSeen : null,
       pass_target: passTarget,
       meets_pass_target: meetsPassTarget,
-      exact_match_required: exactMatchRequired,
       need_score: needScore,
       reasons,
       history,
@@ -552,7 +534,6 @@ export function computeNeedSet({
       alias_shards: aliasShards,
       availability: fieldAvailability,
       difficulty: fieldDifficulty,
-      search_intent: exactMatchRequired ? 'exact_match' : 'broad',
       repeat_count: toFloat(history.query_count, 0),
       query_modes_tried_for_key: history.query_modes_tried_for_key || [],
       domains_tried_for_key: history.domains_tried || [],
@@ -592,13 +573,10 @@ export function computeNeedSet({
   // --- Focus fields (backward compat) ---
   const focusFields = selectFocusFields(eligibleFields, maxFocusFields);
 
-  // --- Blockers (NeedSet assessment: 5 fields) ---
+  // --- Blockers ---
   const missingCount = rows.filter((r) => r.state === 'missing').length;
   const weakCount = rows.filter((r) => r.state === 'weak').length;
   const conflictCount = rows.filter((r) => r.state === 'conflict').length;
-  const needsExactMatchCount = fieldAssessments.filter(
-    (f) => f.exact_match_required && f.state !== 'accepted'
-  ).length;
   // WHY: A field is search-exhausted when it's been targeted multiple times
   // with diverse evidence classes and still has no value. This tells the planner
   // to stop wasting query budget on dead-end fields.
@@ -722,7 +700,6 @@ export function computeNeedSet({
       missing: missingCount,
       weak: weakCount,
       conflict: conflictCount,
-      needs_exact_match: needsExactMatchCount,
       search_exhausted: searchExhaustedCount
     },
     focus_fields: focusFields,

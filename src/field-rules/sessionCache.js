@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { isObject } from '../shared/primitives.js';
 
 // WHY: SQLite datetime('now') returns UTC without a timezone marker
@@ -70,7 +69,6 @@ function remapSelectedKeys(order = [], fields = {}, keyMap = {}) {
 
 function buildGroupedFieldOrder(fieldOrder = [], mergedFields = {}, fieldGroups = []) {
   if (!Array.isArray(fieldGroups) || fieldGroups.length === 0) {
-    // WHY: Legacy path — derive group order from first occurrence in fieldOrder.
     const grouped = [];
     const keysByGroup = new Map();
     const groupOrder = [];
@@ -91,7 +89,6 @@ function buildGroupedFieldOrder(fieldOrder = [], mergedFields = {}, fieldGroups 
     return grouped;
   }
 
-  // WHY: field_groups-driven path — use explicit group list for order and empty group preservation.
   const fieldGroupSet = new Set(fieldGroups);
   const defaultGroup = fieldGroups[0];
   const keysByGroup = new Map();
@@ -126,44 +123,33 @@ function buildLabelsFromFields(mergedFields, fieldOrder) {
   return labels;
 }
 
+// WHY: All compiled field rules + studio overrides now come from DB (field_studio_map).
+// No more JSON reads for compiled baseline, key_migrations, or manifest.
 export function createSessionCache({
-  loadCategoryConfig,
   getSpecDb,
-  readJsonIfExists,
-  statFile,
-  helperRoot
 }) {
   const cache = new Map();
 
-  function manifestPath(category) {
-    return path.join(helperRoot, category, '_generated', 'manifest.json');
-  }
-
-  function keyMigrationsPath(category) {
-    return path.join(helperRoot, category, '_generated', 'key_migrations.json');
-  }
-
   async function loadAndMerge(category) {
-    const catConfig = await loadCategoryConfig(category).catch(() => ({}));
-    const compiledFields = catConfig?.fieldRules?.fields || {};
-    const compiledOrder = catConfig?.fieldOrder || Object.keys(compiledFields);
-    const manifest = await readJsonIfExists(manifestPath(category));
-    const compiledAt = manifest?.generated_at || null;
-
-    // WHY: SQL is the primary source for field_studio_map.
-    // Falls back to JSON file for seed migration (one-time per category).
     const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+
+    // WHY: compiled_rules is the single SSOT for compiled field rules.
+    const compiledRules = specDb?.getCompiledRules?.() ?? null;
+    const compiledFields = compiledRules?.fields || {};
+    const compiledOrder = compiledRules?.field_order || Object.keys(compiledFields);
+    const compiledAt = compiledRules?.compiled_at || null;
+
+    // WHY: SQL is the SSOT for field_studio_map overrides.
     const sqlRow = specDb?.getFieldStudioMap?.() ?? null;
     let savedMap = {};
     let mapSavedAt = null;
 
-    // WHY: SQL is the SSOT for field_studio_map. Reseed handles JSON→SQL on boot.
     if (sqlRow) {
       try { savedMap = JSON.parse(sqlRow.map_json); } catch { savedMap = {}; }
       mapSavedAt = sqlRow.updated_at || null;
     }
 
-    const keyMigrations = await readJsonIfExists(keyMigrationsPath(category));
+    const keyMigrations = compiledRules?.key_migrations || null;
     const keyMap = normalizeKeyMap(keyMigrations?.key_map);
     const mapFieldOverrides = isObject(savedMap.field_overrides) ? savedMap.field_overrides : {};
     const mergedFields = mergeFieldOverrides(compiledFields, mapFieldOverrides);

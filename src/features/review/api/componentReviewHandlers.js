@@ -67,7 +67,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     buildComponentReviewLayout,
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
-    loadCategoryConfig,
     findProductsReferencingComponent,
     safeReadJson,
     invalidateFieldRulesCache,
@@ -90,12 +89,12 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
     }
     const sessionCompLayout = await sessionCache.getSessionRules(category);
-    const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
+    const compiledRules = runtimeSpecDb.getCompiledRules() || {};
     const layout = await buildComponentReviewLayout({
       config,
       category,
       specDb: runtimeSpecDb,
-      fieldRules: buildReviewFieldRulesPayload(sessionCompLayout, categoryConfig.fieldRules),
+      fieldRules: buildReviewFieldRulesPayload(sessionCompLayout, compiledRules),
     });
     return jsonRes(res, 200, layout);
   }
@@ -110,13 +109,13 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
     }
     const sessionComp = await sessionCache.getSessionRules(category);
-    const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
+    const compiledRules = specDb.getCompiledRules() || {};
     const payload = await buildComponentReviewPayloads({
       config,
       category,
       componentType,
       specDb,
-      fieldRules: buildReviewFieldRulesPayload(sessionComp, categoryConfig.fieldRules),
+      fieldRules: buildReviewFieldRulesPayload(sessionComp, compiledRules),
       fieldOrderOverride: sessionComp.cleanFieldOrder
     });
     return jsonRes(res, 200, payload);
@@ -130,12 +129,12 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
     }
     const sessionEnum = await sessionCache.getSessionRules(category);
-    const categoryConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
+    const compiledRulesEnum = specDb.getCompiledRules() || {};
     const payload = await buildEnumReviewPayloads({
       config,
       category,
       specDb,
-      fieldRules: buildReviewFieldRulesPayload(sessionEnum, categoryConfig.fieldRules),
+      fieldRules: buildReviewFieldRulesPayload(sessionEnum, compiledRulesEnum),
       fieldOrderOverride: sessionEnum.cleanFieldOrder
     });
     return jsonRes(res, 200, payload);

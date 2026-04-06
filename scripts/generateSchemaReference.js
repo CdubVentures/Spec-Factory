@@ -6,6 +6,7 @@
  * maintained here as the rendered SSOT for durability audits.
  */
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -535,6 +536,593 @@ for (const [table, cols] of Object.entries(migCols)) {
   }
 }
 
+// ── Source usage scan ──
+const CODE_FILE_RE = /\.(?:js|jsx|ts|tsx|mjs|cjs)$/i;
+
+function normalizeRelPath(relPath) {
+  return relPath.replace(/\\/g, '/');
+}
+
+function listTrackedSourceFiles() {
+  try {
+    return execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'src', 'tools/gui-react/src'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+      .split(/\r?\n/)
+      .map(line => normalizeRelPath(line.trim()))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function isUsageCandidate(relPath) {
+  if (!CODE_FILE_RE.test(relPath)) return false;
+  if (/(^|\/)(e2e|__tests__|tests)(\/|$)/i.test(relPath)) return false;
+  if (/\.(?:test|spec)\.[^.]+$/i.test(relPath)) return false;
+  return relPath.startsWith('src/') || relPath.startsWith('tools/gui-react/src/');
+}
+
+function readUsageText(relPath) {
+  try {
+    const text = fs.readFileSync(path.join(root, relPath), 'utf8');
+    return text.includes('\u0000') ? null : text;
+  } catch {
+    return null;
+  }
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildDirectTableUsagePatterns(tableName) {
+  const escaped = escapeRegex(tableName);
+  return [
+    new RegExp(`CREATE\\s+(?:VIRTUAL\\s+)?TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?\\s+${escaped}\\b`, 'i'),
+    new RegExp(`(?:INSERT(?:\\s+OR\\s+[A-Z_]+)?\\s+INTO|REPLACE\\s+INTO)\\s+${escaped}\\b`, 'i'),
+    new RegExp(`UPDATE\\s+${escaped}\\b`, 'i'),
+    new RegExp(`DELETE\\s+FROM\\s+${escaped}\\b`, 'i'),
+    new RegExp(`\\bFROM\\s+${escaped}\\b`, 'i'),
+    new RegExp(`\\bJOIN\\s+${escaped}\\b`, 'i'),
+    new RegExp(`\\b${escaped}\\b\\s+MATCH\\b`, 'i'),
+    new RegExp(`name\\s*=\\s*['"\`]${escaped}['"\`]`, 'i'),
+    new RegExp(`['"\`]${escaped}['"\`]`),
+  ];
+}
+
+function detectDirectTableUsage(text, tableName) {
+  return buildDirectTableUsagePatterns(tableName).some(pattern => pattern.test(text));
+}
+
+function collectDirectTablesFromText(text, tableNames) {
+  const tables = new Set();
+  if (!text) return tables;
+  for (const tableName of tableNames) {
+    if (detectDirectTableUsage(text, tableName)) {
+      tables.add(tableName);
+    }
+  }
+  return tables;
+}
+
+function addAll(target, values) {
+  for (const value of values || []) target.add(value);
+}
+
+function sameSet(left, right) {
+  if (!left && !right) return true;
+  if (!left || !right) return false;
+  if (left.size !== right.size) return false;
+  for (const value of left) {
+    if (!right.has(value)) return false;
+  }
+  return true;
+}
+
+function readRepoText(relPath) {
+  try {
+    return fs.readFileSync(path.join(root, relPath), 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+function readStringLiteral(text, startIndex) {
+  let index = startIndex;
+  while (index < text.length && /\s/.test(text[index])) index += 1;
+  const quote = text[index];
+  if (!quote || !['"', '\'', '`'].includes(quote)) return null;
+  let value = '';
+  index += 1;
+  while (index < text.length) {
+    const ch = text[index];
+    if (ch === '\\') {
+      value += ch;
+      if (index + 1 < text.length) {
+        value += text[index + 1];
+      }
+      index += 2;
+      continue;
+    }
+    if (ch === quote) {
+      return { value, endIndex: index + 1 };
+    }
+    value += ch;
+    index += 1;
+  }
+  return null;
+}
+
+function findMatchingBrace(text, openIndex) {
+  let depth = 0;
+  let index = openIndex;
+  let quote = null;
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  while (index < text.length) {
+    const ch = text[index];
+    const next = text[index + 1];
+
+    if (inLineComment) {
+      if (ch === '\n') inLineComment = false;
+      index += 1;
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (ch === '*' && next === '/') {
+        inBlockComment = false;
+        index += 2;
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (quote) {
+      if (ch === '\\') {
+        index += 2;
+        continue;
+      }
+      if (ch === quote) {
+        quote = null;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (ch === '/' && next === '/') {
+      inLineComment = true;
+      index += 2;
+      continue;
+    }
+
+    if (ch === '/' && next === '*') {
+      inBlockComment = true;
+      index += 2;
+      continue;
+    }
+
+    if (ch === '"' || ch === '\'' || ch === '`') {
+      quote = ch;
+      index += 1;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+
+    index += 1;
+  }
+
+  return -1;
+}
+
+const RESERVED_METHOD_NAMES = new Set([
+  'if',
+  'for',
+  'while',
+  'switch',
+  'catch',
+  'do',
+  'try',
+  'return',
+]);
+
+function extractNamedBlocks(text, headerRe, { advanceToBlockEnd = true } = {}) {
+  const blocks = new Map();
+  let match;
+  while ((match = headerRe.exec(text)) !== null) {
+    const name = match[1];
+    if (!name || RESERVED_METHOD_NAMES.has(name)) continue;
+    const openBraceIndex = match.index + match[0].lastIndexOf('{');
+    const closeBraceIndex = findMatchingBrace(text, openBraceIndex);
+    if (closeBraceIndex < 0) break;
+    blocks.set(name, text.slice(openBraceIndex + 1, closeBraceIndex));
+    if (advanceToBlockEnd) {
+      headerRe.lastIndex = closeBraceIndex + 1;
+    }
+  }
+  return blocks;
+}
+
+function extractClassMethods(text) {
+  return extractNamedBlocks(text, /^[ \t]*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm);
+}
+
+function extractFunctionDeclarations(text) {
+  return extractNamedBlocks(
+    text,
+    /function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g,
+    { advanceToBlockEnd: false }
+  );
+}
+
+function extractTransactionHelpers(text) {
+  return extractNamedBlocks(
+    text,
+    /this\.([A-Za-z_$][\w$]*)\s*=\s*this\.db\.transaction\(\([^)]*\)\s*=>\s*\{/g
+  );
+}
+
+function extractPreparedStatements(text, mode) {
+  const statements = new Map();
+  const pattern = mode === 'class'
+    ? /this\.(\_[A-Za-z_$][\w$]*)\s*=\s*this\.db\.prepare\(\s*/g
+    : /(\_[A-Za-z_$][\w$]*)\s*:\s*db\.prepare\(\s*/g;
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    const name = match[1];
+    const literal = readStringLiteral(text, pattern.lastIndex);
+    if (!literal) continue;
+    statements.set(name, literal.value);
+    pattern.lastIndex = literal.endIndex;
+  }
+  return statements;
+}
+
+function resolveSymbolTables({ bodies, bodyDirectTables, initialTables, getRefs }) {
+  const resolved = new Map();
+  for (const [symbolId, tables] of initialTables.entries()) {
+    resolved.set(symbolId, new Set(tables));
+  }
+  for (const symbolId of bodies.keys()) {
+    if (!resolved.has(symbolId)) {
+      resolved.set(symbolId, new Set());
+    }
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [symbolId, body] of bodies.entries()) {
+      const next = new Set(resolved.get(symbolId) || []);
+      addAll(next, bodyDirectTables.get(symbolId));
+      for (const refId of getRefs(symbolId, body)) {
+        addAll(next, resolved.get(refId));
+      }
+      if (!sameSet(next, resolved.get(symbolId))) {
+        resolved.set(symbolId, next);
+        changed = true;
+      }
+    }
+  }
+
+  return resolved;
+}
+
+function buildStoreUsageInfo(tableNames, specStatementTables) {
+  const storeDir = path.join(root, 'src/db/stores');
+  const storeFiles = fs.readdirSync(storeDir)
+    .filter(fileName => fileName.endsWith('.js'))
+    .sort((left, right) => left.localeCompare(right));
+  const factoryNameToNamespace = new Map();
+  const functionNamesByNamespace = new Map();
+  const methodTables = new Map();
+
+  for (const fileName of storeFiles) {
+    const namespace = fileName.replace(/\.js$/i, '');
+    const text = readRepoText(path.join('src/db/stores', fileName));
+    const factoryMatch = text.match(/export function (create[A-Za-z_$][\w$]*)\s*\(/);
+    if (factoryMatch) {
+      factoryNameToNamespace.set(factoryMatch[1], namespace);
+    }
+
+    const functionBodies = extractFunctionDeclarations(text);
+    const functionNames = new Set(functionBodies.keys());
+    functionNamesByNamespace.set(namespace, functionNames);
+
+    const bodies = new Map();
+    const bodyDirectTables = new Map();
+    for (const [name, body] of functionBodies.entries()) {
+      const symbolId = `store:${namespace}#${name}`;
+      bodies.set(symbolId, body);
+      bodyDirectTables.set(symbolId, collectDirectTablesFromText(body, tableNames));
+    }
+
+    const resolved = resolveSymbolTables({
+      bodies,
+      bodyDirectTables,
+      initialTables: specStatementTables,
+      getRefs(symbolId, body) {
+        const refs = new Set();
+        const localName = symbolId.split('#')[1];
+
+        let match;
+        const stmtRe = /stmts\.(\_[A-Za-z_$][\w$]*)\b/g;
+        while ((match = stmtRe.exec(body)) !== null) {
+          refs.add(`stmt#${match[1]}`);
+        }
+
+        for (const fnName of functionNames) {
+          if (fnName === localName) continue;
+          const callRe = new RegExp(`\\b${escapeRegex(fnName)}\\s*\\(`);
+          if (callRe.test(body)) {
+            refs.add(`store:${namespace}#${fnName}`);
+          }
+        }
+
+        return refs;
+      },
+    });
+
+    for (const name of functionNames) {
+      methodTables.set(`store:${namespace}#${name}`, resolved.get(`store:${namespace}#${name}`) || new Set());
+    }
+  }
+
+  return { factoryNameToNamespace, functionNamesByNamespace, methodTables };
+}
+
+function buildAppDbUsageInfo(tableNames) {
+  const text = readRepoText('src/db/appDb.js');
+  const statementSql = extractPreparedStatements(text, 'class');
+  const initialTables = new Map();
+  for (const [stmtName, sql] of statementSql.entries()) {
+    initialTables.set(`appDb#${stmtName}`, collectDirectTablesFromText(sql, tableNames));
+  }
+
+  const bodies = new Map();
+  const bodyDirectTables = new Map();
+  const helperBodies = extractTransactionHelpers(text);
+  for (const [name, body] of helperBodies.entries()) {
+    const symbolId = `appDb#${name}`;
+    bodies.set(symbolId, body);
+    bodyDirectTables.set(symbolId, collectDirectTablesFromText(body, tableNames));
+  }
+
+  const methodBodies = extractClassMethods(text);
+  for (const [name, body] of methodBodies.entries()) {
+    const symbolId = `appDb#${name}`;
+    bodies.set(symbolId, body);
+    bodyDirectTables.set(symbolId, collectDirectTablesFromText(body, tableNames));
+  }
+
+  const methodNames = new Set(methodBodies.keys());
+  const resolved = resolveSymbolTables({
+    bodies,
+    bodyDirectTables,
+    initialTables,
+    getRefs(symbolId, body) {
+      const refs = new Set();
+      const localName = symbolId.split('#')[1];
+
+      let match;
+      const privateRe = /this\.(\_[A-Za-z_$][\w$]*)\b/g;
+      while ((match = privateRe.exec(body)) !== null) {
+        refs.add(`appDb#${match[1]}`);
+      }
+
+      const methodRe = /this\.([A-Za-z_$][\w$]*)\s*\(/g;
+      while ((match = methodRe.exec(body)) !== null) {
+        const methodName = match[1];
+        if (methodName === localName) continue;
+        if (methodNames.has(methodName)) {
+          refs.add(`appDb#${methodName}`);
+        }
+      }
+
+      return refs;
+    },
+  });
+
+  return { methodNames, resolved };
+}
+
+function buildSpecStatementTables(tableNames) {
+  const text = readRepoText('src/db/specDbStatements.js');
+  const statementSql = extractPreparedStatements(text, 'object');
+  const tablesByStatement = new Map();
+  for (const [stmtName, sql] of statementSql.entries()) {
+    tablesByStatement.set(`stmt#${stmtName}`, collectDirectTablesFromText(sql, tableNames));
+  }
+  return tablesByStatement;
+}
+
+function buildSpecDbUsageInfo(tableNames, specStatementTables, storeUsageInfo) {
+  const text = readRepoText('src/db/specDb.js');
+  const initialTables = new Map(specStatementTables);
+  for (const [symbolId, tablesForSymbol] of storeUsageInfo.methodTables.entries()) {
+    initialTables.set(symbolId, new Set(tablesForSymbol));
+  }
+  const storeFieldToNamespace = new Map();
+  let storeMatch;
+  const storeFieldRe = /this\.(\_[A-Za-z_$][\w$]*)\s*=\s*(create[A-Za-z_$][\w$]*)\s*\(/g;
+  while ((storeMatch = storeFieldRe.exec(text)) !== null) {
+    const fieldName = storeMatch[1];
+    const factoryName = storeMatch[2];
+    const namespace = storeUsageInfo.factoryNameToNamespace.get(factoryName);
+    if (namespace) {
+      storeFieldToNamespace.set(fieldName, namespace);
+    }
+  }
+
+  const methodBodies = extractClassMethods(text);
+  const methodNames = new Set(methodBodies.keys());
+  const bodies = new Map();
+  const bodyDirectTables = new Map();
+  for (const [name, body] of methodBodies.entries()) {
+    const symbolId = `specDb#${name}`;
+    bodies.set(symbolId, body);
+    bodyDirectTables.set(symbolId, collectDirectTablesFromText(body, tableNames));
+  }
+
+  const resolved = resolveSymbolTables({
+    bodies,
+    bodyDirectTables,
+    initialTables,
+    getRefs(symbolId, body) {
+      const refs = new Set();
+      const localName = symbolId.split('#')[1];
+
+      let match;
+      const storeMethodRe = /this\.(\_[A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)\s*\(/g;
+      while ((match = storeMethodRe.exec(body)) !== null) {
+        const storeField = match[1];
+        const storeMethod = match[2];
+        const namespace = storeFieldToNamespace.get(storeField);
+        const functionNames = namespace ? storeUsageInfo.functionNamesByNamespace.get(namespace) : null;
+        if (namespace && functionNames?.has(storeMethod)) {
+          refs.add(`store:${namespace}#${storeMethod}`);
+        }
+      }
+
+      const privateRe = /this\.(\_[A-Za-z_$][\w$]*)\b/g;
+      while ((match = privateRe.exec(body)) !== null) {
+        const fieldName = match[1];
+        if (!storeFieldToNamespace.has(fieldName)) {
+          refs.add(`stmt#${fieldName}`);
+        }
+      }
+
+      const methodRe = /this\.([A-Za-z_$][\w$]*)\s*\(/g;
+      while ((match = methodRe.exec(body)) !== null) {
+        const methodName = match[1];
+        if (methodName === localName) continue;
+        if (methodNames.has(methodName)) {
+          refs.add(`specDb#${methodName}`);
+        }
+      }
+
+      return refs;
+    },
+  });
+
+  return { methodNames, resolved };
+}
+
+export function buildTableUsageAccessors(tables = allTables) {
+  const tableNames = [...new Set(tables.map(table => table.name))];
+  const accessors = Object.fromEntries(
+    tableNames.map(tableName => [tableName, { calls: new Set(), refs: new Set() }])
+  );
+
+  const specStatementTables = buildSpecStatementTables(tableNames);
+  const storeUsageInfo = buildStoreUsageInfo(tableNames, specStatementTables);
+  const appDbUsageInfo = buildAppDbUsageInfo(tableNames);
+  const specDbUsageInfo = buildSpecDbUsageInfo(tableNames, specStatementTables, storeUsageInfo);
+
+  for (const [symbolId, tablesForSymbol] of specStatementTables.entries()) {
+    const refName = symbolId.split('#')[1];
+    for (const tableName of tablesForSymbol) {
+      accessors[tableName]?.refs.add(refName);
+    }
+  }
+
+  for (const [symbolId, tablesForSymbol] of appDbUsageInfo.resolved.entries()) {
+    const name = symbolId.split('#')[1];
+    const isPublicMethod = appDbUsageInfo.methodNames.has(name) && name !== 'constructor';
+    for (const tableName of tablesForSymbol) {
+      if (isPublicMethod) {
+        accessors[tableName]?.calls.add(name);
+      } else if (name.startsWith('_')) {
+        accessors[tableName]?.refs.add(name);
+      }
+    }
+  }
+
+  for (const [symbolId, tablesForSymbol] of specDbUsageInfo.resolved.entries()) {
+    const name = symbolId.split('#')[1];
+    if (!specDbUsageInfo.methodNames.has(name) || name === 'constructor') continue;
+    for (const tableName of tablesForSymbol) {
+      accessors[tableName]?.calls.add(name);
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(accessors).map(([tableName, groups]) => [
+      tableName,
+      {
+        calls: [...groups.calls].sort((left, right) => left.localeCompare(right)),
+        refs: [...groups.refs].sort((left, right) => left.localeCompare(right)),
+      },
+    ])
+  );
+}
+
+const TABLE_USAGE_ACCESSORS = buildTableUsageAccessors(allTables);
+
+function buildTableUsagePatterns(tableName) {
+  const patterns = [...buildDirectTableUsagePatterns(tableName)];
+
+  const accessors = TABLE_USAGE_ACCESSORS[tableName];
+  if (accessors) {
+    for (const accessor of accessors.calls || []) {
+      patterns.push(new RegExp(`(?:\\b[A-Za-z_$][\\w$]*|this)\\.${escapeRegex(accessor)}\\s*\\(`));
+    }
+    for (const accessor of accessors.refs || []) {
+      patterns.push(new RegExp(`\\b${escapeRegex(accessor)}\\b`));
+    }
+  }
+
+  return patterns;
+}
+
+export function detectTableUsage(text, tableName) {
+  return buildTableUsagePatterns(tableName).some(pattern => pattern.test(text));
+}
+
+function buildTableUsageMap(tables) {
+  const usage = Object.fromEntries(
+    tables.map(table => [table.name, { src: new Set(), gui: new Set() }])
+  );
+
+  const candidates = listTrackedSourceFiles().filter(isUsageCandidate);
+  const tableNames = [...new Set(tables.map(table => table.name))];
+
+  for (const relPath of candidates) {
+    const text = readUsageText(relPath);
+    if (!text) continue;
+
+    const bucket = relPath.startsWith('tools/gui-react/src/') ? 'gui' : 'src';
+    for (const tableName of tableNames) {
+      if (detectTableUsage(text, tableName)) {
+        usage[tableName][bucket].add(relPath);
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(usage).map(([tableName, groups]) => [
+      tableName,
+      {
+        src: [...groups.src].sort((left, right) => left.localeCompare(right)),
+        gui: [...groups.gui].sort((left, right) => left.localeCompare(right)),
+      },
+    ])
+  );
+}
+
+const tableUsageMap = buildTableUsageMap(allTables);
+
 // ── HTML generators ──
 const rebuildStatus = {
   yes: { label: 'rebuild yes', className: 'tag-life-yes' },
@@ -636,15 +1224,33 @@ function renderLifecycleBlock(tableName) {
   </div>`;
 }
 
+function renderUsageSection(title, files, emptyText) {
+  const countLabel = `${files.length} file${files.length === 1 ? '' : 's'}`;
+  const body = files.length
+    ? `<ul class="usage-file-list">${files.map(file => `<li><code>${esc(file)}</code></li>`).join('')}</ul>`
+    : `<div class="usage-empty">${esc(emptyText)}</div>`;
+
+  return `<div class="usage-section">
+    <div class="usage-head">
+      <div class="usage-title">${esc(title)}</div>
+      <div class="usage-count">${esc(countLabel)}</div>
+    </div>
+    ${body}
+  </div>`;
+}
+
 function renderTableCard(t) {
   const store = storeMap[t.name] || '—';
   const colCount = t.columns.length;
   const hasFk = t.fks.length > 0;
   const pkLabel = t.pk || '—';
+  const usage = tableUsageMap[t.name] || { src: [], gui: [] };
 
   const lifecycle = lifecycleMap[t.name];
 
   let tagsHtml = `<span class="tag tag-pk">PK: ${esc(pkLabel)}</span>`;
+  tagsHtml += `<span class="tag tag-usage-src">SRC: ${usage.src.length}</span>`;
+  tagsHtml += `<span class="tag tag-usage-gui">GUI: ${usage.gui.length}</span>`;
   if (hasFk) tagsHtml += `<span class="tag tag-fk">FK</span>`;
   if (t.isVirtual) tagsHtml += `<span class="tag tag-virtual">${esc(t.engine || 'VIRTUAL')}</span>`;
   tagsHtml += `<span class="tag tag-cols">${colCount} cols</span>`;
@@ -692,6 +1298,8 @@ function renderTableCard(t) {
     <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
     <tbody>${colRows}</tbody></table>
     ${idxHtml}
+    ${renderUsageSection('Source Files', usage.src, 'No non-test src code files detected.')}
+    ${renderUsageSection('GUI / Tools Files', usage.gui, 'No non-test tools/gui-react/src code files detected.')}
   </div>
 </details>`;
 }
@@ -758,6 +1366,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
 .tag-store{background:var(--accent-s);color:var(--accent)}
 .tag-pk{background:var(--green-s);color:var(--green)}
+.tag-usage-src{background:rgba(59,130,246,0.16);color:#93c5fd;border:1px solid rgba(59,130,246,0.24)}
+.tag-usage-gui{background:rgba(245,158,11,0.16);color:#fbbf24;border:1px solid rgba(245,158,11,0.24)}
 .tag-fk{background:var(--violet-s);color:var(--violet)}
 .tag-virtual{background:var(--amber-s);color:var(--amber)}
 .tag-cols{background:var(--s2);color:var(--t2)}
@@ -806,6 +1416,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 .idx-section{margin-top:12px}
 .idx-label{font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
 .idx-item{font-family:var(--mono);font-size:0.78rem;color:var(--t2);padding:2px 0}
+.usage-section{margin-top:12px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px}
+.usage-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.usage-title{font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3)}
+.usage-count{font-size:0.72rem;color:var(--t2)}
+.usage-file-list{list-style:none;display:grid;gap:6px}
+.usage-file-list li{margin:0}
+.usage-file-list code{display:block;font-size:0.78rem;color:var(--t2);word-break:break-word}
+.usage-empty{font-size:0.78rem;color:var(--t3)}
 .life-section{margin-bottom:14px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px}
 .life-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px}
 .life-item{min-width:0}
@@ -846,7 +1464,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="audit-callout">
   <div class="audit-callout-item">
     <div class="audit-callout-k">Auto-derived</div>
-    <div class="audit-callout-v"><strong>Tables, columns, keys, indexes, and store ownership</strong> are generated from the live schema and migration code.</div>
+    <div class="audit-callout-v"><strong>Tables, columns, keys, indexes, store ownership, and non-test code file counts</strong> are generated from the live schema and code references.</div>
   </div>
   <div class="audit-callout-item">
     <div class="audit-callout-k">Manual audit metadata</div>
@@ -1006,7 +1624,26 @@ filter?.addEventListener('input', () => {
 </body>
 </html>`;
 
-const outPath = path.join(root, 'docs/data-structure/schema-reference.html');
-fs.writeFileSync(outPath, html, 'utf8');
-console.log(`Written ${(html.length / 1024).toFixed(1)}KB to ${path.relative(root, outPath)}`);
-console.log(`Tables: ${specTables.length} spec + ${migrationTables.length} migration + ${appTables.length} app = ${allTables.length} total`);
+export function writeSchemaReferenceFile() {
+  const outPath = path.join(root, 'docs/data-structure/schema-reference.html');
+  fs.writeFileSync(outPath, html, 'utf8');
+  return {
+    outPath,
+    htmlKb: (html.length / 1024).toFixed(1),
+    tableCounts: {
+      spec: specTables.length,
+      migration: migrationTables.length,
+      app: appTables.length,
+      total: allTables.length,
+    },
+  };
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const result = writeSchemaReferenceFile();
+  console.log(`Written ${result.htmlKb}KB to ${path.relative(root, result.outPath)}`);
+  console.log(
+    `Tables: ${result.tableCounts.spec} spec + ${result.tableCounts.migration} migration + ${result.tableCounts.app} app = ${result.tableCounts.total} total`
+  );
+}

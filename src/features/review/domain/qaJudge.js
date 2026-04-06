@@ -29,7 +29,7 @@ export async function runQaJudge({
 
   let engine = null;
   try {
-    engine = await FieldRulesEngine.create(category, { config });
+    engine = await FieldRulesEngine.create(category, { config, specDb });
   } catch {
     // No field rules for this category — run without engine
   }

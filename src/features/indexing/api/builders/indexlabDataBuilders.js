@@ -54,74 +54,6 @@ function summarizeSearchProfileArtifact(searchProfile) {
   };
 }
 
-function normalizeRunMetaFromFile(payload, fallbackRunId = '') {
-  if (!payload || typeof payload !== 'object') return null;
-
-  const summaryMeta = payload.telemetry?.meta;
-  if (summaryMeta && typeof summaryMeta === 'object') {
-    return {
-      ...summaryMeta,
-      run_id: String(summaryMeta.run_id || fallbackRunId).trim(),
-      category: String(summaryMeta.category || '').trim(),
-      product_id: String(summaryMeta.product_id || '').trim(),
-      status: String(summaryMeta.status || '').trim(),
-      started_at: String(summaryMeta.started_at || '').trim(),
-      ended_at: String(summaryMeta.ended_at || '').trim(),
-      stage_cursor: String(summaryMeta.stage_cursor || '').trim(),
-      identity_fingerprint: String(summaryMeta.identity_fingerprint || '').trim(),
-      identity_lock_status: String(summaryMeta.identity_lock_status || '').trim(),
-      dedupe_mode: String(summaryMeta.dedupe_mode || '').trim(),
-      counters: summaryMeta.counters && typeof summaryMeta.counters === 'object'
-        ? summaryMeta.counters
-        : {},
-      startup_ms: summaryMeta.startup_ms && typeof summaryMeta.startup_ms === 'object'
-        ? summaryMeta.startup_ms
-        : {},
-      needset_summary: summaryMeta.needset_summary ?? null,
-      search_profile_summary: summaryMeta.search_profile_summary ?? null,
-    };
-  }
-
-  const run = payload.run && typeof payload.run === 'object' ? payload.run : payload;
-  const counters = run.counters && typeof run.counters === 'object'
-    ? run.counters
-    : (payload.counters && typeof payload.counters === 'object' ? payload.counters : {});
-  const createdAt = String(payload.created_at || '').trim();
-
-  return {
-    run_id: String(run.run_id || fallbackRunId).trim(),
-    category: String(run.category || '').trim(),
-    product_id: String(run.product_id || '').trim(),
-    status: String(run.status || '').trim() || 'completed',
-    started_at: String(run.started_at || createdAt).trim(),
-    ended_at: String(run.ended_at || createdAt).trim(),
-    stage_cursor: String(run.stage_cursor || '').trim(),
-    identity_fingerprint: String(run.identity_fingerprint || '').trim(),
-    identity_lock_status: String(run.identity_lock_status || '').trim(),
-    dedupe_mode: String(run.dedupe_mode || '').trim(),
-    counters,
-    startup_ms: payload.startup_ms && typeof payload.startup_ms === 'object'
-      ? payload.startup_ms
-      : {},
-    needset_summary: summarizeNeedSetArtifact(payload.needset),
-    search_profile_summary: summarizeSearchProfileArtifact(payload.search_profile),
-  };
-}
-
-async function readRunMetaFromDisk(runDir, fallbackRunId = '') {
-  if (!runDir) return null;
-
-  const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
-  const summaryMeta = normalizeRunMetaFromFile(summary, fallbackRunId);
-  if (summaryMeta?.run_id) return summaryMeta;
-
-  const checkpoint = await safeReadJson(path.join(runDir, 'run.json'));
-  const checkpointMeta = normalizeRunMetaFromFile(checkpoint, fallbackRunId);
-  if (checkpointMeta?.run_id) return checkpointMeta;
-
-  return null;
-}
-
 export async function resolveIndexLabRunDirectory(runId) {
   const token = String(runId || '').trim();
   if (!token) return '';
@@ -133,18 +65,6 @@ export async function resolveIndexLabRunDirectory(runId) {
       if (stat.isDirectory()) return directRunDir;
     } catch { /* directory doesn't exist */ }
   }
-  // WHY: Directory name may differ from canonical run_id (e.g. live-watch alias).
-  // Lightweight scan of live indexLabRoot to match by run.json metadata.
-  try {
-    const entries = await fs.readdir(indexLabRoot, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const candidateDir = safeJoin(indexLabRoot, entry.name);
-      if (!candidateDir) continue;
-      const meta = await readRunMetaFromDisk(candidateDir, token);
-      if (meta && String(meta.run_id || '').trim() === token) return candidateDir;
-    }
-  } catch { /* indexLabRoot doesn't exist or unreadable */ }
   return '';
 }
 
@@ -191,12 +111,6 @@ export async function readIndexLabRunMeta(runId) {
       } catch { continue; }
     }
   }
-
-  // Tier 2: archived-run file fallback. Some runs are present on disk as
-  // checkpoints but have not been re-seeded into SQL yet.
-  const runDir = await resolveIndexLabRunDirectory(token);
-  const fileMeta = await readRunMetaFromDisk(runDir, token);
-  if (fileMeta) return fileMeta;
 
   return null;
 }
@@ -292,9 +206,8 @@ export async function readIndexLabRunEvents(runId, limit = 2000, { category } = 
   return rows;
 }
 
-// WHY: Wave 5.5 — read events from run-summary.json (written at finalize)
-// instead of querying bridge_events SQL on every GUI page load.
-// 3-tier fallback: SQL artifact → file → bridge_events SQL (existing path).
+// WHY: 2-tier event reader. Tier 1: SQL run_summary artifact (completed runs —
+// bridge_events purged at finalize). Tier 2: bridge_events SQL (active runs).
 export async function readRunSummaryEvents(runId, limit = 2000, { category } = {}) {
   const { extractEventsFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
   const token = String(runId || '').trim();
@@ -365,7 +278,7 @@ export async function resolveIndexLabRunContext(runId) {
   if (!category || !resolvedRunId) {
     return null;
   }
-  const eventRows = await readIndexLabRunEvents(token, 3000, { category });
+  const eventRows = await readRunSummaryEvents(token, 3000, { category });
   const productId = resolveRunProductId(meta, eventRows);
   if (!productId) {
     return null;

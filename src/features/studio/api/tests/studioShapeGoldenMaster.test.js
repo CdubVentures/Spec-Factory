@@ -32,9 +32,15 @@ test('studio payload response has exact StudioPayload shape', async () => {
       }),
       invalidateSessionCache: () => {},
     },
-    loadCategoryConfig: async () => ({
-      uiFieldCatalog: { dpi: { group: 'performance' } },
-      guardrails: { maxFields: 50 },
+    getSpecDb: () => ({
+      getCompiledRules: () => ({
+        fields: { dpi: { label: 'DPI' } },
+        field_order: ['dpi'],
+        ui_field_catalog: { dpi: { group: 'performance' } },
+        known_values: null,
+      }),
+      getFieldStudioMap: () => null,
+      getFieldKeyOrder: () => null,
     }),
   }, ['studio', 'mouse', 'payload'], 'GET');
 

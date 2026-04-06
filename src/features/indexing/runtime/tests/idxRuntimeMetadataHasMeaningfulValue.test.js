@@ -58,9 +58,7 @@ const ARRAY_FILTERED_FIELDS = [
   ['search_hints.content_types', { search_hints: { content_types: ['spec_sheet', 'review'] } }],
 ];
 
-const BOOL_PRESENCE_FIELDS = [
-  ['contract.exact_match', { contract: { exact_match: true } }, null],
-];
+const BOOL_PRESENCE_FIELDS = [];
 
 // ---------------------------------------------------------------------------
 // String field tests
@@ -179,9 +177,9 @@ test('hasMeaningfulValue returns false for unknown field path', () => {
   assert.equal(hasMeaningfulValue({ foo: 'bar' }, ''), false);
 });
 
-test('hasMeaningfulValue handles contract.exact_match with true value (presence check)', () => {
+test('hasMeaningfulValue returns false for unregistered path like contract.exact_match', () => {
   if (!canTestDirectly) return;
-  assert.equal(hasMeaningfulValue({ contract: { exact_match: true } }, 'contract.exact_match'), true);
+  assert.equal(hasMeaningfulValue({ contract: { exact_match: true } }, 'contract.exact_match'), false);
 });
 
 // ---------------------------------------------------------------------------

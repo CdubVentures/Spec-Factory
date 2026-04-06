@@ -44,6 +44,10 @@ export const MIGRATIONS = [
   // model = full product name, base_model = family name, variant = differentiator.
   // The checkpoint reseed phase populates correct values from product.json files on every startup.
   `ALTER TABLE products ADD COLUMN base_model TEXT DEFAULT ''`,
+  // WHY: field_studio_map is the single SSOT for compiled field rules.
+  // compiled_rules holds full engine artifacts, boot_config holds pipeline boot data.
+  `ALTER TABLE field_studio_map ADD COLUMN compiled_rules TEXT NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE field_studio_map ADD COLUMN boot_config TEXT NOT NULL DEFAULT '{}'`,
 ];
 
 export const SECONDARY_INDEXES = `

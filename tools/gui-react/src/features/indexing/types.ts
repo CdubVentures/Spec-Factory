@@ -16,13 +16,6 @@ export interface IndexLabRunSummary {
   identity_lock_status?: string;
   dedupe_mode?: string;
   stage_cursor?: string;
-  startup_ms?: {
-    first_event?: number | null;
-    search_started?: number | null;
-    fetch_started?: number | null;
-    parse_started?: number | null;
-    index_started?: number | null;
-  };
 }
 
 export interface IndexLabRunsResponse {
@@ -94,7 +87,6 @@ export interface IndexLabNeedSetIdentity {
 }
 
 export interface IndexLabNeedSetFieldIdx {
-  min_evidence_refs: number;
   query_terms?: string[];
   domain_hints?: string[];
   preferred_content_types?: string[];
@@ -124,11 +116,9 @@ export interface IndexLabNeedSetField {
   confidence: number;
   effective_confidence: number;
   refs_found: number;
-  min_refs: number;
   best_tier_seen: number | null;
   pass_target: number;
   meets_pass_target: boolean;
-  exact_match_required: boolean;
   need_score: number;
   reasons: string[];
   history: IndexLabNeedSetFieldHistory;
@@ -155,7 +145,6 @@ export interface IndexLabNeedSetBlockers {
   missing: number;
   weak: number;
   conflict: number;
-  needs_exact_match: number;
   search_exhausted: number;
 }
 

@@ -32,52 +32,24 @@ function makeDeps({
       ? { map_json: JSON.stringify(mapDoc), map_hash: 'test-hash', updated_at: mapMtimeIso }
       : null;
 
-  let readCount = 0;
-
-  const readJsonIfExists = async (filePath) => {
-    readCount += 1;
-    if (String(filePath).includes('manifest.json')) {
-      return manifest ? JSON.parse(JSON.stringify(manifest)) : null;
-    }
-    if (String(filePath).includes('key_migrations.json')) {
-      return keyMigrations ? JSON.parse(JSON.stringify(keyMigrations)) : null;
-    }
-    return null;
-  };
-
-  const loadCategoryConfig = async () => ({
-    fieldRules: { fields: JSON.parse(JSON.stringify(compiledFields)) },
-    fieldOrder: [...compiledOrder],
-  });
-
-  const statFile = async () => ({
-    mtime: new Date(mapMtimeIso),
-  });
-
-  // WHY: specDb always returns a mock so SQL-only read paths are exercised.
   const getSpecDb = () => ({
     getFieldStudioMap: () => effectiveSqlRow,
-    upsertFieldStudioMap: () => {},
     getFieldKeyOrder: () => fieldKeyOrderRow,
+    getCompiledRules: () => ({
+      fields: JSON.parse(JSON.stringify(compiledFields)),
+      field_order: [...compiledOrder],
+      key_migrations: keyMigrations || null,
+      compiled_at: manifest?.generated_at || null,
+    }),
   });
 
-  return {
-    readJsonIfExists,
-    statFile,
-    loadCategoryConfig,
-    getSpecDb,
-    getReadCount: () => readCount,
-  };
+  return { getSpecDb };
 }
 
 async function createCache(deps) {
   const { createSessionCache } = await import('../sessionCache.js');
   return createSessionCache({
-    loadCategoryConfig: deps.loadCategoryConfig,
     getSpecDb: deps.getSpecDb,
-    readJsonIfExists: deps.readJsonIfExists,
-    statFile: deps.statFile,
-    helperRoot: 'category_authority',
   });
 }
 
@@ -253,15 +225,12 @@ describe('sessionCache', () => {
       fieldKeyOrderRow: null,
     });
     const getSpecDb = () => ({
-      getFieldStudioMap: () => baseDeps.getSpecDb().getFieldStudioMap(),
-      upsertFieldStudioMap: () => {},
+      ...baseDeps.getSpecDb(),
       getFieldKeyOrder: () => null,
     });
     const cache = await createCache({ ...baseDeps, getSpecDb });
     const result = await cache.getSessionRules('mouse');
 
-    // WHY: SQL is the SSOT. When field_key_order SQL is empty, computed order from
-    // field_groups/compiled order is used. Reseed handles JSON→SQL on boot.
     assert.deepEqual(
       result.mergedFieldOrder,
       ['__grp::sensor', 'dpi_max', 'polling_rate', '__grp::physical', 'weight']
@@ -273,10 +242,8 @@ describe('sessionCache', () => {
       sqlRow: { map_json: JSON.stringify(MAP_DOC), map_hash: 'h1', updated_at: '2026-01-01' },
       fieldKeyOrderRow: null,
     });
-    // readJsonIfExists returns null for field_key_order.json (default mock behavior)
     const getSpecDb = () => ({
-      getFieldStudioMap: () => baseDeps.getSpecDb().getFieldStudioMap(),
-      upsertFieldStudioMap: () => {},
+      ...baseDeps.getSpecDb(),
       getFieldKeyOrder: () => null,
     });
     const cache = await createCache({ ...baseDeps, getSpecDb });
@@ -299,17 +266,22 @@ describe('sessionCache', () => {
   });
 
   it('second call returns cache hit until invalidated', async () => {
-    const deps = makeDeps();
-    const cache = await createCache(deps);
+    let callCount = 0;
+    const baseDeps = makeDeps();
+    const getSpecDb = () => {
+      callCount++;
+      return baseDeps.getSpecDb();
+    };
+    const cache = await createCache({ ...baseDeps, getSpecDb });
 
     await cache.getSessionRules('mouse');
-    const readsBefore = deps.getReadCount();
+    const countBefore = callCount;
     await cache.getSessionRules('mouse');
-    assert.equal(deps.getReadCount(), readsBefore);
+    assert.equal(callCount, countBefore, 'cached — no new DB calls');
 
     cache.invalidateSessionCache('mouse');
     await cache.getSessionRules('mouse');
-    assert.ok(deps.getReadCount() > readsBefore);
+    assert.ok(callCount > countBefore, 'after invalidate — new DB call');
   });
 
   it('reads from SQL when specDb has data', async () => {
@@ -335,8 +307,6 @@ describe('sessionCache', () => {
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
-    // WHY: SQL is the SSOT. When SQL is empty, compiled field defaults are used.
-    // Reseed handles JSON→SQL projection on boot.
     assert.equal(result.mergedFields.dpi_max.ui.label, 'Max DPI');
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
   });
@@ -365,10 +335,6 @@ describe('sessionCache', () => {
   });
 
   it('compileStale is false when SQL updated_at is bare UTC before compiled ISO string', async () => {
-    // WHY: SQLite datetime('now') returns UTC without Z suffix.
-    // JavaScript new Date() parses bare datetimes as local time, shifting
-    // by the host's UTC offset. On UTC-7 this made 18:22 look like 01:22
-    // next day — always after the compile timestamp.
     const deps = makeDeps({
       manifest: { generated_at: '2026-03-31T18:31:23.683Z' },
       sqlRow: {

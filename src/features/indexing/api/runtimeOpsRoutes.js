@@ -157,7 +157,6 @@ export function registerRuntimeOpsRoutes(ctx) {
     OUTPUT_ROOT,
     config,
     storage,
-    readIndexLabRunEvents,
     readRunSummaryEvents,
     readIndexLabRunSearchProfile,
     readIndexLabRunMeta,
@@ -267,9 +266,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     const runDir = typeof resolveIndexLabRunDirectory === 'function'
       ? (await resolveIndexLabRunDirectory(runId).catch(() => '')) || directRunDir
       : directRunDir;
-    const meta = typeof readIndexLabRunMeta === 'function'
-      ? await readIndexLabRunMeta(runId).catch(() => null)
-      : await safeReadJson(path.join(runDir, 'run.json'));
+    const meta = await readIndexLabRunMeta(runId).catch(() => null);
     if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
 
     const subPath = String(parts[4] || '').trim();
@@ -282,12 +279,9 @@ export function registerRuntimeOpsRoutes(ctx) {
     }
 
     if (subPath === 'workers' && !parts[5]) {
-      const fieldRulesPayload = await loadRuntimeFieldRulesPayload({
-        category: resolvedMeta?.category,
-        config,
-        safeReadJson,
-        path,
-      });
+      const workerSpecDb = typeof getSpecDbReady === 'function' && resolvedMeta?.category
+        ? await getSpecDbReady(resolvedMeta.category) : null;
+      const fieldRulesPayload = await loadRuntimeFieldRulesPayload({ specDb: workerSpecDb });
       const sourceIndexingPacketCollection = null;
       const workers = buildRuntimeOpsWorkers(events, {
         sourceIndexingPacketCollection,
@@ -450,11 +444,12 @@ export function registerRuntimeOpsRoutes(ctx) {
     if (subPath === 'prefetch' && !parts[5]) {
       // WHY: SQL is the sole source for run artifacts (Wave 5.5 killed JSON file writes).
       let needsetArt = null, profileArt = null, brandArt = null;
+      let prefetchSpecDb = null;
       if (typeof getSpecDbReady === 'function' && resolvedMeta?.category) {
         try {
-          const specDb = await getSpecDbReady(resolvedMeta.category);
-          if (specDb) {
-            const arts = specDb.getRunArtifactsByRunId(runId);
+          prefetchSpecDb = await getSpecDbReady(resolvedMeta.category);
+          if (prefetchSpecDb) {
+            const arts = prefetchSpecDb.getRunArtifactsByRunId(runId);
             for (const art of arts) {
               if (art.artifact_type === 'needset') needsetArt = art.payload;
               else if (art.artifact_type === 'search_profile') profileArt = art.payload;
@@ -476,12 +471,7 @@ export function registerRuntimeOpsRoutes(ctx) {
             ? mergeSearchProfileRows(profileArt, planProfile, toInt)
             : profileArt)
           : planProfile;
-      const fieldRulesPayload = await loadRuntimeFieldRulesPayload({
-        category: resolvedMeta?.category,
-        config,
-        safeReadJson,
-        path,
-      });
+      const fieldRulesPayload = await loadRuntimeFieldRulesPayload({ specDb: prefetchSpecDb });
       searchProfile = await hydrateFieldRuleGateCounts({
         searchProfile,
         fieldRulesPayload,

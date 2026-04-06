@@ -266,7 +266,6 @@ export const BLOCKER_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze
   weak:              'sf-chip-warning',
   weak_evidence:     'sf-chip-warning',
   conflict:          'sf-chip-danger',
-  needs_exact_match: 'sf-chip-confirm',
 });
 
 export function resolveBlockerBadge(key: string): string {

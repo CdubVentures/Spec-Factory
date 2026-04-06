@@ -398,7 +398,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
   let coreUnresolvedCount = 0;
   let secondaryUnresolvedCount = 0;
   let optionalUnresolvedCount = 0;
-  let exactMatchCount = 0;
   let noValueAttempts = 0;
   let duplicateAttemptsSuppressed = 0;
   let urlsExaminedCount = 0;
@@ -426,11 +425,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
       if (isCoreBucket(field.required_level)) coreUnresolvedCount++;
       else if (field.required_level === 'expected') secondaryUnresolvedCount++;
       else optionalUnresolvedCount++;
-    }
-
-    // Exact match
-    if (field.exact_match_required && field.state !== 'accepted') {
-      exactMatchCount++;
     }
 
     // Scalar sums from history
@@ -511,7 +505,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
     core_unresolved_count: coreUnresolvedCount,
     secondary_unresolved_count: secondaryUnresolvedCount,
     optional_unresolved_count: optionalUnresolvedCount,
-    exact_match_count: exactMatchCount,
     no_value_attempts: noValueAttempts,
     duplicate_attempts_suppressed: duplicateAttemptsSuppressed,
     urls_examined_count: urlsExaminedCount, // GAP-8

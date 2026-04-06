@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 12,
     "name": "closed_enum_reject",
-    "description": "Invalid values for all 1 closed enum fields",
+    "description": "Invalid values for all 2 closed enum fields",
     "category": "Enums"
   }
 }

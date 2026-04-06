@@ -191,7 +191,7 @@ describe('V4 - Schema 2 field entries carry V4 fields', () => {
         required_level: 'required',
         display_name: 'Weight',
         aliases: ['mass'],
-        min_evidence_refs: 1,
+        evidence: { min_evidence_refs: 1 },
         search_hints: { query_terms: ['weight', 'grams'], content_types: ['spec'], domain_hints: [] },
       },
     };
@@ -236,22 +236,6 @@ describe('V4 - Schema 2 field entries carry V4 fields', () => {
   it('query_modes_tried_for_key empty on round 0', () => {
     const result = computeNeedSet(makeBaseInput({ round: 0 }));
     assert.deepStrictEqual(result.fields[0].query_modes_tried_for_key, []);
-  });
-});
-
-describe('V4 - search_intent is per-field, not per-group', () => {
-  it('exact_match_required=true -> search_intent=exact_match', () => {
-    const rules = {
-      f1: { required_level: 'required', contract: { exact_match: true }, search_hints: { query_terms: ['x'], domain_hints: [] } },
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['f1'], fieldRules: rules }));
-    const field = result.fields.find((entry) => entry.field_key === 'f1');
-    assert.equal(field.search_intent, 'exact_match');
-  });
-
-  it('exact_match_required=false -> search_intent=broad', () => {
-    const result = computeNeedSet(makeBaseInput());
-    assert.equal(result.fields[0].search_intent, 'broad');
   });
 });
 

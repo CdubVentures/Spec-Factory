@@ -4,7 +4,6 @@ import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteM
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
 import { reseedOverridesFromJson } from '../../features/review/domain/overridesReseed.js';
-import { reseedPipelineCategoryCacheFromJson } from '../../features/indexing/pipeline/pipelineCategoryCacheReseed.js';
 import { buildReseedSurfaces } from '../../db/seedRegistry.js';
 
 function assertFunction(name, value) {
@@ -57,7 +56,6 @@ export function createSpecDbRuntime({
     reseedFieldKeyOrderFromJson,
     reseedFieldStudioMapFromJson,
     reseedOverridesFromJson,
-    reseedPipelineCategoryCacheFromJson,
   });
   const reseedPhases = reseedSurfaces.map(surface => ({
     name: surface.key,

@@ -92,7 +92,6 @@ export interface StageTimestamp {
 export interface RunDetailResponse extends RunInventoryRow {
   sources?: RunSourceEntry[];
   out_root: string;
-  events_path: string;
   run_base: string;
   latest_base: string;
   identity_fingerprint: string;

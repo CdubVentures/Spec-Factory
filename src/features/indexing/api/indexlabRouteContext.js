@@ -1,5 +1,5 @@
 import {
-  readIndexLabRunEvents, readIndexLabRunMeta, resolveIndexLabRunDirectory,
+  readRunSummaryEvents, readIndexLabRunMeta, resolveIndexLabRunDirectory,
   readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
   readIndexLabRunSerpExplorer,
   readIndexLabRunAutomationQueue,
@@ -33,7 +33,7 @@ export function createIndexlabRouteContext(options = {}) {
     processStatus, readJsonBody, broadcastWs, storage, OUTPUT_ROOT,
     getIndexLabRoot, getSpecDb,
     readIndexLabRunMeta, resolveIndexLabRunDirectory,
-    readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
+    readRunSummaryEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
     readIndexLabRunSerpExplorer,
     readIndexLabRunAutomationQueue,
     listIndexLabRuns, buildRoundSummaryFromEvents, buildSearchHints,

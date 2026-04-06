@@ -5,18 +5,21 @@ import { Writable } from 'node:stream';
 
 import {
   initIndexLabDataBuilders,
-  readIndexLabRunEvents,
   readIndexLabRunMeta,
+  readRunSummaryEvents,
   resolveIndexLabRunDirectory,
 } from '../../builders/indexlabDataBuilders.js';
 import { registerRuntimeOpsRoutes } from '../../runtimeOpsRoutes.js';
+import { SpecDb } from '../../../../../db/specDb.js';
 
 export {
   initIndexLabDataBuilders,
-  readIndexLabRunEvents,
   readIndexLabRunMeta,
+  readRunSummaryEvents,
   resolveIndexLabRunDirectory,
 };
+
+export { SpecDb };
 
 export async function createRuntimeOpsRoot(prefix) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -235,16 +238,34 @@ export async function setupFixture() {
     ],
   });
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed an in-memory SpecDb so run lookups succeed.
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.upsertRun({
+    run_id: runId,
+    category: 'mouse',
+    product_id: 'mouse-test-brand-model',
+    status: 'completed',
+    started_at: '2026-02-20T00:00:00.000Z',
+    ended_at: '2026-02-20T00:10:00.000Z',
+    stage_cursor: '',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: {},
+  });
+
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot,
     storage: createStorageStub(),
     config: {},
-    getSpecDbReady: () => false,
+    getSpecDbReady: async () => specDb,
     isProcessRunning: () => false,
   });
 
-  return { tempRoot, indexLabRoot, outputRoot, runId, runDir };
+  return { tempRoot, indexLabRoot, outputRoot, runId, runDir, specDb };
 }
 
 export function createRuntimeOpsHandler({
@@ -262,6 +283,10 @@ export function createRuntimeOpsHandler({
     safeReadJson: readJsonOrNull,
     safeJoin: safeJoinPath,
     path,
+    // WHY: Default to the module-level functions seeded by initIndexLabDataBuilders.
+    // Tests can override these via the overrides spread.
+    readIndexLabRunMeta,
+    resolveIndexLabRunDirectory,
     ...overrides,
   });
 }

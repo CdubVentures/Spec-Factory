@@ -89,7 +89,7 @@ export function toNeedSetBaseline({
     generated_at: generatedAt,
     total_fields: 0,
     summary: { total: 0, resolved: 0, core_total: 0, core_unresolved: 0, secondary_total: 0, secondary_unresolved: 0, optional_total: 0, optional_unresolved: 0, conflicts: 0, bundles_planned: 0 },
-    blockers: { missing: 0, weak: 0, conflict: 0, needs_exact_match: 0, search_exhausted: 0 },
+    blockers: { missing: 0, weak: 0, conflict: 0, search_exhausted: 0 },
     focus_fields: [],
     bundles: [],
     profile_mix: null,

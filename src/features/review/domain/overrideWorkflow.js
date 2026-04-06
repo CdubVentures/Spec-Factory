@@ -624,7 +624,7 @@ export async function finalizeOverrides({
   };
   let runtimeEngineReady = false;
   try {
-    const runtimeEngine = await createFieldRulesEngine(category, { config });
+    const runtimeEngine = await createFieldRulesEngine(category, { config, specDb });
     runtimeEngineReady = true;
     const migratedInput = runtimeEngine.applyKeyMigrations(nextNormalized.fields);
     runtimeGateResult = applyRuntimeFieldRules({

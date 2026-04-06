@@ -33,7 +33,6 @@ export function makeFocusGroup(overrides = {}) {
     core_unresolved_count: 2,
     secondary_unresolved_count: 0,
     optional_unresolved_count: 0,
-    exact_match_count: 0,
     no_value_attempts: 0,
     duplicate_attempts_suppressed: 0,
     urls_examined_count: 0,
@@ -101,7 +100,7 @@ export function makeSearchPlanningContext(overrides = {}) {
     identity: makeIdentity(),
     needset: {
       summary: { total: 10, resolved: 2, core_total: 5, core_unresolved: 3, secondary_total: 3, secondary_unresolved: 1, optional_total: 2, optional_unresolved: 0, conflicts: 0, bundles_planned: 2 },
-      blockers: { missing: 3, weak: 1, conflict: 0, needs_exact_match: 1, search_exhausted: 0 },
+      blockers: { missing: 3, weak: 1, conflict: 0, search_exhausted: 0 },
       missing_critical_fields: ['sensor', 'dpi'],
       unresolved_fields: ['sensor', 'dpi', 'weight'],
       fields: [],

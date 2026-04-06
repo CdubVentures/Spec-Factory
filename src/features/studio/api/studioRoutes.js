@@ -48,7 +48,6 @@ export function registerStudioRoutes(ctx) {
     getSpecDb,
     getSpecDbReady,
     storage,
-    loadCategoryConfig,
     startProcess,
     broadcastWs,
     reviewLayoutByCategory,
@@ -71,7 +70,8 @@ export function registerStudioRoutes(ctx) {
     // Studio payload
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'payload' && method === 'GET') {
       const category = parts[1];
-      const catConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
+      const payloadSpecDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      const payloadCompiledRules = payloadSpecDb?.getCompiledRules?.() ?? null;
       const session = await sessionCache.getSessionRules(category);
 
       // WHY: Read eg_toggles from the studio map (SQL) to determine which keys are actively locked.
@@ -134,8 +134,8 @@ export function registerStudioRoutes(ctx) {
         category,
         fieldRules: fields,
         fieldOrder: order,
-        uiFieldCatalog: catConfig.uiFieldCatalog || null,
-        guardrails: catConfig.guardrails || null,
+        uiFieldCatalog: payloadCompiledRules?.ui_field_catalog || null,
+        guardrails: null,
         compiledAt: session.compiledAt,
         mapSavedAt: session.mapSavedAt,
         compileStale: session.compileStale,
@@ -240,11 +240,9 @@ export function registerStudioRoutes(ctx) {
       const maxPendingInput = Number.parseInt(String(body?.maxPending ?? ''), 10);
       const maxPending = Number.isFinite(maxPendingInput) ? Math.max(1, Math.min(200, maxPendingInput)) : 120;
 
-      const kvPath = path.join(HELPER_ROOT, category, '_generated', 'known_values.json');
-      const [knownValuesDoc, session] = await Promise.all([
-        safeReadJson(kvPath),
-        sessionCache.getSessionRules(category),
-      ]);
+      const enumCompiledRules = runtimeSpecDb?.getCompiledRules?.() ?? null;
+      const knownValuesDoc = enumCompiledRules?.known_values || null;
+      const session = await sessionCache.getSessionRules(category);
       const knownValues = dedupeEnumValues(
         Array.isArray(knownValuesDoc?.enums?.[field]?.values)
           ? knownValuesDoc.enums[field].values

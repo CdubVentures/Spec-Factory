@@ -31,7 +31,6 @@ import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
-import { createPipelineCategoryCacheStore } from './stores/pipelineCategoryCacheStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
@@ -134,14 +133,10 @@ export class SpecDb {
       stmts: { _getProvenanceForProduct: this._getProvenanceForProduct },
     });
     this._fieldStudioMapStore = createFieldStudioMapStore({
-      stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap },
+      stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap, _upsertCompiledRules: this._upsertCompiledRules },
     });
     this._fieldKeyOrderStore = createFieldKeyOrderStore({
       stmts: { _getFieldKeyOrder: this._getFieldKeyOrder, _setFieldKeyOrder: this._setFieldKeyOrder, _deleteFieldKeyOrder: this._deleteFieldKeyOrder },
-    });
-    this._pipelineCategoryCacheStore = createPipelineCategoryCacheStore({
-      db: this.db, category: this.category,
-      stmts: { _getPipelineCategoryCache: this._getPipelineCategoryCache, _upsertPipelineCategoryCache: this._upsertPipelineCategoryCache, _deletePipelineCategoryCache: this._deletePipelineCategoryCache },
     });
     this._crawlLedgerStore = createCrawlLedgerStore({
       db: this.db,
@@ -804,10 +799,10 @@ export class SpecDb {
   setFieldKeyOrder(category, orderJson) { return this._fieldKeyOrderStore.setFieldKeyOrder(category, orderJson); }
   deleteFieldKeyOrder(category) { return this._fieldKeyOrderStore.deleteFieldKeyOrder(category); }
 
-  // --- Pipeline Category Cache (pre-computed boot projection) ---
+  // --- Compiled Rules + Boot Config (SSOT for all field-rules consumers) ---
 
-  upsertPipelineCategoryCache(category, payload) { this._pipelineCategoryCacheStore.upsertCache(category, payload); }
-  getPipelineCategoryCache(category) { return this._pipelineCategoryCacheStore.getCache(category); }
-  deletePipelineCategoryCache(category) { return this._pipelineCategoryCacheStore.deleteCache(category); }
+  getCompiledRules() { return this._fieldStudioMapStore.getCompiledRules(); }
+  getBootConfig() { return this._fieldStudioMapStore.getBootConfig(); }
+  upsertCompiledRules(compiledRulesJson, bootConfigJson) { return this._fieldStudioMapStore.upsertCompiledRules(compiledRulesJson, bootConfigJson); }
 
 }

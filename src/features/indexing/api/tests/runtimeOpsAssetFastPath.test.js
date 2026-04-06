@@ -7,6 +7,7 @@ import { Writable } from 'node:stream';
 
 import { registerRuntimeOpsRoutes } from '../runtimeOpsRoutes.js';
 import { initIndexLabDataBuilders } from '../builders/indexlabDataBuilders.js';
+import { SpecDb } from '../../../../db/specDb.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -102,6 +103,24 @@ async function createAssetFixture() {
   const pngContent = Buffer.from('fake-png-bytes');
   await fs.writeFile(path.join(screenshotsDir, 'shot1.png'), pngContent);
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed an in-memory SpecDb so run lookups succeed.
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'keyboard' });
+  specDb.upsertRun({
+    run_id: runId,
+    category: 'keyboard',
+    product_id: 'keyboard-test',
+    status: 'completed',
+    started_at: '2026-02-20T00:00:00.000Z',
+    ended_at: '2026-02-20T00:10:00.000Z',
+    stage_cursor: '',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: {},
+  });
+
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot,
@@ -111,7 +130,7 @@ async function createAssetFixture() {
       readJsonOrNull: async () => null,
     },
     config: {},
-    getSpecDbReady: () => false,
+    getSpecDbReady: async () => specDb,
     isProcessRunning: () => false,
   });
 
@@ -133,7 +152,6 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: {},
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
         readRunSummaryEvents: async () => [],
         readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
@@ -171,7 +189,6 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: {},
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
         readRunSummaryEvents: async () => [],
         readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
@@ -209,7 +226,6 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: {},
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
         readRunSummaryEvents: async () => [],
         readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
@@ -250,7 +266,6 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: {},
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
         readRunSummaryEvents: async () => [],
         readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),

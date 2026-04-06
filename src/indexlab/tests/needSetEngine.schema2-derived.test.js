@@ -56,17 +56,6 @@ describe('Phase 01 â€” Schema 2 reasons[] derivation', () => {
     assert.ok(wField.reasons.includes('low_conf'));
   });
 
-  it('insufficient refs â†’ reasons includes "min_refs_fail"', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required', min_evidence_refs: 3 } },
-      provenance: { weight: { value: '58g', confidence: 0.95, pass_target: 0.8, evidence: [{ url: 'a', tier: 1 }] } }
-    }));
-    const wField = result.fields.find((f) => f.field_key === 'weight');
-    assert.ok(wField.reasons.includes('min_refs_fail'),
-      `reasons should include min_refs_fail, got: ${JSON.stringify(wField.reasons)}`);
-  });
-
   it('accepted field â†’ empty reasons', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: {

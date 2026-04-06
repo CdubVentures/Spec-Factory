@@ -170,7 +170,6 @@ registerChipFamilyCases('resolveBlockerBadge', resolveBlockerBadge, [
   ['missing', 'neutral'],
   ['weak', 'warning'],
   ['conflict', 'danger'],
-  ['needs_exact_match', 'confirm'],
 ]);
 
 describe('resolveNeedsetState', () => {

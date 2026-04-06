@@ -11,7 +11,7 @@ export function createStudioRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
     listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
-    getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
+    getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
     reviewLayoutByCategory, appDb,
   } = options;
 
@@ -19,7 +19,7 @@ export function createStudioRouteContext(options = {}) {
     jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
     listFiles, fs, path, sessionCache, saveFieldStudioMap,
     validateFieldStudioMap, invalidateFieldRulesCache, buildFieldLabelsMap,
-    getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
+    getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
     reviewLayoutByCategory, cleanVariant,
     runEnumConsistencyReview, appDb,
   };

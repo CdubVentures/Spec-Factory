@@ -68,9 +68,18 @@ export async function buildReviewLayout({
   fieldOrderOverride = null,
   fieldsOverride = null,
   studioMap: studioMapOverride = null,
+  specDb = null,
 }) {
-  const categoryConfig = await loadCategoryConfig(category, { storage, config });
-  const compiledFields = categoryConfig.fieldRules?.fields || {};
+  let compiledFields, compiledFieldOrder;
+  const compiledRulesBlob = specDb?.getCompiledRules?.() ?? null;
+  if (compiledRulesBlob) {
+    compiledFields = compiledRulesBlob.fields || {};
+    compiledFieldOrder = compiledRulesBlob.field_order || Object.keys(compiledFields);
+  } else {
+    const categoryConfig = await loadCategoryConfig(category, { storage, config });
+    compiledFields = categoryConfig.fieldRules?.fields || {};
+    compiledFieldOrder = categoryConfig.fieldOrder || Object.keys(compiledFields);
+  }
   const mergedFields = fieldsOverride
     ? Object.fromEntries(Object.keys({ ...compiledFields, ...fieldsOverride }).map((k) => {
         const compiled = isObject(compiledFields[k]) ? compiledFields[k] : {};
@@ -84,7 +93,7 @@ export async function buildReviewLayout({
   const studioMap = studioMapOverride || null;
   const mapPath = '';
 
-  const compiledFieldList = categoryConfig.fieldOrder || Object.keys(fields || {});
+  const compiledFieldList = compiledFieldOrder || Object.keys(fields || {});
   const fieldSource = Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0
     ? (() => {
         const draftKeys = fieldOrderOverride.filter((k) => !String(k).startsWith('__grp::'));

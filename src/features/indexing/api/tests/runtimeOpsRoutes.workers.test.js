@@ -61,6 +61,14 @@ test('runtimeOpsRoutes: worker detail hydrates screenshot metadata from resolved
       },
     ];
 
+    const runMeta = {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-test-brand-model',
+      started_at: '2026-02-20T00:00:00.000Z',
+      ended_at: '2026-02-20T00:10:00.000Z',
+      status: 'completed',
+    };
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
@@ -68,8 +76,8 @@ test('runtimeOpsRoutes: worker detail hydrates screenshot metadata from resolved
       fs,
       safeStat: statOrNull,
       config: {},
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
+      readIndexLabRunMeta: async () => runMeta,
     });
 
     const res = createMockRes();
@@ -208,8 +216,14 @@ test('runtimeOpsRoutes: worker detail surfaces provisional extraction fields fro
       fs,
       safeStat: statOrNull,
       config: {},
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
+      readIndexLabRunMeta: async () => ({
+        run_id: runId,
+        category: 'mouse',
+        product_id: 'mouse-test-brand-model',
+        started_at: '2026-02-20T00:00:00.000Z',
+        status: 'running',
+      }),
     });
 
     const detailRes = createMockRes();

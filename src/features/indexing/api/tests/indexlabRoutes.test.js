@@ -10,6 +10,7 @@ import {
   resolveIndexLabRunDirectory,
 } from '../builders/indexlabDataBuilders.js';
 import { registerIndexlabRoutes } from '../indexlabRoutes.js';
+import { SpecDb } from '../../../../db/specDb.js';
 
 function createMockRes() {
   const res = {
@@ -111,7 +112,6 @@ function createIndexlabRouteHandler(overrides = {}) {
     getSpecDb: () => mockSpecDb,
     readIndexLabRunMeta: () => null,
     resolveIndexLabRunDirectory: () => '',
-    readIndexLabRunEvents: () => [],
     readRunSummaryEvents: () => [],
     readIndexLabRunNeedSet: () => null,
     readIndexLabRunSearchProfile: () => null,
@@ -187,12 +187,30 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
     'utf8',
   );
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed an in-memory SpecDb so the run resolves.
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.upsertRun({
+    run_id: runId,
+    category: 'mouse',
+    product_id: 'mouse-run-terminal-state',
+    status: 'running',
+    started_at: '2026-02-22T00:00:00.000Z',
+    ended_at: '',
+    stage_cursor: '',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: {},
+  });
+
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot,
     storage: storageStub(),
     config: {},
-    getSpecDbReady: () => false,
+    getSpecDbReady: async () => specDb,
     isProcessRunning: () => false,
   });
 
@@ -202,10 +220,6 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
       processStatus: () => ({ running: false, run_id: null }),
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
-      readIndexLabRunEvents: async () => {
-        const text = await fs.readFile(path.join(runDir, 'run_events.ndjson'), 'utf8');
-        return text.trim().split('\n').map((line) => JSON.parse(line));
-      },
       readRunSummaryEvents: async () => {
         const text = await fs.readFile(path.join(runDir, 'run_events.ndjson'), 'utf8');
         return text.trim().split('\n').map((line) => JSON.parse(line));
@@ -218,7 +232,6 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
 
     const res = createMockRes();
     await handler(['indexlab', 'run', runId], new URLSearchParams(), 'GET', null, res);
-    // Disk checkpoints now backfill run detail when the SQL row is missing.
     const body = parseResBody(res);
     assert.equal(res.statusCode, 200);
     assert.equal(body.run_id, runId);

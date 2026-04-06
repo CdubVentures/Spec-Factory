@@ -225,7 +225,6 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
               ['missing', blockers.missing, '\u25CB'],
               ['weak_evidence', blockers.weak, '\u25D0'],
               ['conflict', blockers.conflict, '\u2298'],
-              ['needs_exact_match', blockers.needs_exact_match, '\u25C8'],
             ] as const).map(([key, count, icon]) => (
               <div
                 key={key}

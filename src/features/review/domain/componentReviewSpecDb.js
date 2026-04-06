@@ -55,17 +55,17 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
   // Load review items from SQL (component_review_queue table)
   const reviewItems = specDb.getComponentReviewItems(componentType) || [];
 
-  // Immutable reference baseline for this component type from component DB.
+  // Immutable reference baseline for this component type from compiled_rules blob.
   const refDbByIdentity = new Map();
   const refDbByName = new Map();
   try {
-    const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
-    const dbFiles = await listJsonFiles(dbDir);
-    for (const fileName of dbFiles) {
-      const dbData = await safeReadJson(path.join(dbDir, fileName));
-      if (!dbData || dbData.component_type !== componentType) continue;
-      for (const item of toArray(dbData.items)) {
-        const name = String(item?.name || '').trim();
+    const compiledRules = specDb.getCompiledRules() || {};
+    const allComponentDbs = compiledRules.component_dbs || {};
+    const matchedDb = Object.values(allComponentDbs).find(db => db?.component_type === componentType);
+    if (matchedDb) {
+      const items = toArray(matchedDb.items || Object.values(matchedDb.entries || {}));
+      for (const item of items) {
+        const name = String(item?.name || item?.canonical_name || '').trim();
         if (!name) continue;
         const maker = String(item?.maker || '').trim();
         const identityKey = `${name.toLowerCase()}::${maker.toLowerCase()}`;
@@ -74,7 +74,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
           refDbByName.set(name.toLowerCase(), item);
         }
       }
-      break;
     }
   } catch {
     // Best-effort reference baseline only.

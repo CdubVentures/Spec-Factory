@@ -88,7 +88,7 @@ describe('Phase 01 â€” Field State Derivation', () => {
   it('covered field â†’ excluded from rows', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required', min_evidence_refs: 1 } },
+      fieldRules: { weight: { required_level: 'required' } },
       provenance: {
         weight: {
           value: '58g', confidence: 0.95, pass_target: 0.8, meets_pass_target: true,

@@ -11,10 +11,11 @@ import {
   createStorageStub,
   initIndexLabDataBuilders,
   parseResBody,
-  readIndexLabRunEvents,
   readIndexLabRunMeta,
+  readRunSummaryEvents,
   resolveIndexLabRunDirectory,
   setupFixture,
+  SpecDb,
 } from './helpers/runtimeOpsRoutesHarness.js';
 
 test('runtimeOpsRoutes: missing runId returns false (no match)', async () => {
@@ -22,7 +23,6 @@ test('runtimeOpsRoutes: missing runId returns false (no match)', async () => {
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();
@@ -38,7 +38,6 @@ test('runtimeOpsRoutes: non-existent run returns 404', async () => {
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();
@@ -80,12 +79,30 @@ test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local liv
     ],
   });
 
+  // WHY: readIndexLabRunMeta is SQL-only — seed an in-memory SpecDb so the canonical run_id resolves.
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.upsertRun({
+    run_id: canonicalRunId,
+    category: 'mouse',
+    product_id: 'mouse-test-brand-model',
+    status: 'completed',
+    started_at: '2026-02-20T00:00:00.000Z',
+    ended_at: '2026-02-20T00:10:00.000Z',
+    stage_cursor: '',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: {},
+  });
+
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot,
     storage: createStorageStub(),
     config: {},
-    getSpecDbReady: () => false,
+    getSpecDbReady: async () => specDb,
     isProcessRunning: () => false,
   });
 
@@ -96,8 +113,7 @@ test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local liv
       storage: {
         resolveLocalPath: (key) => path.join(outputRoot, ...String(key || '').split('/')),
       },
-      readIndexLabRunEvents,
-      readRunSummaryEvents: readIndexLabRunEvents,
+      readRunSummaryEvents,
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
     });
@@ -106,8 +122,7 @@ test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local liv
     await handler(['indexlab', 'run', canonicalRunId, 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
     const body = parseResBody(res);
 
-    // WHY: Disk fallback resolves canonical run_id by scanning run directories
-    // and matching run.json metadata. Returns 200 with summary data.
+    // WHY: SQL-only run meta resolves canonical run_id via the seeded SpecDb.
     assert.equal(res.statusCode, 200);
     assert.ok(body, 'response body should be parseable JSON');
     assert.equal(body.run_id, canonicalRunId);
@@ -125,7 +140,6 @@ test('runtimeOpsRoutes: valid run summary returns correct shape', async () => {
     ];
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
@@ -149,7 +163,6 @@ test('runtimeOpsRoutes: valid run workers returns array', async () => {
     ];
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
@@ -173,7 +186,6 @@ test('runtimeOpsRoutes: documents endpoint respects limit param', async () => {
     ];
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
@@ -195,7 +207,6 @@ test('runtimeOpsRoutes: document detail for unknown URL returns 404', async () =
     ];
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => events,
       readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
@@ -212,7 +223,6 @@ test('runtimeOpsRoutes: unmatched paths return false', async () => {
   try {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
-      readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();

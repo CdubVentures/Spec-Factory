@@ -1,6 +1,7 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { loadFieldStudioMap } from '../../../ingest/categoryCompile.js';
 import { hashJson } from '../../../ingest/compileUtils.js';
+import { reseedCompiledRulesAndBootConfig } from '../../../features/studio/fieldStudioMapReseed.js';
 
 function categoryFromCliArgs(cliArgs) {
   if (!Array.isArray(cliArgs)) return '';
@@ -45,6 +46,11 @@ export async function handleCompileProcessCompletion({
           const json = JSON.stringify(loaded.map);
           specDb.upsertFieldStudioMap(json, hashJson(loaded.map));
         }
+        // WHY: Also populate compiled_rules + boot_config from fresh compile output.
+        await reseedCompiledRulesAndBootConfig({
+          specDb,
+          helperRoot: 'category_authority',
+        }).catch((e) => logError?.(`[compile-sync] compiled_rules sync failed for ${category}:`, e?.message || e));
       }
     } catch (err) {
       logError?.(`[compile-sync] field_studio_map SQL re-sync failed for ${category}:`, err?.message || err);

@@ -127,19 +127,13 @@ describe('Phase 01 â€” Schema 2 Summary (9-field)', () => {
   });
 });
 
-describe('Phase 01 â€” Schema 2 Blockers (5-field)', () => {
-  it('blockers has all 5 fields', () => {
+describe('Phase 01 — Schema 2 Blockers', () => {
+  it('blockers has all 4 fields', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(typeof result.blockers.missing, 'number');
     assert.equal(typeof result.blockers.weak, 'number');
     assert.equal(typeof result.blockers.conflict, 'number');
-    assert.equal(typeof result.blockers.needs_exact_match, 'number');
     assert.equal(typeof result.blockers.search_exhausted, 'number');
-  });
-
-  it('needs_exact_match defaults to 0 (no exact_match rules exist)', () => {
-    const result = computeNeedSet(makeBaseInput());
-    assert.equal(result.blockers.needs_exact_match, 0);
   });
 
   it('search_exhausted defaults to 0 on round 0', () => {
@@ -166,15 +160,12 @@ describe('Phase 01 â€” Schema 2 fields[] per-field shape', () => {
     assert.equal(typeof wField.confidence, 'number');
     assert.equal(typeof wField.effective_confidence, 'number');
     assert.equal(typeof wField.refs_found, 'number');
-    assert.equal(typeof wField.min_refs, 'number');
     assert.equal(typeof wField.pass_target, 'number');
     assert.equal(typeof wField.meets_pass_target, 'boolean');
-    assert.equal(typeof wField.exact_match_required, 'boolean');
     assert.equal(typeof wField.need_score, 'number');
 
     // idx block
     assert.ok(wField.idx, 'idx must exist');
-    assert.equal(typeof wField.idx.min_evidence_refs, 'number');
     assert.ok(Array.isArray(wField.idx.query_terms));
     assert.ok(Array.isArray(wField.idx.domain_hints));
     assert.ok(Array.isArray(wField.idx.content_types));

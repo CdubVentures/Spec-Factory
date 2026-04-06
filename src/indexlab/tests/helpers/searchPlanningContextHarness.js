@@ -29,7 +29,6 @@ export function makeField(overrides = {}) {
     group_key: null,
     required_level: 'optional',
     idx: {
-      min_evidence_refs: 0,
       query_terms: [],
       domain_hints: [],
       content_types: [],
@@ -45,7 +44,6 @@ export function makeField(overrides = {}) {
     best_tier_seen: null,
     pass_target: 0.8,
     meets_pass_target: false,
-    exact_match_required: false,
     need_score: 10,
     reasons: ['missing'],
     history: {
@@ -100,7 +98,7 @@ export function makeNeedSetOutput(overrides = {}) {
       conflicts: 0,
       bundles_planned: 0,
     },
-    blockers: { missing: 0, weak: 0, conflict: 0, needs_exact_match: 0, search_exhausted: 0 },
+    blockers: { missing: 0, weak: 0, conflict: 0, search_exhausted: 0 },
     focus_fields: [],
     bundles: [],
     profile_mix: {},

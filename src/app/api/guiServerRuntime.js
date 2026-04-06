@@ -184,7 +184,7 @@ export function createGuiServerRuntime({
       studioRouteContext: createStudioRouteContext({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
         listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
-        getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
+        getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
         reviewLayoutByCategory, appDb,
       }),
       catalogRouteContext: createCatalogRouteContext({
@@ -207,7 +207,7 @@ export function createGuiServerRuntime({
       reviewRouteContext: createReviewRouteContext({
         jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
         HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
-        loadCategoryConfig, sessionCache, reviewLayoutByCategory,
+        sessionCache, reviewLayoutByCategory,
         broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson,
         syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
         getPendingItemPrimaryCandidateIds, markPrimaryLaneReviewedInItemState,
