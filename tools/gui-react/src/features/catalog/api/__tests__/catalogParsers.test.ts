@@ -35,7 +35,7 @@ describe('parseCatalogRows', () => {
 
 describe('parseCatalogProducts', () => {
   it('returns valid array input unchanged', () => {
-    const input = [{ productId: 'a', seed_urls: [] }];
+    const input = [{ productId: 'a' }];
     deepStrictEqual(parseCatalogProducts(input), input);
   });
 

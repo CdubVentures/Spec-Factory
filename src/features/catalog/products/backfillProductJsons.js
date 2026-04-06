@@ -17,11 +17,6 @@ export function backfillProductJsons({ specDb, category, productRoot }) {
     const pid = row.product_id;
     if (!pid) continue;
 
-    let seedUrls = [];
-    try {
-      seedUrls = row.seed_urls ? JSON.parse(row.seed_urls) : [];
-    } catch { /* ignore parse errors */ }
-
     const cat = category || row.category || '';
     const identity = normalizeProductIdentity(cat, row.brand, row.base_model, row.variant);
 
@@ -35,7 +30,6 @@ export function backfillProductJsons({ specDb, category, productRoot }) {
         variant: identity.variant,
         brand_identifier: row.brand_identifier || '',
       },
-      seedUrls: Array.isArray(seedUrls) ? seedUrls : [],
       identifier: row.identifier || '',
       productRoot,
     });

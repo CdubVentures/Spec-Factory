@@ -309,7 +309,9 @@ export async function analyzeContract(helperRoot, category) {
 
   const fields = isObj(fieldRules.fields) ? fieldRules.fields : {};
   const fieldKeys = Object.keys(fields).sort();
-  const kvFields = isObj(knownValues.fields) ? knownValues.fields : {};
+  const kvFields = isObj(knownValues.enums)
+    ? Object.fromEntries(Object.entries(knownValues.enums).map(([k, v]) => [k, Array.isArray(v?.values) ? v.values : []]))
+    : isObj(knownValues.fields) ? knownValues.fields : {};
   const rules = toArr(crossRules.rules);
 
   // â”€â”€ Analyze fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1386,7 +1388,6 @@ export function buildTestProducts(category, contractAnalysis) {
         id: 9000 + sc.id,
         identifier: `test${String(sc.id).padStart(3, '0')}a`
       },
-      seedUrls: [],
       anchors: {},
       _testCase: { id: sc.id, name: sc.name, description: sc.desc, category: sc.category }
     };
@@ -1433,7 +1434,9 @@ function buildComponentSummary(componentDBs) {
 
 function buildKnownValuesSummary(knownValues) {
   const summary = {};
-  const kvFields = isObj(knownValues.fields) ? knownValues.fields : knownValues;
+  const kvFields = isObj(knownValues.enums)
+    ? Object.fromEntries(Object.entries(knownValues.enums).map(([k, v]) => [k, Array.isArray(v?.values) ? v.values : []]))
+    : isObj(knownValues.fields) ? knownValues.fields : knownValues;
   for (const [key, values] of Object.entries(kvFields)) {
     if (!Array.isArray(values)) continue;
     summary[key] = values.slice(0, 10);

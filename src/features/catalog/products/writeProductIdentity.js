@@ -11,7 +11,6 @@ export function writeProductIdentity({
   productId,
   category,
   identity = {},
-  seedUrls,
   identifier,
   productRoot,
 }) {
@@ -35,7 +34,6 @@ export function writeProductIdentity({
       model: String(identity.model || ''),
       variant: String(identity.variant || ''),
       brand_identifier: String(identity.brand_identifier || ''),
-      seed_urls: Array.isArray(seedUrls) ? seedUrls : [],
       identifier: String(identifier || identity.identifier || ''),
       status: String(identity.status || 'active'),
     },

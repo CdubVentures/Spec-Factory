@@ -234,11 +234,21 @@ export function assembleCompileOutput({
     fields: uiFieldCatalogRows.sort((a, b) => (asInt(a.order, 0) - asInt(b.order, 0)) || a.key.localeCompare(b.key))
   };
 
+  // WHY: Write enums form with per-field policy so the seed chain reads
+  // the correct enum_policy per field (e.g., 'closed' for colors).
   const knownValuesArtifact = {
     version: 1,
     category,
     generated_at: compileTimestamp,
-    fields: sortDeep(knownValues)
+    enums: Object.fromEntries(
+      Object.entries(knownValues).map(([fieldKey, values]) => [
+        fieldKey,
+        {
+          policy: fieldsRuntime[fieldKey]?.enum_policy || 'open',
+          values: sortDeep(values),
+        },
+      ])
+    ),
   };
 
   // ── Cross-check runtime ↔ UI keys ──

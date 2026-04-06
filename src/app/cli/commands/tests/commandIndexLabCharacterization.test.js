@@ -74,7 +74,6 @@ test('commandIndexLab characterization: existing fixture file is read via s3Key'
     productId: 'mouse-abc12345',
     category: 'mouse',
     identityLock: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
-    seedUrls: [],
   };
   const storage = createMockStorage();
   storage.jsonStore.set('specs/inputs/mouse/products/mouse-abc12345.json', existingJob);

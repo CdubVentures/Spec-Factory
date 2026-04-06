@@ -14,7 +14,7 @@ import {
 
 test('buildPreFetchPhases: Search Plan needset_computed supersedes initial baseline needset', () => {
   const events = [
-    // Initial baseline (from bootstrapRunProductExecutionState)
+    // Initial baseline (from bootstrapRunConfig)
     makeEvent('needset_computed', {
       needset_size: 24,
       total_fields: 42,

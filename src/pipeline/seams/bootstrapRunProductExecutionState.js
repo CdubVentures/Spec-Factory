@@ -1,41 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { loadCategoryConfig } from '../../categories/loader.js';
 import {
-  buildIndexlabRuntimeCategoryConfig,
-  loadRouteMatrixPolicyForRun,
   stableHash,
 } from '../../features/indexing/orchestration/shared/index.js';
 import {
   createRunLlmRuntime,
 } from '../../features/indexing/orchestration/bootstrap/index.js';
-import {
-  buildDiscoverySeedPlanContext,
-  runDiscoverySeedPlan,
-} from '../../features/indexing/pipeline/orchestration/index.js';
-import { buildOrderedFetchPlan } from '../../features/indexing/pipeline/domainClassifier/runDomainClassifier.js';
-// WHY: Adapter subsystem removed — baseline LLM extraction handles all sources.
-// No-op factory preserves DI shape while adapters are retired.
-function createNoOpAdapterManager() {
-  return {
-    collectSeedUrls: () => [],
-    extractForPage: async () => ({}),
-    runDedicatedAdapters: async () => ({ syntheticSources: [], adapterArtifacts: [] }),
-  };
-}
 import { readBillingSnapshot } from '../../billing/costLedger.js';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { normalizeCostRates } from '../../billing/costRates.js';
-import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 import { appendCostLedgerEntry } from '../../billing/costLedger.js';
+import { loadPipelineBootConfig } from './loadPipelineBootConfig.js';
 
 const DEFAULT_DEPS = {
-  loadCategoryConfigFn: loadCategoryConfig,
-  buildIndexlabRuntimeCategoryConfigFn: buildIndexlabRuntimeCategoryConfig,
-  loadRouteMatrixPolicyForRunFn: loadRouteMatrixPolicyForRun,
-  createAdapterManagerFn: createNoOpAdapterManager,
+  loadPipelineBootConfigFn: loadPipelineBootConfig,
   readBillingSnapshotFn: readBillingSnapshot,
   createRunLlmRuntimeFn: createRunLlmRuntime,
   normalizeCostRatesFn: normalizeCostRates,
@@ -44,14 +24,10 @@ const DEFAULT_DEPS = {
   defaultIndexLabRootFn: defaultIndexLabRoot,
   joinPathFn: path.join,
   mkdirSyncFn: fs.mkdirSync,
-  normalizeFieldListFn: normalizeFieldList,
   computeNeedSetFn: computeNeedSet,
-  buildDiscoverySeedPlanContextFn: buildDiscoverySeedPlanContext,
-  runDiscoverySeedPlanFn: runDiscoverySeedPlan,
-  buildOrderedFetchPlanFn: buildOrderedFetchPlan,
 };
 
-export async function bootstrapRunProductExecutionState({
+export async function bootstrapRunConfig({
   storage,
   config,
   logger,
@@ -71,58 +47,26 @@ export async function bootstrapRunProductExecutionState({
 } = {}) {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
 
+  // WHY: DB-first boot — reads one cached row instead of ~11 JSON files.
   logger.info('bootstrap_step', { step: 'config', progress: 0 });
-  const authoringCategoryConfig = await runtimeDeps.loadCategoryConfigFn(category, { storage, config });
-  const categoryConfig = runtimeDeps.buildIndexlabRuntimeCategoryConfigFn(authoringCategoryConfig);
-
-  logger.info('bootstrap_step', { step: 'storage', progress: 15 });
-  const routeMatrixPolicy = await runtimeDeps.loadRouteMatrixPolicyForRunFn({
-    config,
-    category,
-    categoryConfig,
-    logger,
-  });
-  logger.info('route_matrix_policy_resolved', {
-    category,
-    source: routeMatrixPolicy.source,
-    row_count: Number(routeMatrixPolicy.row_count || 0),
-    route_key: routeMatrixPolicy.route_key || null,
-    model_ladder_today: routeMatrixPolicy.model_ladder_today || '',
-    max_tokens: Number(routeMatrixPolicy.max_tokens || 0),
-    single_source_data: Boolean(routeMatrixPolicy.single_source_data),
-    all_source_data: Boolean(routeMatrixPolicy.all_source_data),
-    enable_websearch: Boolean(routeMatrixPolicy.enable_websearch),
-    all_sources_confidence_repatch: Boolean(routeMatrixPolicy.all_sources_confidence_repatch),
-    insufficient_evidence_action: routeMatrixPolicy.insufficient_evidence_action || 'threshold_unmet',
-    scalar_linked_send: routeMatrixPolicy.scalar_linked_send,
-    component_values_send: routeMatrixPolicy.component_values_send,
-    list_values_send: routeMatrixPolicy.list_values_send,
-    min_evidence_refs_effective: Number(routeMatrixPolicy.min_evidence_refs_effective || 1),
-    prime_sources_visual_send: Boolean(routeMatrixPolicy.prime_sources_visual_send),
-  });
+  const categoryConfig = runtimeDeps.loadPipelineBootConfigFn({ specDb, category });
 
   const billingMonth = new Date().toISOString().slice(0, 7);
   const fieldOrder = categoryConfig.fieldOrder;
   const requiredFields = job.requirements?.requiredFields || categoryConfig.requiredFields;
 
-  // WHY: Planner removed. Collect seeds as plain arrays and blocked hosts from
-  // runtime overrides. Discovery pipeline runs without a planner — bootstrapPhase
-  // generates manufacturerSeedUrls on ctx, and domainClassifierPhase skips enqueue.
-  logger.info('bootstrap_step', { step: 'seeds', progress: 40 });
-  const runtimeOverrides = await syncRuntimeOverrides({ force: true });
+  // WHY: syncRuntimeOverrides and readBillingSnapshot are independent — run in parallel.
+  logger.info('bootstrap_step', { step: 'billing', progress: 40 });
+  const [runtimeOverrides, billingSnapshot] = await Promise.all([
+    syncRuntimeOverrides({ force: true }),
+    runtimeDeps.readBillingSnapshotFn({ storage, month: billingMonth, productId, specDb }),
+  ]);
   const blockedHosts = new Set(runtimeOverrides?.blocked_domains || []);
-  const seedUrls = job.seedUrls || [];
 
   const brand = String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim();
   const model = String(identityLock.model || job?.identityLock?.model || '').trim();
 
   logger.info('bootstrap_step', { step: 'llm', progress: 65 });
-  const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({
-    storage,
-    month: billingMonth,
-    productId,
-    specDb,
-  });
   const llmRuntime = runtimeDeps.createRunLlmRuntimeFn({
     storage,
     config,
@@ -131,7 +75,6 @@ export async function bootstrapRunProductExecutionState({
     runId,
     roundContext,
     runtimeMode,
-    routeMatrixPolicy,
     runtimeOverrides,
     specDb,
     billingSnapshot,
@@ -183,40 +126,12 @@ export async function bootstrapRunProductExecutionState({
       ? initialNeedSet.fields.filter((f) => f.state !== 'accepted').length : 0,
   });
 
-  // WHY: Discovery pipeline runs without a planner. bootstrapPhase generates
-  // manufacturerSeedUrls on ctx. domainClassifierPhase skips planner.enqueue().
-  const discoveryResult = await runtimeDeps.runDiscoverySeedPlanFn({
-    ...runtimeDeps.buildDiscoverySeedPlanContextFn({
-      config,
-      runtimeOverrides,
-      storage,
-      category,
-      categoryConfig,
-      job,
-      runId,
-      logger,
-      roundContext,
-      requiredFields,
-      llmContext,
-      frontierDb,
-      planner: null,
-      normalizeFieldList: runtimeDeps.normalizeFieldListFn,
-    }),
-  });
-
-  const { orderedSources, workerIdMap, stats } = runtimeDeps.buildOrderedFetchPlanFn({
-    discoveryResult,
-    seedUrls,
-    blockedHosts,
-    config,
-    logger,
-  });
-
   return {
-    orderedFetchPlan: orderedSources,
-    workerIdMap,
-    fetchPlanStats: stats,
+    categoryConfig,
     runtimeOverrides,
-    discoveryResult,
+    llmContext,
+    initialNeedSet,
+    blockedHosts,
+    requiredFields,
   };
 }

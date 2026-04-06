@@ -8,7 +8,6 @@ export {
   buildRunBootstrapLogPayload,
 } from './createRunLoggerBootstrap.js';
 
-export { filterResumeSeedUrls } from './filterResumeSeedUrls.js';
 export { buildRunRuntimePhaseCallsiteContext } from './buildRunRuntimePhaseCallsiteContext.js';
 export { buildRunRuntimeContext } from './buildRunRuntimeContext.js';
 export { buildRuntimeOverridesLoaderPhaseCallsiteContext } from './buildRuntimeOverridesLoaderPhaseCallsiteContext.js';

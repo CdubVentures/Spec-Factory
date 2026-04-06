@@ -149,7 +149,6 @@ function seedProductCheckpoint(specDb, cp) {
     base_model: normalized.base_model,
     variant: normalized.variant,
     status: raw.status || 'active',
-    seed_urls: Array.isArray(raw.seed_urls) ? JSON.stringify(raw.seed_urls) : (raw.seed_urls || null),
     identifier: raw.identifier || null,
     brand_identifier: raw.brand_identifier || '',
   });

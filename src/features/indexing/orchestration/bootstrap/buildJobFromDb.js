@@ -4,20 +4,9 @@
 
 import { normalizeProductIdentity } from '../../../catalog/identity/identityDedup.js';
 
-function parseSeedUrls(raw) {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 /**
  * @param {{ productId: string, category: string, specDb: { getProduct(pid: string): object|null }|null }} opts
- * @returns {{ productId: string, category: string, identityLock: object, seedUrls: string[] }|null}
+ * @returns {{ productId: string, category: string, identityLock: object }|null}
  */
 export function buildJobFromDb({ productId, category, specDb }) {
   if (!specDb || !productId || !category) return null;
@@ -43,6 +32,5 @@ export function buildJobFromDb({ productId, category, specDb }) {
       sku: '',
       title: '',
     },
-    seedUrls: parseSeedUrls(row.seed_urls),
   };
 }

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Field Publisher Implementation Plan</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+
+/* Tags */
+.tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap;display:inline-block}
+.tag-accent{background:var(--accent-s);color:var(--accent)}
+.tag-green{background:var(--green-s);color:var(--green)}
+.tag-amber{background:var(--amber-s);color:var(--amber)}
+.tag-violet{background:var(--violet-s);color:var(--violet)}
+.tag-rose{background:var(--rose-s);color:var(--rose)}
+.tag-cyan{background:var(--cyan-s);color:var(--cyan)}
+
+/* Phase cards */
+.phase{background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;overflow:hidden;transition:border-color 0.15s}
+.phase:hover{border-color:var(--border-f)}
+.phase-head{padding:24px 28px 20px;border-bottom:1px solid var(--border)}
+.phase-head h2{font-size:1.2rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.phase-head .desc{color:var(--t2);font-size:0.85rem;max-width:720px}
+.phase-body{padding:24px 28px}
+
+/* Dependency bar */
+.dep-bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.dep-label{font-size:0.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em}
+
+/* Deliverables list */
+.deliverables{list-style:none;margin:0;padding:0}
+.deliverables li{padding:10px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;font-size:0.88rem}
+.deliverables li:last-child{border-bottom:none}
+.deliverables .file{font-family:var(--mono);font-size:0.8rem;color:var(--accent);font-weight:500}
+.deliverables .what{color:var(--t2);font-size:0.82rem;margin-top:2px}
+
+/* Section labels */
+.section-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;margin-top:24px;padding-left:2px}
+.section-label:first-child{margin-top:0}
+
+/* Flow diagram */
+.flow{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:20px 24px;font-family:var(--mono);font-size:0.8rem;color:var(--t2);line-height:2;overflow-x:auto;white-space:pre;margin:16px 0}
+.flow .hl{color:var(--accent);font-weight:600}
+.flow .ok{color:var(--green);font-weight:600}
+.flow .warn{color:var(--amber);font-weight:600}
+.flow .dim{color:var(--t3)}
+
+/* JSON blocks */
+.json{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:14px 16px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.7;overflow-x:auto;white-space:pre;margin:12px 0}
+
+/* Principle cards */
+.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:16px 0}
+.principle-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color 0.15s}
+.principle-card:hover{border-color:var(--border-f)}
+.principle-card h4{font-size:0.88rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em}
+.principle-card p{font-size:0.82rem;color:var(--t2);line-height:1.55}
+
+/* SQL block */
+.sql{background:#1e293b;border-radius:8px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:#e2e8f0;line-height:1.7;overflow-x:auto;white-space:pre;margin:12px 0}
+.sql .kw{color:#7dd3fc}
+.sql .str{color:#86efac}
+.sql .cm{color:#64748b}
+
+/* Contract box */
+.contract{background:var(--s1);border:2px solid var(--accent);border-radius:10px;padding:20px 24px;margin:16px 0}
+.contract h4{font-size:0.9rem;font-weight:700;color:var(--accent);margin-bottom:8px}
+.contract p,.contract li{font-size:0.84rem;color:var(--t2);line-height:1.6}
+.contract ul{padding-left:20px;margin-top:8px}
+
+/* Timeline connector */
+.timeline{position:relative;padding-left:32px;margin:20px 0}
+.timeline::before{content:"";position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--s3)}
+.timeline-item{position:relative;padding-bottom:20px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-item::before{content:"";position:absolute;left:-25px;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid var(--s3);background:var(--s1)}
+.timeline-item.done::before{background:var(--green);border-color:var(--green)}
+.timeline-item.active::before{background:var(--accent);border-color:var(--accent)}
+.timeline-item.future::before{background:var(--s1);border-color:var(--s3)}
+.timeline-item h4{font-size:0.88rem;font-weight:700;margin-bottom:2px}
+.timeline-item p{font-size:0.82rem;color:var(--t2)}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin:12px 0}
+.data-table th{text-align:left;padding:8px 12px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:2px solid var(--border);background:var(--s2)}
+.data-table td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .mono{font-family:var(--mono);font-size:0.8rem}
+
+@media(max-width:768px){
+  .page{padding:24px 16px 64px}
+  .header h1{font-size:1.5rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .deliverables li{grid-template-columns:1fr}
+  .principle-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ================================================================== -->
+<!-- HEADER                                                              -->
+<!-- ================================================================== -->
+<header class="header">
+  <h1>Field Publisher &mdash; Implementation Plan</h1>
+  <p>A universal, vertical O(1) module that accepts field values from any source, normalizes via Field Studio rules, resolves by confidence, and publishes to <code>product.json</code> + <code>item_field_state</code>. This is the bridge between extraction sources and the product record.</p>
+  <div class="meta">
+    <span>Planned 2026-04-05</span>
+    <span>6 Phases</span>
+    <span>Contract-first TDD</span>
+  </div>
+</header>
+
+<!-- ================================================================== -->
+<!-- STATS                                                               -->
+<!-- ================================================================== -->
+<div class="stats">
+  <div class="stat"><div class="n" style="color:var(--accent)">6</div><div class="l">Phases</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">1</div><div class="l">Existing Table (evolve)</div></div>
+  <div class="stat"><div class="n" style="color:var(--violet)">1</div><div class="l">New Table</div></div>
+  <div class="stat"><div class="n" style="color:var(--amber)">1</div><div class="l">New Module</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">0&ndash;100</div><div class="l">Confidence Scale</div></div>
+  <div class="stat"><div class="n" style="color:var(--rose)">O(1)</div><div class="l">Source Scaling</div></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ARCHITECTURE PRINCIPLES                                             -->
+<!-- ================================================================== -->
+<div class="section-label">Governing Principles</div>
+<div class="principle-grid">
+  <div class="principle-card">
+    <h4>CQRS Dual-State</h4>
+    <p><strong>JSON = durable memory.</strong> product.json owns fields + candidates. <strong>SQLite = UI projection.</strong> item_field_state + field_candidates are rebuildable read caches. Frontend never reads JSON.</p>
+  </div>
+  <div class="principle-card">
+    <h4>O(1) Source Scaling</h4>
+    <p>Adding a new extraction source = one call to <code>publishFieldValues()</code>. No new tables, no new columns, no new code in the publisher. The source just submits contributions.</p>
+  </div>
+  <div class="principle-card">
+    <h4>O(1) Field Scaling</h4>
+    <p>Adding a new field = one entry in <code>field_studio_map.json</code> &rarr; compile &rarr; publisher picks it up automatically. No hardcoded field logic anywhere.</p>
+  </div>
+  <div class="principle-card">
+    <h4>Field Studio is the Brain</h4>
+    <p>The publisher has zero field-specific knowledge. All normalization rules, aliases, enums, types, and component bindings come from <code>field_rules.json</code> at runtime.</p>
+  </div>
+  <div class="principle-card">
+    <h4>Source = Where Data Came From</h4>
+    <p>For website extraction: the source is the <strong>URL/artifact</strong> (content_hash). For LLM-generated: the source is the <strong>model</strong>. For manual: the source is the <strong>user</strong>. Never the extraction tool.</p>
+  </div>
+  <div class="principle-card">
+    <h4>Highest Confidence Wins</h4>
+    <p>All candidates stored. Agreeing sources cluster by normalized value. The group with the highest-confidence source above the publish threshold gets published. Full audit trail preserved.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- DATA FLOW                                                           -->
+<!-- ================================================================== -->
+<div class="section-label">End-to-End Data Flow</div>
+<div class="flow"><span class="dim">Any source (color finder, crawl extraction, manual override, future sources...)</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="hl">publishFieldValues()</span>  <span class="dim">&larr; universal entry point</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="warn">fieldNormalizer</span>  <span class="dim">&larr; reads field_rules.json per key</span>
+  <span class="dim">  |  aliases &rarr; canonical form</span>
+  <span class="dim">  |  enums &rarr; known_values match</span>
+  <span class="dim">  |  numbers &rarr; parse + round + unit</span>
+  <span class="dim">  |  components &rarr; component_db lookup</span>
+  <span class="dim">  |  arrays &rarr; normalize each element</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="hl">Group by normalized value</span>  <span class="dim">&larr; cluster agreeing sources</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="ok">fieldResolver</span>  <span class="dim">&larr; pick winner &ge; PUBLISH_THRESHOLD</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="ok">Write product.json</span>  <span class="dim">&larr; fields (published) + candidates (all)</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="ok">Project to SQL</span>  <span class="dim">&larr; item_field_state (winners) + field_candidates (all)</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="dim">Frontend reads SQL only</span></div>
+
+<!-- ================================================================== -->
+<!-- PHASE 1                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-1">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-accent">Phase 1</span>
+      Field Studio Wiring &amp; Normalizer
+    </h2>
+    <p class="desc">Build the normalizer that reads field_rules.json and collapses raw values to canonical forms. This is the foundation &mdash; without correct normalization, the publisher creates garbage candidate groups. Field Studio must be the single source of normalization truth.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-green">field_rules.json (exists)</span>
+      <span class="tag tag-green">known_values.json (exists)</span>
+      <span class="tag tag-green">component_db/ (exists)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Why This Is First</div>
+    <p style="font-size:0.85rem;color:var(--t2);margin-bottom:16px">Every subsequent phase depends on normalization being correct. If "Cherry MX Red", "MX Red", and "cherry mx red" aren't collapsed into one canonical value, the candidate grouping is broken, the resolution is broken, and the published fields are wrong. Field Studio already has all the rules &mdash; this phase wires them into a callable pure function.</p>
+
+    <div class="section-label">Deliverables</div>
+    <ul class="deliverables">
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/fieldNormalizer.js</div>
+          <div class="what">Pure function: <code>(fieldKey, rawValue, fieldRules) &rarr; { value, normalized, matchType }</code></div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/tests/fieldNormalizer.test.js</div>
+          <div class="what">Exhaustive test matrix: enum match, alias collapse, number coercion, array normalization, component resolution, unknown passthrough</div>
+        </div>
+        <span class="tag tag-rose">red first</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/fieldPublisherSchema.js</div>
+          <div class="what">Zod schemas: <code>contributionShape</code>, <code>candidateShape</code>, <code>sourceShape</code> (polymorphic: artifact | model | user)</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/README.md</div>
+          <div class="what">Domain contract: purpose, public API, dependencies, invariants</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+    </ul>
+
+    <div class="section-label">Normalization Dispatch Table</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>field_rules.contract.type</th>
+          <th>Normalization Strategy</th>
+          <th>Field Studio Data Used</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">string (enum)</td>
+          <td>Match against known_values + aliases &rarr; canonical enum value</td>
+          <td class="mono">known_values[field], aliases[], enum.values</td>
+        </tr>
+        <tr>
+          <td class="mono">string (free)</td>
+          <td>Slug, lowercase, alias match &rarr; canonical or passthrough</td>
+          <td class="mono">aliases[], parse_templates</td>
+        </tr>
+        <tr>
+          <td class="mono">number</td>
+          <td>Parse numeric, apply rounding rules, validate range</td>
+          <td class="mono">contract.range, contract.rounding, contract.unit</td>
+        </tr>
+        <tr>
+          <td class="mono">array</td>
+          <td>Normalize each element individually, sort, dedup</td>
+          <td class="mono">Per-element: same as scalar type above</td>
+        </tr>
+        <tr>
+          <td class="mono">component-linked</td>
+          <td>Resolve through component_db identity + aliases &rarr; canonical name</td>
+          <td class="mono">component.type, component.property, component_db/</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-label">Normalizer Contract</div>
+    <div class="contract">
+      <h4>fieldNormalizer &mdash; Pure Function Contract</h4>
+      <ul>
+        <li><strong>Input:</strong> <code>{ fieldKey, rawValue, fieldRules, knownValues?, componentDb? }</code></li>
+        <li><strong>Output:</strong> <code>{ value: &lt;canonical&gt;, normalized: boolean, matchType: 'exact'|'alias'|'coerced'|'passthrough' }</code></li>
+        <li><strong>No side effects.</strong> No DB calls, no disk reads. All lookup data passed in.</li>
+        <li><strong>Unknown fields:</strong> If fieldKey not in fieldRules &rarr; return raw value with <code>normalized: false</code></li>
+        <li><strong>Unknown values:</strong> If value doesn't match any alias/enum &rarr; return raw value with <code>matchType: 'passthrough'</code></li>
+        <li><strong>Never throws.</strong> Bad input returns passthrough, never crashes the publisher.</li>
+      </ul>
+    </div>
+
+    <div class="section-label">Test Matrix (Required)</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Scenario</th><th>Input</th><th>Expected</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Exact enum match</td><td class="mono">"IPS" for panel_type</td><td class="mono">{ value: "IPS", matchType: "exact" }</td></tr>
+        <tr><td>Alias collapse</td><td class="mono">"MX Red" for switch_type</td><td class="mono">{ value: "Cherry MX Red", matchType: "alias" }</td></tr>
+        <tr><td>Case normalization</td><td class="mono">"ips" for panel_type</td><td class="mono">{ value: "IPS", matchType: "alias" }</td></tr>
+        <tr><td>Number coercion</td><td class="mono">"58g" for weight</td><td class="mono">{ value: 58, matchType: "coerced" }</td></tr>
+        <tr><td>Number rounding</td><td class="mono">58.347 for weight (2 dec)</td><td class="mono">{ value: 58.35, matchType: "coerced" }</td></tr>
+        <tr><td>Array normalization</td><td class="mono">["Black","black","WHITE"]</td><td class="mono">{ value: ["black","white"], matchType: "alias" }</td></tr>
+        <tr><td>Component resolution</td><td class="mono">"Focus Pro 30K" for sensor</td><td class="mono">{ value: "Razer Focus Pro 30K", matchType: "alias" }</td></tr>
+        <tr><td>Unknown field</td><td class="mono">"foo" for nonexistent_key</td><td class="mono">{ value: "foo", normalized: false }</td></tr>
+        <tr><td>Unknown value</td><td class="mono">"NewPanel9000" for panel_type</td><td class="mono">{ value: "NewPanel9000", matchType: "passthrough" }</td></tr>
+        <tr><td>Null/empty</td><td class="mono">null for any field</td><td class="mono">{ value: null, normalized: false }</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 2                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-2">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-green">Phase 2</span>
+      Publisher Core &amp; Resolver
+    </h2>
+    <p class="desc">Build the orchestrator that accepts contributions from any source, normalizes values, groups candidates by normalized value, and resolves the winner per field. Writes to product.json (fields + candidates). Pure logic &mdash; no SQL yet.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-accent">Phase 1 (normalizer)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Deliverables</div>
+    <ul class="deliverables">
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/fieldResolver.js</div>
+          <div class="what">Pure function: given candidate groups &rarr; pick winner &ge; <code>PUBLISH_THRESHOLD</code>. Returns published field or null.</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/fieldPublisher.js</div>
+          <div class="what">Orchestrator: accept contributions &rarr; read product.json &rarr; normalize &rarr; group &rarr; resolve &rarr; write product.json</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/index.js</div>
+          <div class="what">Public API: exports <code>publishFieldValues()</code> and <code>rebuildFieldsFromJson()</code></div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/tests/fieldResolver.test.js</div>
+          <div class="what">Threshold gating, tie-breaking, empty candidates, single source, multi-source corroboration</div>
+        </div>
+        <span class="tag tag-rose">red first</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/tests/fieldPublisher.test.js</div>
+          <div class="what">Full round-trip: contribute &rarr; normalize &rarr; resolve &rarr; verify product.json written correctly</div>
+        </div>
+        <span class="tag tag-rose">red first</span>
+      </li>
+    </ul>
+
+    <div class="section-label">Publisher Function Signature</div>
+    <div class="json">publishFieldValues({
+  productId,           // "mouse-00345848"
+  category,            // "mouse"
+  contributions: {     // what this source is submitting (must be pre-validated)
+    color:         { value: ["black","white"], confidence: 100 },
+    default_color: { value: "black",          confidence: 100 },
+    editions:      { value: { "cyberpunk-2077-edition": { colors: ["black"] } }, confidence: 100 }
+  },
+  source: {            // polymorphic: who produced this
+    model: "gemini-2.5-flash-lite",   // OR artifact + url  OR user
+    run_id: "cef-run-2"
+  },
+  productRoot,         // .workspace/products root
+  fieldRules,          // compiled field_rules.json — used for deterministic proof
+  knownValues,         // compiled known_values.json — used for enum verification
+  componentDb          // compiled component_db/ (optional, for component fields)
+})
+
+// Returns:
+// { accepted: true,  published: ['color','default_color','editions'] }
+// { accepted: false, rejected: [{ fieldKey, value, reason }] }</div>
+
+    <div class="section-label">Resolver Logic</div>
+    <div class="contract">
+      <h4>Resolution Rules</h4>
+      <ul>
+        <li><strong>Publish threshold:</strong> <code>PUBLISH_CONFIDENCE_THRESHOLD = 70</code> (hardcoded now, setting later)</li>
+        <li><strong>Winner:</strong> Candidate group whose top source has the highest confidence &ge; threshold</li>
+        <li><strong>Tie-break:</strong> More corroborating sources wins. If still tied, most recent <code>submitted_at</code> wins.</li>
+        <li><strong>Below threshold:</strong> Field not published to <code>fields</code>. Candidates still stored.</li>
+        <li><strong>sources array:</strong> Published field carries ALL agreeing sources, ordered confidence descending</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- DETERMINISTIC PROOF GATE                                        -->
+    <!-- ============================================================== -->
+    <div class="section-label" style="margin-top:36px">Deterministic Proof Gate &mdash; Accept or Reject</div>
+    <p style="font-size:0.85rem;color:var(--t2);margin-bottom:16px">The publisher has <strong>zero tolerance for unverifiable data</strong>. It does not fix, retry, or call LLMs. It receives data, checks it against field_rules deterministically, and either accepts or rejects. Validation and fix loops are the <strong>source's responsibility</strong> &mdash; sources must clean their own data before calling the publisher.</p>
+
+    <div class="section-label">Publisher Proof Flow</div>
+    <div class="flow"><span class="hl">Source calls publishFieldValues(contributions)</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="hl">For each field_key in contributions:</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+  <span class="warn">fieldNormalizer</span>(fieldKey, rawValue, fieldRules)
+   <span class="dim">  |  Look up field_rules.fields[fieldKey]</span>
+   <span class="dim">  |  Check contract.type, known_values, aliases, component_db</span>
+   <span class="dim">  |</span>
+   <span class="dim">  |  enum?       &rarr; value in known_values or aliases?</span>
+   <span class="dim">  |  number?     &rarr; parseable? in range? roundable?</span>
+   <span class="dim">  |  array?      &rarr; EVERY element provable?</span>
+   <span class="dim">  |  component?  &rarr; exists in component_db?</span>
+   <span class="dim">  |  string?     &rarr; alias match or exact?</span>
+        <span class="hl">|</span>
+        <span class="hl">v</span>
+   <span class="ok">matchType: 'exact' | 'alias' | 'coerced'</span>  &rarr;  <span class="ok">ACCEPT &mdash; normalize &amp; store</span>
+   <span class="warn">matchType: 'passthrough'</span>                  &rarr;  <span class="warn">REJECT &mdash; entire contribution refused</span>
+
+<span class="dim">No LLM calls. No retries. No fix loops.</span>
+<span class="dim">If the source sends bad data, it gets rejected. Period.</span></div>
+
+    <div class="section-label">Concrete Example: Color Edition Finder</div>
+    <p style="font-size:0.85rem;color:var(--t2);margin-bottom:12px">The color edition finder validates its own LLM output <strong>before</strong> calling the publisher. The finder owns the LLM call, the retry logic, and the fix loop. By the time data reaches the publisher, it must be provably correct.</p>
+
+    <div class="flow"><span class="hl">Color Edition Finder &mdash; Source-Side Validation (BEFORE publisher)</span>
+
+<span class="dim">Step 1: LLM returns response</span>
+  { colors: [<span class="ok">"black"</span>, <span class="ok">"white"</span>, <span class="warn">"chartreuse"</span>, <span class="ok">"red"</span>],
+    editions: { <span class="warn">"super-deluxe-rgb-edition"</span>: { colors: [<span class="ok">"black"</span>] } },
+    default_color: <span class="ok">"black"</span> }
+
+<span class="dim">Step 2: Finder validates against known_values.color (source-side)</span>
+  <span class="ok">"black"</span>       &rarr; registered color    &check;
+  <span class="ok">"white"</span>       &rarr; registered color    &check;
+  <span class="warn">"chartreuse"</span>  &rarr; NOT registered      <strong>&cross;</strong>
+  <span class="ok">"red"</span>         &rarr; registered color    &check;
+
+  <span class="warn">Dirty &rarr; finder re-calls its own LLM with rejection context</span>
+  <span class="dim">(reuses bound callLlm from createColorEditionFinderCallLlm)</span>
+
+<span class="dim">Step 3: LLM fix response (source handles this, not publisher)</span>
+  { colors: [<span class="ok">"black"</span>, <span class="ok">"white"</span>, <span class="ok">"red"</span>],
+    editions: {},
+    default_color: <span class="ok">"black"</span> }
+
+  <span class="ok">All clean &rarr; finder now calls publisher with proven data</span>
+
+<span class="hl">&mdash;&mdash;&mdash; boundary: source &rarr; publisher &mdash;&mdash;&mdash;</span>
+
+<span class="dim">Step 4: Publisher receives proven contribution</span>
+  publishFieldValues({
+    contributions: {
+      color:         { value: [<span class="ok">"black"</span>, <span class="ok">"white"</span>, <span class="ok">"red"</span>], confidence: 100 },
+      default_color: { value: <span class="ok">"black"</span>,                  confidence: 100 },
+      editions:      { value: {},                           confidence: 100 }
+    }
+  })
+
+<span class="dim">Step 5: Publisher normalizer re-verifies (deterministic, no LLM)</span>
+  <span class="ok">"black"</span>  &rarr; known_values &check;   <span class="ok">"white"</span>  &rarr; &check;   <span class="ok">"red"</span>  &rarr; &check;
+  <span class="ok">ALL PROVEN &rarr; accept, group, resolve, publish</span></div>
+
+    <div class="section-label">What If Source Sends Bad Data Anyway?</div>
+    <div class="flow"><span class="warn">Scenario: Source skips validation, sends "chartreuse" to publisher</span>
+
+  Publisher normalizer checks "chartreuse" against field_rules:
+    <span class="warn">NOT in known_values.color</span>
+    <span class="warn">NOT an alias of any known color</span>
+    <span class="warn">matchType: 'passthrough' &rarr; UNVERIFIABLE</span>
+
+  <span class="warn">&rarr; REJECT entire contribution. Nothing stored. Nothing published.</span>
+  <span class="warn">&rarr; Return { accepted: false, rejected: [{ fieldKey: "color", reason: "unverifiable value: chartreuse" }] }</span>
+
+  <span class="dim">Source gets a clear rejection with reasons.</span>
+  <span class="dim">Source is responsible for fixing and resubmitting.</span>
+  <span class="dim">Publisher never guesses, never retries, never calls LLMs.</span></div>
+
+    <div class="contract">
+      <h4>Publisher Proof Contract</h4>
+      <ul>
+        <li><strong>Deterministic only.</strong> The publisher makes zero LLM calls, zero network requests. All verification is local field_rules lookups.</li>
+        <li><strong>Prove or reject.</strong> Every value must resolve to <code>exact</code>, <code>alias</code>, or <code>coerced</code>. Any <code>passthrough</code> = reject entire contribution.</li>
+        <li><strong>One bad value = all bad.</strong> If color array has 9 valid + 1 invalid, ALL 10 are rejected. Don't cherry-pick.</li>
+        <li><strong>Source owns validation.</strong> LLM fix loops, retries, and re-evaluation are the source's job. The publisher is a dumb gate.</li>
+        <li><strong>Clear rejection response.</strong> On reject, publisher returns which fields failed and why, so the source can fix and resubmit.</li>
+        <li><strong>Double-check on accept.</strong> Even if the source pre-validated, the publisher re-verifies. Defense in depth, zero trust.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 3                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-3">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-violet">Phase 3</span>
+      item_field_state Evolution &amp; SQL Projection
+    </h2>
+    <p class="desc">Evolve the existing <code>item_field_state</code> table to carry the published sources array and resolved_at timestamp. Add the new <code>field_candidates</code> table. Wire the publisher to project into both tables after writing product.json.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-green">Phase 2 (publisher core)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Deliverables</div>
+    <ul class="deliverables">
+      <li>
+        <div>
+          <div class="file">src/db/specDbSchema.js</div>
+          <div class="what">Add columns to item_field_state: <code>sources TEXT</code>, <code>resolved_at TEXT</code>. Change confidence guidance to INTEGER 0&ndash;100. Add <code>field_candidates</code> table.</div>
+        </div>
+        <span class="tag tag-amber">evolve</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/db/stores/itemStateStore.js</div>
+          <div class="what">Update upsert/get methods to handle new <code>sources</code> column (JSON serialization + hydration)</div>
+        </div>
+        <span class="tag tag-amber">evolve</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/db/stores/fieldCandidateStore.js</div>
+          <div class="what">New store: upsert, list by product, list by field, delete. Hydrates sources JSON.</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/fieldPublisher.js</div>
+          <div class="what">Add SQL projection step after product.json write: upsert item_field_state + field_candidates</div>
+        </div>
+        <span class="tag tag-amber">evolve</span>
+      </li>
+    </ul>
+
+    <div class="section-label">Table: item_field_state (Evolved)</div>
+    <div class="sql"><span class="cm">-- Existing columns preserved, new columns added</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> item_field_state (
+  id                  <span class="str">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  category            <span class="str">TEXT NOT NULL</span>,
+  product_id          <span class="str">TEXT NOT NULL</span>,
+  field_key           <span class="str">TEXT NOT NULL</span>,
+  value               <span class="str">TEXT</span>,                        <span class="cm">-- JSON-encoded resolved value</span>
+  confidence          <span class="str">INTEGER DEFAULT 0</span>,          <span class="cm">-- 0-100 (was REAL 0-1)</span>
+  source              <span class="str">TEXT DEFAULT 'pipeline'</span>,    <span class="cm">-- legacy compat</span>
+  sources             <span class="str">TEXT DEFAULT '[]'</span>,          <span class="cm">-- NEW: JSON array of agreeing sources</span>
+  resolved_at         <span class="str">TEXT</span>,                        <span class="cm">-- NEW: when winner was resolved</span>
+  accepted_candidate_id <span class="str">TEXT</span>,
+  overridden          <span class="str">INTEGER DEFAULT 0</span>,
+  needs_ai_review     <span class="str">INTEGER DEFAULT 0</span>,
+  ai_review_complete  <span class="str">INTEGER DEFAULT 0</span>,
+  override_source     <span class="str">TEXT</span>,
+  override_value      <span class="str">TEXT</span>,
+  override_reason     <span class="str">TEXT</span>,
+  override_provenance <span class="str">TEXT</span>,
+  overridden_by       <span class="str">TEXT</span>,
+  overridden_at       <span class="str">TEXT</span>,
+  updated_at          <span class="str">TEXT DEFAULT (datetime('now'))</span>,
+  <span class="kw">UNIQUE</span>(category, product_id, field_key)
+);
+<span class="cm">-- Rebuild: product.json &rarr; fields</span></div>
+
+    <div class="section-label">Table: field_candidates (New)</div>
+    <div class="sql"><span class="kw">CREATE TABLE IF NOT EXISTS</span> field_candidates (
+  id              <span class="str">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  category        <span class="str">TEXT NOT NULL</span>,
+  product_id      <span class="str">TEXT NOT NULL</span>,
+  field_key       <span class="str">TEXT NOT NULL</span>,
+  value           <span class="str">TEXT NOT NULL</span>,               <span class="cm">-- JSON-encoded candidate value</span>
+  value_hash      <span class="str">TEXT NOT NULL</span>,               <span class="cm">-- SHA256 of normalized value (PK-safe)</span>
+  sources         <span class="str">TEXT NOT NULL DEFAULT '[]'</span>,  <span class="cm">-- JSON array of corroborating sources</span>
+  top_confidence  <span class="str">INTEGER NOT NULL DEFAULT 0</span>,  <span class="cm">-- highest confidence in group</span>
+  source_count    <span class="str">INTEGER NOT NULL DEFAULT 0</span>,  <span class="cm">-- number of agreeing sources</span>
+  <span class="kw">UNIQUE</span>(category, product_id, field_key, value_hash)
+);
+
+<span class="kw">CREATE INDEX IF NOT EXISTS</span> idx_fc_product
+  <span class="kw">ON</span> field_candidates(category, product_id);
+
+<span class="kw">CREATE INDEX IF NOT EXISTS</span> idx_fc_confidence
+  <span class="kw">ON</span> field_candidates(top_confidence);
+<span class="cm">-- Rebuild: product.json &rarr; candidates</span></div>
+
+    <div class="section-label">Rebuild Contract</div>
+    <div class="contract">
+      <h4>Both Tables: Rebuild YES &mdash; Source: product.json</h4>
+      <ul>
+        <li>Delete .sqlite &rarr; scan all <code>.workspace/products/*/product.json</code></li>
+        <li>For each product: read <code>.fields</code> &rarr; upsert <code>item_field_state</code></li>
+        <li>For each product: read <code>.candidates</code> &rarr; upsert <code>field_candidates</code></li>
+        <li>Idempotent: can run multiple times safely (upsert on unique constraint)</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 4                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-4">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-cyan">Phase 4</span>
+      Color Edition Finder Integration
+    </h2>
+    <p class="desc">Wire the existing color edition finder as the first source to use the publisher. After a successful finder run, call <code>publishFieldValues()</code> to push color, default_color, and editions into product.json and SQL. This is the proof that the publisher works end-to-end.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-violet">Phase 3 (SQL projection)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Deliverables</div>
+    <ul class="deliverables">
+      <li>
+        <div>
+          <div class="file">src/features/color-edition/colorEditionFinder.js</div>
+          <div class="what">After successful run: call <code>publishFieldValues()</code> with color, default_color, editions contributions at confidence 100, source = { model, run_id }</div>
+        </div>
+        <span class="tag tag-amber">evolve</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/color-edition/tests/colorEditionFinder.test.js</div>
+          <div class="what">Verify: after run, product.json.fields contains published colors/editions, product.json.candidates has the candidate group</div>
+        </div>
+        <span class="tag tag-rose">red first</span>
+      </li>
+    </ul>
+
+    <div class="section-label">Integration Wire</div>
+    <div class="json">// Inside colorEditionFinder.js, after successful LLM run:
+
+import { publishFieldValues } from '../field-publisher/index.js';
+
+await publishFieldValues({
+  productId: product.product_id,
+  category: product.category,
+  contributions: {
+    color:         { value: result.colors,    confidence: 100 },
+    default_color: { value: result.default_color, confidence: 100 },
+    editions:      { value: result.editions,  confidence: 100 }
+  },
+  source: {
+    model: modelUsed,             // "gemini-2.5-flash-lite"
+    run_id: `cef-run-${runNumber}`
+  },
+  productRoot,
+  specDb,
+  fieldRules: loadedFieldRules
+});</div>
+
+    <div class="section-label">What This Proves</div>
+    <div class="contract">
+      <h4>End-to-End Verification</h4>
+      <ul>
+        <li>LLM response &rarr; normalized values &rarr; product.json.fields populated</li>
+        <li>product.json.candidates stores the candidate group with model source</li>
+        <li>item_field_state has rows for color, default_color, editions</li>
+        <li>field_candidates has the candidate groups</li>
+        <li>color_edition.json UNCHANGED &mdash; still the finder's own durable SSOT</li>
+        <li>Rebuild works: delete sqlite &rarr; rebuild from product.json &rarr; same data</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 5                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-5">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-amber">Phase 5</span>
+      API Routes &amp; Frontend Projection
+    </h2>
+    <p class="desc">Expose published fields and candidates via API. Frontend reads from SQL to show published values and competing candidates per product. No new frontend components yet &mdash; just the data pipeline to the UI.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-cyan">Phase 4 (first integration)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Deliverables</div>
+    <ul class="deliverables">
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/api/fieldPublisherRoutes.js</div>
+          <div class="what">GET routes: published fields per product, candidates per product, candidates per field. All read from SQL.</div>
+        </div>
+        <span class="tag tag-accent">new</span>
+      </li>
+      <li>
+        <div>
+          <div class="file">src/features/field-publisher/api/tests/fieldPublisherRoutes.test.js</div>
+          <div class="what">Route tests: correct hydration, empty product, published vs unpublished fields</div>
+        </div>
+        <span class="tag tag-rose">red first</span>
+      </li>
+    </ul>
+
+    <div class="section-label">API Surface</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Route</th><th>Returns</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">GET</td><td class="mono">/fields/:category/:productId</td><td>All published fields + confidence + sources</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/fields/:category/:productId/candidates</td><td>All candidate groups per field (published and unpublished)</td></tr>
+        <tr><td class="mono">GET</td><td class="mono">/fields/:category/:productId/:fieldKey/candidates</td><td>Candidate groups for one field</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 6                                                             -->
+<!-- ================================================================== -->
+<div class="phase" id="phase-6">
+  <div class="phase-head">
+    <h2>
+      <span class="tag tag-rose">Phase 6</span>
+      Future Source Integrations
+    </h2>
+    <p class="desc">With the publisher proven via color edition finder, every new extraction source follows the same pattern: extract values &rarr; call <code>publishFieldValues()</code>. Each integration is a one-call wire, not a new module.</p>
+    <div class="dep-bar">
+      <span class="dep-label">Depends on:</span>
+      <span class="tag tag-amber">Phase 5 (API)</span>
+    </div>
+  </div>
+  <div class="phase-body">
+
+    <div class="section-label">Future Sources (O(1) Integration Each)</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Source</th><th>Source Shape</th><th>Fields Published</th><th>Confidence Range</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Crawl page extraction</td><td class="mono">{ artifact, url, run_id }</td><td>Any field found on page</td><td>60&ndash;95</td></tr>
+        <tr><td>Spec sheet parser</td><td class="mono">{ artifact, url, run_id }</td><td>Structured spec fields</td><td>85&ndash;95</td></tr>
+        <tr><td>LD+JSON extraction</td><td class="mono">{ artifact, url, run_id }</td><td>Schema.org fields</td><td>80&ndash;90</td></tr>
+        <tr><td>Manual user override</td><td class="mono">{ user, run_id }</td><td>Any field</td><td>100</td></tr>
+        <tr><td>Component DB match</td><td class="mono">{ artifact, url, run_id }</td><td>Component-linked fields</td><td>90&ndash;95</td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-label">Integration Pattern (Same Every Time)</div>
+    <div class="json">// Any new source, same pattern:
+import { publishFieldValues } from '../field-publisher/index.js';
+
+await publishFieldValues({
+  productId, category,
+  contributions: {
+    field_a: { value: extractedValue, confidence: 88 },
+    field_b: { value: otherValue,     confidence: 75 }
+  },
+  source: { artifact: contentHash, url: sourceUrl, run_id: runId },
+  productRoot, specDb, fieldRules
+});</div>
+
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE TIMELINE                                                      -->
+<!-- ================================================================== -->
+<div class="section-label" style="margin-top:48px">Phase Dependency Chain</div>
+<div class="timeline">
+  <div class="timeline-item active">
+    <h4>Phase 1 &mdash; Field Studio Wiring &amp; Normalizer</h4>
+    <p>Foundation. Pure functions, no IO. Exhaustive test matrix. Must be rock-solid before anything else.</p>
+  </div>
+  <div class="timeline-item future">
+    <h4>Phase 2 &mdash; Publisher Core &amp; Resolver</h4>
+    <p>Orchestrator + deterministic proof gate + confidence resolution. Publisher accepts only field_rules-provable data. Rejects everything else. Writes product.json. No SQL yet.</p>
+  </div>
+  <div class="timeline-item future">
+    <h4>Phase 3 &mdash; SQL Projection (item_field_state + field_candidates)</h4>
+    <p>Evolve existing table + new table. Rebuild contract verified.</p>
+  </div>
+  <div class="timeline-item future">
+    <h4>Phase 4 &mdash; Color Edition Finder Integration</h4>
+    <p>First real source wired. End-to-end proof: LLM &rarr; product.json &rarr; SQL.</p>
+  </div>
+  <div class="timeline-item future">
+    <h4>Phase 5 &mdash; API Routes &amp; Frontend Projection</h4>
+    <p>Data available to UI. Published fields + competing candidates queryable.</p>
+  </div>
+  <div class="timeline-item future">
+    <h4>Phase 6 &mdash; Future Source Integrations</h4>
+    <p>Each new source = one <code>publishFieldValues()</code> call. O(1) forever.</p>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

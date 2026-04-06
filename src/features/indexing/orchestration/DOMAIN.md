@@ -21,7 +21,6 @@ The barrel (`index.js`) delegates to six sub-barrels. Consumers should import fr
 - `buildRunBootstrapLogPayload({ s3Key, runId, roundContext, category, productId, config, runtimeMode, identityFingerprint, identityLockStatus, identityLock, dedupeMode })` - Builds canonical run-start and run-context event payloads.
 - `createResearchBootstrap({ config, logger, createFrontierFn, createUberAggressiveOrchestratorFn })` - Resolves research bootstrap seams for crawl ledger adapter and orchestrator setup.
 - ~~`createPlannerBootstrap`~~ — DELETED (2026-04-02). Source intel + planner modules removed.
-- `filterResumeSeedUrls({ urls, frontierDb, resumeCooldownSkippedUrls, logger, seedKind })` - Resolves resume-seed frontier cooldown filtering and skip telemetry before planner re-seeding.
 - `createModeAwareFetcherRegistry({ initialFetcher, initialMode, createFetcherForModeFn, startFetcherFn, stopFetcherFn })` - Resolves lazy mode-to-fetcher routing for scheduler fallback, reuses the started primary fetcher, and provides registry-wide shutdown.
 - `runFetchSchedulerDrain({ planner, config, prepareNextPlannerSourceFn, fetchFn, fetchWithModeFn, shouldSkipFn, shouldStopFn, classifyOutcomeFn, onFetchError, onSkipped, emitEvent, createFetchSchedulerFn })` - Resolves fetch-scheduler prefetch/drain orchestration seam for planner queue processing.
 - `runPlannerQueueSnapshotPhase({ planner, logger, nowIsoFn })` - Resolves planner queue snapshot trace/logging seam by writing bounded queue/blocked-host snapshot traces and emitting `planner_queue_snapshot_written` telemetry.

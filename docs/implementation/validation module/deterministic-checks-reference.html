@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Deterministic Validation Checks — Field Rule Reference</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe;
+  --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4;
+  --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8;
+  --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+}
+
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 32px;
+  line-height: 1.5;
+}
+
+.root { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 16px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+
+.panel {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.card {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
+}
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger  { background: var(--sf-danger-bg);  color: var(--sf-danger-fg);  }
+.chip-purple  { background: var(--sf-purple-bg);  color: var(--sf-purple-fg);  }
+.chip-accent  { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal    { background: var(--sf-teal-bg);    color: var(--sf-teal-fg);    }
+.chip-info    { background: var(--sf-info-bg);    color: var(--sf-info-fg);    }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+
+.code { font-family: var(--sf-font-mono); font-size: 11px; color: var(--sf-purple-fg); }
+
+.code-block {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--sf-text-muted);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.divider { border: none; height: 1px; background: var(--sf-border-soft-alpha); margin: 6px 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  text-align: left; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--sf-text-dim); padding: 8px 12px;
+  border-bottom: 1px solid var(--sf-border-soft);
+}
+td {
+  padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha);
+  color: var(--sf-text-primary); vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+.example-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.pass { color: var(--sf-success-fg); }
+.fail { color: var(--sf-danger-fg); }
+.repair { color: var(--sf-warning-fg); }
+
+.check-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.check-number {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--sf-accent-glow); border: 1.5px solid var(--sf-accent-strong);
+  font-size: 13px; font-weight: 800; color: var(--sf-accent-strong);
+  font-family: var(--sf-font-mono);
+}
+.check-title { font-size: 15px; font-weight: 700; }
+
+.rule-source {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-family: var(--sf-font-mono);
+  color: var(--sf-teal-fg); background: var(--sf-teal-bg);
+  padding: 2px 8px; border-radius: 4px;
+}
+
+.scenario-row { display: grid; grid-template-columns: 300px 300px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--sf-border-soft-alpha); }
+.scenario-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div>
+  <h1>Deterministic Validation Checks</h1>
+  <div class="subtitle">
+    Every check below is derived from the field studio rules in <code>egPresets.js</code>.
+    Each maps a specific rule parameter to a pure function with concrete pass/fail/repair scenarios.
+    <br/>No LLM needed for any of these &mdash; the validate-phase LLM is only called when these checks produce unknowns.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 1: SHAPE VALIDATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">1</span>
+    <span class="check-title">Shape Validation</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-success">EXISTS (Zod)</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">contract.type: 'string'</span>
+    <span class="rule-source">contract.shape: 'list'</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Validates the raw LLM response is the correct struct before any value checks.
+    Uses the existing <code>colorEditionFinderResponseSchema</code> (Zod).
+    <strong>If this fails, reject immediately</strong> &mdash; no repair possible for wrong shape.
+  </div>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Input</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Valid shape</td>
+        <td class="mono tiny"><code>{ colors: ["black"], editions: {}, default_color: "black" }</code></td>
+        <td><span class="chip chip-success">PASS</span></td>
+      </tr>
+      <tr>
+        <td>colors is not an array</td>
+        <td class="mono tiny"><code>{ colors: "black, white", ... }</code></td>
+        <td><span class="chip chip-danger">REJECT</span> <span class="tiny muted">string instead of array</span></td>
+      </tr>
+      <tr>
+        <td>editions is an array instead of record</td>
+        <td class="mono tiny"><code>{ editions: ["launch-edition"], ... }</code></td>
+        <td><span class="chip chip-danger">REJECT</span> <span class="tiny muted">array instead of Record&lt;slug, {colors}&gt;</span></td>
+      </tr>
+      <tr>
+        <td>colors contains non-string</td>
+        <td class="mono tiny"><code>{ colors: ["black", 42, null], ... }</code></td>
+        <td><span class="chip chip-danger">REJECT</span> <span class="tiny muted">non-string in array</span></td>
+      </tr>
+      <tr>
+        <td>edition missing colors sub-array</td>
+        <td class="mono tiny"><code>{ editions: { "launch": "black" }, ... }</code></td>
+        <td><span class="chip chip-danger">REJECT</span> <span class="tiny muted">edition value is string, not {colors:[]}</span></td>
+      </tr>
+      <tr>
+        <td>missing colors field entirely</td>
+        <td class="mono tiny"><code>{ editions: {}, default_color: "black" }</code></td>
+        <td><span class="chip chip-danger">REJECT</span> <span class="tiny muted">required field missing</span></td>
+      </tr>
+      <tr>
+        <td>editions omitted (has .default({}))</td>
+        <td class="mono tiny"><code>{ colors: ["black"], default_color: "black" }</code></td>
+        <td><span class="chip chip-success">PASS</span> <span class="tiny muted">Zod defaults to {}</span></td>
+      </tr>
+      <tr>
+        <td>default_color omitted (has .default(''))</td>
+        <td class="mono tiny"><code>{ colors: ["black"], editions: {} }</code></td>
+        <td><span class="chip chip-success">PASS</span> <span class="tiny muted">Zod defaults to ''</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 2: CASE NORMALIZATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">2</span>
+    <span class="check-title">Lowercase + Hyphen Normalization</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">ui.tooltip_md: "Lowercase + hyphens only"</span>
+    <span class="rule-source">ai_assist.reasoning_note: "lowercase only, hyphens between words"</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The field studio tells the LLM to output lowercase-hyphenated tokens. But LLMs sometimes return
+    Title Case, UPPER CASE, spaces, or underscores. This check normalizes before any other check runs.
+    <br/><strong>Always auto-repairs</strong> &mdash; never rejects on case alone.
+  </div>
+
+  <table>
+    <thead><tr><th>Input</th><th>Normalized</th><th>Rule Applied</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"black"</td><td class="mono pass">"black"</td><td class="tiny muted">no change needed</td></tr>
+      <tr><td class="mono">"Black"</td><td class="mono repair">"black"</td><td class="tiny">toLowerCase()</td></tr>
+      <tr><td class="mono">"DARK GREEN"</td><td class="mono repair">"dark-green"</td><td class="tiny">toLowerCase() + spaces&rarr;hyphens</td></tr>
+      <tr><td class="mono">"Light_Blue"</td><td class="mono repair">"light-blue"</td><td class="tiny">toLowerCase() + underscores&rarr;hyphens</td></tr>
+      <tr><td class="mono">"  white  "</td><td class="mono repair">"white"</td><td class="tiny">trim()</td></tr>
+      <tr><td class="mono">"BLACK+RED"</td><td class="mono repair">"black+red"</td><td class="tiny">toLowerCase() (preserves + separator)</td></tr>
+      <tr><td class="mono tiny" style="color:var(--sf-purple-fg);">Edition:</td><td></td><td></td></tr>
+      <tr><td class="mono">"Launch Edition"</td><td class="mono repair">"launch-edition"</td><td class="tiny">toLowerCase() + spaces&rarr;hyphens</td></tr>
+      <tr><td class="mono">"Cyberpunk 2077 Edition"</td><td class="mono repair">"cyberpunk-2077-edition"</td><td class="tiny">toLowerCase() + spaces&rarr;hyphens</td></tr>
+      <tr><td class="mono">"SF6_Chun_Li"</td><td class="mono repair">"sf6-chun-li"</td><td class="tiny">toLowerCase() + underscores&rarr;hyphens</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 3: TOKEN MAP APPLICATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">3</span>
+    <span class="check-title">Token Map Application</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">parse.token_map</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:8px;">
+    The token_map in <code>egPresets.js</code> defines exact string replacements.
+    Applied <strong>after</strong> lowercase normalization. Each value is checked against the map;
+    if found, replaced with the canonical form.
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    <strong>Colors have 19 rules. Editions have 0</strong> (empty token_map &mdash; slugification in Check 2 is sufficient).
+    <br/>For multi-color values (<code>black+red</code>), split on <code>+</code>, apply map to each atom, rejoin.
+  </div>
+
+  <h3>Full Token Map (colors)</h3>
+  <table>
+    <thead><tr><th>Input Token</th><th>Maps To</th><th>Category</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">grey</td><td class="mono pass">gray</td><td class="tiny muted">Spelling normalization</td></tr>
+      <tr><td class="mono">gray-light</td><td class="mono pass">light-gray</td><td class="tiny muted">Modifier order: last&rarr;first</td></tr>
+      <tr><td class="mono">blue-light</td><td class="mono pass">light-blue</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">green-light</td><td class="mono pass">light-green</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">pink-light</td><td class="mono pass">light-pink</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">red-light</td><td class="mono pass">light-red</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">blue-dark</td><td class="mono pass">dark-blue</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">green-dark</td><td class="mono pass">dark-green</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">red-dark</td><td class="mono pass">dark-red</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">light gray</td><td class="mono pass">light-gray</td><td class="tiny muted">Space&rarr;hyphen + spelling</td></tr>
+      <tr><td class="mono">light grey</td><td class="mono pass">light-gray</td><td class="tiny muted">Space&rarr;hyphen + spelling</td></tr>
+      <tr><td class="mono">dark blue</td><td class="mono pass">dark-blue</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">dark green</td><td class="mono pass">dark-green</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">dark red</td><td class="mono pass">dark-red</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">light blue</td><td class="mono pass">light-blue</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">light green</td><td class="mono pass">light-green</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">light pink</td><td class="mono pass">light-pink</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+      <tr><td class="mono">light red</td><td class="mono pass">light-red</td><td class="tiny muted">Space&rarr;hyphen</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Multi-color Scenarios</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Split</th><th>After Map</th><th>Rejoined</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">"grey+red"</td>
+        <td class="mono tiny">"grey", "red"</td>
+        <td class="mono tiny">"gray", "red"</td>
+        <td class="mono pass">"gray+red"</td>
+      </tr>
+      <tr>
+        <td class="mono">"blue-dark+grey"</td>
+        <td class="mono tiny">"blue-dark", "grey"</td>
+        <td class="mono tiny">"dark-blue", "gray"</td>
+        <td class="mono pass">"dark-blue+gray"</td>
+      </tr>
+      <tr>
+        <td class="mono">"black+white"</td>
+        <td class="mono tiny">"black", "white"</td>
+        <td class="mono tiny">"black", "white"</td>
+        <td class="mono pass">"black+white" <span class="tiny dim">(no map hit)</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 4: LIST RULES
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">4</span>
+    <span class="check-title">List Rules Enforcement</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">contract.list_rules.dedupe: true</span>
+    <span class="rule-source">contract.list_rules.sort: 'none'</span>
+    <span class="rule-source">contract.list_rules.min_items: 0</span>
+    <span class="rule-source">contract.list_rules.max_items: 100 / 50</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Rule</th><th>Colors</th><th>Editions</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">dedupe</td>
+        <td><span class="chip chip-success">true</span></td>
+        <td><span class="chip chip-success">true</span></td>
+        <td class="small muted">After normalization, remove exact duplicate tokens. Keep first occurrence.</td>
+      </tr>
+      <tr>
+        <td class="bold">sort</td>
+        <td><span class="chip chip-info">none</span></td>
+        <td><span class="chip chip-info">none</span></td>
+        <td class="small muted">Preserve original order. <strong>Critical for colors</strong>: colors[0] = default color.</td>
+      </tr>
+      <tr>
+        <td class="bold">min_items</td>
+        <td><span class="chip chip-neutral">0</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+        <td class="small muted">Empty array is valid. No minimum requirement.</td>
+      </tr>
+      <tr>
+        <td class="bold">max_items</td>
+        <td><span class="chip chip-accent">100</span></td>
+        <td><span class="chip chip-accent">50</span></td>
+        <td class="small muted">Truncate to cap if exceeded. Log a warning.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Scenarios</h3>
+  <table>
+    <thead><tr><th>Scenario</th><th>Input</th><th>Output</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Duplicate after normalization</td>
+        <td class="mono tiny">["black", "gray", "Grey", "black"]</td>
+        <td class="mono tiny">["black", "gray"]</td>
+        <td><span class="chip chip-warning">REPAIRED</span> <span class="tiny">"Grey"&rarr;"gray" (dup), "black" (dup)</span></td>
+      </tr>
+      <tr>
+        <td>Order preserved</td>
+        <td class="mono tiny">["white", "black", "red"]</td>
+        <td class="mono tiny">["white", "black", "red"]</td>
+        <td><span class="chip chip-success">PASS</span> <span class="tiny">white is default (index 0)</span></td>
+      </tr>
+      <tr>
+        <td>Over max_items</td>
+        <td class="mono tiny">["c1", "c2", ... "c105"] <span class="dim">(105 items)</span></td>
+        <td class="mono tiny">["c1", "c2", ... "c100"]</td>
+        <td><span class="chip chip-warning">REPAIRED</span> <span class="tiny">truncated to 100</span></td>
+      </tr>
+      <tr>
+        <td>Empty array</td>
+        <td class="mono tiny">[]</td>
+        <td class="mono tiny">[]</td>
+        <td><span class="chip chip-success">PASS</span> <span class="tiny">min_items = 0</span></td>
+      </tr>
+      <tr>
+        <td>Single item</td>
+        <td class="mono tiny">["black"]</td>
+        <td class="mono tiny">["black"]</td>
+        <td><span class="chip chip-success">PASS</span></td>
+      </tr>
+      <tr>
+        <td>Edition duplicates</td>
+        <td class="mono tiny">["launch-edition", "launch-edition"]</td>
+        <td class="mono tiny">["launch-edition"]</td>
+        <td><span class="chip chip-warning">REPAIRED</span> <span class="tiny">deduped</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 5: FORMAT VALIDATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">5</span>
+    <span class="check-title">Format Validation</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">ui.tooltip_md formatting rules</span>
+    <span class="rule-source">ai_assist.reasoning_note formatting rules</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    After normalization and token map, validate that values match the expected format.
+    This catches malformed tokens that survived normalization.
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    <div class="card">
+      <h3>Colors: format regex</h3>
+      <div class="code-block" style="margin-bottom:10px;">/^[a-z][a-z0-9-]*(\+[a-z][a-z0-9-]*)*$/
+
+<span style="color:var(--sf-text-dim);">Single atom:  lowercase letters/digits/hyphens
+Multi-color:  atoms joined by "+"
+No spaces, no underscores, no uppercase</span></div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"black"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"light-blue"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"black+red"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"dark-green+light-pink"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">""</td><td><span class="fail">FAIL</span> <span class="tiny">empty string</span></td></tr>
+          <tr><td class="mono">"black red"</td><td><span class="fail">FAIL</span> <span class="tiny">space (should be + or -)</span></td></tr>
+          <tr><td class="mono">"black+"</td><td><span class="fail">FAIL</span> <span class="tiny">trailing +</span></td></tr>
+          <tr><td class="mono">"+red"</td><td><span class="fail">FAIL</span> <span class="tiny">leading +</span></td></tr>
+          <tr><td class="mono">"123"</td><td><span class="fail">FAIL</span> <span class="tiny">starts with digit</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Editions: kebab-case regex</h3>
+      <div class="code-block" style="margin-bottom:10px;">/^[a-z0-9]+(-[a-z0-9]+)*$/
+
+<span style="color:var(--sf-text-dim);">Kebab-case slugs only.
+Lowercase letters, digits, hyphens.
+No spaces, no underscores, no uppercase.
+Must start with letter or digit.</span></div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"launch-edition"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"cyberpunk-2077-edition"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"sf6-chun-li"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"wilderness"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">""</td><td><span class="fail">FAIL</span> <span class="tiny">empty string</span></td></tr>
+          <tr><td class="mono">"Launch Edition"</td><td><span class="fail">FAIL</span> <span class="tiny">uppercase + space</span></td></tr>
+          <tr><td class="mono">"launch_edition"</td><td><span class="fail">FAIL</span> <span class="tiny">underscore</span></td></tr>
+          <tr><td class="mono">"-edition"</td><td><span class="fail">FAIL</span> <span class="tiny">leading hyphen</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="small muted" style="margin-top:12px;">
+    <strong>Note:</strong> Format failures after Check 2 (normalization) and Check 3 (token map) suggest the LLM produced something
+    genuinely malformed &mdash; not just a case/spacing issue. These are <span class="fail">UNKNOWN</span> candidates that go to the validate LLM.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 6: REGISTRY MEMBERSHIP
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">6</span>
+    <span class="check-title">Registry Membership</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">enum.policy: 'open' (but color_registry is closed vocab)</span>
+    <span class="rule-source">enum.match.strategy: 'exact'</span>
+    <span class="rule-source">Registry: appDb.listColors() &rarr; 77+ atoms</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    <strong>Colors only.</strong> Every color atom must exist in the <code>color_registry</code> table.
+    The registry is the SSOT &mdash; seeded at boot from <code>color_registry.json</code> (77+ entries including light-/dark- variants).
+    <br/><br/>
+    <strong>Editions skip this check entirely</strong> &mdash; <code>enum_policy: 'open'</code> with no closed vocabulary. Any kebab-case slug is valid.
+    <br/><br/>
+    Multi-color values: split on <code>+</code>, check each atom independently.
+    If any atom is unknown &rarr; the whole value goes to the unknown list &rarr; validate LLM decides.
+  </div>
+
+  <table>
+    <thead><tr><th>Input</th><th>Atoms Checked</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">"black"</td>
+        <td class="mono tiny">black &isin; registry? <span class="pass">YES</span></td>
+        <td><span class="chip chip-success">KNOWN</span></td>
+        <td class="tiny muted">Keep as-is</td>
+      </tr>
+      <tr>
+        <td class="mono">"light-blue"</td>
+        <td class="mono tiny">light-blue &isin; registry? <span class="pass">YES</span></td>
+        <td><span class="chip chip-success">KNOWN</span></td>
+        <td class="tiny muted">Keep as-is</td>
+      </tr>
+      <tr>
+        <td class="mono">"black+red"</td>
+        <td class="mono tiny">black <span class="pass">YES</span>, red <span class="pass">YES</span></td>
+        <td><span class="chip chip-success">KNOWN</span></td>
+        <td class="tiny muted">Both atoms pass</td>
+      </tr>
+      <tr>
+        <td class="mono">"midnight-blue"</td>
+        <td class="mono tiny">midnight-blue &isin; registry? <span class="fail">NO</span></td>
+        <td><span class="chip chip-danger">UNKNOWN</span></td>
+        <td class="tiny"><strong>&rarr; validate LLM</strong> (maybe dark-blue?)</td>
+      </tr>
+      <tr>
+        <td class="mono">"arctic"</td>
+        <td class="mono tiny">arctic &isin; registry? <span class="fail">NO</span></td>
+        <td><span class="chip chip-danger">UNKNOWN</span></td>
+        <td class="tiny"><strong>&rarr; validate LLM</strong> (maybe white?)</td>
+      </tr>
+      <tr>
+        <td class="mono">"black+midnight"</td>
+        <td class="mono tiny">black <span class="pass">YES</span>, midnight <span class="fail">NO</span></td>
+        <td><span class="chip chip-danger">UNKNOWN</span></td>
+        <td class="tiny"><strong>&rarr; validate LLM</strong> (one atom failed)</td>
+      </tr>
+      <tr>
+        <td class="mono">"sparkle-unicorn"</td>
+        <td class="mono tiny">sparkle-unicorn &isin; registry? <span class="fail">NO</span></td>
+        <td><span class="chip chip-danger">UNKNOWN</span></td>
+        <td class="tiny"><strong>&rarr; validate LLM</strong> (likely hallucination)</td>
+      </tr>
+      <tr>
+        <td class="mono dim" style="font-style:italic;">edition: "launch-edition"</td>
+        <td class="mono tiny dim">skipped (open enum, no registry)</td>
+        <td><span class="chip chip-neutral">SKIP</span></td>
+        <td class="tiny muted">Editions are open vocab</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>How the registry Set is built</h3>
+    <div class="code-block">// At validation time:
+const allColors = appDb.listColors();
+// [{ name: 'amber', hex: '#f59e0b' }, { name: 'beige', hex: '#f5f5f4' }, ...]
+
+const registrySet = new Set(allColors.map(c => c.name));
+// Set { 'amber', 'beige', 'black', 'blue', 'brown', 'coral', 'cyan',
+//        'dark-blue', 'dark-brown', 'dark-cyan', 'dark-green', 'dark-red',
+//        'gold', 'gray', 'green', 'indigo', 'light-blue', 'light-gray',
+//        'light-green', 'light-pink', 'light-red', 'magenta', 'navy',
+//        'olive', 'orange', 'peach', 'pink', 'purple', 'red', 'silver',
+//        'teal', 'turquoise', 'violet', 'white', 'yellow', ... }
+// 77+ entries total
+
+// For each color value:
+function checkAtom(atom) {
+  return registrySet.has(atom); // O(1) exact match
+}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CHECK 7: CROSS-FIELD INVARIANTS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-number">7</span>
+    <span class="check-title">Cross-Field Invariants</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">NEW</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule source</h3>
+    <span class="rule-source">Domain contract: colors[0] = default_color</span>
+    <span class="rule-source">Domain contract: edition.colors &sube; top-level colors</span>
+    <span class="rule-source">colorEditionSchema.js + handoff invariants</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    These check relationships <strong>between</strong> fields, not individual values.
+    Run after all per-field checks pass. Some can be auto-repaired, others are genuine mismatches.
+  </div>
+
+  <table>
+    <thead><tr><th>Invariant</th><th>Check</th><th>On Fail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">default_color === colors[0]</td>
+        <td class="small">The first color in the array IS the default. <code>default_color</code> must match.</td>
+        <td>
+          <span class="chip chip-warning">AUTO-REPAIR</span>
+          <span class="tiny">Set <code>default_color = colors[0]</code>. Log repair.</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="bold">default_color &isin; colors</td>
+        <td class="small">The default must appear somewhere in the colors array.</td>
+        <td>
+          <span class="chip chip-warning">AUTO-REPAIR</span>
+          <span class="tiny">If not colors[0], prepend default_color to colors array.</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="bold">edition.colors &sube; colors</td>
+        <td class="small">Every color listed in an edition must also appear in the top-level colors array.</td>
+        <td>
+          <span class="chip chip-warning">AUTO-REPAIR</span>
+          <span class="tiny">Add missing edition colors to top-level colors array (append, don't change [0]).</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="bold">No empty edition slugs</td>
+        <td class="small">Edition keys must be non-empty strings.</td>
+        <td>
+          <span class="chip chip-danger">REJECT</span>
+          <span class="tiny">Remove empty-key editions. Log warning.</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="bold">No duplicate edition slugs</td>
+        <td class="small">Edition record keys are unique by definition (JS object), but check anyway for sanity.</td>
+        <td>
+          <span class="chip chip-success">N/A</span>
+          <span class="tiny">Object keys are inherently unique.</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Scenarios</h3>
+  <table>
+    <thead><tr><th>Scenario</th><th>Input</th><th>Output</th><th>Repair</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>default_color mismatch</td>
+        <td class="mono tiny">colors: ["black", "white"]<br/>default_color: "white"</td>
+        <td class="mono tiny">default_color: <span class="repair">"black"</span></td>
+        <td class="tiny">Set to colors[0]</td>
+      </tr>
+      <tr>
+        <td>default_color not in array</td>
+        <td class="mono tiny">colors: ["black", "white"]<br/>default_color: "red"</td>
+        <td class="mono tiny">colors: <span class="repair">["red", "black", "white"]</span><br/>default_color: "red"</td>
+        <td class="tiny">Prepend to colors</td>
+      </tr>
+      <tr>
+        <td>Edition color not in top-level</td>
+        <td class="mono tiny">colors: ["black"]<br/>editions: { "ltd": { colors: ["black", "gold"] } }</td>
+        <td class="mono tiny">colors: <span class="repair">["black", "gold"]</span></td>
+        <td class="tiny">Append "gold" to colors</td>
+      </tr>
+      <tr>
+        <td>All invariants hold</td>
+        <td class="mono tiny">colors: ["black", "white"]<br/>default_color: "black"<br/>editions: { "ltd": { colors: ["black"] } }</td>
+        <td class="mono tiny"><span class="pass">no changes</span></td>
+        <td><span class="chip chip-success">PASS</span></td>
+      </tr>
+      <tr>
+        <td>Empty default + empty colors</td>
+        <td class="mono tiny">colors: []<br/>default_color: ""</td>
+        <td class="mono tiny"><span class="pass">no changes</span></td>
+        <td><span class="chip chip-success">PASS</span> <span class="tiny">both empty is valid</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SUMMARY: FULL PIPELINE ORDER
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <div class="check-header">
+    <span class="check-title" style="font-size:16px; color:var(--sf-accent-strong);">Pipeline Order Summary</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Checks run in this exact order. Each step operates on the output of the previous step.
+    The pipeline short-circuits on shape failure (Check 1). All other checks produce a repaired value + audit log.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Check</th><th>Can Repair?</th><th>On Total Fail</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
+        <td>Shape Validation (Zod)</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Reject immediately. Wrong struct = useless data.</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
+        <td>Lowercase + Hyphen Normalization</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny dim">Cannot fail. Always produces output.</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+        <td>Token Map Application</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny dim">Cannot fail. Passthrough for unknown tokens.</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
+        <td>List Rules (dedupe, max_items)</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny dim">Cannot fail. Dedupes and truncates.</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">5</td>
+        <td>Format Validation (regex)</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Malformed tokens &rarr; <strong>unknown list</strong> &rarr; validate LLM</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">6</td>
+        <td>Registry Membership (colors only)</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Unregistered atoms &rarr; <strong>unknown list</strong> &rarr; validate LLM</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">7</td>
+        <td>Cross-Field Invariants</td>
+        <td><span class="chip chip-warning">MOSTLY</span></td>
+        <td class="tiny">Auto-repair where possible (default_color, edition colors). Reject empty slugs.</td>
+        <td class="tiny muted">~0ms</td>
+      </tr>
+      <tr style="background:var(--sf-warning-bg);">
+        <td class="mono bold" style="color:var(--sf-warning-fg);">?</td>
+        <td style="color:var(--sf-warning-fg);"><strong>Validate LLM (only if unknowns exist)</strong></td>
+        <td><span class="chip chip-warning">MAYBE</span></td>
+        <td class="tiny">Repair or recommend re-run. Caller decides next step.</td>
+        <td class="tiny" style="color:var(--sf-warning-fg);">~2-5s + tokens</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px; text-align:center;">
+    <div class="small muted">
+      <strong>Happy path (most runs)</strong>: Checks 1&rarr;7 all pass &rarr; <span class="chip chip-success">PUBLISH</span> &mdash; zero LLM cost, &lt;1ms total
+      <br/><br/>
+      <strong>Minor repair</strong>: Checks 2-4 fix case/dupes/token_map, 5-7 pass &rarr; <span class="chip chip-success">PUBLISH</span> &mdash; zero LLM cost
+      <br/><br/>
+      <strong>Unknown values</strong>: Check 5 or 6 finds unknowns &rarr; <span class="chip chip-warning">VALIDATE LLM</span> &mdash; cheap call, just unknowns + registry
+      <br/><br/>
+      <strong>Hallucination</strong>: Validate LLM says rerun &rarr; <span class="chip chip-danger">RERUN SOURCE</span> &mdash; orchestrator retries with escalation model
+    </div>
+  </div>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>

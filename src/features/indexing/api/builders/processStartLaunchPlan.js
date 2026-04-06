@@ -32,7 +32,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     base_model: baseModelName,
     variant,
     sku,
-    seedUrls,
     mode = 'indexlab',
     profile,
     dryRun,
@@ -88,8 +87,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   if (variant) cliArgs.push('--variant', String(variant).trim());
   if (sku) cliArgs.push('--sku', String(sku).trim());
 
-  const normalizedSeedUrls = normalizeJoinedList(seedUrls);
-  if (normalizedSeedUrls) cliArgs.push('--seed-urls', normalizedSeedUrls);
   const normalizedFields = normalizeJoinedList(fields);
   if (normalizedFields) cliArgs.push('--fields', normalizedFields);
   const normalizedProviders = normalizeJoinedList(providers);

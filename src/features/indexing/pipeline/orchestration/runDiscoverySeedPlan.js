@@ -65,6 +65,8 @@ export async function runDiscoverySeedPlan(params = {}) {
   let ctx = buildInitialContext({ normalizeFieldListFn: normalizeFieldList, ...params });
 
   for (const phase of PIPELINE_PHASES) {
+    const _phaseId = phase.id || (phase.parallel ? phase.parallel.map(p => p.id).join('+') : '?');
+    const _pt = Date.now();
     if (phase.parallel) {
       const results = await Promise.all(phase.parallel.map((p) => p.execute(ctx)));
       for (const r of results) ctx = { ...ctx, ...r };
@@ -72,6 +74,7 @@ export async function runDiscoverySeedPlan(params = {}) {
       const result = await phase.execute(ctx);
       ctx = { ...ctx, ...result };
     }
+    console.error(`[TIMING] phase.${_phaseId}: ${Date.now() - _pt}ms`);
     await ctx.logger?.flush?.();
     if (phase.checkpoint) {
       validatePipelineCheckpoint(phase.checkpoint, ctx, ctx.logger, ctx.config);

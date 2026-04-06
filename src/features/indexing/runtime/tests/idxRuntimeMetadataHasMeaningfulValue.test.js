@@ -31,38 +31,25 @@ const hasMeaningfulValue = mod.hasMeaningfulValue;
 const canTestDirectly = typeof hasMeaningfulValue === 'function';
 
 // ---------------------------------------------------------------------------
-// Characterization: table-driven tests for all 28 field paths
+// Characterization: table-driven tests for the 10 real IDX registry entries
+// WHY: Aspirational entries (contract.*, ai_assist.*, parse.*, enum.*, etc.)
+// were removed from IDX_FIELD_PATH_REGISTRY — zero pipeline consumers.
 // ---------------------------------------------------------------------------
 
 // Each entry: [fieldPath, ruleWithValue, ruleWithLegacyValue?, emptyRule]
 const STRING_FIELDS = [
-  ['contract.type', { contract: { type: 'string' } }, { data_type: 'number' }, { type: 'boolean' }],
-  ['contract.shape', { contract: { shape: 'scalar' } }, { output_shape: 'list' }, { shape: 'map' }],
-  ['contract.unit', { contract: { unit: 'kg' } }, { unit: 'lb' }, null],
-  ['contract.unknown_token', { contract: { unknown_token: 'N/A' } }, { unknown_token: '-' }, null],
   ['priority.required_level', { priority: { required_level: 'high' } }, { required_level: 'low' }, null],
   ['priority.availability', { priority: { availability: 'common' } }, { availability: 'rare' }, null],
   ['priority.difficulty', { priority: { difficulty: 'easy' } }, { difficulty: 'hard' }, null],
-  ['ai_assist.mode', { ai_assist: { mode: 'auto' } }, null, null],
-  ['ai_assist.model_strategy', { ai_assist: { model_strategy: 'fast' } }, null, null],
-  ['ai_assist.reasoning_note', { ai_assist: { reasoning_note: 'check units' } }, null, null],
-  ['parse.template', { parse: { template: '{{value}}' } }, { parse_template: '{{v}}' }, null],
-  ['enum.policy', { enum: { policy: 'strict' } }, { enum_policy: 'fuzzy' }, null],
-  ['enum.source', { enum: { source: 'authority' } }, { enum_source: 'user' }, null],
-  ['evidence.conflict_policy', { evidence: { conflict_policy: 'majority' } }, null, null],
-  ['component.type', { component: { type: 'capacitor' } }, { component_db_ref: 'ref-123' }, null],
+  ['group', { group: 'sensor_performance' }, null, null],
   ['ui.tooltip_md', { ui: { tooltip_md: 'Hover text' } }, { tooltip_md: 'Alt hover' }, null],
 ];
 
 const NUMERIC_FIELDS = [
-  ['priority.effort', { priority: { effort: 5 } }, { effort: 3 }],
-  ['ai_assist.max_tokens', { ai_assist: { max_tokens: 1024 } }, null],
   ['evidence.min_evidence_refs', { evidence: { min_evidence_refs: 2 } }, { min_evidence_refs: 1 }],
 ];
 
 const ARRAY_FIELDS = [
-  ['evidence.tier_preference', { evidence: { tier_preference: ['primary', 'secondary'] } }],
-  ['constraints', { constraints: ['a > b'] }],
   ['aliases', { aliases: ['alt_name'] }],
 ];
 
@@ -73,12 +60,8 @@ const ARRAY_FILTERED_FIELDS = [
 ];
 
 const BOOL_PRESENCE_FIELDS = [
-  ['contract.range', { contract: { range: { min: 0, max: 100 } } }, null],
-  ['evidence.required', { evidence: { required: true } }, { evidence_required: false }],
-];
-
-const OBJECT_TRUTHY_FIELDS = [
-  ['contract.list_rules', { contract: { list_rules: { dedupe: true } } }, { list_rules: { ordering: 'asc' } }],
+  ['priority.block_publish_when_unk', { priority: { block_publish_when_unk: true } }, { block_publish_when_unk: false }],
+  ['contract.exact_match', { contract: { exact_match: true } }, null],
 ];
 
 // ---------------------------------------------------------------------------
@@ -224,30 +207,6 @@ for (const [fieldPath, structured, legacy] of BOOL_PRESENCE_FIELDS) {
 }
 
 // ---------------------------------------------------------------------------
-// Object truthy field tests
-// ---------------------------------------------------------------------------
-
-for (const [fieldPath, structured, legacy] of OBJECT_TRUTHY_FIELDS) {
-  test(`hasMeaningfulValue('${fieldPath}') — object with truthy entries returns true`, () => {
-    if (!canTestDirectly) return;
-    assert.equal(hasMeaningfulValue(structured, fieldPath), true);
-  });
-
-  if (legacy) {
-    test(`hasMeaningfulValue('${fieldPath}') — legacy object returns true`, () => {
-      if (!canTestDirectly) return;
-      assert.equal(hasMeaningfulValue(legacy, fieldPath), true);
-    });
-  }
-
-  test(`hasMeaningfulValue('${fieldPath}') — empty object returns false`, () => {
-    if (!canTestDirectly) return;
-    const emptyObj = buildRuleWithValue(fieldPath, {});
-    assert.equal(hasMeaningfulValue(emptyObj, fieldPath), false);
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Edge cases
 // ---------------------------------------------------------------------------
 
@@ -257,19 +216,9 @@ test('hasMeaningfulValue returns false for unknown field path', () => {
   assert.equal(hasMeaningfulValue({ foo: 'bar' }, ''), false);
 });
 
-test('hasMeaningfulValue handles contract.range with only min', () => {
+test('hasMeaningfulValue handles block_publish_when_unk with false value (presence check)', () => {
   if (!canTestDirectly) return;
-  assert.equal(hasMeaningfulValue({ contract: { range: { min: 0 } } }, 'contract.range'), true);
-});
-
-test('hasMeaningfulValue handles contract.range with only max', () => {
-  if (!canTestDirectly) return;
-  assert.equal(hasMeaningfulValue({ contract: { range: { max: 100 } } }, 'contract.range'), true);
-});
-
-test('hasMeaningfulValue handles evidence.required with false value (presence check)', () => {
-  if (!canTestDirectly) return;
-  assert.equal(hasMeaningfulValue({ evidence: { required: false } }, 'evidence.required'), true);
+  assert.equal(hasMeaningfulValue({ priority: { block_publish_when_unk: false } }, 'priority.block_publish_when_unk'), true);
 });
 
 // ---------------------------------------------------------------------------

@@ -696,7 +696,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
 <tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, product_id TEXT NOT NULL</td></tr>
 <tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT '', model TEXT DEFAULT '', base_model TEXT DEFAULT '', variant TEXT DEFAULT ''</td></tr>
-<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'active', seed_urls TEXT, identifier TEXT, brand_identifier TEXT DEFAULT ''</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'active', identifier TEXT, brand_identifier TEXT DEFAULT ''</td></tr>
 <tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))</td></tr>
 <tr><td class="cn">brand_identifier</td><td class="ct">TEXT</td><td class="cc">DEFAULT '' <span class="migr-indicator">via migration</span></td></tr>
 <tr><td class="cn">base_model</td><td class="ct">TEXT</td><td class="cc">DEFAULT '' <span class="migr-indicator">via migration</span></td></tr>

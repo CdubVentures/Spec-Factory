@@ -168,9 +168,9 @@ export function prepareStatements(db) {
 
     _upsertProduct: db.prepare(`
       INSERT INTO products (
-        category, product_id, brand, model, base_model, variant, status, seed_urls, identifier, brand_identifier
+        category, product_id, brand, model, base_model, variant, status, identifier, brand_identifier
       ) VALUES (
-        @category, @product_id, @brand, @model, @base_model, @variant, @status, @seed_urls, @identifier, @brand_identifier
+        @category, @product_id, @brand, @model, @base_model, @variant, @status, @identifier, @brand_identifier
       )
       ON CONFLICT(category, product_id) DO UPDATE SET
         brand = COALESCE(excluded.brand, brand),
@@ -178,7 +178,6 @@ export function prepareStatements(db) {
         base_model = COALESCE(NULLIF(excluded.base_model, ''), base_model),
         variant = COALESCE(excluded.variant, variant),
         status = excluded.status,
-        seed_urls = COALESCE(excluded.seed_urls, seed_urls),
         identifier = COALESCE(excluded.identifier, identifier),
         brand_identifier = COALESCE(NULLIF(excluded.brand_identifier, ''), brand_identifier),
         updated_at = datetime('now')
@@ -642,6 +641,40 @@ export function prepareStatements(db) {
     `),
     _deleteFieldKeyOrder: db.prepare(
       'DELETE FROM field_key_order WHERE category = ?'
+    ),
+
+    // --- Pipeline Category Cache ---
+    _getPipelineCategoryCache: db.prepare(
+      'SELECT * FROM pipeline_category_cache WHERE category = ?'
+    ),
+    _upsertPipelineCategoryCache: db.prepare(`
+      INSERT INTO pipeline_category_cache (
+        category, field_rules, field_order, field_groups,
+        required_fields, critical_fields,
+        source_hosts, source_registry, validated_registry, denylist,
+        search_templates, spec_seeds, updated_at
+      ) VALUES (
+        @category, @field_rules, @field_order, @field_groups,
+        @required_fields, @critical_fields,
+        @source_hosts, @source_registry, @validated_registry, @denylist,
+        @search_templates, @spec_seeds, datetime('now')
+      )
+      ON CONFLICT(category) DO UPDATE SET
+        field_rules = excluded.field_rules,
+        field_order = excluded.field_order,
+        field_groups = excluded.field_groups,
+        required_fields = excluded.required_fields,
+        critical_fields = excluded.critical_fields,
+        source_hosts = excluded.source_hosts,
+        source_registry = excluded.source_registry,
+        validated_registry = excluded.validated_registry,
+        denylist = excluded.denylist,
+        search_templates = excluded.search_templates,
+        spec_seeds = excluded.spec_seeds,
+        updated_at = datetime('now')
+    `),
+    _deletePipelineCategoryCache: db.prepare(
+      'DELETE FROM pipeline_category_cache WHERE category = ?'
     ),
 
     // --- Color & Edition Finder ---

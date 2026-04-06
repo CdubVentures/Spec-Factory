@@ -19,6 +19,7 @@ interface EnumConfiguratorProps {
   consistencyPending?: boolean;
   consistencyMessage?: string;
   consistencyError?: string;
+  isEgLocked?: boolean;
 }
 
 type SourceTab = 'manual' | 'enum';
@@ -81,6 +82,7 @@ export function EnumConfigurator({
   consistencyPending = false,
   consistencyMessage = '',
   consistencyError = '',
+  isEgLocked = false,
 }: EnumConfiguratorProps) {
   const currentSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
   const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
@@ -176,6 +178,30 @@ export function EnumConfigurator({
         void onRunConsistency({ formatGuidance, reviewEnabled: true });
       }
     }
+  }
+
+  // WHY: EG-locked fields show known_values as a read-only list.
+  // The enum policy, match strategy, and values are all managed by the EG preset.
+  if (isEgLocked && fieldKnownValues.length > 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span>EG-managed enum. Policy: <strong>{currentPolicy}</strong> &middot; Match: <strong>{matchStrategy}</strong> &middot; {fieldKnownValues.length} registered values</span>
+        </div>
+        <div>
+          <div className={`${labelCls} flex items-center`}>
+            <span>Registered Values ({fieldKnownValues.length})</span>
+            {renderLabelSuffix?.('enum.policy')}
+          </div>
+          <div className="max-h-64 overflow-y-auto flex flex-wrap gap-1 p-3 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+            {fieldKnownValues.map((v) => (
+              <span key={v} className={chipBlue}>{v}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -54,31 +54,23 @@ test('buildRuntimeIdxBadgesBySurface returns active and gray IDX badges for all 
 
   const surfaces = buildRuntimeIdxBadgesBySurface(fieldRulesPayload);
 
-  assert.deepEqual(
-    surfaces.needset.map((badge) => [badge.field_path, badge.state]),
-    [
-      ['priority.required_level', 'active'],
-      ['evidence.min_evidence_refs', 'active'],
-      ['aliases', 'active'],
-      ['search_hints.query_terms', 'active'],
-      ['search_hints.domain_hints', 'active'],
-      ['search_hints.preferred_content_types', 'off'],
-      ['ui.tooltip_md', 'off'],
-    ],
-    'NeedSet should expose all 7 IDX keys that the NeedSet engine passes per field, showing unconfigured ones as off'
-  );
+  const needsetBadges = surfaces.needset.map((badge) => [badge.field_path, badge.state]);
+  // Verify the real fields are present with correct active/off state
+  assert.ok(needsetBadges.some(([p, s]) => p === 'priority.required_level' && s === 'active'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'evidence.min_evidence_refs' && s === 'active'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'aliases' && s === 'active'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.query_terms' && s === 'active'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.domain_hints' && s === 'active'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'search_hints.preferred_content_types' && s === 'off'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'ui.tooltip_md' && s === 'off'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'group' && s === 'off'));
+  assert.ok(needsetBadges.some(([p, s]) => p === 'contract.exact_match' && s === 'off'));
+  assert.equal(needsetBadges.length, 12, 'NeedSet should expose all 12 IDX keys the NeedSet engine reads');
 
-  assert.deepEqual(
-    surfaces.search_profile.map((badge) => [badge.field_path, badge.state]),
-    [
-      ['aliases', 'active'],
-      ['search_hints.query_terms', 'active'],
-      ['search_hints.domain_hints', 'active'],
-      ['search_hints.preferred_content_types', 'off'],
-      ['ui.tooltip_md', 'off'],
-    ],
-    'Search Profile should show all surface fields, graying out unconfigured or idx-disabled ones'
-  );
+  const searchBadges = surfaces.search_profile.map((badge) => [badge.field_path, badge.state]);
+  assert.ok(searchBadges.some(([p, s]) => p === 'aliases' && s === 'active'));
+  assert.ok(searchBadges.some(([p, s]) => p === 'search_hints.query_terms' && s === 'active'));
+  assert.ok(searchBadges.some(([p, s]) => p === 'search_hints.domain_hints' && s === 'active'));
 
   assert.equal(
     surfaces.brand_resolver.length,
@@ -87,61 +79,32 @@ test('buildRuntimeIdxBadgesBySurface returns active and gray IDX badges for all 
   );
 });
 
-test('buildRuntimeIdxBadgesForWorker exposes contract range and list rules on fetch workers', () => {
+test('buildRuntimeIdxBadgesForWorker shows search fields on fetch workers', () => {
   const badges = buildRuntimeIdxBadgesForWorker({
     fieldRulesPayload: {
       fields: {
         weight: {
-          contract: {
-            range: {
-              min: 40,
-              max: 120,
-            },
-          },
-        },
-        features: {
-          contract: {
-            list_rules: {
-              dedupe: true,
-              sort: 'asc',
-              min_items: 1,
-              max_items: 5,
-              item_union: 'set_union',
-            },
-          },
+          priority: { required_level: 'required' },
+          search_hints: { query_terms: ['weight', 'mass'] },
+          aliases: ['mass'],
         },
       },
     },
-    worker: {
-      pool: 'fetch',
-    },
+    worker: { pool: 'fetch' },
   });
 
-  assert.deepEqual(
-    badges
-      .filter((badge) => ['contract.range', 'contract.list_rules'].includes(badge.field_path))
-      .map((badge) => [badge.field_path, badge.label, badge.state]),
-    [
-      ['contract.range', 'idx.contract.range', 'active'],
-      ['contract.list_rules', 'idx.contract.list_rules', 'active'],
-    ],
-    'Fetch Worker should expose active idx.contract.range and idx.contract.list_rules badges when those rules are configured',
+  // Fetch workers now use SEARCH_RUNTIME_FIELDS (aspirational extraction fields removed)
+  assert.ok(
+    badges.some((b) => b.field_path === 'priority.required_level' && b.state === 'active'),
+    'Fetch Worker should show priority.required_level from SEARCH_RUNTIME_FIELDS',
   );
-});
-
-test('buildRuntimeIdxTooltip scopes unknown-token behavior to extraction guidance', () => {
-  const tooltip = buildRuntimeIdxTooltip({
-    fieldPath: 'contract.unknown_token',
-    surfaceLabel: 'Fetch Worker',
-    active: true,
-  });
-
-  assert.match(tooltip, /^idx\.contract\.unknown_token/m);
-  assert.match(tooltip, /Fetch Worker/);
-  assert.match(tooltip, /When ON: This runtime stage includes the configured unknown token in extraction guidance when the field cannot be resolved\./);
-  assert.doesNotMatch(
-    tooltip,
-    /uses the configured unknown token when the field cannot be resolved/,
-    'unknown-token runtime tooltip should not promise end-to-end runtime placeholder handling',
+  assert.ok(
+    badges.some((b) => b.field_path === 'aliases' && b.state === 'active'),
+    'Fetch Worker should show aliases from SEARCH_RUNTIME_FIELDS',
+  );
+  // Aspirational fields no longer appear
+  assert.ok(
+    !badges.some((b) => b.field_path === 'contract.range'),
+    'Fetch Worker should not show removed aspirational field paths',
   );
 });

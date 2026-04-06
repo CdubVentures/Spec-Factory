@@ -201,19 +201,22 @@ export function WorkbenchDrawer({
         </div>
 
         <div className="flex gap-0.5 mt-3 -mb-px">
-          {DRAWER_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-2 py-1 text-[11px] font-medium rounded-t border-b-2 ${
-                activeTab === tab.id
-                  ? 'border-accent text-accent'
-                  : DRAWER_TAB_IDLE_CLASS
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {DRAWER_TABS.map((tab) => {
+            const isLockedTab = isEgLocked && tab.id !== 'search';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2 py-1 text-[11px] font-medium rounded-t border-b-2 ${
+                  activeTab === tab.id
+                    ? 'border-accent text-accent'
+                    : DRAWER_TAB_IDLE_CLASS
+                } ${isLockedTab ? 'opacity-50' : ''}`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -224,7 +227,7 @@ export function WorkbenchDrawer({
         </div>
       )}
 
-      <div className="p-4 space-y-3">
+      <div className={`p-4 space-y-3 ${isEgLocked && activeTab !== 'search' ? 'pointer-events-none opacity-40' : ''}`}>
         <WorkbenchDrawerTabContent
           activeTab={activeTab}
           category={category}
@@ -240,6 +243,7 @@ export function WorkbenchDrawer({
           onRunConsistency={runEnumConsistency}
           onUpdate={update}
           onNavigate={onNavigate}
+          isEgLocked={isEgLocked}
           B={B}
         />
       </div>

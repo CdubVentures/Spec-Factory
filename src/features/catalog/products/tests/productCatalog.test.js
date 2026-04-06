@@ -72,7 +72,7 @@ test('addProduct: creates product with hex-based productId', async () => {
   try {
     const result = await addProduct({
       config, category: 'mouse', brand: 'Logitech', base_model: 'G Pro X Superlight 2',
-      seedUrls: ['https://example.com'], storage, upsertQueue
+      storage, upsertQueue
     });
 
     assert.equal(result.ok, true);
@@ -169,33 +169,12 @@ test('addProduct: works without storage or queue', async () => {
 
 // --- updateProduct ---
 
-test('updateProduct: patches seed_urls without changing productId', async () => {
-  const config = await tmpConfig();
-  try {
-    const pid = 'mouse-aabb1122';
-    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper V3 Pro', base_model: 'Viper V3 Pro', variant: '', status: 'active', seed_urls: [] });
-
-    const result = await updateProduct({
-      config, category: 'mouse', productId: pid, specDb,
-      patch: { seed_urls: ['https://razer.com/viper'] }
-    });
-
-    assert.equal(result.ok, true);
-    assert.equal(result.productId, pid);
-    assert.deepEqual(result.product.seed_urls, ['https://razer.com/viper']);
-    assert.ok(result.product.updated_at);
-  } finally {
-    await cleanup(config);
-  }
-});
-
 test('updateProduct: identity change keeps same productId (immutable)', async () => {
   const config = await tmpConfig();
   try {
     const pid = 'mouse-ccdd3344';
     const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active' });
 
     const result = await updateProduct({
       config, category: 'mouse', productId: pid, specDb,
@@ -228,7 +207,7 @@ test('removeProduct: removes product from catalog', async () => {
   try {
     const pid = 'mouse-eeff5566';
     const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    specDb.upsertProduct({ category: 'mouse', product_id: pid, brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active' });
 
     const result = await removeProduct({ config, category: 'mouse', productId: pid, specDb });
     assert.equal(result.ok, true);
@@ -290,7 +269,7 @@ test('seedFromCatalog: skips existing products in identity mode', async () => {
   const config = await tmpConfig();
   try {
     // Pre-seed a product in the catalog JSON
-    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '', status: 'active' });
 
     // Seed from catalog — the existing product should be SKIPPED in identity mode
     const result = await seedFromCatalog({ config, category: 'mouse' });
@@ -306,9 +285,9 @@ test('seedFromCatalog: skips existing products in identity mode', async () => {
 test('listProducts: returns sorted product list from SQL', () => {
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
   try {
-    specDb.upsertProduct({ product_id: 'mouse-001', brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', seed_urls: [], identifier: '', brand_identifier: '' });
-    specDb.upsertProduct({ product_id: 'mouse-002', brand: 'Logitech', model: 'G502', base_model: 'G502', variant: '', status: 'active', seed_urls: [], identifier: '', brand_identifier: '' });
-    specDb.upsertProduct({ product_id: 'mouse-003', brand: 'Corsair', model: 'M55', base_model: 'M55', variant: '', status: 'active', seed_urls: [], identifier: '', brand_identifier: '' });
+    specDb.upsertProduct({ product_id: 'mouse-001', brand: 'Razer', model: 'Viper', base_model: 'Viper', variant: '', status: 'active', identifier: '', brand_identifier: '' });
+    specDb.upsertProduct({ product_id: 'mouse-002', brand: 'Logitech', model: 'G502', base_model: 'G502', variant: '', status: 'active', identifier: '', brand_identifier: '' });
+    specDb.upsertProduct({ product_id: 'mouse-003', brand: 'Corsair', model: 'M55', base_model: 'M55', variant: '', status: 'active', identifier: '', brand_identifier: '' });
 
     const products = listProducts({ specDb });
     assert.equal(products.length, 3);
@@ -333,7 +312,7 @@ test('listProducts: returns empty array when no products', () => {
 test('listProducts: returns base_model and variant from SQL', () => {
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
   try {
-    specDb.upsertProduct({ product_id: 'mouse-001', brand: 'Finalmouse', model: 'ULX Prophecy - Scream', base_model: 'ULX Prophecy', variant: 'Scream', status: 'active', seed_urls: [], identifier: '', brand_identifier: '' });
+    specDb.upsertProduct({ product_id: 'mouse-001', brand: 'Finalmouse', model: 'ULX Prophecy - Scream', base_model: 'ULX Prophecy', variant: 'Scream', status: 'active', identifier: '', brand_identifier: '' });
 
     const products = listProducts({ specDb });
     assert.equal(products.length, 1);

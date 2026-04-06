@@ -4,12 +4,15 @@ const VALID_NAME = /^[a-z][a-z0-9-]*$/;
 const VALID_HEX = /^#[0-9a-fA-F]{6}$/;
 
 export function registerColorRoutes(ctx) {
-  const { jsonRes, readJsonBody, appDb, broadcastWs, colorRegistryPath, writeBackColorRegistry } = ctx;
+  const { jsonRes, readJsonBody, appDb, broadcastWs, colorRegistryPath, writeBackColorRegistry, syncColorEnums } = ctx;
 
   function afterMutation() {
     writeBackColorRegistry(appDb, colorRegistryPath).catch((err) => {
       console.warn('[mirror-write] color_registry.json write-back failed:', err?.message || err);
     });
+    // WHY: Sync list_values in all active category specDbs so the
+    // closed color enum stays current without requiring recompile.
+    try { syncColorEnums(); } catch { /* best-effort */ }
   }
 
   return async function handleColorRoutes(parts, params, method, req, res) {

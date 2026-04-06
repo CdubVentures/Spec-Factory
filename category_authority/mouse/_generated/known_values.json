@@ -1,142 +1,266 @@
 {
   "category": "mouse",
-  "fields": {
-    "coating": [
-      "A",
-      "help",
-      "matte",
-      "rubber grips"
-    ],
-    "connection": [
-      "bluetooth",
-      "hybrid",
-      "wired",
-      "wireless"
-    ],
-    "connectivity": [
-      "1",
-      "2.4GHz Dongle",
-      "2.4GHz RF Dongle",
-      "2.4GHz WIFI Dongle",
-      "2.5",
-      "n/a",
-      "unk"
-    ],
-    "encoder_steps": [
-      "16",
-      "18",
-      "20",
-      "24",
-      "25",
-      "26",
-      "30",
-      "5",
-      "59"
-    ],
-    "feet_material": [
-      "Glass",
-      "l",
-      "PTFE",
-      "PTFE (95%)",
-      "PTFE (Black-Dyed)",
-      "PTFE (Teflon)",
-      "PTFE (Virgin-Grade)"
-    ],
-    "form_factor": [
-      "ambidextrous",
-      "left",
-      "right"
-    ],
-    "front_flare": [
-      "flat",
-      "inward",
-      "outward"
-    ],
-    "hump": [
-      "back - front",
-      "back - rear",
-      "back mid",
-      "front",
-      "middle"
-    ],
-    "lighting": [
-      "1 zone (led)",
-      "1 zone (rgb)",
-      "2 zone (led)",
-      "2 zone (rgb)",
-      "3 zone (led)",
-      "3 zone (rgb)",
-      "4 zone (led)",
-      "4 zone (rgb)",
-      "5 zone (led)",
-      "5 zone (rgb)",
-      "6 zone (led)",
-      "6 zone (rgb)",
-      "7 zone (led)",
-      "7 zone (rgb)",
-      "8 zone (rgb)",
-      "9 zone (rgb)",
-      "none"
-    ],
-    "mcu": [
-      "Holtek HT32F52352",
-      "Nordic nRF52832",
-      "Nordic nRF52833",
-      "Nordic nRF52840",
-      "Nuvoton M484SIDAE",
-      "NXP LPC11U68",
-      "NXP LPC54605J512",
-      "STM32",
-      "STM32F072CBU6",
-      "STM32L412C8U6",
-      "Ti CC2462R",
-      "unk",
-      "unspecified"
-    ],
-    "sensor_type": [
-      "laser",
-      "optical",
-      "unk"
-    ],
-    "shape": [
-      "asymmetrical",
-      "ergonomic",
-      "symmetrical"
-    ],
-    "switch_type": [
-      "Black Shell Blue Dot",
-      "Corsair Quickstrike",
-      "D2FC-F-7N (20M)",
-      "eqwe",
-      "Haptic Inductive Trigger System (HITS)",
-      "Kailh GM 4.0",
-      "LK Optical V2",
-      "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
-      "mechanical",
-      "Omron",
-      "Omron D2FC-7N",
-      "Omron D2FC-7N (60M)",
-      "Omron D2FC-F-K",
-      "Omron D2FC-F-K (50M)",
-      "Omron D2FP-FN2",
-      "optical",
-      "optical / mechanical",
-      "optical-mechanical",
-      "ROG 70M",
-      "ROG Micro Switch II",
-      "ROG Micro Switches",
-      "ROG Optical Micro Switches",
-      "Transparent Crystal Shell White Dot",
-      "TTC Optical Microswitch",
-      "unk",
-      "unspecified",
-      "yay"
-    ],
-    "yes_no": [
-      "yes",
-      "no"
-    ]
+  "enums": {
+    "coating": {
+      "policy": "open_prefer_known",
+      "values": [
+        "A",
+        "help",
+        "matte",
+        "rubber grips"
+      ]
+    },
+    "colors": {
+      "policy": "closed",
+      "values": [
+        "amber",
+        "beige",
+        "black",
+        "blue",
+        "brown",
+        "coral",
+        "cyan",
+        "dark-blue",
+        "dark-brown",
+        "dark-cyan",
+        "dark-fuchsia",
+        "dark-gray",
+        "dark-green",
+        "dark-indigo",
+        "dark-lime",
+        "dark-orange",
+        "dark-pink",
+        "dark-purple",
+        "dark-red",
+        "dark-rose",
+        "dark-sky",
+        "dark-slate",
+        "dark-stone",
+        "dark-teal",
+        "dark-violet",
+        "dark-yellow",
+        "emerald",
+        "fuchsia",
+        "gold",
+        "gray",
+        "green",
+        "indigo",
+        "ivory",
+        "lavender",
+        "light-amber",
+        "light-blue",
+        "light-brown",
+        "light-coral",
+        "light-cyan",
+        "light-emerald",
+        "light-fuchsia",
+        "light-gray",
+        "light-green",
+        "light-indigo",
+        "light-lime",
+        "light-olive",
+        "light-orange",
+        "light-pink",
+        "light-purple",
+        "light-red",
+        "light-rose",
+        "light-sky",
+        "light-slate",
+        "light-stone",
+        "light-teal",
+        "light-violet",
+        "light-yellow",
+        "lime",
+        "magenta",
+        "maroon",
+        "navy",
+        "olive",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "rose",
+        "salmon",
+        "silver",
+        "sky",
+        "slate",
+        "stone",
+        "teal",
+        "turquoise",
+        "violet",
+        "white",
+        "yellow"
+      ]
+    },
+    "connection": {
+      "policy": "open_prefer_known",
+      "values": [
+        "bluetooth",
+        "hybrid",
+        "wired",
+        "wireless"
+      ]
+    },
+    "connectivity": {
+      "policy": "open_prefer_known",
+      "values": [
+        "1",
+        "2.4GHz Dongle",
+        "2.4GHz RF Dongle",
+        "2.4GHz WIFI Dongle",
+        "2.5",
+        "n/a",
+        "unk"
+      ]
+    },
+    "encoder_steps": {
+      "policy": "closed",
+      "values": [
+        "16",
+        "18",
+        "20",
+        "24",
+        "25",
+        "26",
+        "30",
+        "5",
+        "59"
+      ]
+    },
+    "feet_material": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Glass",
+        "l",
+        "PTFE",
+        "PTFE (95%)",
+        "PTFE (Black-Dyed)",
+        "PTFE (Teflon)",
+        "PTFE (Virgin-Grade)"
+      ]
+    },
+    "form_factor": {
+      "policy": "open_prefer_known",
+      "values": [
+        "ambidextrous",
+        "left",
+        "right"
+      ]
+    },
+    "front_flare": {
+      "policy": "open_prefer_known",
+      "values": [
+        "flat",
+        "inward",
+        "outward"
+      ]
+    },
+    "hump": {
+      "policy": "open_prefer_known",
+      "values": [
+        "back - front",
+        "back - rear",
+        "back mid",
+        "front",
+        "middle"
+      ]
+    },
+    "lighting": {
+      "policy": "open_prefer_known",
+      "values": [
+        "1 zone (led)",
+        "1 zone (rgb)",
+        "2 zone (led)",
+        "2 zone (rgb)",
+        "3 zone (led)",
+        "3 zone (rgb)",
+        "4 zone (led)",
+        "4 zone (rgb)",
+        "5 zone (led)",
+        "5 zone (rgb)",
+        "6 zone (led)",
+        "6 zone (rgb)",
+        "7 zone (led)",
+        "7 zone (rgb)",
+        "8 zone (rgb)",
+        "9 zone (rgb)",
+        "none"
+      ]
+    },
+    "mcu": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Holtek HT32F52352",
+        "Nordic nRF52832",
+        "Nordic nRF52833",
+        "Nordic nRF52840",
+        "Nuvoton M484SIDAE",
+        "NXP LPC11U68",
+        "NXP LPC54605J512",
+        "STM32",
+        "STM32F072CBU6",
+        "STM32L412C8U6",
+        "Ti CC2462R",
+        "unk",
+        "unspecified"
+      ]
+    },
+    "sensor_type": {
+      "policy": "open_prefer_known",
+      "values": [
+        "laser",
+        "optical",
+        "unk"
+      ]
+    },
+    "shape": {
+      "policy": "open_prefer_known",
+      "values": [
+        "asymmetrical",
+        "ergonomic",
+        "symmetrical"
+      ]
+    },
+    "switch_type": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Black Shell Blue Dot",
+        "Corsair Quickstrike",
+        "D2FC-F-7N (20M)",
+        "eqwe",
+        "Haptic Inductive Trigger System (HITS)",
+        "Kailh GM 4.0",
+        "LK Optical V2",
+        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
+        "mechanical",
+        "Omron",
+        "Omron D2FC-7N",
+        "Omron D2FC-7N (60M)",
+        "Omron D2FC-F-K",
+        "Omron D2FC-F-K (50M)",
+        "Omron D2FP-FN2",
+        "optical",
+        "optical / mechanical",
+        "optical-mechanical",
+        "ROG 70M",
+        "ROG Micro Switch II",
+        "ROG Micro Switches",
+        "ROG Optical Micro Switches",
+        "Transparent Crystal Shell White Dot",
+        "TTC Optical Microswitch",
+        "unk",
+        "unspecified",
+        "yay"
+      ]
+    },
+    "yes_no": {
+      "policy": "open",
+      "values": [
+        "yes",
+        "no"
+      ]
+    }
   },
-  "generated_at": "2026-04-05T04:16:03.900Z",
+  "generated_at": "2026-04-06T02:02:54.599Z",
   "version": 1
 }

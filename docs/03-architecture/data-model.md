@@ -304,7 +304,6 @@ Table constraints: `UNIQUE(category, product_id)`.
 | `base_model` | `TEXT` | `DEFAULT ''` | migration-added model family |
 | `variant` | `TEXT` | `DEFAULT ''` | variant token |
 | `status` | `TEXT` | `DEFAULT 'active'` | product lifecycle state |
-| `seed_urls` | `TEXT` |  | serialized seed URL array |
 | `identifier` | `TEXT` |  | stable external identity lock |
 | `brand_identifier` | `TEXT` | `DEFAULT ''` | migration-added AppDb brand join key |
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |

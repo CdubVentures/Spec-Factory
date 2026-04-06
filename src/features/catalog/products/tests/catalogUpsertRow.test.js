@@ -15,7 +15,6 @@ describe('upsertCatalogProductRow contract', () => {
     model: ' G Pro X ',
     variant: ' Superlight ',
     status: ' active ',
-    seed_urls: ['https://example.com'],
     identifier: ' lg-gpx ',
   };
 

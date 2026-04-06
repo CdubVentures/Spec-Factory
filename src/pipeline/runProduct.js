@@ -36,7 +36,10 @@ import {
   normalizeAmbiguityLevel,
   resolveIdentityLockStatus
 } from '../utils/identityNormalize.js';
-import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
+import { bootstrapRunConfig } from './seams/bootstrapRunProductExecutionState.js';
+import { buildDiscoverySeedPlanContext, runDiscoverySeedPlan } from '../features/indexing/pipeline/orchestration/index.js';
+import { buildOrderedFetchPlan } from '../features/indexing/pipeline/domainClassifier/runDomainClassifier.js';
+import { normalizeFieldList } from '../utils/fieldKeys.js';
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
@@ -213,35 +216,69 @@ export async function runProduct({
       });
     },
   });
+  const _t0 = Date.now();
   await session.start();
   const warmUpPromise = session.warmUp?.() ?? Promise.resolve();
+  console.error(`[TIMING] session.start: ${Date.now() - _t0}ms`);
 
-  const [executionBootstrapState] = await Promise.all([
-    bootstrapRunProductExecutionState({
-      storage,
-      config,
-      logger,
-      category,
-      productId,
-      runId,
-      roundContext,
-      runtimeMode,
-      job,
-      identityLock,
-      identityLockStatus,
-      runArtifactsBase,
-      syncRuntimeOverrides: async ({ force = false } = {}) => {
-        runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
-        return runtimeOverrides;
-      },
-      frontierDb,
-      specDb: config.specDb || null,
-    }),
+  // ── Phase 1: Config bootstrap (< 1s) ──────────────────────────────────────
+  const _t1 = Date.now();
+  const bootstrapConfig = await bootstrapRunConfig({
+    storage,
+    config,
+    logger,
+    category,
+    productId,
+    runId,
+    roundContext,
+    runtimeMode,
+    job,
+    identityLock,
+    identityLockStatus,
+    runArtifactsBase,
+    syncRuntimeOverrides: async ({ force = false } = {}) => {
+      runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
+      return runtimeOverrides;
+    },
+    frontierDb,
+    specDb: config.specDb || null,
+  });
+  runtimeOverrides = bootstrapConfig.runtimeOverrides;
+  console.error(`[TIMING] bootstrapRunConfig: ${Date.now() - _t1}ms`);
+
+  // ── Phase 2: Discovery pipeline + browser warm-up (parallel) ─────────────
+  const _t2 = Date.now();
+  const discoveryContext = buildDiscoverySeedPlanContext({
+    config,
+    storage,
+    category,
+    categoryConfig: bootstrapConfig.categoryConfig,
+    job,
+    runId,
+    logger,
+    roundContext,
+    requiredFields: bootstrapConfig.requiredFields,
+    llmContext: bootstrapConfig.llmContext,
+    frontierDb,
+    planner: null,
+    normalizeFieldList,
+  });
+
+  const [discoveryResult] = await Promise.all([
+    runDiscoverySeedPlan(discoveryContext),
     warmUpPromise,
   ]);
-  runtimeOverrides = executionBootstrapState.runtimeOverrides;
 
-  const { orderedFetchPlan, workerIdMap, fetchPlanStats } = executionBootstrapState;
+  console.error(`[TIMING] discovery+warmup: ${Date.now() - _t2}ms`);
+
+  // ── Phase 3: Build fetch plan ────────────────────────────────────────────
+  const { orderedSources: orderedFetchPlan, workerIdMap, stats: fetchPlanStats } =
+    buildOrderedFetchPlan({
+      discoveryResult,
+      blockedHosts: bootstrapConfig.blockedHosts,
+      config,
+      logger,
+    });
 
   logger.info('crawl_fetch_plan_state', {
     has_urls: orderedFetchPlan?.length > 0,

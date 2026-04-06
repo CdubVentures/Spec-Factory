@@ -25,7 +25,7 @@ import {
   buildFallbackKeyRows,
 } from './compileFileIo.js';
 import { declaredComponentPropertyKeysFromMap } from './compileComponentHelpers.js';
-import { EG_LOCKED_KEYS, getEgPresetForKey } from '../features/studio/index.js';
+import { EG_LOCKED_KEYS, getEgPresetForKey, preserveEgEditablePaths } from '../features/studio/index.js';
 
 export async function loadCompileContext({
   category,
@@ -145,9 +145,16 @@ export async function loadCompileContext({
     ? Object.keys(colorRegistryDoc.colors)
     : [];
   const egCtx = compileColorNames.length > 0 ? { colorNames: compileColorNames } : undefined;
+  // WHY: EG-locked fields always use the current preset as SSOT. If the saved
+  // map has a stale override (e.g., enum_policy was 'open' before registry close),
+  // the preset must win. Editable paths (ui.aliases, search_hints) are preserved.
   for (const k of EG_LOCKED_KEYS) {
-    if (!effectiveFieldOverrides[k]) {
-      effectiveFieldOverrides[k] = getEgPresetForKey(k, egCtx);
+    const preset = getEgPresetForKey(k, egCtx);
+    const current = effectiveFieldOverrides[k];
+    if (current && preset) {
+      effectiveFieldOverrides[k] = preserveEgEditablePaths(current, preset);
+    } else {
+      effectiveFieldOverrides[k] = preset;
     }
   }
 
@@ -223,6 +230,14 @@ export async function loadCompileContext({
       if (!vals.length) continue;
       enumLists[nf] = orderedUniqueStrings([...toArray(enumLists[nf]), ...vals]);
     }
+  }
+  // WHY: Color registry is a closed vocabulary. Inject all registered names
+  // into enumLists so the compile chain generates closed known_values.
+  if (compileColorNames.length > 0) {
+    enumLists['colors'] = orderedUniqueStrings([
+      ...toArray(enumLists['colors']),
+      ...compileColorNames,
+    ]);
   }
   const componentPull = {
     componentDb: await loadGeneratedComponentDbForCompile(generatedRoot),

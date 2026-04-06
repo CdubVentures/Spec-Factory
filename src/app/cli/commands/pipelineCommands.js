@@ -128,7 +128,6 @@ export function createPipelineCommands({
           sku,
           title
         },
-        seedUrls: seedIsUrl ? [seed] : parseCsvList(args['seed-urls'])
       };
       if (fields.length > 0) {
         job.requirements = {
@@ -175,7 +174,6 @@ export function createPipelineCommands({
           sku: String(args.sku || '').trim(),
           title: String(args.title || '').trim(),
         },
-        seedUrls: parseCsvList(args['seed-urls']),
       };
       const cliFields = parseCsvList(args.fields);
       if (cliFields.length > 0) {
@@ -413,7 +411,6 @@ export function createPipelineCommands({
       gtin: String(args.gtin || '').trim()
     };
 
-    const seedUrls = parseCsvList(args['seed-urls']);
     const anchors = parseJsonArg('anchors-json', args['anchors-json'], {});
     const requirements = parseJsonArg('requirements-json', args['requirements-json'], null);
 
@@ -421,7 +418,6 @@ export function createPipelineCommands({
       productId,
       category,
       identityLock,
-      seedUrls,
       anchors
     };
     if (requirements) {

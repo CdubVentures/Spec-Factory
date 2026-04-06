@@ -31,6 +31,7 @@ import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
+import { createPipelineCategoryCacheStore } from './stores/pipelineCategoryCacheStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
@@ -137,6 +138,10 @@ export class SpecDb {
     });
     this._fieldKeyOrderStore = createFieldKeyOrderStore({
       stmts: { _getFieldKeyOrder: this._getFieldKeyOrder, _setFieldKeyOrder: this._setFieldKeyOrder, _deleteFieldKeyOrder: this._deleteFieldKeyOrder },
+    });
+    this._pipelineCategoryCacheStore = createPipelineCategoryCacheStore({
+      db: this.db, category: this.category,
+      stmts: { _getPipelineCategoryCache: this._getPipelineCategoryCache, _upsertPipelineCategoryCache: this._upsertPipelineCategoryCache, _deletePipelineCategoryCache: this._deletePipelineCategoryCache },
     });
     this._crawlLedgerStore = createCrawlLedgerStore({
       db: this.db,
@@ -798,5 +803,11 @@ export class SpecDb {
   getFieldKeyOrder(category) { return this._fieldKeyOrderStore.getFieldKeyOrder(category); }
   setFieldKeyOrder(category, orderJson) { return this._fieldKeyOrderStore.setFieldKeyOrder(category, orderJson); }
   deleteFieldKeyOrder(category) { return this._fieldKeyOrderStore.deleteFieldKeyOrder(category); }
+
+  // --- Pipeline Category Cache (pre-computed boot projection) ---
+
+  upsertPipelineCategoryCache(category, payload) { this._pipelineCategoryCacheStore.upsertCache(category, payload); }
+  getPipelineCategoryCache(category) { return this._pipelineCategoryCacheStore.getCache(category); }
+  deletePipelineCategoryCache(category) { return this._pipelineCategoryCacheStore.deleteCache(category); }
 
 }

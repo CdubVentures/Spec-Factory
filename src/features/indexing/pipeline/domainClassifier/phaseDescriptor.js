@@ -1,6 +1,6 @@
 // WHY: Orchestration descriptor for Domain Classifier phase.
 // Assembles final pipeline result. buildOrderedFetchPlan runs post-discovery
-// in bootstrapRunProductExecutionState — this phase just merges results.
+// in runProduct — this phase just merges results.
 
 export const domainClassifierPhase = {
   id: 'domainClassifier',

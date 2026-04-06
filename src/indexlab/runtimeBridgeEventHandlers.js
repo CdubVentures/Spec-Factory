@@ -491,7 +491,6 @@ async function handleBrandResolved(state, deps, { ts, row }) {
             model: String(identity.model || '').trim(),
             variant: String(identity.variant || '').trim(),
             status: 'active',
-            seed_urls: [],
             identifier: null,
             brand_identifier: '',
           });

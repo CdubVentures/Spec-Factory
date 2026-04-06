@@ -16,7 +16,6 @@ export function upsertCatalogProductRow(specDb, category, productId, product) {
     base_model: identity.base_model,
     variant: identity.variant,
     status: String(product.status || '').trim() || 'active',
-    seed_urls: Array.isArray(product.seed_urls) ? product.seed_urls : [],
     identifier: String(product.identifier || '').trim() || null,
     brand_identifier: String(product.brand_identifier || '').trim() || '',
   });

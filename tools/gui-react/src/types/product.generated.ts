@@ -21,7 +21,6 @@ export interface CatalogProductGen {
   base_model: string;
   variant: string;
   status: string;
-  seed_urls: string[];
   added_at: string;
   added_by: string;
   updated_at?: string;

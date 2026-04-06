@@ -247,6 +247,19 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: field_studio_map re-seeded${result.manualRemoved > 0 ? ` (${result.manualRemoved} stale manual enums removed)` : ''}`
           : '',
     },
+    {
+      key: 'pipeline_category_cache',
+      label: 'Pipeline Category Cache',
+      scope: 'reseed',
+      tables: ['pipeline_category_cache'],
+      shouldRun: null,
+      execute: (ctx) => deps.reseedPipelineCategoryCacheFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded ? `${category}: pipeline cache re-seeded` : '',
+    },
   ];
 }
 

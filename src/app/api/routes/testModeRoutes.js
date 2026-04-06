@@ -263,7 +263,6 @@ export function registerTestModeRoutes(ctx) {
           model,
           variant: il.variant || '',
           status: 'active',
-          seed_urls: [],
           added_at: new Date().toISOString(),
           added_by: 'test-mode'
         };

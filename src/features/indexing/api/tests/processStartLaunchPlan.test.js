@@ -38,7 +38,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     const result = buildPlan({
       requestedRunId: 'bad',
       categoryAuthorityRoot: overrideRoot,
-      seedUrls: [' https://example.com/a ', '', 'https://example.com/b'],
       fields: ['dpi', 'weight', ''],
       providers: ['manufacturer', ' search '],
       discoveryEnabled: true,
@@ -69,8 +68,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       'mouse',
       '--product-id',
       'mouse-acme-orbit-x1',
-      '--seed-urls',
-      'https://example.com/a,https://example.com/b',
       '--fields',
       'dpi,weight',
       '--providers',

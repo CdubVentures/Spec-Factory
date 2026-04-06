@@ -29,6 +29,7 @@ export interface WorkbenchDrawerTabContentProps {
   }) => Promise<void>;
   onUpdate: (path: string, value: unknown) => void;
   onNavigate: (key: string) => void;
+  isEgLocked?: boolean;
   B: BadgeSlot;
 }
 
@@ -47,6 +48,7 @@ export function WorkbenchDrawerTabContent({
   onRunConsistency,
   onUpdate,
   onNavigate,
+  isEgLocked = false,
   B,
 }: WorkbenchDrawerTabContentProps) {
   if (activeTab === 'contract') {
@@ -68,6 +70,7 @@ export function WorkbenchDrawerTabContent({
         consistencyPending={consistencyPending}
         consistencyMessage={consistencyMessage}
         consistencyError={consistencyError}
+        isEgLocked={isEgLocked}
         B={B}
       />
     );

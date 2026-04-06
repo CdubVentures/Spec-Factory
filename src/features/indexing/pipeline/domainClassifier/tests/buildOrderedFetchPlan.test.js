@@ -32,16 +32,13 @@ describe('buildOrderedFetchPlan', () => {
         selectedUrls: ['https://approved.com/page'],
         candidates,
       }),
-      seedUrls: ['https://seed.com/robots.txt'],
       config: {},
       logger: null,
     });
 
     const urls = result.orderedSources.map((s) => s.url);
-    assert.equal(urls.length, 2);
-    // Approved URL has slot 'a' → sorts first; seeds without slots sort last
+    assert.equal(urls.length, 1);
     assert.equal(urls[0], 'https://approved.com/page');
-    assert.ok(urls.includes('https://seed.com/robots.txt'));
   });
 
   test('filters out blocked hosts', () => {
@@ -75,18 +72,16 @@ describe('buildOrderedFetchPlan', () => {
         selectedUrls: ['https://a.com', 'https://b.com', 'https://c.com'],
         candidates,
       }),
-      seedUrls: ['https://seed.com/robots.txt'],
       config: { domainClassifierUrlCap: '2' },
       logger: null,
     });
 
     const urls = result.orderedSources.map((s) => s.url);
-    // 2 approved URLs (highest scores) + 1 seed = 3 total
-    assert.equal(urls.length, 3);
+    // 2 approved URLs (highest scores) capped
+    assert.equal(urls.length, 2);
     assert.ok(urls.includes('https://a.com'));
     assert.ok(urls.includes('https://b.com'));
     assert.ok(!urls.includes('https://c.com'));
-    assert.ok(urls.includes('https://seed.com/robots.txt'));
     assert.equal(result.stats.overflow_count, 1);
   });
 
@@ -153,13 +148,11 @@ describe('buildOrderedFetchPlan', () => {
         selectedUrls: ['https://approved.com'],
         candidates,
       }),
-      seedUrls: ['https://seed.com'],
       config: {},
       logger: null,
     });
 
     const byUrl = Object.fromEntries(result.orderedSources.map((s) => [s.url, s]));
-    assert.equal(byUrl['https://seed.com'].discoveredFrom, 'seed');
     assert.equal(byUrl['https://approved.com'].discoveredFrom, 'discovery_approved');
   });
 
@@ -170,7 +163,6 @@ describe('buildOrderedFetchPlan', () => {
         selectedUrls: ['https://a.com'],
         candidates,
       }),
-      seedUrls: ['https://seed.com'],
       blockedHosts: new Set(['evil.com']),
       config: {},
       logger: null,
@@ -178,7 +170,6 @@ describe('buildOrderedFetchPlan', () => {
 
     assert.ok('total_queued' in result.stats);
     assert.ok('approved_count' in result.stats);
-    assert.ok('seed_count' in result.stats);
     assert.ok('overflow_count' in result.stats);
     assert.ok('blocked_count' in result.stats);
     assert.ok(Array.isArray(result.stats.blocked_hosts));

@@ -19,7 +19,6 @@ test('buildJobFromDb — happy path returns full job object', () => {
     base_model: 'Viper V3 Pro',
     model: 'Viper V3 Pro',
     variant: '4K',
-    seed_urls: '["https://razer.com/viper"]',
   });
 
   const job = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
@@ -36,7 +35,6 @@ test('buildJobFromDb — happy path returns full job object', () => {
       sku: '',
       title: '',
     },
-    seedUrls: ['https://razer.com/viper'],
   });
 });
 
@@ -73,24 +71,6 @@ test('buildJobFromDb — returns null when category is empty', () => {
   const db = mockSpecDb({ brand: 'Razer', base_model: 'Viper', model: 'Viper' });
   const result = buildJobFromDb({ productId: PRODUCT_ID, category: '', specDb: db });
   assert.equal(result, null);
-});
-
-test('buildJobFromDb — null seed_urls yields empty array', () => {
-  const db = mockSpecDb({ brand: 'Razer', base_model: 'Viper', model: 'Viper', seed_urls: null });
-  const job = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
-  assert.deepEqual(job.seedUrls, []);
-});
-
-test('buildJobFromDb — JSON string seed_urls is parsed', () => {
-  const db = mockSpecDb({ brand: 'X', base_model: 'Y', model: 'Y', seed_urls: '["a","b"]' });
-  const job = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
-  assert.deepEqual(job.seedUrls, ['a', 'b']);
-});
-
-test('buildJobFromDb — invalid JSON seed_urls yields empty array', () => {
-  const db = mockSpecDb({ brand: 'X', base_model: 'Y', model: 'Y', seed_urls: 'not-json' });
-  const job = buildJobFromDb({ productId: PRODUCT_ID, category: CATEGORY, specDb: db });
-  assert.deepEqual(job.seedUrls, []);
 });
 
 test('buildJobFromDb — trims whitespace from brand/model/variant', () => {

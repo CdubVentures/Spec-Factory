@@ -42,7 +42,6 @@ function makeProduct(productId, brand, model, variant, extra = {}) {
     productId,
     category: 'mouse',
     identityLock: { brand, base_model: model, model, variant },
-    seedUrls: [],
     anchors: {},
     ...extra
   };

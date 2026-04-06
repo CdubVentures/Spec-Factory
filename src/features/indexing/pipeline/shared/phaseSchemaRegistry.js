@@ -37,7 +37,7 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
         { name: 'dark-green', hex: '#15803d' }, { name: 'teal', hex: '#14b8a6' },
         { name: 'yellow', hex: '#eab308' }, { name: 'blue', hex: '#3b82f6' },
       ],
-      product: { brand: '{brand}', model: '{model}', category: '{category}', seed_urls: ['{seed_url}'] },
+      product: { brand: '{brand}', model: '{model}', category: '{category}' },
     }),
     response_schema: zodToLlmSchema(colorEditionFinderResponseSchema),
   },

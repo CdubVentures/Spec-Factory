@@ -246,7 +246,11 @@ export function registerStudioRoutes(ctx) {
         sessionCache.getSessionRules(category),
       ]);
       const knownValues = dedupeEnumValues(
-        Array.isArray(knownValuesDoc?.fields?.[field]) ? knownValuesDoc.fields[field] : []
+        Array.isArray(knownValuesDoc?.enums?.[field]?.values)
+          ? knownValuesDoc.enums[field].values
+          : Array.isArray(knownValuesDoc?.fields?.[field])
+            ? knownValuesDoc.fields[field]
+            : []
       );
       // WHY: Phase E3 — SQL is sole source for pending enum values
       const pendingValues = runtimeSpecDb

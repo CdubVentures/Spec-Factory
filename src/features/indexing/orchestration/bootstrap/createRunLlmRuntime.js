@@ -6,7 +6,6 @@ export function createRunLlmRuntime({
   runId = '',
   roundContext = null,
   runtimeMode = 'production',
-  routeMatrixPolicy = {},
   runtimeOverrides = {},
   specDb = null,
   normalizeCostRatesFn = () => ({}),
@@ -35,8 +34,6 @@ export function createRunLlmRuntime({
     round: Number.parseInt(String(roundContext?.round ?? 0), 10) || 0,
     mode: runtimeMode,
     costRates: llmCostRates,
-    route_matrix_policy: routeMatrixPolicy,
-    routeMatrixPolicy: routeMatrixPolicy,
     forcedHighFields: [
       ...new Set([...(runtimeOverrides.force_high_fields || []), ...escalatedFromRound]),
     ],

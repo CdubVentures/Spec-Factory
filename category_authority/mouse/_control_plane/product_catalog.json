@@ -7,7 +7,7 @@
       "model": "AW610M",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.678Z",
       "added_by": "seed",
       "id": 1,
@@ -20,7 +20,7 @@
       "model": "AW620M",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.700Z",
       "added_by": "seed",
       "id": 2,
@@ -33,7 +33,7 @@
       "model": "Alienware Pro",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.722Z",
       "added_by": "seed",
       "id": 3,
@@ -46,7 +46,7 @@
       "model": "AW720M",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.755Z",
       "added_by": "seed",
       "id": 4,
@@ -59,7 +59,7 @@
       "model": "AW320M",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.773Z",
       "added_by": "seed",
       "id": 5,
@@ -72,7 +72,7 @@
       "model": "Cestus 310",
       "variant": "310",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.800Z",
       "added_by": "seed",
       "id": 6,
@@ -85,7 +85,7 @@
       "model": "Cestus 330",
       "variant": "330",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.823Z",
       "added_by": "seed",
       "id": 7,
@@ -98,7 +98,7 @@
       "model": "M2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.893Z",
       "added_by": "seed",
       "id": 10,
@@ -111,7 +111,7 @@
       "model": "M3",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.922Z",
       "added_by": "seed",
       "id": 11,
@@ -124,7 +124,7 @@
       "model": "M4",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.938Z",
       "added_by": "seed",
       "id": 12,
@@ -137,7 +137,7 @@
       "model": "M5",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.955Z",
       "added_by": "seed",
       "id": 13,
@@ -150,7 +150,7 @@
       "model": "M6",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.968Z",
       "added_by": "seed",
       "id": 14,
@@ -163,7 +163,7 @@
       "model": "MM310",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.983Z",
       "added_by": "seed",
       "id": 15,
@@ -176,7 +176,7 @@
       "model": "MM311",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.003Z",
       "added_by": "seed",
       "id": 16,
@@ -189,7 +189,7 @@
       "model": "MM711 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.019Z",
       "added_by": "seed",
       "id": 17,
@@ -202,7 +202,7 @@
       "model": "MM712 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.034Z",
       "added_by": "seed",
       "id": 18,
@@ -215,7 +215,7 @@
       "model": "MM712",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.052Z",
       "added_by": "seed",
       "id": 19,
@@ -228,7 +228,7 @@
       "model": "MM712 30th Anniversary Edition",
       "variant": "30th Anniversary Edition",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.066Z",
       "added_by": "seed",
       "id": 20,
@@ -241,7 +241,7 @@
       "model": "M55 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.086Z",
       "added_by": "seed",
       "id": 21,
@@ -254,7 +254,7 @@
       "model": "M55 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.102Z",
       "added_by": "seed",
       "id": 22,
@@ -267,7 +267,7 @@
       "model": "M55 RGB Pro",
       "variant": "RGB Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.117Z",
       "added_by": "seed",
       "id": 23,
@@ -280,7 +280,7 @@
       "model": "M75 Air Wireless",
       "variant": "Air Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.142Z",
       "added_by": "seed",
       "id": 24,
@@ -293,7 +293,7 @@
       "model": "M75 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.160Z",
       "added_by": "seed",
       "id": 25,
@@ -306,7 +306,7 @@
       "model": "M75",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.175Z",
       "added_by": "seed",
       "id": 26,
@@ -319,7 +319,7 @@
       "model": "Scimitar Elite Wireless Se",
       "variant": "Elite Wireless Se",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.193Z",
       "added_by": "seed",
       "id": 27,
@@ -332,7 +332,7 @@
       "model": "Scimitar Elite Wireless",
       "variant": "Elite Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.212Z",
       "added_by": "seed",
       "id": 28,
@@ -345,7 +345,7 @@
       "model": "Scimitar RGB Elite",
       "variant": "RGB Elite",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.232Z",
       "added_by": "seed",
       "id": 29,
@@ -358,7 +358,7 @@
       "model": "Scimitar Pro RGB",
       "variant": "Pro RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.249Z",
       "added_by": "seed",
       "id": 30,
@@ -371,7 +371,7 @@
       "model": "Nightsabre Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.266Z",
       "added_by": "seed",
       "id": 31,
@@ -384,7 +384,7 @@
       "model": "Darkstar Wireless RGB",
       "variant": "Wireless RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.286Z",
       "added_by": "seed",
       "id": 32,
@@ -397,7 +397,7 @@
       "model": "M65 RGB Ultra Wireless",
       "variant": "RGB Ultra Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.305Z",
       "added_by": "seed",
       "id": 33,
@@ -410,7 +410,7 @@
       "model": "M65 RGB Ultra",
       "variant": "RGB Ultra",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.415Z",
       "added_by": "seed",
       "id": 34,
@@ -423,7 +423,7 @@
       "model": "M65 RGB Laser",
       "variant": "RGB Laser",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.432Z",
       "added_by": "seed",
       "id": 35,
@@ -436,7 +436,7 @@
       "model": "M65 RGB Elite",
       "variant": "RGB Elite",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.448Z",
       "added_by": "seed",
       "id": 36,
@@ -449,7 +449,7 @@
       "model": "Katar Pro XT",
       "variant": "Pro XT",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.468Z",
       "added_by": "seed",
       "id": 37,
@@ -462,7 +462,7 @@
       "model": "Katar Elite Wireless",
       "variant": "Elite Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.486Z",
       "added_by": "seed",
       "id": 38,
@@ -475,7 +475,7 @@
       "model": "Katar Pro Wireless",
       "variant": "Pro Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.515Z",
       "added_by": "seed",
       "id": 39,
@@ -488,7 +488,7 @@
       "model": "Dark Core RGB Pro SE",
       "variant": "RGB Pro SE",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.534Z",
       "added_by": "seed",
       "id": 40,
@@ -501,7 +501,7 @@
       "model": "Dark Core RGB Pro",
       "variant": "RGB Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.549Z",
       "added_by": "seed",
       "id": 41,
@@ -514,7 +514,7 @@
       "model": "Dark Core RGB SE",
       "variant": "RGB SE",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.566Z",
       "added_by": "seed",
       "id": 42,
@@ -527,7 +527,7 @@
       "model": "Ironclaw RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.583Z",
       "added_by": "seed",
       "id": 43,
@@ -540,7 +540,7 @@
       "model": "Ironclaw RGB Wireless",
       "variant": "RGB Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.603Z",
       "added_by": "seed",
       "id": 44,
@@ -553,7 +553,7 @@
       "model": "Harpoon RGB Wireless",
       "variant": "RGB Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.619Z",
       "added_by": "seed",
       "id": 45,
@@ -566,7 +566,7 @@
       "model": "Harpoon RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.637Z",
       "added_by": "seed",
       "id": 46,
@@ -579,7 +579,7 @@
       "model": "Sabre RGB Pro",
       "variant": "RGB Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.765Z",
       "added_by": "seed",
       "id": 47,
@@ -592,7 +592,7 @@
       "model": "Sabre Pro Optical",
       "variant": "Pro Optical",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.825Z",
       "added_by": "seed",
       "id": 48,
@@ -605,7 +605,7 @@
       "model": "Sabre RGB Pro Wireless",
       "variant": "RGB Pro Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.843Z",
       "added_by": "seed",
       "id": 49,
@@ -618,7 +618,7 @@
       "model": "Sabre v2 Pro",
       "variant": "v2 Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.865Z",
       "added_by": "seed",
       "id": 50,
@@ -631,7 +631,7 @@
       "model": "Nightsword RGB Tunable",
       "variant": "RGB Tunable",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.882Z",
       "added_by": "seed",
       "id": 51,
@@ -644,7 +644,7 @@
       "model": "Glaive RGB Pro",
       "variant": "RGB Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.901Z",
       "added_by": "seed",
       "id": 52,
@@ -657,7 +657,7 @@
       "model": "ROG Harpe II Ace",
       "variant": "Ace",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.917Z",
       "added_by": "seed",
       "id": 53,
@@ -670,7 +670,7 @@
       "model": "ROG Harpe Ace Extreme",
       "variant": "Ace Extreme",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.934Z",
       "added_by": "seed",
       "id": 54,
@@ -683,7 +683,7 @@
       "model": "ROG Harpe Ace Mini",
       "variant": "Ace Mini",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.954Z",
       "added_by": "seed",
       "id": 55,
@@ -696,7 +696,7 @@
       "model": "ROG Harpe Ace Aim Lab",
       "variant": "Ace Aim Lab",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.969Z",
       "added_by": "seed",
       "id": 56,
@@ -709,7 +709,7 @@
       "model": "ROG Keris II Ace",
       "variant": "Ace",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:55.984Z",
       "added_by": "seed",
       "id": 57,
@@ -722,7 +722,7 @@
       "model": "ROG Keris II Origin",
       "variant": "Origin",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.000Z",
       "added_by": "seed",
       "id": 58,
@@ -735,7 +735,7 @@
       "model": "ROG Keris",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.018Z",
       "added_by": "seed",
       "id": 59,
@@ -748,7 +748,7 @@
       "model": "ROG Keris Wireless AimPoint",
       "variant": "Wireless AimPoint",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.036Z",
       "added_by": "seed",
       "id": 60,
@@ -761,7 +761,7 @@
       "model": "ROG Strix Impact III",
       "variant": "Impact III",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.054Z",
       "added_by": "seed",
       "id": 61,
@@ -774,7 +774,7 @@
       "model": "ROG Strix Impact III Wireless",
       "variant": "Impact III Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.068Z",
       "added_by": "seed",
       "id": 62,
@@ -787,7 +787,7 @@
       "model": "ROG Gladius III Wireless AimPoint",
       "variant": "Wireless AimPoint",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.084Z",
       "added_by": "seed",
       "id": 63,
@@ -800,7 +800,7 @@
       "model": "ROG Gladius III Wireless AimPoint EVA-02",
       "variant": "Wireless AimPoint EVA-02",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.102Z",
       "added_by": "seed",
       "id": 64,
@@ -813,7 +813,7 @@
       "model": "ROG Gladius III Core",
       "variant": "Core",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.119Z",
       "added_by": "seed",
       "id": 65,
@@ -826,7 +826,7 @@
       "model": "ROG Gladius III Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.134Z",
       "added_by": "seed",
       "id": 66,
@@ -839,7 +839,7 @@
       "model": "ROG Gladius III",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.150Z",
       "added_by": "seed",
       "id": 67,
@@ -852,7 +852,7 @@
       "model": "ROG Chakram",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.164Z",
       "added_by": "seed",
       "id": 68,
@@ -865,7 +865,7 @@
       "model": "ROG Chakram X Origin",
       "variant": "X Origin",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.181Z",
       "added_by": "seed",
       "id": 69,
@@ -878,7 +878,7 @@
       "model": "ROG Chakram X Core",
       "variant": "X Core",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.200Z",
       "added_by": "seed",
       "id": 70,
@@ -891,7 +891,7 @@
       "model": "ROG Spatha X",
       "variant": "X",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.220Z",
       "added_by": "seed",
       "id": 71,
@@ -904,7 +904,7 @@
       "model": "GX1000 Eagle Eye Mouse",
       "variant": "Eagle Eye Mouse",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.241Z",
       "added_by": "seed",
       "id": 72,
@@ -917,7 +917,7 @@
       "model": "Model O 2 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.260Z",
       "added_by": "seed",
       "id": 73,
@@ -930,7 +930,7 @@
       "model": "Model O 2 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.274Z",
       "added_by": "seed",
       "id": 74,
@@ -943,7 +943,7 @@
       "model": "Model O 2 Mini Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.305Z",
       "added_by": "seed",
       "id": 75,
@@ -956,7 +956,7 @@
       "model": "Model O 2 Mini Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.334Z",
       "added_by": "seed",
       "id": 76,
@@ -969,7 +969,7 @@
       "model": "Model O 2 PRO Series Wireless 8KHz Edition",
       "variant": "Series Wireless 8KHz Edition",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.357Z",
       "added_by": "seed",
       "id": 77,
@@ -982,7 +982,7 @@
       "model": "Model O 2 PRO Series",
       "variant": "Series",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.375Z",
       "added_by": "seed",
       "id": 78,
@@ -995,7 +995,7 @@
       "model": "Model D Wired",
       "variant": "el D Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.391Z",
       "added_by": "seed",
       "id": 79,
@@ -1008,7 +1008,7 @@
       "model": "Model D Minus Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.410Z",
       "added_by": "seed",
       "id": 80,
@@ -1021,7 +1021,7 @@
       "model": "Model D Minus Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.434Z",
       "added_by": "seed",
       "id": 81,
@@ -1034,7 +1034,7 @@
       "model": "Model D 2 PRO Series Wireless",
       "variant": "Series Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.451Z",
       "added_by": "seed",
       "id": 82,
@@ -1047,7 +1047,7 @@
       "model": "Model D 2 PRO Series Wireless 8Khz Edition",
       "variant": "Series Wireless 8Khz Edition",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.470Z",
       "added_by": "seed",
       "id": 83,
@@ -1060,7 +1060,7 @@
       "model": "Model D 2 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.487Z",
       "added_by": "seed",
       "id": 84,
@@ -1073,7 +1073,7 @@
       "model": "Model D 2 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.507Z",
       "added_by": "seed",
       "id": 85,
@@ -1086,7 +1086,7 @@
       "model": "Model I 2 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.525Z",
       "added_by": "seed",
       "id": 86,
@@ -1099,7 +1099,7 @@
       "model": "Model I 2 Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.541Z",
       "added_by": "seed",
       "id": 87,
@@ -1112,7 +1112,7 @@
       "model": "Series 2 PRO Wireless",
       "variant": "PRO Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.557Z",
       "added_by": "seed",
       "id": 88,
@@ -1125,7 +1125,7 @@
       "model": "Pulsefire Haste 2 Pro Wireless",
       "variant": "Pro Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.574Z",
       "added_by": "seed",
       "id": 89,
@@ -1138,7 +1138,7 @@
       "model": "Pulsefire Haste 2 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.588Z",
       "added_by": "seed",
       "id": 90,
@@ -1151,7 +1151,7 @@
       "model": "Pulsefire Haste 2 Core Wireless",
       "variant": "2 Core Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.606Z",
       "added_by": "seed",
       "id": 91,
@@ -1164,7 +1164,7 @@
       "model": "Pulsefire Haste 2",
       "variant": "2",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.624Z",
       "added_by": "seed",
       "id": 92,
@@ -1177,7 +1177,7 @@
       "model": "Pulsefire Wireless Haste 2 Mini Wireless",
       "variant": "2 Mini Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.639Z",
       "added_by": "seed",
       "id": 93,
@@ -1190,7 +1190,7 @@
       "model": "Pulsefire Haste Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.659Z",
       "added_by": "seed",
       "id": 94,
@@ -1203,7 +1203,7 @@
       "model": "Pulsefire Haste",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.674Z",
       "added_by": "seed",
       "id": 95,
@@ -1216,7 +1216,7 @@
       "model": "Pulsefire Surge",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.689Z",
       "added_by": "seed",
       "id": 96,
@@ -1229,7 +1229,7 @@
       "model": "Pulsefire Core",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.707Z",
       "added_by": "seed",
       "id": 97,
@@ -1242,7 +1242,7 @@
       "model": "Pro X Superlight 2 Dex",
       "variant": "Dex",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.725Z",
       "added_by": "seed",
       "id": 98,
@@ -1255,7 +1255,7 @@
       "model": "Pro 2 Lightspeed",
       "variant": "Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.741Z",
       "added_by": "seed",
       "id": 99,
@@ -1268,7 +1268,7 @@
       "model": "G309 Lightspeed",
       "variant": "Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.757Z",
       "added_by": "seed",
       "id": 100,
@@ -1281,7 +1281,7 @@
       "model": "Pro X Superlight 2",
       "variant": "Superlight 2",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.772Z",
       "added_by": "seed",
       "id": 101,
@@ -1294,7 +1294,7 @@
       "model": "G502 X Plus",
       "variant": "Plus",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.791Z",
       "added_by": "seed",
       "id": 102,
@@ -1307,7 +1307,7 @@
       "model": "Pro X Superlight",
       "variant": "Superlight",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.814Z",
       "added_by": "seed",
       "id": 103,
@@ -1320,7 +1320,7 @@
       "model": "Pro X Superlight 2c",
       "variant": "Superlight 2c",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.833Z",
       "added_by": "seed",
       "id": 104,
@@ -1333,7 +1333,7 @@
       "model": "Pro X 2 Superstrike",
       "variant": "2 Superstrike",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.857Z",
       "added_by": "seed",
       "id": 105,
@@ -1346,7 +1346,7 @@
       "model": "G502 X Lightspeed Wireless",
       "variant": "Lightspeed Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.885Z",
       "added_by": "seed",
       "id": 106,
@@ -1359,7 +1359,7 @@
       "model": "Pro Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.909Z",
       "added_by": "seed",
       "id": 107,
@@ -1372,7 +1372,7 @@
       "model": "G502 X",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.926Z",
       "added_by": "seed",
       "id": 108,
@@ -1385,7 +1385,7 @@
       "model": "G705 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.949Z",
       "added_by": "seed",
       "id": 109,
@@ -1398,7 +1398,7 @@
       "model": "G502 Lightspeed",
       "variant": "Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.971Z",
       "added_by": "seed",
       "id": 110,
@@ -1411,7 +1411,7 @@
       "model": "G305 Lightspeed",
       "variant": "Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:56.987Z",
       "added_by": "seed",
       "id": 111,
@@ -1424,7 +1424,7 @@
       "model": "G502 Hero",
       "variant": "Hero",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.005Z",
       "added_by": "seed",
       "id": 112,
@@ -1437,7 +1437,7 @@
       "model": "G903 Lightspeed",
       "variant": "Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.021Z",
       "added_by": "seed",
       "id": 113,
@@ -1450,7 +1450,7 @@
       "model": "G703 Hero Lightspeed",
       "variant": "Hero Lightspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.036Z",
       "added_by": "seed",
       "id": 114,
@@ -1463,7 +1463,7 @@
       "model": "G203 Lightsync",
       "variant": "Lightsync",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.058Z",
       "added_by": "seed",
       "id": 115,
@@ -1476,7 +1476,7 @@
       "model": "G403 Hero",
       "variant": "Hero",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.077Z",
       "added_by": "seed",
       "id": 116,
@@ -1489,7 +1489,7 @@
       "model": "Clutch GM41 LW Wireless",
       "variant": "LW Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.092Z",
       "added_by": "seed",
       "id": 117,
@@ -1502,7 +1502,7 @@
       "model": "Clutch GM41 LW V2",
       "variant": "LW V2",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.107Z",
       "added_by": "seed",
       "id": 118,
@@ -1515,7 +1515,7 @@
       "model": "Clutch GM20 Elite",
       "variant": "Elite",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.125Z",
       "added_by": "seed",
       "id": 119,
@@ -1528,7 +1528,7 @@
       "model": "Versa 300 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.140Z",
       "added_by": "seed",
       "id": 120,
@@ -1541,7 +1541,7 @@
       "model": "Versa 300 Elite Wireless",
       "variant": "Elite Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.156Z",
       "added_by": "seed",
       "id": 121,
@@ -1554,7 +1554,7 @@
       "model": "Clutch GM31 LW",
       "variant": "LW",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.188Z",
       "added_by": "seed",
       "id": 122,
@@ -1567,7 +1567,7 @@
       "model": "Clutch GM51 LW Wireless",
       "variant": "LW Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.203Z",
       "added_by": "seed",
       "id": 123,
@@ -1580,7 +1580,7 @@
       "model": "Clutch GM51 LW",
       "variant": "LW",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.219Z",
       "added_by": "seed",
       "id": 124,
@@ -1593,7 +1593,7 @@
       "model": "Clutch GM31 LW Wireless",
       "variant": "LW Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.238Z",
       "added_by": "seed",
       "id": 125,
@@ -1606,7 +1606,7 @@
       "model": "Forge GM300",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.256Z",
       "added_by": "seed",
       "id": 126,
@@ -1619,7 +1619,7 @@
       "model": "Forge GM100",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.274Z",
       "added_by": "seed",
       "id": 127,
@@ -1632,7 +1632,7 @@
       "model": "Forge GM310",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.288Z",
       "added_by": "seed",
       "id": 128,
@@ -1645,7 +1645,7 @@
       "model": "Clutch GM30",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.310Z",
       "added_by": "seed",
       "id": 129,
@@ -1658,7 +1658,7 @@
       "model": "Clutch GM08",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.333Z",
       "added_by": "seed",
       "id": 130,
@@ -1671,7 +1671,7 @@
       "model": "Clutch DM07",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.351Z",
       "added_by": "seed",
       "id": 131,
@@ -1684,7 +1684,7 @@
       "model": "Clutch GM11",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.369Z",
       "added_by": "seed",
       "id": 132,
@@ -1697,7 +1697,7 @@
       "model": "Clutch GM41 LW",
       "variant": "LW",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.385Z",
       "added_by": "seed",
       "id": 133,
@@ -1710,7 +1710,7 @@
       "model": "Cobra",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.411Z",
       "added_by": "seed",
       "id": 134,
@@ -1723,7 +1723,7 @@
       "model": "Cobra Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.435Z",
       "added_by": "seed",
       "id": 135,
@@ -1736,7 +1736,7 @@
       "model": "Viper Mini Signature Edition",
       "variant": "Signature Edition",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.453Z",
       "added_by": "seed",
       "id": 136,
@@ -1749,7 +1749,7 @@
       "model": "Deathadder V3 Pro",
       "variant": "V3 Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.575Z",
       "added_by": "seed",
       "id": 137,
@@ -1762,7 +1762,7 @@
       "model": "Deathadder V3 Hyperspeed",
       "variant": "V3 Hyperspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.593Z",
       "added_by": "seed",
       "id": 138,
@@ -1775,7 +1775,7 @@
       "model": "Deathadder V3",
       "variant": "V3",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.613Z",
       "added_by": "seed",
       "id": 139,
@@ -1788,7 +1788,7 @@
       "model": "Viper V3 Pro",
       "variant": "V3 Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.633Z",
       "added_by": "seed",
       "id": 140,
@@ -1801,7 +1801,7 @@
       "model": "Viper V3 Hyperspeed",
       "variant": "V3 Hyperspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.649Z",
       "added_by": "seed",
       "id": 141,
@@ -1814,7 +1814,7 @@
       "model": "Naga V2 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.668Z",
       "added_by": "seed",
       "id": 142,
@@ -1827,7 +1827,7 @@
       "model": "Naga V2 Hyperspeed",
       "variant": "Hyperspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.688Z",
       "added_by": "seed",
       "id": 143,
@@ -1840,7 +1840,7 @@
       "model": "Naga X",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.705Z",
       "added_by": "seed",
       "id": 144,
@@ -1853,7 +1853,7 @@
       "model": "Naga Left-Handed Edition",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.723Z",
       "added_by": "seed",
       "id": 145,
@@ -1866,7 +1866,7 @@
       "model": "Basilisk V3 Pro 35k",
       "variant": "Pro 35k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.740Z",
       "added_by": "seed",
       "id": 146,
@@ -1879,7 +1879,7 @@
       "model": "Basilisk V3 35k",
       "variant": "35k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.757Z",
       "added_by": "seed",
       "id": 147,
@@ -1892,7 +1892,7 @@
       "model": "Basilisk V3 X Hyperspeed",
       "variant": "X Hyperspeed",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.774Z",
       "added_by": "seed",
       "id": 148,
@@ -1905,7 +1905,7 @@
       "model": "Orochi V2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.802Z",
       "added_by": "seed",
       "id": 149,
@@ -1918,7 +1918,7 @@
       "model": "Pro Click",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.875Z",
       "added_by": "seed",
       "id": 150,
@@ -1931,7 +1931,7 @@
       "model": "Aatrox M811 MMO",
       "variant": "MMO",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.955Z",
       "added_by": "seed",
       "id": 151,
@@ -1944,7 +1944,7 @@
       "model": "Aatrox M811 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:57.993Z",
       "added_by": "seed",
       "id": 152,
@@ -1957,7 +1957,7 @@
       "model": "Bullseye M806",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.018Z",
       "added_by": "seed",
       "id": 153,
@@ -1970,7 +1970,7 @@
       "model": "Bullseye M806 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.036Z",
       "added_by": "seed",
       "id": 154,
@@ -1983,7 +1983,7 @@
       "model": "Cobra M711",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.053Z",
       "added_by": "seed",
       "id": 155,
@@ -1996,7 +1996,7 @@
       "model": "Cobra M711 FPS",
       "variant": "FPS",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.070Z",
       "added_by": "seed",
       "id": 156,
@@ -2009,7 +2009,7 @@
       "model": "Devourer M993",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.086Z",
       "added_by": "seed",
       "id": 157,
@@ -2022,7 +2022,7 @@
       "model": "EISA K1NG M916 Pro (1khz)",
       "variant": "Pro (1khz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.101Z",
       "added_by": "seed",
       "id": 158,
@@ -2035,7 +2035,7 @@
       "model": "FYZU M995",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.119Z",
       "added_by": "seed",
       "id": 159,
@@ -2048,7 +2048,7 @@
       "model": "Gainer M656",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.136Z",
       "added_by": "seed",
       "id": 160,
@@ -2061,7 +2061,7 @@
       "model": "Impact Elite M913",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.149Z",
       "added_by": "seed",
       "id": 161,
@@ -2074,7 +2074,7 @@
       "model": "Impact M908",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.166Z",
       "added_by": "seed",
       "id": 162,
@@ -2087,7 +2087,7 @@
       "model": "Invader M719 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.183Z",
       "added_by": "seed",
       "id": 163,
@@ -2100,7 +2100,7 @@
       "model": "K1ING M916 Pro (4K Hz)",
       "variant": "Pro (4K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.201Z",
       "added_by": "seed",
       "id": 164,
@@ -2113,7 +2113,7 @@
       "model": "K1NG M724 (1K Hz)",
       "variant": "(1K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.233Z",
       "added_by": "seed",
       "id": 165,
@@ -2126,7 +2126,7 @@
       "model": "K1NG M916 (2.4Ghz Wireless)",
       "variant": "(2.4Ghz Wireless)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.251Z",
       "added_by": "seed",
       "id": 166,
@@ -2139,7 +2139,7 @@
       "model": "K1NG M916 PRO (1K Hz)",
       "variant": "PRO (1K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.271Z",
       "added_by": "seed",
       "id": 167,
@@ -2152,7 +2152,7 @@
       "model": "K1NG M996 (8K Hz)",
       "variant": "(8K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.289Z",
       "added_by": "seed",
       "id": 168,
@@ -2165,7 +2165,7 @@
       "model": "K1NG MAX M918 (1K Hz)",
       "variant": "(1K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.318Z",
       "added_by": "seed",
       "id": 169,
@@ -2178,7 +2178,7 @@
       "model": "K1NG MAX M918 PRO (1K Hz)",
       "variant": "PRO (1K Hz)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.342Z",
       "added_by": "seed",
       "id": 170,
@@ -2191,7 +2191,7 @@
       "model": "Legend Chroma M990",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.376Z",
       "added_by": "seed",
       "id": 171,
@@ -2204,7 +2204,7 @@
       "model": "M991 Wireless FPS",
       "variant": "Wireless FPS",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.397Z",
       "added_by": "seed",
       "id": 172,
@@ -2217,7 +2217,7 @@
       "model": "Mirage M690 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.415Z",
       "added_by": "seed",
       "id": 173,
@@ -2230,7 +2230,7 @@
       "model": "Mirage 2 M690-1",
       "variant": "1",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.432Z",
       "added_by": "seed",
       "id": 174,
@@ -2243,7 +2243,7 @@
       "model": "Nirvana M652",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.451Z",
       "added_by": "seed",
       "id": 175,
@@ -2256,7 +2256,7 @@
       "model": "Predator M612",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.467Z",
       "added_by": "seed",
       "id": 176,
@@ -2269,7 +2269,7 @@
       "model": "Predator M612 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.493Z",
       "added_by": "seed",
       "id": 177,
@@ -2282,7 +2282,7 @@
       "model": "Rind M813 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.521Z",
       "added_by": "seed",
       "id": 178,
@@ -2295,7 +2295,7 @@
       "model": "Storm M808",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.551Z",
       "added_by": "seed",
       "id": 179,
@@ -2308,7 +2308,7 @@
       "model": "Storm M808-N",
       "variant": "N",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.567Z",
       "added_by": "seed",
       "id": 180,
@@ -2321,7 +2321,7 @@
       "model": "Storm Pro M808",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.587Z",
       "added_by": "seed",
       "id": 181,
@@ -2334,7 +2334,7 @@
       "model": "Taipan Pro M810 Pro",
       "variant": "Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.607Z",
       "added_by": "seed",
       "id": 182,
@@ -2347,7 +2347,7 @@
       "model": "Trident M616",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.630Z",
       "added_by": "seed",
       "id": 183,
@@ -2360,7 +2360,7 @@
       "model": "Trident M693",
       "variant": "M693",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.652Z",
       "added_by": "seed",
       "id": 184,
@@ -2373,7 +2373,7 @@
       "model": "Vampire Elite M686",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.671Z",
       "added_by": "seed",
       "id": 185,
@@ -2386,7 +2386,7 @@
       "model": "Woki M994",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.689Z",
       "added_by": "seed",
       "id": 186,
@@ -2399,7 +2399,7 @@
       "model": "Revenger Pro 4k",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.706Z",
       "added_by": "seed",
       "id": 187,
@@ -2412,7 +2412,7 @@
       "model": "Dualblader",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.744Z",
       "added_by": "seed",
       "id": 188,
@@ -2425,7 +2425,7 @@
       "model": "700M EVO eSPORTS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.760Z",
       "added_by": "seed",
       "id": 189,
@@ -2438,7 +2438,7 @@
       "model": "Minos Neo",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.775Z",
       "added_by": "seed",
       "id": 190,
@@ -2451,7 +2451,7 @@
       "model": "Airblader",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.859Z",
       "added_by": "seed",
       "id": 191,
@@ -2464,7 +2464,7 @@
       "model": "Airblader Tournamanet",
       "variant": "Tournamanet",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.883Z",
       "added_by": "seed",
       "id": 192,
@@ -2477,7 +2477,7 @@
       "model": "Minox XT",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.903Z",
       "added_by": "seed",
       "id": 193,
@@ -2490,7 +2490,7 @@
       "model": "Minos X2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.919Z",
       "added_by": "seed",
       "id": 194,
@@ -2503,7 +2503,7 @@
       "model": "Minos EX",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.939Z",
       "added_by": "seed",
       "id": 195,
@@ -2516,7 +2516,7 @@
       "model": "Surpassion EX",
       "variant": "EX",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.955Z",
       "added_by": "seed",
       "id": 196,
@@ -2529,7 +2529,7 @@
       "model": "Surpassion RX",
       "variant": "RX",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.972Z",
       "added_by": "seed",
       "id": 197,
@@ -2542,7 +2542,7 @@
       "model": "XM2w 4k Wireless",
       "variant": "4k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:58.991Z",
       "added_by": "seed",
       "id": 198,
@@ -2555,7 +2555,7 @@
       "model": "OP1",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.024Z",
       "added_by": "seed",
       "id": 199,
@@ -2568,7 +2568,7 @@
       "model": "OP1 RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.038Z",
       "added_by": "seed",
       "id": 200,
@@ -2581,7 +2581,7 @@
       "model": "OP1 8k",
       "variant": "8k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.054Z",
       "added_by": "seed",
       "id": 201,
@@ -2594,7 +2594,7 @@
       "model": "OP1w 4k Wireless",
       "variant": "4k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.071Z",
       "added_by": "seed",
       "id": 202,
@@ -2607,7 +2607,7 @@
       "model": "OP1we Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.089Z",
       "added_by": "seed",
       "id": 203,
@@ -2620,7 +2620,7 @@
       "model": "XM2we Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.107Z",
       "added_by": "seed",
       "id": 204,
@@ -2633,7 +2633,7 @@
       "model": "XM2 8k",
       "variant": "8k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.139Z",
       "added_by": "seed",
       "id": 205,
@@ -2646,7 +2646,7 @@
       "model": "XM1r",
       "variant": "r",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.164Z",
       "added_by": "seed",
       "id": 206,
@@ -2659,7 +2659,7 @@
       "model": "XM1 RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.177Z",
       "added_by": "seed",
       "id": 207,
@@ -2672,7 +2672,7 @@
       "model": "X12",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.200Z",
       "added_by": "seed",
       "id": 208,
@@ -2685,7 +2685,7 @@
       "model": "X17",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.219Z",
       "added_by": "seed",
       "id": 209,
@@ -2698,7 +2698,7 @@
       "model": "X15 MMO",
       "variant": "MMO",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.248Z",
       "added_by": "seed",
       "id": 210,
@@ -2711,7 +2711,7 @@
       "model": "X20 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.273Z",
       "added_by": "seed",
       "id": 211,
@@ -2724,7 +2724,7 @@
       "model": "ULX Prophecy - Clix",
       "variant": "Clix",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.293Z",
       "added_by": "seed",
       "id": 212,
@@ -2737,7 +2737,7 @@
       "model": "ULX Prophecy - Scream",
       "variant": "Scream",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.310Z",
       "added_by": "seed",
       "id": 213,
@@ -2750,7 +2750,7 @@
       "model": "ULX Prophecy - Tarik",
       "variant": "Tarik",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.327Z",
       "added_by": "seed",
       "id": 214,
@@ -2763,7 +2763,7 @@
       "model": "ULX Prophecy - Tfue",
       "variant": "Tfue",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.343Z",
       "added_by": "seed",
       "id": 215,
@@ -2776,7 +2776,7 @@
       "model": "x Lamzu MAYA X 8K",
       "variant": "X 8K",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.359Z",
       "added_by": "seed",
       "id": 216,
@@ -2789,7 +2789,7 @@
       "model": "x Lamzu MAYA 8K",
       "variant": "8K",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.374Z",
       "added_by": "seed",
       "id": 217,
@@ -2802,7 +2802,7 @@
       "model": "x Lamzu THORN",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.389Z",
       "added_by": "seed",
       "id": 218,
@@ -2815,7 +2815,7 @@
       "model": "Bolt",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.405Z",
       "added_by": "seed",
       "id": 219,
@@ -2828,7 +2828,7 @@
       "model": "HTR PRO 8k Wireless",
       "variant": "PRO 8k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.423Z",
       "added_by": "seed",
       "id": 220,
@@ -2841,7 +2841,7 @@
       "model": "HTR 8k Wireless",
       "variant": "8k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.454Z",
       "added_by": "seed",
       "id": 221,
@@ -2854,7 +2854,7 @@
       "model": "HT-S2 8k Wireless",
       "variant": "8k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.471Z",
       "added_by": "seed",
       "id": 222,
@@ -2867,7 +2867,7 @@
       "model": "HTS Ultra 8K Wireless",
       "variant": "Ultra 8K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.484Z",
       "added_by": "seed",
       "id": 223,
@@ -2880,7 +2880,7 @@
       "model": "Hati-S ACE Wireless",
       "variant": "ACE Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.500Z",
       "added_by": "seed",
       "id": 224,
@@ -2893,7 +2893,7 @@
       "model": "Hati-S OPEN Source Wireless",
       "variant": "OPEN Source Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.521Z",
       "added_by": "seed",
       "id": 225,
@@ -2906,7 +2906,7 @@
       "model": "HTS Plus 8K Wireless",
       "variant": "8K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.537Z",
       "added_by": "seed",
       "id": 226,
@@ -2919,7 +2919,7 @@
       "model": "HTS Plus 4K Wireless",
       "variant": "4K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.552Z",
       "added_by": "seed",
       "id": 227,
@@ -2932,7 +2932,7 @@
       "model": "HTS Plus Ace Wireless",
       "variant": "Ace Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.568Z",
       "added_by": "seed",
       "id": 228,
@@ -2945,7 +2945,7 @@
       "model": "HTS Plus Classic Wireless",
       "variant": "Classic Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.583Z",
       "added_by": "seed",
       "id": 229,
@@ -2958,7 +2958,7 @@
       "model": "HTX Mini 8K Wireless",
       "variant": "Mini 8K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.599Z",
       "added_by": "seed",
       "id": 230,
@@ -2971,7 +2971,7 @@
       "model": "HTX 4K Wireless",
       "variant": "4K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.617Z",
       "added_by": "seed",
       "id": 231,
@@ -2984,7 +2984,7 @@
       "model": "HTX ACE Wireless",
       "variant": "ACE Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.648Z",
       "added_by": "seed",
       "id": 232,
@@ -2997,7 +2997,7 @@
       "model": "HSK Pro 4K Wireless",
       "variant": "4K Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.675Z",
       "added_by": "seed",
       "id": 233,
@@ -3010,7 +3010,7 @@
       "model": "HSK Pro ACE Wireless",
       "variant": "ACE Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.719Z",
       "added_by": "seed",
       "id": 234,
@@ -3023,7 +3023,7 @@
       "model": "HSK Plus 4k Wireless",
       "variant": "4k Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.740Z",
       "added_by": "seed",
       "id": 235,
@@ -3036,7 +3036,7 @@
       "model": "HSK Plus Lite Wireless",
       "variant": "Lite Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.756Z",
       "added_by": "seed",
       "id": 236,
@@ -3049,7 +3049,7 @@
       "model": "HSK Plus Ace-2 Wireless",
       "variant": "Ace-2 Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.772Z",
       "added_by": "seed",
       "id": 237,
@@ -3062,7 +3062,7 @@
       "model": "Hati-M HTM ACE Wireless",
       "variant": "HTM ACE Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.787Z",
       "added_by": "seed",
       "id": 238,
@@ -3075,7 +3075,7 @@
       "model": "Hati HTM ACE Wired",
       "variant": "ACE Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.804Z",
       "added_by": "seed",
       "id": 239,
@@ -3088,7 +3088,7 @@
       "model": "Hati HTM Classic Wired",
       "variant": "Classic Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.818Z",
       "added_by": "seed",
       "id": 240,
@@ -3101,7 +3101,7 @@
       "model": "Hati-S HTS ACE Wired",
       "variant": "ACE Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.835Z",
       "added_by": "seed",
       "id": 241,
@@ -3114,7 +3114,7 @@
       "model": "HSK Wired",
       "variant": "Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.858Z",
       "added_by": "seed",
       "id": 242,
@@ -3127,7 +3127,7 @@
       "model": "Skoll Mini SK-S Wired",
       "variant": "SK-S Wired",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.890Z",
       "added_by": "seed",
       "id": 243,
@@ -3140,7 +3140,7 @@
       "model": "Tachi",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.910Z",
       "added_by": "seed",
       "id": 244,
@@ -3153,7 +3153,7 @@
       "model": "Maya 4k",
       "variant": "4k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.932Z",
       "added_by": "seed",
       "id": 245,
@@ -3166,7 +3166,7 @@
       "model": "Maya X",
       "variant": "X",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.949Z",
       "added_by": "seed",
       "id": 246,
@@ -3179,7 +3179,7 @@
       "model": "Maya (4k Compatible)",
       "variant": "(4k Compatible)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.965Z",
       "added_by": "seed",
       "id": 247,
@@ -3192,7 +3192,7 @@
       "model": "Maya Doodle",
       "variant": "Doodle",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.982Z",
       "added_by": "seed",
       "id": 248,
@@ -3205,7 +3205,7 @@
       "model": "Paro",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:59.999Z",
       "added_by": "seed",
       "id": 249,
@@ -3218,7 +3218,7 @@
       "model": "Thorn 4k",
       "variant": "4k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.023Z",
       "added_by": "seed",
       "id": 250,
@@ -3231,7 +3231,7 @@
       "model": "Thorn 4k (4K Compatible)",
       "variant": "4k (4K Compatible)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.043Z",
       "added_by": "seed",
       "id": 251,
@@ -3244,7 +3244,7 @@
       "model": "Atlantis Mini 4k",
       "variant": "Mini 4k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.058Z",
       "added_by": "seed",
       "id": 252,
@@ -3257,7 +3257,7 @@
       "model": "Atlantis Mini Pro (4k Compatible)",
       "variant": "Mini Pro (4k Compatible)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.077Z",
       "added_by": "seed",
       "id": 253,
@@ -3270,7 +3270,7 @@
       "model": "Atlantis Mini [Champion Edition]",
       "variant": "Mini [Champion Edition]",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.104Z",
       "added_by": "seed",
       "id": 254,
@@ -3283,7 +3283,7 @@
       "model": "Atlantis OG V2 4k",
       "variant": "OG V2 4k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.120Z",
       "added_by": "seed",
       "id": 255,
@@ -3296,7 +3296,7 @@
       "model": "Atlantis OG V2 Pro (4k Compatible)",
       "variant": "OG V2 Pro (4k Compatible)",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.136Z",
       "added_by": "seed",
       "id": 256,
@@ -3309,7 +3309,7 @@
       "model": "M300s RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.154Z",
       "added_by": "seed",
       "id": 257,
@@ -3322,7 +3322,7 @@
       "model": "M210 RGB",
       "variant": "RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.172Z",
       "added_by": "seed",
       "id": 258,
@@ -3335,7 +3335,7 @@
       "model": "M410 Wireless RGB",
       "variant": "Wireless RGB",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.189Z",
       "added_by": "seed",
       "id": 259,
@@ -3348,7 +3348,7 @@
       "model": "M600s Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.216Z",
       "added_by": "seed",
       "id": 260,
@@ -3361,7 +3361,7 @@
       "model": "M600 Wireless",
       "variant": "Wireless",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.248Z",
       "added_by": "seed",
       "id": 261,
@@ -3374,7 +3374,7 @@
       "model": "B.A.T. 6+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.288Z",
       "added_by": "seed",
       "id": 262,
@@ -3387,7 +3387,7 @@
       "model": "M.O.J.O. M1",
       "variant": "M1",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.309Z",
       "added_by": "seed",
       "id": 263,
@@ -3400,7 +3400,7 @@
       "model": "R.A.T. 8+ ADV",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.332Z",
       "added_by": "seed",
       "id": 264,
@@ -3413,7 +3413,7 @@
       "model": "R.A.T. PRO X3 Supreme",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.360Z",
       "added_by": "seed",
       "id": 265,
@@ -3426,7 +3426,7 @@
       "model": "R.A.T. PRO X3",
       "variant": "X3",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.376Z",
       "added_by": "seed",
       "id": 266,
@@ -3439,7 +3439,7 @@
       "model": "R.A.T. 8+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.393Z",
       "added_by": "seed",
       "id": 267,
@@ -3452,7 +3452,7 @@
       "model": "R.A.T. 6+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.409Z",
       "added_by": "seed",
       "id": 268,
@@ -3465,7 +3465,7 @@
       "model": "R.A.T. PRO S3",
       "variant": "S3",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.427Z",
       "added_by": "seed",
       "id": 269,
@@ -3478,7 +3478,7 @@
       "model": "R.A.T. 4+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.455Z",
       "added_by": "seed",
       "id": 270,
@@ -3491,7 +3491,7 @@
       "model": "R.A.T. 2+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.475Z",
       "added_by": "seed",
       "id": 271,
@@ -3504,7 +3504,7 @@
       "model": "R.A.T. 1+",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.501Z",
       "added_by": "seed",
       "id": 272,
@@ -3517,7 +3517,7 @@
       "model": "M.O.J.O. M2",
       "variant": "M2",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.526Z",
       "added_by": "seed",
       "id": 273,
@@ -3530,7 +3530,7 @@
       "model": "R.A.T. DWS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.551Z",
       "added_by": "seed",
       "id": 274,
@@ -3543,7 +3543,7 @@
       "model": "R.A.T. AIR",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.567Z",
       "added_by": "seed",
       "id": 275,
@@ -3556,7 +3556,7 @@
       "model": "Lift Elite Wireless",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.594Z",
       "added_by": "seed",
       "id": 276,
@@ -3569,7 +3569,7 @@
       "model": "Lift 2 Symm",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.609Z",
       "added_by": "seed",
       "id": 277,
@@ -3582,7 +3582,7 @@
       "model": "Lift 2 Ergo",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.623Z",
       "added_by": "seed",
       "id": 278,
@@ -3595,7 +3595,7 @@
       "model": "Kone II Air",
       "variant": "Air",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.639Z",
       "added_by": "seed",
       "id": 279,
@@ -3608,7 +3608,7 @@
       "model": "Kone II",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.659Z",
       "added_by": "seed",
       "id": 280,
@@ -3621,7 +3621,7 @@
       "model": "Burst II Air",
       "variant": "Air",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.676Z",
       "added_by": "seed",
       "id": 281,
@@ -3634,7 +3634,7 @@
       "model": "Pure Air",
       "variant": "Air",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.692Z",
       "added_by": "seed",
       "id": 282,
@@ -3647,7 +3647,7 @@
       "model": "Pure Sel",
       "variant": "Sel",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.709Z",
       "added_by": "seed",
       "id": 283,
@@ -3660,7 +3660,7 @@
       "model": "Kone XP Air",
       "variant": "Air",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.735Z",
       "added_by": "seed",
       "id": 284,
@@ -3673,7 +3673,7 @@
       "model": "X3",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.759Z",
       "added_by": "seed",
       "id": 285,
@@ -3686,7 +3686,7 @@
       "model": "X3 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.786Z",
       "added_by": "seed",
       "id": 286,
@@ -3699,7 +3699,7 @@
       "model": "X3 LHD",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.820Z",
       "added_by": "seed",
       "id": 287,
@@ -3712,7 +3712,7 @@
       "model": "X3 LHD Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.837Z",
       "added_by": "seed",
       "id": 288,
@@ -3725,7 +3725,7 @@
       "model": "X2 Crazylight",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.860Z",
       "added_by": "seed",
       "id": 289,
@@ -3738,7 +3738,7 @@
       "model": "X2 v3 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.883Z",
       "added_by": "seed",
       "id": 290,
@@ -3751,7 +3751,7 @@
       "model": "X2 v3",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.905Z",
       "added_by": "seed",
       "id": 291,
@@ -3764,7 +3764,7 @@
       "model": "X2 Wired",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.924Z",
       "added_by": "seed",
       "id": 292,
@@ -3777,7 +3777,7 @@
       "model": "X2 v2 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.942Z",
       "added_by": "seed",
       "id": 293,
@@ -3790,7 +3790,7 @@
       "model": "X2 v2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.966Z",
       "added_by": "seed",
       "id": 294,
@@ -3803,7 +3803,7 @@
       "model": "X2 v1 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:00.983Z",
       "added_by": "seed",
       "id": 295,
@@ -3816,7 +3816,7 @@
       "model": "X2 v1",
       "variant": "v1",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.000Z",
       "added_by": "seed",
       "id": 296,
@@ -3829,7 +3829,7 @@
       "model": "[Founders Edition] X2 v2",
       "variant": "[Founders Edition] v2",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.016Z",
       "added_by": "seed",
       "id": 297,
@@ -3842,7 +3842,7 @@
       "model": "[Founders Edition] X2 v2 Mini",
       "variant": "Mini",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.050Z",
       "added_by": "seed",
       "id": 298,
@@ -3855,7 +3855,7 @@
       "model": "X2H v3",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.077Z",
       "added_by": "seed",
       "id": 299,
@@ -3868,7 +3868,7 @@
       "model": "X2H v3 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.104Z",
       "added_by": "seed",
       "id": 300,
@@ -3881,7 +3881,7 @@
       "model": "X2H",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.124Z",
       "added_by": "seed",
       "id": 301,
@@ -3894,7 +3894,7 @@
       "model": "X2H Medium",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.152Z",
       "added_by": "seed",
       "id": 302,
@@ -3907,7 +3907,7 @@
       "model": "X2H Wired",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.174Z",
       "added_by": "seed",
       "id": 303,
@@ -3920,7 +3920,7 @@
       "model": "X2H Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.203Z",
       "added_by": "seed",
       "id": 304,
@@ -3933,7 +3933,7 @@
       "model": "X2H eS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.224Z",
       "added_by": "seed",
       "id": 305,
@@ -3946,7 +3946,7 @@
       "model": "[Founders Edition] X2H",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.300Z",
       "added_by": "seed",
       "id": 306,
@@ -3959,7 +3959,7 @@
       "model": "[Founders Edition] X2H Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.375Z",
       "added_by": "seed",
       "id": 307,
@@ -3972,7 +3972,7 @@
       "model": "[Founders Edition] X2H eS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.471Z",
       "added_by": "seed",
       "id": 308,
@@ -3985,7 +3985,7 @@
       "model": "X2A v3",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.511Z",
       "added_by": "seed",
       "id": 309,
@@ -3998,7 +3998,7 @@
       "model": "X2A Wired",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.542Z",
       "added_by": "seed",
       "id": 310,
@@ -4011,7 +4011,7 @@
       "model": "[Founders Edition] X2A eS",
       "variant": "[Founders Edition] eS",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.558Z",
       "added_by": "seed",
       "id": 311,
@@ -4024,7 +4024,7 @@
       "model": "X2A eS",
       "variant": "eS",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.576Z",
       "added_by": "seed",
       "id": 312,
@@ -4037,7 +4037,7 @@
       "model": "X2A Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.602Z",
       "added_by": "seed",
       "id": 313,
@@ -4050,7 +4050,7 @@
       "model": "X2A",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.618Z",
       "added_by": "seed",
       "id": 314,
@@ -4063,7 +4063,7 @@
       "model": "Xlite v4",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.636Z",
       "added_by": "seed",
       "id": 315,
@@ -4076,7 +4076,7 @@
       "model": "Xlite v4 Large",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.651Z",
       "added_by": "seed",
       "id": 316,
@@ -4089,7 +4089,7 @@
       "model": "Xlite v4 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.668Z",
       "added_by": "seed",
       "id": 317,
@@ -4102,7 +4102,7 @@
       "model": "Xlite v4 eS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.684Z",
       "added_by": "seed",
       "id": 318,
@@ -4115,7 +4115,7 @@
       "model": "Xlite Wired",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.783Z",
       "added_by": "seed",
       "id": 319,
@@ -4128,7 +4128,7 @@
       "model": "[Founders Edition] Xlite v3 eS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.883Z",
       "added_by": "seed",
       "id": 320,
@@ -4141,7 +4141,7 @@
       "model": "Xlite v3 Large",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.941Z",
       "added_by": "seed",
       "id": 321,
@@ -4154,7 +4154,7 @@
       "model": "Xlite v3 Medium",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.964Z",
       "added_by": "seed",
       "id": 322,
@@ -4167,7 +4167,7 @@
       "model": "Xlite v3 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.981Z",
       "added_by": "seed",
       "id": 323,
@@ -4180,7 +4180,7 @@
       "model": "Xlite v3 eS",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:01.997Z",
       "added_by": "seed",
       "id": 324,
@@ -4193,7 +4193,7 @@
       "model": "Xlite v2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.013Z",
       "added_by": "seed",
       "id": 325,
@@ -4206,7 +4206,7 @@
       "model": "Xlite v2 Mini",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.032Z",
       "added_by": "seed",
       "id": 326,
@@ -4219,7 +4219,7 @@
       "model": "[First Edition] Feinmann F01",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.050Z",
       "added_by": "seed",
       "id": 327,
@@ -4232,7 +4232,7 @@
       "model": "Trinity CF",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.065Z",
       "added_by": "seed",
       "id": 328,
@@ -4245,7 +4245,7 @@
       "model": "StormBreaker MAX CF",
       "variant": "MAX CF",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.082Z",
       "added_by": "seed",
       "id": 329,
@@ -4258,7 +4258,7 @@
       "model": "StormBreaker 8k",
       "variant": "8k",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.098Z",
       "added_by": "seed",
       "id": 330,
@@ -4271,7 +4271,7 @@
       "model": "StormBreaker x Whzy MAX CF",
       "variant": "x Whzy MAX CF",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.126Z",
       "added_by": "seed",
       "id": 331,
@@ -4284,7 +4284,7 @@
       "model": "StormBreaker X BLG Valorant",
       "variant": "X BLG Valorant",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.141Z",
       "added_by": "seed",
       "id": 332,
@@ -4297,7 +4297,7 @@
       "model": "Ultra Custom Wireless Ambi",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.157Z",
       "added_by": "seed",
       "id": 333,
@@ -4310,7 +4310,7 @@
       "model": "Ultra Custom Ergo",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.175Z",
       "added_by": "seed",
       "id": 334,
@@ -4323,7 +4323,7 @@
       "model": "Ultra Custom Wireless Ergo Gen 2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.191Z",
       "added_by": "seed",
       "id": 335,
@@ -4336,7 +4336,7 @@
       "model": "Ultra Custom Wireless Symm 1 Gen 2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.204Z",
       "added_by": "seed",
       "id": 336,
@@ -4349,7 +4349,7 @@
       "model": "Ultra Custom Wireless Symm 2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.220Z",
       "added_by": "seed",
       "id": 337,
@@ -4362,7 +4362,7 @@
       "model": "Ultra Custom Symm 2",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.236Z",
       "added_by": "seed",
       "id": 338,
@@ -4375,7 +4375,7 @@
       "model": "Ultra Custom Symm",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.254Z",
       "added_by": "seed",
       "id": 339,
@@ -4388,7 +4388,7 @@
       "model": "MM730",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.272Z",
       "added_by": "seed",
       "id": 340,
@@ -4401,7 +4401,7 @@
       "model": "MM731",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.288Z",
       "added_by": "seed",
       "id": 341,
@@ -4414,7 +4414,7 @@
       "model": "Deathadder V4 Pro",
       "variant": "V4 Pro",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:50:02.318Z",
       "added_by": "seed",
       "id": 342,
@@ -4427,7 +4427,7 @@
       "model": "Cestus 335",
       "variant": "335",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.853Z",
       "added_by": "seed",
       "id": 8,
@@ -4441,7 +4441,7 @@
       "model": "Cestus 350",
       "variant": "350",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-02-15T03:49:54.873Z",
       "added_by": "seed",
       "id": 9,
@@ -4455,7 +4455,7 @@
       "model": "Aerox 9",
       "variant": "",
       "status": "active",
-      "seed_urls": [],
+
       "added_at": "2026-03-10T05:56:01.320Z",
       "added_by": "manual",
       "id": 343,

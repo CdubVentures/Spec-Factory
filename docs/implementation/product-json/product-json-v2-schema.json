@@ -1,0 +1,163 @@
+{
+  "$comment": "product.json v2 schema — target structure for field publishing",
+  "schema_version": 2,
+  "checkpoint_type": "product",
+  "product_id": "mouse-00345848",
+  "category": "mouse",
+
+  "identity": {
+    "brand": "Razer",
+    "base_model": "Viper",
+    "model": "Viper",
+    "variant": "",
+    "brand_identifier": "",
+    "identifier": "3a427095",
+    "status": "active"
+  },
+
+  "latest_run_id": "20260405174747-513f9a",
+  "runs_completed": 3,
+
+  "sources": [
+    {
+      "url": "https://www.razer.com/gaming-mice/razer-viper/...",
+      "host": "www.razer.com",
+      "content_hash": "2db2b3f03aac541f61bc92ab...",
+      "html_file": "2db2b3f03aac.html.gz",
+      "first_seen_run_id": "20260403033950-946ed1",
+      "last_seen_run_id": "20260405174747-513f9a",
+      "status": 200
+    }
+  ],
+
+  "fields": {
+    "color": {
+      "value": ["black", "white", "pink", "red", "purple",
+                "quartz-pink", "mercury-white", "matte-black",
+                "red+white", "black+red"],
+      "confidence": 100,
+      "resolved_at": "2026-04-05T04:34:50.656Z",
+      "sources": [
+        { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2" },
+        { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1" }
+      ]
+    },
+    "default_color": {
+      "value": "black",
+      "confidence": 100,
+      "resolved_at": "2026-04-05T04:34:50.656Z",
+      "sources": [
+        { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2" }
+      ]
+    },
+    "editions": {
+      "value": {
+        "cyberpunk-2077-edition":    { "colors": ["black"] },
+        "halo-infinite-edition":     { "colors": ["green"] },
+        "pokemon-edition-pikachu":   { "colors": ["yellow"] },
+        "pokemon-edition-eevee":     { "colors": ["brown"] },
+        "valorant-edition-jett":     { "colors": ["white", "blue"] },
+        "star-wars-edition-darth-vader": { "colors": ["black", "red"] }
+      },
+      "confidence": 100,
+      "resolved_at": "2026-04-05T04:34:50.656Z",
+      "sources": [
+        { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2" },
+        { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1" }
+      ]
+    },
+    "weight": {
+      "value": 58,
+      "confidence": 92,
+      "resolved_at": "2026-04-05T18:00:00.000Z",
+      "sources": [
+        { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/gaming-mice/razer-viper/...",  "confidence": 92, "run_id": "20260405174747-513f9a" },
+        { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/mouse/reviews/razer/viper",   "confidence": 88, "run_id": "20260405174747-513f9a" },
+        { "artifact": "1bc45e233af0...", "url": "https://www.amazon.com/dp/B09ABC1234",               "confidence": 75, "run_id": "20260405174747-513f9a" }
+      ]
+    },
+    "sensor": {
+      "value": "Focus Pro 30K",
+      "confidence": 92,
+      "resolved_at": "2026-04-05T18:00:00.000Z",
+      "sources": [
+        { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/gaming-mice/razer-viper/...", "confidence": 92, "run_id": "20260405174747-513f9a" },
+        { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/mouse/reviews/razer/viper",  "confidence": 88, "run_id": "20260405174747-513f9a" }
+      ]
+    }
+  },
+
+  "candidates": {
+    "color": [
+      {
+        "value": ["black", "white", "pink", "red", "purple",
+                  "quartz-pink", "mercury-white", "matte-black",
+                  "red+white", "black+red"],
+        "sources": [
+          { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
+          { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
+        ]
+      }
+    ],
+    "default_color": [
+      {
+        "value": "black",
+        "sources": [
+          { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
+          { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
+        ]
+      }
+    ],
+    "editions": [
+      {
+        "value": {
+          "cyberpunk-2077-edition":    { "colors": ["black"] },
+          "halo-infinite-edition":     { "colors": ["green"] },
+          "pokemon-edition-pikachu":   { "colors": ["yellow"] },
+          "pokemon-edition-eevee":     { "colors": ["brown"] },
+          "valorant-edition-jett":     { "colors": ["white", "blue"] },
+          "star-wars-edition-darth-vader": { "colors": ["black", "red"] }
+        },
+        "sources": [
+          { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
+          { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
+        ]
+      }
+    ],
+    "weight": [
+      {
+        "value": 58,
+        "sources": [
+          { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/...",  "confidence": 92, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
+          { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/...", "confidence": 88, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
+          { "artifact": "1bc45e233af0...", "url": "https://www.amazon.com/...", "confidence": 75, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
+        ]
+      },
+      {
+        "value": 57,
+        "sources": [
+          { "artifact": "f9a221bcc340...", "url": "https://www.techpowerup.com/...", "confidence": 60, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "value": "Focus Pro 30K",
+        "sources": [
+          { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/...",  "confidence": 92, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
+          { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/...", "confidence": 88, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
+        ]
+      },
+      {
+        "value": "Razer Focus Pro 30K",
+        "sources": [
+          { "artifact": "1bc45e233af0...", "url": "https://www.amazon.com/...", "confidence": 75, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
+        ]
+      }
+    ]
+  },
+
+  "query_cooldowns": [],
+  "created_at": "2026-04-04T19:10:11.913Z",
+  "updated_at": "2026-04-05T18:00:00.000Z"
+}

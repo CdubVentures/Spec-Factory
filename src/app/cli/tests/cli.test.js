@@ -6,16 +6,6 @@ import path from 'node:path';
 import { executeCli } from '../spec.js';
 import { createCliJsonHarness } from './helpers/cliJsonHarness.js';
 
-function localArgs({ inputRoot, outputRoot, importsRoot }) {
-  return [
-    '--local',
-    '--output-mode', 'local',
-    '--local-input-root', inputRoot,
-    '--local-output-root', outputRoot,
-    '--imports-root', importsRoot
-  ];
-}
-
 async function ensureFile(filePath, content = '') {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, String(content), 'utf8');

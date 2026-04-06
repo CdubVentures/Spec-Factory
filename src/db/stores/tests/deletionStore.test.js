@@ -159,7 +159,7 @@ function seedProductIdentity(specDb, { productId }) {
   specDb.upsertProduct({
     category: specDb.category, product_id: productId,
     brand: 'TestBrand', model: 'TestModel', base_model: 'TestModel', variant: '',
-    status: 'active', seed_urls: '[]', identifier: '', brand_identifier: '',
+    status: 'active', identifier: '', brand_identifier: '',
   });
   // WHY: upsertQueueProduct removed from SpecDb — seed directly via raw SQL.
   specDb.db.prepare(`
@@ -211,7 +211,7 @@ function seedProductCheckpoint(fsRoots, { productId, category, runIds, sources }
   fs.writeFileSync(path.join(productDir, 'product.json'), JSON.stringify({
     schema_version: 1, checkpoint_type: 'product',
     product_id: productId, category,
-    identity: { brand: 'TestBrand', model: 'TestModel', variant: '', seed_urls: [], status: 'active' },
+    identity: { brand: 'TestBrand', model: 'TestModel', variant: '', status: 'active' },
     latest_run_id: runIds[runIds.length - 1],
     runs_completed: runIds.length,
     sources: sources || [],

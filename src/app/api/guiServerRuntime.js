@@ -170,7 +170,7 @@ export function createGuiServerRuntime({
         brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
       }),
       colorRouteContext: createColorRouteContext({
-        jsonRes, readJsonBody, appDb, broadcastWs,
+        jsonRes, readJsonBody, appDb, broadcastWs, specDbCache,
         colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
       }),
       colorEditionFinderRouteContext: createColorEditionFinderRouteContext({

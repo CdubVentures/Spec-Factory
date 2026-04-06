@@ -20,6 +20,7 @@ import {
   invalidateEnumReviewDataQuery,
   setEnumReviewQueryData,
 } from './enumReviewStore.js';
+import { useFieldRulesStore } from '../../features/studio/state/useFieldRulesStore.ts';
 import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem } from '../../types/componentReview.ts';
 
 interface EnumSubTabProps {
@@ -252,6 +253,7 @@ export function EnumSubTab({
   debugLinkedProducts = false,
 }: EnumSubTabProps) {
   const { getLabel } = useFieldLabels(category);
+  const egLockedKeys = useFieldRulesStore((s) => s.egLockedKeys);
   const enumFieldIds = useMemo(
     () => data.fields.map((field) => field.field),
     [data.fields],
@@ -623,6 +625,13 @@ export function EnumSubTab({
           <div className="border sf-border-default rounded-lg overflow-y-auto max-h-[calc(100vh-320px)] min-w-0">
             {selectedFieldData ? (
               <>
+                {egLockedKeys.includes(selectedFieldData.field) && (
+                  <div className="px-3 py-2 sf-surface-alt border-b sf-border-default flex items-center gap-2 text-[11px] sf-text-subtle">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    EG-managed enum &middot; Read-only &middot; {selectedFieldData.values.length} registered values
+                  </div>
+                )}
+                <div className={egLockedKeys.includes(selectedFieldData.field) ? 'pointer-events-none opacity-50' : ''}>
                 <div className="sticky top-0 sf-surface-elevated px-3 py-2 border-b sf-border-default flex items-center justify-between">
                   <p className="text-xs font-medium sf-text-muted">
                     {getLabel(selectedFieldData.field)} - {selectedFieldData.values.length} values
@@ -714,6 +723,7 @@ export function EnumSubTab({
                     </button>
                   </div>
                 </div>
+              </div>
               </>
             ) : (
               <div className="flex items-center justify-center h-full sf-text-muted text-sm">

@@ -24,7 +24,6 @@ export const CATALOG_PRODUCT_SHAPE = Object.freeze([
   { key: 'base_model', coerce: 'string' },
   { key: 'variant', coerce: 'string' },
   { key: 'status', coerce: 'string' },
-  { key: 'seed_urls', coerce: 'array', itemType: 'string' },
   { key: 'added_at', coerce: 'string' },
   { key: 'added_by', coerce: 'string' },
   { key: 'updated_at', coerce: 'string', optional: true },
@@ -33,7 +32,7 @@ export const CATALOG_PRODUCT_KEYS = Object.freeze(CATALOG_PRODUCT_SHAPE.map(s =>
 
 // ── Catalog Row (enriched summary from buildCatalog in catalogHelpers.js) ──
 // WHY: buildCatalog returns a DIFFERENT shape than the CRUD endpoint.
-// It shares identity fields with CatalogProduct but drops seed_urls/added_at/added_by
+// It shares identity fields with CatalogProduct but drops added_at/added_by
 // and adds pipeline summary fields (hasFinal, confidence, coverage, etc.).
 
 export const CATALOG_ROW_SHAPE = Object.freeze([

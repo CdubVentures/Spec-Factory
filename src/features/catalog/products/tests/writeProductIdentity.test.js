@@ -17,7 +17,6 @@ describe('writeProductIdentity', () => {
       productId: 'mouse-abc123',
       category: 'mouse',
       identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: '', sku: '', title: '' },
-      seedUrls: ['https://razer.com'],
       identifier: 'abc123',
       productRoot: root,
     });
@@ -32,7 +31,6 @@ describe('writeProductIdentity', () => {
     assert.equal(written.category, 'mouse');
     assert.equal(written.identity.brand, 'Razer');
     assert.equal(written.identity.model, 'Viper V3 Pro');
-    assert.deepEqual(written.identity.seed_urls, ['https://razer.com']);
     assert.equal(written.identity.identifier, 'abc123');
     assert.equal(written.identity.status, 'active');
     assert.equal(written.runs_completed, 0);
@@ -84,7 +82,6 @@ describe('writeProductIdentity', () => {
     assert.equal(written.identity.variant, '');
     assert.equal(written.identity.base_model, '');
     assert.equal(written.identity.brand_identifier, '');
-    assert.deepEqual(written.identity.seed_urls, []);
     assert.equal(written.identity.identifier, '');
     assert.equal(written.identity.status, 'active');
 

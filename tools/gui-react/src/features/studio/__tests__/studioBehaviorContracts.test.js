@@ -112,16 +112,9 @@ test('studio deferred-lock and tooltip contracts stay scoped to real deferred fi
     STUDIO_TIPS.unknown_token,
     "Field-specific placeholder used in extraction guidance when data can't be determined.",
   );
-  assert.equal(
-    formatStaticConsumerTooltip('contract.unknown_token', 'indexlab').includes(
-      'Key Navigation > Contract (Type, Shape, Unit) > Unknown Token',
-    ),
-    true,
-  );
-  assert.equal(
-    formatStaticConsumerTooltip('contract.unknown_token', 'indexlab').includes(
-      'passes this token into field-specific extraction guidance and runtime metadata when the field is unresolved.',
-    ),
-    true,
-  );
+  // WHY: contract.unknown_token was removed from FIELD_SYSTEM_MAP (was IDX-only,
+  // no pipeline consumer). formatStaticConsumerTooltip returns the generic fallback.
+  const unknownTokenTip = formatStaticConsumerTooltip('contract.unknown_token', 'indexlab');
+  assert.equal(typeof unknownTokenTip, 'string');
+  assert.ok(unknownTokenTip.length > 0, 'tooltip should return non-empty fallback');
 });

@@ -47,10 +47,6 @@ export function ProductManager() {
     `catalog:products:addDraft:variant:${category}`,
     '',
   );
-  const [addDraftSeedUrls, setAddDraftSeedUrls] = usePersistedTab<string>(
-    `catalog:products:addDraft:seedUrls:${category}`,
-    '',
-  );
   const [addDraftStatus, setAddDraftStatus] = usePersistedTab<(typeof PRODUCT_STATUS_VALUES)[number]>(
     `catalog:products:addDraft:status:${category}`,
     'active',
@@ -59,14 +55,12 @@ export function ProductManager() {
   const [formBrand, setFormBrand] = useState('');
   const [formModel, setFormModel] = useState('');
   const [formVariant, setFormVariant] = useState('');
-  const [formSeedUrls, setFormSeedUrls] = useState('');
   const [formStatus, setFormStatus] = useState('active');
   // Track original values for change detection
   const [origBrand, setOrigBrand] = useState('');
   const [origModel, setOrigModel] = useState('');
   const [origVariant, setOrigVariant] = useState('');
   const [origStatus, setOrigStatus] = useState('active');
-  const [origSeedUrls, setOrigSeedUrls] = useState('');
   // Confirmation state (delete only — identity changes save directly)
   const [confirmAction, setConfirmAction] = useState<'delete' | null>(null);
   const [confirmInput, setConfirmInput] = useState('');
@@ -90,7 +84,7 @@ export function ProductManager() {
 
   // ── Mutations ──────────────────────────────────────────────────
   const addMut = useMutation({
-    mutationFn: (body: { brand: string; base_model: string; variant: string; seedUrls: string[] }) =>
+    mutationFn: (body: { brand: string; base_model: string; variant: string }) =>
       api.post<MutationResult>(`/catalog/${category}/products`, body),
     onSuccess: () => { invalidate(); closeDrawer(); },
   });
@@ -136,7 +130,6 @@ export function ProductManager() {
     setFormBrand(addDraftBrand || (brands.length > 0 ? brands[0].canonical_name : ''));
     setFormModel(addDraftModel);
     setFormVariant(addDraftVariant);
-    setFormSeedUrls(addDraftSeedUrls);
     setFormStatus(addDraftStatus);
     setDrawerOpen(true);
   }
@@ -151,9 +144,6 @@ export function ProductManager() {
     setOrigBrand(product.brand);
     setOrigModel(product.base_model);
     setOrigVariant(product.variant || '');
-    const urls = (product.seed_urls || []).join('\n');
-    setFormSeedUrls(urls);
-    setOrigSeedUrls(urls);
     setFormStatus(product.status || 'active');
     setOrigStatus(product.status || 'active');
     setConfirmAction(null);
@@ -192,9 +182,6 @@ export function ProductManager() {
     setOrigBrand(product.brand);
     setOrigModel(product.base_model);
     setOrigVariant(product.variant || '');
-    const urls = (product.seed_urls || []).join('\n');
-    setFormSeedUrls(urls);
-    setOrigSeedUrls(urls);
     setFormStatus(product.status || 'active');
     setOrigStatus(product.status || 'active');
     setConfirmAction(null);
@@ -206,7 +193,6 @@ export function ProductManager() {
     setAddDraftBrand(formBrand);
     setAddDraftModel(formModel);
     setAddDraftVariant(formVariant);
-    setAddDraftSeedUrls(formSeedUrls);
     setAddDraftStatus(formStatus === 'inactive' ? 'inactive' : 'active');
   }, [
     drawerOpen,
@@ -214,20 +200,17 @@ export function ProductManager() {
     formBrand,
     formModel,
     formVariant,
-    formSeedUrls,
     formStatus,
     setAddDraftBrand,
     setAddDraftModel,
     setAddDraftVariant,
-    setAddDraftSeedUrls,
     setAddDraftStatus,
   ]);
 
   // ── Change detection ──────────────────────────────────────────
   const hasIdentityChange = Boolean(editPid && (formBrand !== origBrand || formModel !== origModel || formVariant !== origVariant));
   const isStatusChange = Boolean(editPid && formStatus !== origStatus);
-  const isSeedUrlChange = Boolean(editPid && formSeedUrls !== origSeedUrls);
-  const hasAnyChange = hasIdentityChange || isStatusChange || isSeedUrlChange;
+  const hasAnyChange = hasIdentityChange || isStatusChange;
 
   // The confirmation phrase the user must type for delete
   const deleteConfirmPhrase = editPid || '';
@@ -235,14 +218,12 @@ export function ProductManager() {
   function handleSave() {
     // New product — no confirmation needed
     if (!editPid) {
-      const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
-      addMut.mutate({ brand: formBrand, base_model: formModel, variant: formVariant, seedUrls });
+      addMut.mutate({ brand: formBrand, base_model: formModel, variant: formVariant });
       return;
     }
-    const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
     updateMut.mutate({
       pid: editPid,
-      patch: { brand: formBrand, base_model: formModel, variant: formVariant, seed_urls: seedUrls, status: formStatus },
+      patch: { brand: formBrand, base_model: formModel, variant: formVariant, status: formStatus },
     });
   }
 
@@ -555,18 +536,6 @@ export function ProductManager() {
             </div>
           )}
 
-          {/* Seed URLs */}
-          <div>
-            <label className={labelCls}>Seed URLs (one per line)</label>
-            <textarea
-              value={formSeedUrls}
-              onChange={(e) => setFormSeedUrls(e.target.value)}
-              placeholder={"https://example.com/product-page\nhttps://..."}
-              rows={3}
-              className={`${inputCls} w-full resize-y`}
-            />
-          </div>
-
           {/* Identity Preview */}
           <div className="sf-bg-surface-soft sf-bg-surface-soft rounded p-2.5 border sf-border-default sf-border-default space-y-1.5">
             <div className="text-[10px] font-medium sf-text-muted uppercase tracking-wide">Identity Preview</div>
@@ -650,9 +619,6 @@ export function ProductManager() {
                         {formStatus === 'inactive' && <p className="text-[10px] mt-0.5">Inactive products excluded from queue processing and pipeline runs.</p>}
                       </div>
                     )}
-                    {isSeedUrlChange && (
-                      <p>Seed URLs changed — next pipeline run uses updated URLs.</p>
-                    )}
                   </div>
                 )}
 
@@ -672,7 +638,7 @@ export function ProductManager() {
 
                 {/* Hint when no changes */}
                 {!hasAnyChange && (
-                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run. Identity changes (brand/base model/variant) update metadata only — the product ID is immutable.</p>
+                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>status</strong> takes effect on next pipeline run. Identity changes (brand/base model/variant) update metadata only — the product ID is immutable.</p>
                 )}
               </div>
             </div>

@@ -679,6 +679,7 @@ export function KeyNavigatorTab({
                   onUpdate={(path, value) =>
                     updateField(selectedKey, path, value)
                   }
+                  isEgLocked={isSelectedEgLocked}
                   renderLabelSuffix={(path) => <B p={path} />}
                   onRunConsistency={async (options) => {
                     if (!selectedKey) return;

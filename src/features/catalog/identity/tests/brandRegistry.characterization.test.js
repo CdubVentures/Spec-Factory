@@ -333,7 +333,7 @@ describe('renameBrand: O(1) brand_identifier cascade', () => {
       specDb.upsertProduct({
         category: 'mouse', product_id: 'mouse-aabb1122',
         brand: 'Acme', model: 'Widget', variant: '',
-        status: 'active', seed_urls: [], identifier: 'aabb1122',
+        status: 'active', identifier: 'aabb1122',
         brand_identifier: identifier,
       });
 
@@ -365,7 +365,7 @@ describe('renameBrand: O(1) brand_identifier cascade', () => {
       specDb.upsertProduct({
         category: 'mouse', product_id: 'mouse-ccdd3344',
         brand: 'Acme', model: 'Legacy', variant: '',
-        status: 'active', seed_urls: [], identifier: 'ccdd3344',
+        status: 'active', identifier: 'ccdd3344',
         brand_identifier: '',
       });
 

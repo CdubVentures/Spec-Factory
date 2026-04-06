@@ -193,7 +193,9 @@ export async function generateTypesForCategory({
     }
     fields[field] = rawRule;
   }
-  const knownValuesByField = isObject(knownValues.fields) ? knownValues.fields : {};
+  const knownValuesByField = isObject(knownValues.enums)
+    ? Object.fromEntries(Object.entries(knownValues.enums).map(([k, v]) => [k, Array.isArray(v?.values) ? v.values : []]))
+    : isObject(knownValues.fields) ? knownValues.fields : {};
 
   const targetDir = path.resolve(outDir || path.join('src', 'generated'));
   await fs.mkdir(targetDir, { recursive: true });

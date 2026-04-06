@@ -58,13 +58,4 @@ export const PRODUCT_TABLE_COLUMNS: ColumnDef<CatalogProduct, unknown>[] = [
     },
     size: 80,
   },
-  {
-    accessorKey: 'seed_urls',
-    header: 'URLs',
-    cell: ({ getValue }) => {
-      const urls = getValue() as string[];
-      return <span className="text-xs sf-text-muted">{urls?.length || 0}</span>;
-    },
-    size: 50,
-  },
 ];

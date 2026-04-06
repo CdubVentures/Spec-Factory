@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL, product_id TEXT NOT NULL,
   brand TEXT DEFAULT '', model TEXT DEFAULT '', base_model TEXT DEFAULT '', variant TEXT DEFAULT '',
-  status TEXT DEFAULT 'active', seed_urls TEXT, identifier TEXT, brand_identifier TEXT DEFAULT '',
+  status TEXT DEFAULT 'active', identifier TEXT, brand_identifier TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, product_id)
 );
@@ -668,6 +668,26 @@ CREATE TABLE IF NOT EXISTS field_key_order (
   category TEXT PRIMARY KEY,
   order_json TEXT NOT NULL DEFAULT '[]',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pipeline category cache (pre-computed projection for fast pipeline boot)
+-- WHY: Pipeline needs 14 properties from categoryConfig but loadCategoryConfig
+-- reads ~11 JSON files. This caches the compiled config as JSON columns,
+-- populated at server boot reconcile. Rebuild: delete row → reseed from JSON.
+CREATE TABLE IF NOT EXISTS pipeline_category_cache (
+  category TEXT PRIMARY KEY,
+  field_rules TEXT NOT NULL DEFAULT '{}',
+  field_order TEXT NOT NULL DEFAULT '[]',
+  field_groups TEXT NOT NULL DEFAULT '{}',
+  required_fields TEXT NOT NULL DEFAULT '[]',
+  critical_fields TEXT NOT NULL DEFAULT '[]',
+  source_hosts TEXT NOT NULL DEFAULT '[]',
+  source_registry TEXT NOT NULL DEFAULT '{}',
+  validated_registry TEXT NOT NULL DEFAULT '{}',
+  denylist TEXT NOT NULL DEFAULT '[]',
+  search_templates TEXT NOT NULL DEFAULT '[]',
+  spec_seeds TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 
 -- Color & Edition Finder (per-product LLM discovery summary, rebuildable from product JSON)

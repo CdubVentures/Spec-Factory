@@ -139,6 +139,7 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     componentDbSig,
     overridesSig,
     studioMapSig,
+    colorRegistrySig,
   ] = await Promise.all([
     statSignature(path.join(generatedRoot, 'field_rules.json'), 'field_rules'),
     statSignature(path.join(generatedRoot, 'known_values.json'), 'known_values'),
@@ -148,6 +149,9 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     dirJsonSignature(componentRoot, 'component_db'),
     dirJsonSignature(overrideDir, 'component_overrides'),
     statSignature(path.join(controlPlane, 'field_studio_map.json'), 'studio_map'),
+    // WHY: Color registry changes must invalidate all category signatures
+    // so list_values re-seed picks up new/removed colors.
+    statSignature(path.join(helperRoot, '_global', 'color_registry.json'), 'color_registry'),
   ]);
 
   return [
@@ -159,6 +163,7 @@ export async function buildFieldRulesSignature(helperRoot, category) {
     componentDbSig,
     overridesSig,
     studioMapSig,
+    colorRegistrySig,
   ].join('|');
 }
 

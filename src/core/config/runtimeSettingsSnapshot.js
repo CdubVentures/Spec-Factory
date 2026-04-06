@@ -11,7 +11,7 @@ import { defaultSnapshotRoot } from './runtimeArtifactRoots.js';
 // They control what to run (product identity), not how to run (pipeline settings).
 const RUN_CONTROL_KEYS = new Set([
   'requestedRunId', 'runId', 'category', 'productId', 'brand', 'model',
-  'variant', 'sku', 'seedUrls', 'mode', 'profile', 'seed', 'fields',
+  'variant', 'sku', 'mode', 'profile', 'seed', 'fields',
   'providers', 'indexlabOut', 'replaceRunning',
 ]);
 

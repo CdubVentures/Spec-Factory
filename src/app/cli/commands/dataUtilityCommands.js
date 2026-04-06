@@ -5,39 +5,10 @@ import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createDataUtilityCommands({
   asBool,
-  ingestCsvFile,
   EventLogger,
   generateTypesForCategory,
   openSpecDbForCategory = null,
 }) {
-  async function commandIngestCsv(config, storage, args) {
-    const category = String(args.category || '').trim();
-    const csvPath = String(args.path || '').trim();
-    if (!category) {
-      throw new Error('ingest-csv requires --category <category>');
-    }
-    if (!csvPath) {
-      throw new Error('ingest-csv requires --path <csv>');
-    }
-    await assertCategorySchemaReady({ category, storage, config });
-    const specDb = typeof openSpecDbForCategory === 'function'
-      ? await openSpecDbForCategory(config, category)
-      : null;
-    const result = await ingestCsvFile({
-      storage,
-      config,
-      category,
-      csvPath,
-      importsRoot: args['imports-root'] || config.importsRoot,
-      specDb,
-    });
-    return {
-      command: 'ingest-csv',
-      ...result
-    };
-  }
-
-
   async function commandSeedDb(config, _storage, args) {
     const category = String(args.category || '').trim();
     if (!category) throw new Error('seed-db requires --category');
@@ -102,7 +73,6 @@ export function createDataUtilityCommands({
   }
 
   return {
-    commandIngestCsv,
     commandSeedDb,
     commandSeedCheckpoint,
     commandGenerateTypes,

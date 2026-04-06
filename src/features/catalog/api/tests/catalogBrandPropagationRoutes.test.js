@@ -116,7 +116,6 @@ test('catalog routes: product add passes specDb into queue upsert and upserts pr
           model: 'Viper',
           variant: '',
           status: 'active',
-          seed_urls: ['https://example.com'],
           identifier: 'id_123',
         },
       };
@@ -150,7 +149,6 @@ test('catalog routes: product identity update upserts same productId in specDb (
         base_model: 'Viper V3',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'id_123',
       },
     }),
@@ -209,7 +207,6 @@ test('catalog routes: product add emits typed data-change contract', async () =>
         model: 'Viper',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'id_123',
       },
     }),

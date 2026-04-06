@@ -64,10 +64,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Data Type' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab selects the correct parser and validator based on data type (string, number, boolean, etc.). Values are type-checked before acceptance.',
-        off: 'IndexLab skips type-aware parsing. Extracted values pass through without type validation — may produce misformatted data.',
-      },
       seed: {
         on: 'Seed Pipeline creates correctly-typed columns in SpecDb. The database schema matches the declared type.',
         off: 'Seed Pipeline skips this field during schema creation. The field will not appear in seeded data.',
@@ -82,10 +78,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Shape' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab parses according to the declared shape: scalar (single value), list (multiple values), or structured (key-value pairs).',
-        off: 'IndexLab ignores shape — may misparse lists as single values or vice versa. Data structure may be incorrect.',
-      },
       seed: {
         on: 'Seed Pipeline sets up the correct storage structure in SpecDb: single value column vs array vs structured object.',
         off: 'Seed Pipeline defaults to scalar storage. List or structured data may be flattened or lost.',
@@ -99,40 +91,9 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'contract.unit': {
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Unit' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab normalizes all extracted values to this unit (e.g., g, mm, Hz). Values in alternate units are converted automatically.',
-        off: 'IndexLab skips unit normalization. Values arrive in whatever unit was found on the source page — may be inconsistent.',
-      },
       review: {
         on: 'LLM Review flags candidates with unexpected or missing units. Ensures unit consistency across sources.',
         off: 'LLM Review does not check unit correctness. Candidates with wrong units pass through undetected.',
-      },
-    },
-  },
-  'contract.range': {
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Range' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab enforces the configured min/max numeric range during runtime validation and extraction guidance.',
-        off: 'IndexLab skips the field-specific numeric range guard. Out-of-range values are no longer blocked by this field rule.',
-      },
-    },
-  },
-  'contract.list_rules': {
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'List Rules' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab enforces the configured list dedupe, ordering, and item limits during runtime normalization.',
-        off: 'IndexLab ignores the field-specific list rules. List outputs fall back to default runtime handling.',
-      },
-    },
-  },
-  'contract.unknown_token': {
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Unknown Token' },
-    tooltips: {
-      indexlab: {
-        on: 'IndexLab passes this token into field-specific extraction guidance and runtime metadata when the field is unresolved.',
-        off: 'IndexLab omits the field-specific unknown token and falls back to default extraction guidance.',
       },
     },
   },
@@ -200,10 +161,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
         on: 'Seed Pipeline maps effort to route matrix effort band for key review state seeding. Higher effort fields get larger LLM budgets.',
         off: 'Seed Pipeline uses default effort band. Key review state is seeded without effort context.',
       },
-      indexlab: {
-        on: 'IndexLab caps LLM calls and search depth using this effort budget (1-10). Higher effort = more API calls and deeper source crawling.',
-        off: 'IndexLab uses the default effort budget. May over-spend on simple fields or under-spend on complex ones.',
-      },
       review: {
         on: 'LLM Review determines per-field LLM call budget via the route matrix effort band. Higher effort allows more validation passes.',
         off: 'LLM Review uses default call budget. No per-field effort adjustment.',
@@ -233,10 +190,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
         on: 'Seed Pipeline seeds initial key_review_state AI configuration from this mode. Determines default AI behavior for the review pipeline.',
         off: 'Seed Pipeline does not seed AI mode into key_review_state. Review starts with no AI configuration.',
       },
-      indexlab: {
-        on: 'IndexLab uses the configured AI mode (advisory, planner, judge) to control extraction depth and model selection for this field.',
-        off: 'IndexLab runs with no AI assistance for this field. Only deterministic parsing and static extraction are used.',
-      },
       review: {
         on: 'LLM Review uses the AI mode to control validation rigor. Judge mode enables deep reasoning with the strongest model.',
         off: 'LLM Review skips AI-powered validation. This field is only reviewed by human operators.',
@@ -246,10 +199,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'ai_assist.model_strategy': {
     navigation: { section: 'AI Assist', key: 'Model Strategy' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab uses this strategy override (auto, force_fast, force_deep) to select the LLM model for extraction calls.',
-        off: 'IndexLab auto-selects the model based on AI mode. The strategy override is ignored.',
-      },
       review: {
         on: 'LLM Review overrides model tier selection from the route ladder based on this strategy. force_deep ensures the strongest model is used.',
         off: 'LLM Review auto-selects the validation model from the route ladder. No per-field strategy override.',
@@ -259,10 +208,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'ai_assist.max_tokens': {
     navigation: { section: 'AI Assist', key: 'Max Tokens' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab caps LLM output tokens per call for this field. Controls cost per API call and response length.',
-        off: 'IndexLab uses the default token cap for the selected model. No per-field token limit applied.',
-      },
       review: {
         on: 'LLM Review caps output tokens per call during validation for this field. Controls response length and cost.',
         off: 'LLM Review uses the default token cap for the selected model. No per-field limit.',
@@ -272,10 +217,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'ai_assist.reasoning_note': {
     navigation: { section: 'AI Assist', key: 'Reasoning Note' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab sends this extraction guidance text to the LLM as part of the prompt. Helps the model understand what to extract and how.',
-        off: 'IndexLab uses auto-generated guidance derived from other field settings (type, difficulty, evidence rules).',
-      },
       review: {
         on: 'LLM Review includes this extraction guidance in the AI validation prompt. Helps the model understand field-specific validation nuances.',
         off: 'LLM Review uses auto-generated guidance only. No per-field reasoning note is included.',
@@ -287,10 +228,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'parse.template': {
     navigation: { section: 'Parse Rules', key: 'Parse Template' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab uses this template to structure extraction output (number_with_unit, boolean, component_reference, etc.). Controls how raw text becomes structured data.',
-        off: 'IndexLab falls back to raw text extraction. No structured parsing is applied — output is unformatted text.',
-      },
       review: {
         on: 'LLM Review validates that candidate values match the expected parse template format. Format violations are flagged.',
         off: 'LLM Review does not check parse template compliance. Any format is accepted.',
@@ -307,10 +244,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
         on: 'Seed Pipeline uses the enum policy (open, closed, open_prefer_known) when populating initial value constraints in SpecDb.',
         off: 'Seed Pipeline skips enum constraint seeding. All values are accepted without policy enforcement.',
       },
-      indexlab: {
-        on: 'IndexLab validates extracted values against enum policy. A "closed" policy rejects any value not in the allowed list.',
-        off: 'IndexLab ignores enum policy. Any extracted value passes through regardless of the allowed list.',
-      },
       review: {
         on: 'LLM Review enforces enum policy during candidate scoring. Unknown values in a "closed" enum are flagged as invalid.',
         off: 'LLM Review does not enforce enum constraints. Any value is accepted during review.',
@@ -324,10 +257,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       seed: {
         on: 'Seed Pipeline loads the enum value list from this source (data_lists, component_db, yes_no) into SpecDb as allowed values.',
         off: 'Seed Pipeline does not seed any enum values for this field. The allowed-value list remains empty.',
-      },
-      indexlab: {
-        on: 'IndexLab uses this value list to validate and normalize extracted values. Known values get higher confidence scores.',
-        off: 'IndexLab ignores the enum source. Extracted values are not validated against any known-value list.',
       },
       review: {
         on: 'LLM Review matches candidates against this enum value list during scoring. Known values score higher.',
@@ -377,10 +306,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
         on: 'Seed Pipeline seeds key_review_state to require evidence backing for this field. Review starts with evidence as mandatory.',
         off: 'Seed Pipeline does not seed evidence requirement. Key review state starts without evidence mandate.',
       },
-      indexlab: {
-        on: 'IndexLab requires at least one evidence source to support any extracted value. Unsupported values are rejected.',
-        off: 'IndexLab accepts values without evidence backing. No source attribution is required.',
-      },
       review: {
         on: 'LLM Review blocks candidates that lack supporting evidence references. Evidence is mandatory for acceptance.',
         off: 'LLM Review accepts candidates regardless of evidence backing.',
@@ -408,10 +333,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'evidence.conflict_policy': {
     navigation: { section: 'Evidence Requirements', key: 'Conflict Policy' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab uses this policy to resolve conflicting values from different sources (e.g., prefer highest tier, flag for review, prefer most recent).',
-        off: 'IndexLab defaults to "resolve by tier" conflict resolution. The highest-tier source wins automatically.',
-      },
       review: {
         on: 'LLM Review applies the configured conflict resolution policy when multiple candidates disagree.',
         off: 'LLM Review defaults to tier-based resolution without the configured policy override.',
@@ -421,10 +342,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   'evidence.tier_preference': {
     navigation: { section: 'Evidence Requirements', key: 'Tier Preference' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab prioritizes evidence from these tiers in order: T1 (manufacturer), T2 (lab reviews), T3 (retail). Earlier tiers outrank later ones.',
-        off: 'IndexLab treats all source tiers equally. A retail listing is weighted the same as a manufacturer spec sheet.',
-      },
       review: {
         on: 'LLM Review weights evidence quality by tier during scoring. Higher-tier sources contribute more confidence to candidate acceptance.',
         off: 'LLM Review treats all evidence tiers equally during scoring. Source quality does not affect confidence.',
@@ -460,15 +377,29 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       },
     },
   },
+  group: {
+    navigation: { section: 'Field Groups', key: 'Group' },
+    tooltips: {
+      indexlab: {
+        on: 'Fields with the same group get ONE shared Tier 2 query (e.g. "Razer Viper V3 Pro sensor_performance"). Also drives group productivity scoring and phase scheduling.',
+        off: 'Field placed in _ungrouped bucket. No shared Tier 2 query generation.',
+      },
+    },
+  },
+  'contract.exact_match': {
+    navigation: { section: 'Contract', key: 'Exact Match' },
+    tooltips: {
+      indexlab: {
+        on: 'Sets search_intent: "exact_match" sent to the LLM planner as a prompt signal. The LLM may generate stricter queries. Indirect effect — pipeline code does not enforce it.',
+        off: 'Default broad search intent. LLM generates standard queries.',
+      },
+    },
+  },
 
   // ── Constraints ───────────────────────────────────────────────────────
   constraints: {
     navigation: { section: 'Cross-Field Constraints', key: 'Constraints' },
     tooltips: {
-      indexlab: {
-        on: 'IndexLab enforces cross-field validation rules (e.g., min < max, weight must be positive, length consistency). Invalid value combinations are rejected.',
-        off: 'IndexLab skips cross-field constraint checks. Inconsistent values across related fields may pass through undetected.',
-      },
       review: {
         on: 'LLM Review enforces constraint rules during candidate scoring. Constraint violations lower confidence and may block acceptance.',
         off: 'LLM Review ignores cross-field constraints. Contradictory values across fields are not flagged.',
@@ -484,10 +415,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
       seed: {
         on: 'Seed Pipeline creates component identity records and links for this component type in SpecDb. Products are linked to their components.',
         off: 'Seed Pipeline skips component identity creation. No component links are established in the database.',
-      },
-      indexlab: {
-        on: 'IndexLab performs component identity matching using the component database. Extracted names are matched to known components with aliases.',
-        off: 'IndexLab treats this as a plain text field. No component matching or identity resolution is performed.',
       },
       review: {
         on: 'LLM Review validates component identity candidates against the known component database. Fuzzy matching and alias resolution are applied.',

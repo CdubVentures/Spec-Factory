@@ -125,6 +125,7 @@ export function EnumTab({
   consistencyPending,
   consistencyMessage,
   consistencyError,
+  isEgLocked = false,
   B,
 }: {
   category: string;
@@ -137,6 +138,7 @@ export function EnumTab({
   consistencyPending: boolean;
   consistencyMessage: string;
   consistencyError: string;
+  isEgLocked?: boolean;
   B: BadgeSlot;
 }) {
   const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
@@ -153,6 +155,7 @@ export function EnumTab({
       consistencyPending={consistencyPending}
       consistencyMessage={consistencyMessage}
       consistencyError={consistencyError}
+      isEgLocked={isEgLocked}
       renderLabelSuffix={(path) => <B p={path} />}
     />
   );

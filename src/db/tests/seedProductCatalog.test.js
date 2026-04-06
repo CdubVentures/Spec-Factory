@@ -31,7 +31,6 @@ describe('seedProductCatalog — characterization', () => {
         model: 'Viper V3 Pro',
         variant: 'Wireless',
         status: 'active',
-        seed_urls: [],
         identifier: 'abc123',
       },
     });
@@ -44,7 +43,6 @@ describe('seedProductCatalog — characterization', () => {
       model: 'Viper V3 Pro',
       variant: 'Wireless',
       status: 'active',
-      seed_urls: [],
       identifier: 'abc123',
     });
 
@@ -63,7 +61,6 @@ describe('seedProductCatalog — characterization', () => {
       model: 'OP1 8k',
       variant: '8k',
       status: 'active',
-      seed_urls: [],
       identifier: '6655dc93',
     });
 

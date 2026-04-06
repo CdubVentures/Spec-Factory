@@ -14,7 +14,6 @@ function makeCatalogRow(overrides: Partial<CatalogRow> = {}): CatalogRow {
     status: 'active',
     identifier: 'abc123',
     brand_identifier: 'a8158910',
-    seed_urls: [],
     added_at: '',
     added_by: '',
     ...overrides,

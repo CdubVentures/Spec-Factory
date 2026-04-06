@@ -32,7 +32,6 @@ export async function addProduct({
   brand,
   base_model,
   variant = '',
-  seedUrls = [],
   storage = null,
   upsertQueue = null,
   specDb = null,
@@ -71,7 +70,6 @@ export async function addProduct({
     variant: identity.variant,
     brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
     status: 'active',
-    seed_urls: Array.isArray(seedUrls) ? seedUrls.filter(Boolean) : [],
     added_at: nowIso(),
     added_by: 'gui'
   };
@@ -82,7 +80,6 @@ export async function addProduct({
       productId: pid,
       category: cat,
       identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
-      seedUrls,
       identifier: product.identifier,
     });
   } catch { /* best-effort: pipeline still works without product.json */ }
@@ -97,7 +94,7 @@ export async function addProduct({
 
 /**
  * Bulk add products under a brand.
- * Accepts rows in the shape [{ model, variant?, brand?, seedUrls? }].
+ * Accepts rows in the shape [{ model, variant?, brand? }].
  * Returns per-row statuses so callers can safely retry.
  */
 export async function addProductsBulk({
@@ -146,7 +143,6 @@ export async function addProductsBulk({
     const rowBrand = String(row.brand ?? defaultBrand).trim();
     const rowBaseModel = String(row.base_model ?? '').trim();
     const rowVariant = String(row.variant ?? '').trim();
-    const seedUrls = Array.isArray(row.seedUrls) ? row.seedUrls.filter(Boolean) : [];
     const baseResult = {
       index: i,
       brand: rowBrand,
@@ -204,7 +200,6 @@ export async function addProductsBulk({
       variant: identity.variant,
       brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
       status: 'active',
-      seed_urls: seedUrls,
       added_at: nowIso(),
       added_by: 'gui_bulk'
     };
@@ -215,7 +210,6 @@ export async function addProductsBulk({
           productId: pid,
           category: cat,
           identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
-          seedUrls,
           identifier: product.identifier,
         });
       } catch { /* best-effort */ }
@@ -286,10 +280,6 @@ export async function updateProduct({
     : existingRow.base_model;
   const newVariant = patch.variant !== undefined ? String(patch.variant).trim() : existingRow.variant;
 
-  const existingSeedUrls = (() => { try { return JSON.parse(existingRow.seed_urls || '[]'); } catch { return []; } })();
-  const updatedSeedUrls = patch.seed_urls !== undefined
-    ? (Array.isArray(patch.seed_urls) ? patch.seed_urls.filter(Boolean) : existingSeedUrls)
-    : existingSeedUrls;
   const updatedStatus = patch.status !== undefined ? patch.status : (existingRow.status || 'active');
 
   // WHY: Normalize identity (strip fabricated variants) but productId stays immutable
@@ -308,7 +298,6 @@ export async function updateProduct({
     variant: identity.variant,
     brand_identifier: newBrandIdentifier,
     status: updatedStatus,
-    seed_urls: updatedSeedUrls,
     updated_at: nowIso()
   };
 
@@ -527,7 +516,6 @@ export function listProducts({ specDb }) {
     model: String(row.model || '').trim(),
     variant: String(row.variant || '').trim(),
     status: row.status || 'active',
-    seed_urls: (() => { try { return JSON.parse(row.seed_urls || '[]'); } catch { return []; } })(),
     added_at: row.created_at || '',
     added_by: '',
   })).sort((a, b) =>

@@ -41,6 +41,7 @@ import type {
 } from "../../../types/studio.ts";
 import { EditableDataList } from "./EditableDataList.tsx";
 import { EditableComponentSource } from "./EditableComponentSource.tsx";
+import { useStudioFieldRulesState } from "../state/studioFieldRulesController.ts";
 
 interface DataListEntry {
   field: string;
@@ -83,6 +84,7 @@ export function MappingStudioTab({
   setAutoSaveMapEnabled,
   autoSaveMapLocked,
 }: MappingStudioTabProps) {
+  const { egLockedKeys } = useStudioFieldRulesState();
   const [tooltipPath, setTooltipPath] = useState("");
   const [compSources, setCompSources] = useState<ComponentSource[]>([]);
   const [dataLists, setDataLists] = useState<DataListEntry[]>([]);
@@ -193,6 +195,21 @@ export function MappingStudioTab({
           ai_assist: normalizeAiAssistConfig(undefined),
         });
       }
+    }
+    // WHY: EG-locked fields with known_values (e.g., colors from registry)
+    // appear as locked enum entries. O(1): driven by egLockedKeys + knownValues.
+    for (const egKey of egLockedKeys) {
+      if (seenFields.has(egKey)) continue;
+      const egValues = knownValues[egKey];
+      if (!Array.isArray(egValues) || egValues.length === 0) continue;
+      seededLists.push({
+        field: egKey,
+        normalize: 'lower_trim',
+        delimiter: '',
+        manual_values: egValues,
+        priority: deriveListPriority(egKey, rules),
+        ai_assist: normalizeAiAssistConfig(undefined),
+      });
     }
     setDataLists(seededLists);
     // WHY: assembleMap converts data_lists + manual_enum_values into the
@@ -619,16 +636,26 @@ export function MappingStudioTab({
             </div>
             {dataLists.length > 0 ? (
               <div className="space-y-3">
-                {dataLists.map((dl, idx) => (
-                  <EditableDataList
-                    key={idx}
-                    entry={dl}
-                    index={idx}
-                    isDuplicate={duplicateDataListFields.has(dl.field)}
-                    onUpdate={(updates) => updateDataList(idx, updates)}
-                    onRemove={() => removeDataList(idx)}
-                  />
-                ))}
+                {dataLists.map((dl, idx) => {
+                  const isLocked = egLockedKeys.includes(dl.field);
+                  return (
+                    <div key={idx} className={isLocked ? 'pointer-events-none opacity-60' : ''}>
+                      <EditableDataList
+                        entry={dl}
+                        index={idx}
+                        isDuplicate={duplicateDataListFields.has(dl.field)}
+                        onUpdate={isLocked ? () => {} : (updates) => updateDataList(idx, updates)}
+                        onRemove={isLocked ? () => {} : () => removeDataList(idx)}
+                      />
+                      {isLocked && (
+                        <div className="flex items-center gap-1.5 mt-1 px-2 text-[10px] sf-text-subtle">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                          EG-managed &middot; Linked to color registry
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-sm sf-text-subtle text-center py-4">

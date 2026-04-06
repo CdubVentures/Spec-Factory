@@ -214,7 +214,7 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
     const firstKnownValuesRaw = await fs.readFile(knownValuesPath, 'utf8');
     const firstUiCatalogRaw = await fs.readFile(uiCatalogPath, 'utf8');
     const firstKnownValues = JSON.parse(firstKnownValuesRaw);
-    assert.equal(typeof firstKnownValues.fields, 'object');
+    assert.equal(typeof firstKnownValues.enums, 'object');
     assert.equal((first.compile_report?.counts?.component_types || 0) > 0, true);
     assert.equal(typeof first.compile_report?.source_summary?.enum_lists, 'number');
     assert.equal(typeof first.compile_report?.diff?.fields?.changed_count, 'number');

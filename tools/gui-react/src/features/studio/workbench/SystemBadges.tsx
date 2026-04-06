@@ -1,4 +1,6 @@
-// ── SystemBadges: clickable consumer toggle badges per field ─────────
+// ── SystemBadges: consumer badges per field ──────────────────────────
+// WHY: IDX badges are reference-only (non-toggleable) — the pipeline should
+// always see full field rules. Seed/review remain toggleable for now.
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   type DownstreamSystem,
@@ -7,7 +9,12 @@ import {
   isConsumerEnabled,
   formatConsumerTooltip,
   parseFormattedConsumerTooltip,
+  formatStaticConsumerTooltip,
+  parseFormattedStaticConsumerTooltip,
 } from './systemMapping.ts';
+
+// WHY: IDX badges are non-toggleable — pipeline always sees full rules.
+const NON_INTERACTIVE_SYSTEMS: ReadonlySet<DownstreamSystem> = new Set(['indexlab']);
 
 interface Props {
   fieldPath: string;
@@ -26,6 +33,20 @@ const disabledInline: React.CSSProperties = {
   textDecoration: 'line-through',
 };
 
+const staticBadgeStyle: React.CSSProperties = {
+  fontSize: '9px',
+  lineHeight: '14px',
+  padding: '0 4px',
+  borderRadius: '3px',
+  fontWeight: 600,
+  userSelect: 'none',
+};
+
+const interactiveBadgeStyle: React.CSSProperties = {
+  ...staticBadgeStyle,
+  cursor: 'pointer',
+};
+
 export function SystemBadges({ fieldPath, rule, onToggle }: Props) {
   const systems = getFieldSystems(fieldPath);
   if (systems.length === 0) return null;
@@ -34,6 +55,38 @@ export function SystemBadges({ fieldPath, rule, onToggle }: Props) {
     <span className="inline-flex gap-0.5 ml-auto shrink-0">
       {systems.map((sys) => {
         const cfg = SYSTEM_BADGE_CONFIGS[sys];
+
+        // Non-interactive systems render as static reference labels
+        if (NON_INTERACTIVE_SYSTEMS.has(sys)) {
+          const tipText = formatStaticConsumerTooltip(fieldPath, sys);
+          const parsedTip = parseFormattedStaticConsumerTooltip(tipText);
+          return (
+            <Tooltip.Root key={sys} delayDuration={200}>
+              <Tooltip.Trigger asChild>
+                <span
+                  style={{ ...staticBadgeStyle, ...enabledInline[sys] }}
+                  className={cfg.cls}
+                >
+                  {cfg.label}
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  className="z-50 max-w-md px-3 py-2 text-xs leading-snug sf-text-primary bg-white border sf-border-default rounded shadow-lg sf-dk-fg-100 sf-dk-surface-900 dark:sf-border-default"
+                  sideOffset={5}
+                >
+                  <div className="space-y-2">
+                    <div className="font-semibold sf-text-primary">{parsedTip.title}</div>
+                    <div className="text-[11px] sf-text-muted sf-dk-fg-200">{parsedTip.summary || tipText}</div>
+                  </div>
+                  <Tooltip.Arrow className="sf-tooltip-arrow" />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          );
+        }
+
+        // Interactive systems render as clickable toggle buttons
         const enabled = isConsumerEnabled(rule, fieldPath, sys);
         const tipText = formatConsumerTooltip(fieldPath, sys, enabled);
         const parsedTip = parseFormattedConsumerTooltip(tipText);
@@ -44,13 +97,7 @@ export function SystemBadges({ fieldPath, rule, onToggle }: Props) {
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(fieldPath, sys, !enabled); }}
                 style={{
-                  fontSize: '9px',
-                  lineHeight: '14px',
-                  padding: '0 4px',
-                  borderRadius: '3px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  userSelect: 'none',
+                  ...interactiveBadgeStyle,
                   ...(enabled ? enabledInline[sys] : disabledInline),
                 }}
                 className={`${enabled ? cfg.cls : cfg.clsDim}`}

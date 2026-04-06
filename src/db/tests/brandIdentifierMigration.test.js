@@ -50,7 +50,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'Viper V3 Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'aabb1122',
         brand_identifier: 'b5a50d8f',
       });
@@ -73,7 +72,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'Viper V3 Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'aabb1122',
         brand_identifier: 'b5a50d8f',
       });
@@ -86,7 +84,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'Viper V3 Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'aabb1122',
         brand_identifier: '',
       });
@@ -108,7 +105,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'Viper V3 Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'aabb1122',
         brand_identifier: 'oldid123',
       });
@@ -120,7 +116,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'Viper V3 Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'aabb1122',
         brand_identifier: 'newid456',
       });
@@ -142,7 +137,6 @@ describe('brand_identifier column — upsert', () => {
         model: 'G Pro',
         variant: '',
         status: 'active',
-        seed_urls: [],
         identifier: 'ccdd3344',
       });
       const row = db.getProduct('mouse-ccdd3344');

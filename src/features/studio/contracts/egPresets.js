@@ -160,11 +160,18 @@ export function buildEgColorFieldRule(ctx) {
         'light red': 'light-red',
       },
     },
-    enum_policy: 'open',
+    enum_policy: 'closed',
     enum: {
-      policy: 'open',
+      policy: 'closed',
       match: { strategy: 'exact' },
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
+    },
+    // WHY: vocab.known_values populated from ctx.colorNames (color registry).
+    // Prevents categoryCompile.js:285 from downgrading 'closed' to 'open_prefer_known'.
+    vocab: {
+      mode: 'closed',
+      allow_new: false,
+      known_values: colorNames,
     },
     priority: {
       required_level: 'expected',

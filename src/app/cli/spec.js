@@ -20,8 +20,8 @@ function usage() {
     'Commands:',
     '  run-one --s3key <key> [--local] [--dry-run]',
     '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--run-id <run_id>] [--local]',
-    '  run-ad-hoc <category> <brand> <model> [<variant>] [--seed-urls <csv>] [--until-complete] [--max-rounds <n>] [--local]',
-    '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--seed-urls <csv>] [--until-complete] [--max-rounds <n>] [--local]',
+    '  run-ad-hoc <category> <brand> <model> [<variant>] [--until-complete] [--max-rounds <n>] [--local]',
+    '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--until-complete] [--max-rounds <n>] [--local]',
     '  run-batch --category <category> [--brand <brand>] [--strategy <explore|exploit|mixed|bandit>] [--local] [--dry-run]',
     '  run-until-complete --s3key <key> [--max-rounds <n>] [--local]',
     '  category-compile --category <category> [--field-studio-source <path>] [--map <path>] [--local]',
@@ -36,7 +36,6 @@ function usage() {
     '  field-rules-verify --category <category> [--fixture <path>] [--strict-bytes] [--local]',
     '  generate-types --category <category> [--out-dir <path>] [--local]',
     '  discover --category <category> [--brand <brand>] [--local]',
-    '  ingest-csv --category <category> --path <csv> [--imports-root <path>] [--local]',
     '  review layout --category <category> [--local]',
     '  review queue --category <category> [--status needs_review|queued|...] [--limit <n>] [--local]',
     '  review product --category <category> --product-id <id> [--without-candidates] [--local]',
@@ -264,18 +263,15 @@ const loadPublishingCommands = createLazyLoader(async () => {
 const loadDataUtilityCommands = createLazyLoader(async () => {
   const [
     { createDataUtilityCommands },
-    { ingestCsvFile },
     { EventLogger },
     { generateTypesForCategory },
   ] = await Promise.all([
     import('./commands/dataUtilityCommands.js'),
-    import('../../ingest/csvIngestor.js'),
     import('../../logger.js'),
     import('../../build/generate-types.js'),
   ]);
   return createDataUtilityCommands({
     asBool,
-    ingestCsvFile,
     EventLogger,
     generateTypesForCategory,
     openSpecDbForCategory,
@@ -359,8 +355,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadBatchCommandGroup()).commandRunBatch(config, storage, args);
     case 'discover':
       return (await loadDiscoverCommandHandler())(config, storage, args);
-    case 'ingest-csv':
-      return (await loadDataUtilityCommands()).commandIngestCsv(config, storage, args);
     case 'review':
       return (await loadReviewCommandHandler())(config, storage, args);
     case 'export-overrides':

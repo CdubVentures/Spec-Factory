@@ -83,10 +83,10 @@ describe('buildEgColorFieldRule', () => {
     assert.equal(rule.parse.template, 'list_of_tokens_delimited');
   });
 
-  it('has open enum policy (infinite color+color combos cannot be enumerated)', () => {
+  it('has closed enum policy (colors are a closed vocabulary from the registry)', () => {
     const rule = buildEgColorFieldRule();
-    assert.equal(rule.enum_policy, 'open');
-    assert.equal(rule.enum.policy, 'open');
+    assert.equal(rule.enum_policy, 'closed');
+    assert.equal(rule.enum.policy, 'closed');
     assert.equal(rule.enum.match.strategy, 'exact');
     assert.equal(rule.enum.new_value_policy.accept_if_evidence, true);
     assert.equal(rule.enum.new_value_policy.mark_needs_curation, false);

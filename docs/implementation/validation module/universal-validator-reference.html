@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Universal Validator — Complete Deterministic Check Reference</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe;
+  --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4;
+  --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8;
+  --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+}
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 32px;
+  line-height: 1.5;
+}
+.root { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+.pass { color: var(--sf-success-fg); }
+.fail { color: var(--sf-danger-fg); }
+.repair { color: var(--sf-warning-fg); }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
+.divider { border: none; height: 1px; background: var(--sf-border-soft-alpha); margin: 6px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.check-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.check-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sf-accent-glow); border: 1.5px solid var(--sf-accent-strong); font-size: 13px; font-weight: 800; color: var(--sf-accent-strong); font-family: var(--sf-font-mono); }
+.check-title { font-size: 15px; font-weight: 700; }
+.rule-source { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-family: var(--sf-font-mono); color: var(--sf-teal-fg); background: var(--sf-teal-bg); padding: 2px 8px; border-radius: 4px; margin: 2px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.prompt-block { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.25); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-warning-fg); white-space: pre-wrap; overflow-x: auto; }
+.reject-block { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-danger-fg); white-space: pre-wrap; overflow-x: auto; }
+.toc { list-style: none; padding: 0; }
+.toc li { padding: 4px 0; font-size: 13px; }
+.toc li a { color: var(--sf-accent-strong); text-decoration: none; }
+.toc li a:hover { text-decoration: underline; }
+.toc .num { color: var(--sf-text-dim); font-family: var(--sf-font-mono); font-size: 12px; margin-right: 8px; }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div>
+  <h1>Universal Validator — Complete Deterministic Check Reference</h1>
+  <div class="subtitle">
+    Every validation dimension derived from <code>field_studio_map</code>, <code>parse_templates</code>, <code>known_values</code>, <code>cross_validation_rules</code>, and <code>ui_field_catalog</code>.
+    <br/>Each dimension maps to a pure deterministic function. The LLM repair phase is called <strong>only</strong> when deterministic checks produce unknowns.
+    <br/>This document is the SSOT for what the universal validator must check, how it decides, and what prompt to send for repair.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TABLE OF CONTENTS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>Table of Contents</h2>
+  <ul class="toc">
+    <li><span class="num">1</span><a href="#dim-overview">Validation Dimensions Overview Matrix</a></li>
+    <li><span class="num">2</span><a href="#dim-shape">Shape Validation (scalar vs list vs record)</a></li>
+    <li><span class="num">3</span><a href="#dim-type">Data Type Check (string / number / boolean / date / url)</a></li>
+    <li><span class="num">4</span><a href="#dim-unit">Unit Handling &amp; Conversion</a></li>
+    <li><span class="num">5</span><a href="#dim-normalization">String Normalization (case, trim, hyphens, token_map)</a></li>
+    <li><span class="num">6</span><a href="#dim-format">Format Pattern Validation (regex)</a></li>
+    <li><span class="num">7</span><a href="#dim-enum">Enum Policy &amp; Match Strategy</a></li>
+    <li><span class="num">8</span><a href="#dim-list">List Rules (dedupe, sort, min_items, max_items)</a></li>
+    <li><span class="num">9</span><a href="#dim-rounding">Rounding, Decimals &amp; Numeric Precision</a></li>
+    <li><span class="num">10</span><a href="#dim-crossfield">Cross-Field Constraints</a></li>
+    <li><span class="num">11</span><a href="#dim-component">Component DB Lookup &amp; Consistency</a></li>
+    <li><span class="num">12</span><a href="#dim-conditional">Conditional Requirements</a></li>
+    <li><span class="num">13</span><a href="#dim-pipeline">Full Pipeline Order &amp; Short-Circuit Rules</a></li>
+    <li><span class="num">14</span><a href="#prompts">LLM Repair Prompt Catalog (all prompt templates)</a></li>
+    <li><span class="num">15</span><a href="#hallucination">Hallucination Detection &amp; Rejection Patterns</a></li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1: OVERVIEW MATRIX
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-overview">
+  <h2>1. Validation Dimensions Overview Matrix</h2>
+  <div class="small muted" style="margin-bottom:16px;">
+    Every field in the system is governed by these dimensions. The validator reads the field's rule definition and runs <strong>only</strong> the applicable checks.
+    A dimension is "applicable" when the field rule contains the corresponding key (e.g. a field with <code>unit: "mm"</code> triggers the Unit check).
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>Rule Source Key(s)</th>
+        <th>Deterministic?</th>
+        <th>Can Auto-Repair?</th>
+        <th>LLM Needed?</th>
+        <th>Applies To</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bold">Shape</td>
+        <td class="mono tiny">shape: scalar|list|record</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td><span class="chip chip-neutral">NEVER</span></td>
+        <td class="tiny muted">All fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Data Type</td>
+        <td class="mono tiny">type: string|number</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">All fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Unit</td>
+        <td class="mono tiny">unit: mm|g|dpi|ips|ms|h|Hz|gf</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td><span class="chip chip-neutral">NEVER</span></td>
+        <td class="tiny muted">number fields with unit</td>
+      </tr>
+      <tr>
+        <td class="bold">Normalization</td>
+        <td class="mono tiny">parse.token_map + tooltip_md rules</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td><span class="chip chip-neutral">NEVER</span></td>
+        <td class="tiny muted">string/token fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Format Pattern</td>
+        <td class="mono tiny">derived regex per template type</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">All fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Enum Policy</td>
+        <td class="mono tiny">enum.policy: closed|open_prefer_known|open</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">Fields with known_values</td>
+      </tr>
+      <tr>
+        <td class="bold">List Rules</td>
+        <td class="mono tiny">list_rules: dedupe|sort|min|max</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td><span class="chip chip-neutral">NEVER</span></td>
+        <td class="tiny muted">shape: list fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Rounding</td>
+        <td class="mono tiny">display_decimals + rounding_mode</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td><span class="chip chip-neutral">NEVER</span></td>
+        <td class="tiny muted">number fields</td>
+      </tr>
+      <tr>
+        <td class="bold">Cross-Field</td>
+        <td class="mono tiny">cross_validation_rules[]</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">Fields with cross-refs</td>
+      </tr>
+      <tr>
+        <td class="bold">Component DB</td>
+        <td class="mono tiny">template: component_reference</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">sensor, switch, encoder, material</td>
+      </tr>
+      <tr>
+        <td class="bold">Conditional Req</td>
+        <td class="mono tiny">cross_validation_rules[].condition</td>
+        <td><span class="chip chip-teal">YES</span></td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td><span class="chip chip-warning">ON FAIL</span></td>
+        <td class="tiny muted">Fields with trigger conditions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Parse Template &rarr; Dimensions Mapping</h3>
+    <div class="small muted" style="margin-bottom:8px;">Each parse template activates a specific subset of dimensions. The validator reads <code>parse_templates[fieldKey].template</code> to know which checks to run.</div>
+    <table>
+      <thead><tr><th>Parse Template</th><th>Shape</th><th>Type</th><th>Unit</th><th>Norm</th><th>Format</th><th>Enum</th><th>List</th><th>Round</th><th>Fields Using It</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono tiny">text_field</td>
+          <td>scalar</td><td>string</td><td>—</td><td>trim</td><td>non-empty</td><td>if policy</td><td>—</td><td>—</td>
+          <td class="tiny muted">sku, price_range, cable_type, mcu, shape, hump, form_factor, etc.</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">boolean_yes_no_unk</td>
+          <td>scalar</td><td>string</td><td>—</td><td>lowercase</td><td>/^(yes|no|unk)$/</td><td>closed</td><td>—</td><td>—</td>
+          <td class="tiny muted">discontinued, bluetooth, paracord, rgb, onboard_memory, etc.</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">number_with_unit</td>
+          <td>scalar</td><td>number</td><td>convert</td><td>strip unit str</td><td>/^\d+(\.\d+)?$/</td><td>—</td><td>—</td><td>yes</td>
+          <td class="tiny muted">weight, height, width, lngth, dpi, ips, battery_hours, etc.</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">integer_field</td>
+          <td>scalar</td><td>number</td><td>—</td><td>strip non-digit</td><td>/^\d+$/</td><td>—</td><td>—</td><td>floor</td>
+          <td class="tiny muted">encoder_life_span, encoder_steps</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">list_of_tokens_delimited</td>
+          <td>list</td><td>string[]</td><td>—</td><td>full chain</td><td>per-token</td><td>if policy</td><td>yes</td><td>—</td>
+          <td class="tiny muted">colors, editions, design, lighting, coating, connectivity, grip, etc.</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">list_of_numbers_with_unit</td>
+          <td>list</td><td>number[]</td><td>convert</td><td>strip unit str</td><td>/^\d+(\.\d+)?$/</td><td>—</td><td>yes</td><td>yes</td>
+          <td class="tiny muted">polling_rate</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">list_numbers_or_ranges</td>
+          <td>list</td><td>{min,max}[]</td><td>convert</td><td>—</td><td>/^\d+(-\d+)?$/</td><td>—</td><td>yes</td><td>yes</td>
+          <td class="tiny muted">lift</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">component_reference</td>
+          <td>scalar</td><td>string</td><td>—</td><td>alias match</td><td>—</td><td>closed(db)</td><td>—</td><td>—</td>
+          <td class="tiny muted">sensor, switch, encoder, material</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">date_field</td>
+          <td>scalar</td><td>string</td><td>—</td><td>ISO parse</td><td>/^\d{4}-\d{2}-\d{2}$/</td><td>—</td><td>—</td><td>—</td>
+          <td class="tiny muted">release_date, sensor_date</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">url_field</td>
+          <td>scalar</td><td>string</td><td>—</td><td>scheme prefix</td><td>URL regex</td><td>—</td><td>—</td><td>—</td>
+          <td class="tiny muted">sensor_link, encoder_link, mcu_link, switches_link</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">latency_list_modes_ms</td>
+          <td>list</td><td>object[]</td><td>ms</td><td>—</td><td>{mode,value}</td><td>—</td><td>yes</td><td>yes</td>
+          <td class="tiny muted">click_latency_list, sensor_latency_list</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2: SHAPE VALIDATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-shape">
+  <div class="check-header">
+    <span class="check-number">2</span>
+    <span class="check-title">Shape Validation</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-danger">NO REPAIR — REJECT</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">ui_field_catalog[].shape: 'scalar' | 'list'</span>
+    <span class="rule-source">parse_templates[].template &rarr; implied shape</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The very first gate. If the returned value has the wrong structural shape, reject immediately.
+    Shape is non-negotiable — an LLM cannot "repair" a scalar into a list or vice versa without re-running the entire extraction.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Deterministic check function</span>
+function checkShape(value, expectedShape) {
+  if (expectedShape === 'scalar') {
+    if (Array.isArray(value)) return { pass: false, reason: 'expected scalar, got array' };
+    if (typeof value === 'object' && value !== null) return { pass: false, reason: 'expected scalar, got object' };
+    return { pass: true };
+  }
+  if (expectedShape === 'list') {
+    if (!Array.isArray(value)) return { pass: false, reason: `expected array, got ${typeof value}` };
+    return { pass: true };
+  }
+  if (expectedShape === 'record') {
+    if (typeof value !== 'object' || value === null || Array.isArray(value))
+      return { pass: false, reason: 'expected object/record' };
+    return { pass: true };
+  }
+}</div>
+
+  <table>
+    <thead><tr><th>Expected Shape</th><th>Input</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">scalar</td><td class="mono tiny">"black"</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">string scalar</td></tr>
+      <tr><td class="mono">scalar</td><td class="mono tiny">42</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">number scalar</td></tr>
+      <tr><td class="mono">scalar</td><td class="mono tiny">["black", "white"]</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Array where scalar expected. Re-run source.</td></tr>
+      <tr><td class="mono">scalar</td><td class="mono tiny">{ name: "black" }</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Object where scalar expected. Re-run source.</td></tr>
+      <tr><td class="mono">scalar</td><td class="mono tiny">null</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">null is not a valid scalar value.</td></tr>
+      <tr><td class="mono">scalar</td><td class="mono tiny">undefined</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Missing field entirely.</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">["black", "white"]</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">array of strings</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">[]</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">empty array is valid shape</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">"black, white"</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Comma-separated string where array expected.</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">"black"</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Single string where array expected.</td></tr>
+      <tr><td class="mono">list</td><td class="mono tiny">null</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">null is not an array.</td></tr>
+      <tr><td class="mono">record</td><td class="mono tiny">{ "launch": { colors: ["black"] } }</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">valid object</td></tr>
+      <tr><td class="mono">record</td><td class="mono tiny">["launch-edition"]</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Array where record expected.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="reject-block" style="margin-top:16px;"><strong>LLM PROMPT: Not applicable.</strong>
+Shape failures are <strong>never</strong> sent to the repair LLM.
+The source LLM must be re-run with an explicit correction:
+
+"Your previous response returned {actualShape} for field '{fieldKey}',
+but the contract requires {expectedShape}.
+Return the value as {expectedShape}. Do not wrap scalars in arrays.
+Do not stringify arrays as comma-separated strings."</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3: DATA TYPE CHECK
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-type">
+  <div class="check-header">
+    <span class="check-number">3</span>
+    <span class="check-title">Data Type Check</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">SOMETIMES REPAIRABLE</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">ui_field_catalog[].type: 'string' | 'number'</span>
+    <span class="rule-source">parse_templates[].template &rarr; implied type</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Validates the JavaScript type of each value matches the field contract. Some type mismatches are deterministically repairable
+    (e.g. <code>"42"</code> string can be parsed to number <code>42</code>). Others require LLM re-extraction.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Deterministic check function</span>
+function checkType(value, expectedType, templateType) {
+  if (expectedType === 'number') {
+    if (typeof value === 'number' && !isNaN(value)) return { pass: true };
+    if (typeof value === 'string') {
+      const stripped = value.replace(/[^\d.\-]/g, '');  // strip unit suffixes
+      const parsed = Number(stripped);
+      if (!isNaN(parsed) && stripped.length > 0)
+        return { pass: true, repaired: parsed, rule: 'string_to_number' };
+    }
+    return { pass: false, reason: `expected number, got ${typeof value}` };
+  }
+  if (expectedType === 'string') {
+    if (typeof value === 'string') return { pass: true };
+    if (typeof value === 'number') return { pass: true, repaired: String(value), rule: 'number_to_string' };
+    if (typeof value === 'boolean') return { pass: true, repaired: value ? 'yes' : 'no', rule: 'bool_to_string' };
+    return { pass: false, reason: `expected string, got ${typeof value}` };
+  }
+}</div>
+
+  <h3 style="margin-top:12px;">String Fields</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Expected</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"black"</td><td>string</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">correct type</td></tr>
+      <tr><td class="mono">42</td><td>string</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Auto-convert: <code>String(42)</code> &rarr; <code>"42"</code></td></tr>
+      <tr><td class="mono">true</td><td>string</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Auto-convert: <code>true</code> &rarr; <code>"yes"</code></td></tr>
+      <tr><td class="mono">false</td><td>string</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Auto-convert: <code>false</code> &rarr; <code>"no"</code></td></tr>
+      <tr><td class="mono">null</td><td>string</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">null not coercible to meaningful string</td></tr>
+      <tr><td class="mono">[1, 2]</td><td>string</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">array not coercible (shape fail catches first)</td></tr>
+      <tr><td class="mono">""</td><td>string</td><td><span class="chip chip-success">PASS shape</span></td><td class="tiny muted">empty string passes type check; handled by "unk" logic downstream</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Number Fields</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Expected</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">42</td><td>number</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">correct type</td></tr>
+      <tr><td class="mono">42.5</td><td>number</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">float ok</td></tr>
+      <tr><td class="mono">"42"</td><td>number</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Parse: <code>Number("42")</code> &rarr; <code>42</code></td></tr>
+      <tr><td class="mono">"42.5g"</td><td>number</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip unit suffix: <code>"42.5g"</code> &rarr; <code>42.5</code></td></tr>
+      <tr><td class="mono">"120 mm"</td><td>number</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip unit: <code>"120 mm"</code> &rarr; <code>120</code></td></tr>
+      <tr><td class="mono">"12 cm"</td><td>number (unit: mm)</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Convert: <code>12 cm</code> &rarr; <code>120 mm</code></td></tr>
+      <tr><td class="mono">"4.5 in"</td><td>number (unit: mm)</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Convert: <code>4.5 in</code> &rarr; <code>114.3 mm</code></td></tr>
+      <tr><td class="mono">"~42"</td><td>number</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Strip approximate marker: &rarr; <code>42</code></td></tr>
+      <tr><td class="mono">"1k"</td><td>number</td><td><span class="chip chip-warning">REPAIR</span></td><td class="tiny">Parse SI prefix: <code>"1k"</code> &rarr; <code>1000</code></td></tr>
+      <tr><td class="mono">"twenty"</td><td>number</td><td><span class="chip chip-danger">UNKNOWN</span></td><td class="tiny">&rarr; LLM repair: word-to-number</td></tr>
+      <tr><td class="mono">"N/A"</td><td>number</td><td><span class="chip chip-info">UNK</span></td><td class="tiny">Map to <code>"unk"</code> with reason <code>"not_applicable"</code></td></tr>
+      <tr><td class="mono">"unk"</td><td>number</td><td><span class="chip chip-info">UNK</span></td><td class="tiny">Recognized unknown token — pass through as unk</td></tr>
+      <tr><td class="mono">NaN</td><td>number</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">NaN is never valid</td></tr>
+      <tr><td class="mono">Infinity</td><td>number</td><td><span class="chip chip-danger">REJECT</span></td><td class="tiny">Infinity is never valid</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Boolean Fields (boolean_yes_no_unk template)</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Normalized</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"yes"</td><td class="mono pass">"yes"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">"Yes"</td><td class="mono repair">"yes"</td><td><span class="chip chip-warning">REPAIR</span> lowercase</td></tr>
+      <tr><td class="mono">"YES"</td><td class="mono repair">"yes"</td><td><span class="chip chip-warning">REPAIR</span> lowercase</td></tr>
+      <tr><td class="mono">"no"</td><td class="mono pass">"no"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">"true"</td><td class="mono repair">"yes"</td><td><span class="chip chip-warning">REPAIR</span> true&rarr;yes</td></tr>
+      <tr><td class="mono">"false"</td><td class="mono repair">"no"</td><td><span class="chip chip-warning">REPAIR</span> false&rarr;no</td></tr>
+      <tr><td class="mono">true</td><td class="mono repair">"yes"</td><td><span class="chip chip-warning">REPAIR</span> bool&rarr;string</td></tr>
+      <tr><td class="mono">"1"</td><td class="mono repair">"yes"</td><td><span class="chip chip-warning">REPAIR</span> 1&rarr;yes</td></tr>
+      <tr><td class="mono">"0"</td><td class="mono repair">"no"</td><td><span class="chip chip-warning">REPAIR</span> 0&rarr;no</td></tr>
+      <tr><td class="mono">"unk"</td><td class="mono pass">"unk"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">"unknown"</td><td class="mono repair">"unk"</td><td><span class="chip chip-warning">REPAIR</span> normalize</td></tr>
+      <tr><td class="mono">"n/a"</td><td class="mono repair">"unk"</td><td><span class="chip chip-warning">REPAIR</span> normalize</td></tr>
+      <tr><td class="mono">"maybe"</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">UNKNOWN</span> &rarr; LLM</td></tr>
+      <tr><td class="mono">"sometimes"</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">UNKNOWN</span> &rarr; LLM</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Date Fields (date_field template)</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Normalized</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"2024-10-01"</td><td class="mono pass">"2024-10-01"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">"Oct 2024"</td><td class="mono repair">"2024-10-01"</td><td><span class="chip chip-warning">REPAIR</span> partial date &rarr; first of month</td></tr>
+      <tr><td class="mono">"2024"</td><td class="mono repair">"2024-01-01"</td><td><span class="chip chip-warning">REPAIR</span> year only &rarr; Jan 1</td></tr>
+      <tr><td class="mono">"October 1, 2024"</td><td class="mono repair">"2024-10-01"</td><td><span class="chip chip-warning">REPAIR</span> natural language parse</td></tr>
+      <tr><td class="mono">"10/01/2024"</td><td class="mono repair">"2024-10-01"</td><td><span class="chip chip-warning">REPAIR</span> US date format</td></tr>
+      <tr><td class="mono">"Q4 2024"</td><td class="mono repair">"2024-10-01"</td><td><span class="chip chip-warning">REPAIR</span> quarter &rarr; first month</td></tr>
+      <tr><td class="mono">"unk"</td><td class="mono pass">"unk"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">"soon"</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">UNKNOWN</span> &rarr; LLM</td></tr>
+      <tr><td class="mono">"2099-13-45"</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span> invalid date</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">URL Fields (url_field template)</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Normalized</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono tiny">"https://example.com/spec"</td><td class="mono tiny pass">"https://example.com/spec"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono tiny">"http://example.com/spec"</td><td class="mono tiny pass">"http://example.com/spec"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono tiny">"example.com/spec"</td><td class="mono tiny repair">"https://example.com/spec"</td><td><span class="chip chip-warning">REPAIR</span> add scheme</td></tr>
+      <tr><td class="mono tiny">"  https://example.com  "</td><td class="mono tiny repair">"https://example.com"</td><td><span class="chip chip-warning">REPAIR</span> trim</td></tr>
+      <tr><td class="mono tiny">"not a url"</td><td class="mono tiny fail">&mdash;</td><td><span class="chip chip-danger">REJECT</span></td></tr>
+      <tr><td class="mono tiny">"unk"</td><td class="mono tiny pass">"unk"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono tiny">""</td><td class="mono tiny pass">"unk"</td><td><span class="chip chip-warning">REPAIR</span> empty &rarr; unk</td></tr>
+    </tbody>
+  </table>
+
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT: Type Coercion Failure</strong>
+"The field '{fieldKey}' (type: {expectedType}) received a value that
+could not be deterministically converted:
+  Value: {rawValue}
+  Expected type: {expectedType}
+  Template: {templateType}
+
+Your task:
+1. If the value contains the answer in a different format, extract it.
+   e.g. "twenty grams" → 20, "around 3.5 inches" → 88.9 (mm)
+2. If the value is genuinely unknown, return "unk".
+3. If the value is nonsensical or hallucinated, return null with
+   reason: "hallucination_detected".
+
+Return: { resolved: &lt;value&gt;, confidence: 0.0-1.0, reasoning: "..." }"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4: UNIT HANDLING
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-unit">
+  <div class="check-header">
+    <span class="check-number">4</span>
+    <span class="check-title">Unit Handling &amp; Conversion</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-success">ALWAYS REPAIRABLE</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">parse_templates[].unit: mm|g|dpi|ips|ms|h|Hz|gf|none</span>
+    <span class="rule-source">ui_field_catalog[].suffix</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    When a field has a target unit, the validator strips unit text from the value and converts if needed.
+    This is always deterministic — unit conversion factors are fixed constants.
+  </div>
+
+  <table>
+    <thead><tr><th>Target Unit</th><th>Known Conversion Sources</th><th>Factor</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr><td class="mono bold">mm</td><td class="mono tiny">cm &rarr; mm</td><td class="mono">× 10</td><td class="tiny muted">height, width, lngth, lift</td></tr>
+      <tr><td class="mono bold">mm</td><td class="mono tiny">in &rarr; mm</td><td class="mono">× 25.4</td><td class="tiny muted">height, width, lngth</td></tr>
+      <tr><td class="mono bold">mm</td><td class="mono tiny">m &rarr; mm</td><td class="mono">× 1000</td><td class="tiny muted">height, width, lngth</td></tr>
+      <tr><td class="mono bold">g</td><td class="mono tiny">kg &rarr; g</td><td class="mono">× 1000</td><td class="tiny muted">weight, acceleration</td></tr>
+      <tr><td class="mono bold">g</td><td class="mono tiny">oz &rarr; g</td><td class="mono">× 28.3495</td><td class="tiny muted">weight</td></tr>
+      <tr><td class="mono bold">g</td><td class="mono tiny">lb &rarr; g</td><td class="mono">× 453.592</td><td class="tiny muted">weight</td></tr>
+      <tr><td class="mono bold">h</td><td class="mono tiny">min &rarr; h</td><td class="mono">÷ 60</td><td class="tiny muted">battery_hours</td></tr>
+      <tr><td class="mono bold">h</td><td class="mono tiny">days &rarr; h</td><td class="mono">× 24</td><td class="tiny muted">battery_hours</td></tr>
+      <tr><td class="mono bold">Hz</td><td class="mono tiny">kHz &rarr; Hz</td><td class="mono">× 1000</td><td class="tiny muted">polling_rate</td></tr>
+      <tr><td class="mono bold">ms</td><td class="mono tiny">s &rarr; ms</td><td class="mono">× 1000</td><td class="tiny muted">click_latency, debounce, sensor_latency</td></tr>
+      <tr><td class="mono bold">ms</td><td class="mono tiny">μs &rarr; ms</td><td class="mono">÷ 1000</td><td class="tiny muted">click_latency</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Scenarios</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Target</th><th>Output</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"120 mm"</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-warning">REPAIR</span> strip unit text</td></tr>
+      <tr><td class="mono">"12 cm"</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-warning">REPAIR</span> convert cm&rarr;mm</td></tr>
+      <tr><td class="mono">"4.5 in"</td><td>mm</td><td class="mono pass">114.3</td><td><span class="chip chip-warning">REPAIR</span> convert in&rarr;mm</td></tr>
+      <tr><td class="mono">"42g"</td><td>g</td><td class="mono pass">42</td><td><span class="chip chip-warning">REPAIR</span> strip unit</td></tr>
+      <tr><td class="mono">"1.5 oz"</td><td>g</td><td class="mono pass">42.52</td><td><span class="chip chip-warning">REPAIR</span> convert oz&rarr;g</td></tr>
+      <tr><td class="mono">120</td><td>mm</td><td class="mono pass">120</td><td><span class="chip chip-success">PASS</span> already numeric, correct unit assumed</td></tr>
+      <tr><td class="mono">"1000Hz"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> strip Hz</td></tr>
+      <tr><td class="mono">"1kHz"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> convert kHz</td></tr>
+      <tr><td class="mono">"1k"</td><td>Hz</td><td class="mono pass">1000</td><td><span class="chip chip-warning">REPAIR</span> SI prefix</td></tr>
+      <tr><td class="mono">"500 mAh"</td><td>h</td><td class="mono fail">&mdash;</td><td><span class="chip chip-danger">UNKNOWN</span> mAh≠hours, &rarr; LLM</td></tr>
+    </tbody>
+  </table>
+
+  <div class="code-block" style="margin-top:16px;"><span style="color:var(--sf-teal-fg);">// Sanity bounds per unit (detect hallucinated magnitudes)</span>
+const SANITY_BOUNDS = {
+  mm:  { min: 0.1, max: 500 },    // mouse dimensions
+  g:   { min: 5,   max: 500 },    // mouse weight
+  dpi: { min: 100, max: 100000 }, // sensor DPI
+  ips: { min: 50,  max: 1000 },   // sensor IPS
+  ms:  { min: 0,   max: 100 },    // latency
+  h:   { min: 1,   max: 10000 },  // battery hours
+  Hz:  { min: 50,  max: 10000 },  // polling rate
+  gf:  { min: 1,   max: 200 },    // click/release force
+};</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5: NORMALIZATION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-normalization">
+  <div class="check-header">
+    <span class="check-number">5</span>
+    <span class="check-title">String Normalization</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-success">ALWAYS REPAIRS</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">parse.token_map{}</span>
+    <span class="rule-source">tooltip_md: "lowercase + hyphens"</span>
+    <span class="rule-source">ai_assist.reasoning_note</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Normalization runs as a deterministic chain. Each step is a pure function. The chain order matters.
+    Normalization <strong>never fails</strong> — it always produces output.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Normalization chain (in order)</span>
+function normalizeValue(raw, fieldRule) {
+  let v = raw;
+  v = v.trim();                                    // Step A: trim whitespace
+  v = v.toLowerCase();                             // Step B: lowercase
+  v = v.replace(/\s+/g, '-');                      // Step C: spaces → hyphens
+  v = v.replace(/_/g, '-');                         // Step D: underscores → hyphens
+  v = v.replace(/-{2,}/g, '-');                     // Step E: collapse multiple hyphens
+  v = v.replace(/^-|-$/g, '');                      // Step F: trim leading/trailing hyphens
+  v = applyTokenMap(v, fieldRule.parse?.token_map); // Step G: token map lookup
+  return v;
+}</div>
+
+  <h3>Step-by-Step Normalization Examples</h3>
+  <table>
+    <thead><tr><th>Raw Input</th><th>After Trim</th><th>After Lower</th><th>After Hyphens</th><th>After Token Map</th><th>Final</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">"  Black  "</td>
+        <td class="mono tiny">"Black"</td>
+        <td class="mono tiny">"black"</td>
+        <td class="mono tiny">"black"</td>
+        <td class="mono tiny">"black"</td>
+        <td class="mono pass">"black"</td>
+      </tr>
+      <tr>
+        <td class="mono">"DARK GREEN"</td>
+        <td class="mono tiny">"DARK GREEN"</td>
+        <td class="mono tiny">"dark green"</td>
+        <td class="mono tiny">"dark-green"</td>
+        <td class="mono tiny">"dark-green"</td>
+        <td class="mono pass">"dark-green"</td>
+      </tr>
+      <tr>
+        <td class="mono">"Light_Blue"</td>
+        <td class="mono tiny">"Light_Blue"</td>
+        <td class="mono tiny">"light_blue"</td>
+        <td class="mono tiny">"light-blue"</td>
+        <td class="mono tiny">"light-blue"</td>
+        <td class="mono pass">"light-blue"</td>
+      </tr>
+      <tr>
+        <td class="mono">"grey"</td>
+        <td class="mono tiny">"grey"</td>
+        <td class="mono tiny">"grey"</td>
+        <td class="mono tiny">"grey"</td>
+        <td class="mono tiny repair">"gray"</td>
+        <td class="mono pass">"gray"</td>
+      </tr>
+      <tr>
+        <td class="mono">"blue-dark"</td>
+        <td class="mono tiny">"blue-dark"</td>
+        <td class="mono tiny">"blue-dark"</td>
+        <td class="mono tiny">"blue-dark"</td>
+        <td class="mono tiny repair">"dark-blue"</td>
+        <td class="mono pass">"dark-blue"</td>
+      </tr>
+      <tr>
+        <td class="mono">"Launch Edition"</td>
+        <td class="mono tiny">"Launch Edition"</td>
+        <td class="mono tiny">"launch edition"</td>
+        <td class="mono tiny">"launch-edition"</td>
+        <td class="mono tiny">"launch-edition"</td>
+        <td class="mono pass">"launch-edition"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Multi-Color (split on +) Normalization</h3>
+  <table>
+    <thead><tr><th>Raw</th><th>Split</th><th>Each Normalized</th><th>Rejoined</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">"Grey+Red"</td>
+        <td class="mono tiny">["Grey", "Red"]</td>
+        <td class="mono tiny">["gray", "red"]</td>
+        <td class="mono pass">"gray+red"</td>
+      </tr>
+      <tr>
+        <td class="mono">"blue-dark + grey"</td>
+        <td class="mono tiny">["blue-dark", "grey"]</td>
+        <td class="mono tiny">["dark-blue", "gray"]</td>
+        <td class="mono pass">"dark-blue+gray"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Full Token Map (colors — 19 rules)</h3>
+  <table>
+    <thead><tr><th>Input Token</th><th>Maps To</th><th>Category</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">grey</td><td class="mono pass">gray</td><td class="tiny muted">Spelling</td></tr>
+      <tr><td class="mono">gray-light</td><td class="mono pass">light-gray</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">blue-light</td><td class="mono pass">light-blue</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">green-light</td><td class="mono pass">light-green</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">pink-light</td><td class="mono pass">light-pink</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">red-light</td><td class="mono pass">light-red</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">blue-dark</td><td class="mono pass">dark-blue</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">green-dark</td><td class="mono pass">dark-green</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">red-dark</td><td class="mono pass">dark-red</td><td class="tiny muted">Modifier order</td></tr>
+      <tr><td class="mono">light gray</td><td class="mono pass">light-gray</td><td class="tiny muted">Space + spelling</td></tr>
+      <tr><td class="mono">light grey</td><td class="mono pass">light-gray</td><td class="tiny muted">Space + spelling</td></tr>
+      <tr><td class="mono">dark blue</td><td class="mono pass">dark-blue</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">dark green</td><td class="mono pass">dark-green</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">dark red</td><td class="mono pass">dark-red</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">light blue</td><td class="mono pass">light-blue</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">light green</td><td class="mono pass">light-green</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">light pink</td><td class="mono pass">light-pink</td><td class="tiny muted">Space</td></tr>
+      <tr><td class="mono">light red</td><td class="mono pass">light-red</td><td class="tiny muted">Space</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6: FORMAT PATTERN
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-format">
+  <div class="check-header">
+    <span class="check-number">6</span>
+    <span class="check-title">Format Pattern Validation</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-danger">FAILS → UNKNOWN → LLM</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    After normalization, each value is checked against the format regex for its template type.
+    Format failures after normalization mean the LLM produced something genuinely malformed — these go to the repair LLM.
+  </div>
+
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3>Color Token Format</h3>
+      <div class="code-block">/^[a-z][a-z0-9-]*(\+[a-z][a-z0-9-]*)*$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"black"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"light-blue"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"black+red"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">""</td><td><span class="fail">FAIL</span></td></tr>
+          <tr><td class="mono">"black red"</td><td><span class="fail">FAIL</span></td></tr>
+          <tr><td class="mono">"123"</td><td><span class="fail">FAIL</span></td></tr>
+          <tr><td class="mono">"black+"</td><td><span class="fail">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Kebab-Case Slug (editions, etc.)</h3>
+      <div class="code-block">/^[a-z0-9]+(-[a-z0-9]+)*$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"launch-edition"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"sf6-chun-li"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">""</td><td><span class="fail">FAIL</span></td></tr>
+          <tr><td class="mono">"Launch Edition"</td><td><span class="fail">FAIL</span></td></tr>
+          <tr><td class="mono">"-edition"</td><td><span class="fail">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>ISO Date</h3>
+      <div class="code-block">/^\d{4}-\d{2}-\d{2}$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"2024-10-01"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"2024-1-1"</td><td><span class="fail">FAIL</span> needs zero-pad</td></tr>
+          <tr><td class="mono">"10/01/2024"</td><td><span class="fail">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Number (after unit strip)</h3>
+      <div class="code-block">/^-?\d+(\.\d+)?$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"42"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"42.5"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"-3.2"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"42g"</td><td><span class="fail">FAIL</span> unit not stripped</td></tr>
+          <tr><td class="mono">"~42"</td><td><span class="fail">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Integer</h3>
+      <div class="code-block">/^\d+$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"42"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"42.5"</td><td><span class="fail">FAIL</span> not integer</td></tr>
+          <tr><td class="mono">"-3"</td><td><span class="fail">FAIL</span> negative</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Boolean Token</h3>
+      <div class="code-block">/^(yes|no|unk)$/</div>
+      <table>
+        <tbody>
+          <tr><td class="mono">"yes"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"no"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"unk"</td><td><span class="pass">PASS</span></td></tr>
+          <tr><td class="mono">"maybe"</td><td><span class="fail">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT: Format Failure</strong>
+"The field '{fieldKey}' value failed format validation after normalization:
+  Value: '{normalizedValue}'
+  Expected format: {formatRegex}
+  Template: {templateType}
+
+The value survived lowercase + hyphen + token_map normalization but
+still doesn't match the required format. This suggests the original
+LLM output was genuinely malformed.
+
+Decide:
+1. If you can extract a valid value, return it.
+2. If this looks like a hallucination, return null + reason.
+3. If the value is unknown/missing, return 'unk'.
+
+Return: { resolved: &lt;value&gt;, confidence: 0.0-1.0, reasoning: '...' }"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 7: ENUM POLICY
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-enum">
+  <div class="check-header">
+    <span class="check-number">7</span>
+    <span class="check-title">Enum Policy &amp; Match Strategy</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">FAILS → LLM REPAIR</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">known_values.enums[fieldKey].policy</span>
+    <span class="rule-source">known_values.enums[fieldKey].values[]</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Three enum policies govern how values are checked against the known values list.
+    The validator builds a <code>Set</code> from the known values for O(1) lookup.
+  </div>
+
+  <h3>Policy Behaviors</h3>
+  <table>
+    <thead><tr><th>Policy</th><th>Known Value</th><th>Unknown Value</th><th>LLM Needed?</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-danger-fg);">closed</td>
+        <td><span class="chip chip-success">PASS</span></td>
+        <td><span class="chip chip-danger">REJECT → LLM</span></td>
+        <td>Yes — must map to existing or reject</td>
+        <td class="tiny muted">colors (82 values), encoder_steps (9 values)</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-warning-fg);">open_prefer_known</td>
+        <td><span class="chip chip-success">PASS</span></td>
+        <td><span class="chip chip-warning">FLAG → LLM</span></td>
+        <td>Yes — confirm new or map to existing</td>
+        <td class="tiny muted">connection, coating, form_factor, switch_type, lighting, etc.</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-success-fg);">open</td>
+        <td><span class="chip chip-success">PASS</span></td>
+        <td><span class="chip chip-success">PASS</span></td>
+        <td>No — any value valid</td>
+        <td class="tiny muted">yes_no (only format check)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Closed Enum Scenarios (colors example — 82 atoms)</h3>
+  <table>
+    <thead><tr><th>Input (normalized)</th><th>In known_values?</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"black"</td><td class="pass">YES</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">exact match</td></tr>
+      <tr><td class="mono">"dark-blue"</td><td class="pass">YES</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">exact match</td></tr>
+      <tr><td class="mono">"midnight-blue"</td><td class="fail">NO</td><td><span class="chip chip-danger">UNKNOWN</span></td><td class="tiny">&rarr; LLM: map to existing or reject</td></tr>
+      <tr><td class="mono">"sparkle-unicorn"</td><td class="fail">NO</td><td><span class="chip chip-danger">UNKNOWN</span></td><td class="tiny">&rarr; LLM: likely hallucination</td></tr>
+      <tr><td class="mono">"arctic"</td><td class="fail">NO</td><td><span class="chip chip-danger">UNKNOWN</span></td><td class="tiny">&rarr; LLM: maybe white?</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Open-Prefer-Known Scenarios (connection example)</h3>
+  <table>
+    <thead><tr><th>Input</th><th>Known Values</th><th>In list?</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">"wired"</td><td class="tiny muted">bluetooth, hybrid, wired, wireless</td><td class="pass">YES</td><td><span class="chip chip-success">PASS</span></td><td class="tiny muted">known</td></tr>
+      <tr><td class="mono">"usb-c"</td><td class="tiny muted">bluetooth, hybrid, wired, wireless</td><td class="fail">NO</td><td><span class="chip chip-warning">FLAG</span></td><td class="tiny">&rarr; LLM: is this "wired" or genuinely new?</td></tr>
+      <tr><td class="mono">"magical"</td><td class="tiny muted">bluetooth, hybrid, wired, wireless</td><td class="fail">NO</td><td><span class="chip chip-warning">FLAG</span></td><td class="tiny">&rarr; LLM: hallucination?</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Multi-Value Enum Check (for list-shaped fields)</h3>
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// For list fields, check each element independently</span>
+function checkEnumList(values, policy, knownSet) {
+  const known = [];
+  const unknown = [];
+  for (const v of values) {
+    if (knownSet.has(v)) known.push(v);
+    else if (policy === 'open') known.push(v);  // open = all pass
+    else unknown.push(v);
+  }
+  return { known, unknown, needsLlm: unknown.length > 0 &amp;&amp; policy !== 'open' };
+}
+
+<span style="color:var(--sf-teal-fg);">// For multi-color atoms (split on +)</span>
+function checkColorAtoms(value, registrySet) {
+  const atoms = value.split('+');
+  const unknownAtoms = atoms.filter(a => !registrySet.has(a));
+  if (unknownAtoms.length > 0) return { pass: false, unknownAtoms };
+  return { pass: true };
+}</div>
+
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT: Enum Mismatch (closed)</strong>
+"The field '{fieldKey}' has enum policy '{policy}'.
+The following values are not in the registered vocabulary:
+  Unknown: {unknownValues}
+
+Registered values ({count} total):
+  {registeredValuesList}
+
+For each unknown value:
+1. MAP_TO_EXISTING: If it's a synonym/variant of a registered value,
+   return the canonical registered name + confidence.
+2. REJECT: If it looks hallucinated or nonsensical, reject it.
+   Reason: hallucination_detected | not_a_real_{fieldKey}
+
+You MUST NOT invent new values for a closed enum.
+Return: { decisions: [{ value, decision, resolved_to, confidence, reasoning }] }"</div>
+
+  <div class="prompt-block" style="margin-top:8px;"><strong>LLM REPAIR PROMPT: Enum Mismatch (open_prefer_known)</strong>
+"The field '{fieldKey}' has enum policy 'open_prefer_known'.
+The following values are not in the known vocabulary:
+  Unknown: {unknownValues}
+
+Known values ({count} total):
+  {knownValuesList}
+
+For each unknown value:
+1. MAP_TO_EXISTING: If it's a synonym/variant, map to canonical.
+2. KEEP_NEW: If it's a genuinely valid new value for this field,
+   confirm it. Explain why it's legitimate.
+3. REJECT: If it looks hallucinated, reject it.
+
+Return: { decisions: [{ value, decision, resolved_to, confidence, reasoning }] }"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 8: LIST RULES
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-list">
+  <div class="check-header">
+    <span class="check-number">8</span>
+    <span class="check-title">List Rules</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-success">ALWAYS REPAIRS</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">list_rules.dedupe: true|false</span>
+    <span class="rule-source">list_rules.sort: 'none'|'alpha'|'numeric'</span>
+    <span class="rule-source">list_rules.min_items: number</span>
+    <span class="rule-source">list_rules.max_items: number</span>
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Deterministic list rules enforcement</span>
+function enforceListRules(values, rules) {
+  let result = [...values];
+  const repairs = [];
+
+  // Dedupe (preserve first occurrence)
+  if (rules.dedupe) {
+    const seen = new Set();
+    const before = result.length;
+    result = result.filter(v => { if (seen.has(v)) return false; seen.add(v); return true; });
+    if (result.length &lt; before) repairs.push({ rule: 'dedupe', removed: before - result.length });
+  }
+
+  // Sort
+  if (rules.sort === 'alpha') { result.sort(); repairs.push({ rule: 'sort_alpha' }); }
+  if (rules.sort === 'numeric') { result.sort((a, b) => a - b); repairs.push({ rule: 'sort_numeric' }); }
+  // sort: 'none' → preserve original order (critical for colors[0] = default)
+
+  // Max items
+  if (rules.max_items &amp;&amp; result.length > rules.max_items) {
+    repairs.push({ rule: 'max_items', truncatedFrom: result.length, to: rules.max_items });
+    result = result.slice(0, rules.max_items);
+  }
+
+  // Min items (flag only, cannot auto-repair by adding values)
+  if (rules.min_items &amp;&amp; result.length &lt; rules.min_items) {
+    repairs.push({ rule: 'min_items_violation', have: result.length, need: rules.min_items });
+  }
+
+  return { values: result, repairs };
+}</div>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Input</th><th>Output</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Duplicates after normalization</td><td class="mono tiny">["black", "gray", "grey", "black"]</td><td class="mono tiny">["black", "gray"]</td><td><span class="chip chip-warning">REPAIR</span> dedupe (grey→gray is dup)</td></tr>
+      <tr><td>Order preserved (sort: none)</td><td class="mono tiny">["white", "black", "red"]</td><td class="mono tiny">["white", "black", "red"]</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td>Over max_items (100)</td><td class="mono tiny">["c1"..."c105"]</td><td class="mono tiny">["c1"..."c100"]</td><td><span class="chip chip-warning">REPAIR</span> truncated</td></tr>
+      <tr><td>Empty array (min: 0)</td><td class="mono tiny">[]</td><td class="mono tiny">[]</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td>Below min_items</td><td class="mono tiny">[] (min: 1)</td><td class="mono tiny">[]</td><td><span class="chip chip-danger">FLAG</span> cannot auto-add</td></tr>
+      <tr><td>Numeric sort</td><td class="mono tiny">[1000, 500, 125]</td><td class="mono tiny">[125, 500, 1000]</td><td><span class="chip chip-warning">REPAIR</span> sorted</td></tr>
+      <tr><td>Alpha sort</td><td class="mono tiny">["wired", "bluetooth"]</td><td class="mono tiny">["bluetooth", "wired"]</td><td><span class="chip chip-warning">REPAIR</span> sorted</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 9: ROUNDING
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-rounding">
+  <div class="check-header">
+    <span class="check-number">9</span>
+    <span class="check-title">Rounding, Decimals &amp; Numeric Precision</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-success">ALWAYS REPAIRS</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">ui_field_catalog[].display_decimals: 0 | 1 | 2</span>
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Round to display_decimals</span>
+function roundToDecimals(value, decimals, mode = 'half-up') {
+  if (typeof value !== 'number' || isNaN(value)) return value;
+  const factor = Math.pow(10, decimals);
+  if (mode === 'half-up') return Math.round(value * factor) / factor;
+  if (mode === 'floor')   return Math.floor(value * factor) / factor;
+  if (mode === 'ceil')    return Math.ceil(value * factor) / factor;
+}</div>
+
+  <table>
+    <thead><tr><th>Input</th><th>display_decimals</th><th>Mode</th><th>Output</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">42.567</td><td>0</td><td>half-up</td><td class="mono pass">43</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+      <tr><td class="mono">42.567</td><td>1</td><td>half-up</td><td class="mono pass">42.6</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+      <tr><td class="mono">42.567</td><td>2</td><td>half-up</td><td class="mono pass">42.57</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+      <tr><td class="mono">42</td><td>0</td><td>half-up</td><td class="mono pass">42</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">114.3</td><td>1</td><td>half-up</td><td class="mono pass">114.3</td><td><span class="chip chip-success">PASS</span> already 1 decimal</td></tr>
+      <tr><td class="mono">0.999</td><td>0</td><td>half-up</td><td class="mono pass">1</td><td><span class="chip chip-warning">REPAIR</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:12px;">
+    <h3>Fields by display_decimals</h3>
+    <table>
+      <thead><tr><th>Decimals</th><th>Fields</th></tr></thead>
+      <tbody>
+        <tr><td class="mono bold">0</td><td class="tiny muted">weight, height, width, lngth, dpi, ips, battery_hours, polling_rate, encoder_steps, encoder_life_span, programmable_buttons, side_buttons, middle_buttons, onboard_memory_value</td></tr>
+        <tr><td class="mono bold">1</td><td class="tiny muted">connection (display_decimals: 1), lift, click_latency, debounce, sensor_latency, shift_latency, acceleration</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 10: CROSS-FIELD CONSTRAINTS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-crossfield">
+  <div class="check-header">
+    <span class="check-number">10</span>
+    <span class="check-title">Cross-Field Constraints</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">SOMETIMES REPAIRABLE</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">cross_validation_rules.json</span>
+    <span class="rule-source">domain invariants (colors[0] = default_color, etc.)</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Constraint</th><th>Check</th><th>On Fail</th><th>Auto-Repair?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">default_color === colors[0]</td>
+        <td class="small">First color = default</td>
+        <td><span class="chip chip-warning">REPAIR</span></td>
+        <td class="tiny">Set default_color = colors[0]</td>
+      </tr>
+      <tr>
+        <td class="bold">default_color ∈ colors</td>
+        <td class="small">Default must be in array</td>
+        <td><span class="chip chip-warning">REPAIR</span></td>
+        <td class="tiny">Prepend default to colors array</td>
+      </tr>
+      <tr>
+        <td class="bold">edition.colors ⊆ colors</td>
+        <td class="small">Edition colors subset of top-level</td>
+        <td><span class="chip chip-warning">REPAIR</span></td>
+        <td class="tiny">Append missing edition colors to top-level</td>
+      </tr>
+      <tr>
+        <td class="bold">sensor_dpi_consistency</td>
+        <td class="small">dpi ≤ sensors[sensor].max_dpi (±5%)</td>
+        <td><span class="chip chip-danger">FLAG</span></td>
+        <td class="tiny">Cannot auto-repair — flag for review + LLM</td>
+      </tr>
+      <tr>
+        <td class="bold">dimensions_consistency</td>
+        <td class="small">width + height + lngth: ≥3 present</td>
+        <td><span class="chip chip-danger">FLAG</span></td>
+        <td class="tiny">Cannot auto-fill — flag for review</td>
+      </tr>
+      <tr>
+        <td class="bold">wireless_battery_required</td>
+        <td class="small">If connection∈[wireless,hybrid,bluetooth] → battery_hours required</td>
+        <td><span class="chip chip-danger">FLAG</span></td>
+        <td class="tiny">Set battery_hours = unk with reason</td>
+      </tr>
+      <tr>
+        <td class="bold">sensor_date ≤ release_date</td>
+        <td class="small">Sensor can't be newer than product</td>
+        <td><span class="chip chip-danger">FLAG</span></td>
+        <td class="tiny">Possible data error — flag for review</td>
+      </tr>
+      <tr>
+        <td class="bold">No empty edition slugs</td>
+        <td class="small">Edition keys non-empty</td>
+        <td><span class="chip chip-warning">REPAIR</span></td>
+        <td class="tiny">Remove empty-key editions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT: Cross-Field Inconsistency</strong>
+"Cross-field validation found inconsistencies in product '{productName}':
+
+Failing constraints:
+{constraintList}
+
+Product context:
+{relevantFieldValues}
+
+For each constraint failure:
+1. If you can determine the correct value from context, provide it.
+2. If the data is genuinely conflicting, flag which field is more
+   likely wrong and why.
+3. If you cannot resolve, recommend manual review.
+
+Return: { repairs: [{ field, old_value, new_value, confidence, reasoning }] }"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 11: COMPONENT DB LOOKUP
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-component">
+  <div class="check-header">
+    <span class="check-number">11</span>
+    <span class="check-title">Component DB Lookup &amp; Consistency</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-warning">SOMETIMES → LLM</span>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <h3>Rule Sources</h3>
+    <span class="rule-source">parse_templates[].template: 'component_reference'</span>
+    <span class="rule-source">field_studio_map.component_sources[]</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Component reference fields (sensor, switch, encoder, material) must resolve to an entity in the component_db.
+    The validator checks exact name match first, then aliases. If no match → LLM repair.
+  </div>
+
+  <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Component DB lookup</span>
+function resolveComponent(value, componentType, componentDb) {
+  // 1. Exact name match
+  const exact = componentDb.find(e => e.name === value);
+  if (exact) return { pass: true, canonical: exact.name };
+
+  // 2. Case-insensitive name match
+  const lower = componentDb.find(e => e.name.toLowerCase() === value.toLowerCase());
+  if (lower) return { pass: true, canonical: lower.name, repaired: true };
+
+  // 3. Alias match
+  const aliased = componentDb.find(e => e.aliases?.some(a => a.toLowerCase() === value.toLowerCase()));
+  if (aliased) return { pass: true, canonical: aliased.name, repaired: true };
+
+  // 4. No match → unknown
+  return { pass: false, reason: 'not_in_component_db' };
+}</div>
+
+  <table>
+    <thead><tr><th>Field</th><th>Component Type</th><th>DB Size</th><th>Example Input</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">sensor</td><td>sensor</td><td>116 entities</td><td class="mono tiny">"PAW3395"</td><td><span class="chip chip-success">PASS</span> exact match</td></tr>
+      <tr><td class="mono">sensor</td><td>sensor</td><td>116</td><td class="mono tiny">"PAW 3395"</td><td><span class="chip chip-warning">REPAIR</span> alias match</td></tr>
+      <tr><td class="mono">sensor</td><td>sensor</td><td>116</td><td class="mono tiny">"PixArt 3395"</td><td><span class="chip chip-warning">REPAIR</span> alias match</td></tr>
+      <tr><td class="mono">sensor</td><td>sensor</td><td>116</td><td class="mono tiny">"Mystery Sensor 9000"</td><td><span class="chip chip-danger">UNKNOWN</span> → LLM</td></tr>
+      <tr><td class="mono">switch</td><td>switch</td><td>varies</td><td class="mono tiny">"Kailh GM 8.0"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">switch</td><td>switch</td><td>varies</td><td class="mono tiny">"Omron 50M"</td><td><span class="chip chip-warning">REPAIR</span> alias</td></tr>
+      <tr><td class="mono">encoder</td><td>encoder</td><td>40</td><td class="mono tiny">"TTC Gold"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">material</td><td>material</td><td>3</td><td class="mono tiny">"plastic"</td><td><span class="chip chip-success">PASS</span></td></tr>
+      <tr><td class="mono">material</td><td>material</td><td>3</td><td class="mono tiny">"ABS plastic"</td><td><span class="chip chip-danger">UNKNOWN</span> → LLM</td></tr>
+    </tbody>
+  </table>
+
+  <div class="prompt-block" style="margin-top:16px;"><strong>LLM REPAIR PROMPT: Component Not Found</strong>
+"The field '{fieldKey}' (component_reference for '{componentType}') could not
+resolve the value against the component database:
+  Value: '{rawValue}'
+
+Known {componentType} entities ({count}):
+{entityList}
+
+Decide:
+1. MAP_TO_EXISTING: If this is a known component under a different name/alias.
+2. KEEP_NEW: If this is a legitimate component not yet in our DB (provide
+   maker + canonical name so we can add it).
+3. REJECT: If this looks hallucinated or is not a real {componentType}.
+
+Return: { decision, resolved_to, confidence, reasoning }"</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 12: CONDITIONAL REQUIREMENTS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-conditional">
+  <div class="check-header">
+    <span class="check-number">12</span>
+    <span class="check-title">Conditional Requirements</span>
+    <span class="chip chip-teal">DETERMINISTIC</span>
+    <span class="chip chip-danger">CANNOT AUTO-REPAIR</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Some fields are only required when another field has a specific value.
+    If the condition is met but the required field is missing, set to <code>"unk"</code> with <code>unknown_reason: "not_found_after_search"</code>.
+  </div>
+
+  <table>
+    <thead><tr><th>Rule ID</th><th>Trigger</th><th>Condition</th><th>Requires</th><th>On Fail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono tiny">wireless_battery_required</td>
+        <td class="mono">connection</td>
+        <td class="tiny">connection ∈ [wireless, hybrid, bluetooth]</td>
+        <td class="mono">battery_hours</td>
+        <td class="tiny">Set battery_hours = "unk" with reason "not_found_after_search"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// Conditional requirement check</span>
+function checkConditionalRequirements(product, rules) {
+  const flags = [];
+  for (const rule of rules) {
+    if (rule.condition) {
+      const triggerValue = product[rule.trigger_field];
+      if (evaluateCondition(triggerValue, rule.condition)) {
+        if (!product[rule.requires_field] || product[rule.requires_field] === 'unk') {
+          flags.push({
+            rule_id: rule.rule_id,
+            field: rule.requires_field,
+            reason: rule.unknown_reason || 'conditional_requirement_unmet',
+            action: rule.on_fail,
+          });
+        }
+      }
+    }
+  }
+  return flags;
+}</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 13: FULL PIPELINE ORDER
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="dim-pipeline">
+  <div class="check-header">
+    <span class="check-title" style="font-size:16px; color:var(--sf-accent-strong);">13. Full Pipeline Order &amp; Short-Circuit Rules</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Checks run in this exact order. Each step operates on the output of the previous step.
+    The pipeline short-circuits on shape failure (Step 1). All other steps accumulate repairs + unknowns.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Check</th><th>Can Repair?</th><th>On Fail</th><th>Cost</th><th>Short-Circuit?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
+        <td>Shape Validation</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">REJECT immediately</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny"><strong>YES</strong> — stops all</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
+        <td>Data Type Check</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td class="tiny">Auto-coerce if possible, else UNKNOWN</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+        <td>Unit Conversion</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny">Convert to target unit</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
+        <td>String Normalization</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny">trim + lowercase + hyphens + token_map</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">5</td>
+        <td>Format Pattern (regex)</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Malformed → UNKNOWN list</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">6</td>
+        <td>List Rules (dedupe/sort/cap)</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny">Dedupe, truncate, sort</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">7</td>
+        <td>Rounding &amp; Decimals</td>
+        <td><span class="chip chip-success">ALWAYS</span></td>
+        <td class="tiny">Round to display_decimals</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">8</td>
+        <td>Enum / Registry Check</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Unknown values → UNKNOWN list</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">9</td>
+        <td>Component DB Lookup</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td class="tiny">Alias resolve or UNKNOWN</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">10</td>
+        <td>Cross-Field Invariants</td>
+        <td><span class="chip chip-warning">SOMETIMES</span></td>
+        <td class="tiny">Auto-repair where possible, else FLAG</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">11</td>
+        <td>Conditional Requirements</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Set to "unk" with reason</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">12</td>
+        <td>Sanity Bounds</td>
+        <td><span class="chip chip-danger">NO</span></td>
+        <td class="tiny">Value outside physical range → UNKNOWN</td>
+        <td class="tiny muted">~0ms</td>
+        <td class="tiny">No</td>
+      </tr>
+      <tr style="background:var(--sf-warning-bg);">
+        <td class="mono bold" style="color:var(--sf-warning-fg);">?</td>
+        <td style="color:var(--sf-warning-fg);"><strong>LLM Repair (only if unknowns)</strong></td>
+        <td><span class="chip chip-warning">MAYBE</span></td>
+        <td class="tiny">Repair or recommend re-run</td>
+        <td class="tiny" style="color:var(--sf-warning-fg);">~2-5s + tokens</td>
+        <td class="tiny">N/A</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px; text-align:center;">
+    <div class="small muted">
+      <strong>Happy path</strong>: Steps 1→12 all pass → <span class="chip chip-success">PUBLISH</span> — zero LLM cost, &lt;1ms
+      <br/><br/>
+      <strong>Minor repair</strong>: Steps 2-7 auto-fix type/case/dupes/rounding → <span class="chip chip-success">PUBLISH</span> — zero LLM cost
+      <br/><br/>
+      <strong>Unknown values</strong>: Steps 5/8/9 find unknowns → <span class="chip chip-warning">LLM REPAIR</span> — one cheap prompt
+      <br/><br/>
+      <strong>Hallucination</strong>: LLM says rerun → <span class="chip chip-danger">RERUN SOURCE</span> — orchestrator retries (max 3)
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 14: LLM REPAIR PROMPT CATALOG
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="prompts">
+  <div class="check-header">
+    <span class="check-title" style="font-size:16px; color:var(--sf-accent-strong);">14. LLM Repair Prompt Catalog</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every prompt template the repair LLM can receive. The validator batches all unknowns from a single field
+    into one prompt. Parameters in <code>{braces}</code> are injected from the field rule + validation context.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Prompt ID</th><th>Trigger</th><th>Injected Parameters</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">P1</td>
+        <td class="bold">enum_closed_mismatch</td>
+        <td class="tiny">Closed enum: value not in known_values</td>
+        <td class="mono tiny">fieldKey, unknownValues, registeredValues, count</td>
+      </tr>
+      <tr>
+        <td class="mono">P2</td>
+        <td class="bold">enum_open_prefer_known</td>
+        <td class="tiny">Open-prefer-known: value not in known_values</td>
+        <td class="mono tiny">fieldKey, unknownValues, knownValues, count</td>
+      </tr>
+      <tr>
+        <td class="mono">P3</td>
+        <td class="bold">type_coercion_failure</td>
+        <td class="tiny">Value can't be deterministically type-converted</td>
+        <td class="mono tiny">fieldKey, rawValue, expectedType, templateType</td>
+      </tr>
+      <tr>
+        <td class="mono">P4</td>
+        <td class="bold">format_failure</td>
+        <td class="tiny">Normalized value fails format regex</td>
+        <td class="mono tiny">fieldKey, normalizedValue, formatRegex, templateType</td>
+      </tr>
+      <tr>
+        <td class="mono">P5</td>
+        <td class="bold">component_not_found</td>
+        <td class="tiny">Component reference not in DB</td>
+        <td class="mono tiny">fieldKey, rawValue, componentType, entityList, count</td>
+      </tr>
+      <tr>
+        <td class="mono">P6</td>
+        <td class="bold">cross_field_inconsistency</td>
+        <td class="tiny">Cross-field invariant violated (non-repairable)</td>
+        <td class="mono tiny">productName, constraintList, relevantFieldValues</td>
+      </tr>
+      <tr>
+        <td class="mono">P7</td>
+        <td class="bold">sanity_bounds_exceeded</td>
+        <td class="tiny">Numeric value outside physical range</td>
+        <td class="mono tiny">fieldKey, value, unit, bounds{min,max}</td>
+      </tr>
+      <tr>
+        <td class="mono">P8</td>
+        <td class="bold">shape_correction</td>
+        <td class="tiny">Shape mismatch — fed back to source LLM, not repair</td>
+        <td class="mono tiny">fieldKey, actualShape, expectedShape</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Common System Prompt (prepended to all repair prompts)</h3>
+  <div class="prompt-block">You are a field value validator for the Spec Factory product database.
+Your job is to repair or reject LLM-extracted field values that failed
+deterministic validation.
+
+RULES:
+- You MUST return valid JSON matching the response schema.
+- Confidence 0.0-1.0: only values ≥ 0.8 will be auto-applied.
+  Values 0.5-0.8 are flagged for human review.
+  Values &lt; 0.5 are treated as rejection.
+- You MUST NOT hallucinate new values. If you're unsure, return "unk".
+- For closed enums, you MUST map to an existing registered value or reject.
+  You cannot invent new entries for a closed vocabulary.
+- For open_prefer_known enums, you may confirm genuinely new values,
+  but you must provide reasoning for why it's legitimate.
+- Check for common LLM hallucination patterns:
+  • Values that sound plausible but don't exist (e.g., "phantom-blue")
+  • Overly specific values the source couldn't have known
+  • Mix-ups between similar products
+  • Round numbers that feel "guessed" rather than measured</div>
+
+  <h3 style="margin-top:16px;">Response Schema (all repair prompts)</h3>
+  <div class="code-block">{
+  status: "repaired" | "rerun_recommended",
+  reason: string | null,
+  decisions: [
+    {
+      value: string,           // the original unknown value
+      decision: "map_to_existing" | "keep_new" | "reject" | "set_unk",
+      resolved_to: string | number | null,
+      confidence: number,      // 0.0 - 1.0
+      reasoning: string        // explain the decision
+    }
+  ]
+}
+
+<span style="color:var(--sf-text-dim);">// status = "repaired" when ALL decisions are map_to_existing, keep_new, or set_unk
+// status = "rerun_recommended" when ANY decision is "reject" AND
+//   the LLM believes the source data is fundamentally wrong</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 15: HALLUCINATION DETECTION
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel" id="hallucination">
+  <div class="check-header">
+    <span class="check-title" style="font-size:16px; color:var(--sf-danger-fg);">15. Hallucination Detection &amp; Rejection Patterns</span>
+  </div>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The repair LLM must identify and reject hallucinations. These patterns are injected into every repair prompt
+    and also checked deterministically where possible.
+  </div>
+
+  <h3>Deterministic Hallucination Checks (before LLM)</h3>
+  <table>
+    <thead><tr><th>Pattern</th><th>Check</th><th>Example</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Sanity bounds violation</td>
+        <td class="tiny">Number outside physical range for field</td>
+        <td class="mono tiny">weight: 0.001g or weight: 50000g</td>
+        <td><span class="chip chip-danger">REJECT + FLAG</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Impossible date</td>
+        <td class="tiny">Date before 1980 or after current year + 3</td>
+        <td class="mono tiny">release_date: "1823-01-01"</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Negative where positive required</td>
+        <td class="tiny">Negative number for weight, DPI, etc.</td>
+        <td class="mono tiny">dpi: -26000</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Duplicate field values</td>
+        <td class="tiny">Entire list is copies of one value</td>
+        <td class="mono tiny">colors: ["black","black","black","black"]</td>
+        <td><span class="chip chip-warning">REPAIR</span> dedupe to ["black"]</td>
+      </tr>
+      <tr>
+        <td class="bold">Suspiciously round</td>
+        <td class="tiny">Exact round numbers for precision fields</td>
+        <td class="mono tiny">weight: 100.0 (exactly)</td>
+        <td><span class="chip chip-info">FLAG</span> low confidence (0.6)</td>
+      </tr>
+      <tr>
+        <td class="bold">Value = field name</td>
+        <td class="tiny">LLM echoed the field key as the value</td>
+        <td class="mono tiny">sensor: "sensor"</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Placeholder text</td>
+        <td class="tiny">Common LLM placeholder patterns</td>
+        <td class="mono tiny">"[insert value]", "TBD", "example"</td>
+        <td><span class="chip chip-warning">REPAIR</span> → "unk"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">LLM Hallucination Patterns (injected into prompts)</h3>
+  <div class="reject-block">HALLUCINATION RED FLAGS — reject if you see these:
+
+1. COLOR NAMES that don't correspond to real colors:
+   "phantom-blue", "sparkle-unicorn", "galaxy-fade", "rgb-wave"
+   → These are made-up marketing terms, not color tokens.
+
+2. SENSOR/SWITCH NAMES with impossible specs:
+   "PAW9999" (doesn't exist), "PixArt 100K DPI" (no such sensor)
+   → Cross-check against the component database provided.
+
+3. MEASUREMENTS that violate physics:
+   Mouse weighing 1g or 5000g. Mouse that's 500mm long.
+   → Check sanity bounds provided.
+
+4. DATES in the far future or distant past:
+   A mouse released in 2030, or a sensor from 1990.
+   → Products in this DB are typically 2015-present.
+
+5. EDITION NAMES that are generic descriptions, not real editions:
+   "regular", "standard", "basic", "default", "normal"
+   → These are not real edition names. The base product has no edition.
+
+6. FIELD VALUE = FIELD NAME or GENERIC LABEL:
+   sensor: "sensor", switch: "switch", weight: "weight"
+   → LLM echoed the prompt template.
+
+7. VALUES COPIED FROM A DIFFERENT PRODUCT:
+   If values seem internally inconsistent (wireless mouse with 0
+   battery hours, wired mouse with 500h battery), suspect cross-
+   contamination.
+
+8. PERFECT ROUND NUMBERS for measured values:
+   weight: exactly 100g, height: exactly 40mm
+   → Real measurements have some precision. Flag low confidence.</div>
+
+  <h3 style="margin-top:16px;">Escalation Chain</h3>
+  <div class="grid-3" style="gap:12px;">
+    <div class="card" style="text-align:center;">
+      <div class="chip chip-success" style="margin-bottom:8px;">ATTEMPT 1</div>
+      <div class="tiny bold muted" style="margin-bottom:4px;">DETERMINISTIC</div>
+      <div class="small muted">
+        All 12 checks run.<br/>
+        If all pass → <strong>publish</strong>.<br/>
+        If unknowns → attempt 2.
+      </div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="chip chip-warning" style="margin-bottom:8px;">ATTEMPT 2</div>
+      <div class="tiny bold muted" style="margin-bottom:4px;">LLM REPAIR</div>
+      <div class="small muted">
+        Send unknowns to repair LLM.<br/>
+        If <code>repaired</code> → re-validate → <strong>publish</strong>.<br/>
+        If <code>rerun_recommended</code> → attempt 3.
+      </div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="chip chip-danger" style="margin-bottom:8px;">ATTEMPT 3</div>
+      <div class="tiny bold muted" style="margin-bottom:4px;">RE-RUN SOURCE</div>
+      <div class="small muted">
+        Re-run source LLM with correction.<br/>
+        Feed back: "these values failed: [...]"<br/>
+        If still fails → <strong>manual review</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>

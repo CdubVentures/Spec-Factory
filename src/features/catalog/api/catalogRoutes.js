@@ -152,7 +152,7 @@ export function registerCatalogRoutes(ctx) {
         return jsonRes(res, 200, products);
       }
 
-      // POST /api/v1/catalog/{cat}/products  { brand, base_model, variant?, seedUrls? }
+      // POST /api/v1/catalog/{cat}/products  { brand, base_model, variant? }
       if (!parts[3] && method === 'POST') {
         const body = await readJsonBody(req);
         const result = await catalogAddProduct({
@@ -160,7 +160,6 @@ export function registerCatalogRoutes(ctx) {
           brand: body.brand,
           base_model: body.base_model || '',
           variant: body.variant || '',
-          seedUrls: body.seedUrls || [],
           storage,
           upsertQueue: makeQueueUpsert(category),
           appDb,
@@ -180,7 +179,7 @@ export function registerCatalogRoutes(ctx) {
         return jsonRes(res, status, result);
       }
 
-      // PUT /api/v1/catalog/{cat}/products/{pid}  { brand?, model?, variant?, seedUrls?, status? }
+      // PUT /api/v1/catalog/{cat}/products/{pid}  { brand?, model?, variant?, status? }
       if (parts[3] && method === 'PUT') {
         const body = await readJsonBody(req);
         const result = await catalogUpdateProduct({

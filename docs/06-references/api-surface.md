@@ -24,7 +24,7 @@
 | POST | `/api/v1/categories` | create category skeleton | none | `{ name }` | `{ ok, slug, categories }` |
 | GET | `/api/v1/searxng/status` | SearXNG local status | none | none | status object |
 | POST | `/api/v1/searxng/start` | start local SearXNG stack | none | none | start result or error |
-| POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `seedUrls`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
+| POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
 | POST | `/api/v1/process/stop` | stop child process | none | `{ force? }` | normalized process status |
 | GET | `/api/v1/process/status` | read child-process status | none | none | normalized process status |
 | POST | `/api/v1/graphql` | proxy GraphQL request to local helper server | none | GraphQL JSON body | proxied GraphQL JSON or `502` |
@@ -134,7 +134,7 @@
 |--------|------|---------|------|--------------|----------------|
 | POST | `/api/v1/catalog/:category/reconcile` | reconcile orphaned catalog state | none | `{ dryRun? }` | reconciliation result |
 | GET | `/api/v1/catalog/:category/products` | list products in category catalog | none | none | product rows |
-| POST | `/api/v1/catalog/:category/products` | add a product | none | `{ brand, base_model, variant?, seedUrls? }` | product add result |
+| POST | `/api/v1/catalog/:category/products` | add a product | none | `{ brand, base_model, variant? }` | product add result |
 | POST | `/api/v1/catalog/:category/products/seed` | seed queue/catalog from catalog entries | none | `{ mode? }` | seed result |
 | POST | `/api/v1/catalog/:category/products/bulk` | bulk add products | none | `{ brand, rows }` | bulk add result |
 | PUT | `/api/v1/catalog/:category/products/:productId` | update product | none | patch body | update result |

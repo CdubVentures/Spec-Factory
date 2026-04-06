@@ -93,11 +93,14 @@ test('dead knobs stay out of the published field map', async () => {
   }
 });
 
-test('live IDX knobs remain mapped in the field contract', async () => {
+test('aspirational IDX-only knobs are removed from the field contract', async () => {
   const harness = await createSystemMappingHarness();
 
-  assert.deepEqual(harness.fieldSystemMap['contract.range'], ['indexlab']);
-  assert.deepEqual(harness.fieldSystemMap['contract.list_rules'], ['indexlab']);
+  // WHY: contract.range, contract.list_rules, contract.unknown_token were IDX-only
+  // with zero pipeline consumers. Removed 2026-04-05.
+  assert.equal(harness.fieldSystemMap['contract.range'], undefined);
+  assert.equal(harness.fieldSystemMap['contract.list_rules'], undefined);
+  assert.equal(harness.fieldSystemMap['contract.unknown_token'], undefined);
 });
 
 test('IDX tooltips point users to the field studio navigation path', async () => {
