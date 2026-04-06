@@ -18,7 +18,7 @@ const COOLDOWN_DAYS = 30;
  * Run the Color & Edition Finder for a single product.
  *
  * @param {object} opts
- * @param {object} opts.product — { product_id, category, brand, base_model, model, variant, seed_urls }
+ * @param {object} opts.product — { product_id, category, brand, base_model, model, variant }
  * @param {object} opts.appDb — AppDb instance (listColors)
  * @param {object} opts.specDb — SpecDb instance (upsertColorEditionFinder)
  * @param {object} opts.config — LLM config
@@ -95,8 +95,6 @@ export async function runColorEditionFinder({
     base_model: product.base_model || '',
     model: product.model || '',
     variant: product.variant || '',
-    category: product.category || '',
-    seed_urls: product.seed_urls || [],
   });
 
   // Merge into JSON (durable memory — write first)

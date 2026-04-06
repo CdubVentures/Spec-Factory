@@ -252,7 +252,9 @@ export function RuntimeOpsPage() {
     queryKey: ['runtime-ops', effectiveRunId, 'summary'],
     queryFn: () => api.get<RuntimeOpsSummaryResponse>(`/indexlab/run/${effectiveRunId}/runtime/summary`),
     enabled: Boolean(effectiveRunId),
-    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'overview', 2000, 10000),
+    // WHY: The stepper bar is always visible in the header regardless of active tab.
+    // Summary must always poll when a run is active so stage_cursor stays fresh.
+    refetchInterval: getRefetchInterval(isSelectedRunActive, false, 2000, 10000),
   });
 
   useEffect(() => {

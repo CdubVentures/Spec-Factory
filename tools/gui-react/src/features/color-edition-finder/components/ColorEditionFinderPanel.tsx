@@ -182,7 +182,7 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
       {/* System Prompt */}
       <div>
         <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">System Prompt</div>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-60">
+        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.systemPrompt}
         </pre>
       </div>
@@ -190,7 +190,7 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
       {/* User Message */}
       <div>
         <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">User Message</div>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-20">
+        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.userMessage}
         </pre>
       </div>
@@ -198,7 +198,7 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
       {/* LLM Response */}
       <div>
         <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">LLM Response</div>
-        <pre className="sf-pre-block sf-text-label font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-60">
+        <pre className="sf-pre-block sf-text-label font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.responseJson}
         </pre>
       </div>
@@ -215,12 +215,20 @@ function buildRunHistoryColumns(
     {
       accessorKey: 'runNumber',
       header: 'Run',
-      cell: ({ row }) => (
-        <span className="font-mono text-[13px] font-bold text-[var(--sf-token-accent-strong)]">
-          #{row.original.runNumber}
-        </span>
-      ),
-      size: 60,
+      cell: ({ row }) => {
+        const isExpanded = row.getIsExpanded();
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
+            className="inline-flex items-center gap-1.5 font-mono text-[13px] font-bold text-[var(--sf-token-accent-strong)] hover:opacity-80"
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <span className={`text-[10px] transition-transform ${isExpanded ? 'rotate-90' : ''}`}>{'\u25B6'}</span>
+            #{row.original.runNumber}
+          </button>
+        );
+      },
+      size: 80,
     },
     {
       accessorKey: 'ranAt',
@@ -312,7 +320,7 @@ function useResolvedFinderModel() {
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:finder:collapsed:${productId}`, false);
 
-  const { data: result = null, isLoading } = useColorEditionFinderQuery(category, productId);
+  const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
   const runMut = useColorEditionFinderRunMutation(category, productId);
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
@@ -330,11 +338,14 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
   if (!productId || !category) return null;
 
-  const statusChip = deriveFinderStatusChip(result);
-  const kpiCards = deriveFinderKpiCards(result);
-  const cooldown = deriveCooldownState(result);
-  const selectedState = deriveSelectedStateDisplay(result, colorRegistry);
-  const runHistoryRows = deriveRunHistoryRows(result);
+  // WHY: After deleting all runs, the GET returns 404 → isError. Treat as no data.
+  const effectiveResult = isError ? null : result;
+
+  const statusChip = deriveFinderStatusChip(effectiveResult);
+  const kpiCards = deriveFinderKpiCards(effectiveResult);
+  const cooldown = deriveCooldownState(effectiveResult);
+  const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry);
+  const runHistoryRows = deriveRunHistoryRows(effectiveResult);
 
   const modelDisplay = resolvedModel?.effectiveModel || 'not configured';
   const webSearchEnabled = resolvedModel?.webSearch ?? false;
@@ -388,7 +399,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
       {/* Body */}
       {collapsed ? null : isLoading ? (
         <div className="flex items-center justify-center py-12"><Spinner /></div>
-      ) : !result ? (
+      ) : !effectiveResult ? (
         <div className="text-center py-12 sf-text-muted">
           <p className="text-sm">No color or edition data yet.</p>
           <p className="sf-text-caption mt-1">Click <strong>Run Now</strong> to discover variants.</p>
@@ -404,7 +415,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           </div>
 
           {/* Cooldown Strip */}
-          {result.run_count > 0 && (
+          {effectiveResult.run_count > 0 && (
             <div className="flex items-center gap-3.5 px-4 py-2.5 sf-surface-elevated rounded-lg">
               <span className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted whitespace-nowrap">
                 Cooldown
@@ -454,7 +465,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
                 data={runHistoryRows}
                 columns={runHistoryColumns}
                 persistKey="cef-runs"
-                maxHeight="max-h-[600px]"
+                maxHeight="max-h-none"
                 renderExpandedRow={(row) => (
                   <RunHistoryExpandedDetail row={row} colorRegistry={colorRegistry} />
                 )}
@@ -465,7 +476,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
           {/* Footer */}
           <div className="flex items-center gap-3 pt-4 border-t sf-border-soft text-[10px] sf-text-muted">
-            <span>Last run: <strong className="sf-text-subtle">{result.last_ran_at?.split('T')[0] ?? '--'}</strong></span>
+            <span>Last run: <strong className="sf-text-subtle">{effectiveResult.last_ran_at?.split('T')[0] ?? '--'}</strong></span>
             <span>&middot;</span>
             <span className="inline-flex items-center gap-1.5">Model:
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
@@ -478,7 +489,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               </span>
             </span>
             <span>&middot;</span>
-            <span>Runs: <strong className="sf-text-subtle">{result.run_count}</strong></span>
+            <span>Runs: <strong className="sf-text-subtle">{effectiveResult.run_count}</strong></span>
             {selectedState.ssotRunNumber > 0 && (
               <>
                 <span>&middot;</span>

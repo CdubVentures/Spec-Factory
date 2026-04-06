@@ -12,7 +12,6 @@ describe('buildColorEditionFinderPrompt', () => {
     brand: 'Corsair',
     model: 'M75 Air Wireless',
     variant: '',
-    seed_urls: ['https://corsair.com/m75'],
   };
   const colorNames = ['black', 'white', 'red', 'light-blue', 'dark-green'];
   const colors = [

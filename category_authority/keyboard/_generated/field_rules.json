@@ -55,7 +55,7 @@
     }
   },
   "enum_buckets": {},
-  "field_count": 101,
+  "field_count": 103,
   "fields": {
     "actuation_adjustment_step": {
       "ai_assist": {
@@ -98,8 +98,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -239,8 +238,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -381,8 +379,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -525,8 +522,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -667,8 +663,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -799,8 +794,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.adjustable_feet"
@@ -923,8 +917,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.adjustable_input_granularity"
@@ -1048,8 +1041,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.analog_input"
@@ -1174,8 +1166,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.anti_ghosting"
@@ -1299,8 +1290,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.arrow_keys"
@@ -1424,8 +1414,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.backlighting"
@@ -1549,8 +1538,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1681,8 +1669,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1820,8 +1807,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1964,8 +1950,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2098,8 +2083,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.bluetooth_version"
@@ -2231,8 +2215,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2365,8 +2348,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2498,8 +2480,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2635,8 +2616,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.cable_type"
@@ -2759,8 +2739,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.case_material"
@@ -2883,8 +2862,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.category"
@@ -3007,8 +2985,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.charging_method"
@@ -3138,8 +3115,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.color"
@@ -3238,6 +3214,164 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "colors": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
+      },
+      "aliases": [
+        "colors"
+      ],
+      "availability": "expected",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Colors",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": false
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "colors",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "field_catalog"
+        }
+      },
+      "group": "general",
+      "key": "colors",
+      "output_shape": "list",
+      "parse": {
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {
+          "blue-dark": "dark-blue",
+          "blue-light": "light-blue",
+          "dark blue": "dark-blue",
+          "dark green": "dark-green",
+          "dark red": "dark-red",
+          "gray-light": "light-gray",
+          "green-dark": "dark-green",
+          "green-light": "light-green",
+          "grey": "gray",
+          "light blue": "light-blue",
+          "light gray": "light-gray",
+          "light green": "light-green",
+          "light grey": "light-gray",
+          "light pink": "light-pink",
+          "light red": "light-red",
+          "pink-light": "light-pink",
+          "red-dark": "dark-red",
+          "red-light": "light-red"
+        }
+      },
+      "priority": {
+        "availability": "expected",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "product_page",
+          "spec_sheet"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "bestbuy.com",
+          "amazon.com",
+          "mousespecs.org"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "colors",
+          "color options",
+          "available colors",
+          "colorways"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "token_list",
+        "label": "Colors",
+        "order": 102,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray.",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search"
+    },
     "compatible_os": {
       "ai_assist": {
         "max_calls": null,
@@ -3275,8 +3409,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.compatible_os"
@@ -3412,8 +3545,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.connection"
@@ -3551,8 +3683,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3691,8 +3822,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3822,8 +3952,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.detachable_cable"
@@ -3945,8 +4074,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.discontinued"
@@ -4070,8 +4198,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.doubleshot"
@@ -4164,6 +4291,136 @@
       },
       "unknown_reason_default": "not_found_after_search"
     },
+    "editions": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
+      },
+      "aliases": [
+        "editions"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 50,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Editions",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "editions",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "field_catalog"
+        }
+      },
+      "group": "general",
+      "key": "editions",
+      "output_shape": "list",
+      "parse": {
+        "delimiters": [
+          ","
+        ],
+        "template": "list_of_tokens_delimited"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "required_level": "optional",
+      "search_hints": {
+        "content_types": [
+          "product_page"
+        ],
+        "domain_hints": [],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} {field}",
+          "{brand} {model} specifications {field}",
+          "{brand} {model} manual pdf {field}",
+          "{brand} {model} datasheet {field}"
+        ],
+        "query_terms": [
+          "special edition",
+          "limited edition",
+          "editions",
+          "collaboration",
+          "limited colorway"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "token_list",
+        "label": "Editions",
+        "order": 103,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search"
+    },
     "foam_dampening": {
       "ai_assist": {
         "max_calls": null,
@@ -4195,8 +4452,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.foam_dampening"
@@ -4319,8 +4575,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.form_factor"
@@ -4444,8 +4699,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.function_row"
@@ -4569,8 +4823,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.gasket_mount"
@@ -4694,8 +4947,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -4829,8 +5081,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -4971,8 +5222,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -5104,8 +5354,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.hot_swappable"
@@ -5237,8 +5486,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.included_accessories"
@@ -5376,8 +5624,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -5502,8 +5749,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.key_rollover"
@@ -5627,8 +5873,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.keycap_material"
@@ -5752,8 +5997,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.keycap_profile"
@@ -5886,8 +6130,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6021,8 +6264,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.knob_dial"
@@ -6149,8 +6391,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.layout"
@@ -6276,8 +6517,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.layout_standard"
@@ -6404,8 +6644,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.legends"
@@ -6530,8 +6769,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.macro_keys"
@@ -6656,8 +6894,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.media_controls"
@@ -6780,8 +7017,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6904,8 +7140,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.mounting_style"
@@ -7028,8 +7263,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7153,8 +7387,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.multi_device_pairing"
@@ -7287,8 +7520,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7420,8 +7652,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7552,8 +7783,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.numpad"
@@ -7677,8 +7907,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.onboard_memory"
@@ -7811,8 +8040,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7936,8 +8164,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.os_mode_switch"
@@ -8061,8 +8288,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.per_key_rgb"
@@ -8187,8 +8413,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.plate_material"
@@ -8321,8 +8546,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8462,8 +8686,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8593,8 +8816,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8720,8 +8942,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.qmk_via_support"
@@ -8847,8 +9068,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.rapid_trigger"
@@ -8971,8 +9191,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9096,8 +9315,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.rgb_zones"
@@ -9231,8 +9449,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9363,8 +9580,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.shine_through"
@@ -9499,8 +9715,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9631,8 +9846,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9756,8 +9970,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.socd_cleaning"
@@ -9881,8 +10094,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.software"
@@ -10006,8 +10218,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.software_required"
@@ -10131,8 +10342,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.sound_dampening"
@@ -10256,8 +10466,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.sound_profile"
@@ -10381,8 +10590,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.south_facing_leds"
@@ -10506,8 +10714,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.stabilizer_lubed"
@@ -10631,8 +10838,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.stabilizer_mount"
@@ -10756,8 +10962,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.stabilizer_type"
@@ -10880,8 +11085,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_brand"
@@ -11006,8 +11210,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_compatibility"
@@ -11131,8 +11334,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_feel"
@@ -11267,8 +11469,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -11404,8 +11605,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_name"
@@ -11532,8 +11732,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_output_type"
@@ -11660,8 +11859,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_pin_support"
@@ -11785,8 +11983,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.switch_type"
@@ -11919,8 +12116,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12061,8 +12257,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12192,8 +12387,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.typing_noise"
@@ -12316,8 +12510,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.usb_passthrough"
@@ -12441,8 +12634,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12565,8 +12757,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12697,8 +12888,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12847,8 +13037,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -12977,8 +13166,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.wired_interface"
@@ -13107,8 +13295,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": "data_lists.wireless_technology"
@@ -13207,7 +13394,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-03-18T18:39:54.507Z",
+  "generated_at": "2026-04-05T17:47:37.870Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

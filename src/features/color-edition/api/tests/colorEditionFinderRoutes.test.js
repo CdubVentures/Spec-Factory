@@ -17,7 +17,7 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     listColorEditionFinderByCategory: () => listRows,
     listColorEditionFinderRuns: () => runRows,
     getColorEditionFinderIfOnCooldown: () => null,
-    getProduct: () => productRow ?? { product_id: 'mouse-001', category: 'mouse', brand: 'Corsair', model: 'M75 Air Wireless', variant: '', seed_urls: '[]' },
+    getProduct: () => productRow ?? { product_id: 'mouse-001', category: 'mouse', brand: 'Corsair', model: 'M75 Air Wireless', variant: '' },
     upsertColorEditionFinder: () => {},
     deleteColorEditionFinder: () => {},
     deleteColorEditionFinderRunByNumber: () => {},

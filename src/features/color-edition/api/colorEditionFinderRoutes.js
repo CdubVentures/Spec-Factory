@@ -62,11 +62,6 @@ export function registerColorEditionFinderRoutes(ctx) {
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
-        const seedUrls = (() => {
-          try { return JSON.parse(productRow.seed_urls || '[]'); }
-          catch { return []; }
-        })();
-
         const result = await runColorEditionFinder({
           product: {
             product_id: productId,
@@ -74,7 +69,6 @@ export function registerColorEditionFinderRoutes(ctx) {
             brand: productRow.brand || '',
             model: productRow.model || '',
             variant: productRow.variant || '',
-            seed_urls: seedUrls,
           },
           appDb,
           specDb,

@@ -2050,6 +2050,18 @@
       "width"
     ]
   },
+  "field_groups": [
+    "Identity",
+    "Display Panel",
+    "Performance",
+    "Color & Image Quality",
+    "Connectivity",
+    "Dimensions & Weight",
+    "Ergonomics",
+    "Features",
+    "Power",
+    "General"
+  ],
   "field_overrides": {
     "adaptive_sync": {
       "aliases": [
@@ -2103,6 +2115,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "adaptive_sync",
       "min_evidence_refs": 1,
       "parse": {
@@ -2180,8 +2193,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "aspect_ratio": {
       "aliases": [
@@ -2233,6 +2245,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "aspect_ratio",
       "min_evidence_refs": 1,
       "parse": {
@@ -2308,8 +2321,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "audio_output": {
       "aliases": [
@@ -2362,6 +2374,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "audio_output",
       "min_evidence_refs": 1,
       "parse": {
@@ -2435,8 +2448,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "backlight_type": {
       "aliases": [
@@ -2490,6 +2502,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "backlight_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -2568,8 +2581,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "base_model": {
       "aliases": [],
@@ -2619,6 +2631,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "base_model",
       "min_evidence_refs": 1,
       "parse": {
@@ -2691,8 +2704,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "black_uniformity": {
       "aliases": [
@@ -2752,6 +2764,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "black_uniformity",
       "min_evidence_refs": 1,
       "parse": {
@@ -2844,8 +2857,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "brand": {
       "aliases": [],
@@ -2895,6 +2907,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "brand",
       "min_evidence_refs": 1,
       "parse": {
@@ -2967,8 +2980,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "brightness_hdr_peak": {
       "aliases": [
@@ -3030,6 +3042,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "brightness_hdr_peak",
       "min_evidence_refs": 1,
       "parse": {
@@ -3114,8 +3127,7 @@
       },
       "unit": "nits",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "brightness_sdr": {
       "aliases": [
@@ -3177,6 +3189,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "brightness_sdr",
       "min_evidence_refs": 1,
       "parse": {
@@ -3265,8 +3278,7 @@
       },
       "unit": "nits",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "cable_length": {
       "aliases": [
@@ -3319,6 +3331,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "cable_length",
       "min_evidence_refs": 1,
       "parse": {
@@ -3398,8 +3411,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "cable_type": {
       "aliases": [
@@ -3451,6 +3463,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "cable_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -3524,8 +3537,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "cables_included": {
       "aliases": [
@@ -3584,6 +3596,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "cables_included",
       "min_evidence_refs": 1,
       "parse": {
@@ -3657,8 +3670,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "Features"
+      "value_form_sample": "list"
     },
     "category": {
       "aliases": [],
@@ -3708,6 +3720,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "category",
       "min_evidence_refs": 1,
       "parse": {
@@ -3779,8 +3792,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "color": {
       "aliases": [
@@ -3837,6 +3849,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "color",
       "min_evidence_refs": 1,
       "parse": {
@@ -3911,8 +3924,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "General"
+      "value_form_sample": "list"
     },
     "color_accuracy_delta_e": {
       "aliases": [
@@ -3973,6 +3985,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "color_accuracy_delta_e",
       "min_evidence_refs": 1,
       "parse": {
@@ -4046,8 +4059,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "color_gamut_adobe_rgb": {
       "aliases": [
@@ -4108,6 +4120,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "color_gamut_adobe_rgb",
       "min_evidence_refs": 1,
       "parse": {
@@ -4186,8 +4199,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "color_gamut_dci_p3": {
       "aliases": [
@@ -4248,6 +4260,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "color_gamut_dci_p3",
       "min_evidence_refs": 1,
       "parse": {
@@ -4327,8 +4340,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "color_gamut_srgb": {
       "aliases": [
@@ -4389,6 +4401,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "color_gamut_srgb",
       "min_evidence_refs": 1,
       "parse": {
@@ -4468,8 +4481,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "contrast_ratio": {
       "aliases": [
@@ -4523,6 +4535,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "contrast_ratio",
       "min_evidence_refs": 1,
       "parse": {
@@ -4597,8 +4610,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "contrast_ratio_dynamic": {
       "aliases": [
@@ -4651,6 +4663,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "contrast_ratio_dynamic",
       "min_evidence_refs": 1,
       "parse": {
@@ -4722,8 +4735,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "crosshair_overlay": {
       "aliases": [
@@ -4777,6 +4789,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "crosshair_overlay",
       "min_evidence_refs": 1,
       "parse": {
@@ -4849,8 +4862,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "curve_radius": {
       "aliases": [
@@ -4903,6 +4915,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "curve_radius",
       "min_evidence_refs": 1,
       "parse": {
@@ -4977,8 +4990,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "curved": {
       "aliases": [
@@ -5030,6 +5042,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "curved",
       "min_evidence_refs": 1,
       "parse": {
@@ -5102,8 +5115,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "daisy_chain": {
       "aliases": [
@@ -5157,6 +5169,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "daisy_chain",
       "min_evidence_refs": 1,
       "parse": {
@@ -5230,8 +5243,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "depth": {
       "aliases": [
@@ -5291,6 +5303,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "depth",
       "min_evidence_refs": 1,
       "parse": {
@@ -5370,8 +5383,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "discontinued": {
       "aliases": [
@@ -5423,6 +5435,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "discontinued",
       "min_evidence_refs": 1,
       "parse": {
@@ -5495,8 +5508,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "display_stream_compression": {
       "aliases": [
@@ -5549,6 +5561,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "display_stream_compression",
       "min_evidence_refs": 1,
       "parse": {
@@ -5624,8 +5637,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "displayport_ports": {
       "aliases": [
@@ -5679,6 +5691,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "displayport_ports",
       "min_evidence_refs": 1,
       "parse": {
@@ -5754,8 +5767,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "displayport_version": {
       "aliases": [
@@ -5809,6 +5821,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "displayport_version",
       "min_evidence_refs": 1,
       "parse": {
@@ -5884,8 +5897,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "energy_rating": {
       "aliases": [
@@ -5939,6 +5951,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "energy_rating",
       "min_evidence_refs": 1,
       "parse": {
@@ -6012,8 +6025,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "ethernet_rj45": {
       "aliases": [
@@ -6067,6 +6079,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "ethernet_rj45",
       "min_evidence_refs": 1,
       "parse": {
@@ -6142,8 +6155,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "factory_calibrated": {
       "aliases": [
@@ -6196,6 +6208,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "factory_calibrated",
       "min_evidence_refs": 1,
       "parse": {
@@ -6268,8 +6281,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "flicker_free": {
       "aliases": [
@@ -6322,6 +6334,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "flicker_free",
       "min_evidence_refs": 1,
       "parse": {
@@ -6396,8 +6409,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "flicker_frequency": {
       "aliases": [
@@ -6459,6 +6471,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "flicker_frequency",
       "min_evidence_refs": 1,
       "parse": {
@@ -6552,8 +6565,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "frc": {
       "aliases": [
@@ -6607,6 +6619,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "frc",
       "min_evidence_refs": 1,
       "parse": {
@@ -6679,8 +6692,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "gradient_handling": {
       "aliases": [
@@ -6733,6 +6745,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "gradient_handling",
       "min_evidence_refs": 1,
       "parse": {
@@ -6817,8 +6830,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "gray_uniformity_50": {
       "aliases": [
@@ -6879,6 +6891,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "gray_uniformity_50",
       "min_evidence_refs": 1,
       "parse": {
@@ -6971,8 +6984,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "gtin": {
       "aliases": [],
@@ -7022,6 +7034,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "gtin",
       "min_evidence_refs": 1,
       "parse": {
@@ -7093,8 +7106,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "hdmi_ports": {
       "aliases": [
@@ -7147,6 +7159,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "hdmi_ports",
       "min_evidence_refs": 1,
       "parse": {
@@ -7222,8 +7235,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "hdmi_version": {
       "aliases": [
@@ -7277,6 +7289,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "hdmi_version",
       "min_evidence_refs": 1,
       "parse": {
@@ -7353,8 +7366,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "hdr_support": {
       "aliases": [
@@ -7413,6 +7425,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "hdr_support",
       "min_evidence_refs": 1,
       "parse": {
@@ -7491,8 +7504,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "Color & Image Quality"
+      "value_form_sample": "list"
     },
     "headphone_jack": {
       "aliases": [
@@ -7546,6 +7558,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "headphone_jack",
       "min_evidence_refs": 1,
       "parse": {
@@ -7618,8 +7631,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "height": {
       "aliases": [
@@ -7681,6 +7693,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "height",
       "min_evidence_refs": 1,
       "parse": {
@@ -7760,8 +7773,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "height_adjustment": {
       "aliases": [
@@ -7814,6 +7826,7 @@
           "sheet": null
         }
       },
+      "group": "Ergonomics",
       "key": "height_adjustment",
       "min_evidence_refs": 1,
       "parse": {
@@ -7889,8 +7902,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Ergonomics"
+      "value_form_sample": "scalar"
     },
     "height_with_stand": {
       "aliases": [
@@ -7950,6 +7962,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "height_with_stand",
       "min_evidence_refs": 1,
       "parse": {
@@ -8029,8 +8042,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "horizontal_viewing_angle": {
       "aliases": [
@@ -8091,6 +8103,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "horizontal_viewing_angle",
       "min_evidence_refs": 1,
       "parse": {
@@ -8183,8 +8196,7 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "input_lag": {
       "aliases": [
@@ -8245,6 +8257,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "input_lag",
       "min_evidence_refs": 1,
       "parse": {
@@ -8325,8 +8338,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "input_lag_120hz": {
       "aliases": [
@@ -8387,6 +8399,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "input_lag_120hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -8478,8 +8491,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "input_lag_60hz": {
       "aliases": [
@@ -8540,6 +8552,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "input_lag_60hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -8631,8 +8644,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "input_lag_max_refresh": {
       "aliases": [
@@ -8693,6 +8705,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "input_lag_max_refresh",
       "min_evidence_refs": 1,
       "parse": {
@@ -8784,8 +8797,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "kvm_switch": {
       "aliases": [
@@ -8838,6 +8850,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "kvm_switch",
       "min_evidence_refs": 1,
       "parse": {
@@ -8911,8 +8924,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "local_dimming_zones": {
       "aliases": [
@@ -8973,6 +8985,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "local_dimming_zones",
       "min_evidence_refs": 1,
       "parse": {
@@ -9046,8 +9059,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "low_blue_light": {
       "aliases": [
@@ -9101,6 +9113,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "low_blue_light",
       "min_evidence_refs": 1,
       "parse": {
@@ -9174,8 +9187,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "macos_compatibility": {
       "aliases": [
@@ -9228,6 +9240,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "macos_compatibility",
       "min_evidence_refs": 1,
       "parse": {
@@ -9312,8 +9325,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "material": {
       "aliases": [
@@ -9365,6 +9377,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "material",
       "min_evidence_refs": 1,
       "parse": {
@@ -9438,8 +9451,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "max_refresh_rate_displayport": {
       "aliases": [
@@ -9501,6 +9513,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "max_refresh_rate_displayport",
       "min_evidence_refs": 1,
       "parse": {
@@ -9596,8 +9609,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "max_refresh_rate_hdmi": {
       "aliases": [
@@ -9659,6 +9671,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "max_refresh_rate_hdmi",
       "min_evidence_refs": 1,
       "parse": {
@@ -9754,8 +9767,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "microphone": {
       "aliases": [
@@ -9809,6 +9821,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "microphone",
       "min_evidence_refs": 1,
       "parse": {
@@ -9884,8 +9897,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "model": {
       "aliases": [],
@@ -9935,6 +9947,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "model",
       "min_evidence_refs": 1,
       "parse": {
@@ -10007,8 +10020,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "motion_blur_reduction": {
       "aliases": [
@@ -10063,6 +10075,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "motion_blur_reduction",
       "min_evidence_refs": 1,
       "parse": {
@@ -10139,8 +10152,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "mpn": {
       "aliases": [],
@@ -10190,6 +10202,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "mpn",
       "min_evidence_refs": 1,
       "parse": {
@@ -10261,8 +10274,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "native_colors": {
       "aliases": [
@@ -10320,6 +10332,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "native_colors",
       "min_evidence_refs": 1,
       "parse": {
@@ -10399,8 +10412,7 @@
       },
       "unit": "M",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "osd_type": {
       "aliases": [
@@ -10454,6 +10466,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "osd_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -10527,8 +10540,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "overdrive": {
       "aliases": [
@@ -10580,6 +10592,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "overdrive",
       "min_evidence_refs": 1,
       "parse": {
@@ -10654,8 +10667,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "overshoot_120hz": {
       "aliases": [
@@ -10716,6 +10728,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "overshoot_120hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -10808,8 +10821,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "overshoot_60hz": {
       "aliases": [
@@ -10870,6 +10882,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "overshoot_60hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -10962,8 +10975,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "overshoot_max_refresh": {
       "aliases": [
@@ -11024,6 +11036,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "overshoot_max_refresh",
       "min_evidence_refs": 1,
       "parse": {
@@ -11117,8 +11130,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "panel_bit_depth": {
       "aliases": [
@@ -11172,6 +11184,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "panel_bit_depth",
       "min_evidence_refs": 1,
       "parse": {
@@ -11246,8 +11259,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "panel_coating": {
       "aliases": [
@@ -11301,6 +11313,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "panel_coating",
       "min_evidence_refs": 1,
       "parse": {
@@ -11376,8 +11389,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "panel_manufacturer": {
       "aliases": [
@@ -11430,6 +11442,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "panel_manufacturer",
       "min_evidence_refs": 1,
       "parse": {
@@ -11504,8 +11517,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "panel_type": {
       "aliases": [
@@ -11559,6 +11571,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "panel_type",
       "min_evidence_refs": 2,
       "parse": {
@@ -11638,8 +11651,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "pip_pbp": {
       "aliases": [
@@ -11694,6 +11706,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "pip_pbp",
       "min_evidence_refs": 1,
       "parse": {
@@ -11768,8 +11781,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "pivot_rotation": {
       "aliases": [
@@ -11823,6 +11835,7 @@
           "sheet": null
         }
       },
+      "group": "Ergonomics",
       "key": "pivot_rotation",
       "min_evidence_refs": 1,
       "parse": {
@@ -11896,8 +11909,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Ergonomics"
+      "value_form_sample": "scalar"
     },
     "pixel_density": {
       "aliases": [
@@ -11959,6 +11971,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "pixel_density",
       "min_evidence_refs": 1,
       "parse": {
@@ -12039,8 +12052,7 @@
       },
       "unit": "ppi",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "power_consumption_max": {
       "aliases": [
@@ -12101,6 +12113,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "power_consumption_max",
       "min_evidence_refs": 1,
       "parse": {
@@ -12180,8 +12193,7 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "power_consumption_typical": {
       "aliases": [
@@ -12242,6 +12254,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "power_consumption_typical",
       "min_evidence_refs": 1,
       "parse": {
@@ -12323,8 +12336,7 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "price_range": {
       "aliases": [
@@ -12379,6 +12391,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "price_range",
       "min_evidence_refs": 1,
       "parse": {
@@ -12459,8 +12472,7 @@
       },
       "unit": "usd",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "ps5_compatibility": {
       "aliases": [
@@ -12513,6 +12525,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "ps5_compatibility",
       "min_evidence_refs": 1,
       "parse": {
@@ -12597,8 +12610,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "reflections": {
       "aliases": [
@@ -12659,6 +12671,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "reflections",
       "min_evidence_refs": 1,
       "parse": {
@@ -12752,8 +12765,7 @@
       },
       "unit": "%",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "refresh_rate": {
       "aliases": [
@@ -12814,6 +12826,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "refresh_rate",
       "min_evidence_refs": 2,
       "parse": {
@@ -12903,8 +12916,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "release_date": {
       "aliases": [
@@ -12957,6 +12969,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "release_date",
       "min_evidence_refs": 1,
       "parse": {
@@ -13030,8 +13043,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "resolution": {
       "aliases": [
@@ -13084,6 +13096,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "resolution",
       "min_evidence_refs": 2,
       "parse": {
@@ -13162,8 +13175,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "response_time_120hz": {
       "aliases": [
@@ -13224,6 +13236,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "response_time_120hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -13316,8 +13329,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "response_time_60hz": {
       "aliases": [
@@ -13378,6 +13390,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "response_time_60hz",
       "min_evidence_refs": 1,
       "parse": {
@@ -13470,8 +13483,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "response_time_gtg": {
       "aliases": [
@@ -13533,6 +13545,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "response_time_gtg",
       "min_evidence_refs": 1,
       "parse": {
@@ -13615,8 +13628,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "response_time_mprt": {
       "aliases": [
@@ -13677,6 +13689,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "response_time_mprt",
       "min_evidence_refs": 1,
       "parse": {
@@ -13757,8 +13770,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "screen_size": {
       "aliases": [
@@ -13820,6 +13832,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "screen_size",
       "min_evidence_refs": 2,
       "parse": {
@@ -13908,8 +13921,7 @@
       },
       "unit": "in",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "sku": {
       "aliases": [],
@@ -13959,6 +13971,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "sku",
       "min_evidence_refs": 1,
       "parse": {
@@ -14031,8 +14044,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "speakers": {
       "aliases": [
@@ -14084,6 +14096,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "speakers",
       "min_evidence_refs": 1,
       "parse": {
@@ -14159,8 +14172,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "subpixel_layout": {
       "aliases": [
@@ -14213,6 +14225,7 @@
           "sheet": null
         }
       },
+      "group": "Display Panel",
       "key": "subpixel_layout",
       "min_evidence_refs": 1,
       "parse": {
@@ -14285,8 +14298,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Display Panel"
+      "value_form_sample": "scalar"
     },
     "swivel_range": {
       "aliases": [
@@ -14339,6 +14351,7 @@
           "sheet": null
         }
       },
+      "group": "Ergonomics",
       "key": "swivel_range",
       "min_evidence_refs": 1,
       "parse": {
@@ -14412,8 +14425,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Ergonomics"
+      "value_form_sample": "scalar"
     },
     "text_clarity": {
       "aliases": [
@@ -14466,6 +14478,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "text_clarity",
       "min_evidence_refs": 1,
       "parse": {
@@ -14550,8 +14563,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "thunderbolt_ports": {
       "aliases": [
@@ -14605,6 +14617,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "thunderbolt_ports",
       "min_evidence_refs": 1,
       "parse": {
@@ -14679,8 +14692,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "thunderbolt_version": {
       "aliases": [
@@ -14735,6 +14747,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "thunderbolt_version",
       "min_evidence_refs": 1,
       "parse": {
@@ -14809,8 +14822,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "tilt_range": {
       "aliases": [
@@ -14864,6 +14876,7 @@
           "sheet": null
         }
       },
+      "group": "Ergonomics",
       "key": "tilt_range",
       "min_evidence_refs": 1,
       "parse": {
@@ -14938,8 +14951,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Ergonomics"
+      "value_form_sample": "scalar"
     },
     "usb_c_ports": {
       "aliases": [
@@ -14993,6 +15005,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "usb_c_ports",
       "min_evidence_refs": 1,
       "parse": {
@@ -15067,8 +15080,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "usb_hub": {
       "aliases": [
@@ -15121,6 +15133,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "usb_hub",
       "min_evidence_refs": 1,
       "parse": {
@@ -15194,8 +15207,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "usb_power_delivery_watts": {
       "aliases": [
@@ -15257,6 +15269,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "usb_power_delivery_watts",
       "min_evidence_refs": 1,
       "parse": {
@@ -15339,8 +15352,7 @@
       },
       "unit": "W",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "variable_refresh_rate": {
       "aliases": [
@@ -15393,6 +15405,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "variable_refresh_rate",
       "min_evidence_refs": 1,
       "parse": {
@@ -15466,8 +15479,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "variant": {
       "aliases": [],
@@ -15517,6 +15529,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "variant",
       "min_evidence_refs": 1,
       "parse": {
@@ -15590,8 +15603,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "vertical_viewing_angle": {
       "aliases": [
@@ -15652,6 +15664,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "vertical_viewing_angle",
       "min_evidence_refs": 1,
       "parse": {
@@ -15744,8 +15757,7 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "vesa_mount": {
       "aliases": [
@@ -15799,6 +15811,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "vesa_mount",
       "min_evidence_refs": 1,
       "parse": {
@@ -15875,8 +15888,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "vrr_range": {
       "aliases": [
@@ -15930,6 +15942,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "vrr_range",
       "min_evidence_refs": 1,
       "parse": {
@@ -16003,8 +16016,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "wall_mountable": {
       "aliases": [
@@ -16057,6 +16069,7 @@
           "sheet": null
         }
       },
+      "group": "Ergonomics",
       "key": "wall_mountable",
       "min_evidence_refs": 1,
       "parse": {
@@ -16129,8 +16142,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Ergonomics"
+      "value_form_sample": "scalar"
     },
     "warranty": {
       "aliases": [
@@ -16184,6 +16196,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "warranty",
       "min_evidence_refs": 1,
       "parse": {
@@ -16256,8 +16269,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "webcam": {
       "aliases": [
@@ -16311,6 +16323,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "webcam",
       "min_evidence_refs": 1,
       "parse": {
@@ -16387,8 +16400,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "weight_with_stand": {
       "aliases": [
@@ -16449,6 +16461,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "weight_with_stand",
       "min_evidence_refs": 2,
       "parse": {
@@ -16533,8 +16546,7 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "weight_without_stand": {
       "aliases": [
@@ -16595,6 +16607,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "weight_without_stand",
       "min_evidence_refs": 2,
       "parse": {
@@ -16680,8 +16693,7 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "wide_color_gamut": {
       "aliases": [
@@ -16734,6 +16746,7 @@
           "sheet": null
         }
       },
+      "group": "Color & Image Quality",
       "key": "wide_color_gamut",
       "min_evidence_refs": 1,
       "parse": {
@@ -16807,8 +16820,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Color & Image Quality"
+      "value_form_sample": "scalar"
     },
     "width": {
       "aliases": [
@@ -16870,6 +16882,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions & Weight",
       "key": "width",
       "min_evidence_refs": 1,
       "parse": {
@@ -16949,8 +16962,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions & Weight"
+      "value_form_sample": "scalar"
     },
     "xbox_series_xs_compatibility": {
       "aliases": [
@@ -17004,6 +17016,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "xbox_series_xs_compatibility",
       "min_evidence_refs": 1,
       "parse": {
@@ -17088,8 +17101,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     }
   },
   "field_studio_source_path": "",
@@ -17757,17 +17769,5 @@
   },
   "ui_defaults": {},
   "version": 2,
-  "version_note": "Full monitor contract refresh: 111 fields, modern ports plus lab-depth performance and compatibility",
-  "field_groups": [
-    "Identity",
-    "Display Panel",
-    "Performance",
-    "Color & Image Quality",
-    "Connectivity",
-    "Dimensions & Weight",
-    "Ergonomics",
-    "Features",
-    "Power",
-    "General"
-  ]
+  "version_note": "Full monitor contract refresh: 111 fields, modern ports plus lab-depth performance and compatibility"
 }

@@ -2078,6 +2078,20 @@
       "weight"
     ]
   },
+  "field_groups": [
+    "Identity",
+    "Switch",
+    "Layout",
+    "Keycaps",
+    "Performance",
+    "Features",
+    "Connectivity",
+    "Build",
+    "Sound",
+    "Dimensions",
+    "Power",
+    "General"
+  ],
   "field_overrides": {
     "actuation_adjustment_step": {
       "aliases": [
@@ -2139,6 +2153,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "actuation_adjustment_step",
       "min_evidence_refs": 2,
       "parse": {
@@ -2234,8 +2249,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "actuation_distance": {
       "aliases": [
@@ -2296,6 +2310,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "actuation_distance",
       "min_evidence_refs": 1,
       "parse": {
@@ -2391,8 +2406,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "actuation_force": {
       "aliases": [
@@ -2453,6 +2467,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "actuation_force",
       "min_evidence_refs": 1,
       "parse": {
@@ -2550,8 +2565,7 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "adjustable_actuation_max": {
       "aliases": [
@@ -2613,6 +2627,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "adjustable_actuation_max",
       "min_evidence_refs": 2,
       "parse": {
@@ -2708,8 +2723,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "adjustable_actuation_min": {
       "aliases": [
@@ -2771,6 +2785,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "adjustable_actuation_min",
       "min_evidence_refs": 2,
       "parse": {
@@ -2866,8 +2881,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "adjustable_feet": {
       "aliases": [
@@ -2920,6 +2934,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "adjustable_feet",
       "min_evidence_refs": 1,
       "parse": {
@@ -3003,8 +3018,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "adjustable_input_granularity": {
       "aliases": [
@@ -3057,6 +3071,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "adjustable_input_granularity",
       "min_evidence_refs": 2,
       "parse": {
@@ -3140,8 +3155,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "analog_input": {
       "aliases": [
@@ -3195,6 +3209,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "analog_input",
       "min_evidence_refs": 2,
       "parse": {
@@ -3279,8 +3294,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "anti_ghosting": {
       "aliases": [
@@ -3334,6 +3348,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "anti_ghosting",
       "min_evidence_refs": 2,
       "parse": {
@@ -3418,8 +3433,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "arrow_keys": {
       "aliases": [
@@ -3472,6 +3486,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "arrow_keys",
       "min_evidence_refs": 1,
       "parse": {
@@ -3556,8 +3571,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "backlighting": {
       "aliases": [
@@ -3610,6 +3624,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "backlighting",
       "min_evidence_refs": 1,
       "parse": {
@@ -3694,8 +3709,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "base_model": {
       "aliases": [
@@ -3748,6 +3762,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "base_model",
       "min_evidence_refs": 1,
       "parse": {
@@ -3831,8 +3846,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "battery_capacity": {
       "aliases": [
@@ -3892,6 +3906,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "battery_capacity",
       "min_evidence_refs": 1,
       "parse": {
@@ -3983,8 +3998,7 @@
       },
       "unit": "mAh",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "battery_life_off": {
       "aliases": [
@@ -4046,6 +4060,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "battery_life_off",
       "min_evidence_refs": 1,
       "parse": {
@@ -4144,8 +4159,7 @@
       },
       "unit": "hours",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "battery_life_rgb": {
       "aliases": [
@@ -4207,6 +4221,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "battery_life_rgb",
       "min_evidence_refs": 1,
       "parse": {
@@ -4305,8 +4320,7 @@
       },
       "unit": "hours",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "bluetooth_version": {
       "aliases": [
@@ -4359,6 +4373,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "bluetooth_version",
       "min_evidence_refs": 1,
       "parse": {
@@ -4442,8 +4457,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "bottom_out_force": {
       "aliases": [
@@ -4504,6 +4518,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "bottom_out_force",
       "min_evidence_refs": 2,
       "parse": {
@@ -4601,8 +4616,7 @@
       },
       "unit": "g",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "brand": {
       "aliases": [
@@ -4655,6 +4669,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "brand",
       "min_evidence_refs": 1,
       "parse": {
@@ -4738,8 +4753,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "cable_length": {
       "aliases": [
@@ -4800,6 +4814,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "cable_length",
       "min_evidence_refs": 1,
       "parse": {
@@ -4904,8 +4919,7 @@
       },
       "unit": "m",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "cable_type": {
       "aliases": [
@@ -4958,6 +4972,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "cable_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -5041,8 +5056,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "case_material": {
       "aliases": [
@@ -5095,6 +5109,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "case_material",
       "min_evidence_refs": 1,
       "parse": {
@@ -5178,8 +5193,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "category": {
       "aliases": [
@@ -5232,6 +5246,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "category",
       "min_evidence_refs": 1,
       "parse": {
@@ -5315,8 +5330,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "charging_method": {
       "aliases": [
@@ -5369,6 +5383,7 @@
           "sheet": null
         }
       },
+      "group": "Power",
       "key": "charging_method",
       "min_evidence_refs": 1,
       "parse": {
@@ -5453,8 +5468,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Power"
+      "value_form_sample": "scalar"
     },
     "color": {
       "aliases": [
@@ -5512,6 +5526,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "color",
       "min_evidence_refs": 1,
       "parse": {
@@ -5611,8 +5626,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "General"
+      "value_form_sample": "list"
     },
     "compatible_os": {
       "aliases": [
@@ -5670,6 +5684,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "compatible_os",
       "min_evidence_refs": 1,
       "parse": {
@@ -5769,8 +5784,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "General"
+      "value_form_sample": "list"
     },
     "connection": {
       "aliases": [
@@ -5828,6 +5842,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "connection",
       "min_evidence_refs": 2,
       "parse": {
@@ -5926,8 +5941,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "Connectivity"
+      "value_form_sample": "list"
     },
     "debounce_time": {
       "aliases": [
@@ -5988,6 +6002,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "debounce_time",
       "min_evidence_refs": 2,
       "parse": {
@@ -6082,8 +6097,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "depth": {
       "aliases": [
@@ -6144,6 +6158,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "depth",
       "min_evidence_refs": 2,
       "parse": {
@@ -6238,8 +6253,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "detachable_cable": {
       "aliases": [
@@ -6292,6 +6306,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "detachable_cable",
       "min_evidence_refs": 1,
       "parse": {
@@ -6374,8 +6389,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "discontinued": {
       "aliases": [
@@ -6428,6 +6442,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "discontinued",
       "min_evidence_refs": 1,
       "parse": {
@@ -6512,8 +6527,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "doubleshot": {
       "aliases": [
@@ -6566,6 +6580,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "doubleshot",
       "min_evidence_refs": 1,
       "parse": {
@@ -6650,8 +6665,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "foam_dampening": {
       "aliases": [
@@ -6704,6 +6718,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "foam_dampening",
       "min_evidence_refs": 1,
       "parse": {
@@ -6787,8 +6802,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "form_factor": {
       "aliases": [
@@ -6841,6 +6855,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "form_factor",
       "min_evidence_refs": 2,
       "parse": {
@@ -6925,8 +6940,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "function_row": {
       "aliases": [
@@ -6979,6 +6993,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "function_row",
       "min_evidence_refs": 1,
       "parse": {
@@ -7063,8 +7078,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "gasket_mount": {
       "aliases": [
@@ -7117,6 +7131,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "gasket_mount",
       "min_evidence_refs": 1,
       "parse": {
@@ -7200,8 +7215,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "gtin": {
       "aliases": [
@@ -7255,6 +7269,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "gtin",
       "min_evidence_refs": 1,
       "parse": {
@@ -7339,8 +7354,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "height_front": {
       "aliases": [
@@ -7402,6 +7416,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "height_front",
       "min_evidence_refs": 1,
       "parse": {
@@ -7497,8 +7512,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "height_rear": {
       "aliases": [
@@ -7560,6 +7574,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "height_rear",
       "min_evidence_refs": 1,
       "parse": {
@@ -7655,8 +7670,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "hot_swappable": {
       "aliases": [
@@ -7710,6 +7724,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
       "parse": {
@@ -7795,8 +7810,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "included_accessories": {
       "aliases": [
@@ -7854,6 +7868,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "included_accessories",
       "min_evidence_refs": 1,
       "parse": {
@@ -7953,8 +7968,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "General"
+      "value_form_sample": "list"
     },
     "key_count": {
       "aliases": [
@@ -8011,6 +8025,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "key_count",
       "min_evidence_refs": 2,
       "parse": {
@@ -8095,8 +8110,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "key_rollover": {
       "aliases": [
@@ -8150,6 +8164,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "key_rollover",
       "min_evidence_refs": 2,
       "parse": {
@@ -8234,8 +8249,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "keycap_material": {
       "aliases": [
@@ -8288,6 +8302,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "keycap_material",
       "min_evidence_refs": 1,
       "parse": {
@@ -8372,8 +8387,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "keycap_profile": {
       "aliases": [
@@ -8426,6 +8440,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "keycap_profile",
       "min_evidence_refs": 1,
       "parse": {
@@ -8510,8 +8525,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "keycap_thickness": {
       "aliases": [
@@ -8572,6 +8586,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "keycap_thickness",
       "min_evidence_refs": 2,
       "parse": {
@@ -8667,8 +8682,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "knob_dial": {
       "aliases": [
@@ -8724,6 +8738,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "knob_dial",
       "min_evidence_refs": 1,
       "parse": {
@@ -8811,8 +8826,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "layout": {
       "aliases": [
@@ -8865,6 +8879,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "layout",
       "min_evidence_refs": 1,
       "parse": {
@@ -8949,8 +8964,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "layout_standard": {
       "aliases": [
@@ -9005,6 +9019,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "layout_standard",
       "min_evidence_refs": 2,
       "parse": {
@@ -9091,8 +9106,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "legends": {
       "aliases": [
@@ -9146,6 +9160,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "legends",
       "min_evidence_refs": 1,
       "parse": {
@@ -9231,8 +9246,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "macro_keys": {
       "aliases": [
@@ -9285,6 +9299,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "macro_keys",
       "min_evidence_refs": 1,
       "parse": {
@@ -9369,8 +9384,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "media_controls": {
       "aliases": [
@@ -9424,6 +9438,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "media_controls",
       "min_evidence_refs": 1,
       "parse": {
@@ -9507,8 +9522,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "model": {
       "aliases": [
@@ -9561,6 +9575,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "model",
       "min_evidence_refs": 1,
       "parse": {
@@ -9644,8 +9659,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "mounting_style": {
       "aliases": [
@@ -9698,6 +9712,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "mounting_style",
       "min_evidence_refs": 1,
       "parse": {
@@ -9781,8 +9796,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "mpn": {
       "aliases": [
@@ -9835,6 +9849,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "mpn",
       "min_evidence_refs": 1,
       "parse": {
@@ -9918,8 +9933,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "multi_device_pairing": {
       "aliases": [
@@ -9973,6 +9987,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "multi_device_pairing",
       "min_evidence_refs": 1,
       "parse": {
@@ -10057,8 +10072,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "multi_device_pairing_count": {
       "aliases": [
@@ -10119,6 +10133,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "multi_device_pairing_count",
       "min_evidence_refs": 1,
       "parse": {
@@ -10201,8 +10216,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "multi_key_latency": {
       "aliases": [
@@ -10264,6 +10278,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "multi_key_latency",
       "min_evidence_refs": 2,
       "parse": {
@@ -10359,8 +10374,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "numpad": {
       "aliases": [
@@ -10413,6 +10427,7 @@
           "sheet": null
         }
       },
+      "group": "Layout",
       "key": "numpad",
       "min_evidence_refs": 1,
       "parse": {
@@ -10497,8 +10512,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Layout"
+      "value_form_sample": "scalar"
     },
     "onboard_memory": {
       "aliases": [
@@ -10551,6 +10565,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "onboard_memory",
       "min_evidence_refs": 1,
       "parse": {
@@ -10635,8 +10650,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "onboard_profile_count": {
       "aliases": [
@@ -10697,6 +10711,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "onboard_profile_count",
       "min_evidence_refs": 1,
       "parse": {
@@ -10780,8 +10795,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "os_mode_switch": {
       "aliases": [
@@ -10835,6 +10849,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "os_mode_switch",
       "min_evidence_refs": 1,
       "parse": {
@@ -10918,8 +10933,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "per_key_rgb": {
       "aliases": [
@@ -10973,6 +10987,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "per_key_rgb",
       "min_evidence_refs": 1,
       "parse": {
@@ -11058,8 +11073,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "plate_material": {
       "aliases": [
@@ -11112,6 +11126,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "plate_material",
       "min_evidence_refs": 1,
       "parse": {
@@ -11195,8 +11210,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "polling_rate_wired": {
       "aliases": [
@@ -11258,6 +11272,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "polling_rate_wired",
       "min_evidence_refs": 2,
       "parse": {
@@ -11352,8 +11367,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "polling_rate_wireless": {
       "aliases": [
@@ -11415,6 +11429,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "polling_rate_wireless",
       "min_evidence_refs": 2,
       "parse": {
@@ -11509,8 +11524,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "price_range": {
       "aliases": [
@@ -11563,6 +11577,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "price_range",
       "min_evidence_refs": 1,
       "parse": {
@@ -11647,8 +11662,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "qmk_via_support": {
       "aliases": [
@@ -11703,6 +11717,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "qmk_via_support",
       "min_evidence_refs": 1,
       "parse": {
@@ -11789,8 +11804,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "rapid_trigger": {
       "aliases": [
@@ -11843,6 +11857,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "rapid_trigger",
       "min_evidence_refs": 2,
       "parse": {
@@ -11926,8 +11941,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "release_date": {
       "aliases": [
@@ -11980,6 +11994,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "release_date",
       "min_evidence_refs": 1,
       "parse": {
@@ -12064,8 +12079,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "rgb_zones": {
       "aliases": [
@@ -12118,6 +12132,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "rgb_zones",
       "min_evidence_refs": 1,
       "parse": {
@@ -12202,8 +12217,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "scan_rate": {
       "aliases": [
@@ -12265,6 +12279,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "scan_rate",
       "min_evidence_refs": 2,
       "parse": {
@@ -12359,8 +12374,7 @@
       },
       "unit": "Hz",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "shine_through": {
       "aliases": [
@@ -12414,6 +12428,7 @@
           "sheet": null
         }
       },
+      "group": "Keycaps",
       "key": "shine_through",
       "min_evidence_refs": 1,
       "parse": {
@@ -12499,8 +12514,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Keycaps"
+      "value_form_sample": "scalar"
     },
     "single_key_latency": {
       "aliases": [
@@ -12562,6 +12576,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "single_key_latency",
       "min_evidence_refs": 2,
       "parse": {
@@ -12657,8 +12672,7 @@
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "sku": {
       "aliases": [
@@ -12711,6 +12725,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "sku",
       "min_evidence_refs": 1,
       "parse": {
@@ -12794,8 +12809,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "socd_cleaning": {
       "aliases": [
@@ -12849,6 +12863,7 @@
           "sheet": null
         }
       },
+      "group": "Performance",
       "key": "socd_cleaning",
       "min_evidence_refs": 2,
       "parse": {
@@ -12933,8 +12948,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Performance"
+      "value_form_sample": "scalar"
     },
     "software": {
       "aliases": [
@@ -12987,6 +13001,7 @@
           "sheet": null
         }
       },
+      "group": "Features",
       "key": "software",
       "min_evidence_refs": 1,
       "parse": {
@@ -13071,8 +13086,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Features"
+      "value_form_sample": "scalar"
     },
     "software_required": {
       "aliases": [
@@ -13125,6 +13139,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "software_required",
       "min_evidence_refs": 1,
       "parse": {
@@ -13209,8 +13224,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "sound_dampening": {
       "aliases": [
@@ -13263,6 +13277,7 @@
           "sheet": null
         }
       },
+      "group": "Sound",
       "key": "sound_dampening",
       "min_evidence_refs": 2,
       "parse": {
@@ -13346,8 +13361,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Sound"
+      "value_form_sample": "scalar"
     },
     "sound_profile": {
       "aliases": [
@@ -13401,6 +13415,7 @@
           "sheet": null
         }
       },
+      "group": "Sound",
       "key": "sound_profile",
       "min_evidence_refs": 2,
       "parse": {
@@ -13485,8 +13500,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Sound"
+      "value_form_sample": "scalar"
     },
     "south_facing_leds": {
       "aliases": [
@@ -13540,6 +13554,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "south_facing_leds",
       "min_evidence_refs": 1,
       "parse": {
@@ -13624,8 +13639,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "stabilizer_lubed": {
       "aliases": [
@@ -13678,6 +13692,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "stabilizer_lubed",
       "min_evidence_refs": 1,
       "parse": {
@@ -13761,8 +13776,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "stabilizer_mount": {
       "aliases": [
@@ -13816,6 +13830,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "stabilizer_mount",
       "min_evidence_refs": 1,
       "parse": {
@@ -13900,8 +13915,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "stabilizer_type": {
       "aliases": [
@@ -13954,6 +13968,7 @@
           "sheet": null
         }
       },
+      "group": "Build",
       "key": "stabilizer_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -14037,8 +14052,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Build"
+      "value_form_sample": "scalar"
     },
     "switch_brand": {
       "aliases": [
@@ -14091,6 +14105,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_brand",
       "min_evidence_refs": 1,
       "parse": {
@@ -14175,8 +14190,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_compatibility": {
       "aliases": [
@@ -14230,6 +14244,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_compatibility",
       "min_evidence_refs": 1,
       "parse": {
@@ -14314,8 +14329,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_feel": {
       "aliases": [
@@ -14368,6 +14382,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_feel",
       "min_evidence_refs": 1,
       "parse": {
@@ -14452,8 +14467,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_lifespan": {
       "aliases": [
@@ -14515,6 +14529,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_lifespan",
       "min_evidence_refs": 1,
       "parse": {
@@ -14613,8 +14628,7 @@
       },
       "unit": "million keystrokes",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_name": {
       "aliases": [
@@ -14669,6 +14683,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_name",
       "min_evidence_refs": 2,
       "parse": {
@@ -14755,8 +14770,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_output_type": {
       "aliases": [
@@ -14810,6 +14824,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_output_type",
       "min_evidence_refs": 1,
       "parse": {
@@ -14895,8 +14910,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_pin_support": {
       "aliases": [
@@ -14950,6 +14964,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_pin_support",
       "min_evidence_refs": 1,
       "parse": {
@@ -15034,8 +15049,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "switch_type": {
       "aliases": [
@@ -15088,6 +15102,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "switch_type",
       "min_evidence_refs": 2,
       "parse": {
@@ -15172,8 +15187,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "total_travel": {
       "aliases": [
@@ -15234,6 +15248,7 @@
           "sheet": null
         }
       },
+      "group": "Switch",
       "key": "total_travel",
       "min_evidence_refs": 1,
       "parse": {
@@ -15329,8 +15344,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Switch"
+      "value_form_sample": "scalar"
     },
     "typing_angle": {
       "aliases": [
@@ -15391,6 +15405,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "typing_angle",
       "min_evidence_refs": 1,
       "parse": {
@@ -15485,8 +15500,7 @@
       },
       "unit": "deg",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "typing_noise": {
       "aliases": [
@@ -15539,6 +15553,7 @@
           "sheet": null
         }
       },
+      "group": "Sound",
       "key": "typing_noise",
       "min_evidence_refs": 2,
       "parse": {
@@ -15622,8 +15637,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Sound"
+      "value_form_sample": "scalar"
     },
     "usb_passthrough": {
       "aliases": [
@@ -15676,6 +15690,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "usb_passthrough",
       "min_evidence_refs": 1,
       "parse": {
@@ -15759,8 +15774,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "variant": {
       "aliases": [
@@ -15814,6 +15828,7 @@
           "sheet": null
         }
       },
+      "group": "Identity",
       "key": "variant",
       "min_evidence_refs": 1,
       "parse": {
@@ -15898,8 +15913,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Identity"
+      "value_form_sample": "scalar"
     },
     "warranty": {
       "aliases": [
@@ -15951,6 +15965,7 @@
           "sheet": null
         }
       },
+      "group": "General",
       "key": "warranty",
       "min_evidence_refs": 1,
       "parse": {
@@ -16034,8 +16049,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "General"
+      "value_form_sample": "scalar"
     },
     "weight": {
       "aliases": [
@@ -16095,6 +16109,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "weight",
       "min_evidence_refs": 2,
       "parse": {
@@ -16210,8 +16225,7 @@
       },
       "unit": "kg",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "width": {
       "aliases": [
@@ -16271,6 +16285,7 @@
           "sheet": null
         }
       },
+      "group": "Dimensions",
       "key": "width",
       "min_evidence_refs": 2,
       "parse": {
@@ -16364,8 +16379,7 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Dimensions"
+      "value_form_sample": "scalar"
     },
     "wired_interface": {
       "aliases": [
@@ -16418,6 +16432,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "wired_interface",
       "min_evidence_refs": 1,
       "parse": {
@@ -16501,8 +16516,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "group": "Connectivity"
+      "value_form_sample": "scalar"
     },
     "wireless_technology": {
       "aliases": [
@@ -16560,6 +16574,7 @@
           "sheet": null
         }
       },
+      "group": "Connectivity",
       "key": "wireless_technology",
       "min_evidence_refs": 1,
       "parse": {
@@ -16658,8 +16673,7 @@
         "tooltip_source": null
       },
       "value_form": "list",
-      "value_form_sample": "list",
-      "group": "Connectivity"
+      "value_form_sample": "list"
     }
   },
   "field_studio_source_path": "",
@@ -17250,19 +17264,5 @@
   },
   "ui_defaults": {},
   "version": 2,
-  "version_note": "Keyboard category rebuilt as a contract-first field studio map.",
-  "field_groups": [
-    "Identity",
-    "Switch",
-    "Layout",
-    "Keycaps",
-    "Performance",
-    "Features",
-    "Connectivity",
-    "Build",
-    "Sound",
-    "Dimensions",
-    "Power",
-    "General"
-  ]
+  "version_note": "Keyboard category rebuilt as a contract-first field studio map."
 }
