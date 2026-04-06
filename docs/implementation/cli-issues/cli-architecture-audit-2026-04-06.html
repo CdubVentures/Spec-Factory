@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Architecture Audit — 2026-04-06</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #252536;
+    --surface2: #2d2d42;
+    --border: #3a3a52;
+    --text: #cdd6f4;
+    --text-dim: #9399b2;
+    --text-bright: #f0f0f8;
+    --accent: #89b4fa;
+    --green: #a6e3a1;
+    --red: #f38ba8;
+    --yellow: #f9e2af;
+    --orange: #fab387;
+    --teal: #94e2d5;
+    --mauve: #cba6f7;
+    --code-bg: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--text-bright); font-size: 1.8rem; margin-bottom: 0.3rem; }
+  h2 { color: var(--accent); font-size: 1.35rem; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h3 { color: var(--teal); font-size: 1.1rem; margin: 1.8rem 0 0.6rem; }
+  h4 { color: var(--mauve); font-size: 0.95rem; margin: 1.2rem 0 0.4rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; }
+  p { margin-bottom: 0.8rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: var(--code-bg);
+    color: var(--mauve);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0.6rem 0 1.2rem;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--text-bright);
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--surface); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1rem 0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-red { background: rgba(243,139,168,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(249,226,175,0.15); color: var(--yellow); }
+  .badge-green { background: rgba(166,227,161,0.15); color: var(--green); }
+  .badge-blue { background: rgba(137,180,250,0.15); color: var(--accent); }
+  .badge-orange { background: rgba(250,179,135,0.15); color: var(--orange); }
+  .finding {
+    background: var(--surface);
+    border-left: 3px solid var(--yellow);
+    padding: 0.8rem 1rem;
+    margin: 0.6rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .finding.critical { border-left-color: var(--red); }
+  .finding.good { border-left-color: var(--green); }
+  .finding.info { border-left-color: var(--accent); }
+  .finding-title { font-weight: 600; color: var(--text-bright); margin-bottom: 0.3rem; }
+  .phase-header {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1.5rem 0 0.8rem;
+  }
+  .phase-header h3 { margin: 0 0 0.3rem; color: var(--accent); }
+  .phase-header .effort { color: var(--text-dim); font-size: 0.85rem; }
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+  .metric-label { font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; }
+  .file-ref { color: var(--text-dim); font-size: 0.82rem; font-family: monospace; }
+  ul { padding-left: 1.4rem; margin: 0.4rem 0 1rem; }
+  li { margin: 0.3rem 0; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; margin: 1.5rem 0; }
+  .toc a { display: block; padding: 0.2rem 0; color: var(--text); }
+  .toc a:hover { color: var(--accent); }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li::before { content: ''; display: inline-block; width: 1rem; }
+  .checklist li.pass::before { content: '\2713 '; color: var(--green); font-weight: 700; }
+  .checklist li.fail::before { content: '\2717 '; color: var(--red); font-weight: 700; }
+  .checklist li.warn::before { content: '\26A0 '; color: var(--yellow); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>CLI Architecture Audit</h1>
+<p class="subtitle">Full structural audit of <code>src/app/cli/</code> against CLAUDE.md &mdash; 2026-04-06</p>
+
+<div class="metric-grid">
+  <div class="metric"><div class="metric-value">28</div><div class="metric-label">Files</div></div>
+  <div class="metric"><div class="metric-value">~2,800</div><div class="metric-label">LOC (commands)</div></div>
+  <div class="metric"><div class="metric-value">26</div><div class="metric-label">Commands</div></div>
+  <div class="metric"><div class="metric-value">9</div><div class="metric-label">Test Files</div></div>
+  <div class="metric"><div class="metric-value">12</div><div class="metric-label">Lazy Loaders</div></div>
+  <div class="metric"><div class="metric-value">7/26</div><div class="metric-label">Commands Tested</div></div>
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <a href="#current">1. Current Architecture</a>
+  <a href="#findings">2. CLAUDE.md Compliance Findings</a>
+  <a href="#file-inventory">3. Complete File Inventory</a>
+  <a href="#issues">4. All Issues (Categorized)</a>
+  <a href="#phases">5. Phased Remediation Plan</a>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="current">1. Current Architecture</h2>
+
+<h3>How it works today</h3>
+<p>The CLI is a <strong>process-boundary layer</strong>. The GUI/API server spawns <code>node src/app/cli/spec.js &lt;command&gt;</code> as a child process for all work &mdash; crawls, compilation, seeding, review, exports. The child writes JSON to stdout, then <code>process.exit()</code>. Completion handlers in the API server then sync results into SQLite.</p>
+
+<pre>
+GUI Button Click
+  &rarr; POST /process/start  (processRoutes.js:95)
+  &rarr; spawn('node', ['src/app/cli/spec.js', 'indexlab', ...args])
+  &rarr; stdout/stderr streamed to GUI via WebSocket
+  &rarr; child.on('exit')
+    &rarr; compileProcessCompletion.js   (JSON &rarr; SQL sync)
+    &rarr; indexLabProcessCompletion.js   (run status reconciliation)
+  &rarr; broadcastWs('process-status')
+</pre>
+
+<h3>Command dispatch</h3>
+<p><code>spec.js</code> (457 LOC) is the entry point. It parses args, loads <code>.env</code>, builds config, creates storage, then dispatches via a 26-case <code>switch</code> statement to lazy-loaded command handlers.</p>
+
+<h3>Lazy loading pattern</h3>
+<pre>
+const loadFieldRulesCommands = createLazyLoader(async () =&gt; {
+  const [{ createFieldRulesCommands }, ...] = await Promise.all([...]);
+  return createFieldRulesCommands({ ...injectedDeps });
+});
+
+// Dispatch:
+case 'compile-rules':
+  return (await loadFieldRulesCommands()).commandCompileRules(config, storage, args);
+</pre>
+
+<h3>DB access patterns (two competing approaches)</h3>
+<table>
+  <tr>
+    <th>Pattern</th>
+    <th>Where used</th>
+    <th>How it works</th>
+  </tr>
+  <tr>
+    <td><code>openSpecDbForCategory()</code></td>
+    <td>review, discover, batch, export, migrate-to-sqlite</td>
+    <td>Injected helper, reads <code>SPEC_DB_DIR</code> env / <code>config.specDbDir</code>, returns <code>null</code> on error</td>
+  </tr>
+  <tr>
+    <td>Direct <code>new SpecDb()</code></td>
+    <td>pipelineCommands.js (3 places), dataUtilityCommands.js (2 places)</td>
+    <td>Hardcoded <code>PROJECT_ROOT/.workspace/db/</code>, inline <code>mkdir</code>, inline <code>import()</code></td>
+  </tr>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="findings">2. CLAUDE.md Compliance Findings</h2>
+
+<h3>Compliance checklist</h3>
+<ul class="checklist">
+  <li class="pass">CQRS Dual-State: JSON = durable, SQLite = projection (review workflow is textbook)</li>
+  <li class="pass">O(1) Feature Scaling: Pipeline phase registry is add-one-entry</li>
+  <li class="pass">Dependency Injection: All commands use factory pattern</li>
+  <li class="pass">No circular dependencies between CLI and features</li>
+  <li class="pass">Lazy loading prevents startup penalty</li>
+  <li class="pass">No hardcoded secrets</li>
+  <li class="pass">Runtime dirs use <code>.workspace/</code> correctly</li>
+  <li class="fail">Feature boundary violations: direct internal imports (not through <code>index.js</code>)</li>
+  <li class="fail">DB path SSOT: 4 competing resolution patterns</li>
+  <li class="fail">Test coverage: 7/26 commands tested (domain logic untested)</li>
+  <li class="fail">Dead commands: <code>export-overrides</code> / <code>migrate-overrides</code> not wired in dispatcher</li>
+  <li class="fail">Rebuild contract violation: <code>migrate-to-sqlite</code> phases 2 &amp; 4 one-way</li>
+  <li class="warn">Unused <code>_storage</code> parameter in 15+ command signatures</li>
+  <li class="warn"><code>pipelineCommands.js</code> at 495 LOC (exceeds soft limit)</li>
+  <li class="warn"><code>reviewCommand.js</code> at 362 LOC with 11 subcommands in one function</li>
+  <li class="warn">Process isolation used for pure functions (compile, validate) that don't need it</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="file-inventory">3. Complete File Inventory</h2>
+
+<h3>Entry points &amp; helpers</h3>
+<table>
+  <tr><th>File</th><th>LOC</th><th>Role</th></tr>
+  <tr><td><code>spec.js</code></td><td>457</td><td>CLI entry, config, dispatch, lazy loaders</td></tr>
+  <tr><td><code>args.js</code></td><td>30</td><td>Argument parser (<code>parseArgs</code>, <code>asBool</code>)</td></tr>
+  <tr><td><code>cliHelpers.js</code></td><td>98</td><td>Shared utilities: slug, CSV, JSON, DB open, brand filter</td></tr>
+  <tr><td><code>indexlab.js</code></td><td>~15</td><td>Thin wrapper (imports spec.js)</td></tr>
+  <tr><td><code>smokeLocal.js</code></td><td>~111</td><td>Standalone smoke runner (CI validation)</td></tr>
+</table>
+
+<h3>Command handlers</h3>
+<table>
+  <tr><th>File</th><th>LOC</th><th>Commands</th><th>Tests?</th></tr>
+  <tr>
+    <td><code>pipelineCommands.js</code></td>
+    <td>495</td>
+    <td>run-one, indexlab, run-ad-hoc, run-until-complete</td>
+    <td><span class="badge badge-yellow">partial</span> indexlab characterization only</td>
+  </tr>
+  <tr>
+    <td><code>reviewCommand.js</code></td>
+    <td>362</td>
+    <td>review (11 subcommands)</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+  <tr>
+    <td><code>batchCommand.js</code></td>
+    <td>263</td>
+    <td>run-batch</td>
+    <td><span class="badge badge-red">no</span></td>
+  </tr>
+  <tr>
+    <td><code>fieldRulesCommands.js</code></td>
+    <td>217</td>
+    <td>9 field-rules/compile commands</td>
+    <td><span class="badge badge-red">no</span></td>
+  </tr>
+  <tr>
+    <td><code>migrateToSqliteCommand.js</code></td>
+    <td>125</td>
+    <td>migrate-to-sqlite (4 phases)</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+  <tr>
+    <td><code>exportOverridesCommand.js</code></td>
+    <td>115</td>
+    <td>export-overrides, migrate-overrides</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+  <tr>
+    <td><code>dataUtilityCommands.js</code></td>
+    <td>80</td>
+    <td>seed-db, seed-checkpoint, generate-types</td>
+    <td><span class="badge badge-red">no</span></td>
+  </tr>
+  <tr>
+    <td><code>discoverCommand.js</code></td>
+    <td>67</td>
+    <td>discover</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+  <tr>
+    <td><code>intelGraphApiCommand.js</code></td>
+    <td>26</td>
+    <td>intel-graph-api</td>
+    <td><span class="badge badge-red">no</span></td>
+  </tr>
+  <tr>
+    <td><code>publishingCommands.js</code></td>
+    <td>23</td>
+    <td>product-reconcile</td>
+    <td><span class="badge badge-red">no</span></td>
+  </tr>
+  <tr>
+    <td><code>llmHealthCommand.js</code></td>
+    <td>18</td>
+    <td>llm-health</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+  <tr>
+    <td><code>billingReportCommand.js</code></td>
+    <td>16</td>
+    <td>billing-report</td>
+    <td><span class="badge badge-green">yes</span></td>
+  </tr>
+</table>
+
+<h3>Test files</h3>
+<table>
+  <tr><th>File</th><th>Tests</th></tr>
+  <tr><td><code>tests/cli.test.js</code></td><td>CLI entrypoint + retired command rejection</td></tr>
+  <tr><td><code>tests/reviewCli.test.js</code></td><td>E2E review suggest through full CLI</td></tr>
+  <tr><td><code>commands/tests/reviewCommand.test.js</code></td><td>All 11 review subcommands</td></tr>
+  <tr><td><code>commands/tests/discoverCommand.test.js</code></td><td>Brand filter, event flush, errors</td></tr>
+  <tr><td><code>commands/tests/exportOverridesCommand.test.js</code></td><td>Export v1 + migrate v2</td></tr>
+  <tr><td><code>commands/tests/migrateToSqliteCommand.test.js</code></td><td>Phases 1-2, malformed data</td></tr>
+  <tr><td><code>commands/tests/billingReportCommand.test.js</code></td><td>Month defaulting</td></tr>
+  <tr><td><code>commands/tests/llmHealthCommand.test.js</code></td><td>Provider normalization</td></tr>
+  <tr><td><code>commands/tests/commandIndexLabCharacterization.test.js</code></td><td>Fixture, jobOverride, identity resolution</td></tr>
+</table>
+
+<h3>External callers</h3>
+<table>
+  <tr><th>Caller</th><th>File</th><th>How</th></tr>
+  <tr><td>API process route</td><td><code>processRoutes.js:95</code></td><td><code>startProcess('src/app/cli/spec.js', cliArgs)</code></td></tr>
+  <tr><td>Studio routes</td><td><code>studioRoutes.js:176,187</code></td><td><code>startProcess(..., ['compile-rules'|'validate-rules'])</code></td></tr>
+  <tr><td>package.json scripts</td><td><code>package.json:16-25</code></td><td><code>node src/app/cli/spec.js &lt;command&gt;</code></td></tr>
+  <tr><td>Dockerfile</td><td><code>Dockerfile:15</code></td><td><code>CMD ["node", "src/app/cli/spec.js", "run-batch"]</code></td></tr>
+  <tr><td>Demo script</td><td><code>scripts/demo-improvements.js</code></td><td><code>spawnSync('node', ['src/app/cli/spec.js', ...])</code></td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="issues">4. All Issues (Categorized)</h2>
+
+<h3>Critical &mdash; CLAUDE.md violations</h3>
+
+<div class="finding critical">
+  <div class="finding-title">F1. Feature boundary violations &mdash; direct internal imports</div>
+  <p><code>pipelineCommands.js</code> bypasses public barrel exports:</p>
+  <ul>
+    <li><code>:11</code> &mdash; <code>import { buildJobFromDb } from '../../../features/indexing/orchestration/bootstrap/buildJobFromDb.js'</code></li>
+    <li><code>:13</code> &mdash; <code>import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js'</code></li>
+    <li><code>:16</code> &mdash; <code>import { deriveFullModel } from '../../../features/catalog/identity/identityDedup.js'</code></li>
+    <li><code>:6</code> &mdash; <code>import { SpecDb } from '../../../db/specDb.js'</code> (direct, not injected)</li>
+    <li><code>:7-10,12,14-15</code> &mdash; 6 more direct imports from pipeline/checkpoint, indexlab internals</li>
+  </ul>
+  <p class="file-ref">CLAUDE.md: "Features must not import other features' internals" / "Use explicit public contracts"</p>
+</div>
+
+<div class="finding critical">
+  <div class="finding-title">F2. DB path resolution &mdash; 4 competing patterns (O(1) SSOT violation)</div>
+  <ul>
+    <li><strong>Pattern A:</strong> <code>openSpecDbForCategory()</code> in cliHelpers.js &mdash; reads <code>SPEC_DB_DIR</code> env, <code>config.specDbDir</code>, fallback <code>.workspace/db</code></li>
+    <li><strong>Pattern B:</strong> <code>PROJECT_ROOT/.workspace/db/</code> hardcoded in pipelineCommands.js:18-20 (used 3 times: lines 107, 150, 392)</li>
+    <li><strong>Pattern C:</strong> <code>config.specDbDir || '.workspace/db'</code> inline in dataUtilityCommands.js:19,62</li>
+    <li><strong>Pattern D:</strong> Dynamic <code>import('../../../db/specDb.js')</code> in pipelineCommands.js:149 and dataUtilityCommands.js:16,57</li>
+  </ul>
+  <p class="file-ref">CLAUDE.md: "O(1) Feature Scaling &mdash; STRICTLY FORBIDDEN from writing code that requires a human to manually touch [multiple files] to add a simple setting"</p>
+</div>
+
+<div class="finding critical">
+  <div class="finding-title">F3. Test coverage gap &mdash; 19 commands untested</div>
+  <p>CLAUDE.md requires tests for "domain logic, state transitions, parsers/mappers/transforms, boundary contracts, error handling." Untested commands with domain logic:</p>
+  <ul>
+    <li><strong>batchCommand.js</strong> &mdash; scoring algorithms (explore/exploit/bandit), concurrency pool, brand reward index</li>
+    <li><strong>fieldRulesCommands.js</strong> &mdash; 9 commands that parse args and delegate to compiler</li>
+    <li><strong>dataUtilityCommands.js</strong> &mdash; seed-db, seed-checkpoint (DB operations)</li>
+    <li><strong>pipelineCommands.js</strong> &mdash; run-one, run-ad-hoc, run-until-complete (only indexlab has characterization test)</li>
+    <li><strong>publishingCommands.js</strong> &mdash; product-reconcile</li>
+  </ul>
+</div>
+
+<div class="finding critical">
+  <div class="finding-title">F4. Rebuild contract violation &mdash; migrate-to-sqlite phases 2 &amp; 4</div>
+  <p>Phase 2 imports billing ledger JSONL &rarr; SQL. Phase 4 imports learning profiles JSON &rarr; SQL. <strong>No reverse path exists.</strong> If <code>spec.sqlite</code> is deleted, billing entries and learning profiles are lost.</p>
+  <p class="file-ref">CLAUDE.md: "Any new SQL table must support a 'Deleted-DB Rebuild'"</p>
+</div>
+
+<h3>Medium &mdash; maintainability issues</h3>
+
+<div class="finding">
+  <div class="finding-title">F5. Dead commands &mdash; export-overrides / migrate-overrides not in dispatcher</div>
+  <p><code>export-overrides</code> is in the switch (spec.js:360-361), but <code>migrate-overrides</code> is exported from <code>exportOverridesCommand.js:76</code> and <strong>never wired into the dispatcher or usage text</strong>. The lazy loader only creates the export command, not the migrate command.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F6. Process isolation overkill for pure functions</div>
+  <p>The API server spawns a child process for <code>compile-rules</code> and <code>validate-rules</code> (studioRoutes.js:176,187). These are pure JSON&rarr;JSON transforms completing in &lt;5s. The spawn adds: PID tracking, orphan detection, completion handler re-sync, stdout parsing. All unnecessary &mdash; these functions are directly importable.</p>
+  <table>
+    <tr><th>Command</th><th>Needs process isolation?</th><th>Why / why not</th></tr>
+    <tr><td>indexlab, run-*, run-batch</td><td><span class="badge badge-green">YES</span></td><td>Browser processes, hours-long, crash isolation</td></tr>
+    <tr><td>compile-rules, validate-rules, category-compile</td><td><span class="badge badge-red">NO</span></td><td>Pure functions, &lt;5s, no spawned children</td></tr>
+    <tr><td>discover</td><td><span class="badge badge-yellow">BORDERLINE</span></td><td>Fast but calls pipeline internals</td></tr>
+    <tr><td>billing-report, llm-health, list-fields, etc.</td><td><span class="badge badge-red">NO</span></td><td>Thin wrappers over importable functions</td></tr>
+  </table>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F7. pipelineCommands.js &mdash; 495 LOC, 11 direct imports, mixed concerns</div>
+  <p><code>commandIndexLab</code> alone is 325 lines handling: seed parsing, identity resolution, product ID dedup, fixture creation, SpecDb opening, IndexLabRuntimeBridge setup, IPC event forwarding, config overrides, runProduct orchestration, checkpoint writing, summary serialization, and bridge finalization. This violates the 700 LOC soft limit <em>and</em> single-responsibility.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F8. SpecDb open/close ceremony duplicated</div>
+  <p>The same pattern appears 15+ times across commands:</p>
+<pre>const specDb = await openSpecDbForCategory(config, category);
+try {
+  // ... work
+} finally {
+  try { specDb?.close(); } catch { /* no-op */ }
+}</pre>
+  <p>Should be a single <code>withSpecDb(config, category, fn)</code> helper.</p>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F9. Unused <code>_storage</code> parameter in 15+ command signatures</div>
+  <p>Commands like <code>commandSeedDb(config, _storage, args)</code>, all fieldRulesCommands, generateTypes, exportOverrides &mdash; receive <code>storage</code> but never use it. The uniform <code>(config, storage, args)</code> signature is enforced by the dispatcher but not needed by these handlers.</p>
+</div>
+
+<h3>Low &mdash; nice-to-have</h3>
+
+<div class="finding info">
+  <div class="finding-title">F10. reviewCommand.js &mdash; 11 subcommands in one function</div>
+  <p>362 LOC, 11 <code>if (action === '...')</code> blocks. Each block is self-contained. Could decompose into per-action handlers for readability.</p>
+</div>
+
+<div class="finding info">
+  <div class="finding-title">F11. <code>run_profile</code> hardcoded to 'standard'</div>
+  <p>spec.js:414 &mdash; <code>output.run_profile = 'standard'</code> ignores the <code>--profile</code> / <code>--thorough</code> CLI flags. These flags are parsed in args but never applied to the output.</p>
+</div>
+
+<div class="finding info">
+  <div class="finding-title">F12. <code>filterKeysByBrand</code> reads JSON for brand lookup</div>
+  <p>cliHelpers.js:39-57 &mdash; When filtering by brand, reads every product JSON file via <code>storage.readJsonOrNull(key)</code>. The DB <code>getAllProducts()</code> already returns brand. Could use DB brand directly and skip the JSON reads.</p>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="phases">5. Phased Remediation Plan</h2>
+
+<div class="phase-header">
+  <h3>Phase 1 &mdash; Unify DB access &amp; fix boundary violations</h3>
+  <div class="effort"><span class="badge badge-orange">effort: small</span> &mdash; ~2-3 hours</div>
+</div>
+
+<h4>1a. Single DB path resolver</h4>
+<p>Create one function that all commands use. Kill the 4 competing patterns.</p>
+<pre>
+// cliHelpers.js (replace current openSpecDbForCategory)
+export async function openSpecDbForCategory(config, category) {
+  const { SpecDb } = await import('../../db/specDb.js');
+  const root = process.env.SPEC_DB_DIR || config.specDbDir || '.workspace/db';
+  const dbDir = pathNode.join(root, String(category).trim());
+  await fsNode.mkdir(dbDir, { recursive: true });
+  return new SpecDb({ dbPath: pathNode.join(dbDir, 'spec.sqlite'), category });
+}
+</pre>
+
+<h4>1b. Add <code>withSpecDb</code> helper</h4>
+<pre>
+export async function withSpecDb(config, category, fn) {
+  const specDb = await openSpecDbForCategory(config, category);
+  if (!specDb) return fn(null);
+  try { return await fn(specDb); }
+  finally { try { specDb.close(); } catch { /* */ } }
+}
+</pre>
+
+<h4>1c. Fix pipelineCommands.js imports</h4>
+<ul>
+  <li>Delete <code>PROJECT_ROOT</code> constant (lines 18-20)</li>
+  <li>Delete direct <code>import { SpecDb }</code> (line 6)</li>
+  <li>Inject <code>openSpecDbForCategory</code> via the factory (already done for other commands)</li>
+  <li>Route all feature imports through public barrels:
+    <ul>
+      <li><code>buildJobFromDb</code> &rarr; through <code>features/indexing/orchestration/index.js</code></li>
+      <li><code>buildRuntimeOpsPanels</code> &rarr; through <code>features/indexing/api/index.js</code></li>
+      <li><code>deriveFullModel</code> &rarr; through <code>features/catalog/index.js</code></li>
+    </ul>
+  </li>
+  <li>Inject checkpoint builders via factory instead of direct imports</li>
+</ul>
+
+<h4>1d. Wire or delete <code>migrate-overrides</code></h4>
+<p>Either add it to the lazy loader + dispatcher + usage text, or remove the export entirely.</p>
+
+<h4>Affected files</h4>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>cliHelpers.js</code></td><td>Add <code>withSpecDb</code>, harden <code>openSpecDbForCategory</code></td></tr>
+  <tr><td><code>pipelineCommands.js</code></td><td>Remove PROJECT_ROOT, direct SpecDb import, route through barrels</td></tr>
+  <tr><td><code>dataUtilityCommands.js</code></td><td>Use injected <code>openSpecDbForCategory</code> instead of direct import</td></tr>
+  <tr><td><code>spec.js</code></td><td>Inject <code>openSpecDbForCategory</code> into pipeline loader; wire or remove migrate-overrides</td></tr>
+  <tr><td><code>reviewCommand.js</code></td><td>Replace open/close ceremony with <code>withSpecDb</code></td></tr>
+</table>
+
+<hr>
+
+<div class="phase-header">
+  <h3>Phase 2 &mdash; Decompose pipelineCommands.js</h3>
+  <div class="effort"><span class="badge badge-orange">effort: medium</span> &mdash; ~3-4 hours</div>
+</div>
+
+<p>Split 495-LOC monolith into focused modules. <code>commandIndexLab</code> does too many things in one function.</p>
+
+<h4>Proposed decomposition</h4>
+<table>
+  <tr><th>New file</th><th>Responsibility</th><th>LOC estimate</th></tr>
+  <tr><td><code>pipelineCommands.js</code> (slimmed)</td><td>Factory + <code>commandRunOne</code>, <code>commandRunUntilComplete</code></td><td>~60</td></tr>
+  <tr><td><code>indexlabCommand.js</code></td><td><code>commandIndexLab</code> &mdash; bridge setup, run orchestration, checkpoint writes</td><td>~280</td></tr>
+  <tr><td><code>runAdHocCommand.js</code></td><td><code>commandRunAdHoc</code> &mdash; identity resolution, fixture creation</td><td>~110</td></tr>
+</table>
+
+<h4>Extract shared identity resolution</h4>
+<p>Both <code>commandIndexLab</code> (lines 104-117) and <code>commandRunAdHoc</code> (lines 389-401) contain identical brand+model+variant lookup logic. Extract to a shared helper:</p>
+<pre>
+// shared/resolveProductId.js
+export function resolveProductIdFromDb(specDb, { brand, model, variant, category }) {
+  const rows = specDb?.getAllProducts?.() || [];
+  const match = rows.find(r =&gt;
+    eq(r.brand, brand) && eq(r.base_model, model) && eq(r.variant, variant)
+  );
+  return match?.product_id || buildProductId(category);
+}
+</pre>
+
+<hr>
+
+<div class="phase-header">
+  <h3>Phase 3 &mdash; In-process compile/validate (optional)</h3>
+  <div class="effort"><span class="badge badge-yellow">effort: medium</span> &mdash; ~3-5 hours</div>
+</div>
+
+<p>Instead of spawning <code>node spec.js compile-rules</code> as a child process, call the function directly from the API server. This eliminates process overhead for sub-5-second operations.</p>
+
+<h4>Current flow (spawned)</h4>
+<pre>
+POST /studio/:category/compile
+  &rarr; startProcess('src/app/cli/spec.js', ['compile-rules', '--category', cat])
+  &rarr; child writes JSON artifacts to disk
+  &rarr; child exits
+  &rarr; handleCompileProcessCompletion() re-reads JSON, syncs to SQL
+</pre>
+
+<h4>Proposed flow (in-process)</h4>
+<pre>
+POST /studio/:category/compile
+  &rarr; const result = await compileRules({ category, config })
+  &rarr; handleCompileProcessCompletion() syncs to SQL (using result directly)
+</pre>
+
+<h4>What this eliminates</h4>
+<ul>
+  <li>Child process spawn + PID tracking</li>
+  <li>Stdout/stderr parsing</li>
+  <li>Orphan detection for compile processes</li>
+  <li>~50-100ms latency per invocation</li>
+</ul>
+
+<h4>What stays spawned</h4>
+<ul>
+  <li><code>indexlab</code>, <code>run-one</code>, <code>run-ad-hoc</code>, <code>run-batch</code>, <code>run-until-complete</code> &mdash; browser processes, long-running</li>
+  <li><code>discover</code> &mdash; calls into pipeline</li>
+  <li><code>intel-graph-api</code> &mdash; starts a server</li>
+</ul>
+
+<hr>
+
+<div class="phase-header">
+  <h3>Phase 4 &mdash; Test coverage for untested commands</h3>
+  <div class="effort"><span class="badge badge-red">effort: large</span> &mdash; multi-session</div>
+</div>
+
+<h4>Priority order (by domain-logic density)</h4>
+<table>
+  <tr><th>#</th><th>Command</th><th>Test focus</th><th>Risk if untested</th></tr>
+  <tr><td>1</td><td><code>batchCommand.js</code></td><td>Scoring algorithms, concurrency pool, brand reward index, strategy routing</td><td><span class="badge badge-red">high</span></td></tr>
+  <tr><td>2</td><td><code>pipelineCommands.js</code> run-one/run-ad-hoc</td><td>Arg parsing matrix, fixture creation, identity dedup</td><td><span class="badge badge-red">high</span></td></tr>
+  <tr><td>3</td><td><code>fieldRulesCommands.js</code></td><td>Arg validation, mode routing (single/all/watch), delegation wiring</td><td><span class="badge badge-yellow">medium</span></td></tr>
+  <tr><td>4</td><td><code>dataUtilityCommands.js</code></td><td>seed-db sync, seed-checkpoint scan, generate-types output</td><td><span class="badge badge-yellow">medium</span></td></tr>
+  <tr><td>5</td><td><code>publishingCommands.js</code></td><td>reconcileOrphans delegation, dry-run default</td><td><span class="badge badge-blue">low</span></td></tr>
+</table>
+
+<hr>
+
+<div class="phase-header">
+  <h3>Phase 5 &mdash; Cleanup &amp; polish</h3>
+  <div class="effort"><span class="badge badge-blue">effort: small</span> &mdash; ~1-2 hours</div>
+</div>
+
+<ul>
+  <li><strong>Remove unused <code>_storage</code> params</strong> from fieldRulesCommands, dataUtilityCommands, exportOverridesCommand (15+ signatures). Update the dispatcher to not pass storage to commands that don't need it, OR accept the uniform signature as a convention and document it.</li>
+  <li><strong>Fix <code>run_profile</code> hardcoding</strong> &mdash; spec.js:414 should read from <code>args.profile</code> or <code>args.thorough</code></li>
+  <li><strong>Optimize <code>filterKeysByBrand</code></strong> &mdash; use DB brand from <code>getAllProducts()</code> instead of reading every JSON file</li>
+  <li><strong>Decompose reviewCommand.js</strong> (optional) &mdash; split 11 if-blocks into per-action handlers or a dispatch map</li>
+  <li><strong>Add rebuild path for migrate-to-sqlite phases 2 &amp; 4</strong> &mdash; store source S3 keys so billing/learning tables can be rebuilt from JSON</li>
+</ul>
+
+<hr>
+
+<h2>Phase summary</h2>
+<table>
+  <tr><th>Phase</th><th>What</th><th>Effort</th><th>Fixes</th></tr>
+  <tr><td><span class="badge badge-green">1</span></td><td>Unify DB access, fix boundary violations</td><td>~2-3h</td><td>F1, F2, F5, F8</td></tr>
+  <tr><td><span class="badge badge-green">2</span></td><td>Decompose pipelineCommands.js</td><td>~3-4h</td><td>F7</td></tr>
+  <tr><td><span class="badge badge-yellow">3</span></td><td>In-process compile/validate (optional)</td><td>~3-5h</td><td>F6</td></tr>
+  <tr><td><span class="badge badge-orange">4</span></td><td>Test coverage for untested commands</td><td>multi-session</td><td>F3</td></tr>
+  <tr><td><span class="badge badge-blue">5</span></td><td>Cleanup &amp; polish</td><td>~1-2h</td><td>F4, F9, F10, F11, F12</td></tr>
+</table>
+
+</body>
+</html>

@@ -288,23 +288,32 @@ function findItemWithProperties(db) {
 // â”€â”€ Contract Analysis (core function) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Reads the full contract from the test category's _generated dir and
- * builds all three matrices as structured data.
+ * Reads the full contract from compiled_rules (DB) or _generated dir (JSON fallback)
+ * and builds all three matrices as structured data.
  */
-export async function analyzeContract(helperRoot, category) {
-  const genDir = path.join(helperRoot, category, '_generated');
-  const fieldRules = await safeReadJson(path.join(genDir, 'field_rules.json')) || {};
-  const knownValues = await safeReadJson(path.join(genDir, 'known_values.json')) || {};
-  const crossRules = await safeReadJson(path.join(genDir, 'cross_validation_rules.json')) || {};
-  const parseTemplates = await safeReadJson(path.join(genDir, 'parse_templates.json')) || {};
-
-  // Load component DBs
-  const compDbDir = path.join(genDir, 'component_db');
-  const compFiles = await listJsonFiles(compDbDir);
-  const componentDBs = {};
-  for (const f of compFiles) {
-    const data = await safeReadJson(path.join(compDbDir, f));
-    if (data) componentDBs[data.component_type || f.replace('.json', '')] = data;
+export async function analyzeContract(helperRoot, category, { compiledRules: cr } = {}) {
+  let fieldRules, knownValues, crossRules, parseTemplates, componentDBs;
+  if (cr && cr.fields) {
+    // WHY: DB-first — compiled_rules has everything analyzeContract needs.
+    fieldRules = { fields: cr.fields, component_db_sources: cr.component_db_sources || {} };
+    knownValues = cr.known_values || {};
+    crossRules = { rules: Array.isArray(cr.cross_validation_rules) ? cr.cross_validation_rules : [] };
+    parseTemplates = cr.parse_templates || {};
+    componentDBs = cr.component_dbs || {};
+  } else {
+    // JSON fallback — CLI, pre-seeded test categories, tests without specDb
+    const genDir = path.join(helperRoot, category, '_generated');
+    fieldRules = await safeReadJson(path.join(genDir, 'field_rules.json')) || {};
+    knownValues = await safeReadJson(path.join(genDir, 'known_values.json')) || {};
+    crossRules = await safeReadJson(path.join(genDir, 'cross_validation_rules.json')) || {};
+    parseTemplates = await safeReadJson(path.join(genDir, 'parse_templates.json')) || {};
+    const compDbDir = path.join(genDir, 'component_db');
+    const compFiles = await listJsonFiles(compDbDir);
+    componentDBs = {};
+    for (const f of compFiles) {
+      const data = await safeReadJson(path.join(compDbDir, f));
+      if (data) componentDBs[data.component_type || f.replace('.json', '')] = data;
+    }
   }
 
   const fields = isObj(fieldRules.fields) ? fieldRules.fields : {};

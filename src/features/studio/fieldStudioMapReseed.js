@@ -145,6 +145,7 @@ export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, sto
   const fieldRules = categoryConfig.fieldRules || {};
   const compiledRules = {
     fields: fieldRules.fields || fieldRules,
+    component_db_sources: fieldRules.component_db_sources || {},
     field_order: categoryConfig.fieldOrder || [],
     field_groups: categoryConfig.fieldGroups || {},
     required_fields: categoryConfig.requiredFields || [],

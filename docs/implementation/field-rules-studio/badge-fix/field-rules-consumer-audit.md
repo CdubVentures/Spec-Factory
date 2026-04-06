@@ -67,25 +67,17 @@
 
 ## Remaining Work
 
-### testMode.run — `runTestProduct` is a stub
+### testMode.run — `runTestProduct` (DONE)
 
-**File:** `src/tests/testRunner.js`
+`runTestProduct()` fully wired: consensus → normalization → cross-validation → traffic light → artifact persistence. Processes `sourceResults` through `buildCandidateFieldMap` → `FieldRulesEngine` → `applyRuntimeFieldRules` → `buildTrafficLight`. Persists `normalized.json`, `summary.json`, `provenance.json` to storage. Curation suggestions persisted to specDb via `appendComponentCurationSuggestions` / `appendEnumCurationSuggestions`.
 
-`runTestProduct()` is a stub that returns hardcoded zeros (confidence: 0, coverage: 0, completeness: 0). The consensus pipeline that processed test results was removed in a prior refactor. All 21 test scenarios complete but produce empty results.
+### testMode.contract + testMode.run — JSON reads (DONE)
 
-**What needs to happen:**
-- Wire the validation/normalization pipeline into `runTestProduct`
-- The function receives `sourceResults`, `fieldRules`, `knownValues`, `componentDBs` from `testModeRoutes.js` (lines 356-376)
-- It needs to run these through `FieldRulesEngine` + `applyRuntimeFieldRules` and produce real normalized output with confidence/coverage/traffic-light scoring
-- Test mode also still reads field rules from JSON (`testModeRoutes.js:324-335`) — should migrate to DB after `runTestProduct` is functional
-
-### testMode.contract + testMode.run — JSON reads
-
-**Files:**
-- `src/app/api/routes/testModeRoutes.js` (lines 324-335) — reads `field_rules.json`, `known_values.json`, `component_db/*.json` from `_generated/`
-- `src/tests/testDataProvider.js` (`analyzeContract()`) — reads 5+ JSON files from `_generated/`
-
-Both have `getSpecDbReady` available. Can migrate to DB after `runTestProduct` is functional.
+- `testModeRoutes.js` run route: DB-first via `runtimeSpecDb.getCompiledRules()`, JSON fallback
+- `analyzeContract()`: accepts optional `{ compiledRules }` param, DB-first with JSON fallback
+- All 6 `analyzeContract` call sites in `testModeRoutes.js` pass `compiledRules` from specDb
+- `compiled_rules` blob now includes `component_db_sources` (added to reseed)
+- Test category creation reseeds `compiled_rules` after copying `_generated/` files
 
 ### rev.seed — boot-order constraint
 
@@ -105,10 +97,32 @@ Post-implementation audit found 5 live production surfaces still reading from JS
 
 **Shared root cause:** `src/categories/loader.js` (`loadCategoryConfig()`) is still a file-backed loader for `_generated/` artifacts. These 5 routes call it directly rather than going through sessionCache or `specDb.getCompiledRules()`.
 
-**Route context wiring:** All 5 surfaces have `getSpecDb` or `getSpecDbReady` available in their route context:
-- `reviewRouteContext.js:25` passes `loadCategoryConfig` and `sessionCache` to review handlers
-- `studioRouteContext.js:14` passes `loadCategoryConfig` and `getSpecDb` to studio routes
-- `componentReviewHandlers.js:70` receives `loadCategoryConfig` from route context
+**Phase 6 status: DONE.** All 5 surfaces migrated. `loadCategoryConfig` removed from review/studio route contexts.
+
+### Remaining fallback paths (post Phase 6 audit)
+
+| Path | File:Line | Why it exists |
+|---|---|---|
+| `buildReviewLayout` JSON fallback | `reviewGridData.js:79` | CLI callers don't have specDb. Live routes pass specDb. |
+| `buildReviewLayout` internal calls | `reviewGridData.js:411,701` | `buildProductReviewPayload` and `buildReviewAllForCategory` call without specDb |
+| CLI review/discover/batch | `reviewCommand.js:32`, `discoverCommand.js:13`, `batchCommand.js:196` | CLI has no DB — JSON is correct |
+
+---
+
+## DB Consumer Map — Who reads what from `compiled_rules`
+
+| Consumer | File | Blob keys read | Field Studio sections |
+|---|---|---|---|
+| Pipeline boot | `loadPipelineBootConfig.js:10` | `fields` (10 keys), `field_order`, `field_groups`, `required_fields`, `critical_fields` | Priority, Search Hints, Aliases, UI, Group |
+| Engine | `fieldRulesEngine.js:87` | `fields`, `known_values`, `parse_templates`, `cross_validation_rules`, `component_dbs`, `ui_field_catalog`, `key_migrations` | **Everything** |
+| Session cache | `sessionCache.js:137` | `fields`, `field_order`, `compiled_at`, `key_migrations` | All fields + ordering + staleness |
+| RuntimeOps prefetch | `runtimeOpsFieldRuleGateHelpers.js:190` | `fields` (projected indexlab) | Search Hints, Priority, Aliases, UI |
+| RuntimeOps workers | `runtimeOpsRoutes.js:286` | Same as prefetch | Same |
+| Review grid | `reviewGridData.js:74` | `fields`, `field_order` | All fields (projected review) |
+| Component review | `componentReviewHandlers.js:92,112,132` | `fields` | Full rules for component/enum layout |
+| Component review baseline | `componentReviewSpecDb.js:62` | `component_dbs` | Components (items, properties) |
+| Studio payload | `studioRoutes.js:74` | `ui_field_catalog` | UI grouping metadata |
+| Studio enum consistency | `studioRoutes.js:243` | `known_values` | Enum value lists |
 
 ---
 

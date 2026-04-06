@@ -2064,6 +2064,13 @@
   ],
   "field_overrides": {
     "adaptive_sync": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "adaptive sync",
         "FreeSync",
@@ -2073,6 +2080,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "adaptive_sync",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2081,7 +2089,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Adaptive Sync",
       "effort": 3,
       "enum": {
         "match": {
@@ -2107,6 +2117,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adaptive_sync",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2118,6 +2129,7 @@
       "group": "Performance",
       "key": "adaptive_sync",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2192,10 +2204,19 @@
         "tooltip_md": "Adaptive sync technology: FreeSync, FreeSync Premium, FreeSync Premium Pro, G-Sync, G-Sync Compatible, G-Sync Ultimate",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "aspect_ratio": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "aspect ratio"
       ],
@@ -2203,6 +2224,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "aspect_ratio",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2211,7 +2233,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Aspect Ratio",
       "effort": 3,
       "enum": {
         "match": {
@@ -2237,6 +2261,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "aspect_ratio",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2248,6 +2273,7 @@
       "group": "Display Panel",
       "key": "aspect_ratio",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2320,10 +2346,19 @@
         "tooltip_md": "Display aspect ratio (e.g. 16:9, 21:9, 32:9, 16:10)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "audio_output": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "audio output",
         "audio out"
@@ -2332,6 +2367,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "audio_output",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2340,7 +2376,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Audio Output",
       "effort": 3,
       "enum": {
         "match": {
@@ -2366,6 +2404,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "audio_output",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2377,6 +2416,7 @@
       "group": "Connectivity",
       "key": "audio_output",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2447,10 +2487,19 @@
         "tooltip_md": "Audio output type (3.5mm, SPDIF, optical)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "backlight_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "backlight type",
         "backlight",
@@ -2460,6 +2509,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "backlight_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2468,7 +2518,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Backlight Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -2494,6 +2546,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "backlight_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2505,6 +2558,7 @@
       "group": "Color & Image Quality",
       "key": "backlight_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2580,15 +2634,25 @@
         "tooltip_md": "Backlight technology: WLED edge-lit, WLED direct-lit, Mini-LED, none (OLED)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "base_model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "base_model",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2597,7 +2661,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Base Model",
       "effort": 3,
       "enum": {
         "match": {
@@ -2623,6 +2689,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "base_model",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2634,6 +2701,7 @@
       "group": "Identity",
       "key": "base_model",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2703,10 +2771,19 @@
         "tooltip_md": "Base model without variant suffix",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "black_uniformity": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "black uniformity"
       ],
@@ -2714,6 +2791,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "black_uniformity",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2730,7 +2808,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Black Uniformity",
       "effort": 6,
       "enum": {
         "match": {
@@ -2756,6 +2836,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "black_uniformity",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2767,6 +2848,7 @@
       "group": "Color & Image Quality",
       "key": "black_uniformity",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2856,15 +2938,24 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2873,7 +2964,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Brand",
       "effort": 3,
       "enum": {
         "match": {
@@ -2899,6 +2992,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "brand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2910,6 +3004,7 @@
       "group": "Identity",
       "key": "brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2979,10 +3074,19 @@
         "tooltip_md": "Manufacturer brand name",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "brightness_hdr_peak": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "HDR brightness",
         "peak brightness",
@@ -2992,6 +3096,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "brightness_hdr_peak",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -3008,7 +3113,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Peak HDR Brightness",
       "effort": 5,
       "enum": {
         "match": {
@@ -3034,6 +3141,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "brightness_hdr_peak",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3045,6 +3153,7 @@
       "group": "Color & Image Quality",
       "key": "brightness_hdr_peak",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3126,10 +3235,19 @@
         "tooltip_source": null
       },
       "unit": "nits",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "brightness_sdr": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "brightness",
         "SDR brightness",
@@ -3139,6 +3257,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "brightness_sdr",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -3155,7 +3274,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Brightness (SDR)",
       "effort": 4,
       "enum": {
         "match": {
@@ -3181,6 +3302,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "brightness_sdr",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3192,6 +3314,7 @@
       "group": "Color & Image Quality",
       "key": "brightness_sdr",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3277,10 +3400,19 @@
         "tooltip_source": null
       },
       "unit": "nits",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "cable_length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cable length"
       ],
@@ -3288,6 +3420,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "cable_length",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3297,7 +3430,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Cable Length",
       "effort": 3,
       "enum": {
         "match": {
@@ -3323,6 +3458,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cable_length",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3334,6 +3470,7 @@
       "group": "General",
       "key": "cable_length",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3410,10 +3547,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "cable_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cable type"
       ],
@@ -3421,6 +3567,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "cable_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3429,7 +3576,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Cable Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -3455,6 +3604,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3466,6 +3616,7 @@
       "group": "General",
       "key": "cable_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3536,10 +3687,19 @@
         "tooltip_md": "Type of included cables",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "cables_included": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cables included",
         "included cables",
@@ -3549,6 +3709,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "cables_included",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3562,7 +3723,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Cables Included",
       "effort": 3,
       "enum": {
         "match": {
@@ -3588,6 +3751,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cables_included",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3599,6 +3763,7 @@
       "group": "Features",
       "key": "cables_included",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3669,15 +3834,25 @@
         "tooltip_md": "Cables and accessories included in the box",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variance_policy": "authoritative"
     },
     "category": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "category",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3686,7 +3861,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Category",
       "effort": 3,
       "enum": {
         "match": {
@@ -3712,6 +3889,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "category",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3723,6 +3901,7 @@
       "group": "Identity",
       "key": "category",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3791,10 +3970,19 @@
         "tooltip_md": "Product category",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "color": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "chassis color"
       ],
@@ -3802,6 +3990,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3815,7 +4004,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Color",
       "effort": 3,
       "enum": {
         "match": {
@@ -3841,6 +4032,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3852,6 +4044,7 @@
       "group": "General",
       "key": "color",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3923,10 +4116,19 @@
         "tooltip_md": "Available chassis/body color options",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variance_policy": "authoritative"
     },
     "color_accuracy_delta_e": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "delta E",
         "color accuracy",
@@ -3936,6 +4138,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color_accuracy_delta_e",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -3951,7 +4154,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Color Accuracy (ΔE)",
       "effort": 6,
       "enum": {
         "match": {
@@ -3977,6 +4182,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color_accuracy_delta_e",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3988,6 +4194,7 @@
       "group": "Color & Image Quality",
       "key": "color_accuracy_delta_e",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4058,10 +4265,19 @@
         "tooltip_md": "Average color error measured as Delta E (lower is better)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "color_gamut_adobe_rgb": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Adobe RGB coverage",
         "Adobe RGB gamut"
@@ -4070,6 +4286,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color_gamut_adobe_rgb",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4086,7 +4303,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Adobe RGB Coverage",
       "effort": 4,
       "enum": {
         "match": {
@@ -4112,6 +4331,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color_gamut_adobe_rgb",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4123,6 +4343,7 @@
       "group": "Color & Image Quality",
       "key": "color_gamut_adobe_rgb",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4198,10 +4419,19 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "color_gamut_dci_p3": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "DCI-P3 coverage",
         "P3 gamut"
@@ -4210,6 +4440,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color_gamut_dci_p3",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4226,7 +4457,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "DCI-P3 Coverage",
       "effort": 4,
       "enum": {
         "match": {
@@ -4252,6 +4485,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color_gamut_dci_p3",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4263,6 +4497,7 @@
       "group": "Color & Image Quality",
       "key": "color_gamut_dci_p3",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4339,10 +4574,19 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "color_gamut_srgb": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sRGB coverage",
         "sRGB gamut"
@@ -4351,6 +4595,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color_gamut_srgb",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4367,7 +4612,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "sRGB Coverage",
       "effort": 4,
       "enum": {
         "match": {
@@ -4393,6 +4640,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color_gamut_srgb",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4404,6 +4652,7 @@
       "group": "Color & Image Quality",
       "key": "color_gamut_srgb",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4480,10 +4729,206 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
+    },
+    "colors": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
+      },
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": false
+        },
+        "policy": "closed"
+      },
+      "enum_policy": "closed",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "key": "colors",
+      "parse": {
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {
+          "blue-dark": "dark-blue",
+          "blue-light": "light-blue",
+          "dark blue": "dark-blue",
+          "dark green": "dark-green",
+          "dark red": "dark-red",
+          "gray-light": "light-gray",
+          "green-dark": "dark-green",
+          "green-light": "light-green",
+          "grey": "gray",
+          "light blue": "light-blue",
+          "light gray": "light-gray",
+          "light green": "light-green",
+          "light grey": "light-gray",
+          "light pink": "light-pink",
+          "light red": "light-red",
+          "pink-light": "light-pink",
+          "red-dark": "dark-red",
+          "red-light": "light-red"
+        }
+      },
+      "priority": {
+        "availability": "expected",
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "search_hints": {
+        "content_types": [
+          "product_page",
+          "spec_sheet"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "bestbuy.com",
+          "amazon.com",
+          "mousespecs.org"
+        ],
+        "query_terms": [
+          "colors",
+          "color options",
+          "available colors",
+          "colorways"
+        ]
+      },
+      "ui": {
+        "group": "general",
+        "input_control": "token_list",
+        "label": "Colors",
+        "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray."
+      },
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "amber",
+          "beige",
+          "black",
+          "blue",
+          "brown",
+          "coral",
+          "cyan",
+          "dark-blue",
+          "dark-brown",
+          "dark-cyan",
+          "dark-fuchsia",
+          "dark-gray",
+          "dark-green",
+          "dark-indigo",
+          "dark-lime",
+          "dark-orange",
+          "dark-pink",
+          "dark-purple",
+          "dark-red",
+          "dark-rose",
+          "dark-sky",
+          "dark-slate",
+          "dark-stone",
+          "dark-teal",
+          "dark-violet",
+          "dark-yellow",
+          "emerald",
+          "fuchsia",
+          "gold",
+          "gray",
+          "green",
+          "indigo",
+          "ivory",
+          "lavender",
+          "light-amber",
+          "light-blue",
+          "light-brown",
+          "light-coral",
+          "light-cyan",
+          "light-emerald",
+          "light-fuchsia",
+          "light-gray",
+          "light-green",
+          "light-indigo",
+          "light-lime",
+          "light-olive",
+          "light-orange",
+          "light-pink",
+          "light-purple",
+          "light-red",
+          "light-rose",
+          "light-sky",
+          "light-slate",
+          "light-stone",
+          "light-teal",
+          "light-violet",
+          "light-yellow",
+          "lime",
+          "magenta",
+          "maroon",
+          "navy",
+          "olive",
+          "orange",
+          "pink",
+          "purple",
+          "red",
+          "rose",
+          "salmon",
+          "silver",
+          "sky",
+          "slate",
+          "stone",
+          "teal",
+          "turquoise",
+          "violet",
+          "white",
+          "yellow"
+        ],
+        "mode": "closed"
+      }
     },
     "contrast_ratio": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "contrast ratio",
         "static contrast",
@@ -4493,6 +4938,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "contrast_ratio",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4501,7 +4947,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Contrast Ratio",
       "effort": 3,
       "enum": {
         "match": {
@@ -4527,6 +4975,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "contrast_ratio",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4538,6 +4987,7 @@
       "group": "Color & Image Quality",
       "key": "contrast_ratio",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4609,10 +5059,19 @@
         "tooltip_md": "Static contrast ratio (e.g. 1000:1, 3000:1, Infinite for OLED)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "contrast_ratio_dynamic": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "dynamic contrast",
         "DCR"
@@ -4621,6 +5080,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "contrast_ratio_dynamic",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4629,7 +5089,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Dynamic Contrast Ratio",
       "effort": 3,
       "enum": {
         "match": {
@@ -4655,6 +5117,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "contrast_ratio_dynamic",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4666,6 +5129,7 @@
       "group": "Color & Image Quality",
       "key": "contrast_ratio_dynamic",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4734,10 +5198,19 @@
         "tooltip_md": "Dynamic contrast ratio (marketing spec, not measured)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "crosshair_overlay": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "crosshair",
         "on-screen crosshair",
@@ -4747,6 +5220,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "crosshair_overlay",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4755,7 +5229,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Crosshair Overlay",
       "effort": 3,
       "enum": {
         "match": {
@@ -4781,6 +5257,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "crosshair_overlay",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4792,6 +5269,7 @@
       "group": "Features",
       "key": "crosshair_overlay",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4861,10 +5339,19 @@
         "tooltip_md": "Built-in on-screen crosshair/aim-point overlay for gaming",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "curve_radius": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "curve radius",
         "curvature"
@@ -4873,6 +5360,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "curve_radius",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4881,7 +5369,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Curve Radius",
       "effort": 3,
       "enum": {
         "match": {
@@ -4907,6 +5397,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "curve_radius",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4918,6 +5409,7 @@
       "group": "Display Panel",
       "key": "curve_radius",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4989,10 +5481,19 @@
         "tooltip_md": "Curvature radius in R (e.g. 1000R, 1500R, 1800R)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "curved": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "curved display"
       ],
@@ -5000,6 +5501,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "curved",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5008,7 +5510,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Curved",
       "effort": 3,
       "enum": {
         "match": {
@@ -5034,6 +5538,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "curved",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5045,6 +5550,7 @@
       "group": "Display Panel",
       "key": "curved",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5114,10 +5620,19 @@
         "tooltip_md": "Whether the display is curved",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "daisy_chain": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "daisy chain",
         "DP out",
@@ -5127,6 +5642,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "daisy_chain",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5135,7 +5651,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Daisy Chain (DP Out)",
       "effort": 3,
       "enum": {
         "match": {
@@ -5161,6 +5679,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "daisy_chain",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5172,6 +5691,7 @@
       "group": "Connectivity",
       "key": "daisy_chain",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5242,10 +5762,19 @@
         "tooltip_md": "DisplayPort output for daisy-chaining multiple monitors",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "depth": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "thickness"
       ],
@@ -5253,6 +5782,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "depth",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -5269,7 +5799,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Depth",
       "effort": 3,
       "enum": {
         "match": {
@@ -5295,6 +5827,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "depth",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5306,6 +5839,7 @@
       "group": "Dimensions & Weight",
       "key": "depth",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5382,10 +5916,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "discontinued": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "end of life"
       ],
@@ -5393,6 +5936,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "discontinued",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5401,7 +5945,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Discontinued",
       "effort": 3,
       "enum": {
         "match": {
@@ -5427,6 +5973,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5438,6 +5985,7 @@
       "group": "General",
       "key": "discontinued",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5507,10 +6055,19 @@
         "tooltip_md": "Whether the product is discontinued",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "display_stream_compression": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "DSC",
         "Display Stream Compression"
@@ -5519,6 +6076,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "display_stream_compression",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5527,7 +6085,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Display Stream Compression",
       "effort": 3,
       "enum": {
         "match": {
@@ -5553,6 +6113,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "display_stream_compression",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5564,6 +6125,7 @@
       "group": "Connectivity",
       "key": "display_stream_compression",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5636,10 +6198,18 @@
         "tooltip_md": "Display Stream Compression support or stated DSC revision.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "displayport_ports": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "DisplayPort",
         "DP",
@@ -5649,6 +6219,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "displayport_ports",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5657,7 +6228,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "DisplayPort",
       "effort": 3,
       "enum": {
         "match": {
@@ -5683,6 +6256,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "displayport_ports",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5694,6 +6268,7 @@
       "group": "Connectivity",
       "key": "displayport_ports",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5766,10 +6341,19 @@
         "tooltip_md": "DisplayPort count and version (e.g. 1x DP 1.4, 1x DP 2.1)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "displayport_version": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "DisplayPort version",
         "DP version",
@@ -5779,6 +6363,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "displayport_version",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5787,7 +6372,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "DisplayPort Version",
       "effort": 3,
       "enum": {
         "match": {
@@ -5813,6 +6400,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "displayport_version",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5824,6 +6412,7 @@
       "group": "Connectivity",
       "key": "displayport_version",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5896,10 +6485,95 @@
         "tooltip_md": "Highest supported DisplayPort specification revision (for example DisplayPort 1.4a or 2.1).",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
+    "editions": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
+      },
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 50,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open"
+      },
+      "enum_policy": "open",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "key": "editions",
+      "parse": {
+        "delimiters": [
+          ","
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "search_hints": {
+        "content_types": [
+          "product_page"
+        ],
+        "domain_hints": [],
+        "query_terms": [
+          "special edition",
+          "limited edition",
+          "editions",
+          "collaboration",
+          "limited colorway"
+        ]
+      },
+      "ui": {
+        "group": "general",
+        "input_control": "token_list",
+        "label": "Editions",
+        "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness."
+      }
+    },
     "energy_rating": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "energy rating",
         "Energy Star",
@@ -5909,6 +6583,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "energy_rating",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5917,7 +6592,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Energy Rating",
       "effort": 3,
       "enum": {
         "match": {
@@ -5943,6 +6620,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "energy_rating",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5954,6 +6632,7 @@
       "group": "Power",
       "key": "energy_rating",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6024,10 +6703,19 @@
         "tooltip_md": "Energy efficiency rating or Energy Star certification",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "ethernet_rj45": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "RJ45",
         "Ethernet",
@@ -6037,6 +6725,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "ethernet_rj45",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6045,7 +6734,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Ethernet / RJ45",
       "effort": 3,
       "enum": {
         "match": {
@@ -6071,6 +6762,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "ethernet_rj45",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6082,6 +6774,7 @@
       "group": "Connectivity",
       "key": "ethernet_rj45",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6154,10 +6847,18 @@
         "tooltip_md": "Integrated Ethernet uplink capability and stated LAN speed.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "factory_calibrated": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "factory calibrated",
         "pre-calibrated"
@@ -6166,6 +6867,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "factory_calibrated",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6174,7 +6876,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Factory Calibrated",
       "effort": 3,
       "enum": {
         "match": {
@@ -6200,6 +6904,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "factory_calibrated",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6211,6 +6916,7 @@
       "group": "Color & Image Quality",
       "key": "factory_calibrated",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6280,10 +6986,19 @@
         "tooltip_md": "Whether the monitor ships factory-calibrated with dE < 2",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "flicker_free": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "flicker free",
         "flicker-free"
@@ -6292,6 +7007,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "flicker_free",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6300,7 +7016,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Flicker-Free",
       "effort": 3,
       "enum": {
         "match": {
@@ -6326,6 +7044,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "flicker_free",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6337,6 +7056,7 @@
       "group": "Features",
       "key": "flicker_free",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6408,10 +7128,19 @@
         "tooltip_md": "Whether the backlight is flicker-free (DC dimming)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "flicker_frequency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "PWM frequency",
         "image flicker frequency",
@@ -6421,6 +7150,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "flicker_frequency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -6437,7 +7167,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Flicker Frequency",
       "effort": 3,
       "enum": {
         "match": {
@@ -6463,6 +7195,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "flicker_frequency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6474,6 +7207,7 @@
       "group": "Features",
       "key": "flicker_frequency",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6564,10 +7298,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "frc": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "FRC",
         "dithering",
@@ -6577,6 +7319,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "frc",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6585,7 +7328,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "FRC (Dithering)",
       "effort": 3,
       "enum": {
         "match": {
@@ -6611,6 +7356,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "frc",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6622,6 +7368,7 @@
       "group": "Display Panel",
       "key": "frc",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6691,10 +7438,19 @@
         "tooltip_md": "Frame Rate Control dithering to simulate higher bit depth",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "gradient_handling": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gradient handling",
         "color gradient performance"
@@ -6703,6 +7459,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "gradient_handling",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6711,7 +7468,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Gradient Handling",
       "effort": 3,
       "enum": {
         "match": {
@@ -6737,6 +7496,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "gradient_handling",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6748,6 +7508,7 @@
       "group": "Color & Image Quality",
       "key": "gradient_handling",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6829,10 +7590,18 @@
         "tooltip_md": "Assessment of the panel's ability to render smooth gradients without banding.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "gray_uniformity_50": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gray uniformity 50%",
         "50% gray uniformity"
@@ -6841,6 +7610,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "gray_uniformity_50",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -6857,7 +7627,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Gray Uniformity (50%)",
       "effort": 6,
       "enum": {
         "match": {
@@ -6883,6 +7655,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "gray_uniformity_50",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6894,6 +7667,7 @@
       "group": "Color & Image Quality",
       "key": "gray_uniformity_50",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6983,15 +7757,24 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "gtin": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "gtin",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7000,7 +7783,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "GTIN / UPC",
       "effort": 3,
       "enum": {
         "match": {
@@ -7026,6 +7811,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "gtin",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7037,6 +7823,7 @@
       "group": "Identity",
       "key": "gtin",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7105,10 +7892,19 @@
         "tooltip_md": "Global Trade Item Number / UPC barcode",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "hdmi_ports": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "HDMI",
         "HDMI ports"
@@ -7117,6 +7913,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "hdmi_ports",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7125,7 +7922,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "HDMI Ports",
       "effort": 3,
       "enum": {
         "match": {
@@ -7151,6 +7950,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hdmi_ports",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7162,6 +7962,7 @@
       "group": "Connectivity",
       "key": "hdmi_ports",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7234,10 +8035,19 @@
         "tooltip_md": "HDMI port count and version (e.g. 2x HDMI 2.1)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "hdmi_version": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "HDMI version",
         "HDMI specification",
@@ -7247,6 +8057,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "hdmi_version",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7255,7 +8066,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "HDMI Version",
       "effort": 3,
       "enum": {
         "match": {
@@ -7281,6 +8094,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hdmi_version",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7292,6 +8106,7 @@
       "group": "Connectivity",
       "key": "hdmi_version",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7365,10 +8180,18 @@
         "tooltip_md": "Highest supported HDMI specification revision (for example HDMI 2.0 or HDMI 2.1a).",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "hdr_support": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "HDR",
         "HDR support",
@@ -7378,6 +8201,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "hdr_support",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -7391,7 +8215,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "HDR Support",
       "effort": 3,
       "enum": {
         "match": {
@@ -7417,6 +8243,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hdr_support",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7428,6 +8255,7 @@
       "group": "Color & Image Quality",
       "key": "hdr_support",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7503,10 +8331,19 @@
         "tooltip_md": "HDR standards supported: HDR10, HDR10+, Dolby Vision, DisplayHDR 400/600/1000/1400",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variance_policy": "authoritative"
     },
     "headphone_jack": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "headphone jack",
         "audio out",
@@ -7516,6 +8353,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "headphone_jack",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7524,7 +8362,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Headphone Jack",
       "effort": 3,
       "enum": {
         "match": {
@@ -7550,6 +8390,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "headphone_jack",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7561,6 +8402,7 @@
       "group": "Connectivity",
       "key": "headphone_jack",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7630,10 +8472,19 @@
         "tooltip_md": "Whether the monitor has a 3.5mm headphone output",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "height": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "panel height",
         "display height",
@@ -7643,6 +8494,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "height",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -7659,7 +8511,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Height",
       "effort": 3,
       "enum": {
         "match": {
@@ -7685,6 +8539,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7696,6 +8551,7 @@
       "group": "Dimensions & Weight",
       "key": "height",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7772,10 +8628,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "height_adjustment": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "height adjustment",
         "height adjustable"
@@ -7784,6 +8649,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "height_adjustment",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7792,7 +8658,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Height Adjustment",
       "effort": 3,
       "enum": {
         "match": {
@@ -7818,6 +8686,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height_adjustment",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7829,6 +8698,7 @@
       "group": "Ergonomics",
       "key": "height_adjustment",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7901,10 +8771,19 @@
         "tooltip_md": "Height adjustment range in mm (e.g. 130mm, 0-150mm)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "height_with_stand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "height with stand"
       ],
@@ -7912,6 +8791,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "height_with_stand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -7928,7 +8808,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Height (With Stand)",
       "effort": 3,
       "enum": {
         "match": {
@@ -7954,6 +8836,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height_with_stand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7965,6 +8848,7 @@
       "group": "Dimensions & Weight",
       "key": "height_with_stand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8041,10 +8925,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "horizontal_viewing_angle": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "horizontal viewing angle",
         "viewing angle horizontal"
@@ -8053,6 +8946,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "horizontal_viewing_angle",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8069,7 +8963,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Horizontal Viewing Angle",
       "effort": 2,
       "enum": {
         "match": {
@@ -8095,6 +8991,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "horizontal_viewing_angle",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8106,6 +9003,7 @@
       "group": "Color & Image Quality",
       "key": "horizontal_viewing_angle",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8195,10 +9093,18 @@
         "tooltip_source": null
       },
       "unit": "deg",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "input_lag": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "input lag",
         "display lag"
@@ -8207,6 +9113,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "input_lag",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8223,7 +9130,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Input Lag",
       "effort": 6,
       "enum": {
         "match": {
@@ -8249,6 +9158,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "input_lag",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8260,6 +9170,7 @@
       "group": "Performance",
       "key": "input_lag",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8337,10 +9248,19 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "input_lag_120hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "input lag 120Hz",
         "120Hz input lag"
@@ -8349,6 +9269,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "input_lag_120hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8365,7 +9286,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Input Lag (120 Hz)",
       "effort": 6,
       "enum": {
         "match": {
@@ -8391,6 +9314,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "input_lag_120hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8402,6 +9326,7 @@
       "group": "Performance",
       "key": "input_lag_120hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8490,10 +9415,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "input_lag_60hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "input lag 60Hz",
         "60Hz input lag"
@@ -8502,6 +9435,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "input_lag_60hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8518,7 +9452,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Input Lag (60 Hz)",
       "effort": 6,
       "enum": {
         "match": {
@@ -8544,6 +9480,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "input_lag_60hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8555,6 +9492,7 @@
       "group": "Performance",
       "key": "input_lag_60hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8643,10 +9581,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "input_lag_max_refresh": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "input lag max refresh",
         "input lag highest refresh"
@@ -8655,6 +9601,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "input_lag_max_refresh",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8671,7 +9618,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Input Lag (Max Refresh)",
       "effort": 6,
       "enum": {
         "match": {
@@ -8697,6 +9646,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "input_lag_max_refresh",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8708,6 +9658,7 @@
       "group": "Performance",
       "key": "input_lag_max_refresh",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8796,10 +9747,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "kvm_switch": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "KVM",
         "KVM switch"
@@ -8808,6 +9767,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "kvm_switch",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8816,7 +9776,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "KVM Switch",
       "effort": 3,
       "enum": {
         "match": {
@@ -8842,6 +9804,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "kvm_switch",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8853,6 +9816,7 @@
       "group": "Connectivity",
       "key": "kvm_switch",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8923,10 +9887,19 @@
         "tooltip_md": "Built-in KVM switch for multi-computer control",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "local_dimming_zones": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "dimming zones",
         "local dimming",
@@ -8936,6 +9909,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "local_dimming_zones",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8951,7 +9925,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Local Dimming Zones",
       "effort": 4,
       "enum": {
         "match": {
@@ -8977,6 +9953,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "local_dimming_zones",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8988,6 +9965,7 @@
       "group": "Color & Image Quality",
       "key": "local_dimming_zones",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9058,10 +10036,19 @@
         "tooltip_md": "Number of local dimming zones (for FALD / Mini-LED backlight)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "low_blue_light": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "low blue light",
         "eye care",
@@ -9071,6 +10058,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "low_blue_light",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9079,7 +10067,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Low Blue Light",
       "effort": 3,
       "enum": {
         "match": {
@@ -9105,6 +10095,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "low_blue_light",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9116,6 +10107,7 @@
       "group": "Features",
       "key": "low_blue_light",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9186,10 +10178,19 @@
         "tooltip_md": "Built-in blue light reduction / eye care mode",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "macos_compatibility": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "macOS compatibility",
         "Mac compatibility"
@@ -9198,6 +10199,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "macos_compatibility",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9206,7 +10208,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "macOS Compatibility",
       "effort": 3,
       "enum": {
         "match": {
@@ -9232,6 +10236,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "macos_compatibility",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9243,6 +10248,7 @@
       "group": "Features",
       "key": "macos_compatibility",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9324,10 +10330,18 @@
         "tooltip_md": "Practical compatibility status with macOS systems and common Apple workflows.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "body material"
       ],
@@ -9335,6 +10349,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9343,7 +10358,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -9369,6 +10386,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "material",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9380,6 +10398,7 @@
       "group": "General",
       "key": "material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9450,10 +10469,19 @@
         "tooltip_md": "Chassis/body material",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "max_refresh_rate_displayport": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "DisplayPort max refresh rate",
         "max refresh rate displayport",
@@ -9463,6 +10491,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "max_refresh_rate_displayport",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -9479,7 +10508,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Max Refresh Rate (DisplayPort)",
       "effort": 3,
       "enum": {
         "match": {
@@ -9505,6 +10536,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "max_refresh_rate_displayport",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9516,6 +10548,7 @@
       "group": "Performance",
       "key": "max_refresh_rate_displayport",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9608,10 +10641,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "max_refresh_rate_hdmi": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "HDMI max refresh rate",
         "max refresh rate hdmi",
@@ -9621,6 +10662,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "max_refresh_rate_hdmi",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -9637,7 +10679,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Max Refresh Rate (HDMI)",
       "effort": 3,
       "enum": {
         "match": {
@@ -9663,6 +10707,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "max_refresh_rate_hdmi",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9674,6 +10719,7 @@
       "group": "Performance",
       "key": "max_refresh_rate_hdmi",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9766,10 +10812,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "microphone": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "microphone",
         "integrated microphone",
@@ -9779,6 +10833,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "microphone",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9787,7 +10842,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Microphone",
       "effort": 3,
       "enum": {
         "match": {
@@ -9813,6 +10870,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "microphone",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9824,6 +10882,7 @@
       "group": "Features",
       "key": "microphone",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9896,15 +10955,24 @@
         "tooltip_md": "Integrated microphone presence or array type.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "model",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9913,7 +10981,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Model",
       "effort": 3,
       "enum": {
         "match": {
@@ -9939,6 +11009,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "model",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9950,6 +11021,7 @@
       "group": "Identity",
       "key": "model",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10019,10 +11091,19 @@
         "tooltip_md": "Full model name/number",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "motion_blur_reduction": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "motion blur reduction",
         "backlight strobing",
@@ -10033,6 +11114,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "motion_blur_reduction",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10041,7 +11123,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Motion Blur Reduction",
       "effort": 3,
       "enum": {
         "match": {
@@ -10067,6 +11151,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "motion_blur_reduction",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10078,6 +11163,7 @@
       "group": "Performance",
       "key": "motion_blur_reduction",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10151,15 +11237,25 @@
         "tooltip_md": "Backlight strobing for motion clarity (ELMB, DyAc, ULMB, BFI)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "mpn": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "mpn",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10168,7 +11264,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "MPN",
       "effort": 3,
       "enum": {
         "match": {
@@ -10194,6 +11292,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mpn",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10205,6 +11304,7 @@
       "group": "Identity",
       "key": "mpn",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10273,10 +11373,19 @@
         "tooltip_md": "Manufacturer Part Number",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "native_colors": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "colors",
         "display colors",
@@ -10286,6 +11395,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "native_colors",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -10298,7 +11408,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Native Colors",
       "effort": 3,
       "enum": {
         "match": {
@@ -10324,6 +11436,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "native_colors",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10335,6 +11448,7 @@
       "group": "Display Panel",
       "key": "native_colors",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10411,10 +11525,19 @@
         "tooltip_source": null
       },
       "unit": "M",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "osd_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "OSD",
         "on screen display",
@@ -10424,6 +11547,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "osd_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10432,7 +11556,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "OSD Control",
       "effort": 3,
       "enum": {
         "match": {
@@ -10458,6 +11584,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "osd_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10469,6 +11596,7 @@
       "group": "Features",
       "key": "osd_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10539,10 +11667,19 @@
         "tooltip_md": "OSD control method: buttons, joystick, touch-sensitive, remote",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "overdrive": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "response time overdrive"
       ],
@@ -10550,6 +11687,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "overdrive",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10558,7 +11696,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Overdrive",
       "effort": 3,
       "enum": {
         "match": {
@@ -10584,6 +11724,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "overdrive",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10595,6 +11736,7 @@
       "group": "Performance",
       "key": "overdrive",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10666,10 +11808,19 @@
         "tooltip_md": "Whether overdrive/response time boost is available",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "overshoot_120hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "overshoot 120Hz",
         "inverse ghosting 120Hz"
@@ -10678,6 +11829,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "overshoot_120hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -10694,7 +11846,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Overshoot (120 Hz)",
       "effort": 6,
       "enum": {
         "match": {
@@ -10720,6 +11874,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "overshoot_120hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10731,6 +11886,7 @@
       "group": "Performance",
       "key": "overshoot_120hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10820,10 +11976,18 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "overshoot_60hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "overshoot 60Hz",
         "inverse ghosting 60Hz"
@@ -10832,6 +11996,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "overshoot_60hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -10848,7 +12013,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Overshoot (60 Hz)",
       "effort": 6,
       "enum": {
         "match": {
@@ -10874,6 +12041,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "overshoot_60hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10885,6 +12053,7 @@
       "group": "Performance",
       "key": "overshoot_60hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10974,10 +12143,18 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "overshoot_max_refresh": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "overshoot max refresh",
         "inverse ghosting max refresh"
@@ -10986,6 +12163,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "overshoot_max_refresh",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -11002,7 +12180,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Overshoot (Max Refresh)",
       "effort": 6,
       "enum": {
         "match": {
@@ -11028,6 +12208,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "overshoot_max_refresh",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11039,6 +12220,7 @@
       "group": "Performance",
       "key": "overshoot_max_refresh",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11129,10 +12311,18 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "panel_bit_depth": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "bit depth",
         "color depth",
@@ -11142,6 +12332,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "panel_bit_depth",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11150,7 +12341,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Panel Bit Depth",
       "effort": 3,
       "enum": {
         "match": {
@@ -11176,6 +12369,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "panel_bit_depth",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11187,6 +12381,7 @@
       "group": "Display Panel",
       "key": "panel_bit_depth",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11258,10 +12453,19 @@
         "tooltip_md": "Native panel bit depth: 6-bit, 8-bit, 10-bit",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "panel_coating": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "panel coating",
         "screen coating",
@@ -11271,6 +12475,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "panel_coating",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11279,7 +12484,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Panel Coating",
       "effort": 3,
       "enum": {
         "match": {
@@ -11305,6 +12512,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "panel_coating",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11316,6 +12524,7 @@
       "group": "Display Panel",
       "key": "panel_coating",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11388,10 +12597,19 @@
         "tooltip_md": "Panel surface coating: matte, glossy, semi-glossy, anti-glare",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "panel_manufacturer": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "panel manufacturer",
         "panel maker"
@@ -11400,6 +12618,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "panel_manufacturer",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11408,7 +12627,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Panel Manufacturer",
       "effort": 3,
       "enum": {
         "match": {
@@ -11434,6 +12655,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "panel_manufacturer",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11445,6 +12667,7 @@
       "group": "Display Panel",
       "key": "panel_manufacturer",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11516,10 +12739,19 @@
         "tooltip_md": "Panel manufacturer (LG Display, AU Optronics, BOE, Samsung Display, Innolux)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "panel_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "panel type",
         "panel technology",
@@ -11529,6 +12761,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "panel_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11537,7 +12770,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Panel Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -11563,6 +12798,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "panel_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11574,6 +12810,7 @@
       "group": "Display Panel",
       "key": "panel_type",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11650,10 +12887,19 @@
         "tooltip_md": "Panel technology: IPS, VA, TN, OLED, QD-OLED, W-OLED, Mini-LED IPS, etc.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "pip_pbp": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "PiP",
         "PbP",
@@ -11664,6 +12910,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "pip_pbp",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11672,7 +12919,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "PiP / PbP",
       "effort": 3,
       "enum": {
         "match": {
@@ -11698,6 +12947,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "pip_pbp",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11709,6 +12959,7 @@
       "group": "Features",
       "key": "pip_pbp",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11780,10 +13031,19 @@
         "tooltip_md": "Picture-in-Picture / Picture-by-Picture multi-source display",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "pivot_rotation": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "pivot",
         "portrait mode",
@@ -11793,6 +13053,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "pivot_rotation",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11801,7 +13062,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Pivot / Portrait",
       "effort": 3,
       "enum": {
         "match": {
@@ -11827,6 +13090,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "pivot_rotation",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11838,6 +13102,7 @@
       "group": "Ergonomics",
       "key": "pivot_rotation",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11908,10 +13173,19 @@
         "tooltip_md": "Whether the stand supports 90° pivot rotation for portrait mode",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "pixel_density": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "pixel density",
         "PPI",
@@ -11921,6 +13195,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "pixel_density",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -11937,7 +13212,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Pixel Density",
       "effort": 3,
       "enum": {
         "match": {
@@ -11963,6 +13240,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "pixel_density",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11974,6 +13252,7 @@
       "group": "Display Panel",
       "key": "pixel_density",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12051,10 +13330,19 @@
         "tooltip_source": null
       },
       "unit": "ppi",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "power_consumption_max": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "max power",
         "maximum power consumption"
@@ -12063,6 +13351,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "power_consumption_max",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12079,7 +13368,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Power Consumption (Max)",
       "effort": 3,
       "enum": {
         "match": {
@@ -12105,6 +13396,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "power_consumption_max",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12116,6 +13408,7 @@
       "group": "Power",
       "key": "power_consumption_max",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12192,10 +13485,19 @@
         "tooltip_source": null
       },
       "unit": "W",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "power_consumption_typical": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "typical power",
         "power consumption"
@@ -12204,6 +13506,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "power_consumption_typical",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12220,7 +13523,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Power Consumption (Typical)",
       "effort": 3,
       "enum": {
         "match": {
@@ -12246,6 +13551,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "power_consumption_typical",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12257,6 +13563,7 @@
       "group": "Power",
       "key": "power_consumption_typical",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12335,10 +13642,19 @@
         "tooltip_source": null
       },
       "unit": "W",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "price_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "price",
         "MSRP",
@@ -12348,6 +13664,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "price_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12357,7 +13674,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Price (MSRP)",
       "effort": 3,
       "enum": {
         "match": {
@@ -12383,6 +13702,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12394,6 +13714,7 @@
       "group": "General",
       "key": "price_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12471,10 +13792,19 @@
         "tooltip_source": null
       },
       "unit": "usd",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "ps5_compatibility": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "PS5 compatibility",
         "PlayStation 5 support"
@@ -12483,6 +13813,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "ps5_compatibility",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12491,7 +13822,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "PS5 Compatibility",
       "effort": 3,
       "enum": {
         "match": {
@@ -12517,6 +13850,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "ps5_compatibility",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12528,6 +13862,7 @@
       "group": "Features",
       "key": "ps5_compatibility",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12609,10 +13944,18 @@
         "tooltip_md": "Compatibility status with PlayStation 5, including common console display modes.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "reflections": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "reflection handling",
         "total reflections"
@@ -12621,6 +13964,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "reflections",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12637,7 +13981,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Reflections",
       "effort": 6,
       "enum": {
         "match": {
@@ -12663,6 +14009,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "reflections",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12674,6 +14021,7 @@
       "group": "Color & Image Quality",
       "key": "reflections",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12764,10 +14112,18 @@
         "tooltip_source": null
       },
       "unit": "%",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "refresh_rate": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "refresh rate",
         "max refresh rate"
@@ -12776,6 +14132,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "refresh_rate",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12792,7 +14149,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Refresh Rate",
       "effort": 3,
       "enum": {
         "match": {
@@ -12818,6 +14177,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "refresh_rate",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12829,6 +14189,7 @@
       "group": "Performance",
       "key": "refresh_rate",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12915,10 +14276,19 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "upper_bound"
     },
     "release_date": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "release date",
         "launch date"
@@ -12927,6 +14297,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "release_date",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12935,7 +14306,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Release Date",
       "effort": 3,
       "enum": {
         "match": {
@@ -12961,6 +14334,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12972,6 +14346,7 @@
       "group": "General",
       "key": "release_date",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13042,10 +14417,19 @@
         "tooltip_md": "Product release/launch date",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "resolution": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "native resolution",
         "display resolution"
@@ -13054,6 +14438,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "resolution",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13062,7 +14447,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Resolution",
       "effort": 2,
       "enum": {
         "match": {
@@ -13088,6 +14475,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "resolution",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13099,6 +14487,7 @@
       "group": "Display Panel",
       "key": "resolution",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13174,10 +14563,19 @@
         "tooltip_md": "Native resolution as WxH (e.g. 2560 x 1440, 3840 x 2160)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "response_time_120hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "response time 120Hz",
         "120Hz response time"
@@ -13186,6 +14584,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "response_time_120hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -13202,7 +14601,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Response Time (120 Hz)",
       "effort": 5,
       "enum": {
         "match": {
@@ -13228,6 +14629,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "response_time_120hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13239,6 +14641,7 @@
       "group": "Performance",
       "key": "response_time_120hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13328,10 +14731,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "response_time_60hz": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "response time 60Hz",
         "60Hz response time"
@@ -13340,6 +14751,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "response_time_60hz",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -13356,7 +14768,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Response Time (60 Hz)",
       "effort": 5,
       "enum": {
         "match": {
@@ -13382,6 +14796,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "response_time_60hz",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13393,6 +14808,7 @@
       "group": "Performance",
       "key": "response_time_60hz",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13482,10 +14898,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "response_time_gtg": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "response time",
         "GtG",
@@ -13495,6 +14919,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "response_time_gtg",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -13511,7 +14936,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Response Time (GtG)",
       "effort": 5,
       "enum": {
         "match": {
@@ -13537,6 +14964,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "response_time_gtg",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13548,6 +14976,7 @@
       "group": "Performance",
       "key": "response_time_gtg",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13627,10 +15056,19 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "response_time_mprt": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "MPRT",
         "motion picture response time"
@@ -13639,6 +15077,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "response_time_mprt",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -13655,7 +15094,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Response Time (MPRT)",
       "effort": 5,
       "enum": {
         "match": {
@@ -13681,6 +15122,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "response_time_mprt",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13692,6 +15134,7 @@
       "group": "Performance",
       "key": "response_time_mprt",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13769,10 +15212,19 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "screen_size": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "screen size",
         "display size",
@@ -13782,6 +15234,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "screen_size",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -13798,7 +15251,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Screen Size",
       "effort": 2,
       "enum": {
         "match": {
@@ -13824,6 +15279,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "screen_size",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13835,6 +15291,7 @@
       "group": "Display Panel",
       "key": "screen_size",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13920,15 +15377,25 @@
         "tooltip_source": null
       },
       "unit": "in",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "exact"
     },
     "sku": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "sku",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13937,7 +15404,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "SKU / Part #",
       "effort": 3,
       "enum": {
         "match": {
@@ -13963,6 +15432,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13974,6 +15444,7 @@
       "group": "Identity",
       "key": "sku",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14043,10 +15514,19 @@
         "tooltip_md": "Manufacturer SKU or part number",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "speakers": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "built-in speakers"
       ],
@@ -14054,6 +15534,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "speakers",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14062,7 +15543,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Speakers",
       "effort": 3,
       "enum": {
         "match": {
@@ -14088,6 +15571,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "speakers",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14099,6 +15583,7 @@
       "group": "Features",
       "key": "speakers",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14171,10 +15656,19 @@
         "tooltip_md": "Built-in speakers (e.g. 2x 2W, 2x 5W, None)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "subpixel_layout": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "subpixel layout",
         "subpixel structure"
@@ -14183,6 +15677,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "subpixel_layout",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14191,7 +15686,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Subpixel Layout",
       "effort": 3,
       "enum": {
         "match": {
@@ -14217,6 +15714,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "subpixel_layout",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14228,6 +15726,7 @@
       "group": "Display Panel",
       "key": "subpixel_layout",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14297,10 +15796,19 @@
         "tooltip_md": "Subpixel arrangement: RGB, BGR, WRGB, RWBG",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "swivel_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "swivel",
         "swivel range"
@@ -14309,6 +15817,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "swivel_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14317,7 +15826,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Swivel Range",
       "effort": 3,
       "enum": {
         "match": {
@@ -14343,6 +15854,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "swivel_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14354,6 +15866,7 @@
       "group": "Ergonomics",
       "key": "swivel_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14424,10 +15937,19 @@
         "tooltip_md": "Swivel adjustment range (e.g. -45° to 45°)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "text_clarity": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "text clarity",
         "desktop text clarity"
@@ -14436,6 +15958,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "text_clarity",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14444,7 +15967,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Text Clarity",
       "effort": 3,
       "enum": {
         "match": {
@@ -14470,6 +15995,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "text_clarity",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14481,6 +16007,7 @@
       "group": "Color & Image Quality",
       "key": "text_clarity",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14562,10 +16089,18 @@
         "tooltip_md": "Overall text clarity assessment for desktop use.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "thunderbolt_ports": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Thunderbolt",
         "Thunderbolt ports",
@@ -14575,6 +16110,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "thunderbolt_ports",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14583,7 +16119,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Thunderbolt Ports",
       "effort": 3,
       "enum": {
         "match": {
@@ -14609,6 +16147,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "thunderbolt_ports",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14620,6 +16159,7 @@
       "group": "Connectivity",
       "key": "thunderbolt_ports",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14691,10 +16231,18 @@
         "tooltip_md": "Thunderbolt port count exposed by the monitor.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "thunderbolt_version": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Thunderbolt version",
         "Thunderbolt specification",
@@ -14705,6 +16253,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "thunderbolt_version",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14713,7 +16262,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Thunderbolt Version",
       "effort": 3,
       "enum": {
         "match": {
@@ -14739,6 +16290,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "thunderbolt_version",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14750,6 +16302,7 @@
       "group": "Connectivity",
       "key": "thunderbolt_version",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14821,10 +16374,18 @@
         "tooltip_md": "Supported Thunderbolt generation (for example Thunderbolt 3, 4, or 5).",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "tilt_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "tilt",
         "tilt range",
@@ -14834,6 +16395,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "tilt_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14842,7 +16404,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Tilt Range",
       "effort": 3,
       "enum": {
         "match": {
@@ -14868,6 +16432,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "tilt_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14879,6 +16444,7 @@
       "group": "Ergonomics",
       "key": "tilt_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14950,10 +16516,19 @@
         "tooltip_md": "Tilt adjustment range (e.g. -5° to 20°)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "usb_c_ports": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "USB-C",
         "USB Type-C",
@@ -14963,6 +16538,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "usb_c_ports",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14971,7 +16547,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "USB-C Ports",
       "effort": 3,
       "enum": {
         "match": {
@@ -14997,6 +16575,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "usb_c_ports",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15008,6 +16587,7 @@
       "group": "Connectivity",
       "key": "usb_c_ports",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15079,10 +16659,19 @@
         "tooltip_md": "USB-C port count, alt mode, and power delivery wattage",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "usb_hub": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "USB hub",
         "USB ports"
@@ -15091,6 +16680,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "usb_hub",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15099,7 +16689,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "USB Hub",
       "effort": 3,
       "enum": {
         "match": {
@@ -15125,6 +16717,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "usb_hub",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15136,6 +16729,7 @@
       "group": "Connectivity",
       "key": "usb_hub",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15206,10 +16800,19 @@
         "tooltip_md": "Built-in USB hub port count and version (e.g. 4x USB 3.0)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "usb_power_delivery_watts": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "USB-C PD",
         "power delivery",
@@ -15219,6 +16822,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "usb_power_delivery_watts",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -15235,7 +16839,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "USB-C Power Delivery",
       "effort": 3,
       "enum": {
         "match": {
@@ -15261,6 +16867,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "usb_power_delivery_watts",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15272,6 +16879,7 @@
       "group": "Features",
       "key": "usb_power_delivery_watts",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15351,10 +16959,19 @@
         "tooltip_source": null
       },
       "unit": "W",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "variable_refresh_rate": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "variable refresh rate",
         "VRR"
@@ -15363,6 +16980,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "variable_refresh_rate",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15371,7 +16989,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Variable Refresh Rate",
       "effort": 3,
       "enum": {
         "match": {
@@ -15397,6 +17017,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "variable_refresh_rate",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15408,6 +17029,7 @@
       "group": "Performance",
       "key": "variable_refresh_rate",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15478,15 +17100,25 @@
         "tooltip_md": "Whether the monitor supports variable refresh rate",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "variant": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "variant",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15495,7 +17127,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Variant",
       "effort": 3,
       "enum": {
         "match": {
@@ -15521,6 +17155,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "variant",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15532,6 +17167,7 @@
       "group": "Identity",
       "key": "variant",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15602,10 +17238,19 @@
         "tooltip_md": "Variant identifier (size, region, revision)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "vertical_viewing_angle": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "vertical viewing angle",
         "viewing angle vertical"
@@ -15614,6 +17259,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "vertical_viewing_angle",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -15630,7 +17276,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Vertical Viewing Angle",
       "effort": 2,
       "enum": {
         "match": {
@@ -15656,6 +17304,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "vertical_viewing_angle",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15667,6 +17316,7 @@
       "group": "Color & Image Quality",
       "key": "vertical_viewing_angle",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15756,10 +17406,18 @@
         "tooltip_source": null
       },
       "unit": "deg",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "vesa_mount": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "VESA mount",
         "VESA",
@@ -15769,6 +17427,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "vesa_mount",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15777,7 +17436,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "VESA Mount",
       "effort": 3,
       "enum": {
         "match": {
@@ -15803,6 +17464,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "vesa_mount",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15814,6 +17476,7 @@
       "group": "Dimensions & Weight",
       "key": "vesa_mount",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15887,10 +17550,19 @@
         "tooltip_md": "VESA mount pattern (e.g. 100x100, 200x200, 75x75, None)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "vrr_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "VRR range",
         "variable refresh rate range",
@@ -15900,6 +17572,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "vrr_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15908,7 +17581,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "VRR Range",
       "effort": 3,
       "enum": {
         "match": {
@@ -15934,6 +17609,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "vrr_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15945,6 +17621,7 @@
       "group": "Performance",
       "key": "vrr_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16015,10 +17692,19 @@
         "tooltip_md": "Variable refresh rate range in Hz (e.g. 48-165 Hz)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "wall_mountable": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "wall mountable",
         "wall mount"
@@ -16027,6 +17713,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "wall_mountable",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16035,7 +17722,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Wall Mountable",
       "effort": 3,
       "enum": {
         "match": {
@@ -16061,6 +17750,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "wall_mountable",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16072,6 +17762,7 @@
       "group": "Ergonomics",
       "key": "wall_mountable",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16141,10 +17832,19 @@
         "tooltip_md": "Whether the monitor is wall-mountable",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "warranty": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "warranty",
         "warranty period",
@@ -16154,6 +17854,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "warranty",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16162,7 +17863,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Warranty",
       "effort": 3,
       "enum": {
         "match": {
@@ -16188,6 +17891,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "warranty",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16199,6 +17903,7 @@
       "group": "General",
       "key": "warranty",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16268,10 +17973,19 @@
         "tooltip_md": "Manufacturer warranty period",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "webcam": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "camera",
         "built-in webcam",
@@ -16281,6 +17995,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "webcam",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16289,7 +18004,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Webcam",
       "effort": 3,
       "enum": {
         "match": {
@@ -16315,6 +18032,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "webcam",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16326,6 +18044,7 @@
       "group": "Features",
       "key": "webcam",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16399,10 +18118,18 @@
         "tooltip_md": "Integrated webcam capability or headline resolution.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "weight_with_stand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight with stand",
         "total weight"
@@ -16411,6 +18138,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "weight_with_stand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -16427,7 +18155,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Weight (With Stand)",
       "effort": 3,
       "enum": {
         "match": {
@@ -16453,6 +18183,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "weight_with_stand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16464,6 +18195,7 @@
       "group": "Dimensions & Weight",
       "key": "weight_with_stand",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16545,10 +18277,19 @@
         "tooltip_source": null
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "weight_without_stand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight without stand",
         "panel weight"
@@ -16557,6 +18298,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "weight_without_stand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -16573,7 +18315,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Weight (Without Stand)",
       "effort": 3,
       "enum": {
         "match": {
@@ -16599,6 +18343,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "weight_without_stand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16610,6 +18355,7 @@
       "group": "Dimensions & Weight",
       "key": "weight_without_stand",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16692,10 +18438,19 @@
         "tooltip_source": null
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "wide_color_gamut": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "wide color gamut",
         "wide gamut"
@@ -16704,6 +18459,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "wide_color_gamut",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16712,7 +18468,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Wide Color Gamut",
       "effort": 3,
       "enum": {
         "match": {
@@ -16738,6 +18496,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "wide_color_gamut",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16749,6 +18508,7 @@
       "group": "Color & Image Quality",
       "key": "wide_color_gamut",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16819,10 +18579,19 @@
         "tooltip_md": "Whether the monitor supports wide color gamut (typically >90% DCI-P3)",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "width": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "panel width",
         "display width",
@@ -16832,6 +18601,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "width",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -16848,7 +18618,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Width",
       "effort": 3,
       "enum": {
         "match": {
@@ -16874,6 +18646,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16885,6 +18658,7 @@
       "group": "Dimensions & Weight",
       "key": "width",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16961,10 +18735,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "xbox_series_xs_compatibility": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "Xbox Series X compatibility",
         "Xbox Series S compatibility",
@@ -16974,6 +18757,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "xbox_series_xs_compatibility",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16982,7 +18766,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Xbox Series X|S Compatibility",
       "effort": 3,
       "enum": {
         "match": {
@@ -17008,6 +18794,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "xbox_series_xs_compatibility",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -17019,6 +18806,7 @@
       "group": "Features",
       "key": "xbox_series_xs_compatibility",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -17100,6 +18888,7 @@
         "tooltip_md": "Compatibility status with Xbox Series X and Series S display modes.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     }
@@ -17755,7 +19544,9 @@
     "warranty",
     "cable_length",
     "cable_type",
-    "material"
+    "material",
+    "colors",
+    "editions"
   ],
   "sheet_roles": [
     {

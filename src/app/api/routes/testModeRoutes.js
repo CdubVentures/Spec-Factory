@@ -84,7 +84,9 @@ export function registerTestModeRoutes(ctx) {
       broadcastWs('test-import-progress', { step: 'field_rules', status: 'done', detail: `${copiedRules} rule files` });
 
       // Build seed component DBs from source contract analysis
-      const sourceAnalysis = await analyzeContract(HELPER_ROOT, sourceCategory);
+      const sourceSpecDb = await getSpecDbReady(sourceCategory).catch(() => null);
+      const sourceCR = sourceSpecDb?.getCompiledRules?.() ?? null;
+      const sourceAnalysis = await analyzeContract(HELPER_ROOT, sourceCategory, { compiledRules: sourceCR });
       const componentTypes = (sourceAnalysis?.summary?.componentTypes || [])
         .map((row) => String(row?.type || '').trim())
         .filter(Boolean);
@@ -106,10 +108,20 @@ export function registerTestModeRoutes(ctx) {
       const productsDir = path.join('fixtures', 's3', 'specs', 'inputs', testCategory, 'products');
       await fs.mkdir(productsDir, { recursive: true });
 
+      // WHY: Populate compiled_rules so subsequent calls (contract-summary, generate-products, run)
+      // can read from DB instead of JSON.
+      let testCR = null;
+      try {
+        const testSpecDb = await getSpecDbReady(testCategory);
+        const { reseedCompiledRulesAndBootConfig } = await import('../../../features/studio/fieldStudioMapReseed.js');
+        await reseedCompiledRulesAndBootConfig({ specDb: testSpecDb, helperRoot: HELPER_ROOT });
+        testCR = testSpecDb?.getCompiledRules?.() ?? null;
+      } catch { /* non-fatal */ }
+
       // Analyze the test category contract for summary
       let contractSummary = null;
       try {
-        const analysis = await analyzeContract(HELPER_ROOT, testCategory);
+        const analysis = await analyzeContract(HELPER_ROOT, testCategory, { compiledRules: testCR });
         contractSummary = analysis.summary;
         broadcastWs('test-import-progress', {
           step: 'complete',
@@ -145,7 +157,9 @@ export function registerTestModeRoutes(ctx) {
       }
 
       try {
-        const analysis = await analyzeContract(HELPER_ROOT, category);
+        const runtimeSpecDb = await getSpecDbReady(category).catch(() => null);
+        const compiledRules = runtimeSpecDb?.getCompiledRules?.() ?? null;
+        const analysis = await analyzeContract(HELPER_ROOT, category, { compiledRules });
         return jsonRes(res, 200, { ok: true, summary: analysis.summary, matrices: analysis.matrices, scenarioDefs: analysis.scenarioDefs });
       } catch (err) {
         return jsonRes(res, 500, { ok: false, error: err.message });
@@ -226,7 +240,9 @@ export function registerTestModeRoutes(ctx) {
 
       let contractAnalysis = null;
       try {
-        contractAnalysis = await analyzeContract(HELPER_ROOT, category);
+        const genSpecDb = await getSpecDbReady(category).catch(() => null);
+        const genCR = genSpecDb?.getCompiledRules?.() ?? null;
+        contractAnalysis = await analyzeContract(HELPER_ROOT, category, { compiledRules: genCR });
       } catch { /* non-fatal */ }
 
       const testProducts = buildTestProducts(category, contractAnalysis);
@@ -321,22 +337,30 @@ export function registerTestModeRoutes(ctx) {
         resetTestModeSharedReviewState(runtimeSpecDb, category);
       }
 
-      const fieldRulesPath = path.join(HELPER_ROOT, category, '_generated', 'field_rules.json');
-      const knownValuesPath = path.join(HELPER_ROOT, category, '_generated', 'known_values.json');
-      const compDbDir = path.join(HELPER_ROOT, category, '_generated', 'component_db');
-
-      const fieldRules = await safeReadJson(fieldRulesPath) || {};
-      const knownValues = await safeReadJson(knownValuesPath) || {};
-      const componentDBs = {};
-      const compFiles = await listFiles(compDbDir, '.json');
-      for (const f of compFiles) {
-        const data = await safeReadJson(path.join(compDbDir, f));
-        if (data) componentDBs[data?.component_type || f.replace('.json', '')] = data;
+      // WHY: DB-first for field rules, JSON fallback for freshly created test categories
+      const compiledRules = runtimeSpecDb?.getCompiledRules?.() ?? null;
+      let fieldRules, knownValues, componentDBs;
+      if (compiledRules?.fields) {
+        fieldRules = { fields: compiledRules.fields, component_db_sources: compiledRules.component_db_sources || {} };
+        knownValues = compiledRules.known_values || {};
+        componentDBs = compiledRules.component_dbs || {};
+      } else {
+        const fieldRulesPath = path.join(HELPER_ROOT, category, '_generated', 'field_rules.json');
+        const knownValuesPath = path.join(HELPER_ROOT, category, '_generated', 'known_values.json');
+        const compDbDir = path.join(HELPER_ROOT, category, '_generated', 'component_db');
+        fieldRules = await safeReadJson(fieldRulesPath) || {};
+        knownValues = await safeReadJson(knownValuesPath) || {};
+        componentDBs = {};
+        const compFiles = await listFiles(compDbDir, '.json');
+        for (const f of compFiles) {
+          const data = await safeReadJson(path.join(compDbDir, f));
+          if (data) componentDBs[data?.component_type || f.replace('.json', '')] = data;
+        }
       }
 
       let contractAnalysis = null;
       try {
-        contractAnalysis = await analyzeContract(HELPER_ROOT, category);
+        contractAnalysis = await analyzeContract(HELPER_ROOT, category, { compiledRules });
       } catch { /* non-fatal */ }
       const generationOptions = (body && typeof body.generation === 'object' && body.generation !== null)
         ? body.generation
@@ -376,7 +400,11 @@ export function registerTestModeRoutes(ctx) {
           }
 
           const result = await runTestProduct({
-            storage, config, job, sourceResults, category
+            storage, config, job, sourceResults, category,
+            specDb: runtimeSpecDb,
+            fieldRules,
+            knownValues,
+            componentDBs,
           });
           results.push({ productId: job.productId, status: 'complete', ...result });
         } catch (err) {
@@ -431,17 +459,19 @@ export function registerTestModeRoutes(ctx) {
       // SQL is now the SSOT for curation suggestions
       let suggestionsEnums = { suggestions: [] };
       let suggestionsComponents = { suggestions: [] };
+      let validateSpecDb = null;
       try {
-        const runtimeSpecDb = await getSpecDbReady(category);
-        if (runtimeSpecDb) {
-          suggestionsEnums = { suggestions: runtimeSpecDb.getCurationSuggestions('enum_value') || [] };
-          suggestionsComponents = { suggestions: runtimeSpecDb.getCurationSuggestions('new_component') || [] };
+        validateSpecDb = await getSpecDbReady(category);
+        if (validateSpecDb) {
+          suggestionsEnums = { suggestions: validateSpecDb.getCurationSuggestions('enum_value') || [] };
+          suggestionsComponents = { suggestions: validateSpecDb.getCurationSuggestions('new_component') || [] };
         }
       } catch { /* non-fatal — specDb may not be ready */ }
 
       let contractAnalysis = null;
       try {
-        contractAnalysis = await analyzeContract(HELPER_ROOT, category);
+        const validateCR = validateSpecDb?.getCompiledRules?.() ?? null;
+        contractAnalysis = await analyzeContract(HELPER_ROOT, category, { compiledRules: validateCR });
       } catch { /* non-fatal */ }
       const scenarioDefs = contractAnalysis?.scenarioDefs || null;
 

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Field Test &mdash; Universal Contract Compliance Proof</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe; --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+}
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 32px; line-height: 1.5; }
+.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+.pass { color: var(--sf-success-fg); }
+.fail { color: var(--sf-danger-fg); }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.flow { display: flex; flex-direction: column; gap: 0; align-items: center; }
+.flow-node { width: 100%; max-width: 800px; border-radius: 10px; padding: 16px 20px; }
+.flow-arrow { display: flex; flex-direction: column; align-items: center; padding: 6px 0; color: var(--sf-text-dim); font-size: 18px; line-height: 1; }
+.flow-arrow-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+.flow-pure { background: var(--sf-teal-bg); border: 1.5px solid rgba(94,234,212,0.4); }
+.flow-check { background: var(--sf-info-bg); border: 1.5px solid rgba(147,197,253,0.4); }
+.flow-publish { background: var(--sf-success-bg); border: 1.5px solid rgba(134,239,172,0.4); }
+.flow-source { background: var(--sf-purple-bg); border: 1.5px solid rgba(168,85,247,0.4); }
+.flow-node-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.flow-node-detail { font-size: 11px; color: var(--sf-text-muted); line-height: 1.5; }
+.callout { border-left: 3px solid var(--sf-accent-strong); padding: 12px 16px; background: var(--sf-accent-glow); border-radius: 0 8px 8px 0; margin: 12px 0; }
+.callout-warn { border-left-color: var(--sf-warning-fg); background: var(--sf-warning-bg); }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div>
+  <h1>Field Test &mdash; Universal Contract Compliance Proof</h1>
+  <div class="subtitle">
+    The field test takes any category's contract and deterministically proves the validator returns values in the shape the contract declares.
+    The contract IS the test. Zero hardcoded data. Zero category-specific logic. Add a category &rarr; field test auto-generates proof.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1: WHAT THE FIELD TEST IS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>1. What the Field Test Is</h2>
+
+  <div class="small" style="line-height:1.8; margin-bottom:16px;">
+    You design a category's field rules in Field Studio: types, shapes, units, enums, ranges, components, constraints, list rules.
+    That contract defines the exact shape every value must have when it reaches the product record.
+    <br/><br/>
+    The field test answers one question: <strong>"Does my contract actually enforce what I designed?"</strong>
+    <br/><br/>
+    It reads your contract, generates synthetic data that exercises every dimension the contract declares,
+    runs that data through the validator, and checks that every value came back in the declared shape.
+    If you say <code>dpi</code> is a number with range 100&ndash;30000, the field test generates an in-range value
+    and an out-of-range value, feeds both through the validator, and proves the in-range value passes
+    and the out-of-range value is rejected.
+  </div>
+
+  <div class="callout">
+    <div class="small bold" style="color:var(--sf-accent-strong);">Universal by design</div>
+    <div class="small muted">
+      Add a new category tomorrow with 200 fields. The field test auto-generates scenarios from those 200 fields
+      and proves the validator enforces every one. No new test code. No hardcoded values. The contract drives everything.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2: HOW IT WORKS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>2. How It Works</h2>
+
+  <div class="flow">
+    <div class="flow-node flow-source">
+      <div class="flow-node-title" style="color:var(--sf-purple-fg);">
+        <span class="chip chip-purple">1</span> Read the Contract
+      </div>
+      <div class="flow-node-detail">
+        <code>analyzeContract()</code> reads your category's compiled rules from DB (<code>field_studio_map.compiled_rules</code>).
+        Extracts every field's type, shape, unit, enum policy, range, component references, cross-validation rules, list rules.
+        Builds three matrices: field rules, components, enums. Auto-generates scenario definitions.
+      </div>
+    </div>
+    <div class="flow-arrow">&darr; <span class="flow-arrow-label">derive scenarios</span></div>
+    <div class="flow-node flow-pure">
+      <div class="flow-node-title" style="color:var(--sf-teal-fg);">
+        <span class="chip chip-teal">2</span> Generate Deterministic Test Data
+      </div>
+      <div class="flow-node-detail">
+        <code>buildDeterministicSourceResults()</code> creates synthetic source data for each scenario.
+        Every value is derived from the contract &mdash; correct values, wrong-type values, out-of-range values,
+        unknown components, invalid enums, missing required fields. Five fake sources per product, each with field candidates and evidence.
+        <br/><br/>
+        The inputs are <strong>deterministic and reproducible</strong>. Same contract &rarr; same test data every time.
+      </div>
+    </div>
+    <div class="flow-arrow">&darr; <span class="flow-arrow-label">validate</span></div>
+    <div class="flow-node flow-check">
+      <div class="flow-node-title" style="color:var(--sf-info-fg);">
+        <span class="chip chip-info">3</span> Run Through the Validator
+      </div>
+      <div class="flow-node-detail">
+        <code>runTestProduct()</code> resolves the best value per field from the synthetic sources,
+        then calls <code>validateRecord()</code> which runs every value through the 12-step deterministic pipeline:
+        shape &rarr; type &rarr; unit &rarr; format &rarr; normalize &rarr; enum &rarr; list rules &rarr; rounding &rarr; range &rarr; constraints &rarr; component resolution.
+        <br/><br/>
+        Produces: validated fields, per-field rejections, per-field repairs, cross-field constraint results, curation suggestions.
+      </div>
+    </div>
+    <div class="flow-arrow">&darr; <span class="flow-arrow-label">assert</span></div>
+    <div class="flow-node flow-publish">
+      <div class="flow-node-title" style="color:var(--sf-success-fg);">
+        <span class="chip chip-success">4</span> Assert Contract Compliance
+      </div>
+      <div class="flow-node-detail">
+        <code>buildValidationChecks()</code> asserts the exact output for each scenario:
+        <br/>&bull; <strong>happy_path:</strong> every field populated, correct type, correct shape, coverage &ge; 70%
+        <br/>&bull; <strong>closed_enum_reject:</strong> specific fields rejected with <code>enum_value_not_allowed</code>
+        <br/>&bull; <strong>range_violations:</strong> specific fields rejected with <code>out_of_range</code>
+        <br/>&bull; <strong>new_{component}:</strong> curation suggestion emitted for unknown component
+        <br/>&bull; Every scenario maps to a contract dimension and asserts the validator enforced it.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3: WHAT EACH SCENARIO PROVES
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>3. What Each Scenario Proves About Your Contract</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every scenario is auto-generated from your contract. If your contract doesn't declare component references,
+    the component scenarios aren't generated. If it has no closed enums, the closed_enum scenario is skipped.
+    The test is shaped by what you designed.
+  </div>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Contract Dimension</th><th>What the Assertion Proves</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">happy_path</td>
+        <td class="small">All fields, all rules</td>
+        <td class="small">Every field passes validation. Output type matches <code>contract.type</code>. Output shape matches <code>contract.shape</code>. No rejections. Coverage &ge; 70%.</td>
+      </tr>
+      <tr>
+        <td class="bold">missing_required</td>
+        <td class="small"><code>priority.required_level</code></td>
+        <td class="small">Required fields that weren't provided are reported in <code>missing_required_fields[]</code>. The validator doesn't invent values.</td>
+      </tr>
+      <tr>
+        <td class="bold">closed_enum_reject</td>
+        <td class="small"><code>enum.policy: closed</code></td>
+        <td class="small">A value not in <code>known_values</code> for a closed-enum field is rejected with <code>enum_value_not_allowed</code>. The validator doesn't let invalid enum values through.</td>
+      </tr>
+      <tr>
+        <td class="bold">new_enum_values</td>
+        <td class="small"><code>enum.policy: open_prefer_known</code></td>
+        <td class="small">A new value for an open_prefer_known field passes but produces a curation suggestion. The validator accepts it while flagging it for human review.</td>
+      </tr>
+      <tr>
+        <td class="bold">similar_enum_values</td>
+        <td class="small"><code>parse.token_map</code> + enum matching</td>
+        <td class="small">A near-match value (e.g. "grey" for a catalog with "gray") is normalized to the canonical form. The validator applies token maps before rejecting.</td>
+      </tr>
+      <tr>
+        <td class="bold">range_violations</td>
+        <td class="small"><code>contract.range</code></td>
+        <td class="small">A value outside <code>min</code>/<code>max</code> bounds is rejected with <code>out_of_range</code>. The validator enforces the range constraint.</td>
+      </tr>
+      <tr>
+        <td class="bold">new_{component}</td>
+        <td class="small"><code>parse.template: component_reference</code></td>
+        <td class="small">An unknown component name produces a <code>new_component</code> curation suggestion. The validator flags it for human verification.</td>
+      </tr>
+      <tr>
+        <td class="bold">similar_{component}</td>
+        <td class="small">Component alias matching</td>
+        <td class="small">A near-match component name resolves to the canonical identity via alias lookup. The validator finds the right component.</td>
+      </tr>
+      <tr>
+        <td class="bold">component_constraints</td>
+        <td class="small">Component property constraints</td>
+        <td class="small">A component property that violates its constraints (e.g. sensor date after release date) is flagged. The validator checks component-level rules.</td>
+      </tr>
+      <tr>
+        <td class="bold">variance_policies</td>
+        <td class="small">Component variance policies</td>
+        <td class="small">Component properties with non-authoritative variance policies (upper_bound, override_allowed) have scoring applied. The validator respects variance rules.</td>
+      </tr>
+      <tr>
+        <td class="bold">cross_validation</td>
+        <td class="small"><code>cross_validation_rules</code></td>
+        <td class="small">Field combinations that violate cross-field constraints are flagged. The validator checks inter-field consistency.</td>
+      </tr>
+      <tr>
+        <td class="bold">list_fields_dedup</td>
+        <td class="small"><code>contract.list_rules</code></td>
+        <td class="small">Duplicate values in list fields are removed. Sorting applied per rule. Min/max items enforced. The validator maintains list integrity.</td>
+      </tr>
+      <tr>
+        <td class="bold">multi_source_consensus</td>
+        <td class="small">Candidate resolution</td>
+        <td class="small">When 4 sources disagree, the highest-scored candidate wins. Fields are resolved, not left ambiguous.</td>
+      </tr>
+      <tr>
+        <td class="bold">min_evidence_refs</td>
+        <td class="small"><code>evidence.min_evidence_refs</code></td>
+        <td class="small">Fields requiring 2+ evidence sources but receiving only 1 are flagged as below pass target.</td>
+      </tr>
+      <tr>
+        <td class="bold">tier_preference_override</td>
+        <td class="small">Source tier ranking</td>
+        <td class="small">When a tier-2 source is preferred over tier-1 for a field, the correct value is selected.</td>
+      </tr>
+      <tr>
+        <td class="bold">preserve_all_candidates</td>
+        <td class="small">List fields from multiple sources</td>
+        <td class="small">Values from all sources are merged into the list, not discarded.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4: WHAT EXISTS TODAY vs AFTER VALIDATOR
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>4. Current State vs After the Validator Module</h2>
+
+  <div class="callout callout-warn">
+    <div class="small bold" style="color:var(--sf-warning-fg);">Prerequisite: the validation module must be built and wired first</div>
+    <div class="small muted">
+      The full contract compliance proof described in this document depends on <code>src/features/validation/</code> being implemented
+      per <code>field-value-validation-architecture.html</code>. Until then, <code>runTestProduct</code> uses the existing engine
+      (<code>applyRuntimeFieldRules</code>) which covers core dimensions but has known gaps.
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:16px; margin-top: 16px;">
+    <div class="card">
+      <h3><span class="chip chip-warning">TODAY</span> Plumbing done, enforcement partial</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>Done:</strong>
+        <br/>&bull; <code>runTestProduct</code> wired: consensus &rarr; engine &rarr; traffic light &rarr; artifact persistence
+        <br/>&bull; All test mode routes read field rules from DB (<code>compiled_rules</code>)
+        <br/>&bull; <code>analyzeContract()</code> reads from DB with JSON fallback
+        <br/>&bull; Scenarios auto-generated from contract
+        <br/>&bull; Deterministic source data generated per scenario
+        <br/>&bull; Artifacts persisted (normalized, summary, provenance)
+        <br/>&bull; Curation suggestions persisted to specDb
+        <br/><br/>
+        <strong>Not done (engine gaps):</strong>
+        <br/>&bull; No shape gate (scalar vs list mismatch not caught)
+        <br/>&bull; No unit rejection (wrong unit passes through)
+        <br/>&bull; No format regex validation
+        <br/>&bull; No rounding enforcement
+        <br/>&bull; <code>open_prefer_known</code> treated same as <code>open</code>
+        <br/>&bull; Assertions in <code>buildValidationChecks</code> are loose, not exact shape proofs
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="chip chip-success">AFTER VALIDATOR</span> Full deterministic proof</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>What changes:</strong>
+        <br/>&bull; <code>runTestProduct</code> swaps <code>applyRuntimeFieldRules()</code> for <code>validateRecord()</code>
+        <br/>&bull; All 12 validation steps enforced deterministically
+        <br/>&bull; Every gap closed: shape, unit, format, rounding, hallucination
+        <br/>&bull; <code>open_prefer_known</code> correctly flags for curation
+        <br/>&bull; LLM repair prompts returned as data for unknowns
+        <br/><br/>
+        <strong>What also changes:</strong>
+        <br/>&bull; <code>buildValidationChecks</code> tightened: exact shape assertions per field, not approximate
+        <br/>&bull; New scenarios added: <code>wrong_shape</code>, <code>wrong_unit</code>, <code>format_mismatch</code>
+        <br/>&bull; For happy_path: assert every field's output type matches <code>contract.type</code> and shape matches <code>contract.shape</code>
+        <br/>&bull; For rejections: assert the specific field, the specific reason code, and the specific rejected value
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5: THE SWAP
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>5. The Swap &mdash; Wiring the Validator into the Field Test</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    When <code>src/features/validation/</code> is implemented and tested standalone, wiring it into the field test is a single function swap in <code>src/tests/testRunner.js</code>.
+    Everything else (candidate resolution, provenance, traffic light, artifact persistence) stays identical.
+  </div>
+
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3>Before (engine)</h3>
+      <div class="code-block"><span style="color:var(--sf-danger-fg);">// src/tests/testRunner.js — today</span>
+import { FieldRulesEngine } from '../engine/fieldRulesEngine.js';
+import { applyRuntimeFieldRules } from '../engine/runtimeGate.js';
+
+const engine = await FieldRulesEngine.create(category, { specDb });
+const gateResult = applyRuntimeFieldRules({
+  engine, fields, provenance, fieldOrder,
+  curationQueue, componentReviewQueue,
+});
+
+<span style="color:var(--sf-text-dim);">// gateResult.fields, gateResult.failures, curationQueue (mutated)</span></div>
+    </div>
+    <div class="card">
+      <h3>After (validator)</h3>
+      <div class="code-block"><span style="color:var(--sf-success-fg);">// src/tests/testRunner.js — after validator</span>
+import { validateRecord } from '../features/validation/index.js';
+
+const compiledRules = specDb.getCompiledRules();
+const result = validateRecord({
+  fields,
+  fieldRules: compiledRules.fields,
+  knownValues: compiledRules.known_values,
+  componentDbs: compiledRules.component_dbs,
+  crossRules: compiledRules.cross_validation_rules,
+});
+
+<span style="color:var(--sf-text-dim);">// result.fields, result.perField[k].rejections, result.crossFieldFailures</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:16px;">Output Mapping</h3>
+  <table>
+    <thead><tr><th>runTestProduct needs</th><th>Engine (today)</th><th>Validator (after)</th></tr></thead>
+    <tbody>
+      <tr><td class="bold">Validated fields</td><td class="mono tiny">gateResult.fields</td><td class="mono tiny">result.fields</td></tr>
+      <tr><td class="bold">Failures</td><td class="mono tiny">gateResult.failures[]</td><td class="mono tiny">perField[k].rejections[]</td></tr>
+      <tr><td class="bold">Repairs/changes</td><td class="mono tiny">gateResult.changes[]</td><td class="mono tiny">perField[k].repairs[]</td></tr>
+      <tr><td class="bold">Cross-field failures</td><td class="mono tiny">failures.filter(stage === 'cross_validate')</td><td class="mono tiny">result.crossFieldFailures[]</td></tr>
+      <tr><td class="bold">Curation suggestions</td><td class="mono tiny">curationQueue[] (side effect)</td><td class="mono tiny">perField[k].repairPrompt (data)</td></tr>
+      <tr><td class="bold">Unknown reason</td><td class="mono tiny">failure.reason_code</td><td class="mono tiny">perField[k].unknownReason</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6: TIGHTENING THE ASSERTION LAYER
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>6. Tightening the Assertion Layer (After Validator)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Today's <code>buildValidationChecks()</code> uses loose assertions ("has fields", "has confidence").
+    After the validator is wired in, assertions should be tightened to exact shape proofs.
+    The contract declares the expected output &mdash; the assertion verifies it precisely.
+  </div>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Today (loose)</th><th>After Validator (exact proof)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">happy_path</td>
+        <td class="small muted">At least 1 field present. Has confidence value.</td>
+        <td class="small">For every field in <code>field_order</code>: output type === <code>contract.type</code>. Output shape === <code>contract.shape</code>. Zero rejections. If <code>contract.range</code> exists, value is within bounds. If <code>contract.unit</code> exists, value is unitless number.</td>
+      </tr>
+      <tr>
+        <td class="bold">closed_enum_reject</td>
+        <td class="small muted">Failures array has entries with "enum" reason.</td>
+        <td class="small">For each closed-enum field that received an invalid value: <code>rejections</code> contains <code>{ reason_code: 'enum_value_not_allowed', field_key: X }</code>. The output value is <code>'unk'</code>.</td>
+      </tr>
+      <tr>
+        <td class="bold">range_violations</td>
+        <td class="small muted">Failures exist for out-of-range fields.</td>
+        <td class="small">For each field with <code>contract.range</code> that received an out-of-bounds value: <code>rejections</code> contains <code>{ reason_code: 'out_of_range' }</code>. The output value is <code>'unk'</code>. The rejection detail shows expected min/max vs actual.</td>
+      </tr>
+      <tr>
+        <td class="bold">new_{component}</td>
+        <td class="small muted">Curation suggestion exists.</td>
+        <td class="small">A <code>new_component</code> suggestion exists for the specific component type. The suggestion's <code>value</code> matches the fabricated unknown name. The component field's output is the raw value (not resolved to a canonical).</td>
+      </tr>
+      <tr>
+        <td class="bold">missing_required</td>
+        <td class="small muted">Missing required fields flagged.</td>
+        <td class="small"><code>missing_required_fields</code> contains exactly the fields with <code>required_level: 'required'</code> or <code>'critical'</code> that were omitted from the source data. Count matches the contract's required field count minus the fields deliberately provided.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:16px;">
+    <div class="small bold" style="color:var(--sf-accent-strong);">The contract drives the assertion</div>
+    <div class="small muted">
+      The assertion doesn't hardcode expected values. It reads the contract and derives what the output must look like.
+      "This field is type <code>number</code> with range <code>100&ndash;30000</code>" &rarr; assert <code>typeof output === 'number' &amp;&amp; output >= 100 &amp;&amp; output <= 30000</code>.
+      The assertion is as universal as the test data generation.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 7: INTEGRATION STEPS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>7. Integration Steps (After Validator Module Is Complete)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Prerequisites: <code>src/features/validation/</code> is implemented per <code>field-value-validation-architecture.html</code>,
+    all 8 implementation phases are green, <code>validateField()</code> and <code>validateRecord()</code> pass their standalone test suites.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Task</th><th>File</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
+        <td><strong>Swap engine for validator in <code>runTestProduct</code></strong><br/><span class="small muted">Replace <code>FieldRulesEngine</code> + <code>applyRuntimeFieldRules</code> imports with <code>validateRecord</code>. Map output per Section 5 table.</span></td>
+        <td class="mono tiny">src/tests/testRunner.js</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
+        <td><strong>Add new scenarios for validator-only dimensions</strong><br/><span class="small muted">Add <code>wrong_shape</code>, <code>wrong_unit</code>, <code>format_mismatch</code> to <code>buildScenarioDefsFromContract()</code>. Generate deterministic source data for each.</span></td>
+        <td class="mono tiny">src/tests/testDataProvider.js</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+        <td><strong>Tighten assertion layer</strong><br/><span class="small muted">Update <code>buildValidationChecks()</code> to assert exact shape compliance per Section 6. Contract-driven assertions, not hardcoded.</span></td>
+        <td class="mono tiny">src/tests/testDataProvider.js</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
+        <td><strong>Update <code>testRunner.test.js</code></strong><br/><span class="small muted">Update mocks for validator output shape. Add tests for new scenario types.</span></td>
+        <td class="mono tiny">src/tests/tests/testRunner.test.js</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">5</td>
+        <td><strong>Run field test for every live category</strong><br/><span class="small muted">Create &rarr; Generate &rarr; Run &rarr; Validate for mouse, keyboard, monitor. All scenarios pass. All assertions exact.</span></td>
+        <td class="mono tiny">GUI or API</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">6</td>
+        <td><strong>Remove engine dependency from test runner</strong><br/><span class="small muted">Delete <code>FieldRulesEngine</code> and <code>applyRuntimeFieldRules</code> imports. <code>runTestProduct</code> depends only on <code>src/features/validation/</code>.</span></td>
+        <td class="mono tiny">src/tests/testRunner.js</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 8: DATA FLOW
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="panel">
+  <h2>8. Complete Data Flow</h2>
+
+  <div class="code-block">
+<span style="color:var(--sf-purple-fg);">Your contract (Field Studio)</span>
+  field_rules: types, shapes, units, enums, ranges, list rules, components, constraints
+  known_values: enum catalogs
+  cross_validation_rules: inter-field constraints
+  component_dbs: component identities + aliases + properties
+  <span style="color:var(--sf-text-dim);">&darr; compiled into field_studio_map.compiled_rules (DB)</span>
+
+<span style="color:var(--sf-purple-fg);">POST /test-mode/create</span>
+  analyzeContract() reads compiled_rules from DB
+  Auto-generates scenario definitions from your contract
+  <span style="color:var(--sf-text-dim);">&darr;</span>
+
+<span style="color:var(--sf-purple-fg);">POST /test-mode/generate-products</span>
+  buildTestProducts() creates one product per scenario
+  <span style="color:var(--sf-text-dim);">&darr;</span>
+
+<span style="color:var(--sf-purple-fg);">POST /test-mode/run</span>
+  For each product:
+    buildDeterministicSourceResults()         <span style="color:var(--sf-text-dim);">contract-driven synthetic data</span>
+    runTestProduct()
+      buildCandidateFieldMap()                <span style="color:var(--sf-text-dim);">resolve best value per field</span>
+      validateRecord()                        <span style="color:var(--sf-teal-fg);">&larr; the validator (12 deterministic steps)</span>
+      buildTrafficLight()                     <span style="color:var(--sf-text-dim);">grade by evidence quality</span>
+      persist artifacts                       <span style="color:var(--sf-text-dim);">normalized.json, summary.json, provenance.json</span>
+  <span style="color:var(--sf-text-dim);">&darr;</span>
+
+<span style="color:var(--sf-purple-fg);">POST /test-mode/validate</span>
+  buildValidationChecks()                     <span style="color:var(--sf-text-dim);">contract-driven assertions</span>
+  For each scenario:
+    Read the contract dimension being tested
+    Assert the validator output matches the declared shape
+  <span style="color:var(--sf-text-dim);">&darr;</span>
+
+<span style="color:var(--sf-success-fg);">Result: "Your contract enforces what you designed."</span>
+  </div>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>
