@@ -5,7 +5,7 @@ export function createBatchCommand({
   loadSourceIntel,
   rankBatchWithBandit,
   runProduct,
-  openSpecDbForCategory,
+  withSpecDb,
 }) {
   async function runWithConcurrency(items, concurrency, worker) {
     const results = [];
@@ -191,70 +191,67 @@ export function createBatchCommand({
 
   async function commandRunBatch(config, storage, args) {
     const category = args.category || 'mouse';
-    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
-    try {
-    const categoryConfig = await loadCategoryConfig(category, { storage, config });
-    // WHY: SQL is the source of truth for products — no fixture scan needed.
-    const allProducts = specDb ? specDb.getAllProducts() : [];
-    const allKeys = allProducts.map((p) => p.product_id);
-    const keys = await filterKeysByBrand(storage, allKeys, args.brand);
-    const strategy = normalizeBatchStrategy(args.strategy || 'bandit');
-    const metadataRows = await runWithConcurrency(keys, config.concurrency, async (key) =>
-      collectBatchMetadata({ storage, config, category, key, specDb })
-    );
-    const metadataByKey = new Map(metadataRows.map((row) => [row.key, row]));
-    const intel = await loadSourceIntel({ storage, config, category });
-    const brandRewardIndex = buildBrandRewardIndex(intel.data.domains || {});
-    const schedule = orderBatchKeysByStrategy(keys, metadataByKey, strategy, {
-      brandRewardIndex,
-      seed: `${category}:${new Date().toISOString().slice(0, 10)}`
-    });
-    const orderedKeys = schedule.orderedKeys;
+    return withSpecDb(config, category, async (specDb) => {
+      const categoryConfig = await loadCategoryConfig(category, { storage, config });
+      // WHY: SQL is the source of truth for products — no fixture scan needed.
+      const allProducts = specDb ? specDb.getAllProducts() : [];
+      const allKeys = allProducts.map((p) => p.product_id);
+      const keys = await filterKeysByBrand(storage, allKeys, args.brand);
+      const strategy = normalizeBatchStrategy(args.strategy || 'bandit');
+      const metadataRows = await runWithConcurrency(keys, config.concurrency, async (key) =>
+        collectBatchMetadata({ storage, config, category, key, specDb })
+      );
+      const metadataByKey = new Map(metadataRows.map((row) => [row.key, row]));
+      const intel = await loadSourceIntel({ storage, config, category });
+      const brandRewardIndex = buildBrandRewardIndex(intel.data.domains || {});
+      const schedule = orderBatchKeysByStrategy(keys, metadataByKey, strategy, {
+        brandRewardIndex,
+        seed: `${category}:${new Date().toISOString().slice(0, 10)}`
+      });
+      const orderedKeys = schedule.orderedKeys;
 
-    const runs = await runWithConcurrency(orderedKeys, config.concurrency, async (key) => {
-      try {
-        const result = await runProduct({ storage, config, s3Key: key });
-        return {
-          key,
-          productId: result.productId,
-          runId: result.runId,
-          urls_crawled: result.crawlResults?.length ?? 0,
-          urls_successful: result.crawlResults?.filter((r) => r.success).length ?? 0
-        };
-      } catch (error) {
-        return {
-          key,
-          error: error.message
-        };
-      }
-    });
+      const runs = await runWithConcurrency(orderedKeys, config.concurrency, async (key) => {
+        try {
+          const result = await runProduct({ storage, config, s3Key: key });
+          return {
+            key,
+            productId: result.productId,
+            runId: result.runId,
+            urls_crawled: result.crawlResults?.length ?? 0,
+            urls_successful: result.crawlResults?.filter((r) => r.success).length ?? 0
+          };
+        } catch (error) {
+          return {
+            key,
+            error: error.message
+          };
+        }
+      });
 
-    return {
-      command: 'run-batch',
-      category,
-      brand: args.brand || null,
-      strategy,
-      total_inputs: allKeys.length,
-      selected_inputs: keys.length,
-      concurrency: config.concurrency,
-      scheduled_order: orderedKeys,
-      bandit_preview: strategy === 'bandit'
-        ? (schedule.diagnostics || []).slice(0, 25).map((row) => ({
-          key: row.key,
-          productId: row.productId,
-          bandit_score: row.bandit_score,
-          thompson: row.thompson,
-          ucb: row.ucb,
-          info_need: row.info_need,
-          mean_reward: row.mean_reward,
-          brand_reward: row.brandReward
-        }))
-        : [],
-      runs
-    };
-    } finally {
-      try { specDb?.close(); } catch { /* */ }
-    }
+      return {
+        command: 'run-batch',
+        category,
+        brand: args.brand || null,
+        strategy,
+        total_inputs: allKeys.length,
+        selected_inputs: keys.length,
+        concurrency: config.concurrency,
+        scheduled_order: orderedKeys,
+        bandit_preview: strategy === 'bandit'
+          ? (schedule.diagnostics || []).slice(0, 25).map((row) => ({
+            key: row.key,
+            productId: row.productId,
+            bandit_score: row.bandit_score,
+            thompson: row.thompson,
+            ucb: row.ucb,
+            info_need: row.info_need,
+            mean_reward: row.mean_reward,
+            brand_reward: row.brandReward
+          }))
+          : [],
+        runs
+      };
+    });
   }
 
   return {

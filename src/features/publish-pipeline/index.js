@@ -1,11 +1,33 @@
 // Public API — publish pipeline feature.
-// Phase 1: validation sub-module only. candidate-gate and publisher added in later phases.
+// Phases 1-3: validation sub-module. candidate-gate and publisher added in later phases.
 
+// Phase 1: core gates
 export { normalizeAbsence } from './validation/absenceNormalizer.js';
 export { checkShape } from './validation/checks/checkShape.js';
 export { checkType } from './validation/checks/checkType.js';
 
-// TODO (Phase 7-8): export { validateField } from './validation/validateField.js';
-// TODO (Phase 7-8): export { validateRecord } from './validation/validateRecord.js';
-// TODO (Phase 2):   export { submitCandidate } from './candidate-gate/submitCandidate.js';
-// TODO (Phase 3):   export { publishResolved } from './publisher/publishResolved.js';
+// Phase 2: normalization + template dispatch
+export { normalizeValue, applyTokenMap } from './validation/checks/normalize.js';
+export { dispatchTemplate } from './validation/templateDispatch.js';
+
+// Phase 3: unit + format
+export { checkUnit } from './validation/checks/checkUnit.js';
+export { checkFormat } from './validation/checks/checkFormat.js';
+
+// Phase 4: enum + list rules
+export { checkEnum } from './validation/checks/checkEnum.js';
+export { enforceListRules } from './validation/checks/enforceListRules.js';
+
+// Phase 5: rounding + range
+export { applyRounding } from './validation/checks/applyRounding.js';
+export { checkRange } from './validation/checks/checkRange.js';
+
+// Phase 6: component + constraints
+export { resolveComponent } from './validation/checks/resolveComponent.js';
+export { checkConstraints } from './validation/checks/checkConstraints.js';
+
+// Phase 7-8: composed pipeline + record orchestrator
+export { validateField } from './validation/validateField.js';
+export { validateRecord } from './validation/validateRecord.js';
+// TODO: export { submitCandidate } from './candidate-gate/submitCandidate.js';
+// TODO: export { publishResolved } from './publisher/publishResolved.js';

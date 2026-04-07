@@ -10,7 +10,10 @@ function createDeps(overrides = {}) {
       return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
     },
     parseJsonArg: (_name, _value, fallback) => fallback,
-    openSpecDbForCategory: async () => ({ close() {} }),
+    withSpecDb: async (_config, _category, fn) => {
+      const specDb = { close() {} };
+      try { return await fn(specDb); } finally { try { specDb?.close(); } catch { /* */ } }
+    },
     buildReviewLayout: async () => ({ columns: [] }),
     buildReviewQueue: async () => [],
     buildProductReviewPayload: async () => ({ product_id: 'mouse-1', fields: {} }),
@@ -93,11 +96,10 @@ test('review queue closes the SpecDb and rethrows when queue building fails', as
   let closeCount = 0;
   const expectedError = new Error('queue_build_failed');
   const commandReview = createReviewHarness({
-    openSpecDbForCategory: async () => ({
-      close() {
-        closeCount += 1;
-      },
-    }),
+    withSpecDb: async (_config, _category, fn) => {
+      const specDb = { close() { closeCount += 1; } };
+      try { return await fn(specDb); } finally { try { specDb?.close(); } catch { /* */ } }
+    },
     buildReviewQueue: async () => {
       throw expectedError;
     },

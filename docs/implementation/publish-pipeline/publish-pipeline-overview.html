@@ -537,28 +537,35 @@ CREATE TABLE item_field_state (
   </div>
 
   <table>
-    <thead><tr><th>#</th><th>Sub-Module</th><th>Depends On</th><th>Nature</th><th>Reference Doc</th></tr></thead>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Depends On</th><th>Nature</th><th>Status</th></tr></thead>
     <tbody>
-      <tr>
-        <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
+      <tr style="background:var(--sf-success-bg);">
+        <td class="mono bold" style="color:var(--sf-success-fg);">1</td>
         <td class="bold">validation/</td>
         <td class="mono tiny">src/shared/ only</td>
-        <td class="small">Pure functions. Most complex. 12 check dimensions, 12 parse templates, 297 fields proven.</td>
-        <td class="mono tiny"><a href="universal-validator-reference.html" style="color:var(--sf-accent-strong);">universal-validator-reference.html</a></td>
+        <td class="small">Pure functions. 18 modules, 12 check dimensions, O(1) dispatch. Zero engine imports.</td>
+        <td><span class="chip chip-success">COMPLETE &mdash; 458 tests</span></td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
-        <td class="bold">candidate-gate/</td>
+        <td class="bold">repair-adapter/</td>
         <td class="mono tiny">validation/</td>
-        <td class="small">Thin orchestration. Calls <code>validateField()</code>, dual-writes. Needs DB access patterns.</td>
-        <td class="mono tiny"><a href="product-json-v2-schema.json" style="color:var(--sf-accent-strong);">product-json-v2-schema.json</a></td>
+        <td class="small">LLM repair orchestration. Takes repairPrompt from validator, calls LLM, re-validates. 3-attempt escalation chain.</td>
+        <td><span class="chip chip-warning">NEXT</span></td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+        <td class="bold">candidate-gate/</td>
+        <td class="mono tiny">validation/, repair-adapter/</td>
+        <td class="small">Source-side gate. Calls <code>validateField()</code>, optionally repairs, dual-writes candidate.</td>
+        <td><span class="chip chip-neutral">PLANNED</span></td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
         <td class="bold">publisher/</td>
         <td class="mono tiny">validation/</td>
-        <td class="small">Thin orchestration. Resolves candidates, calls <code>validateRecord()</code>, dual-writes.</td>
-        <td class="mono tiny"><a href="product-json-v2-schema.json" style="color:var(--sf-accent-strong);">product-json-v2-schema.json</a></td>
+        <td class="small">Resolves candidates, calls <code>validateRecord()</code> for cross-field, dual-writes resolved values.</td>
+        <td><span class="chip chip-neutral">PLANNED</span></td>
       </tr>
     </tbody>
   </table>

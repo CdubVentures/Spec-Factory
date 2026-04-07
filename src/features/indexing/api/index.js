@@ -23,3 +23,4 @@ export {
   normalizeAutomationQuery,
   buildSearchProfileQueryMaps,
 } from './builders/indexlabDataBuilders.js';
+export { buildRuntimeOpsPanels } from './builders/buildRuntimeOpsPanels.js';

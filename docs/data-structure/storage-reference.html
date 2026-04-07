@@ -490,7 +490,6 @@ code{font-family:var(--mono);font-size:0.85em}
         <span class="json">{type}.json</span>
     <span class="dir">_control_plane/</span>
       <span class="json">field_studio_map.json</span>
-      <span class="json">product_catalog.json</span>           <span class="comment"># mouse only; still read by loader/seed flows</span>
     <span class="dir">_overrides/</span>
       <span class="json">overrides.json</span>                 <span class="comment"># Canonical consolidated v2 path when present</span>
       <span class="json">{productId}.overrides.json</span>    <span class="comment"># Legacy per-product fallback still supported</span>
@@ -521,14 +520,13 @@ code{font-family:var(--mono);font-size:0.85em}
     <div class="domain-label">Control Plane (_control_plane/)</div>
 
     <details class="card">
-      <summary><span class="card-name">_control_plane/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">1&ndash;2 files</span><span class="tag tag-git">Committed</span></span></summary>
+      <summary><span class="card-name">_control_plane/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">1 file</span><span class="tag tag-git">Committed</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Current counts</td><td class="pv"><strong>mouse:</strong> <code>field_studio_map.json</code> + <code>product_catalog.json</code>. <strong>keyboard</strong> and <strong>monitor</strong>: <code>field_studio_map.json</code> only.</td></tr>
-          <tr><td class="pk">Product catalog status</td><td class="pv">The SQL <code>products</code> table is the live CRUD/runtime SSOT, but <code>product_catalog.json</code> is still read by <code>catalogProductLoader.js</code> and catalog seed flows.</td></tr>
-          <tr><td class="pk">Written by</td><td class="pv">Category/control-plane maintenance and field-studio mapping workflows.</td></tr>
+          <tr><td class="pk">Current counts</td><td class="pv">All categories: <code>field_studio_map.json</code> only. <code>product_catalog.json</code> has been retired and deleted.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Field-studio mapping workflows.</td></tr>
           <tr><td class="pk">Mutable?</td><td class="pv">Yes, but these are committed control-plane inputs, not transient runtime files.</td></tr>
-          <tr><td class="pk">In SQL?</td><td class="pv"><code>field_studio_map.json</code> feeds the per-category <code>field_studio_map</code> table. <code>product_catalog.json</code> can seed products/overrides but does not replace SQL runtime ownership.</td></tr>
+          <tr><td class="pk">In SQL?</td><td class="pv"><code>field_studio_map.json</code> feeds the per-category <code>field_studio_map</code> table.</td></tr>
         </table>
       </div>
     </details>
@@ -634,7 +632,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <span class="tag tag-bin">Runtime</span>
     <span class="tag tag-sql">SQL Live SSOT</span>
   </div>
-  <p class="section-desc">The SQL <code>products</code> table is the live runtime CRUD surface. <code>.workspace/products/{pid}/product.json</code> is the durable rebuild checkpoint, and <code>.workspace/products/{pid}/color_edition.json</code> is the durable SSOT for color/edition finder data. <code>product_catalog.json</code> still exists as a control-plane input for loader and seed flows; it is not the live CRUD surface.</p>
+  <p class="section-desc">The SQL <code>products</code> table is the live runtime CRUD surface. <code>.workspace/products/{pid}/product.json</code> is the durable rebuild checkpoint, and <code>.workspace/products/{pid}/color_edition.json</code> is the durable SSOT for color/edition finder data.</p>
 
   <div class="tree"><span class="dir">.workspace/</span>
   <span class="dir">products/</span>

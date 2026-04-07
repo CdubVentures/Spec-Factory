@@ -1,6 +1,6 @@
 ## Purpose
 
-Pure deterministic field value validation against Field Studio contracts. 12-step pipeline: shape, type, unit, format, normalize, enum, list rules, rounding, range, constraints, component, sanity bounds. Every check is a pure function. No DB, no LLM, no side effects.
+Pure deterministic field value validation against Field Studio contracts. **COMPLETE — 458 tests, 0 failures.** 12-step pipeline: absence, shape, unit, type, normalize, format, list rules, rounding, enum, range, component, constraints. Every check is a pure function. No DB, no LLM, no side effects. Zero `src/engine/` imports — fully standalone.
 
 ## Public API (The Contract)
 

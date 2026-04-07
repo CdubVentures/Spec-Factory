@@ -78,6 +78,17 @@ export async function assertCategorySchemaReady({ category, storage, config }) {
   }
 }
 
+export function createWithSpecDb(openFn) {
+  return async function withSpecDb(config, category, fn) {
+    const specDb = await openFn(config, category);
+    try {
+      return await fn(specDb);
+    } finally {
+      try { specDb?.close(); } catch { /* best-effort */ }
+    }
+  };
+}
+
 export async function openSpecDbForCategory(config, category) {
   const normalizedCategory = String(category || '').trim();
   if (!normalizedCategory) return null;

@@ -10,6 +10,12 @@ export type LlmPhaseId =
   | 'validate'
   | 'color-finder';
 
+export type LlmPhaseGroup =
+  | 'global'
+  | 'indexing'
+  | 'publish'
+  | 'discovery';
+
 export interface LlmPhaseDefinition {
   id: LlmPhaseId;
   label: string;
@@ -17,4 +23,5 @@ export interface LlmPhaseDefinition {
   tip: string;
   roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;
   sharedWith?: ReadonlyArray<LlmPhaseId>;
+  group: LlmPhaseGroup;
 }

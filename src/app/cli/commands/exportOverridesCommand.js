@@ -42,15 +42,14 @@ function buildProductOverridesFromSql(specDb, category, productId) {
 
 // ── Export command (legacy v1 per-product format) ─────────────────────────────
 
-export function createExportOverridesCommand({ openSpecDbForCategory }) {
+export function createExportOverridesCommand({ withSpecDb }) {
   return async function commandExportOverrides(config, _storage, args) {
     const category = String(args.category || '').trim();
     if (!category) {
       throw new Error('export-overrides requires --category <category>');
     }
 
-    const specDb = await openSpecDbForCategory(config, category);
-    try {
+    return withSpecDb(config, category, (specDb) => {
       const productIds = specDb.listApprovedProductIds();
       const products = productIds.map((productId) => ({
         version: 1,
@@ -65,23 +64,20 @@ export function createExportOverridesCommand({ openSpecDbForCategory }) {
         product_count: products.length,
         products,
       };
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
+    });
   };
 }
 
 // ── Migrate command (v2 consolidated format) ─────────────────────────────────
 
-export function createMigrateOverridesCommand({ openSpecDbForCategory }) {
+export function createMigrateOverridesCommand({ withSpecDb }) {
   return async function commandMigrateOverrides(config, _storage, args) {
     const category = String(args?.category || '').trim();
     if (!category) {
       throw new Error('migrate-overrides requires --category <category>');
     }
 
-    const specDb = await openSpecDbForCategory(config, category);
-    try {
+    return withSpecDb(config, category, async (specDb) => {
       // WHY: listProductIdsWithOverrides returns ALL products with overrides or review state,
       // not just approved. This prevents losing in_progress/draft overrides during migration.
       const productIds = typeof specDb.listProductIdsWithOverrides === 'function'
@@ -108,8 +104,6 @@ export function createMigrateOverridesCommand({ openSpecDbForCategory }) {
         migrated_count: productIds.length,
         path: `category_authority/${category}/_overrides/overrides.json`,
       };
-    } finally {
-      try { specDb?.close(); } catch { /* no-op */ }
-    }
+    });
   };
 }

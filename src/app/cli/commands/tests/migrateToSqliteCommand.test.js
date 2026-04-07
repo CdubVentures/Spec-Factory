@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createMigrateToSqliteCommand } from '../migrateToSqliteCommand.js';
@@ -38,12 +38,16 @@ function createSpecDbStub() {
   };
 }
 
+function mockWithSpecDb(specDb) {
+  return async (_config, _category, fn) => {
+    try { return await fn(specDb); } finally { try { specDb?.close(); } catch { /* */ } }
+  };
+}
+
 test('migrate-to-sqlite requires --category', async () => {
   const command = createMigrateToSqliteCommand({
-    openSpecDbForCategory: async () => createSpecDbStub(),
+    withSpecDb: mockWithSpecDb(createSpecDbStub()),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    fsNode: { readdir: async () => [], readFile: async () => '' },
-    pathNode: { join: (...parts) => parts.join('/') },
     now: () => 0,
   });
 
@@ -55,10 +59,8 @@ test('migrate-to-sqlite requires --category', async () => {
 
 test('migrate-to-sqlite throws when SpecDb cannot be opened', async () => {
   const command = createMigrateToSqliteCommand({
-    openSpecDbForCategory: async () => null,
+    withSpecDb: mockWithSpecDb(null),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    fsNode: { readdir: async () => [], readFile: async () => '' },
-    pathNode: { join: (...parts) => parts.join('/') },
     now: () => 0,
   });
 
@@ -71,10 +73,8 @@ test('migrate-to-sqlite throws when SpecDb cannot be opened', async () => {
 test('migrate-to-sqlite phase 1 reports queue verification and closes SpecDb', async () => {
   const specDb = createSpecDbStub();
   const command = createMigrateToSqliteCommand({
-    openSpecDbForCategory: async () => specDb,
+    withSpecDb: mockWithSpecDb(specDb),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    fsNode: { readdir: async () => [], readFile: async () => '' },
-    pathNode: { join: (...parts) => parts.join('/') },
     now: () => 0,
   });
 
@@ -116,10 +116,8 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
   });
 
   const command = createMigrateToSqliteCommand({
-    openSpecDbForCategory: async () => specDb,
+    withSpecDb: mockWithSpecDb(specDb),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    fsNode: { readdir: async () => [], readFile: async () => '' },
-    pathNode: { join: (...parts) => parts.join('/') },
     now: () => 0,
   });
 
@@ -131,5 +129,3 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
   assert.equal(specDb.billingEntries.length, 2);
   assert.equal(specDb.wasClosed(), true);
 });
-
-

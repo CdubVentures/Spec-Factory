@@ -1,23 +1,17 @@
 import { parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
 import pathNode from 'node:path';
-import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { buildProductId } from '../../../shared/primitives.js';
-import { SpecDb as SpecDbForLookup } from '../../../db/specDb.js';
 import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlCheckpoint.js';
 import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
 import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
 import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProductCheckpoint.js';
-import { buildJobFromDb } from '../../../features/indexing/orchestration/bootstrap/buildJobFromDb.js';
+import { buildJobFromDb } from '../../../features/indexing/orchestration/index.js';
 import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
-import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js';
+import { buildRuntimeOpsPanels } from '../../../features/indexing/api/index.js';
 import { setStageCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
 import { writeRunMeta } from '../../../indexlab/runtimeBridgeArtifacts.js';
-import { deriveFullModel } from '../../../features/catalog/identity/identityDedup.js';
-
-const PROJECT_ROOT = pathNode.resolve(
-  decodeURIComponent(new URL('../../../../', import.meta.url).pathname).replace(/^\/([A-Z]:)/i, '$1'),
-);
+import { deriveFullModel } from '../../../features/catalog/index.js';
 
 export function createPipelineCommands({
   asBool,
@@ -26,6 +20,8 @@ export function createPipelineCommands({
   runUntilComplete,
   IndexLabRuntimeBridge,
   defaultIndexLabRoot,
+  openSpecDbForCategory,
+  withSpecDb,
 }) {
   async function commandRunOne(config, storage, args) {
     const s3Key =
@@ -104,15 +100,15 @@ export function createPipelineCommands({
       let generatedProductId = productIdArg;
       if (!generatedProductId) {
         try {
-          const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
-          const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
-          const allRows = lookupDb.getAllProducts?.() || [];
-          const match = allRows.find((r) =>
-            String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
-            String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
-            String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
-          );
-          generatedProductId = match?.product_id || buildProductId(category);
+          generatedProductId = await withSpecDb(config, category, (lookupDb) => {
+            const allRows = lookupDb?.getAllProducts?.() || [];
+            const match = allRows.find((r) =>
+              String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
+              String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
+              String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
+            );
+            return match?.product_id || buildProductId(category);
+          });
         } catch { generatedProductId = buildProductId(category); }
       }
       const derivedModel = deriveFullModel(model, variant);
@@ -143,13 +139,9 @@ export function createPipelineCommands({
     }
 
     // Open per-category SpecDb for event logging (WAL-safe, best-effort)
-    // WHY: resolve from project root, not CWD — the child process CWD may differ from the GUI server
     let specDb = null;
     try {
-      const { SpecDb } = await import('../../../db/specDb.js');
-      const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
-      await fsNode.mkdir(specDbDir, { recursive: true });
-      specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
+      specDb = await openSpecDbForCategory(config, category);
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
     // WHY: DB-first job resolution. The products table in spec.sqlite is the SSOT
@@ -389,15 +381,15 @@ export function createPipelineCommands({
     let productId = String(args['product-id'] || '').trim();
     if (!productId) {
       try {
-        const specDbDir = pathNode.join(PROJECT_ROOT, '.workspace', 'db', category);
-        const lookupDb = new SpecDbForLookup({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
-        const allRows = lookupDb.getAllProducts?.() || [];
-        const match = allRows.find((r) =>
-          String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
-          String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
-          String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
-        );
-        productId = match?.product_id || buildProductId(category);
+        productId = await withSpecDb(config, category, (lookupDb) => {
+          const allRows = lookupDb?.getAllProducts?.() || [];
+          const match = allRows.find((r) =>
+            String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
+            String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
+            String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
+          );
+          return match?.product_id || buildProductId(category);
+        });
       } catch { productId = buildProductId(category); }
     }
 

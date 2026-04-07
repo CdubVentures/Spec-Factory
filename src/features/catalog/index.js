@@ -27,6 +27,7 @@ export {
 } from './identity/identityGate.js';
 export {
   cleanVariant,
+  deriveFullModel,
   isFabricatedVariant,
   normalizeProductIdentity,
 } from './identity/identityDedup.js';

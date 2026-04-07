@@ -29,14 +29,13 @@
 
 - **`.workspace/products/{pid}/product.json`** is the sole disk SSOT per product (identity + run history, created at add time, grown after runs).
 - **SQL `products` table** in `spec.sqlite` is the runtime cache, rebuilt from product.json files via `scanAndSeedCheckpoints`.
-- **`product_catalog.json`** is retired — kept only as a legacy import format for `seedFromCatalog`. Not read at boot, not the SSOT.
-- **No fixture input files** — the `fixtures/` directory and `INPUT_KEY_PREFIX` pattern have been eliminated.
+- **No fixture input files** — the `fixtures/` directory, `INPUT_KEY_PREFIX` pattern, and `product_catalog.json` have all been eliminated.
 
 ## Flow
 
 1. A user adds or edits a product in `CatalogPage.tsx`.
 2. The GUI calls `POST`, `PUT`, or `DELETE` on `/api/v1/catalog/:category/products`.
-3. `catalogRoutes.js` delegates to `catalogAddProduct`, `catalogUpdateProduct`, `catalogRemoveProduct`, or bulk/seed helpers.
+3. `catalogRoutes.js` delegates to `catalogAddProduct`, `catalogAddProductsBulk`, `catalogUpdateProduct`, or `catalogRemoveProduct`.
 4. `productCatalog.js` creates `.workspace/products/{pid}/product.json` via `writeProductIdentity()` and queues the product.
 5. The route mirrors identity into SQLite via `upsertCatalogProductRow()`.
 6. The route emits `data-change` events so review, indexing, and studio screens refresh.
@@ -47,7 +46,6 @@
 - Writes `.workspace/products/{pid}/product.json` (rebuild SSOT).
 - Writes `products` and `product_queue` rows in SQLite.
 - Emits `catalog-*` and `brand-*` data-change events.
-- `POST /catalog/:category/products/seed` can enqueue many products in one operation.
 
 ## Error Paths
 

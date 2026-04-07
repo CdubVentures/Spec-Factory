@@ -5,7 +5,7 @@
 // Usage: node tools/gui-react/scripts/generateLlmPhaseRegistry.js
 // Output: writes 4 .generated.ts files in the llm-config feature directory
 
-import { LLM_PHASE_DEFS, LLM_PHASE_UI_GLOBAL } from '../../../src/core/config/llmPhaseDefs.js';
+import { LLM_PHASE_DEFS, LLM_PHASE_UI_GLOBAL, LLM_PHASE_GROUPS } from '../../../src/core/config/llmPhaseDefs.js';
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +29,10 @@ function generatePhaseTypes() {
   // LlmPhaseId union
   lines.push(`export type LlmPhaseId =\n  ${ids.map((id) => `| ${quote(id)}`).join('\n  ')};\n`);
 
+  // LlmPhaseGroup union
+  const groupIds = LLM_PHASE_GROUPS;
+  lines.push(`export type LlmPhaseGroup =\n  ${groupIds.map((g) => `| ${quote(g)}`).join('\n  ')};\n`);
+
   // LlmPhaseDefinition interface
   lines.push(`export interface LlmPhaseDefinition {`);
   lines.push(`  id: LlmPhaseId;`);
@@ -37,6 +41,7 @@ function generatePhaseTypes() {
   lines.push(`  tip: string;`);
   lines.push(`  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;`);
   lines.push(`  sharedWith?: ReadonlyArray<LlmPhaseId>;`);
+  lines.push(`  group: LlmPhaseGroup;`);
   lines.push(`}\n`);
 
   return lines.join('\n');
@@ -58,9 +63,18 @@ function generatePhaseRegistry() {
   lines.push('export const LLM_PHASES: readonly LlmPhaseDefinition[] = [');
   for (const p of allPhases) {
     const sharedWith = p.sharedWith ? `, sharedWith: [${p.sharedWith.map(quote).join(', ')}]` : '';
-    lines.push(`  { id: ${quote(p.uiId)}, label: ${quote(p.label)}, subtitle: ${quote(p.subtitle)}, tip: ${quote(p.tip)}, roles: [${p.roles.map(quote).join(', ')}]${sharedWith} },`);
+    const group = p.group ? `, group: ${quote(p.group)}` : `, group: 'global'`;
+    lines.push(`  { id: ${quote(p.uiId)}, label: ${quote(p.label)}, subtitle: ${quote(p.subtitle)}, tip: ${quote(p.tip)}, roles: [${p.roles.map(quote).join(', ')}]${sharedWith}${group} },`);
   }
   lines.push('] as const;\n');
+
+  // LLM_PHASE_GROUP_LABELS — display labels for sidebar section dividers
+  lines.push(`export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {`);
+  lines.push(`  global: 'Global',`);
+  lines.push(`  indexing: 'Indexing Pipeline',`);
+  lines.push(`  publish: 'Publish Pipeline',`);
+  lines.push(`  discovery: 'Discovery',`);
+  lines.push(`};\n`);
 
   return lines.join('\n');
 }

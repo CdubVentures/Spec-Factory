@@ -7,11 +7,13 @@ import {
   slug,
   parseCsvList,
   parseJsonArg,
-  openSpecDbForCategory
+  openSpecDbForCategory,
+  createWithSpecDb,
 } from './cliHelpers.js';
-import fsNode from 'node:fs/promises';
 import pathNode from 'node:path';
 import { pathToFileURL } from 'node:url';
+
+const withSpecDb = createWithSpecDb(openSpecDbForCategory);
 
 function usage() {
   return [
@@ -55,6 +57,7 @@ function usage() {
     '  seed-db --category <category> [--local]',
     '  seed-checkpoint --category <category> [--out <path>] [--local]',
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
+    '  migrate-overrides --category <category> [--local]',
     '',
     'Global options:',
     '  --env <path>   Path to dotenv file (default: .env)',
@@ -132,7 +135,7 @@ const loadReviewCommandHandler = createLazyLoader(async () => {
   return createReviewCommand({
     asBool,
     parseJsonArg,
-    openSpecDbForCategory,
+    withSpecDb,
     buildReviewLayout: reviewDomain.buildReviewLayout,
     buildReviewQueue: reviewDomain.buildReviewQueue,
     buildProductReviewPayload: reviewDomain.buildProductReviewPayload,
@@ -150,7 +153,12 @@ const loadReviewCommandHandler = createLazyLoader(async () => {
 
 const loadExportOverridesCommandHandler = createLazyLoader(async () => {
   const { createExportOverridesCommand } = await import('./commands/exportOverridesCommand.js');
-  return createExportOverridesCommand({ openSpecDbForCategory });
+  return createExportOverridesCommand({ withSpecDb });
+});
+
+const loadMigrateOverridesCommandHandler = createLazyLoader(async () => {
+  const { createMigrateOverridesCommand } = await import('./commands/exportOverridesCommand.js');
+  return createMigrateOverridesCommand({ withSpecDb });
 });
 
 const loadDiscoverCommandHandler = createLazyLoader(async () => {
@@ -172,6 +180,7 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
     runDiscoverySeedPlan,
     EventLogger,
     buildRunId,
+    openSpecDbForCategory,
   });
 });
 
@@ -209,10 +218,8 @@ const loadLlmHealthCommandHandler = createLazyLoader(async () => {
 const loadMigrateToSqliteCommandHandler = createLazyLoader(async () => {
   const { createMigrateToSqliteCommand } = await import('./commands/migrateToSqliteCommand.js');
   return createMigrateToSqliteCommand({
-    openSpecDbForCategory,
+    withSpecDb,
     toPosixKey,
-    fsNode,
-    pathNode,
     now: () => Date.now(),
   });
 });
@@ -256,7 +263,6 @@ const loadPublishingCommands = createLazyLoader(async () => {
   return createPublishingCommands({
     asBool,
     reconcileOrphans,
-    openSpecDbForCategory,
   });
 });
 
@@ -295,7 +301,7 @@ const loadBatchCommandGroup = createLazyLoader(async () => {
     loadSourceIntel: async () => ({ data: { domains: {} } }),
     rankBatchWithBandit,
     runProduct,
-    openSpecDbForCategory,
+    withSpecDb,
   });
 });
 
@@ -318,6 +324,8 @@ const loadPipelineCommands = createLazyLoader(async () => {
     runUntilComplete,
     IndexLabRuntimeBridge,
     defaultIndexLabRoot,
+    openSpecDbForCategory,
+    withSpecDb,
   });
 });
 
@@ -373,6 +381,8 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadDataUtilityCommands()).commandSeedCheckpoint(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
+    case 'migrate-overrides':
+      return (await loadMigrateOverridesCommandHandler())(config, storage, args);
     default:
       throw new Error(`Unknown command: ${command}`);
   }

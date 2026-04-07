@@ -1,7 +1,7 @@
 export function createReviewCommand({
   asBool,
   parseJsonArg,
-  openSpecDbForCategory,
+  withSpecDb,
   buildReviewLayout,
   buildReviewQueue,
   buildProductReviewPayload,
@@ -23,28 +23,26 @@ export function createReviewCommand({
     }
 
     if (action === 'layout') {
-      const specDb = await openSpecDbForCategory(config, category);
-      let studioMap = null;
-      try {
-        const row = specDb?.getFieldStudioMap?.();
-        studioMap = row ? JSON.parse(row.map_json) : null;
-      } catch { /* no studio map available */ }
-      const layout = await buildReviewLayout({ storage, config, category, studioMap });
-      try { specDb?.close(); } catch { /* no-op */ }
-      return {
-        command: 'review',
-        action,
-        ...layout
-      };
+      return withSpecDb(config, category, async (specDb) => {
+        let studioMap = null;
+        try {
+          const row = specDb?.getFieldStudioMap?.();
+          studioMap = row ? JSON.parse(row.map_json) : null;
+        } catch { /* no studio map available */ }
+        const layout = await buildReviewLayout({ storage, config, category, studioMap });
+        return {
+          command: 'review',
+          action,
+          ...layout
+        };
+      });
     }
 
     if (action === 'queue') {
       const status = String(args.status || 'needs_review').trim().toLowerCase();
       const limit = Math.max(1, Number.parseInt(String(args.limit || '100'), 10) || 100);
-      const specDb = await openSpecDbForCategory(config, category);
-      let items;
-      try {
-        items = await buildReviewQueue({
+      return withSpecDb(config, category, async (specDb) => {
+        const items = await buildReviewQueue({
           storage,
           config,
           category,
@@ -52,17 +50,15 @@ export function createReviewCommand({
           limit,
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        status,
-        count: items.length,
-        items
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          status,
+          count: items.length,
+          items
+        };
+      });
     }
 
     if (action === 'product') {
@@ -71,10 +67,8 @@ export function createReviewCommand({
         throw new Error('review product requires --product-id <id>');
       }
       const includeCandidates = !asBool(args['without-candidates'], false) && !asBool(args['selected-only'], false);
-      const specDb = await openSpecDbForCategory(config, category);
-      let payload;
-      try {
-        payload = await buildProductReviewPayload({
+      return withSpecDb(config, category, async (specDb) => {
+        const payload = await buildProductReviewPayload({
           storage,
           config,
           category,
@@ -82,15 +76,13 @@ export function createReviewCommand({
           includeCandidates,
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        ...payload
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          ...payload
+        };
+      });
     }
 
     if (action === 'build') {
@@ -179,10 +171,8 @@ export function createReviewCommand({
       if (!productId || !field || !candidateId) {
         throw new Error('review override requires --product-id --field --candidate-id');
       }
-      const specDb = await openSpecDbForCategory(config, category);
-      let result;
-      try {
-        result = await setOverrideFromCandidate({
+      return withSpecDb(config, category, async (specDb) => {
+        const result = await setOverrideFromCandidate({
           storage,
           config,
           category,
@@ -193,15 +183,13 @@ export function createReviewCommand({
           reviewer: String(args.reviewer || '').trim(),
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        ...result
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          ...result
+        };
+      });
     }
 
     if (action === 'approve-greens') {
@@ -209,10 +197,8 @@ export function createReviewCommand({
       if (!productId) {
         throw new Error('review approve-greens requires --product-id <id>');
       }
-      const specDb = await openSpecDbForCategory(config, category);
-      let result;
-      try {
-        result = await approveGreenOverrides({
+      return withSpecDb(config, category, async (specDb) => {
+        const result = await approveGreenOverrides({
           storage,
           config,
           category,
@@ -221,16 +207,14 @@ export function createReviewCommand({
           reviewer: String(args.reviewer || '').trim(),
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        product_id: productId,
-        ...result
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          product_id: productId,
+          ...result
+        };
+      });
     }
 
     if (action === 'manual-override') {
@@ -240,10 +224,8 @@ export function createReviewCommand({
       if (!productId || !field || !value) {
         throw new Error('review manual-override requires --product-id --field --value');
       }
-      const specDb = await openSpecDbForCategory(config, category);
-      let result;
-      try {
-        result = await setManualOverride({
+      return withSpecDb(config, category, async (specDb) => {
+        const result = await setManualOverride({
           storage,
           config,
           category,
@@ -263,15 +245,13 @@ export function createReviewCommand({
           },
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        ...result
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          ...result
+        };
+      });
     }
 
     if (action === 'finalize') {
@@ -279,10 +259,8 @@ export function createReviewCommand({
       if (!productId) {
         throw new Error('review finalize requires --product-id <id>');
       }
-      const specDb = await openSpecDbForCategory(config, category);
-      let result;
-      try {
-        result = await finalizeOverrides({
+      return withSpecDb(config, category, async (specDb) => {
+        const result = await finalizeOverrides({
           storage,
           config,
           category,
@@ -292,15 +270,13 @@ export function createReviewCommand({
           reviewer: String(args.reviewer || '').trim(),
           specDb
         });
-      } finally {
-        try { specDb?.close(); } catch { /* no-op */ }
-      }
-      return {
-        command: 'review',
-        action,
-        category,
-        ...result
-      };
+        return {
+          command: 'review',
+          action,
+          category,
+          ...result
+        };
+      });
     }
 
     if (action === 'metrics') {
@@ -324,36 +300,35 @@ export function createReviewCommand({
       if (!type || !field || !value) {
         throw new Error('review suggest requires --type --field --value');
       }
-      let suggestSpecDb = null;
-      try { suggestSpecDb = await openSpecDbForCategory(config, category); } catch { /* optional */ }
-      const result = await appendReviewSuggestion({
-        config,
-        category,
-        type,
-        specDb: suggestSpecDb,
-        payload: {
-          product_id: String(args['product-id'] || '').trim(),
-          field,
-          value,
-          canonical: String(args.canonical || '').trim(),
-          reason: String(args.reason || '').trim(),
-          reviewer: String(args.reviewer || '').trim(),
-          evidence: {
-            url: String(args['evidence-url'] || '').trim(),
-            quote: String(args['evidence-quote'] || '').trim(),
-            quote_span: parseJsonArg('evidence-quote-span', args['evidence-quote-span'], null),
-            snippet_id: String(args['evidence-snippet-id'] || '').trim(),
-            snippet_hash: String(args['evidence-snippet-hash'] || '').trim()
+      return withSpecDb(config, category, async (specDb) => {
+        const result = await appendReviewSuggestion({
+          config,
+          category,
+          type,
+          specDb,
+          payload: {
+            product_id: String(args['product-id'] || '').trim(),
+            field,
+            value,
+            canonical: String(args.canonical || '').trim(),
+            reason: String(args.reason || '').trim(),
+            reviewer: String(args.reviewer || '').trim(),
+            evidence: {
+              url: String(args['evidence-url'] || '').trim(),
+              quote: String(args['evidence-quote'] || '').trim(),
+              quote_span: parseJsonArg('evidence-quote-span', args['evidence-quote-span'], null),
+              snippet_id: String(args['evidence-snippet-id'] || '').trim(),
+              snippet_hash: String(args['evidence-snippet-hash'] || '').trim()
+            }
           }
-        }
+        });
+        return {
+          command: 'review',
+          action,
+          category,
+          ...result
+        };
       });
-      try { suggestSpecDb?.close(); } catch { /* no-op */ }
-      return {
-        command: 'review',
-        action,
-        category,
-        ...result
-      };
     }
 
     throw new Error(`Unknown review subcommand: ${action}`);

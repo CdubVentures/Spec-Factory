@@ -1,35 +1,27 @@
 import { assertCategorySchemaReady } from '../cliHelpers.js';
-import fsNode from 'node:fs/promises';
-import pathNode from 'node:path';
-import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createDataUtilityCommands({
   asBool,
   EventLogger,
   generateTypesForCategory,
-  openSpecDbForCategory = null,
+  openSpecDbForCategory,
 }) {
   async function commandSeedDb(config, _storage, args) {
     const category = String(args.category || '').trim();
     if (!category) throw new Error('seed-db requires --category');
 
-    const { SpecDb } = await import('../../../db/specDb.js');
     const { syncSpecDbForCategory } = await import('../../../app/api/services/specDbSyncService.js');
 
-    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
-    await fsNode.mkdir(dbDir, { recursive: true });
-    const dbPath = pathNode.join(dbDir, 'spec.sqlite');
-    const db = new SpecDb({ dbPath, category });
-
+    const db = await openSpecDbForCategory(config, category);
     try {
       const result = await syncSpecDbForCategory({
         category,
         config,
         getSpecDbReady: async () => db,
       });
-      return { command: 'seed-db', category, db_path: dbPath, ...result };
+      return { command: 'seed-db', category, ...result };
     } finally {
-      db.close();
+      try { db?.close(); } catch { /* best-effort */ }
     }
   }
 
@@ -54,21 +46,17 @@ export function createDataUtilityCommands({
     const category = String(args.category || '').trim();
     if (!category) throw new Error('seed-checkpoint requires --category');
 
-    const { SpecDb } = await import('../../../db/specDb.js');
     const { scanAndSeedCheckpoints } = await import('../../../pipeline/checkpoint/scanAndSeedCheckpoints.js');
     const { defaultIndexLabRoot } = await import('../../../core/config/runtimeArtifactRoots.js');
 
     const indexLabRoot = String(args.out || defaultIndexLabRoot()).trim();
-    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
-    await fsNode.mkdir(dbDir, { recursive: true });
-    const dbPath = pathNode.join(dbDir, 'spec.sqlite');
-    const db = new SpecDb({ dbPath, category });
+    const db = await openSpecDbForCategory(config, category);
 
     try {
       const result = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot });
-      return { command: 'seed-checkpoint', category, db_path: dbPath, ...result };
+      return { command: 'seed-checkpoint', category, ...result };
     } finally {
-      db.close();
+      try { db?.close(); } catch { /* best-effort */ }
     }
   }
 

@@ -9,6 +9,7 @@ export interface SidebarNavItem<T extends string> {
   subtitle: string;
   tip: string;
   badge?: ReactNode;
+  group?: string;
 }
 
 interface SidebarShellProps<T extends string> {
@@ -20,6 +21,8 @@ interface SidebarShellProps<T extends string> {
   headerActions?: ReactNode;
   subtitleExtra?: ReactNode;
   children: ReactNode;
+  /** Map from group key to display label for section dividers */
+  groupLabels?: Record<string, string>;
 }
 
 /* ── Component ───────────────────────────────────────────────────── */
@@ -33,8 +36,13 @@ export function SidebarShell<T extends string>({
   headerActions,
   subtitleExtra,
   children,
+  groupLabels,
 }: SidebarShellProps<T>) {
   const activeData = items.find((i) => i.id === activeItem) ?? items[0];
+
+  // WHY: Track which group was last rendered so we can insert section dividers
+  // only when the group changes between consecutive items.
+  let lastGroup: string | undefined;
 
   return (
     <div
@@ -50,30 +58,43 @@ export function SidebarShell<T extends string>({
         </div>
         {items.map((item) => {
           const isActive = activeItem === item.id;
+          const itemGroup = item.group;
+          const showDivider = groupLabels && itemGroup && itemGroup !== lastGroup && itemGroup !== 'global';
+          lastGroup = itemGroup;
+
           return (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item.id)}
-              className={`group relative w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
-            >
-              {item.badge && (
-                <span className="absolute top-[-6px] right-[3px]">{item.badge}</span>
+            <div key={item.id}>
+              {showDivider && (
+                <div
+                  className="mt-3 mb-1 px-2 pt-2 border-t sf-text-nano font-bold uppercase tracking-widest"
+                  style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
+                >
+                  {groupLabels[itemGroup] ?? itemGroup}
+                </div>
               )}
-              <div className="flex items-center gap-2.5">
-                {renderIcon(item.id, isActive)}
-                <div className="min-w-0 flex-1">
-                  <div
-                    className="sf-text-label font-semibold leading-5"
-                    style={{ color: isActive ? 'rgb(var(--sf-color-accent-strong-rgb))' : 'var(--sf-text)' }}
-                  >
-                    {item.label}
-                  </div>
-                  <div className="sf-text-caption leading-4" style={{ color: 'var(--sf-muted)' }}>
-                    {item.subtitle}
+              <button
+                onClick={() => onSelect(item.id)}
+                className={`group relative w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
+              >
+                {item.badge && (
+                  <span className="absolute top-[-4px] right-[3px]">{item.badge}</span>
+                )}
+                <div className="flex items-center gap-2.5">
+                  {renderIcon(item.id, isActive)}
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="sf-text-label font-semibold leading-5"
+                      style={{ color: isActive ? 'rgb(var(--sf-color-accent-strong-rgb))' : 'var(--sf-text)' }}
+                    >
+                      {item.label}
+                    </div>
+                    <div className="sf-text-caption leading-4" style={{ color: 'var(--sf-muted)' }}>
+                      {item.subtitle}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            </div>
           );
         })}
       </aside>

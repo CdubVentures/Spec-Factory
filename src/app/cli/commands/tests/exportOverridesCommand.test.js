@@ -19,7 +19,9 @@ function createMockSpecDb({
 function createHarness(overrides = {}) {
   const mockSpecDb = overrides.specDb || createMockSpecDb(overrides);
   return createExportOverridesCommand({
-    openSpecDbForCategory: async () => mockSpecDb,
+    withSpecDb: async (_config, _category, fn) => {
+      try { return await fn(mockSpecDb); } finally { try { mockSpecDb?.close(); } catch { /* */ } }
+    },
     ...overrides,
   });
 }
@@ -166,7 +168,9 @@ function createMigrationMockSpecDb({
 function createMigrationHarness(overrides = {}) {
   const mockSpecDb = overrides.specDb || createMigrationMockSpecDb(overrides);
   return createMigrateOverridesCommand({
-    openSpecDbForCategory: async () => mockSpecDb,
+    withSpecDb: async (_config, _category, fn) => {
+      try { return await fn(mockSpecDb); } finally { try { mockSpecDb?.close(); } catch { /* */ } }
+    },
   });
 }
 

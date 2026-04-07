@@ -1,0 +1,271 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { validateRecord } from '../validateRecord.js';
+
+// --- Helpers ---
+
+function numRule(unit, { rounding, range } = {}) {
+  return {
+    contract: { shape: 'scalar', type: 'number', unit, ...(rounding ? { rounding } : {}), ...(range ? { range } : {}) },
+    parse: { template: 'number_with_unit', unit_accepts: [unit] },
+    enum: {},
+    ui: rounding ? { display_decimals: rounding.decimals } : {},
+  };
+}
+
+function textRule() {
+  return { contract: { shape: 'scalar', type: 'string' }, parse: { template: 'text_field' }, enum: {}, ui: {} };
+}
+
+function rangeRule(field, min, max) {
+  return { rule_id: `${field}_plausibility`, trigger_field: field, check: { type: 'range', min, max, on_fail: 'reject_candidate' } };
+}
+
+function conditionalRule() {
+  return {
+    rule_id: 'wireless_battery_required', trigger_field: 'connection',
+    condition: "connection IN ['wireless','hybrid','bluetooth']",
+    requires_field: 'battery_hours', on_fail: 'set_unknown_with_reason',
+  };
+}
+
+function groupRule() {
+  return {
+    rule_id: 'dimensions_consistency', trigger_field: 'lngth',
+    related_fields: ['width', 'height'],
+    check: { type: 'group_completeness', minimum_present: 3, on_fail: 'flag_for_review' },
+  };
+}
+
+// ============================================================
+// Happy path
+// ============================================================
+
+describe('validateRecord — happy path', () => {
+  it('all fields valid', () => {
+    const r = validateRecord({
+      fields: { weight: 42, model: 'Viper' },
+      fieldRules: { weight: numRule('g'), model: textRule() },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.fields.weight, 42);
+    assert.equal(r.fields.model, 'viper');
+    assert.equal(r.perField.weight.valid, true);
+    assert.equal(r.perField.model.valid, true);
+    assert.equal(r.crossFieldFailures.length, 0);
+  });
+
+  it('single field', () => {
+    const r = validateRecord({
+      fields: { weight: 42 },
+      fieldRules: { weight: numRule('g') },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(Object.keys(r.perField).length, 1);
+  });
+
+  it('empty fields → valid', () => {
+    const r = validateRecord({ fields: {}, fieldRules: {} });
+    assert.equal(r.valid, true);
+    assert.equal(Object.keys(r.perField).length, 0);
+  });
+});
+
+// ============================================================
+// Per-field validation flows through
+// ============================================================
+
+describe('validateRecord — per-field flow-through', () => {
+  it('type coerce + unit strip', () => {
+    const r = validateRecord({
+      fields: { weight: '120 mm' },
+      fieldRules: { weight: numRule('mm') },
+    });
+    assert.equal(r.perField.weight.value, 120);
+    assert.equal(r.perField.weight.valid, true);
+  });
+
+  it('string normalization', () => {
+    const r = validateRecord({
+      fields: { model: '  BLACK  ' },
+      fieldRules: { model: textRule() },
+    });
+    assert.equal(r.perField.model.value, 'black');
+  });
+
+  it('wrong unit rejection', () => {
+    const r = validateRecord({
+      fields: { weight: '2.65 lb' },
+      fieldRules: { weight: numRule('g') },
+    });
+    assert.equal(r.valid, false);
+    assert.equal(r.perField.weight.valid, false);
+  });
+
+  it('field with no matching rule → default handling', () => {
+    const r = validateRecord({
+      fields: { unknown_field: 'hello' },
+      fieldRules: {},
+    });
+    assert.equal(r.valid, true);
+    assert.ok(r.perField.unknown_field);
+  });
+});
+
+// ============================================================
+// Enum routing
+// ============================================================
+
+describe('validateRecord — enum routing', () => {
+  it('enum pass — known value', () => {
+    const r = validateRecord({
+      fields: { color: 'black' },
+      fieldRules: { color: textRule() },
+      knownValues: { enums: { color: { policy: 'closed', values: ['black', 'white'] } } },
+    });
+    assert.equal(r.valid, true);
+  });
+
+  it('enum reject — unknown value (closed)', () => {
+    const r = validateRecord({
+      fields: { color: 'pink' },
+      fieldRules: { color: textRule() },
+      knownValues: { enums: { color: { policy: 'closed', values: ['black', 'white'] } } },
+    });
+    assert.equal(r.valid, false);
+  });
+
+  it('no knownValues → skip enum', () => {
+    const r = validateRecord({
+      fields: { color: 'black' },
+      fieldRules: { color: textRule() },
+      knownValues: null,
+    });
+    assert.equal(r.valid, true);
+  });
+});
+
+// ============================================================
+// Cross-field constraints
+// ============================================================
+
+describe('validateRecord — cross-field constraints', () => {
+  it('range: in range → no failure', () => {
+    const r = validateRecord({
+      fields: { actuation_force: 50 },
+      fieldRules: { actuation_force: numRule('') },
+      crossRules: { rules: [rangeRule('actuation_force', 20, 100)] },
+    });
+    assert.equal(r.crossFieldFailures.length, 0);
+  });
+
+  it('range: below min → failure', () => {
+    const r = validateRecord({
+      fields: { actuation_force: 5 },
+      fieldRules: { actuation_force: numRule('') },
+      crossRules: { rules: [rangeRule('actuation_force', 20, 100)] },
+    });
+    assert.equal(r.crossFieldFailures.length, 1);
+  });
+
+  it('conditional: met + unk → failure', () => {
+    const r = validateRecord({
+      fields: { connection: 'wireless', battery_hours: 'unk' },
+      fieldRules: { connection: textRule(), battery_hours: numRule('h') },
+      crossRules: { rules: [conditionalRule()] },
+    });
+    assert.equal(r.crossFieldFailures.length, 1);
+  });
+
+  it('group completeness: all present → no failure', () => {
+    const r = validateRecord({
+      fields: { lngth: 120, width: 60, height: 40 },
+      fieldRules: { lngth: numRule('mm'), width: numRule('mm'), height: numRule('mm') },
+      crossRules: { rules: [groupRule()] },
+    });
+    assert.equal(r.crossFieldFailures.length, 0);
+  });
+
+  it('group completeness: 2 of 3 → failure', () => {
+    const r = validateRecord({
+      fields: { lngth: 120, width: 60 },
+      fieldRules: { lngth: numRule('mm'), width: numRule('mm') },
+      crossRules: { rules: [groupRule()] },
+    });
+    assert.equal(r.crossFieldFailures.length, 1);
+  });
+});
+
+// ============================================================
+// Overall valid determination
+// ============================================================
+
+describe('validateRecord — overall valid', () => {
+  it('all valid + no cross failures → true', () => {
+    const r = validateRecord({
+      fields: { weight: 42 },
+      fieldRules: { weight: numRule('g') },
+    });
+    assert.equal(r.valid, true);
+  });
+
+  it('per-field rejection → false', () => {
+    const r = validateRecord({
+      fields: { weight: '2.65 lb' },
+      fieldRules: { weight: numRule('g') },
+    });
+    assert.equal(r.valid, false);
+  });
+
+  it('flag_for_review failure → still valid (flags dont reject)', () => {
+    const r = validateRecord({
+      fields: { lngth: 120, width: 60 },
+      fieldRules: { lngth: numRule('mm'), width: numRule('mm') },
+      crossRules: { rules: [groupRule()] },
+    });
+    // group rule has on_fail: flag_for_review → doesn't make invalid
+    assert.equal(r.valid, true);
+    assert.equal(r.crossFieldFailures.length, 1);
+  });
+
+  it('reject_candidate failure → false', () => {
+    const r = validateRecord({
+      fields: { actuation_force: 5 },
+      fieldRules: { actuation_force: numRule('') },
+      crossRules: { rules: [rangeRule('actuation_force', 20, 100)] },
+    });
+    assert.equal(r.valid, false);
+  });
+});
+
+// ============================================================
+// Edge cases
+// ============================================================
+
+describe('validateRecord — edge cases', () => {
+  it('null fieldRules → graceful', () => {
+    const r = validateRecord({ fields: { weight: 42 }, fieldRules: null });
+    assert.equal(r.valid, true);
+    assert.ok(r.perField.weight);
+  });
+
+  it('empty fieldRules → no rule for field', () => {
+    const r = validateRecord({ fields: { weight: 42 }, fieldRules: {} });
+    assert.equal(r.valid, true);
+  });
+
+  it('null fields → empty', () => {
+    const r = validateRecord({ fields: null, fieldRules: {} });
+    assert.equal(r.valid, true);
+    assert.equal(Object.keys(r.perField).length, 0);
+  });
+
+  it('no crossRules → no cross failures', () => {
+    const r = validateRecord({
+      fields: { weight: 42 },
+      fieldRules: { weight: numRule('g') },
+      crossRules: null,
+    });
+    assert.equal(r.crossFieldFailures.length, 0);
+  });
+});

@@ -1,22 +1,20 @@
 import { OUTPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 
 export function createMigrateToSqliteCommand({
-  openSpecDbForCategory,
+  withSpecDb,
   toPosixKey,
-  fsNode,
-  pathNode,
   now = () => Date.now(),
 }) {
   return async function commandMigrateToSqlite(config, storage, args) {
     const category = String(args.category || '').trim();
     if (!category) throw new Error('migrate-to-sqlite requires --category');
     const phase = args.phase ? Number.parseInt(String(args.phase), 10) : 0;
-    const specDb = await openSpecDbForCategory(config, category);
-    if (!specDb) throw new Error(`Could not open SpecDb for category: ${category}`);
 
-    const results = {};
+    return withSpecDb(config, category, async (specDb) => {
+      if (!specDb) throw new Error(`Could not open SpecDb for category: ${category}`);
 
-    try {
+      const results = {};
+
       if (!phase || phase === 1) {
         const rows = specDb.getAllQueueProducts();
         results.phase1_queue = { status: 'verified', rows: rows.length };
@@ -118,8 +116,6 @@ export function createMigrateToSqliteCommand({
         results,
         table_counts: counts,
       };
-    } finally {
-      specDb.close();
-    }
+    });
   };
 }

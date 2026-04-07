@@ -453,13 +453,6 @@ svg text{font-family:var(--sans)}
   <div class="domain-group">
     <div class="domain-label">C. Control Plane</div>
 
-    <details class="card" data-search="product_catalog.json product inventory control plane seed">
-      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-mutable">Mutable</span></span></summary>
-      <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Control-plane seed catalog for product identities. Read by <code>seedFromCatalog()</code>, catalog ingest helpers, and test-mode scaffolds; in full seed mode it also contributes canonical field values via overrides.<br><strong>Written by:</strong> Test-mode product generator and manual/control-plane maintenance<br><strong>Mutable?</strong> Yes<br><strong>Runtime role:</strong> Not the live runtime SSOT. Product CRUD/listing runs through SpecDb; <code>.workspace/products/{pid}/product.json</code> remains the rebuild artifact for app-created products.</p>
-      </div>
-    </details>
-
     <details class="card" data-search="field_studio_map.json sheet-to-field mapping">
       <summary><span class="tname">field_studio_map.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_control_plane/</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
       <div class="card-body">
@@ -836,7 +829,6 @@ svg text{font-family:var(--sans)}
         <span class="file">*.json</span>                         <span class="comment">-- Category-specific component authority files (mouse: encoders/sensors/switches/materials; keyboard: switches; monitor: panel)</span>
     <span class="file">sources.json</span>                       <span class="comment">-- Source strategy (mutable SSOT, not in SQL)</span>
     <span class="dir">_control_plane/</span>                      <span class="comment">-- Control plane files (varies by category)</span>
-      <span class="file">product_catalog.json</span>             <span class="comment">-- Control-plane import/feed for seedFromCatalog and test-mode scaffolds; not the runtime SSOT</span>
       <span class="file">field_studio_map.json</span>            <span class="comment">-- Sheet-to-field mapping (all categories)</span>
       <span class="file">rename_log.json</span>                  <span class="comment">-- Rename audit trail (mouse only)</span>
   <span class="dir">_global/</span>
