@@ -26,8 +26,6 @@ function makeCatalogCtx(overrides = {}) {
     catalogAddProductsBulk: async () => ({ ok: true, created: 0 }),
     catalogUpdateProduct: async () => ({ ok: true, productId: 'mouse-razer-viper', product: {} }),
     catalogRemoveProduct: async () => ({ ok: true, removed: true }),
-    catalogSeedFromCatalog: async () => ({ ok: true, seeded: 0 }),
-    loadProductCatalog: async () => ({ products: {} }),
     readJsonlEvents: async () => [],
     fs: { readFile: async () => '' },
     path: { join: (...parts) => parts.join('/') },
@@ -78,7 +76,6 @@ function makeBrandCtx(overrides = {}) {
     upsertQueueProduct: async () => ({ ok: true }),
     broadcastWs: noop,
     getSpecDb: () => null,
-    loadProductCatalog: async () => ({ products: {} }),
     brandRegistryPath: '',
     writeBackBrandRegistry: async () => {},
   };
@@ -237,7 +234,6 @@ test('catalog routes: product detail resolves identity through specDb when catal
         return null;
       },
     },
-    loadProductCatalog: async () => ({ products: {} }),
     getSpecDb: (category) => (category === 'mouse'
       ? {
           getProduct: (productId) => (productId === 'mouse-foo-bar'

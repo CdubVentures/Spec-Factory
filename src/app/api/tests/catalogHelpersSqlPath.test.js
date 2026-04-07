@@ -5,8 +5,6 @@ import { createCatalogBuilder } from '../catalogHelpers.js';
 import { createCatalogSummary } from './helpers/appApiTestBuilders.js';
 
 // WHY: Contract tests for the SQL-based catalog builder path.
-// Step 2 of the product consolidation: catalogHelpers reads from SQL
-// instead of product_catalog.json + fixture input files.
 
 function cleanVariant(variant) {
   const token = String(variant ?? '').trim().toLowerCase();

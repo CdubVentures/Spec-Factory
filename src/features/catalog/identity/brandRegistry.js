@@ -13,7 +13,7 @@
 
 import { writeFileSync } from 'node:fs';
 import { slugify } from './slugify.js';
-import { discoverCategoriesLocal } from '../products/catalogProductLoader.js';
+import { discoverCategoriesLocal } from '../products/discoverCategories.js';
 import { generateIdentifier } from './productIdentity.js';
 
 function nowIso() {

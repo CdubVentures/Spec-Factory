@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "artifact_count": 9,
+  "artifact_count": 8,
   "artifacts": [
     {
       "bytes": 10202,
@@ -13,19 +13,14 @@
       "sha256": "d9cadace739f891999b3b85c50683a39dd596b670c6b704680d0b5dfb5023491"
     },
     {
-      "bytes": 7240,
+      "bytes": 7313,
       "path": "field_groups.json",
-      "sha256": "ff048510547a6c9dd5babc136b91924bdc466cff622dd9343af59a298c2560b5"
+      "sha256": "5dde9a3a9124f599f56d9ecf447abacf13273280c8792398a960e222ba2d8aa2"
     },
     {
-      "bytes": 383999,
+      "bytes": 374243,
       "path": "field_rules.json",
-      "sha256": "179f0d5e4c8e23caaa74391d48fcd4e080816a5e60620e27a711d21a4fc84afc"
-    },
-    {
-      "bytes": 383999,
-      "path": "field_rules.runtime.json",
-      "sha256": "179f0d5e4c8e23caaa74391d48fcd4e080816a5e60620e27a711d21a4fc84afc"
+      "sha256": "c90e4ab26e405469e76949a8e6277d83b571b0a7f97f7d2d1ac41d29ed332be4"
     },
     {
       "bytes": 201,
@@ -33,22 +28,23 @@
       "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
     },
     {
-      "bytes": 8428,
+      "bytes": 13783,
       "path": "known_values.json",
-      "sha256": "2bca33c56ab5ba4c857fd16e3377f1423a2a87792e435cced150291b61433458"
+      "sha256": "b2654a977a3ab295fee25f6552d501cdd6f2f95cdab75cf87adbdecac0c87c7b"
     },
     {
-      "bytes": 24078,
+      "bytes": 24370,
       "path": "parse_templates.json",
-      "sha256": "b2a92a7c5e6f9c9e9b4669637214c3a850b59f9582207e431a1676046abc971b"
+      "sha256": "fd042315ba7e1bd5219abf20914fa36ce7324f9976f3e98a3638e3b4621eabc9"
     },
     {
-      "bytes": 96681,
+      "bytes": 98475,
       "path": "ui_field_catalog.json",
-      "sha256": "e19c9751f91b7bd12c3b926be675b719ecea62935676f6cd8a3bfaea5011f486"
+      "sha256": "6d516305c8a7eaef4635bb759e4aa66d72447d2388f6ed6231e2bb99f7f17602"
     }
   ],
   "category": "monitor",
-  "generated_at": "2026-03-29T22:02:02.121Z",
+  "generated_at": "2026-04-07T04:29:56.246Z",
+  "source_map_hash": "fd5816733397f3a97b4e49961e5f54c42a72f188266cd24d1d8719ce53c2189e",
   "version": 1
 }

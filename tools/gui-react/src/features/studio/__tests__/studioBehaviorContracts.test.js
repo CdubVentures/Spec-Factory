@@ -74,22 +74,6 @@ test('studio behavior contracts flush autosave only when a new fingerprint still
   );
 });
 
-test('studio consumer-toggle contracts persist explicit false overrides and prune empty override maps', async () => {
-  const { buildNextConsumerOverrides } = await loadStudioBehaviorContracts();
-
-  assert.deepEqual(
-    buildNextConsumerOverrides({}, 'contract.range', 'indexlab', false),
-    {
-      'contract.range': { indexlab: false },
-    },
-  );
-
-  assert.equal(
-    buildNextConsumerOverrides({ 'contract.range': { indexlab: false } }, 'contract.range', 'indexlab', true),
-    undefined,
-  );
-});
-
 test('studio deferred-lock and tooltip contracts stay scoped to real deferred fields and unknown-token guidance', async () => {
   const [
     { isStudioContractFieldDeferredLocked },

@@ -4,7 +4,6 @@ import {
   addProductsBulk as catalogAddProductsBulk,
   updateProduct as catalogUpdateProduct,
   removeProduct as catalogRemoveProduct,
-  seedFromCatalog as catalogSeedFromCatalog,
 } from '../index.js';
 
 export function createCatalogRouteContext(options = {}) {
@@ -21,7 +20,7 @@ export function createCatalogRouteContext(options = {}) {
   return {
     jsonRes, readJsonBody, toInt, config, storage, reconcileOrphans, buildCatalog,
     listProducts, catalogAddProduct, catalogAddProductsBulk, catalogUpdateProduct,
-    catalogRemoveProduct, catalogSeedFromCatalog,
+    catalogRemoveProduct,
     readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
     resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
   };

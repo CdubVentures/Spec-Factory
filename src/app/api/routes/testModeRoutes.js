@@ -262,33 +262,11 @@ export function registerTestModeRoutes(ctx) {
         });
       }
 
-      // Build product_catalog.json
-      const catalogProducts = {};
       const testBrands = new Set();
       for (const product of testProducts) {
         const il = product.identityLock || {};
-        const brandName = il.brand || 'TestCo';
-        const baseModel = String(il.base_model || '').trim();
-        const model = String(il.model || '').trim();
-        testBrands.add(brandName);
-        catalogProducts[product.productId] = {
-          id: il.id || 0,
-          identifier: il.identifier || '',
-          brand: brandName,
-          base_model: baseModel,
-          model,
-          variant: il.variant || '',
-          status: 'active',
-          added_at: new Date().toISOString(),
-          added_by: 'test-mode'
-        };
+        testBrands.add(il.brand || 'TestCo');
       }
-      const catalogDir = path.join(HELPER_ROOT, category, '_control_plane');
-      await fs.mkdir(catalogDir, { recursive: true });
-      await fs.writeFile(
-        path.join(catalogDir, 'product_catalog.json'),
-        JSON.stringify({ _doc: 'Test mode product catalog', _version: 1, products: catalogProducts }, null, 2)
-      );
 
       testBrands.add('NovaForge Labs');
       for (const brandName of testBrands) {

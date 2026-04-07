@@ -12,7 +12,6 @@ import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
 import { EnumConfigurator } from "./EnumConfigurator.tsx";
 import { SystemBadges } from "../workbench/SystemBadges.tsx";
-import type { DownstreamSystem } from "../workbench/systemMapping.ts";
 import {
   useStudioFieldRulesActions,
   useStudioFieldRulesState,
@@ -36,9 +35,6 @@ import {
   arrN,
   strN,
 } from "../state/nestedValueHelpers.ts";
-import {
-  buildNextConsumerOverrides,
-} from "../state/studioBehaviorContracts.ts";
 import { displayLabel } from "../state/studioDisplayLabel.ts";
 import { KeyConstraintEditor } from "./KeyConstraintEditor.tsx";
 import {
@@ -332,33 +328,9 @@ export function KeyNavigatorTab({
 
   const currentRule = selectedKey ? editedRules[selectedKey] || null : null;
 
-  const handleConsumerToggle = useCallback(
-    (fieldPath: string, system: DownstreamSystem, enabled: boolean) => {
-      if (!selectedKey || !currentRule) return;
-      const cur = (currentRule.consumers || {}) as Record<
-        string,
-        Record<string, boolean>
-      >;
-      updateField(
-        selectedKey,
-        "consumers",
-        buildNextConsumerOverrides(cur, fieldPath, system, enabled),
-      );
-      saveIfAutoSaveEnabled();
-    },
-    [selectedKey, currentRule, updateField, saveIfAutoSaveEnabled],
-  );
-
   const B = useCallback(
-    ({ p }: { p: string }) =>
-      currentRule ? (
-        <SystemBadges
-          fieldPath={p}
-          rule={currentRule}
-          onToggle={handleConsumerToggle}
-        />
-      ) : null,
-    [currentRule, handleConsumerToggle],
+    ({ p }: { p: string }) => <SystemBadges fieldPath={p} />,
+    [],
   );
 
   return (

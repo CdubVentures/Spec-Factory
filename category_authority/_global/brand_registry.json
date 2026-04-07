@@ -2,291 +2,325 @@
   "_doc": "Global brand registry. Managed by GUI.",
   "_version": 1,
   "brands": {
-    "alienware": {
-      "canonical_name": "Alienware",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "0b32ea8f"
-    },
     "acer": {
       "canonical_name": "Acer",
+      "identifier": "6f1f6e73",
       "aliases": [],
       "categories": [
+        "monitor",
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "6f1f6e73"
+      "renames": []
+    },
+    "alienware": {
+      "canonical_name": "Alienware",
+      "identifier": "0b32ea8f",
+      "aliases": [],
+      "categories": [
+        "monitor",
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
     },
     "aorus": {
       "canonical_name": "Aorus",
+      "identifier": "d5345f96",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "d5345f96"
-    },
-    "cooler-master": {
-      "canonical_name": "Cooler Master",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "cba919ca"
-    },
-    "corsair": {
-      "canonical_name": "Corsair",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "8b2d6222"
+      "renames": []
     },
     "asus": {
       "canonical_name": "Asus",
+      "identifier": "067bd3df",
       "aliases": [],
       "categories": [
+        "keyboard",
+        "monitor",
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "067bd3df"
+      "renames": []
     },
-    "glorious": {
-      "canonical_name": "Glorious",
+    "cooler-master": {
+      "canonical_name": "Cooler Master",
+      "identifier": "cba919ca",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "0831f4ad"
+      "renames": []
     },
-    "hyperx": {
-      "canonical_name": "HyperX",
+    "corsair": {
+      "canonical_name": "Corsair",
+      "identifier": "8b2d6222",
       "aliases": [],
       "categories": [
+        "keyboard",
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "c9258059"
-    },
-    "logitech-g": {
-      "canonical_name": "Logitech G",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "84a009b9"
-    },
-    "msi": {
-      "canonical_name": "MSI",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "b52151d9"
-    },
-    "razer": {
-      "canonical_name": "Razer",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "b5a50d8f"
-    },
-    "redragon": {
-      "canonical_name": "Redragon",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "04d6e32e"
+      "renames": []
     },
     "cougar": {
       "canonical_name": "Cougar",
+      "identifier": "d5e3438d",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "d5e3438d"
+      "renames": []
     },
-    "endgame-gear": {
-      "canonical_name": "Endgame Gear",
+    "dell": {
+      "canonical_name": "Dell",
+      "identifier": "83a06e3b",
       "aliases": [],
       "categories": [
-        "mouse"
+        "monitor"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "a8158910"
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
     },
     "evga": {
       "canonical_name": "EVGA",
+      "identifier": "e32b9c0e",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "e32b9c0e"
+      "renames": []
+    },
+    "endgame-gear": {
+      "canonical_name": "Endgame Gear",
+      "identifier": "a8158910",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
     },
     "finalmouse": {
       "canonical_name": "Finalmouse",
+      "identifier": "84711e4e",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "84711e4e"
+      "renames": []
     },
     "fnatic": {
       "canonical_name": "Fnatic",
+      "identifier": "c1eaf3bc",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "c1eaf3bc"
+      "renames": []
     },
     "g-wolves": {
       "canonical_name": "G-Wolves",
+      "identifier": "8315b94d",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "8315b94d"
+      "renames": []
+    },
+    "gigabyte": {
+      "canonical_name": "Gigabyte",
+      "identifier": "945b01fa",
+      "aliases": [],
+      "categories": [
+        "monitor"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "glorious": {
+      "canonical_name": "Glorious",
+      "identifier": "0831f4ad",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "hp": {
+      "canonical_name": "HP",
+      "identifier": "72a32a48",
+      "aliases": [],
+      "categories": [
+        "monitor"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "hyperx": {
+      "canonical_name": "HyperX",
+      "identifier": "c9258059",
+      "aliases": [],
+      "categories": [
+        "keyboard",
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "lg": {
+      "canonical_name": "LG",
+      "identifier": "0638c1e1",
+      "aliases": [],
+      "categories": [
+        "monitor"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
     },
     "lamzu": {
       "canonical_name": "Lamzu",
+      "identifier": "3e1b76af",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "3e1b76af"
+      "renames": []
+    },
+    "lemokey": {
+      "canonical_name": "Lemokey",
+      "identifier": "bdd1fc66",
+      "aliases": [],
+      "categories": [
+        "keyboard"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
     },
     "lenovo-legion": {
       "canonical_name": "Lenovo Legion",
+      "identifier": "449660b9",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "449660b9"
+      "renames": []
+    },
+    "logitech-g": {
+      "canonical_name": "Logitech G",
+      "identifier": "84a009b9",
+      "aliases": [],
+      "categories": [
+        "keyboard",
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "msi": {
+      "canonical_name": "MSI",
+      "identifier": "b52151d9",
+      "aliases": [],
+      "categories": [
+        "monitor",
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
     },
     "mad-catz": {
       "canonical_name": "Mad Catz",
+      "identifier": "281c6b22",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "281c6b22"
+      "renames": []
+    },
+    "mountain": {
+      "canonical_name": "Mountain",
+      "identifier": "82f9d0eb",
+      "aliases": [],
+      "categories": [
+        "keyboard"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
     },
     "nzxt": {
       "canonical_name": "NZXT",
+      "identifier": "8c765c04",
       "aliases": [],
       "categories": [
         "mouse"
       ],
       "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
+      "added_at": "2026-04-07 03:31:31",
       "added_by": "seed",
-      "identifier": "8c765c04"
-    },
-    "turtle-beach": {
-      "canonical_name": "Turtle Beach",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "8dd5b4bf"
-    },
-    "pulsar": {
-      "canonical_name": "Pulsar",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "1c27799b"
-    },
-    "pwnage": {
-      "canonical_name": "Pwnage",
-      "aliases": [],
-      "categories": [
-        "mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-15T05:13:16.107Z",
-      "added_by": "seed",
-      "identifier": "6e8dfe82"
-    },
-    "testco": {
-      "canonical_name": "TestCo",
-      "identifier": "92704c39",
-      "aliases": [],
-      "categories": [
-        "_test_mouse"
-      ],
-      "website": "",
-      "added_at": "2026-02-25T18:43:01.402Z",
-      "added_by": "gui"
+      "renames": []
     },
     "novaforge-labs": {
       "canonical_name": "NovaForge Labs",
@@ -296,8 +330,142 @@
         "_test_mouse"
       ],
       "website": "",
-      "added_at": "2026-02-25T18:43:01.413Z",
-      "added_by": "gui"
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "gui",
+      "renames": []
+    },
+    "nuphy": {
+      "canonical_name": "NuPhy",
+      "identifier": "a1426045",
+      "aliases": [],
+      "categories": [
+        "keyboard"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "pulsar": {
+      "canonical_name": "Pulsar",
+      "identifier": "1c27799b",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "pwnage": {
+      "canonical_name": "Pwnage",
+      "identifier": "6e8dfe82",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "razer": {
+      "canonical_name": "Razer",
+      "identifier": "b5a50d8f",
+      "aliases": [],
+      "categories": [
+        "keyboard",
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "redragon": {
+      "canonical_name": "Redragon",
+      "identifier": "04d6e32e",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "samsung": {
+      "canonical_name": "Samsung",
+      "identifier": "cf06245f",
+      "aliases": [],
+      "categories": [
+        "monitor"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "steelseries": {
+      "canonical_name": "SteelSeries",
+      "identifier": "985c0d54",
+      "aliases": [],
+      "categories": [
+        "keyboard"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "testco": {
+      "canonical_name": "TestCo",
+      "identifier": "92704c39",
+      "aliases": [],
+      "categories": [
+        "_test_mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "gui",
+      "renames": []
+    },
+    "turtle-beach": {
+      "canonical_name": "Turtle Beach",
+      "identifier": "8dd5b4bf",
+      "aliases": [],
+      "categories": [
+        "mouse"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 03:31:31",
+      "added_by": "seed",
+      "renames": []
+    },
+    "viewsonic": {
+      "canonical_name": "ViewSonic",
+      "identifier": "f0edc51a",
+      "aliases": [],
+      "categories": [
+        "monitor"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
+    },
+    "wooting": {
+      "canonical_name": "Wooting",
+      "identifier": "efe3d2d0",
+      "aliases": [],
+      "categories": [
+        "keyboard"
+      ],
+      "website": "",
+      "added_at": "2026-04-07 04:18:32",
+      "added_by": "gui",
+      "renames": []
     }
   }
 }

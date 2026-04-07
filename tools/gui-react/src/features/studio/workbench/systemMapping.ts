@@ -1,30 +1,56 @@
 // ── System Consumer Mapping ──────────────────────────────────────────
-// Static mapping of field rule properties to downstream system consumers.
-// Badge configs, field-to-system map, and helpers for consumer override logic.
-//
-// ── MAINTENANCE GUIDE ────────────────────────────────────────────────
-//
-// When adding a new field rule property:
-//   1. Add the field path + systems to FIELD_SYSTEM_MAP in src/field-rules/consumerGate.js (SSOT).
-//   2. Add tooltips (and optional navigation) to FIELD_CONSUMER_REGISTRY below.
-//   3. Run: node --test tools/gui-react/src/features/studio/workbench/__tests__/systemMappingCoverage.test.js
-//
-// Backend cross-references (trace these for consumer evidence):
-//   - src/engine/ruleAccessors.js    — universal getters for field rule properties
-//   - src/db/seed.js                 — seedSourceAndKeyReview, deriveSchemaFromFieldRules
-//   - src/categories/loader.js       — loadCategoryConfig, schema derivation
-//   - src/indexlab/needsetEngine.js   — NeedSet score computation
-//   - src/llm/extractCandidatesLLM.js — LLM extraction context
-//   - src/retrieve/tierAwareRetriever.js — tier preference retrieval
-//   - implementation/ai-implenentation-plans/ai-source-review.md — review route matrix
+// All badge data derived from the unified consumerBadgeRegistry.js (SSOT).
+// Adding a new badge = one entry in consumerBadgeRegistry.js. Zero edits here.
 
-// WHY: O(1) SSOT — field-to-system mapping owned by backend consumerGate.js.
-// IDX badge tooltips derived from idxBadgeRegistry.js (single definition point).
 import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../../../../../../src/field-rules/consumerGate.js';
-import { IDX_BADGE_REGISTRY } from '../../../../../../src/field-rules/idxBadgeRegistry.js';
+import {
+  CONSUMER_BADGE_REGISTRY,
+  PARENT_GROUPS,
+  FIELD_PARENT_MAP,
+  FIELD_CONSUMER_MAP,
+  NAVIGATION_MAP,
+} from '../../../../../../src/field-rules/consumerBadgeRegistry.js';
 
+// WHY: DownstreamSystem kept for EnumConfigurator backward compat (uses 'review' strings).
 export type DownstreamSystem = 'indexlab' | 'seed' | 'review';
 
+export type ParentGroup = 'idx' | 'eng' | 'rev' | 'seed' | 'comp';
+
+// ── Badge configs (5 parent groups, all read-only) ───────────────────
+
+export const PARENT_BADGE_CONFIGS: Record<ParentGroup, {
+  label: string;
+  title: string;
+  cls: string;
+}> = {
+  idx: {
+    label: 'IDX',
+    title: 'Indexing Lab',
+    cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+  },
+  eng: {
+    label: 'ENG',
+    title: 'Field Rules Engine',
+    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  },
+  rev: {
+    label: 'REV',
+    title: 'LLM Review',
+    cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+  },
+  seed: {
+    label: 'SEED',
+    title: 'Seed Pipeline',
+    cls: 'bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300',
+  },
+  comp: {
+    label: 'COMP',
+    title: 'Component System',
+    cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+  },
+};
+
+// WHY: Legacy badge configs kept for EnumConfigurator / StaticBadges backward compat.
 export const SYSTEM_BADGE_CONFIGS: Record<DownstreamSystem, {
   label: string;
   title: string;
@@ -51,237 +77,43 @@ export const SYSTEM_BADGE_CONFIGS: Record<DownstreamSystem, {
   },
 };
 
-type SystemSet = DownstreamSystem[];
+// ── Derived maps (from unified registry) ─────────────────────────────
 
+// WHY: SSOT — field-to-system mapping owned by backend consumerGate.js.
+export const FIELD_SYSTEM_MAP: Record<string, DownstreamSystem[]> = BACKEND_FIELD_SYSTEM_MAP as Record<string, DownstreamSystem[]>;
+
+// WHY: parent groups per path — drives badge chip rendering.
+export const FIELD_PARENT_GROUP_MAP: Record<string, ParentGroup[]> = FIELD_PARENT_MAP as Record<string, ParentGroup[]>;
+
+// WHY: consumer detail per path — drives tooltip content.
+export const CONSUMER_DETAIL_MAP: Record<string, Record<string, { desc: string }>> = FIELD_CONSUMER_MAP as Record<string, Record<string, { desc: string }>>;
+
+// WHY: navigation breadcrumbs per path.
+export const KEY_NAVIGATION_PATHS: Record<string, { section: string; key: string }> = NAVIGATION_MAP as Record<string, { section: string; key: string }>;
+
+// WHY: Legacy CONSUMER_TOOLTIPS derived for EnumConfigurator backward compat.
+// Maps path → system → { on, off } using the old format.
 type ConsumerTip = { on: string; off: string };
-
-interface FieldConsumerEntry {
-  navigation?: { section: string; key: string };
-  tooltips: Partial<Record<DownstreamSystem, ConsumerTip>>;
-}
-
-const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
-  // ── Contract ──────────────────────────────────────────────────────────
-  'contract.type': {
-
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Data Type' },
-    tooltips: {
-      review: {
-        on: 'LLM Review validates that candidate values match the expected data type. Type mismatches are flagged for correction.',
-        off: 'LLM Review accepts candidates regardless of type format. Misformatted values (e.g., text in a number field) are not caught.',
-      },
-    },
-  },
-  'contract.shape': {
-
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Shape' },
-    tooltips: {
-      seed: {
-        on: 'Seed Pipeline sets up the correct storage structure in SpecDb: single value column vs array vs structured object.',
-        off: 'Seed Pipeline defaults to scalar storage. List or structured data may be flattened or lost.',
-      },
-      review: {
-        on: 'LLM Review validates that candidate shape matches the declaration. A list value in a scalar field is flagged.',
-        off: 'LLM Review ignores shape mismatches. Wrong-shape values pass through unchecked.',
-      },
-    },
-  },
-  'contract.unit': {
-    navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Unit' },
-    tooltips: {
-      review: {
-        on: 'LLM Review flags candidates with unexpected or missing units. Ensures unit consistency across sources.',
-        off: 'LLM Review does not check unit correctness. Candidates with wrong units pass through undetected.',
-      },
-    },
-  },
-
-  // ── Priority ──────────────────────────────────────────────────────────
-  'priority.required_level': {
-
-    navigation: { section: 'Priority & Effort', key: 'Required Level' },
-    tooltips: {
-      review: {
-        on: 'LLM Review weights this field by importance during consensus scoring. Identity/required fields get stricter validation.',
-        off: 'LLM Review gives this field no priority weighting. Treated as optional during scoring.',
-      },
-    },
-  },
-  'priority.availability': {
-    navigation: { section: 'Priority & Effort', key: 'Availability' },
-    tooltips: {},
-  },
-  'priority.difficulty': {
-    navigation: { section: 'Priority & Effort', key: 'Difficulty' },
-    tooltips: {},
-  },
-
-
-  // ── Enum ──────────────────────────────────────────────────────────────
-  'enum.policy': {
-
-    navigation: { section: 'Enum Policy', key: 'Policy' },
-    tooltips: {
-      seed: {
-        on: 'Seed Pipeline uses the enum policy (open, closed, open_prefer_known) when populating initial value constraints in SpecDb.',
-        off: 'Seed Pipeline skips enum constraint seeding. All values are accepted without policy enforcement.',
-      },
-      review: {
-        on: 'LLM Review enforces enum policy during candidate scoring. Unknown values in a "closed" enum are flagged as invalid.',
-        off: 'LLM Review does not enforce enum constraints. Any value is accepted during review.',
-      },
-    },
-  },
-  'enum.source': {
-
-    navigation: { section: 'Enum Policy', key: 'Source' },
-    tooltips: {
-      seed: {
-        on: 'Seed Pipeline loads the enum value list from this source (data_lists, component_db, yes_no) into SpecDb as allowed values.',
-        off: 'Seed Pipeline does not seed any enum values for this field. The allowed-value list remains empty.',
-      },
-      review: {
-        on: 'LLM Review matches candidates against this enum value list during scoring. Known values score higher.',
-        off: 'LLM Review does not check candidates against any enum list. All values are scored equally.',
-      },
-    },
-  },
-  'enum.match.strategy': {
-    tooltips: {
-      review: {
-        on: 'LLM Review uses this matching strategy (alias, exact, fuzzy) when comparing candidates to enum values. Alias matching uses known alternate names.',
-        off: 'LLM Review defaults to exact string matching only. Aliases and fuzzy matching are not used.',
-      },
-    },
-  },
-  'enum.match.format_hint': {
-    tooltips: {
-      review: {
-        on: 'LLM Review uses this format template as output guidance during enum consistency runs. Use placeholders like XXXX and YYYY for variable segments.',
-        off: 'LLM Review ignores the custom format template and falls back to canonical list style inference.',
-      },
-    },
-  },
-  'enum.additional_values': {
-    tooltips: {
-      review: {
-        on: 'LLM Review includes custom strings in review-time enum matching and consistency decisions.',
-        off: 'LLM Review ignores custom strings for enum matching and consistency decisions.',
-      },
-    },
-  },
-
-  // ── Evidence ──────────────────────────────────────────────────────────
-  'evidence.min_evidence_refs': {
-
-    navigation: { section: 'Evidence Requirements', key: 'Min Evidence Refs' },
-    tooltips: {
-      review: {
-        on: 'LLM Review flags candidates that do not meet the minimum source count. Insufficient evidence lowers confidence.',
-        off: 'LLM Review does not enforce minimum source requirements. Single-source values are accepted.',
-      },
-    },
-  },
-  'evidence.conflict_policy': {
-    navigation: { section: 'Evidence Requirements', key: 'Conflict Policy' },
-    tooltips: {
-      review: {
-        on: 'LLM Review applies the configured conflict resolution policy when multiple candidates disagree.',
-        off: 'LLM Review defaults to tier-based resolution without the configured policy override.',
-      },
-    },
-  },
-
-  // ── Search ────────────────────────────────────────────────────────────
-  'search_hints.domain_hints': {
-    navigation: { section: 'Search Hints', key: 'Domain Hints' },
-    tooltips: {},
-  },
-  'search_hints.query_terms': {
-    navigation: { section: 'Search Hints', key: 'Query Terms' },
-    tooltips: {},
-  },
-  // ── Constraints ───────────────────────────────────────────────────────
-  constraints: {
-    navigation: { section: 'Cross-Field Constraints', key: 'Constraints' },
-    tooltips: {
-      review: {
-        on: 'LLM Review enforces constraint rules during candidate scoring. Constraint violations lower confidence and may block acceptance.',
-        off: 'LLM Review ignores cross-field constraints. Contradictory values across fields are not flagged.',
-      },
-    },
-  },
-
-  // ── Component / Deps ──────────────────────────────────────────────────
-  'component.type': {
-
-    navigation: { section: 'Components', key: 'Component Type' },
-    tooltips: {
-      seed: {
-        on: 'Seed Pipeline creates component identity records and links for this component type in SpecDb. Products are linked to their components.',
-        off: 'Seed Pipeline skips component identity creation. No component links are established in the database.',
-      },
-      review: {
-        on: 'LLM Review validates component identity candidates against the known component database. Fuzzy matching and alias resolution are applied.',
-        off: 'LLM Review skips component identity validation. Component names are accepted as raw text without matching.',
-      },
-    },
-  },
-  aliases: {
-    navigation: { section: 'Extraction Hints & Aliases', key: 'Aliases' },
-    tooltips: {},
-  },
-
-  // ── Tooltip / UI ──────────────────────────────────────────────────────
-  'ui.tooltip_md': {
-    navigation: { section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown' },
-    tooltips: {},
-  },
-};
-
-// WHY: IDX tooltips auto-derived from idxBadgeRegistry.js (SSOT).
-// Adding a new IDX badge = one entry in idxBadgeRegistry.js. No manual edits here.
-for (const entry of IDX_BADGE_REGISTRY as ReadonlyArray<{ path: string; section?: string; key?: string; on: string; off: string }>) {
-  if (!FIELD_CONSUMER_REGISTRY[entry.path]) {
-    FIELD_CONSUMER_REGISTRY[entry.path] = { tooltips: {} };
+export const CONSUMER_TOOLTIPS: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = (() => {
+  const tips: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = {};
+  const parentToLegacy: Record<string, DownstreamSystem | null> = {
+    idx: 'indexlab', eng: null, rev: 'review', seed: 'seed', comp: null,
+  };
+  for (const entry of CONSUMER_BADGE_REGISTRY as ReadonlyArray<{ path: string; consumers: Record<string, { desc: string }> }>) {
+    const pathTips: Partial<Record<DownstreamSystem, ConsumerTip>> = {};
+    for (const [consumerKey, { desc }] of Object.entries(entry.consumers)) {
+      const parent = consumerKey.split('.')[0];
+      const legacySystem = parentToLegacy[parent];
+      if (legacySystem && !pathTips[legacySystem]) {
+        pathTips[legacySystem] = { on: desc, off: `${consumerKey} does not read this path. No effect on this consumer.` };
+      }
+    }
+    if (Object.keys(pathTips).length > 0) {
+      tips[entry.path] = pathTips;
+    }
   }
-  if (!FIELD_CONSUMER_REGISTRY[entry.path].tooltips) {
-    FIELD_CONSUMER_REGISTRY[entry.path].tooltips = {};
-  }
-  FIELD_CONSUMER_REGISTRY[entry.path].tooltips.indexlab = { on: entry.on, off: entry.off };
-  if (entry.section && entry.key && !FIELD_CONSUMER_REGISTRY[entry.path].navigation) {
-    FIELD_CONSUMER_REGISTRY[entry.path].navigation = { section: entry.section, key: entry.key };
-  }
-}
-
-// ── Derived exports ─────────────────────────────────────────────────────
-
-// WHY: SSOT — field-to-system mapping comes from backend consumerGate.js.
-export const FIELD_SYSTEM_MAP: Record<string, SystemSet> = BACKEND_FIELD_SYSTEM_MAP as Record<string, SystemSet>;
-
-export const CONSUMER_TOOLTIPS: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = Object.fromEntries(
-  Object.entries(FIELD_CONSUMER_REGISTRY).map(([k, v]) => [k, v.tooltips]),
-);
-
-const KEY_NAVIGATION_PATHS: Record<string, { section: string; key: string }> = Object.fromEntries(
-  Object.entries(FIELD_CONSUMER_REGISTRY)
-    .filter(([, v]) => v.navigation)
-    .map(([k, v]) => [k, v.navigation!]),
-);
-
-// ── Retired IDX-only tooltip cleanup ────────────────────────────────────
-
-const REMOVED_IDX_TOOLTIP_FIELDS = [
-  'ai_assist.max_calls',
-  'parse.unit_accepts',
-  'parse.allow_unitless',
-  'parse.allow_ranges',
-  'parse.strict_unit_required',
-] as const;
-
-for (const fieldPath of REMOVED_IDX_TOOLTIP_FIELDS) {
-  delete CONSUMER_TOOLTIPS[fieldPath];
-}
+  return tips;
+})();
 
 // ── Public helpers ──────────────────────────────────────────────────────
 
@@ -289,6 +121,11 @@ export function getFieldSystems(fieldPath: string): DownstreamSystem[] {
   return FIELD_SYSTEM_MAP[fieldPath] || [];
 }
 
+export function getFieldParentGroups(fieldPath: string): ParentGroup[] {
+  return FIELD_PARENT_GROUP_MAP[fieldPath] || [];
+}
+
+// WHY: Kept for EnumConfigurator backward compat — it reads rule.consumers overrides.
 export function isConsumerEnabled(
   rule: Record<string, unknown>,
   fieldPath: string,
@@ -301,13 +138,42 @@ export function isConsumerEnabled(
   return overrides[system] !== false;
 }
 
-// ── Tooltip formatters (shared by all 3 tabs) ──────────────────────────
+// ── Badge tooltip formatters ─────────────────────────────────────────
 
 function keyNavigationLine(fieldPath: string): string {
   const path = KEY_NAVIGATION_PATHS[fieldPath];
   if (!path) return '';
-  return `This feature is enabled in Key Navigation > ${path.section} > ${path.key}.`;
+  return `Key Navigation > ${path.section} > ${path.key}`;
 }
+
+export function formatBadgeTooltip(
+  fieldPath: string,
+  parentGroup: ParentGroup,
+): string {
+  const cfg = PARENT_BADGE_CONFIGS[parentGroup];
+  if (!cfg) return fieldPath;
+
+  const consumers = CONSUMER_DETAIL_MAP[fieldPath];
+  if (!consumers) return cfg.title;
+
+  const subConsumers = Object.entries(consumers)
+    .filter(([key]) => key.startsWith(`${parentGroup}.`))
+    .map(([key, { desc }]) => `${key}: ${desc}`);
+
+  if (subConsumers.length === 0) return cfg.title;
+
+  const keyNav = keyNavigationLine(fieldPath);
+
+  return [
+    cfg.title,
+    ...(keyNav ? [keyNav] : []),
+    '',
+    ...subConsumers,
+  ].join('\n');
+}
+
+// WHY: Legacy formatters kept for EnumConfigurator backward compat and
+// any remaining StaticBadges consumers that use the old DownstreamSystem format.
 
 export function formatConsumerTooltip(
   fieldPath: string,
@@ -330,7 +196,7 @@ export function formatConsumerTooltip(
     `Status: ${enabled ? 'Enabled' : 'Disabled'}`,
     '',
     'When enabled:',
-    ...(keyNav ? [keyNav] : []),
+    ...(keyNav ? [`This feature is enabled in ${keyNav}.`] : []),
     enabledDescription,
     '',
     'When disabled:',
@@ -355,7 +221,7 @@ export function formatStaticConsumerTooltip(
   return [
     cfg.title,
     '',
-    ...(keyNav ? [keyNav, ''] : []),
+    ...(keyNav ? [`This feature is enabled in ${keyNav}.`, ''] : []),
     summary,
   ].join('\n');
 }

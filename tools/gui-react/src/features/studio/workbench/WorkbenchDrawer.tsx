@@ -3,12 +3,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../../../api/client.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { humanizeField } from '../../../utils/fieldNormalize.ts';
-import { buildNextConsumerOverrides } from '../state/studioBehaviorContracts.ts';
 import { useStudioFieldRulesActions, useStudioFieldRulesState } from '../state/studioFieldRulesController.ts';
 import { SystemBadges } from './SystemBadges.tsx';
 import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent.tsx';
 import { strN } from './workbenchHelpers.ts';
-import type { DownstreamSystem } from './systemMapping.ts';
 import type { DrawerTab } from './workbenchTypes.ts';
 import type {
   ComponentDbResponse,
@@ -129,18 +127,8 @@ export function WorkbenchDrawer({
     }
   }
 
-  const handleConsumerToggle = (
-    fieldPath: string,
-    system: DownstreamSystem,
-    enabled: boolean,
-  ) => {
-    const currentConsumers = (rule.consumers || {}) as Record<string, Record<string, boolean>>;
-    update('consumers', buildNextConsumerOverrides(currentConsumers, fieldPath, system, enabled));
-    onCommitImmediate();
-  };
-
   const B = ({ p }: { p: string }) => (
-    <SystemBadges fieldPath={p} rule={rule} onToggle={handleConsumerToggle} />
+    <SystemBadges fieldPath={p} />
   );
 
   const idx = fieldOrder.indexOf(fieldKey);

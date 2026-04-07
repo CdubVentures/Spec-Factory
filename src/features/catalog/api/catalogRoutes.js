@@ -17,7 +17,6 @@ export function registerCatalogRoutes(ctx) {
     catalogAddProductsBulk,
     catalogUpdateProduct,
     catalogRemoveProduct,
-    catalogSeedFromCatalog,
     upsertQueueProduct,
     readJsonlEvents,
     fs,
@@ -87,35 +86,6 @@ export function registerCatalogRoutes(ctx) {
     // Product Catalog CRUD - /api/v1/catalog/{cat}/products[/{pid}]
     if (parts[0] === 'catalog' && parts[1] && parts[2] === 'products') {
       const category = parts[1];
-
-      // POST /api/v1/catalog/{cat}/products/seed
-      if (parts[3] === 'seed' && method === 'POST') {
-        if (typeof catalogSeedFromCatalog !== 'function') {
-          return jsonRes(res, 500, { ok: false, error: 'catalog_seed_handler_missing' });
-        }
-        const body = await readJsonBody(req).catch(() => ({}));
-        const mode = body.mode === 'full' ? 'full' : 'identity';
-        const result = await catalogSeedFromCatalog({
-          config,
-          category,
-          mode,
-          storage,
-          upsertQueue: makeQueueUpsert(category),
-          appDb,
-        });
-        if (result?.ok) {
-          emitDataChange({
-            broadcastWs,
-            event: 'catalog-seed',
-            category,
-            meta: {
-              mode,
-              seeded: Number(result?.seeded || 0),
-            },
-          });
-        }
-        return jsonRes(res, 200, result);
-      }
 
       // POST /api/v1/catalog/{cat}/products/bulk  { brand, rows:[{ model, variant? }] }
       if (parts[3] === 'bulk' && method === 'POST') {

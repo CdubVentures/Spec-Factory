@@ -11,8 +11,7 @@ function assertObject(name, value) {
 }
 
 // WHY: SQL-first catalog builder. Reads directly from specDb (products + product_queue
-// tables). This eliminates the dependency on product_catalog.json and fixture input
-// files for the GUI dropdown.
+// tables) for the GUI dropdown.
 
 function buildQueueLookup(queueRows) {
   const map = new Map();

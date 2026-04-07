@@ -7,7 +7,6 @@ function makeBuilder(overrides = {}) {
   return createDomainChecklistBuilder({
     readGzipJsonlEvents: async () => [],
     readJsonlEvents: async () => [],
-    loadProductCatalog: async () => ({ products: {} }),
     ...overrides,
   });
 }

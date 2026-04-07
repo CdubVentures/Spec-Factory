@@ -6,14 +6,10 @@
  * CRUD writes to SQL via upsertCatalogProductRow (called from catalogRoutes.js).
  */
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { normalizeProductIdentity, deriveFullModel } from '../identity/identityDedup.js';
-import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
+import { normalizeProductIdentity } from '../identity/identityDedup.js';
 import { generateIdentifier } from '../identity/productIdentity.js';
 import { writeProductIdentity } from './writeProductIdentity.js';
 import { buildProductId } from '../../../shared/primitives.js';
-import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveBrandIdentifier } from '../identity/resolveBrandIdentifier.js';
 
 function nowIso() {
@@ -49,7 +45,7 @@ export async function addProduct({
   // Normalize identity (strips fabricated variants against base_model)
   const identity = normalizeProductIdentity(cat, cleanBrand, cleanBaseModel, variant);
 
-  // WHY: SQL is the sole SSOT for products. product_catalog.json is retired.
+  // WHY: SQL is the sole SSOT for products.
   const allProducts = specDb?.getAllProducts?.() || [];
   const existingPid = allProducts.find((r) =>
     String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
@@ -338,170 +334,7 @@ export async function removeProduct({
 }
 
 /**
- * Seed catalog from app-owned product docs.
- * Reads products (and optionally field values) from control-plane catalog and
- * per-product overrides. Imports products that do not yet exist in catalog.
- *
- * @param {object} opts
- * @param {string} opts.mode - 'identity' (default): brand/base_model/variant only.
- *                             'full': also imports field values as overrides with confidence 0.99.
- */
-export async function seedFromCatalog({
-  config,
-  category,
-  mode = 'identity',
-  storage = null,
-  upsertQueue = null,
-  specDb = null,
-  appDb = null,
-}) {
-  const cat = String(category ?? '').trim().toLowerCase();
-  if (!cat) return { ok: false, error: 'category_required' };
-
-  const isFullMode = mode === 'full';
-  const products = isFullMode
-    ? await loadCatalogProductsWithFields({ category: cat, config })
-    : await loadCatalogProducts({ category: cat, config });
-
-  if (!products || products.length === 0) {
-    return { ok: true, seeded: 0, skipped: 0, total: 0, fields_imported: 0, message: 'no_catalog_data' };
-  }
-
-  // WHY: SQL is the sole SSOT — build dedup set from specDb, not catalog JSON.
-  const allProducts = specDb?.getAllProducts?.() || [];
-  let seeded = 0;
-  let skipped = 0;
-  let fieldsImported = 0;
-
-  for (const row of products) {
-    const brand = String(row.brand ?? '').trim();
-    const model = String(row.model ?? '').trim();
-    const baseModel = String(row.base_model ?? '').trim();
-    const rawVariant = String(row.variant ?? '').trim();
-
-    if (!brand || !baseModel) continue;
-
-    // In full mode, skip products with brand+model but zero data fields
-    if (isFullMode) {
-      const fieldCount = row.canonical_fields
-        ? Object.keys(row.canonical_fields).length
-        : 0;
-      if (fieldCount === 0) {
-        skipped += 1;
-        continue;
-      }
-    }
-
-    const identity = normalizeProductIdentity(cat, brand, baseModel, rawVariant);
-    // WHY: Prefer productId from catalog loader (preserves existing ID on re-seed),
-    // then identity lookup from SQL, then generate new hex ID only for truly new products.
-    const foundByIdentity = allProducts.find((r) =>
-      String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
-      String(r.base_model || '').trim().toLowerCase() === identity.base_model.toLowerCase() &&
-      String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
-    )?.product_id || null;
-    const pid = row.productId || foundByIdentity || buildProductId(cat);
-
-    const isExisting = Boolean(row.productId || foundByIdentity);
-    if (isExisting && !isFullMode) {
-      skipped += 1;
-      continue;
-    }
-
-    // WHY: Write product.json for new products (rebuild SSOT)
-    const newIdentifier = generateIdentifier();
-    const newBrandIdentifier = row.brand_identifier || resolveBrandIdentifier(appDb, identity.brand);
-    if (!isExisting) {
-      try {
-        writeProductIdentity({
-          productId: pid,
-          category: cat,
-          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: newBrandIdentifier },
-          identifier: newIdentifier,
-        });
-      } catch { /* best-effort */ }
-    }
-
-    // Full mode: write field value overrides (merge with existing, don't overwrite manual edits)
-    if (isFullMode && row.canonical_fields && Object.keys(row.canonical_fields).length > 0) {
-      const { readProductFromConsolidated, upsertProductInConsolidated } = await import('../../../shared/consolidatedOverrides.js');
-      const setAt = nowIso();
-
-      // WHY: Overlap 0d — read existing from consolidated JSON SSOT
-      const existingEntry = await readProductFromConsolidated({ config, category: cat, productId: pid });
-      const existingOverrides = existingEntry?.overrides || {};
-
-      const overrides = { ...existingOverrides };
-      for (const [field, value] of Object.entries(row.canonical_fields)) {
-        const trimmed = String(value ?? '').trim();
-        if (!trimmed) continue;
-        // Don't overwrite manual user edits (only replace catalog imports or missing entries)
-        const prev = existingOverrides[field];
-        const prevSource = String(prev?.override_source || '').trim();
-        const replaceableImportSource = prevSource === 'catalog_import' || prevSource.endsWith('_import');
-        if (prev && !replaceableImportSource) continue;
-        overrides[field] = {
-          field,
-          override_source: 'catalog_import',
-          candidate_index: null,
-          override_value: trimmed,
-          override_reason: 'Imported from catalog',
-          override_provenance: null,
-          overridden_by: null,
-          overridden_at: setAt,
-          validated: null,
-          candidate_id: buildUserFieldOverrideCandidateId({
-            productId: pid,
-            fieldKey: field,
-            value: trimmed,
-          }),
-          value: trimmed,
-          confidence: 0.99,
-          source: {
-            host: 'catalog.local',
-            source_id: null,
-            method: 'catalog_import',
-            tier: 1,
-            evidence_key: null
-          },
-          set_at: setAt
-        };
-        fieldsImported += 1;
-      }
-      if (Object.keys(overrides).length > 0) {
-        const overrideEntry = {
-          category: cat,
-          product_id: pid,
-          created_at: existingEntry?.created_at || setAt,
-          review_started_at: existingEntry?.review_started_at || setAt,
-          review_status: 'in_progress',
-          updated_at: setAt,
-          overrides
-        };
-        await upsertProductInConsolidated({ config, category: cat, productId: pid, productEntry: overrideEntry });
-      }
-    }
-
-    if (!isExisting) seeded += 1;
-
-    // Upsert queue
-    if (upsertQueue) {
-      await upsertQueue({ storage, category: cat, productId: pid, s3key: '', patch: { status: 'pending', next_action_hint: 'fast_pass' } });
-    }
-  }
-
-  return {
-    ok: true,
-    seeded,
-    skipped,
-    total: allProducts.length + seeded,
-    fields_imported: fieldsImported
-  };
-}
-
-/**
  * List products from SQL (the live SSOT).
- * JSON catalog is only read at seed/rebuild time.
  */
 export function listProducts({ specDb }) {
   if (!specDb) return [];

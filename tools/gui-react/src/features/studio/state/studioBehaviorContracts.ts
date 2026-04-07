@@ -1,29 +1,3 @@
-import type { DownstreamSystem } from '../workbench/systemMapping.ts';
-
-export function buildNextConsumerOverrides(
-  currentConsumers: Record<string, Record<string, boolean>> | undefined,
-  fieldPath: string,
-  system: DownstreamSystem,
-  enabled: boolean,
-): Record<string, Record<string, boolean>> | undefined {
-  const nextConsumers = { ...(currentConsumers || {}) };
-  const fieldOverrides = { ...(nextConsumers[fieldPath] || {}) };
-
-  if (enabled) {
-    delete fieldOverrides[system];
-  } else {
-    fieldOverrides[system] = false;
-  }
-
-  if (Object.keys(fieldOverrides).length === 0) {
-    delete nextConsumers[fieldPath];
-  } else {
-    nextConsumers[fieldPath] = fieldOverrides;
-  }
-
-  return Object.keys(nextConsumers).length > 0 ? nextConsumers : undefined;
-}
-
 export function shouldFlushStudioDocsOnUnmount({
   autoSaveEnabled,
   initialized,

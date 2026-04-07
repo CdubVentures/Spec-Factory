@@ -1,14 +1,19 @@
-// WHY: IDX runtime badge system. Derives everything from idxBadgeRegistry.js (SSOT).
-// Adding a new IDX badge = one entry in idxBadgeRegistry.js. This file auto-adapts.
+// WHY: IDX runtime badge system. Derives everything from consumerBadgeRegistry.js (SSOT).
+// Adding a new IDX badge = one entry in consumerBadgeRegistry.js. This file auto-adapts.
 
 import { resolveConsumerGate } from '../../../field-rules/consumerGate.js';
-import { IDX_BADGE_REGISTRY, IDX_FIELD_PATHS, buildExtractor } from '../../../field-rules/idxBadgeRegistry.js';
+import { CONSUMER_BADGE_REGISTRY, IDX_FIELD_PATHS, buildExtractor } from '../../../field-rules/consumerBadgeRegistry.js';
 import { isObject, normalizeText } from '../../../shared/primitives.js';
+
+// WHY: Only IDX entries need extractors here. Filter to idx.* consumers.
+const IDX_ENTRIES = CONSUMER_BADGE_REGISTRY.filter(
+  (e) => Object.keys(e.consumers).some((k) => k.startsWith('idx.'))
+);
 
 // ── Derived lookup (from registry SSOT) ──────────────────────────────
 
 const FIELD_PATH_LOOKUP = new Map(
-  IDX_BADGE_REGISTRY.map((e) => [e.path, { ...e, extractor: buildExtractor(e) }])
+  IDX_ENTRIES.map((e) => [e.path, { ...e, extractor: buildExtractor(e) }])
 );
 
 // ── Surface specs (which IDX fields each pipeline surface reads) ─────

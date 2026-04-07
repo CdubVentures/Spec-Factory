@@ -3,7 +3,6 @@ export {
   addProductsBulk,
   updateProduct,
   removeProduct,
-  seedFromCatalog,
   listProducts,
 } from './products/productCatalog.js';
 export {
@@ -39,11 +38,7 @@ export {
 export { generateIdentifier } from './identity/productIdentity.js';
 export { slugify } from './identity/slugify.js';
 export { resolveBrandIdentifier } from './identity/resolveBrandIdentifier.js';
-export {
-  loadCatalogProducts,
-  loadCatalogProductsWithFields,
-  discoverCategoriesLocal,
-} from './products/catalogProductLoader.js';
+export { discoverCategoriesLocal } from './products/discoverCategories.js';
 async function loadCatalogReconciler() {
   return import('./products/reconciler.js');
 }

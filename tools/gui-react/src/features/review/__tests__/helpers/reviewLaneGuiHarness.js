@@ -92,35 +92,6 @@ const PRODUCTS = {
   },
 };
 
-async function seedProductCatalog(helperRoot, category) {
-  await writeJson(path.join(helperRoot, category, '_control_plane', 'product_catalog.json'), {
-    _doc: 'Per-category product catalog. Managed by GUI.',
-    _version: 1,
-    products: {
-      [PRODUCT_A]: {
-        id: 1,
-        identifier: 'a1',
-        brand: 'Acme',
-        model: 'Orbit X1',
-        variant: '',
-        status: 'active',
-        added_at: '2026-02-18T00:00:00.000Z',
-        added_by: 'test',
-      },
-      [PRODUCT_B]: {
-        id: 2,
-        identifier: 'b2',
-        brand: 'Nova',
-        model: 'Glide 2',
-        variant: '',
-        status: 'active',
-        added_at: '2026-02-18T00:00:01.000Z',
-        added_by: 'test',
-      },
-    },
-  });
-}
-
 function seedComponentReviewSuggestions(db, category) {
   const items = [
     {
@@ -577,7 +548,6 @@ export async function createReviewLaneGuiHarness(t) {
       seedComponentDb(config.categoryAuthorityRoot, CATEGORY),
       seedKnownValues(config.categoryAuthorityRoot, CATEGORY),
       seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY),
-      seedProductCatalog(config.categoryAuthorityRoot, CATEGORY),
       Promise.all(
         Object.entries(PRODUCTS).map(([productId, product]) =>
           seedLatestArtifacts(storage, CATEGORY, productId, product)),

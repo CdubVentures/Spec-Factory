@@ -27,7 +27,6 @@ function makeReviewCtx(overrides = {}) {
     buildComponentReviewLayout: async () => ({ types: [] }),
     buildComponentReviewPayloads: async () => ({ items: [] }),
     buildEnumReviewPayloads: async () => ({ fields: [] }),
-    loadProductCatalog: async () => ({ products: {} }),
     readLatestArtifacts: async () => ({}),
     sessionCache: {
       getSessionRules: async () => ({ draftFieldOrder: [], draftFields: {}, cleanFieldOrder: [] }),
@@ -152,7 +151,6 @@ function makeMockEnumSpecDb() {
 
 test('review product route resolves identity through specDb when payload identity is stale', async () => {
   const handler = registerReviewRoutes(makeReviewCtx({
-    loadProductCatalog: async () => ({ products: {} }),
     getSpecDb: (category) => (category === 'mouse'
       ? {
           getProduct: (productId) => (productId === 'mouse-foo-bar'

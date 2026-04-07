@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Publish Pipeline &mdash; Feature Overview &amp; Data Flow</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe; --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+  --sf-orange-fg: #fdba74; --sf-orange-bg: rgba(251, 146, 60, 0.15);
+}
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 32px; line-height: 1.5; }
+.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
+.chip-orange { background: var(--sf-orange-bg); color: var(--sf-orange-fg); }
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.flow { display: flex; flex-direction: column; gap: 0; align-items: center; }
+.flow-node { width: 100%; max-width: 860px; border-radius: 10px; padding: 16px 20px; }
+.flow-arrow { display: flex; flex-direction: column; align-items: center; padding: 6px 0; color: var(--sf-text-dim); font-size: 18px; line-height: 1; }
+.flow-arrow-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+.flow-pure { background: var(--sf-teal-bg); border: 1.5px solid rgba(94,234,212,0.4); }
+.flow-check { background: var(--sf-info-bg); border: 1.5px solid rgba(147,197,253,0.4); }
+.flow-publish { background: var(--sf-success-bg); border: 1.5px solid rgba(134,239,172,0.4); }
+.flow-reject { background: var(--sf-danger-bg); border: 1.5px solid rgba(248,113,113,0.4); }
+.flow-source { background: var(--sf-purple-bg); border: 1.5px solid rgba(168,85,247,0.4); }
+.flow-gate { background: var(--sf-orange-bg); border: 1.5px solid rgba(251,146,60,0.4); }
+.flow-node-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.flow-node-detail { font-size: 11px; color: var(--sf-text-muted); line-height: 1.5; }
+.flow-branch { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 860px; }
+.callout { border-left: 3px solid var(--sf-accent-strong); padding: 12px 16px; background: var(--sf-accent-glow); border-radius: 0 8px 8px 0; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- =============================================================== -->
+
+<div>
+  <h1>Publish Pipeline &mdash; Feature Overview</h1>
+  <div class="subtitle">
+    One feature, three sub-modules. Every field value in the system &mdash; from any source &mdash; flows through this pipeline
+    before it can reach the product record. Field Studio is the contract. The pipeline enforces it with 100% certainty.
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 1: THE PROBLEM
+     =============================================================== -->
+
+<div class="panel">
+  <h2>1. The Problem</h2>
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3><span class="chip chip-danger">Today</span></h3>
+      <div class="small muted" style="line-height:1.7;">
+        Multiple sources produce field data (color &amp; edition finder, pipeline extraction, review overrides, CLI).
+        Each source writes directly to <code>item_field_state</code> + <code>product.json</code> with <strong>zero validation</strong>.
+        <br/><br/>
+        There is no gate. No check against Field Studio rules. Hallucinated values, wrong types, wrong units,
+        invalid enums, malformed tokens &mdash; all reach the product record unchecked.
+        <br/><br/>
+        The engine (<code>src/engine/</code>) exists but only covers 2 callers (review path), has 11 proven gaps,
+        and is not universal.
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="chip chip-success">After</span></h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>One pipeline, every source.</strong> No field value reaches storage without passing through the publish pipeline.
+        <br/><br/>
+        Field Studio defines the contract (type, shape, unit, enum, range, format, list rules, rounding, constraints).
+        The pipeline enforces it deterministically. 12 checks, &lt;1ms, zero LLM cost for valid data.
+        <br/><br/>
+        <strong>Two-phase write:</strong> validated candidates first, resolved winners second.
+        Cross-field checks run on the full resolved set before final publish.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 2: THE THREE SUB-MODULES
+     =============================================================== -->
+
+<div class="panel">
+  <h2>2. Feature Structure</h2>
+
+  <div class="code-block" style="margin-bottom:16px;">src/features/publish-pipeline/
+  index.js                        <span style="color:var(--sf-teal-fg);"># Public API: submitCandidate(), publishResolved()</span>
+  validation/                     <span style="color:var(--sf-teal-fg);"># Sub-module 1: pure deterministic checks</span>
+    validateField.js              <span style="color:var(--sf-teal-fg);"># Single-field validation (12 steps)</span>
+    validateRecord.js             <span style="color:var(--sf-teal-fg);"># Full-record validation + cross-field</span>
+    checks/                       <span style="color:var(--sf-teal-fg);"># One file per check dimension</span>
+      checkShape.js
+      checkType.js
+      checkUnit.js
+      checkFormat.js
+      normalize.js
+      checkEnum.js
+      enforceListRules.js
+      applyRounding.js
+      checkRange.js
+      checkConstraints.js
+      resolveComponent.js
+    templateDispatch.js           <span style="color:var(--sf-teal-fg);"># parse.template &rarr; normalizer (O(1) dispatch)</span>
+    formatRegistry.js             <span style="color:var(--sf-teal-fg);"># template &rarr; format regex</span>
+    absenceNormalizer.js          <span style="color:var(--sf-teal-fg);"># null/undefined/empty/unk &rarr; canonical form</span>
+    ruleAccessors.js              <span style="color:var(--sf-teal-fg);"># Pure read-only accessors (owned, no engine import)</span>
+    normalizers.js                <span style="color:var(--sf-teal-fg);"># parseBoolean, parseDate, etc. (owned, no engine import)</span>
+    tests/
+  candidate-gate/                 <span style="color:var(--sf-teal-fg);"># Sub-module 2: validate source &rarr; persist candidate</span>
+    submitCandidate.js            <span style="color:var(--sf-teal-fg);"># Validate per-field, dual-write candidate</span>
+    tests/
+  publisher/                      <span style="color:var(--sf-teal-fg);"># Sub-module 3: resolve &rarr; cross-validate &rarr; publish</span>
+    publishResolved.js            <span style="color:var(--sf-teal-fg);"># Resolve winner, cross-field check, dual-write</span>
+    tests/
+  README.md</div>
+
+  <div class="grid-3" style="gap:16px;">
+    <div class="card">
+      <h3><span class="chip chip-teal">1</span> validation/</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>Pure functions. Zero dependencies.</strong>
+        <br/>No DB, no LLM, no side effects.
+        <br/>Only imports <code>src/shared/</code>.
+        <br/>Owns all logic internally &mdash; no <code>src/engine/</code> imports.
+        <br/><br/>
+        Exports: <code>validateField()</code>, <code>validateRecord()</code>
+        <br/><br/>
+        Spec: <a href="universal-validator-reference.html" style="color:var(--sf-accent-strong);">universal-validator-reference.html</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="chip chip-orange">2</span> candidate-gate/</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>Source-side gate.</strong>
+        <br/>Called by any source after a run.
+        <br/>Calls <code>validateField()</code> per field.
+        <br/>Dual-writes valid candidates to <code>product.json candidates[]</code> + DB.
+        <br/>Rejects invalid values before they enter the candidate pool.
+        <br/><br/>
+        Exports: <code>submitCandidate()</code>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="chip chip-success">3</span> publisher/</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>Resolution + publish.</strong>
+        <br/>Takes validated candidate pool.
+        <br/>Resolves winner per field (consensus, confidence).
+        <br/>Calls <code>validateRecord()</code> for cross-field checks.
+        <br/>Dual-writes to <code>product.json fields[]</code> + <code>item_field_state</code>.
+        <br/><br/>
+        Exports: <code>publishResolved()</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:16px;">
+    <div class="small bold" style="color:var(--sf-accent-strong);">Dependency chain (one-way, no cycles)</div>
+    <div class="small muted">
+      <code>candidate-gate/</code> &rarr; <code>validation/</code> (imports <code>validateField</code>)
+      <br/><code>publisher/</code> &rarr; <code>validation/</code> (imports <code>validateRecord</code>)
+      <br/><code>validation/</code> &rarr; <code>src/shared/</code> only. Zero engine imports. Standalone.
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 3: THE FULL FLOW
+     =============================================================== -->
+
+<div class="panel">
+  <h2>3. End-to-End Data Flow</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every field value in the system flows through this pipeline. Two phases: candidate submission (per-source) and resolution + publish (per-product).
+  </div>
+
+  <div class="flow">
+
+    <!-- SOURCES -->
+    <div class="flow-node flow-source">
+      <div class="flow-node-title" style="color:var(--sf-purple-fg);">
+        <span class="chip chip-purple">SOURCE</span> Any data source completes a run
+      </div>
+      <div class="flow-node-detail">
+        Color &amp; edition finder, pipeline extraction, review override, CLI manual entry, future sources.
+        <br/>Each produces raw field values: <code>{ fieldKey, value, confidence, run_id, source_meta }</code>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr; <span class="flow-arrow-label">per field</span></div>
+
+    <!-- PHASE 1: CANDIDATE GATE -->
+    <div class="flow-node flow-gate">
+      <div class="flow-node-title" style="color:var(--sf-orange-fg);">
+        <span class="chip chip-orange">PHASE 1</span> Candidate Gate &mdash; <code>submitCandidate()</code>
+      </div>
+      <div class="flow-node-detail">
+        For each field the source produced:
+        <br/><strong>1.</strong> Load the field rule from Field Studio (<code>field_rules.json</code>)
+        <br/><strong>2.</strong> Call <code>validateField({ fieldKey, value, fieldRule, knownValues, componentDb })</code>
+        <br/><strong>3.</strong> The 12 deterministic checks run: shape &rarr; type &rarr; unit &rarr; format &rarr; normalize &rarr; enum &rarr; list rules &rarr; rounding &rarr; range &rarr; component &rarr; sanity bounds
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- BRANCH: VALID vs INVALID -->
+    <div class="flow-branch">
+      <div class="flow-node flow-publish">
+        <div class="flow-node-title" style="color:var(--sf-success-fg);">
+          <span class="chip chip-success">VALID</span> Persist as candidate
+        </div>
+        <div class="flow-node-detail">
+          Dual-write:
+          <br/>&bull; <code>product.json</code> &rarr; <code>candidates[fieldKey][]</code> (append)
+          <br/>&bull; DB candidate table (with source, run_id, confidence, validation result)
+          <br/><br/>
+          Includes any repairs applied (normalization, rounding, dedupe, etc.)
+        </div>
+      </div>
+      <div class="flow-node flow-reject">
+        <div class="flow-node-title" style="color:var(--sf-danger-fg);">
+          <span class="chip chip-danger">INVALID</span> Rejected &mdash; never persisted
+        </div>
+        <div class="flow-node-detail">
+          Value fails Field Studio contract.
+          <br/>Returns rejection detail: <code>{ reason_code, dimension, detail }</code>
+          <br/>Optionally returns <code>repairPrompt</code> for LLM repair.
+          <br/><br/>
+          <strong>Garbage never enters the candidate pool.</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow" style="padding:16px 0;">&darr; <span class="flow-arrow-label">after all sources have submitted</span></div>
+
+    <!-- PHASE 2: RESOLUTION -->
+    <div class="flow-node flow-check">
+      <div class="flow-node-title" style="color:var(--sf-info-fg);">
+        <span class="chip chip-info">PHASE 2</span> Resolution &mdash; <code>publishResolved()</code>
+      </div>
+      <div class="flow-node-detail">
+        <strong>1. Resolve winner per field</strong> from the validated candidate pool.
+        <br/>&nbsp;&nbsp;&nbsp;Consensus scoring: source count, confidence, source tier ranking.
+        <br/>&nbsp;&nbsp;&nbsp;Each candidate is already validated &mdash; any winner is shape/type/unit correct.
+        <br/><br/>
+        <strong>2. Cross-field validation</strong> via <code>validateRecord()</code> on the full resolved field set.
+        <br/>&nbsp;&nbsp;&nbsp;Checks: <code>default_color &isin; colors</code>, <code>edition.colors &sube; colors</code>,
+        <code>sensor_date &le; release_date</code>, <code>wireless &rarr; battery_hours required</code>, etc.
+        <br/>&nbsp;&nbsp;&nbsp;Auto-repairs where possible (e.g. set <code>default_color = colors[0]</code>).
+        <br/>&nbsp;&nbsp;&nbsp;Flags non-repairable inconsistencies for review.
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr; <span class="flow-arrow-label">cross-field pass</span></div>
+
+    <!-- PUBLISH -->
+    <div class="flow-node flow-publish">
+      <div class="flow-node-title" style="color:var(--sf-success-fg);">
+        <span class="chip chip-success">PUBLISH</span> Write resolved values
+      </div>
+      <div class="flow-node-detail">
+        Dual-write the resolved, validated, cross-field-checked values:
+        <br/>&bull; <code>product.json</code> &rarr; <code>fields[fieldKey]</code> (with value, confidence, resolved_at, sources[])
+        <br/>&bull; <code>item_field_state</code> &rarr; upsert row (category, product_id, field_key, value, confidence, source)
+        <br/>&bull; <code>item_component_links</code> &rarr; for component_reference fields
+        <br/>&bull; <code>item_list_links</code> &rarr; for list-shaped fields
+        <br/><br/>
+        <strong>This is the only path to <code>item_field_state</code>.</strong> No caller writes directly.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 4: WHAT FIELD STUDIO CONTROLS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>4. Field Studio Is the Contract</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The validator doesn't decide what's valid. <strong>Field Studio already decided.</strong>
+    Every check in the pipeline reads from the rules you designed. The validator just enforces them.
+  </div>
+
+  <table>
+    <thead><tr><th>Dimension</th><th>Field Studio Rule</th><th>What the Validator Checks</th><th>On Fail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Shape</td>
+        <td class="mono tiny">contract.shape: scalar | list | record</td>
+        <td class="small">Value struct matches declared shape</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Type</td>
+        <td class="mono tiny">contract.type: string | number</td>
+        <td class="small">JS type matches. Auto-coerce where safe.</td>
+        <td><span class="chip chip-warning">REPAIR or REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Unit</td>
+        <td class="mono tiny">contract.unit: mm | g | Hz | ...</td>
+        <td class="small">Same unit &rarr; strip suffix. Wrong unit &rarr; reject.</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Format</td>
+        <td class="mono tiny">parse.template &rarr; format regex</td>
+        <td class="small">Post-normalization value matches template format</td>
+        <td><span class="chip chip-danger">UNKNOWN &rarr; LLM</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Normalization</td>
+        <td class="mono tiny">parse.token_map + tooltip rules</td>
+        <td class="small">trim, lowercase, hyphens, token_map applied</td>
+        <td><span class="chip chip-success">ALWAYS REPAIRS</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Enum</td>
+        <td class="mono tiny">enum.policy: closed | open_prefer_known | open</td>
+        <td class="small">Value in known_values for closed. Flag for open_prefer_known.</td>
+        <td><span class="chip chip-danger">REJECT (closed)</span></td>
+      </tr>
+      <tr>
+        <td class="bold">List Rules</td>
+        <td class="mono tiny">list_rules: dedupe, sort, min, max</td>
+        <td class="small">Dedupe, sort, enforce item count bounds</td>
+        <td><span class="chip chip-success">ALWAYS REPAIRS</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Rounding</td>
+        <td class="mono tiny">ui.display_decimals: 0 | 1 | 2</td>
+        <td class="small">Round to declared decimal places</td>
+        <td><span class="chip chip-success">ALWAYS REPAIRS</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Range</td>
+        <td class="mono tiny">contract.range: { min, max }</td>
+        <td class="small">Value within declared bounds</td>
+        <td><span class="chip chip-danger">REJECT</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Component</td>
+        <td class="mono tiny">parse.template: component_reference</td>
+        <td class="small">Resolves in component_db (exact &rarr; alias)</td>
+        <td><span class="chip chip-warning">UNKNOWN &rarr; LLM</span></td>
+      </tr>
+      <tr>
+        <td class="bold">Cross-Field</td>
+        <td class="mono tiny">cross_validation_rules[]</td>
+        <td class="small">Inter-field constraints (DSL operators)</td>
+        <td><span class="chip chip-warning">REPAIR or FLAG</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     SECTION 5: CALLERS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>5. Who Calls What</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Every source calls <code>submitCandidate()</code>. Resolution calls <code>publishResolved()</code>.
+    No source ever writes directly to <code>item_field_state</code> or <code>product.json fields[]</code>.
+  </div>
+
+  <table>
+    <thead><tr><th>Source</th><th>Calls</th><th>When</th><th>What Happens</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Color &amp; Edition Finder</td>
+        <td class="mono tiny">submitCandidate()</td>
+        <td class="small">After LLM returns colors/editions/default_color</td>
+        <td class="small">Each field validated &rarr; persisted as candidate with <code>source: 'cef'</code>, run_id, model</td>
+      </tr>
+      <tr>
+        <td class="bold">Pipeline Extraction</td>
+        <td class="mono tiny">submitCandidate()</td>
+        <td class="small">After LLM extraction per source URL</td>
+        <td class="small">Each field validated &rarr; persisted as candidate with artifact, url, confidence</td>
+      </tr>
+      <tr>
+        <td class="bold">Review Override</td>
+        <td class="mono tiny">submitCandidate()</td>
+        <td class="small">When human sets a value via review grid</td>
+        <td class="small">Override validated &rarr; persisted as candidate with <code>source: 'override'</code></td>
+      </tr>
+      <tr>
+        <td class="bold">CLI Manual Entry</td>
+        <td class="mono tiny">submitCandidate()</td>
+        <td class="small">When human sets a value via CLI</td>
+        <td class="small">Value validated &rarr; persisted as candidate with <code>source: 'cli'</code></td>
+      </tr>
+      <tr style="background: var(--sf-success-bg);">
+        <td class="bold">Resolution Trigger</td>
+        <td class="mono tiny">publishResolved()</td>
+        <td class="small">After candidates collected (end of run, on demand, after override)</td>
+        <td class="small">Resolve winners &rarr; cross-field validate &rarr; dual-write to <code>fields[]</code> + <code>item_field_state</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     SECTION 6: DATA TARGETS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>6. Dual-Write Targets</h2>
+
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3>JSON (Durable Memory)</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <code>.workspace/products/{product_id}/product.json</code>
+        <br/><br/>
+        <strong>Candidate write:</strong>
+        <br/><code>candidates[fieldKey][]</code> &mdash; append validated candidate with sources
+        <br/><br/>
+        <strong>Publish write:</strong>
+        <br/><code>fields[fieldKey]</code> &mdash; resolved value, confidence, resolved_at, sources[]
+      </div>
+
+      <div class="code-block" style="margin-top:12px;"><span style="color:var(--sf-teal-fg);">// product.json v2 structure</span>
+{
+  "fields": {
+    "weight": {
+      "value": 58,
+      "confidence": 92,
+      "resolved_at": "2026-04-05T18:00:00Z",
+      "sources": [...]
+    }
+  },
+  "candidates": {
+    "weight": [
+      { "value": 58, "sources": [...] },
+      { "value": 57, "sources": [...] }
+    ]
+  }
+}</div>
+    </div>
+    <div class="card">
+      <h3>SQLite (Runtime Projection)</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <code>specDb &rarr; item_field_state</code>
+        <br/><br/>
+        <strong>Publish write:</strong>
+        <br/>Upsert per (category, product_id, field_key).
+        <br/>Value, confidence, source, resolved metadata.
+        <br/><br/>
+        <strong>Related tables:</strong>
+        <br/><code>item_component_links</code> &mdash; component_reference fields
+        <br/><code>item_list_links</code> &mdash; list-shaped fields
+      </div>
+
+      <div class="code-block" style="margin-top:12px;"><span style="color:var(--sf-teal-fg);">-- item_field_state (existing table)</span>
+CREATE TABLE item_field_state (
+  id           INTEGER PRIMARY KEY,
+  category     TEXT NOT NULL,
+  product_id   TEXT NOT NULL,
+  field_key    TEXT NOT NULL,
+  value        TEXT,
+  confidence   REAL DEFAULT 0,
+  source       TEXT DEFAULT 'pipeline',
+  ...
+  UNIQUE(category, product_id, field_key)
+);</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 7: BUILD ORDER
+     =============================================================== -->
+
+<div class="panel">
+  <h2>7. Build Order</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Each sub-module is built with its own contract + test matrix. RED &rarr; GREEN &rarr; REFACTOR.
+    The dependency chain dictates the order.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Depends On</th><th>Nature</th><th>Reference Doc</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">1</td>
+        <td class="bold">validation/</td>
+        <td class="mono tiny">src/shared/ only</td>
+        <td class="small">Pure functions. Most complex. 12 check dimensions, 12 parse templates, 297 fields proven.</td>
+        <td class="mono tiny"><a href="universal-validator-reference.html" style="color:var(--sf-accent-strong);">universal-validator-reference.html</a></td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
+        <td class="bold">candidate-gate/</td>
+        <td class="mono tiny">validation/</td>
+        <td class="small">Thin orchestration. Calls <code>validateField()</code>, dual-writes. Needs DB access patterns.</td>
+        <td class="mono tiny"><a href="product-json-v2-schema.json" style="color:var(--sf-accent-strong);">product-json-v2-schema.json</a></td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+        <td class="bold">publisher/</td>
+        <td class="mono tiny">validation/</td>
+        <td class="small">Thin orchestration. Resolves candidates, calls <code>validateRecord()</code>, dual-writes.</td>
+        <td class="mono tiny"><a href="product-json-v2-schema.json" style="color:var(--sf-accent-strong);">product-json-v2-schema.json</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     SECTION 8: PUBLIC API
+     =============================================================== -->
+
+<div class="panel">
+  <h2>8. Public API</h2>
+
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// src/features/publish-pipeline/index.js</span>
+<span style="color:var(--sf-teal-fg);">// This is the only thing consumers import.</span>
+
+<span style="color:var(--sf-teal-fg);">// Phase 1: Any source calls this after producing field data.</span>
+<span style="color:var(--sf-teal-fg);">// Validates each field against Field Studio, persists valid candidates.</span>
+export { submitCandidate } from './candidate-gate/submitCandidate.js';
+
+<span style="color:var(--sf-teal-fg);">// Phase 2: Called after candidates are collected.</span>
+<span style="color:var(--sf-teal-fg);">// Resolves winners, cross-field validates, publishes to product record.</span>
+export { publishResolved } from './publisher/publishResolved.js';
+
+<span style="color:var(--sf-teal-fg);">// Direct access to validation (for testing, field test integration, etc.)</span>
+export { validateField } from './validation/validateField.js';
+export { validateRecord } from './validation/validateRecord.js';</div>
+</div>
+
+<!-- ===============================================================
+     SECTION 9: COMPANION DOCS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>9. Companion Documents</h2>
+
+  <table>
+    <thead><tr><th>Document</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold"><a href="universal-validator-reference.html" style="color:var(--sf-accent-strong);">universal-validator-reference.html</a></td>
+        <td class="small">SSOT for the <code>validation/</code> sub-module. All 12 check dimensions, all scenarios, all LLM repair prompts, all edge cases. 22 sections.</td>
+      </tr>
+      <tr>
+        <td class="bold"><a href="field-value-validation-architecture.html" style="color:var(--sf-accent-strong);">field-value-validation-architecture.html</a></td>
+        <td class="small">Architecture and implementation plan for <code>validation/</code>. File structure, pipeline steps, template dispatch, data surface, TDD phases.</td>
+      </tr>
+      <tr>
+        <td class="bold"><a href="field-test-integration.html" style="color:var(--sf-accent-strong);">field-test-integration.html</a></td>
+        <td class="small">Universal contract compliance proof. How the field test auto-generates scenarios from your Field Studio contract and proves the validator enforces every rule.</td>
+      </tr>
+      <tr>
+        <td class="bold"><a href="deterministic-checks-reference.html" style="color:var(--sf-accent-strong);">deterministic-checks-reference.html</a></td>
+        <td class="small">Superseded (color/edition subset only). Subsumed by universal-validator-reference.html.</td>
+      </tr>
+      <tr>
+        <td class="bold"><a href="product-json-v2-schema.json" style="color:var(--sf-accent-strong);">product-json-v2-schema.json</a></td>
+        <td class="small">Target schema for <code>product.json</code> v2. Defines <code>fields[]</code> (resolved) and <code>candidates[]</code> (per-source) structure.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>

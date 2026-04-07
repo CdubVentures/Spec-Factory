@@ -142,13 +142,6 @@
           "bestbuy.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -268,13 +261,6 @@
           "pcpartpicker.com",
           "bestbuy.com",
           "bhphotovideo.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -397,13 +383,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -523,13 +502,6 @@
           "tftcentral.co.uk",
           "rtings.com",
           "bhphotovideo.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -651,13 +623,6 @@
           "pcpartpicker.com",
           "bhphotovideo.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -912,13 +877,6 @@
           "bhphotovideo.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1052,13 +1010,6 @@
           "tftcentral.co.uk",
           "tomshardware.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1198,13 +1149,6 @@
           "displayspecifications.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1326,13 +1270,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1449,13 +1386,6 @@
           "rtings.com",
           "displayspecifications.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1589,13 +1519,6 @@
           "bestbuy.com",
           "newegg.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1710,13 +1633,6 @@
           "pcpartpicker.com",
           "rtings.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1847,13 +1763,6 @@
           "newegg.com",
           "amazon.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -1982,13 +1891,6 @@
           "rtings.com",
           "tomshardware.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2123,13 +2025,6 @@
           "tomshardware.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -2260,13 +2155,6 @@
           "tftcentral.co.uk",
           "tomshardware.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2400,13 +2288,6 @@
           "tomshardware.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -2478,12 +2359,8 @@
         "match": {
           "strategy": "exact"
         },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": false
-        },
-        "policy": "open",
-        "source": null
+        "policy": "closed",
+        "source": "data_lists.colors"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -2557,23 +2434,10 @@
           "amazon.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "colors",
@@ -2685,13 +2549,6 @@
           "tomshardware.com",
           "displayspecifications.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -2810,13 +2667,6 @@
           "rtings.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -2934,13 +2784,6 @@
           "rtings.com",
           "displayspecifications.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3061,13 +2904,6 @@
           "pcpartpicker.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3187,13 +3023,6 @@
           "bestbuy.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3312,13 +3141,6 @@
           "displayspecifications.com",
           "rtings.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3452,13 +3274,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3574,13 +3389,6 @@
           "displayspecifications.com",
           "bhphotovideo.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3704,13 +3512,6 @@
           "rtings.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -3829,13 +3630,6 @@
           "rtings.com",
           "bestbuy.com",
           "newegg.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3961,13 +3755,6 @@
           "displayspecifications.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4088,23 +3875,10 @@
           "product_page"
         ],
         "domain_hints": [],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "special edition",
@@ -4215,13 +3989,6 @@
           "bhphotovideo.com",
           "pcmonitors.info",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4345,13 +4112,6 @@
           "bhphotovideo.com",
           "displayspecifications.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -4469,13 +4229,6 @@
           "rtings.com",
           "bhphotovideo.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4595,13 +4348,6 @@
           "rtings.com",
           "tftcentral.co.uk",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4861,13 +4607,6 @@
           "tftcentral.co.uk",
           "displayspecifications.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5246,13 +4985,6 @@
           "bestbuy.com",
           "newegg.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -5371,13 +5103,6 @@
           "rtings.com",
           "bestbuy.com",
           "newegg.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5502,13 +5227,6 @@
           "samsung.com",
           "displayspecifications.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5643,13 +5361,6 @@
           "bestbuy.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -5772,13 +5483,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5913,13 +5617,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -6039,13 +5736,6 @@
           "rtings.com",
           "bestbuy.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6178,13 +5868,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6455,13 +6138,6 @@
           "tftcentral.co.uk",
           "tomshardware.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -6996,13 +6672,6 @@
           "displayspecifications.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -7131,13 +6800,6 @@
           "displayspecifications.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -7257,13 +6919,6 @@
           "bestbuy.com",
           "bhphotovideo.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7505,13 +7160,6 @@
           "rtings.com",
           "bhphotovideo.com",
           "displayspecifications.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7921,13 +7569,6 @@
           "bhphotovideo.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8042,13 +7683,6 @@
           "bestbuy.com",
           "bhphotovideo.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8169,13 +7803,6 @@
           "tftcentral.co.uk",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8294,13 +7921,6 @@
           "newegg.com",
           "bestbuy.com",
           "displayspecifications.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8424,13 +8044,6 @@
           "tftcentral.co.uk",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8550,13 +8163,6 @@
           "pcmonitors.info",
           "displayspecifications.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -8675,13 +8281,6 @@
           "tftcentral.co.uk",
           "tomshardware.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9218,13 +8817,6 @@
           "displayspecifications.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9347,13 +8939,6 @@
           "rtings.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9472,13 +9057,6 @@
           "displayspecifications.com",
           "tftcentral.co.uk",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9603,13 +9181,6 @@
           "displayspecifications.com",
           "rtings.com",
           "pcpartpicker.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -9737,13 +9308,6 @@
           "bhphotovideo.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -9864,13 +9428,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -10006,13 +9563,6 @@
           "versus.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10146,13 +9696,6 @@
           "bhphotovideo.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10285,13 +9828,6 @@
           "bhphotovideo.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10413,13 +9949,6 @@
           "amazon.com",
           "bhphotovideo.com",
           "newegg.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -10820,13 +10349,6 @@
           "bestbuy.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -10955,13 +10477,6 @@
           "rtings.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -11081,13 +10596,6 @@
           "bestbuy.com",
           "rtings.com",
           "bhphotovideo.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11506,13 +11014,6 @@
           "pcmonitors.info",
           "displayspecifications.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -11646,13 +11147,6 @@
           "tftcentral.co.uk",
           "pcmonitors.info",
           "tomshardware.com"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11793,13 +11287,6 @@
           "rtings.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -11915,13 +11402,6 @@
           "newegg.com",
           "amazon.com",
           "displayspecifications.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -12042,13 +11522,6 @@
           "bestbuy.com",
           "bhphotovideo.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -12165,13 +11638,6 @@
           "tftcentral.co.uk",
           "rtings.com",
           "displayspecifications.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -12292,13 +11758,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -12546,13 +12005,6 @@
           "bhphotovideo.com",
           "displayspecifications.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -12674,13 +12126,6 @@
           "bhphotovideo.com",
           "displayspecifications.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -12798,13 +12243,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -12928,13 +12366,6 @@
           "bestbuy.com",
           "newegg.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -13053,13 +12484,6 @@
           "displayspecifications.com",
           "rtings.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -13196,13 +12620,6 @@
           "bestbuy.com",
           "newegg.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -13323,13 +12740,6 @@
           "tftcentral.co.uk",
           "pcpartpicker.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -13445,13 +12855,6 @@
           "bhphotovideo.com",
           "newegg.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "spec",
-          "manual",
-          "pdf",
-          "support",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -13712,13 +13115,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -13841,13 +13237,6 @@
           "displayspecifications.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -13967,13 +13356,6 @@
           "pcpartpicker.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -14091,13 +13473,6 @@
           "bestbuy.com",
           "newegg.com",
           "amazon.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -14221,13 +13596,6 @@
           "bestbuy.com",
           "bhphotovideo.com",
           "rtings.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -14364,13 +13732,6 @@
           "rtings.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -14506,13 +13867,6 @@
           "bestbuy.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
@@ -14631,13 +13985,6 @@
           "tftcentral.co.uk",
           "displayspecifications.com",
           "pcmonitors.info"
-        ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -14772,13 +14119,6 @@
           "bhphotovideo.com",
           "rtings.com",
           "bestbuy.com"
-        ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
         ],
         "preferred_tiers": [
           "tier1",
@@ -14942,7 +14282,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-05T17:47:38.759Z",
+  "generated_at": "2026-04-07T02:57:47.555Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

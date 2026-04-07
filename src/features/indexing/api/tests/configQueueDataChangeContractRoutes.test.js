@@ -51,7 +51,6 @@ function makeQueueCtx(overrides = {}) {
     safeReadJson: async () => null,
     safeStat: async () => null,
     listFiles: async () => [],
-    loadProductCatalog: async () => ({ products: {} }),
   };
   return { ...ctx, ...overrides };
 }

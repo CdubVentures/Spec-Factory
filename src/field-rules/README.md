@@ -12,7 +12,7 @@ Field rule compilation, loading, session caching, and consumer gating. Compiles 
 - `compilerCategoryInit.js`: `initCategory()`, `discoverCompileCategories()`, `listFields()`, `fieldReport()` — category discovery and initialization.
 - `compilerFileOps.js`: `stableStringify()`, `writeJsonStable()`, `hashFileWithMeta()`, `sha256Buffer()` — deterministic file I/O and hashing.
 - `compilerPrimitives.js`: `normalizePatterns()`, `auditFieldMetadata()` — low-level compilation primitives.
-- `idxBadgeRegistry.js`: `IDX_BADGE_REGISTRY`, `IDX_FIELD_PATHS`, `buildExtractor(entry)` — O(1) SSOT for IDX badge definitions. Adding a new IDX badge = one entry here.
+- `consumerBadgeRegistry.js`: `CONSUMER_BADGE_REGISTRY`, `FIELD_PARENT_MAP`, `FIELD_CONSUMER_MAP`, `IDX_FIELD_PATHS`, `BADGE_FIELD_PATHS`, `PARENT_GROUPS`, `NAVIGATION_MAP`, `buildExtractor(entry)` — unified SSOT for all consumer badge definitions. One entry per field rule path, declaring which runtime sub-consumers (e.g. `idx.needset`, `eng.validate`, `rev.flag`) read it. GUI badges, tooltips, and system maps all derive from this single registry. Adding a badge = one entry here, zero other files.
 
 ## Dependencies
 - Allowed: `src/ingest/` (categoryCompile for authority path resolution), `src/shared/`.

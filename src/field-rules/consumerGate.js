@@ -1,5 +1,5 @@
 import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
-import { IDX_FIELD_PATHS } from './idxBadgeRegistry.js';
+import { FIELD_PARENT_MAP } from './consumerBadgeRegistry.js';
 
 const SYSTEM_ALIASES = new Map([
   ['seed', 'seed'],
@@ -9,37 +9,18 @@ const SYSTEM_ALIASES = new Map([
   ['rev', 'review']
 ]);
 
-// WHY: O(1) SSOT — maps field rule paths to downstream system consumers.
-// IDX entries are derived from idxBadgeRegistry.js (single definition point).
-// Seed consumers: the 4 paths buildFieldMeta() reads. Review consumers: the 13
-// paths normalizeFieldContract / inferFlags / resolvePropertyFieldMeta read.
-// Review badges are reference-only (non-toggleable) in Field Studio.
-const _SEED_REVIEW_MAP = {
-  'contract.type': ['review'],
-  'contract.shape': ['seed', 'review'],
-  'contract.unit': ['review'],
-  'priority.required_level': ['review'],
-  'enum.policy': ['seed', 'review'],
-  'enum.source': ['seed', 'review'],
-  'enum.match.strategy': ['review'],
-  'enum.match.format_hint': ['review'],
-  'enum.additional_values': ['review'],
-  'evidence.min_evidence_refs': ['review'],
-  'evidence.conflict_policy': ['review'],
-  constraints: ['review'],
-  'component.type': ['seed', 'review'],
-};
+// WHY: FIELD_SYSTEM_MAP derived from the unified consumerBadgeRegistry.
+// Maps parent group keys to legacy system names for backward compat with
+// resolveConsumerGate / projectFieldRulesForConsumer callers.
+const _PARENT_TO_LEGACY = { idx: 'indexlab', eng: null, rev: 'review', seed: 'seed', comp: null };
 
-// WHY: IDX entries injected from the badge registry SSOT.
-// Adding a new IDX badge = one entry in idxBadgeRegistry.js. No edits here.
 function _buildFieldSystemMap() {
   const map = {};
-  for (const [path, systems] of Object.entries(_SEED_REVIEW_MAP)) {
-    map[path] = [...systems];
-  }
-  for (const path of IDX_FIELD_PATHS) {
-    if (!map[path]) map[path] = [];
-    map[path].push('indexlab');
+  for (const [path, parents] of Object.entries(FIELD_PARENT_MAP)) {
+    const systems = parents
+      .map((p) => _PARENT_TO_LEGACY[p])
+      .filter(Boolean);
+    if (systems.length > 0) map[path] = systems;
   }
   return map;
 }

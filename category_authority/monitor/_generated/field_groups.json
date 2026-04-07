@@ -1,6 +1,6 @@
 {
   "category": "monitor",
-  "generated_at": "2026-03-18T18:39:54.609Z",
+  "generated_at": "2026-04-07T02:57:47.555Z",
   "group_index": {
     "color_image_quality": [
       "backlight_type",
@@ -91,7 +91,9 @@
       "cable_length",
       "cable_type",
       "color",
+      "colors",
       "discontinued",
+      "editions",
       "material",
       "price_range",
       "release_date",
@@ -251,13 +253,15 @@
       "group_key": "features"
     },
     {
-      "count": 8,
+      "count": 10,
       "display_name": "General",
       "field_keys": [
         "cable_length",
         "cable_type",
         "color",
+        "colors",
         "discontinued",
+        "editions",
         "material",
         "price_range",
         "release_date",

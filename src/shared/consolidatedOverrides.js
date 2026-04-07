@@ -4,8 +4,7 @@
 // One file per category at: category_authority/{cat}/_overrides/overrides.json
 // This is the JSON SSOT for override state. SQL tables are derived cache.
 //
-// WHY src/shared/: consumed by seed.js, catalogProductLoader,
-// and overrideWorkflow — crosses feature boundaries.
+// WHY src/shared/: consumed by seed.js and overrideWorkflow — crosses feature boundaries.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';

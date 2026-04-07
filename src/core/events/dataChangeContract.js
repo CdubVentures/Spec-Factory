@@ -3,7 +3,6 @@ import { recordDataChangeBroadcast } from './dataPropagationCounters.js';
 export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
   'process-completed': ['studio', 'review-layout', 'component', 'enum'],
-  'catalog-seed': ['catalog', 'queue', 'identity'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
   'catalog-product-add': ['catalog', 'queue', 'identity'],
   'catalog-product-update': ['catalog', 'queue', 'identity'],

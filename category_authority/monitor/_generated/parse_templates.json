@@ -1,6 +1,6 @@
 {
   "category": "monitor",
-  "generated_at": "2026-03-18T18:39:54.609Z",
+  "generated_at": "2026-04-07T02:57:47.555Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -304,6 +304,13 @@
       "template": "number_with_unit",
       "unit": "%"
     },
+    "colors": {
+      "context_keywords": [
+        "colors"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
+    },
     "contrast_ratio": {
       "context_keywords": [
         "contrast",
@@ -394,6 +401,13 @@
       ],
       "patterns": [],
       "template": "text_field"
+    },
+    "editions": {
+      "context_keywords": [
+        "editions"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
     },
     "energy_rating": {
       "context_keywords": [

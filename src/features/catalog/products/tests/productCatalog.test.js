@@ -7,7 +7,6 @@ import {
   addProduct,
   updateProduct,
   removeProduct,
-  seedFromCatalog,
   listProducts,
 } from '../productCatalog.js';
 import { SpecDb } from '../../../../db/specDb.js';
@@ -49,19 +48,6 @@ function mockUpsertQueue() {
 }
 
 const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
-
-// WHY: Since addProduct no longer writes to catalog JSON (SQL is SSOT),
-// tests that need a product in the catalog must pre-seed it.
-async function seedCatalogProduct(config, category, pid, product) {
-  const root = config?.categoryAuthorityRoot || 'category_authority';
-  const cpDir = path.join(root, category, '_control_plane');
-  await fs.mkdir(cpDir, { recursive: true });
-  const filePath = path.join(cpDir, 'product_catalog.json');
-  let catalog = { _version: 1, products: {} };
-  try { catalog = JSON.parse(await fs.readFile(filePath, 'utf8')); } catch {}
-  catalog.products[pid] = product;
-  await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
-}
 
 // --- addProduct ---
 
@@ -228,59 +214,7 @@ test('removeProduct: returns error for non-existent product', async () => {
   }
 });
 
-// --- seedFromCatalog ---
-
-test('seedFromCatalog: handles missing catalog gracefully', async () => {
-  const config = await tmpConfig();
-  try {
-    const result = await seedFromCatalog({ config, category: 'mouse' });
-    assert.equal(result.ok, true);
-    assert.equal(result.seeded, 0);
-    assert.equal(result.fields_imported, 0);
-  } finally {
-    await cleanup(config);
-  }
-});
-
-test('seedFromCatalog: handles missing catalog in full mode gracefully', async () => {
-  const config = await tmpConfig();
-  try {
-    const result = await seedFromCatalog({ config, category: 'mouse', mode: 'full' });
-    assert.equal(result.ok, true);
-    assert.equal(result.seeded, 0);
-    assert.equal(result.fields_imported, 0);
-  } finally {
-    await cleanup(config);
-  }
-});
-
-test('seedFromCatalog: rejects missing category', async () => {
-  const config = await tmpConfig();
-  try {
-    const result = await seedFromCatalog({ config, category: '' });
-    assert.equal(result.ok, false);
-    assert.equal(result.error, 'category_required');
-  } finally {
-    await cleanup(config);
-  }
-});
-
-test('seedFromCatalog: skips existing products in identity mode', async () => {
-  const config = await tmpConfig();
-  try {
-    // Pre-seed a product in the catalog JSON
-    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '', status: 'active' });
-
-    // Seed from catalog — the existing product should be SKIPPED in identity mode
-    const result = await seedFromCatalog({ config, category: 'mouse' });
-    assert.equal(result.ok, true);
-    assert.equal(result.skipped >= 1, true, `expected at least 1 skipped, got ${result.skipped}`);
-  } finally {
-    await cleanup(config);
-  }
-});
-
-// --- listProducts (reads from SQL, not JSON) ---
+// --- listProducts (reads from SQL) ---
 
 test('listProducts: returns sorted product list from SQL', () => {
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
