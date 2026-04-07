@@ -20,7 +20,7 @@ export function createTestModeRouteContext(options = {}) {
     listFiles, resolveCategoryAlias, broadcastWs,
     purgeTestModeCategoryState, resetTestModeSharedReviewState,
     resetTestModeProductReviewState,
-    invalidateFieldRulesCache, sessionCache, appDb,
+    invalidateFieldRulesCache, sessionCache, appDb, logger,
   } = options;
 
   return {
@@ -33,6 +33,6 @@ export function createTestModeRouteContext(options = {}) {
     runTestProduct, purgeTestModeCategoryState,
     resetTestModeSharedReviewState, resetTestModeProductReviewState,
     addBrand, invalidateFieldRulesCache,
-    sessionCache, appDb,
+    sessionCache, appDb, logger,
   };
 }

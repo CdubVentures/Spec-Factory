@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 4,
     "name": "new_material",
-    "description": "Unknown material â†’ new_component suggestion",
+    "description": "Unknown material -> new_component suggestion",
     "category": "Components"
   }
 }

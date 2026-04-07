@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 11,
     "name": "similar_enum_values",
-    "description": "Near-match values â†’ fuzzy resolve to canonical",
+    "description": "Near-match values -> fuzzy resolve to canonical",
     "category": "Enums"
   }
 }

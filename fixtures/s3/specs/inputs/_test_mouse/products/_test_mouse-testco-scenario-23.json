@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-23",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 23",
+    "model": "Scenario 23 format_violations",
+    "variant": "format_violations",
+    "id": 9023,
+    "identifier": "test023a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 23,
+    "name": "format_violations",
+    "description": "Malformed values for 6 format-checked fields -> P4 format repair",
+    "category": "Validation"
+  }
+}

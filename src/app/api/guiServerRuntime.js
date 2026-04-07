@@ -198,6 +198,7 @@ export function createGuiServerRuntime({
         listFiles, resolveCategoryAlias, broadcastWs,
         purgeTestModeCategoryState, resetTestModeSharedReviewState,
         resetTestModeProductReviewState, invalidateFieldRulesCache, sessionCache, appDb,
+        logger: createRouteLlmLogger('test-mode'),
       }),
       indexlabRouteContext: createIndexlabRouteContext({
         jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,

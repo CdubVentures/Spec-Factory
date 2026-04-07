@@ -106,6 +106,7 @@ export function classifyLlmCallType(reason = '') {
   if (r.startsWith('search_planner') || r.startsWith('discovery_planner') || r === 'uber_query_planner') return 'search_planner';
   if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
   if (r === 'domain_safety_classification') return 'domain_classifier';
+  if (r.startsWith('field_repair')) return 'field_repair';
   if (r === 'validate' || r.startsWith('validate_')) return 'validation';
   if (r.startsWith('verify_extract')) return 'verification';
   if (r === 'extract' || r.startsWith('extract_')) return 'extraction';
@@ -118,7 +119,8 @@ export const LLM_CALL_TYPE_TAB = {
   needset_planner: '01',
   search_planner: '04',
   serp_selector: '07',
-  domain_classifier: '08'
+  domain_classifier: '08',
+  field_repair: null,
 };
 
 export function buildLlmCallKey(row = {}, reason = '') {

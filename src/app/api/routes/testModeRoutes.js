@@ -37,6 +37,7 @@ export function registerTestModeRoutes(ctx) {
     appDb,
     invalidateFieldRulesCache,
     sessionCache,
+    logger,
   } = ctx;
 
   return async function handleTestModeRoutes(parts, params, method, req, res) {
@@ -182,6 +183,14 @@ export function registerTestModeRoutes(ctx) {
       const testCases = [];
       const runResults = [];
 
+      // WHY: Load repair data from field_test DB (persists across tabs/reloads)
+      const runtimeSpecDb = await getSpecDbReady(testCategory).catch(() => null);
+      const fieldTestRows = new Map();
+      try {
+        const rows = runtimeSpecDb?.getFieldTestByCategory() || [];
+        for (const row of rows) fieldTestRows.set(row.product_id, row);
+      } catch { /* table may not exist */ }
+
       for (const pf of productFiles) {
         const job = await safeReadJson(path.join(productsDir, pf));
         if (!job?._testCase) continue;
@@ -192,6 +201,33 @@ export function registerTestModeRoutes(ctx) {
           category: job._testCase.category,
           productId: job.productId
         });
+
+        // DB-first: use field_test row if available, fall back to artifacts
+        const ftRow = fieldTestRows.get(job.productId);
+        if (ftRow) {
+          runResults.push({
+            productId: job.productId,
+            status: 'complete',
+            testCase: job._testCase,
+            confidence: ftRow.confidence,
+            coverage: ftRow.coverage,
+            completeness: ftRow.completeness,
+            trafficLight: { green: ftRow.traffic_green, yellow: ftRow.traffic_yellow, red: ftRow.traffic_red },
+            constraintConflicts: ftRow.constraint_conflicts || 0,
+            missingRequired: ftRow.missing_required ? JSON.parse(ftRow.missing_required) : [],
+            curationSuggestions: ftRow.curation_suggestions || 0,
+            runtimeFailures: ftRow.runtime_failures || 0,
+            durationMs: ftRow.duration_ms || undefined,
+            repairLog: ftRow.repair_total > 0 ? {
+              total: ftRow.repair_total,
+              repaired: ftRow.repair_repaired,
+              failed: ftRow.repair_failed,
+              rerunRecommended: ftRow.repair_rerun,
+              promptSkipped: ftRow.repair_skipped,
+            } : null,
+          });
+          continue;
+        }
 
         try {
           const latest = await readLatestArtifacts(storage, testCategory, job.productId);
@@ -345,7 +381,9 @@ export function registerTestModeRoutes(ctx) {
         : {};
 
       const results = [];
-      for (const pf of productFiles) {
+      const totalProducts = productFiles.length;
+      for (let pi = 0; pi < totalProducts; pi++) {
+        const pf = productFiles[pi];
         const productPath = path.join(productsDir, pf);
         const job = await safeReadJson(productPath);
         if (!job) { results.push({ file: pf, error: 'read_failed' }); continue; }
@@ -353,6 +391,16 @@ export function registerTestModeRoutes(ctx) {
         if (resetState && runtimeSpecDb) {
           resetTestModeProductReviewState(runtimeSpecDb, category, job.productId);
         }
+
+        const scenarioName = job._testCase?.name || pf;
+        broadcastWs('test-run-progress', {
+          index: pi,
+          total: totalProducts,
+          productId: job.productId,
+          scenarioName,
+          status: 'running',
+          aiReview: body.aiReview ?? false,
+        });
 
         try {
           let sourceResults;
@@ -383,15 +431,42 @@ export function registerTestModeRoutes(ctx) {
             fieldRules,
             knownValues,
             componentDBs,
+            aiReview: body.aiReview ?? false,
+            logger,
           });
-          results.push({ productId: job.productId, status: 'complete', ...result });
+          const fullResult = { productId: job.productId, status: 'complete', ...result };
+          results.push(fullResult);
+
+          // WHY: Broadcast the full result so frontend can update panels live
+          broadcastWs('test-run-progress', {
+            index: pi,
+            total: totalProducts,
+            productId: job.productId,
+            scenarioName,
+            status: 'complete',
+            result: fullResult,
+          });
         } catch (err) {
-          results.push({ productId: job.productId, status: 'error', error: err.message });
+          const errResult = { productId: job.productId, status: 'error', error: err.message, testCase: job._testCase || null };
+          results.push(errResult);
+
+          broadcastWs('test-run-progress', {
+            index: pi,
+            total: totalProducts,
+            productId: job.productId,
+            scenarioName,
+            status: 'error',
+            result: errResult,
+          });
         }
       }
 
       const resyncSpecDb = body?.resyncSpecDb !== false;
       if (runtimeSpecDb && resyncSpecDb) {
+        // WHY: Preserve field_test rows across purge+resync — they have no file source
+        let savedFieldTestRows = [];
+        try { savedFieldTestRows = runtimeSpecDb.getFieldTestByCategory() || []; } catch { /* table may not exist */ }
+
         try {
           if (!body.productId) {
             purgeTestModeCategoryState(runtimeSpecDb, category);
@@ -410,6 +485,11 @@ export function registerTestModeRoutes(ctx) {
             error: err?.message || 'Unknown SpecDb resync error',
           });
         }
+
+        // Restore field_test rows after resync
+        for (const row of savedFieldTestRows) {
+          try { runtimeSpecDb.upsertFieldTest(row); } catch { /* non-fatal */ }
+        }
       }
 
       emitDataChange({
@@ -418,6 +498,21 @@ export function registerTestModeRoutes(ctx) {
         category,
       });
       return jsonRes(res, 200, { ok: true, results });
+    }
+
+    // GET /api/v1/test-mode/field-test-repairs?category=_test_mouse&productId=xxx
+    if (parts[0] === 'test-mode' && parts[1] === 'field-test-repairs' && method === 'GET') {
+      const cat = resolveCategoryAlias(params.get('category') || '');
+      const productId = params.get('productId') || '';
+      if (!cat || !cat.startsWith('_test_')) {
+        return jsonRes(res, 400, { ok: false, error: 'invalid_test_category' });
+      }
+      const runtimeSpecDb = await getSpecDbReady(cat).catch(() => null);
+      const row = runtimeSpecDb?.getFieldTestByProduct(productId) || null;
+      if (!row) return jsonRes(res, 200, { ok: true, repairs: [], validation: null });
+      const repairs = row.repair_json ? JSON.parse(row.repair_json) : [];
+      const validation = row.validation_json ? JSON.parse(row.validation_json) : null;
+      return jsonRes(res, 200, { ok: true, repairs, validation });
     }
 
     // POST /api/v1/test-mode/validate  { category }

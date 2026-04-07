@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 9,
     "name": "similar_switch",
-    "description": "Switch alias match (\"Switch alpha 01\" â†’ \"Switch Alpha 01\")",
+    "description": "Switch alias match (\"Switch alpha 01\" -> \"Switch Alpha 01\")",
     "category": "Components"
   }
 }

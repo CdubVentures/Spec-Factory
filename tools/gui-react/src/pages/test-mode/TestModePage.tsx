@@ -22,6 +22,27 @@ interface GenerateResult {
   testCases: TestCase[];
 }
 
+interface RepairLogSummary {
+  total: number;
+  repaired: number;
+  failed: number;
+  rerunRecommended: number;
+  promptSkipped: number;
+}
+
+interface RepairEntry {
+  field: string;
+  promptId: string | null;
+  prompt_in: { system: string; user: string } | null;
+  response_out: unknown;
+  status: string;
+  confidence: number;
+  value_before: string | null;
+  value_after: string | null;
+  flaggedForReview: boolean;
+  error: string | null;
+}
+
 interface RunResultItem {
   productId: string;
   status: string;
@@ -37,6 +58,7 @@ interface RunResultItem {
   runtimeFailures?: number;
   durationMs?: number;
   error?: string;
+  repairLog?: RepairLogSummary | null;
 }
 
 interface ValidationCheck {
@@ -112,9 +134,21 @@ interface ImportProgress {
   summary?: { fields: number; components: number; componentItems: number; enums: number; rules: number };
 }
 
+interface RunProgress {
+  index: number;
+  total: number;
+  productId: string;
+  scenarioName: string;
+  status: 'running' | 'complete' | 'error';
+  aiReview?: boolean;
+  error?: string;
+  result?: RunResultItem;
+}
+
 // ── Styles ──────────────────────────────────────────────────────────
 
 import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../shared/ui/buttonClasses.ts';
+import { DrawerShell } from '../../shared/ui/overlay/DrawerShell.tsx';
 
 const btnCls = 'px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors';
 const cardCls = 'border sf-border-default rounded-lg p-3 sf-surface-card';
@@ -270,7 +304,9 @@ export function TestModePage() {
   const [generatedProducts, setGeneratedProducts] = useState<TestCase[]>(saved.generatedProducts || []);
   const [runResults, setRunResults] = useState<RunResultItem[]>(saved.runResults || []);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(saved.validationResult || null);
+  const [repairDrawerProductId, setRepairDrawerProductId] = useState<string | null>(null);
   const [importSteps, setImportSteps] = useState<ImportProgress[]>([]);
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
   const matrixCollapseValues = useCollapseStore((s) => s.values);
   const matrixCollapseToggle = useCollapseStore((s) => s.toggle);
   const matrixCollapsed = {
@@ -365,13 +401,12 @@ export function TestModePage() {
     enabled: Boolean(testCategory),
   });
 
-  // WebSocket listener for import progress
+  // WebSocket listener for import + run progress
   useEffect(() => {
     wsManager.connect();
     const unsub = wsManager.onMessage((channel, data) => {
       if (channel === 'test-import-progress') {
         const progress = data as ImportProgress;
-        // Upsert by step name so 'done' replaces 'copying' instead of duplicating
         const existing = importStepsRef.current;
         const idx = existing.findIndex(s => s.step === progress.step);
         if (idx >= 0) {
@@ -381,6 +416,20 @@ export function TestModePage() {
           importStepsRef.current = [...existing, progress];
         }
         setImportSteps([...importStepsRef.current]);
+      }
+      if (channel === 'test-run-progress') {
+        const progress = data as RunProgress;
+        setRunProgress(progress);
+        // WHY: Update panels live as each scenario completes — don't wait for the full HTTP response
+        if ((progress.status === 'complete' || progress.status === 'error') && progress.result) {
+          setRunResults(prev => {
+            const updated = [...prev];
+            const idx = updated.findIndex(r => r.productId === progress.productId);
+            if (idx >= 0) updated[idx] = progress.result!;
+            else updated.push(progress.result!);
+            return updated;
+          });
+        }
       }
     });
     return unsub;
@@ -417,12 +466,21 @@ export function TestModePage() {
   });
 
   const runAllMut = useMutation({
-    mutationFn: () => api.post<{ ok: boolean; results: RunResultItem[] }>('/test-mode/run', {
-      category: testCategory,
-      aiReview,
-      generation: generationConfig,
-    }),
-    onSuccess: (data) => setRunResults(data.results || []),
+    mutationFn: () => {
+      setRunProgress(null);
+      return api.post<{ ok: boolean; results: RunResultItem[] }>('/test-mode/run', {
+        category: testCategory,
+        aiReview,
+        generation: generationConfig,
+      });
+    },
+    onSuccess: (data) => {
+      // WHY: Merge final results — WebSocket already updated most panels live,
+      // but the HTTP response is the authoritative final set
+      setRunResults(data.results || []);
+      setRunProgress(null);
+    },
+    onError: () => setRunProgress(null),
   });
 
   const runOneMut = useMutation({
@@ -505,7 +563,14 @@ export function TestModePage() {
     return runResults.find((r) => r.testCase?.id === testCaseId);
   }
 
-  function statusBadge(result?: RunResultItem) {
+  function isScenarioRunning(productId?: string): boolean {
+    return Boolean(runProgress && runProgress.status === 'running' && productId && runProgress.productId === productId);
+  }
+
+  function statusBadge(result?: RunResultItem, productId?: string) {
+    if (isScenarioRunning(productId)) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-info animate-pulse">running</span>;
+    }
     if (!result) return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-neutral">pending</span>;
     if (result.status === 'error') return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-danger">error</span>;
     return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-success">complete</span>;
@@ -637,7 +702,7 @@ export function TestModePage() {
             type="button"
             onClick={() => setAiReview((prev) => !prev)}
             className={aiReview ? btnPrimary : btnSecondary}
-            title="When enabled, runs LLM-based AI review on flagged component matches after the pipeline completes. Off by default (deterministic mode only)."
+            title="When enabled, runs the publish-pipeline validator on all fields and calls the LLM repair adapter (P1-P7 prompts) on rejected fields. Repair prompt in/out is saved to repair.json per product. Off by default (deterministic mode only)."
           >
             AI Review {aiReview ? 'On' : 'Off'}
           </button>
@@ -717,6 +782,46 @@ export function TestModePage() {
             Wipe All
           </button>
         </div>
+
+        {/* Run progress bar */}
+        {runProgress && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs sf-text-muted">
+              <Spinner className="h-3 w-3" />
+              <span className="font-mono">
+                {runProgress.index + 1}/{runProgress.total}
+              </span>
+              <span className="truncate">{runProgress.scenarioName.replace(/_/g, ' ')}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                runProgress.status === 'running' ? 'sf-chip-info' :
+                runProgress.status === 'complete' ? 'sf-chip-success' :
+                'sf-chip-danger'
+              }`}>{runProgress.status}</span>
+              {runProgress.aiReview && <span className="text-[10px] sf-chip-warning px-1 py-0.5 rounded">AI</span>}
+            </div>
+            <div className="relative h-1.5 rounded-full sf-surface-elevated overflow-hidden">
+              <progress
+                className="sr-only"
+                value={runProgress.index + (runProgress.status === 'running' ? 0 : 1)}
+                max={runProgress.total}
+              />
+              <div className="absolute inset-0 flex">
+                {Array.from({ length: runProgress.total }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`flex-1 ${
+                      i < runProgress.index ? 'sf-metric-fill-success' :
+                      i === runProgress.index && runProgress.status === 'running' ? 'sf-metric-fill-info animate-pulse' :
+                      i === runProgress.index && runProgress.status === 'error' ? 'sf-metric-fill-danger' :
+                      i === runProgress.index ? 'sf-metric-fill-success' :
+                      ''
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Current step explanation */}
         <div className="text-[11px] sf-text-muted dark:sf-text-subtle leading-relaxed">
@@ -819,10 +924,20 @@ export function TestModePage() {
                               <span className="sf-status-text-success">{passChecks}</span>/<span className={failChecks > 0 ? 'sf-status-text-danger' : 'sf-text-subtle'}>{passChecks + failChecks}</span>
                             </span>
                           )}
-                          {statusBadge(result)}
+                          {statusBadge(result, result?.productId || tc.productId)}
                         </div>
                       </div>
                       <p className="text-[11px] sf-text-muted mb-2">{tc.description}</p>
+
+                      {/* Running indicator */}
+                      {isScenarioRunning(result?.productId || tc.productId) && (
+                        <div className="text-[10px] mb-2 px-2 py-1.5 rounded sf-surface-elevated border sf-border-soft flex items-center gap-2">
+                          <Spinner className="h-3 w-3" />
+                          <span className="sf-text-muted font-medium">
+                            {aiReview ? 'Running validation + LLM repair calls...' : 'Running deterministic pipeline...'}
+                          </span>
+                        </div>
+                      )}
 
                       {result && result.status === 'complete' && (
                         <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] mb-2">
@@ -857,13 +972,24 @@ export function TestModePage() {
                         </div>
                       )}
 
+                      {result?.repairLog && result.repairLog.total > 0 && (
+                        <div className="text-[10px] mb-2 px-2 py-1.5 rounded sf-surface-elevated border sf-border-soft">
+                          <span className="font-semibold sf-text-muted">{'\u2695'} Repair:</span>{' '}
+                          <span className="sf-status-text-success">{result.repairLog.repaired} repaired</span>
+                          {result.repairLog.failed > 0 && <span className="sf-status-text-danger">, {result.repairLog.failed} failed</span>}
+                          {result.repairLog.rerunRecommended > 0 && <span className="sf-status-text-warning">, {result.repairLog.rerunRecommended} rerun</span>}
+                          {result.repairLog.promptSkipped > 0 && <span className="sf-text-subtle">, {result.repairLog.promptSkipped} skipped</span>}
+                          <span className="sf-text-dim ml-1">({result.repairLog.total} total)</span>
+                        </div>
+                      )}
+
                       {result?.error && (
                         <p className="text-[10px] sf-status-text-danger mb-2 truncate" title={result.error}>
                           {result.error}
                         </p>
                       )}
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={() => runOneMut.mutate(result?.productId || tc.productId || '')}
                           disabled={isRunning || !(result?.productId || tc.productId)}
@@ -886,6 +1012,15 @@ export function TestModePage() {
                               Components
                             </a>
                           </>
+                        )}
+                        {/* WHY: Always show Repairs button if repair data exists — works from DB on reload */}
+                        {result?.repairLog && result.repairLog.total > 0 && (
+                          <button
+                            onClick={() => setRepairDrawerProductId(result.productId)}
+                            className={`${btnCls} text-[10px] sf-chip-warning`}
+                          >
+                            Repairs ({result.repairLog.total})
+                          </button>
                         )}
                       </div>
                     </div>
@@ -946,7 +1081,82 @@ export function TestModePage() {
           </div>
         </div>
       )}
+
+      {/* ── Repair Log Drawer ───────────────────────────────── */}
+      {repairDrawerProductId && testCategory && (
+        <RepairLogDrawer
+          category={testCategory}
+          productId={repairDrawerProductId}
+          onClose={() => setRepairDrawerProductId(null)}
+        />
+      )}
     </div>
   );
 }
 
+// ── Repair Log Drawer ────────────────────────────────────────────────────────
+
+function RepairLogDrawer({ category, productId, onClose }: {
+  category: string;
+  productId: string;
+  onClose: () => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['test-mode', 'repairs', category, productId],
+    queryFn: () => api.get<{ ok: boolean; repairs: RepairEntry[] }>(
+      `/test-mode/field-test-repairs?category=${encodeURIComponent(category)}&productId=${encodeURIComponent(productId)}`
+    ),
+    enabled: Boolean(category && productId),
+  });
+  const repairs = data?.repairs ?? [];
+
+  return (
+    <DrawerShell title="Repair Log" subtitle={productId} onClose={onClose} width={480}>
+      {isLoading && <div className="p-4"><Spinner className="h-5 w-5" /></div>}
+      {!isLoading && repairs.length === 0 && (
+        <p className="sf-text-dim text-[11px] p-4">No repair attempts for this scenario.</p>
+      )}
+      {repairs.map((r, i) => (
+        <div key={i} className="mb-3 sf-surface-elevated rounded-lg p-3 border sf-border-soft">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="font-mono font-bold text-[11px] sf-text-primary">{r.field}</span>
+            {r.promptId && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold sf-chip-info">{r.promptId}</span>
+            )}
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+              r.status === 'repaired' ? 'sf-chip-success' :
+              r.status === 'still_failed' ? 'sf-chip-danger' :
+              r.status === 'rerun_recommended' ? 'sf-chip-warning' :
+              'sf-chip-neutral'
+            }`}>{r.status}</span>
+            {r.confidence > 0 && (
+              <span className="sf-text-dim text-[10px]">{(r.confidence * 100).toFixed(0)}%</span>
+            )}
+          </div>
+          {(r.value_before != null || r.value_after != null) && (
+            <div className="text-[10px] mb-2 font-mono">
+              <span className="sf-text-subtle">Before:</span>{' '}
+              <code>{String(r.value_before ?? 'unk')}</code>
+              <span className="mx-1 sf-text-dim">{'\u2192'}</span>
+              <span className="sf-text-subtle">After:</span>{' '}
+              <code>{String(r.value_after ?? 'unk')}</code>
+            </div>
+          )}
+          {r.prompt_in && (
+            <details className="mb-1">
+              <summary className="text-[9px] sf-text-dim cursor-pointer font-semibold select-none">Prompt In</summary>
+              <pre className="sf-pre-block text-[10px] mt-1 max-h-48 overflow-auto whitespace-pre-wrap leading-relaxed">{r.prompt_in.user}</pre>
+            </details>
+          )}
+          {r.response_out != null && (
+            <details>
+              <summary className="text-[9px] sf-text-dim cursor-pointer font-semibold select-none">Response Out</summary>
+              <pre className="sf-pre-block text-[10px] mt-1 max-h-48 overflow-auto whitespace-pre-wrap leading-relaxed">{typeof r.response_out === 'string' ? r.response_out : JSON.stringify(r.response_out, null, 2)}</pre>
+            </details>
+          )}
+          {r.error && <p className="text-[10px] sf-status-text-danger mt-1">{r.error}</p>}
+        </div>
+      ))}
+    </DrawerShell>
+  );
+}

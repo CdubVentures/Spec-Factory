@@ -29,5 +29,10 @@ export { checkConstraints } from './validation/checks/checkConstraints.js';
 // Phase 7-8: composed pipeline + record orchestrator
 export { validateField } from './validation/validateField.js';
 export { validateRecord } from './validation/validateRecord.js';
+
+// Phase 9: repair-adapter (LLM repair orchestration)
+export { repairField, repairCrossField } from './repair-adapter/repairField.js';
+export { createRepairCallLlm } from './repairLlmAdapter.js';
+
 // TODO: export { submitCandidate } from './candidate-gate/submitCandidate.js';
 // TODO: export { publishResolved } from './publisher/publishResolved.js';

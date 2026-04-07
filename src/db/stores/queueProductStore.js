@@ -238,6 +238,75 @@ export function createQueueProductStore({ db, category, stmts }) {
     ).run(newValue, category, componentType, oldName, oldName);
   }
 
+  // --- Field Test (one row per scenario, latest only) ---
+
+  function upsertFieldTest(row) {
+    db.prepare(`
+      INSERT INTO field_test (
+        category, product_id, scenario_id, scenario_name, scenario_category, scenario_desc, run_id,
+        confidence, coverage, completeness, traffic_green, traffic_yellow, traffic_red,
+        constraint_conflicts, missing_required, curation_suggestions, runtime_failures, duration_ms,
+        validation_json, repair_json, repair_total, repair_repaired, repair_failed, repair_rerun, repair_skipped
+      ) VALUES (
+        @category, @product_id, @scenario_id, @scenario_name, @scenario_category, @scenario_desc, @run_id,
+        @confidence, @coverage, @completeness, @traffic_green, @traffic_yellow, @traffic_red,
+        @constraint_conflicts, @missing_required, @curation_suggestions, @runtime_failures, @duration_ms,
+        @validation_json, @repair_json, @repair_total, @repair_repaired, @repair_failed, @repair_rerun, @repair_skipped
+      )
+      ON CONFLICT(category, product_id) DO UPDATE SET
+        scenario_id = excluded.scenario_id, scenario_name = excluded.scenario_name,
+        scenario_category = excluded.scenario_category, scenario_desc = excluded.scenario_desc,
+        run_id = excluded.run_id, confidence = excluded.confidence, coverage = excluded.coverage,
+        completeness = excluded.completeness, traffic_green = excluded.traffic_green,
+        traffic_yellow = excluded.traffic_yellow, traffic_red = excluded.traffic_red,
+        constraint_conflicts = excluded.constraint_conflicts, missing_required = excluded.missing_required,
+        curation_suggestions = excluded.curation_suggestions, runtime_failures = excluded.runtime_failures,
+        duration_ms = excluded.duration_ms, validation_json = excluded.validation_json,
+        repair_json = excluded.repair_json, repair_total = excluded.repair_total,
+        repair_repaired = excluded.repair_repaired, repair_failed = excluded.repair_failed,
+        repair_rerun = excluded.repair_rerun, repair_skipped = excluded.repair_skipped,
+        updated_at = datetime('now')
+    `).run({
+      category: row.category || category,
+      product_id: row.product_id || '',
+      scenario_id: row.scenario_id ?? null,
+      scenario_name: row.scenario_name ?? null,
+      scenario_category: row.scenario_category ?? null,
+      scenario_desc: row.scenario_desc ?? null,
+      run_id: row.run_id ?? null,
+      confidence: row.confidence ?? null,
+      coverage: row.coverage ?? null,
+      completeness: row.completeness ?? null,
+      traffic_green: row.traffic_green ?? 0,
+      traffic_yellow: row.traffic_yellow ?? 0,
+      traffic_red: row.traffic_red ?? 0,
+      constraint_conflicts: row.constraint_conflicts ?? 0,
+      missing_required: row.missing_required ?? null,
+      curation_suggestions: row.curation_suggestions ?? 0,
+      runtime_failures: row.runtime_failures ?? 0,
+      duration_ms: row.duration_ms ?? 0,
+      validation_json: row.validation_json ?? null,
+      repair_json: row.repair_json ?? null,
+      repair_total: row.repair_total ?? 0,
+      repair_repaired: row.repair_repaired ?? 0,
+      repair_failed: row.repair_failed ?? 0,
+      repair_rerun: row.repair_rerun ?? 0,
+      repair_skipped: row.repair_skipped ?? 0,
+    });
+  }
+
+  function getFieldTestByCategory() {
+    return db.prepare('SELECT * FROM field_test WHERE category = ? ORDER BY scenario_id').all(category);
+  }
+
+  function getFieldTestByProduct(productId) {
+    return db.prepare('SELECT * FROM field_test WHERE category = ? AND product_id = ?').get(category, productId);
+  }
+
+  function clearFieldTest() {
+    return db.prepare('DELETE FROM field_test WHERE category = ?').run(category).changes;
+  }
+
   return {
     upsertProductRun,
     getLatestProductRun,
@@ -257,5 +326,9 @@ export function createQueueProductStore({ db, category, stmts }) {
     getComponentReviewItems,
     updateComponentReviewQueueMatchedComponent,
     updateComponentReviewQueueMatchedComponentByName,
+    upsertFieldTest,
+    getFieldTestByCategory,
+    getFieldTestByProduct,
+    clearFieldTest,
   };
 }

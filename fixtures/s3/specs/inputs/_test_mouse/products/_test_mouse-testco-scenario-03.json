@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 3,
     "name": "similar_encoder",
-    "description": "Encoder alias match (\"Encoder alpha 01\" â†’ \"Encoder Alpha 01\")",
+    "description": "Encoder alias match (\"Encoder alpha 01\" -> \"Encoder Alpha 01\")",
     "category": "Components"
   }
 }

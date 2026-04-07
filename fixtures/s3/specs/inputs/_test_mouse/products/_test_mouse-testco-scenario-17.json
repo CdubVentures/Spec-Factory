@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 17,
     "name": "tier_preference_override",
-    "description": "6 fields prefer tier2 over tier1 â€” conflicting values to verify tier2 wins (click_force, click_latency, click_latency_list, sensor_latency, sensor_latency_list, shift_latency)",
+    "description": "6 fields prefer tier2 over tier1 â€\" conflicting values to verify tier2 wins (click_force, click_latency, click_latency_list, sensor_latency, sensor_latency_list, shift_latency)",
     "category": "Edge Cases"
   }
 }

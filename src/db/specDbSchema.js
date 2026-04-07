@@ -251,6 +251,39 @@ CREATE INDEX IF NOT EXISTS idx_pq_category ON product_queue(category, status);
 CREATE INDEX IF NOT EXISTS idx_pq_product ON product_queue(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_cs_category ON curation_suggestions(category, suggestion_type, status);
 CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, component_type, status);
+
+CREATE TABLE IF NOT EXISTS field_test (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  scenario_id INTEGER,
+  scenario_name TEXT,
+  scenario_category TEXT,
+  scenario_desc TEXT,
+  run_id TEXT,
+  confidence REAL,
+  coverage REAL,
+  completeness REAL,
+  traffic_green INTEGER DEFAULT 0,
+  traffic_yellow INTEGER DEFAULT 0,
+  traffic_red INTEGER DEFAULT 0,
+  constraint_conflicts INTEGER DEFAULT 0,
+  missing_required TEXT,
+  curation_suggestions INTEGER DEFAULT 0,
+  runtime_failures INTEGER DEFAULT 0,
+  duration_ms INTEGER DEFAULT 0,
+  validation_json TEXT,
+  repair_json TEXT,
+  repair_total INTEGER DEFAULT 0,
+  repair_repaired INTEGER DEFAULT 0,
+  repair_failed INTEGER DEFAULT 0,
+  repair_rerun INTEGER DEFAULT 0,
+  repair_skipped INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ft_category ON field_test(category);
 CREATE INDEX IF NOT EXISTS idx_pr_product ON product_runs(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, is_latest) WHERE is_latest = 1;
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);

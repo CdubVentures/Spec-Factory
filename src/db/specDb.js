@@ -651,6 +651,12 @@ export class SpecDb {
 
   getProductsByFieldValue(fk, v) { return this._itemStateStore.getProductsByFieldValue(fk, v); }
 
+  // --- Field Test ---
+  upsertFieldTest(row) { this._queueProductStore.upsertFieldTest(row); }
+  getFieldTestByCategory() { return this._queueProductStore.getFieldTestByCategory(); }
+  getFieldTestByProduct(pid) { return this._queueProductStore.getFieldTestByProduct(pid); }
+  clearFieldTest() { return this._queueProductStore.clearFieldTest(); }
+
   // --- LLM Route Matrix ---
 
   ensureDefaultLlmRouteMatrix() { this._llmRouteSourceStore.ensureDefaultLlmRouteMatrix(); }

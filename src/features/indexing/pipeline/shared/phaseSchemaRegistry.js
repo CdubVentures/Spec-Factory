@@ -9,6 +9,8 @@ import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
 import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
+import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publish-pipeline/repair-adapter/promptBuilder.js';
+import { repairResponseJsonSchema } from '../../../publish-pipeline/repair-adapter/repairResponseSchema.js';
 
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   'needset': {
@@ -26,6 +28,10 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   'serp-selector': {
     system_prompt: SERP_SELECT_URLS_SYSTEM_PROMPT,
     response_schema: serpSelectorOutputSchema(),
+  },
+  'validate': {
+    system_prompt: REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS,
+    response_schema: repairResponseJsonSchema,
   },
   'color-finder': {
     system_prompt: buildColorEditionFinderPrompt({

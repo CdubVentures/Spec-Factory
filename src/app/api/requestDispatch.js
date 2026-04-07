@@ -19,6 +19,7 @@ const TEST_MODE_ACTION_SEGMENTS = new Set([
   'generate-products',
   'run',
   'validate',
+  'field-test-repairs',
 ]);
 
 function defaultIsApiRequest(url) {

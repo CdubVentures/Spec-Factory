@@ -1,4 +1,4 @@
-type Channel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'indexlab-event';
+type Channel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'test-run-progress' | 'indexlab-event';
 type MessageHandler = (channel: Channel, data: unknown) => void;
 
 interface WsManagerOptions {

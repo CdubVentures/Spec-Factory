@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-25",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "base_model": "Scenario 25",
+    "model": "Scenario 25 rounding_precision",
+    "variant": "rounding_precision",
+    "id": 9025,
+    "identifier": "test025a"
+  },
+  "anchors": {},
+  "_testCase": {
+    "id": 25,
+    "name": "rounding_precision",
+    "description": "Excess decimal places for 22 numeric fields -> deterministic rounding repair",
+    "category": "Validation"
+  }
+}

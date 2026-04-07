@@ -16,11 +16,12 @@ export const CALL_TYPE_META: Record<string, CallTypeDef> = {
   brand_resolver:  { symbol: '\u25C8', label: 'Brand Resolver',  prefetchTab: 'brand_resolver', tabCode: '02', chipClass: 'sf-chip-info',    barClass: 'sf-bar-ct-brand-resolver' },
   search_planner:  { symbol: '\u25CE', label: 'Search Planner',  prefetchTab: 'search_planner', tabCode: '04', chipClass: 'sf-chip-purple',  barClass: 'sf-bar-ct-search-planner' },
   serp_selector:   { symbol: '\u229E', label: 'SERP Selector',   prefetchTab: 'serp_selector',  tabCode: '07', chipClass: 'sf-chip-warning', barClass: 'sf-bar-ct-serp-triage' },
+  field_repair:    { symbol: '\u2695', label: 'Field Repair',    prefetchTab: null,              tabCode: null,  chipClass: 'sf-chip-warning', barClass: 'sf-bar-ct-field-repair' },
   unknown:         { symbol: '?',      label: 'Unknown',         prefetchTab: null, tabCode: null,  chipClass: 'sf-chip-neutral', barClass: 'sf-bar-ct-extraction' },
 };
 
 export const CALL_TYPE_ORDER = [
-  'needset_planner', 'brand_resolver', 'search_planner', 'serp_selector',
+  'needset_planner', 'brand_resolver', 'search_planner', 'serp_selector', 'field_repair',
 ];
 
 export function ctMeta(ct: string): CallTypeDef {
@@ -92,6 +93,7 @@ export function formatOutputPreview(call: LlmCallRow): string {
 
 export const FILTER_GROUPS: ReadonlyArray<{ label: string; types: string[] }> = [
   { label: 'LLM Calls', types: ['needset_planner', 'brand_resolver', 'search_planner', 'serp_selector'] },
+  { label: 'Publish', types: ['field_repair'] },
 ];
 
 // ── Computed stats (filter-aware) ────────────────────────────────────────────

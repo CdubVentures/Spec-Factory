@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 5,
     "name": "similar_material",
-    "description": "Material alias match (\"Material alpha 01\" â†’ \"Material Alpha 01\")",
+    "description": "Material alias match (\"Material alpha 01\" -> \"Material Alpha 01\")",
     "category": "Components"
   }
 }

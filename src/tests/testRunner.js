@@ -23,6 +23,8 @@ export async function runTestProduct({
   fieldRules = null,
   knownValues = null,
   componentDBs = null,
+  aiReview = false,
+  logger = null,
 }) {
   const startTime = Date.now();
   const runId = buildRunId();
@@ -90,6 +92,72 @@ export async function runTestProduct({
     identityObservations,
     extractedValues: resolvedFields,
   });
+
+  // Step 4b: Run publish-pipeline validator on normalized fields
+  let validationResult = null;
+  let repairLog = null;
+  try {
+    const { validateRecord } = await import('../features/publish-pipeline/validation/validateRecord.js');
+    validationResult = validateRecord({
+      fields: gateResult.fields,
+      fieldRules: fieldRules?.fields || {},
+      knownValues: knownValues || null,
+      componentDbs: componentDBs || null,
+      crossRules: compiledRules?.cross_validation_rules || null,
+    });
+  } catch {
+    // Non-fatal — validator may not be available in all environments
+  }
+
+  // Step 4c: LLM repair on rejected fields (only when AI Review enabled)
+  if (aiReview && validationResult && config) {
+    try {
+      const { buildLlmCallDeps } = await import('../core/llm/buildLlmCallDeps.js');
+      const { createRepairCallLlm } = await import('../features/publish-pipeline/repairLlmAdapter.js');
+      const { repairField } = await import('../features/publish-pipeline/repair-adapter/repairField.js');
+      const { buildRepairPrompt } = await import('../features/publish-pipeline/repair-adapter/promptBuilder.js');
+
+      const callLlm = createRepairCallLlm(buildLlmCallDeps({ config, logger }));
+      repairLog = [];
+
+      for (const [fieldKey, perField] of Object.entries(validationResult.perField)) {
+        if (perField.valid) continue;
+
+        const fieldRule = (fieldRules?.fields || {})[fieldKey] || null;
+        const enumData = knownValues?.enums?.[fieldKey] || null;
+        const componentDb = componentDBs?.[fieldRule?.parse?.component_type] || null;
+
+        const prompt = buildRepairPrompt({
+          rejections: perField.rejections, value: perField.value,
+          fieldKey, fieldRule, knownValues: enumData, componentDb,
+        });
+
+        const repairResult = await repairField({
+          validationResult: perField, fieldKey, fieldRule,
+          knownValues: enumData, componentDb, callLlm,
+        });
+
+        if (repairResult.status === 'repaired') {
+          gateResult.fields[fieldKey] = repairResult.value;
+        }
+
+        repairLog.push({
+          field: fieldKey,
+          promptId: prompt?.promptId || null,
+          prompt_in: prompt ? { system: prompt.system.slice(0, 500), user: prompt.user } : null,
+          response_out: repairResult.decisions || null,
+          status: repairResult.status,
+          confidence: repairResult.confidence,
+          value_before: perField.value,
+          value_after: repairResult.value,
+          flaggedForReview: repairResult.flaggedForReview,
+          error: repairResult.error || null,
+        });
+      }
+    } catch (err) {
+      logger?.warn?.('repair_pass_failed', { error: err.message });
+    }
+  }
 
   // Step 5: Build traffic light (update provenance values after normalization)
   for (const field of fieldOrder) {
@@ -161,6 +229,43 @@ export async function runTestProduct({
     JSON.stringify(provenance, null, 2),
   );
 
+  // Step 7b: Save all test data to field_test table (one row per scenario, latest only)
+  if (specDb) {
+    const testCase = job._testCase || {};
+    const rl = repairLog || [];
+    try {
+      specDb.upsertFieldTest({
+        category,
+        product_id: productId,
+        scenario_id: testCase.id ?? null,
+        scenario_name: testCase.name ?? null,
+        scenario_category: testCase.category ?? null,
+        scenario_desc: testCase.description ?? null,
+        run_id: runId,
+        confidence,
+        coverage,
+        completeness,
+        traffic_green: trafficLight.counts.green || 0,
+        traffic_yellow: trafficLight.counts.yellow || 0,
+        traffic_red: trafficLight.counts.red || 0,
+        constraint_conflicts: crossValidationFailures.length,
+        missing_required: JSON.stringify(missingRequired),
+        curation_suggestions: curationQueue.length,
+        runtime_failures: gateResult.failures.length,
+        duration_ms: Date.now() - startTime,
+        validation_json: validationResult ? JSON.stringify(validationResult) : null,
+        repair_json: rl.length > 0 ? JSON.stringify(rl) : null,
+        repair_total: rl.length,
+        repair_repaired: rl.filter(r => r.status === 'repaired').length,
+        repair_failed: rl.filter(r => r.status === 'still_failed').length,
+        repair_rerun: rl.filter(r => r.status === 'rerun_recommended').length,
+        repair_skipped: rl.filter(r => r.status === 'prompt_skipped').length,
+      });
+    } catch (err) {
+      logger?.warn?.('field_test_upsert_failed', { error: err.message });
+    }
+  }
+
   // Step 8: Persist curation suggestions to specDb
   if (specDb) {
     const componentSuggestions = curationQueue.filter(s => s.suggestion_type === 'new_component');
@@ -184,5 +289,12 @@ export async function runTestProduct({
     curationSuggestions: curationQueue.length,
     runtimeFailures: gateResult.failures.length,
     durationMs: Date.now() - startTime,
+    repairLog: repairLog ? {
+      total: repairLog.length,
+      repaired: repairLog.filter(r => r.status === 'repaired').length,
+      failed: repairLog.filter(r => r.status === 'still_failed').length,
+      rerunRecommended: repairLog.filter(r => r.status === 'rerun_recommended').length,
+      promptSkipped: repairLog.filter(r => r.status === 'prompt_skipped').length,
+    } : null,
   };
 }

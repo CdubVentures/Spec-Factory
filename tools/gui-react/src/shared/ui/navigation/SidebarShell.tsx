@@ -77,7 +77,7 @@ export function SidebarShell<T extends string>({
                 className={`group relative w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${isActive ? 'sf-nav-item-active' : ''}`}
               >
                 {item.badge && (
-                  <span className="absolute top-[-4px] right-[3px]">{item.badge}</span>
+                  <span className="absolute top-[-3px] right-[3px]">{item.badge}</span>
                 )}
                 <div className="flex items-center gap-2.5">
                   {renderIcon(item.id, isActive)}

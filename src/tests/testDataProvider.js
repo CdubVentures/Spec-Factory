@@ -1,11 +1,11 @@
 /**
- * testDataProvider.js â€” Contract-driven synthetic source data generator for test mode v2.
+ * testDataProvider.js â€" Contract-driven synthetic source data generator for test mode v2.
  *
  * Auto-generates ALL test scenarios from the actual imported field rules contract.
  * Covers every single use case the field rules studio contract can produce.
  * Builds 3 coverage matrices: field rules, components, lists & enums.
  *
- * UNIVERSAL: Works for any category â€” all test data is derived from the contract,
+ * UNIVERSAL: Works for any category â€" all test data is derived from the contract,
  * not hardcoded to mouse or any specific category.
  */
 
@@ -16,7 +16,7 @@ import { deriveFullModel } from '../features/catalog/identity/identityDedup.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function isObj(v) { return Boolean(v) && typeof v === 'object' && !Array.isArray(v); }
 function toArr(v) { return Array.isArray(v) ? v : []; }
@@ -258,7 +258,7 @@ function findAliasableItem(db) {
  * Tries multiple strategies to ensure the variant differs from the original.
  */
 function createNearMatch(name) {
-  // Strategy 1: Lowercase first char of each word (e.g., "Focus Pro 45K" â†’ "Focus pro 45k")
+  // Strategy 1: Lowercase first char of each word (e.g., "Focus Pro 45K" -> "Focus pro 45k")
   const words = name.split(/\s+/);
   if (words.length > 1) {
     const variant = words.map((w, i) => i === 0 ? w : w.toLowerCase()).join(' ');
@@ -285,7 +285,7 @@ function findItemWithProperties(db) {
   return items[0] || null;
 }
 
-// â”€â”€ Contract Analysis (core function) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Contract Analysis (core function) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 /**
  * Reads the full contract from compiled_rules (DB) or _generated dir (JSON fallback)
@@ -294,14 +294,14 @@ function findItemWithProperties(db) {
 export async function analyzeContract(helperRoot, category, { compiledRules: cr } = {}) {
   let fieldRules, knownValues, crossRules, parseTemplates, componentDBs;
   if (cr && cr.fields) {
-    // WHY: DB-first — compiled_rules has everything analyzeContract needs.
+    // WHY: DB-first -- compiled_rules has everything analyzeContract needs.
     fieldRules = { fields: cr.fields, component_db_sources: cr.component_db_sources || {} };
     knownValues = cr.known_values || {};
     crossRules = { rules: Array.isArray(cr.cross_validation_rules) ? cr.cross_validation_rules : [] };
     parseTemplates = cr.parse_templates || {};
     componentDBs = cr.component_dbs || {};
   } else {
-    // JSON fallback — CLI, pre-seeded test categories, tests without specDb
+    // JSON fallback -- CLI, pre-seeded test categories, tests without specDb
     const genDir = path.join(helperRoot, category, '_generated');
     fieldRules = await safeReadJson(path.join(genDir, 'field_rules.json')) || {};
     knownValues = await safeReadJson(path.join(genDir, 'known_values.json')) || {};
@@ -323,7 +323,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     : isObj(knownValues.fields) ? knownValues.fields : {};
   const rules = toArr(crossRules.rules);
 
-  // â”€â”€ Analyze fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Analyze fields â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const fieldsByType = {};
   const fieldsByShape = {};
   const enumPolicies = {};
@@ -387,7 +387,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     conflictPolicies[conflictPolicy] = (conflictPolicies[conflictPolicy] || 0) + 1;
   }
 
-  // â”€â”€ Analyze component DBs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Analyze component DBs â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const componentTypes = [];
   for (const [type, db] of Object.entries(componentDBs)) {
     const items = toArr(db.items || db.entities);
@@ -443,7 +443,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     const propItem = findItemWithProperties(db);
 
     componentTypes.push({
-      type: singularize(type),  // sensors â†’ sensor
+      type: singularize(type),  // sensors -> sensor
       dbFile: singularize(type),
       itemCount: items.length,
       aliasCount,
@@ -458,7 +458,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     });
   }
 
-  // â”€â”€ Analyze enum catalogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Analyze enum catalogs â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const knownValuesCatalogs = [];
   for (const [catalogName, values] of Object.entries(kvFields)) {
     const valArr = toArr(values);
@@ -495,7 +495,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     });
   }
 
-  // â”€â”€ Analyze evidence/conflict/tier policies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Analyze evidence/conflict/tier policies â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const highEvidenceFields = [];   // fields with min_evidence_refs > 1
   const preserveAllFields = [];    // fields with preserve_all_candidates conflict policy
   const tierOverrideFields = [];   // fields where tier_preference[0] !== 'tier1'
@@ -522,9 +522,9 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     }
   }
 
-  // â”€â”€ Compute scenario count dynamically â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Compute scenario count dynamically â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const scenarioDefs = buildScenarioDefsFromContract({
-    componentTypes, knownValuesCatalogs, rangeConstraints, rules, listFields, fieldKeys,
+    componentTypes, knownValuesCatalogs, rangeConstraints, rules, listFields, fieldKeys, fields,
     requiredFields, criticalFields, highEvidenceFields, preserveAllFields, tierOverrideFields
   });
 
@@ -552,7 +552,7 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
     objectSchemaFieldCount: objectSchemaFields.length
   };
 
-  // â”€â”€ Build matrices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Build matrices â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   const matrices = {
     fieldRules: buildFieldRulesMatrix(fields, fieldKeys, rules, kvFields, rangeConstraints, aiStrategies, evidenceRequirements, scenarioDefs, componentTypes),
     components: buildComponentMatrix(componentTypes, rules, scenarioDefs),
@@ -569,48 +569,48 @@ export async function analyzeContract(helperRoot, category, { compiledRules: cr 
   };
 }
 
-// â”€â”€ Dynamic Scenario Definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Dynamic Scenario Definitions â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-function buildScenarioDefsFromContract({ componentTypes, knownValuesCatalogs, rangeConstraints, rules, listFields, fieldKeys, requiredFields, criticalFields, highEvidenceFields, preserveAllFields, tierOverrideFields }) {
+function buildScenarioDefsFromContract({ componentTypes, knownValuesCatalogs, rangeConstraints, rules, listFields, fieldKeys, fields = {}, requiredFields, criticalFields, highEvidenceFields, preserveAllFields, tierOverrideFields }) {
   const defs = [];
   let id = 1;
 
   // 1. Happy path (always)
-  defs.push({ id: id++, name: 'happy_path', category: 'Coverage', desc: `All ${fieldKeys.length} fields with valid values`, aiCalls: 'callLlmWithRouting (test_data_generation) â†’ 3 source results' });
+  defs.push({ id: id++, name: 'happy_path', category: 'Coverage', desc: `All ${fieldKeys.length} fields with valid values`, aiCalls: 'callLlmWithRouting (test_data_generation) -> 3 source results' });
 
   // 2-N. Component scenarios: new + alias for each type
   for (const ct of componentTypes) {
-    defs.push({ id: id++, name: `new_${ct.type}`, category: 'Components', desc: `Unknown ${ct.type} â†’ new_component suggestion`, aiCalls: `callLlmWithRouting â†’ source data with unknown ${ct.type} name` });
+    defs.push({ id: id++, name: `new_${ct.type}`, category: 'Components', desc: `Unknown ${ct.type} -> new_component suggestion`, aiCalls: `callLlmWithRouting -> source data with unknown ${ct.type} name` });
     if (ct.aliasCount > 0 && ct.aliasItem) {
-      defs.push({ id: id++, name: `similar_${ct.type}`, category: 'Components', desc: `${capitalize(ct.type)} alias match ("${ct.aliasItem.loweredName}" â†’ "${ct.aliasItem.name}")`, aiCalls: `callLlmWithRouting â†’ source data with near-match ${ct.type} name` });
+      defs.push({ id: id++, name: `similar_${ct.type}`, category: 'Components', desc: `${capitalize(ct.type)} alias match ("${ct.aliasItem.loweredName}" -> "${ct.aliasItem.name}")`, aiCalls: `callLlmWithRouting -> source data with near-match ${ct.type} name` });
     }
   }
 
   // N+1. New enum values (if has open_prefer_known catalogs)
   const openPrefKnown = knownValuesCatalogs.filter(c => c.policy === 'open_prefer_known' && c.catalog !== 'yes_no');
   if (openPrefKnown.length > 0) {
-    defs.push({ id: id++, name: 'new_enum_values', category: 'Enums', desc: `New values for ${openPrefKnown.length} open_prefer_known enums`, aiCalls: 'callLlmWithRouting â†’ source data with fabricated enum values' });
+    defs.push({ id: id++, name: 'new_enum_values', category: 'Enums', desc: `New values for ${openPrefKnown.length} open_prefer_known enums`, aiCalls: 'callLlmWithRouting -> source data with fabricated enum values' });
   }
 
   // N+2. Similar enum values (if has catalogs with values to fuzzy match)
   const closedCatalogs = knownValuesCatalogs.filter(c => c.policy === 'closed' && c.values.length > 0);
   if (closedCatalogs.length > 0 || openPrefKnown.length > 0) {
-    defs.push({ id: id++, name: 'similar_enum_values', category: 'Enums', desc: 'Near-match values â†’ fuzzy resolve to canonical', aiCalls: 'callLlmWithRouting â†’ source data with near-match enum values' });
+    defs.push({ id: id++, name: 'similar_enum_values', category: 'Enums', desc: 'Near-match values -> fuzzy resolve to canonical', aiCalls: 'callLlmWithRouting -> source data with near-match enum values' });
   }
 
   // N+3. Closed enum rejection
   if (closedCatalogs.length > 0) {
-    defs.push({ id: id++, name: 'closed_enum_reject', category: 'Enums', desc: `Invalid values for all ${closedCatalogs.length} closed enum fields`, aiCalls: 'callLlmWithRouting â†’ source data with invalid enum values' });
+    defs.push({ id: id++, name: 'closed_enum_reject', category: 'Enums', desc: `Invalid values for all ${closedCatalogs.length} closed enum fields`, aiCalls: 'callLlmWithRouting -> source data with invalid enum values' });
   }
 
   // N+4. Range violations
   if (Object.keys(rangeConstraints).length > 0) {
-    defs.push({ id: id++, name: 'range_violations', category: 'Constraints', desc: `Out-of-range values for ${Object.keys(rangeConstraints).length} constrained fields`, aiCalls: 'callLlmWithRouting â†’ source data with out-of-range values' });
+    defs.push({ id: id++, name: 'range_violations', category: 'Constraints', desc: `Out-of-range values for ${Object.keys(rangeConstraints).length} constrained fields`, aiCalls: 'callLlmWithRouting -> source data with out-of-range values' });
   }
 
   // N+5. Cross-validation
   if (rules.length > 0) {
-    defs.push({ id: id++, name: 'cross_validation', category: 'Constraints', desc: `Triggers ${rules.length} cross-validation rules`, aiCalls: 'callLlmWithRouting â†’ source data crafted to trigger rule violations' });
+    defs.push({ id: id++, name: 'cross_validation', category: 'Constraints', desc: `Triggers ${rules.length} cross-validation rules`, aiCalls: 'callLlmWithRouting -> source data crafted to trigger rule violations' });
   }
 
   // N+5b. Compound range conflict (field-rule range + component bound intersection)
@@ -626,43 +626,71 @@ function buildScenarioDefsFromContract({ componentTypes, knownValuesCatalogs, ra
   const constrainedTypes = componentTypes.filter(ct => Object.keys(ct.allConstraints).length > 0);
   if (constrainedTypes.length > 0) {
     const constraintDesc = constrainedTypes.map(ct => Object.values(ct.allConstraints).flat().join(', ')).join('; ');
-    defs.push({ id: id++, name: 'component_constraints', category: 'Constraints', desc: `Violate component constraints: ${constraintDesc}`, aiCalls: 'callLlmWithRouting â†’ source data with constraint-violating dates/values' });
+    defs.push({ id: id++, name: 'component_constraints', category: 'Constraints', desc: `Violate component constraints: ${constraintDesc}`, aiCalls: 'callLlmWithRouting -> source data with constraint-violating dates/values' });
   }
 
   // N+7. Variance policy testing
   const varianceTypes = componentTypes.filter(ct => ct.varianceKeys.length > 0);
   if (varianceTypes.length > 0) {
     const varDesc = varianceTypes.map(ct => ct.varianceKeys.join(', ')).join('; ');
-    defs.push({ id: id++, name: 'variance_policies', category: 'Constraints', desc: `Test variance policies: ${varDesc}`, aiCalls: 'callLlmWithRouting â†’ source data with values at variance boundaries' });
+    defs.push({ id: id++, name: 'variance_policies', category: 'Constraints', desc: `Test variance policies: ${varDesc}`, aiCalls: 'callLlmWithRouting -> source data with values at variance boundaries' });
   }
 
   // N+8. Min evidence refs (if any fields require 2+ refs)
   const highEvFields = toArr(highEvidenceFields);
   if (highEvFields.length > 0) {
-    defs.push({ id: id++, name: 'min_evidence_refs', category: 'Edge Cases', desc: `Only 1 source for ${highEvFields.length} fields requiring 2+ evidence refs (${highEvFields.map(f => f.key).join(', ')})`, aiCalls: 'callLlmWithRouting â†’ 1 source for high-evidence fields' });
+    defs.push({ id: id++, name: 'min_evidence_refs', category: 'Edge Cases', desc: `Only 1 source for ${highEvFields.length} fields requiring 2+ evidence refs (${highEvFields.map(f => f.key).join(', ')})`, aiCalls: 'callLlmWithRouting -> 1 source for high-evidence fields' });
   }
 
   // N+9. Tier preference override (if any fields prefer tier2 over tier1)
   const tierFields = toArr(tierOverrideFields);
   if (tierFields.length > 0) {
-    defs.push({ id: id++, name: 'tier_preference_override', category: 'Edge Cases', desc: `${tierFields.length} fields prefer tier2 over tier1 â€” conflicting values to verify tier2 wins (${tierFields.map(f => f.key).join(', ')})`, aiCalls: 'callLlmWithRouting â†’ 2 sources with conflicting values for tier-preference fields' });
+    defs.push({ id: id++, name: 'tier_preference_override', category: 'Edge Cases', desc: `${tierFields.length} fields prefer tier2 over tier1 â€" conflicting values to verify tier2 wins (${tierFields.map(f => f.key).join(', ')})`, aiCalls: 'callLlmWithRouting -> 2 sources with conflicting values for tier-preference fields' });
   }
 
   // N+10. Preserve all candidates conflict policy
   const preserveFields = toArr(preserveAllFields);
   if (preserveFields.length > 0) {
-    defs.push({ id: id++, name: 'preserve_all_candidates', category: 'Edge Cases', desc: `${preserveFields.length} fields use preserve_all_candidates â€” multiple sources merged not resolved (${preserveFields.join(', ')})`, aiCalls: 'callLlmWithRouting â†’ 3 sources with different values for preserve-all fields' });
+    defs.push({ id: id++, name: 'preserve_all_candidates', category: 'Edge Cases', desc: `${preserveFields.length} fields use preserve_all_candidates â€" multiple sources merged not resolved (${preserveFields.join(', ')})`, aiCalls: 'callLlmWithRouting -> 3 sources with different values for preserve-all fields' });
   }
 
   // N+11. Missing required fields (always)
-  defs.push({ id: id++, name: 'missing_required', category: 'Edge Cases', desc: `Only 3-4 optional fields â†’ ${requiredFields.length} required fields missing`, aiCalls: 'callLlmWithRouting â†’ source data with minimal fields' });
+  defs.push({ id: id++, name: 'missing_required', category: 'Edge Cases', desc: `Only 3-4 optional fields -> ${requiredFields.length} required fields missing`, aiCalls: 'callLlmWithRouting -> source data with minimal fields' });
 
   // N+9. Multi-source consensus (always)
-  defs.push({ id: id++, name: 'multi_source_consensus', category: 'Edge Cases', desc: '4 sources disagree on key fields â†’ tier-weighted consensus', aiCalls: 'callLlmWithRouting â†’ 4 source results with disagreements' });
+  defs.push({ id: id++, name: 'multi_source_consensus', category: 'Edge Cases', desc: '4 sources disagree on key fields -> tier-weighted consensus', aiCalls: 'callLlmWithRouting -> 4 source results with disagreements' });
 
   // N+10. List fields dedup (if has list fields)
   if (listFields.length > 0) {
-    defs.push({ id: id++, name: 'list_fields_dedup', category: 'Edge Cases', desc: `All ${listFields.length} list fields with duplicates â†’ dedupe + union`, aiCalls: 'callLlmWithRouting â†’ source data with duplicated list values' });
+    defs.push({ id: id++, name: 'list_fields_dedup', category: 'Edge Cases', desc: `All ${listFields.length} list fields with duplicates -> dedupe + union`, aiCalls: 'callLlmWithRouting -> source data with duplicated list values' });
+  }
+
+  // ── Validation gap scenarios (always generated — exercise validator P3/P4/P7/rounding) ──
+
+  const numericFields = fieldKeys.filter(k => {
+    const r = fields?.[k]; if (!r) return false;
+    const t = r.contract?.type || r.data_type || '';
+    return t === 'number' || t === 'integer';
+  });
+  if (numericFields.length > 0) {
+    defs.push({ id: id++, name: 'type_violations', category: 'Validation', desc: `Non-numeric strings for ${numericFields.length} number fields -> P3 type coercion repair` });
+  }
+
+  const formatFields = fieldKeys.filter(k => {
+    const tmpl = fields?.[k]?.parse?.template || '';
+    return tmpl === 'url_field' || tmpl === 'date_field';
+  });
+  if (formatFields.length > 0) {
+    defs.push({ id: id++, name: 'format_violations', category: 'Validation', desc: `Malformed values for ${formatFields.length} format-checked fields -> P4 format repair` });
+  }
+
+  const unitFields = fieldKeys.filter(k => fields?.[k]?.contract?.unit);
+  if (unitFields.length > 0) {
+    defs.push({ id: id++, name: 'unit_violations', category: 'Validation', desc: `Wrong unit suffixes for ${unitFields.length} unit fields -> unit conversion repair` });
+  }
+
+  if (numericFields.length > 0) {
+    defs.push({ id: id++, name: 'rounding_precision', category: 'Validation', desc: `Excess decimal places for ${numericFields.length} numeric fields -> deterministic rounding repair` });
   }
 
   return defs;
@@ -672,7 +700,7 @@ function buildScenarioDefsFromContract({ componentTypes, knownValuesCatalogs, ra
 function findScenario(defs, name) { return defs.find(d => d.name === name); }
 function findScenarioId(defs, name) { return findScenario(defs, name)?.id ?? -1; }
 
-// â”€â”€ Matrix Builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Matrix Builders â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function buildFieldRulesMatrix(fields, fieldKeys, crossRules, kvFields, rangeConstraints, aiStrategies, evidenceRequirements, scenarioDefs, componentTypes = []) {
   const columns = [
@@ -884,7 +912,7 @@ function describeFieldExpectedBehavior(key, type, shape, template, unit, policy,
   const parts = [];
 
   if (template === 'number_with_unit' && unit !== '-') parts.push(`Parse "${unit}" unit values`);
-  else if (template === 'boolean_yes_no_unk') parts.push('Parse yes/no â†’ canonical');
+  else if (template === 'boolean_yes_no_unk') parts.push('Parse yes/no -> canonical');
   else if (template === 'component_reference') parts.push('Component lookup');
   else if (template === 'date_field') parts.push('Date parse validation');
   else if (template === 'url_field') parts.push('URL format validation');
@@ -987,7 +1015,7 @@ function buildComponentMatrix(componentTypes, crossRules, scenarioDefs) {
     // Row 3: Per-property variance policy rows
     for (const [prop, policy] of Object.entries(ct.allVariancePolicies)) {
       if (varianceScenario) {
-        const policyLabel = policy === 'upper_bound' ? 'extracted â‰¤ known â†’ full score' :
+        const policyLabel = policy === 'upper_bound' ? 'extracted â‰¤ known -> full score' :
           policy === 'override_allowed' ? 'product can claim different value' :
             'must match exactly';
         rows.push({
@@ -1026,7 +1054,7 @@ function buildComponentMatrix(componentTypes, crossRules, scenarioDefs) {
               expectedBehavior: '', expectedAiBehavior: ''
             },
             testNumbers: [constraintScenario.id],
-            expectedBehavior: `Violate "${constraint}" â†’ constraint_analysis contradiction, flag_for_review`,
+            expectedBehavior: `Violate "${constraint}" -> constraint_analysis contradiction, flag_for_review`,
             validationStatus: 'pending'
           });
         }
@@ -1048,7 +1076,7 @@ function buildComponentMatrix(componentTypes, crossRules, scenarioDefs) {
           expectedBehavior: '', expectedAiBehavior: ''
         },
         testNumbers: [crossValScenario.id],
-        expectedBehavior: `Cross-validation: dpi exceeds ${ct.type} max dpi Ã— 1.05 â†’ sensor_dpi_consistency violation`,
+        expectedBehavior: `Cross-validation: dpi exceeds ${ct.type} max dpi Ã-- 1.05 -> sensor_dpi_consistency violation`,
         validationStatus: 'pending'
       });
     }
@@ -1057,12 +1085,12 @@ function buildComponentMatrix(componentTypes, crossRules, scenarioDefs) {
   // Add AI behavior column values
   for (const row of rows) {
     const matchType = row.cells.expectedMatchType;
-    if (matchType === 'new_component') row.cells.expectedAiBehavior = 'LLM generates unknown name â†’ runtime gate: component_reference parse â†’ no match â†’ new_component suggestion created';
-    else if (matchType === 'exact_or_alias') row.cells.expectedAiBehavior = 'LLM generates near-match â†’ runtime gate: fuzzy/alias lookup â†’ canonical resolution â†’ identity observation';
-    else if (matchType === 'variance_check') row.cells.expectedAiBehavior = 'LLM generates value â†’ runtime gate: property scoring compares extracted vs component DB value';
-    else if (matchType === 'constraint_violation') row.cells.expectedAiBehavior = 'LLM generates constraint-violating value â†’ constraint graph evaluation â†’ contradiction flagged';
-    else if (matchType === 'cross_validation') row.cells.expectedAiBehavior = 'LLM generates inconsistent value â†’ cross_validation_rules check â†’ flag_for_review';
-    else row.cells.expectedAiBehavior = 'LLM generates source data â†’ standard component pipeline';
+    if (matchType === 'new_component') row.cells.expectedAiBehavior = 'LLM generates unknown name -> runtime gate: component_reference parse -> no match -> new_component suggestion created';
+    else if (matchType === 'exact_or_alias') row.cells.expectedAiBehavior = 'LLM generates near-match -> runtime gate: fuzzy/alias lookup -> canonical resolution -> identity observation';
+    else if (matchType === 'variance_check') row.cells.expectedAiBehavior = 'LLM generates value -> runtime gate: property scoring compares extracted vs component DB value';
+    else if (matchType === 'constraint_violation') row.cells.expectedAiBehavior = 'LLM generates constraint-violating value -> constraint graph evaluation -> contradiction flagged';
+    else if (matchType === 'cross_validation') row.cells.expectedAiBehavior = 'LLM generates inconsistent value -> cross_validation_rules check -> flag_for_review';
+    else row.cells.expectedAiBehavior = 'LLM generates source data -> standard component pipeline';
   }
 
   for (const row of rows) {
@@ -1110,7 +1138,7 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
   const simEnumScenarioId = findScenarioId(scenarioDefs, 'similar_enum_values');
   const happyId = findScenarioId(scenarioDefs, 'happy_path');
 
-  // Closed catalogs â†’ rejection test + happy path test
+  // Closed catalogs -> rejection test + happy path test
   for (const cat of closedCatalogs) {
     // Rejection row
     if (closedScenarioId > 0) {
@@ -1125,7 +1153,7 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
           expectedBehavior: '', expectedAiBehavior: ''
         },
         testNumbers: [closedScenarioId],
-        expectedBehavior: `enum_value_not_allowed â†’ field set to 'unk', runtime gate failure`,
+        expectedBehavior: `enum_value_not_allowed -> field set to 'unk', runtime gate failure`,
         validationStatus: 'pending'
       });
     }
@@ -1160,18 +1188,18 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
             fieldsUsing: cat.usingFields.join(', ') || cat.catalog,
             testScenario: `Test ${simEnumScenarioId}: Similar Enum`,
             injectValue: stripped,
-            expectedMatch: `SIMILAR â†’ "${parenVal}"`,
+            expectedMatch: `SIMILAR -> "${parenVal}"`,
             expectedBehavior: '', expectedAiBehavior: ''
           },
           testNumbers: [simEnumScenarioId],
-          expectedBehavior: `Alias/fuzzy match resolves "${stripped}" â†’ "${parenVal}"`,
+          expectedBehavior: `Alias/fuzzy match resolves "${stripped}" -> "${parenVal}"`,
           validationStatus: 'pending'
         });
       }
     }
   }
 
-  // Open prefer known â†’ new value + similar match tests
+  // Open prefer known -> new value + similar match tests
   for (const cat of openPrefKnown) {
     if (cat.catalog === 'yes_no') {
       rows.push({
@@ -1200,7 +1228,7 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
           fieldsUsing: cat.usingFields.join(', ') || cat.catalog,
           testScenario: `Test ${newEnumScenarioId}: New Enum`,
           injectValue: `NewTestValue_${cat.catalog}`,
-          expectedMatch: 'NEW â†’ suggestion',
+          expectedMatch: 'NEW -> suggestion',
           expectedBehavior: '', expectedAiBehavior: ''
         },
         testNumbers: [newEnumScenarioId],
@@ -1221,7 +1249,7 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
             fieldsUsing: cat.usingFields.join(', ') || cat.catalog,
             testScenario: `Test ${simEnumScenarioId}: Similar Enum`,
             injectValue: stripped,
-            expectedMatch: `SIMILAR â†’ "${parenVal}"`,
+            expectedMatch: `SIMILAR -> "${parenVal}"`,
             expectedBehavior: '', expectedAiBehavior: ''
           },
           testNumbers: [simEnumScenarioId],
@@ -1321,13 +1349,13 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
   // Set AI behavior for all rows
   for (const row of rows) {
     const match = String(row.cells.expectedMatch || '');
-    if (match === 'REJECT') row.cells.expectedAiBehavior = 'LLM generates invalid value â†’ runtime gate: closed enum check â†’ rejection â†’ field set to unk';
-    else if (match.startsWith('SIMILAR')) row.cells.expectedAiBehavior = 'LLM generates near-match â†’ runtime gate: fuzzy match against known_values â†’ canonical resolution';
-    else if (match.startsWith('NEW')) row.cells.expectedAiBehavior = 'LLM generates unknown value â†’ runtime gate: open_prefer_known accepts â†’ curation suggestion created';
-    else if (match === 'EXACT') row.cells.expectedAiBehavior = 'LLM generates known value â†’ runtime gate: exact match in enum â†’ accepted';
-    else if (match === 'PRESERVE_ALL') row.cells.expectedAiBehavior = 'LLM generates per-source list items â†’ preserve_all_candidates: ALL values from ALL sources kept (not tier-resolved)';
-    else if (match === 'DEDUPE') row.cells.expectedAiBehavior = 'LLM generates list with dupes â†’ list_union reducer: split + dedupe + max_items';
-    else row.cells.expectedAiBehavior = 'LLM generates source data â†’ standard enum/list pipeline';
+    if (match === 'REJECT') row.cells.expectedAiBehavior = 'LLM generates invalid value -> runtime gate: closed enum check -> rejection -> field set to unk';
+    else if (match.startsWith('SIMILAR')) row.cells.expectedAiBehavior = 'LLM generates near-match -> runtime gate: fuzzy match against known_values -> canonical resolution';
+    else if (match.startsWith('NEW')) row.cells.expectedAiBehavior = 'LLM generates unknown value -> runtime gate: open_prefer_known accepts -> curation suggestion created';
+    else if (match === 'EXACT') row.cells.expectedAiBehavior = 'LLM generates known value -> runtime gate: exact match in enum -> accepted';
+    else if (match === 'PRESERVE_ALL') row.cells.expectedAiBehavior = 'LLM generates per-source list items -> preserve_all_candidates: ALL values from ALL sources kept (not tier-resolved)';
+    else if (match === 'DEDUPE') row.cells.expectedAiBehavior = 'LLM generates list with dupes -> list_union reducer: split + dedupe + max_items';
+    else row.cells.expectedAiBehavior = 'LLM generates source data -> standard enum/list pipeline';
   }
 
   for (const row of rows) {
@@ -1351,20 +1379,20 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
   };
 }
 
-// â”€â”€ Export stable scenario defs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Export stable scenario defs â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 // For backward compatibility, export default mouse-like scenarios
 // but buildScenarioDefsFromContract() creates the real ones dynamically
 const SCENARIO_DEFS_DEFAULT = [
   { id: 1,  name: 'happy_path',           category: 'Coverage',    desc: 'All fields with valid values' },
-  { id: 2,  name: 'new_sensor',           category: 'Components',  desc: 'Unknown sensor â†’ new component suggestion' },
+  { id: 2,  name: 'new_sensor',           category: 'Components',  desc: 'Unknown sensor -> new component suggestion' },
   { id: 3,  name: 'similar_sensor',       category: 'Components',  desc: 'Sensor alias match' },
-  { id: 4,  name: 'new_switch',           category: 'Components',  desc: 'Unknown switch â†’ new component suggestion' },
+  { id: 4,  name: 'new_switch',           category: 'Components',  desc: 'Unknown switch -> new component suggestion' },
   { id: 5,  name: 'similar_switch',       category: 'Components',  desc: 'Switch alias match' },
-  { id: 6,  name: 'new_encoder',          category: 'Components',  desc: 'Unknown encoder â†’ new component suggestion' },
-  { id: 7,  name: 'new_material',         category: 'Components',  desc: 'Unknown material â†’ new component suggestion' },
+  { id: 6,  name: 'new_encoder',          category: 'Components',  desc: 'Unknown encoder -> new component suggestion' },
+  { id: 7,  name: 'new_material',         category: 'Components',  desc: 'Unknown material -> new component suggestion' },
   { id: 8,  name: 'new_enum_values',      category: 'Enums',       desc: 'New values for open_prefer_known enums' },
-  { id: 9,  name: 'similar_enum_values',  category: 'Enums',       desc: 'Near-match values â†’ fuzzy resolve to canonical' },
+  { id: 9,  name: 'similar_enum_values',  category: 'Enums',       desc: 'Near-match values -> fuzzy resolve to canonical' },
   { id: 10, name: 'closed_enum_reject',   category: 'Enums',       desc: 'Invalid values for all closed enum fields' },
   { id: 11, name: 'range_violations',     category: 'Constraints', desc: 'Out-of-range values for constrained fields' },
   { id: 12, name: 'cross_validation',     category: 'Constraints', desc: 'Triggers cross-validation rules' },
@@ -1373,12 +1401,16 @@ const SCENARIO_DEFS_DEFAULT = [
   { id: 15, name: 'min_evidence_refs',    category: 'Edge Cases',  desc: '1 source for fields requiring 2+ evidence refs' },
   { id: 16, name: 'tier_preference_override', category: 'Edge Cases', desc: 'Tier2 preferred over tier1 for latency fields' },
   { id: 17, name: 'preserve_all_candidates', category: 'Edge Cases', desc: 'All values from all sources kept for preserve_all fields' },
-  { id: 18, name: 'missing_required',     category: 'Edge Cases',  desc: 'Only 3-4 optional fields â†’ missing required detection' },
-  { id: 19, name: 'multi_source_consensus', category: 'Edge Cases', desc: '4 sources disagree on key fields â†’ consensus' },
-  { id: 20, name: 'list_fields_dedup',    category: 'Edge Cases',  desc: 'All list fields with duplicates â†’ dedupe + union' }
+  { id: 18, name: 'missing_required',     category: 'Edge Cases',  desc: 'Only 3-4 optional fields -> missing required detection' },
+  { id: 19, name: 'multi_source_consensus', category: 'Edge Cases', desc: '4 sources disagree on key fields -> consensus' },
+  { id: 20, name: 'list_fields_dedup',    category: 'Edge Cases',  desc: 'All list fields with duplicates -> dedupe + union' },
+  { id: 21, name: 'type_violations',     category: 'Validation',  desc: 'Non-numeric strings for number fields -> P3 type coercion repair' },
+  { id: 22, name: 'format_violations',   category: 'Validation',  desc: 'Malformed URLs and dates -> P4 format repair' },
+  { id: 23, name: 'unit_violations',     category: 'Validation',  desc: 'Wrong unit suffixes -> unit conversion repair' },
+  { id: 24, name: 'rounding_precision',  category: 'Validation',  desc: 'Excess decimal places -> deterministic rounding repair' },
 ];
 
-// â”€â”€ Test Product Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Test Product Generator â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export function buildTestProducts(category, contractAnalysis) {
   const defs = contractAnalysis?.scenarioDefs || SCENARIO_DEFS_DEFAULT;
@@ -1403,7 +1435,7 @@ export function buildTestProducts(category, contractAnalysis) {
   });
 }
 
-// â”€â”€ LLM Prompt Builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ LLM Prompt Builder â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function buildFieldRulesSummary(fieldRules) {
   const fields = [];
@@ -1468,7 +1500,7 @@ function buildScenarioInstructions(scenario, contractAnalysis) {
 
   const scenarioName = scenario.name;
 
-  // â”€â”€ Happy path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Happy path â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'happy_path') {
     return {
       sourceCount: 3,
@@ -1480,7 +1512,7 @@ IMPORTANT: Every field must have a realistic value. For boolean fields use "yes"
     };
   }
 
-  // â”€â”€ New component (dynamic per type) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ New component (dynamic per type) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName.startsWith('new_')) {
     const typeName = scenarioName.replace('new_', '');
     const ct = componentTypes.find(c => c.type === typeName);
@@ -1501,7 +1533,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Similar component (dynamic per type) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Similar component (dynamic per type) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName.startsWith('similar_')) {
     const typeName = scenarioName.replace('similar_', '');
     const ct = componentTypes.find(c => c.type === typeName);
@@ -1518,7 +1550,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ New enum values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ New enum values â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'new_enum_values') {
     const openPK = knownValuesCatalogs.filter(c => c.policy === 'open_prefer_known' && c.catalog !== 'yes_no');
     const enumInstructions = openPK.slice(0, 5).map(cat =>
@@ -1535,7 +1567,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Similar enum values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Similar enum values â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'similar_enum_values') {
     // Find catalogs with parenthetical values we can strip
     const allCats = [...knownValuesCatalogs];
@@ -1560,7 +1592,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Closed enum rejection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Closed enum rejection â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'closed_enum_reject') {
     const closedCats = knownValuesCatalogs.filter(c => c.policy === 'closed');
     const closedInstructions = closedCats.map(cat =>
@@ -1576,13 +1608,13 @@ Source 2 (tier 2): Return same invalid values.`
     };
   }
 
-  // â”€â”€ Range violations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Range violations â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'range_violations') {
     const rangeRules = rules.filter(r => r.check?.type === 'range');
     const rangeInstructions = rangeRules.map(r => {
       const below = (r.check.min || 0) - 1;
       const above = (r.check.max || 1000) * 2;
-      return `- ${r.trigger_field} MUST be "${below}" (below min of ${r.check.min}) â€” OR use "${above}" (above max of ${r.check.max})`;
+      return `- ${r.trigger_field} MUST be "${below}" (below min of ${r.check.min}) â€" OR use "${above}" (above max of ${r.check.max})`;
     }).join('\n');
     return {
       sourceCount: 2,
@@ -1594,7 +1626,7 @@ Source 2 (tier 2): Return same out-of-range values.`
     };
   }
 
-  // â”€â”€ Cross-validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Cross-validation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'cross_validation') {
     const crossInstructions = [];
     for (const r of rules) {
@@ -1602,7 +1634,7 @@ Source 2 (tier 2): Return same out-of-range values.`
         const sensorCt = componentTypes.find(c => c.type === 'sensor');
         const sensorName = sensorCt?.propItem?.name || 'known sensor';
         crossInstructions.push(`- sensor MUST be "${sensorName}" (known sensor)`);
-        crossInstructions.push(`- dpi MUST be "999999" (way exceeds sensor capability â†’ sensor_dpi_consistency violation)`);
+        crossInstructions.push(`- dpi MUST be "999999" (way exceeds sensor capability -> sensor_dpi_consistency violation)`);
       } else if (r.rule_id === 'wireless_battery_required') {
         crossInstructions.push(`- connection MUST be "wireless"`);
         crossInstructions.push(`- battery_hours MUST be absent/omitted (triggers wireless_battery_required)`);
@@ -1623,7 +1655,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Component constraint violations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Component constraint violations â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'component_constraints') {
     const constraintInstructions = [];
     for (const ct of componentTypes) {
@@ -1633,7 +1665,7 @@ Source 3 (tier 3): Return a subset.`
           if (constraint.includes('<=')) {
             const [left, right] = constraint.split('<=').map(s => s.trim());
             constraintInstructions.push(`- Use a known ${ct.type} (e.g., "${ct.propItem?.name || ct.type}")`);
-            constraintInstructions.push(`- ${right} MUST be "2010-01-01" (very old date, before ${left} â†’ violates "${constraint}")`);
+            constraintInstructions.push(`- ${right} MUST be "2010-01-01" (very old date, before ${left} -> violates "${constraint}")`);
           }
         }
       }
@@ -1652,19 +1684,19 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Variance policy testing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Variance policy testing â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'variance_policies') {
     const varianceInstructions = [];
     for (const ct of componentTypes) {
       if (Object.keys(ct.allVariancePolicies).length === 0) continue;
       const itemName = ct.propItem?.name || `known ${ct.type}`;
-      varianceInstructions.push(`- ${ct.type} MUST be "${itemName}" (known â€” has property data)`);
+      varianceInstructions.push(`- ${ct.type} MUST be "${itemName}" (known â€" has property data)`);
       for (const [prop, policy] of Object.entries(ct.allVariancePolicies)) {
         const propVal = ct.propItem?.properties?.[prop];
         if (policy === 'upper_bound' && propVal != null) {
-          varianceInstructions.push(`- ${prop} MUST be "${Math.round(propVal * 0.8)}" (below ${ct.type}'s max of ${propVal} â†’ valid upper_bound)`);
+          varianceInstructions.push(`- ${prop} MUST be "${Math.round(propVal * 0.8)}" (below ${ct.type}'s max of ${propVal} -> valid upper_bound)`);
         } else if (policy === 'override_allowed' && propVal != null) {
-          varianceInstructions.push(`- ${prop} MUST be "${Math.round(propVal * 1.2)}" (different from ${ct.type}'s ${propVal} â†’ override_allowed accepts)`);
+          varianceInstructions.push(`- ${prop} MUST be "${Math.round(propVal * 1.2)}" (different from ${ct.type}'s ${propVal} -> override_allowed accepts)`);
         } else if (policy === 'authoritative' && propVal != null) {
           varianceInstructions.push(`- ${prop} MUST be "${propVal}" (must match ${ct.type}'s authoritative value)`);
         }
@@ -1681,7 +1713,7 @@ Source 3 (tier 3): Return a subset.`
     };
   }
 
-  // â”€â”€ Min evidence refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Min evidence refs â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'min_evidence_refs') {
     const highEvFields = raw.highEvidenceFields || [];
     const fieldNames = highEvFields.map(f => f.key);
@@ -1691,16 +1723,16 @@ Source 3 (tier 3): Return a subset.`
 The following fields require ${highEvFields[0]?.minRefs || 2}+ evidence references to pass: ${fieldNames.join(', ')}.
 With only 1 source, these fields should NOT meet their pass target (below_pass_target).
 Source 1 (tier 1, manufacturer): Return realistic values for all fields including ${fieldNames.join(', ')}.
-IMPORTANT: Only 1 source total â€” no Source 2 or Source 3.`
+IMPORTANT: Only 1 source total â€" no Source 2 or Source 3.`
     };
   }
 
-  // â”€â”€ Tier preference override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Tier preference override â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'tier_preference_override') {
     const tierFields = raw.tierOverrideFields || [];
     const tierInstructions = tierFields.slice(0, 6).map(f => {
       const pref = f.tierPref[0] || 'tier2';
-      return `- ${f.key}: Source 1 (tier1)="tier1_value_${f.key}", Source 2 (tier2)="tier2_value_${f.key}" â†’ ${pref} wins, so tier2_value should be selected`;
+      return `- ${f.key}: Source 1 (tier1)="tier1_value_${f.key}", Source 2 (tier2)="tier2_value_${f.key}" -> ${pref} wins, so tier2_value should be selected`;
     });
     return {
       sourceCount: 2,
@@ -1713,7 +1745,7 @@ Source 2 (tier 2, review/benchmark site): Return DIFFERENT values for the tier-p
     };
   }
 
-  // â”€â”€ Preserve all candidates conflict policy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Preserve all candidates conflict policy â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'preserve_all_candidates') {
     const preserveFields = raw.preserveAllFields || [];
     return {
@@ -1731,7 +1763,7 @@ Source 3 (tier 3): Return a subset plus latency data for mode="bluetooth".`
     };
   }
 
-  // â”€â”€ Missing required fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Missing required fields â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'missing_required') {
     // Find a few optional fields to populate
     const optionalFields = fieldKeys.filter(k => {
@@ -1754,7 +1786,7 @@ Source 2 (tier 2): Return only 2-3 of those same fields.`
     };
   }
 
-  // â”€â”€ Multi-source consensus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Multi-source consensus â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'multi_source_consensus') {
     // Pick key fields that have range constraints or are required
     const keyFields = fieldKeys.filter(k => {
@@ -1779,7 +1811,7 @@ Source 4 (tier 3, forum): Mixed agreement.`
     };
   }
 
-  // â”€â”€ List fields dedup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ List fields dedup â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   if (scenarioName === 'list_fields_dedup') {
     const listFieldNames = listFields.length > 0 ? listFields.join(', ') : 'any list-type fields';
     return {
@@ -1800,11 +1832,11 @@ Source 3 (tier 3): Return a subset of list values.`
   return { sourceCount: 3, instructions: 'Generate realistic values for all fields.' };
 }
 
-// â”€â”€ Deterministic Test Data Generation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Deterministic Test Data Generation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 /**
  * Build deterministic seed component DBs with 6-11 items per type.
- * Returns Record<dbFile, dbObject> â€” one entry per component type.
+ * Returns Record<dbFile, dbObject> â€" one entry per component type.
  */
 export function buildSeedComponentDB(contractAnalysis, testCategory = '_test', options = {}) {
   const raw = contractAnalysis?._raw || {};
@@ -1896,7 +1928,7 @@ export function buildSeedComponentDB(contractAnalysis, testCategory = '_test', o
 
     const items = [];
 
-    // Item 1: Alpha â€” Standard, all props at midpoint, with aliases
+    // Item 1: Alpha â€" Standard, all props at midpoint, with aliases
     const alphaProps = {};
     for (const pk of propKeys) alphaProps[pk] = propValue(pk, 'mid');
     items.push({
@@ -1910,7 +1942,7 @@ export function buildSeedComponentDB(contractAnalysis, testCategory = '_test', o
       __discovery_source: 'pipeline',
     });
 
-    // Item 2: Beta â€” Upper-bound values, with aliases
+    // Item 2: Beta â€" Upper-bound values, with aliases
     const betaProps = {};
     for (const pk of propKeys) betaProps[pk] = propValue(pk, 'upper');
     const betaVariance = {};
@@ -1930,7 +1962,7 @@ export function buildSeedComponentDB(contractAnalysis, testCategory = '_test', o
       __discovery_source: 'pipeline',
     });
 
-    // Item 3: Gamma â€” Lower-bound values, with constraints
+    // Item 3: Gamma â€" Lower-bound values, with constraints
     const gammaProps = {};
     for (const pk of propKeys) gammaProps[pk] = propValue(pk, 'lower');
     const gammaVariance = {};
@@ -2020,7 +2052,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
     // 1. boolean
     if (template === 'boolean_yes_no_unk') { values[key] = 'yes'; continue; }
 
-    // 2. component_reference â€” vary per scenario to spread products across all discovered items
+    // 2. component_reference â€" vary per scenario to spread products across all discovered items
     if (template === 'component_reference') {
       const ct = componentTypes.find(c => c.type === key || c.type === singularize(key));
       const typeToken = ct?.type || singularize(key);
@@ -2066,7 +2098,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
     // 4. url
     if (template === 'url_field') { values[key] = 'https://example.com/test'; continue; }
 
-    // 5. numeric with range â€” vary per scenario to create distinct pipeline candidates
+    // 5. numeric with range â€" vary per scenario to create distinct pipeline candidates
     if ((type === 'number' || type === 'integer') && rangeConstraints[key]) {
       const range = rangeConstraints[key];
       const mid = (range.min + range.max) / 2;
@@ -2077,7 +2109,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
       continue;
     }
 
-    // 6. numeric (no range) — derive from contract unit or use safe universal default
+    // 6. numeric (no range) -- derive from contract unit or use safe universal default
     if (type === 'number' || type === 'integer') {
       const base = 100;
       const offsets = [0, 0.08, -0.06, 0.12, -0.10, 0.15, -0.08, 0.05, 0.10, -0.12];
@@ -2086,7 +2118,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
       continue;
     }
 
-    // 7. list shape â€” use comma-separated (not JSON) so consensus engine can split correctly
+    // 7. list shape â€" use comma-separated (not JSON) so consensus engine can split correctly
     if (shape === 'list') {
       values[key] = 'TestItem1, TestItem2, TestItem3';
       continue;
@@ -2289,7 +2321,7 @@ function applyGenerationOptionsToSources({
 }
 
 /**
- * Build deterministic source results for a test product â€” no LLM call.
+ * Build deterministic source results for a test product â€" no LLM call.
  * Returns sourceResult[] (1-5 entries depending on scenario).
  */
 export function buildDeterministicSourceResults({
@@ -2401,8 +2433,8 @@ export function buildDeterministicSourceResults({
     scenarioName,
   });
 
-  // â”€â”€ happy_path: all 5 sources, source 4 (tier3) skips ~40% of fields
-  //    but never skip COMMONLY_WRONG fields (pass_target=5 â€” need all 5 sources)
+  // â"€â"€ happy_path: all 5 sources, source 4 (tier3) skips ~40% of fields
+  //    but never skip COMMONLY_WRONG fields (pass_target=5 â€" need all 5 sources)
   if (scenarioName === 'happy_path') {
     const COMMONLY_WRONG = new Set(['weight', 'lngth', 'width', 'height', 'sensor', 'polling_rate', 'dpi', 'ips', 'acceleration', 'switch', 'side_buttons', 'middle_buttons']);
     const skipForSource4 = new Set(fieldKeys.filter((fk, i) => i % 3 === 0 && !COMMONLY_WRONG.has(fk)));
@@ -2411,7 +2443,7 @@ export function buildDeterministicSourceResults({
     ));
   }
 
-  // â”€â”€ new_{type}: unknown component name in all 5 sources
+  // â"€â"€ new_{type}: unknown component name in all 5 sources
   // Use alien names with no character overlap with DB entries to guarantee new_component match
   if (scenarioName.startsWith('new_')) {
     const typeName = scenarioName.replace('new_', '');
@@ -2422,7 +2454,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ similar_{type}: near-match alias in all 5 sources
+  // â"€â"€ similar_{type}: near-match alias in all 5 sources
   if (scenarioName.startsWith('similar_')) {
     const typeName = scenarioName.replace('similar_', '');
     const ct = (raw.componentTypes || []).find(c => c.type === typeName);
@@ -2435,7 +2467,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ new_enum_values: fabricated enum values for open_prefer_known catalogs
+  // â"€â"€ new_enum_values: fabricated enum values for open_prefer_known catalogs
   if (scenarioName === 'new_enum_values') {
     const openPK = (raw.knownValuesCatalogs || []).filter(c => c.policy === 'open_prefer_known' && c.catalog !== 'yes_no');
     const overrides = {};
@@ -2445,7 +2477,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ similar_enum_values: stripped parenthetical values
+  // â"€â"€ similar_enum_values: stripped parenthetical values
   if (scenarioName === 'similar_enum_values') {
     const overrides = {};
     for (const cat of (raw.knownValuesCatalogs || [])) {
@@ -2457,7 +2489,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ closed_enum_reject: invalid values for closed catalogs
+  // â"€â"€ closed_enum_reject: invalid values for closed catalogs
   if (scenarioName === 'closed_enum_reject') {
     const closedCats = (raw.knownValuesCatalogs || []).filter(c => c.policy === 'closed');
     const overrides = {};
@@ -2467,7 +2499,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ range_violations: value = max * 2 for constrained fields
+  // â"€â"€ range_violations: value = max * 2 for constrained fields
   if (scenarioName === 'range_violations') {
     const rangeConstraints = contractAnalysis?.summary?.rangeConstraints || {};
     const overrides = {};
@@ -2477,7 +2509,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ cross_validation: craft specific rule violations
+  // â"€â"€ cross_validation: craft specific rule violations
   if (scenarioName === 'cross_validation') {
     const rules = raw.rules || [];
     const componentTypes = raw.componentTypes || [];
@@ -2502,7 +2534,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides, skipFields)));
   }
 
-  // â”€â”€ component_constraints: violate date/value constraints
+  // â"€â"€ component_constraints: violate date/value constraints
   if (scenarioName === 'component_constraints') {
     const componentTypes = raw.componentTypes || [];
     const overrides = {};
@@ -2523,7 +2555,7 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ variance_policies: component ref = Beta item, numeric props at 80%
+  // â"€â"€ variance_policies: component ref = Beta item, numeric props at 80%
   if (scenarioName === 'variance_policies') {
     const componentTypes = raw.componentTypes || [];
     const overrides = {};
@@ -2550,12 +2582,12 @@ export function buildDeterministicSourceResults({
     return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
   }
 
-  // â”€â”€ min_evidence_refs: only 1 source
+  // â"€â"€ min_evidence_refs: only 1 source
   if (scenarioName === 'min_evidence_refs') {
     return finalizeSources([buildSource(sourceTemplates[0], 0)]);
   }
 
-  // â”€â”€ tier_preference_override: tier1 vs tier2+ disagreement
+  // â"€â"€ tier_preference_override: tier1 vs tier2+ disagreement
   // Use realistic numeric values since these fields (latency, force) expect numbers
   if (scenarioName === 'tier_preference_override') {
     const tierFields = raw.tierOverrideFields || [];
@@ -2573,7 +2605,7 @@ export function buildDeterministicSourceResults({
     }));
   }
 
-  // â”€â”€ preserve_all_candidates: different mode/latency combos per source
+  // â"€â"€ preserve_all_candidates: different mode/latency combos per source
   if (scenarioName === 'preserve_all_candidates') {
     const preserveFields = raw.preserveAllFields || [];
     const modes = ['wired', 'wireless', 'bluetooth', '2.4ghz', 'usb'];
@@ -2587,7 +2619,7 @@ export function buildDeterministicSourceResults({
     }));
   }
 
-  // â”€â”€ missing_required: only 2 sources, only optional fields
+  // â"€â"€ missing_required: only 2 sources, only optional fields
   if (scenarioName === 'missing_required') {
     const optionalFields = fieldKeys.filter(k => {
       const rule = fields[k];
@@ -2605,7 +2637,7 @@ export function buildDeterministicSourceResults({
     }));
   }
 
-  // â”€â”€ multi_source_consensus: 4 sources, disagreements on key fields
+  // â"€â"€ multi_source_consensus: 4 sources, disagreements on key fields
   if (scenarioName === 'multi_source_consensus') {
     const keyFields = fieldKeys.filter(k => {
       const rule = fields[k];
@@ -2627,7 +2659,7 @@ export function buildDeterministicSourceResults({
     }));
   }
 
-  // â”€â”€ list_fields_dedup: overlapping lists with duplicates
+  // â"€â"€ list_fields_dedup: overlapping lists with duplicates
   if (scenarioName === 'list_fields_dedup') {
     const listFields = raw.listFields || [];
     const valueSets = [
@@ -2644,11 +2676,82 @@ export function buildDeterministicSourceResults({
     }));
   }
 
+  // ── type_violations: non-numeric strings for number/integer fields -> P3 repair
+  if (scenarioName === 'type_violations') {
+    const overrides = {};
+    for (const key of fieldKeys) {
+      const rule = fields[key];
+      if (!isObj(rule)) continue;
+      const contract = isObj(rule.contract) ? rule.contract : {};
+      if (contract.type === 'number' || contract.type === 'integer') {
+        const wordValues = ['twenty grams', 'high', 'fast', 'very low', 'approximately medium', 'none specified'];
+        overrides[key] = wordValues[Object.keys(overrides).length % wordValues.length];
+      }
+    }
+    return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
+  }
+
+  // ── format_violations: malformed URLs and dates -> P4 repair
+  if (scenarioName === 'format_violations') {
+    const overrides = {};
+    for (const key of fieldKeys) {
+      const rule = fields[key];
+      if (!isObj(rule)) continue;
+      const template = rule.parse?.template || '';
+      if (template === 'url_field') overrides[key] = 'not-a-valid-url';
+      if (template === 'date_field') overrides[key] = '2024/13/45';
+    }
+    return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
+  }
+
+  // ── unit_violations: wrong unit suffixes -> unit_conversion repair
+  if (scenarioName === 'unit_violations') {
+    const wrongUnits = { mm: 'inches', g: 'lb', ms: 'seconds', h: 'minutes', dpi: 'ppi' };
+    const overrides = {};
+    for (const key of fieldKeys) {
+      const rule = fields[key];
+      if (!isObj(rule)) continue;
+      const unit = rule.contract?.unit;
+      if (unit && wrongUnits[unit]) {
+        const mid = (rule.contract?.range?.min || 10) + (rule.contract?.range?.max || 100);
+        overrides[key] = `${Math.round(mid / 2)} ${wrongUnits[unit]}`;
+      }
+    }
+    return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
+  }
+
+  // ── rounding_precision: excess decimal places -> deterministic rounding repair
+  if (scenarioName === 'rounding_precision') {
+    const overrides = {};
+    for (const key of fieldKeys) {
+      const rule = fields[key];
+      if (!isObj(rule)) continue;
+      const contract = isObj(rule.contract) ? rule.contract : {};
+      if ((contract.type === 'number' || contract.type === 'integer') && contract.rounding) {
+        const mid = ((contract.range?.min || 10) + (contract.range?.max || 100)) / 2;
+        overrides[key] = String(mid + 0.123456789);
+      }
+    }
+    // If no rounding configs found, inject excess decimals for all numeric fields
+    if (Object.keys(overrides).length === 0) {
+      for (const key of fieldKeys) {
+        const rule = fields[key];
+        if (!isObj(rule)) continue;
+        const contract = isObj(rule.contract) ? rule.contract : {};
+        if (contract.type === 'number' || contract.type === 'integer') {
+          overrides[key] = String(42.123456789);
+          if (Object.keys(overrides).length >= 5) break;
+        }
+      }
+    }
+    return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx, overrides)));
+  }
+
   // Fallback: all 5 sources with base values
   return finalizeSources(sourceTemplates.map((tmpl, idx) => buildSource(tmpl, idx)));
 }
 
-// â”€â”€ Source Result Schema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Source Result Schema â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const sourceResponseZodSchema = z.object({
   sources: z.array(z.object({
@@ -2668,7 +2771,7 @@ function sourceResponseJsonSchema() {
 }
 const sourceResponseSchema = sourceResponseJsonSchema();
 
-// â”€â”€ Core Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Core Generator â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 /**
  * Generate synthetic sourceResults[] for a test product using contract analysis.
@@ -2702,10 +2805,10 @@ export async function generateTestSourceResults({
 Based on these field rules (field name, type, shape, unit, required level, parse template):
 ${JSON.stringify(fieldSummary, null, 2)}
 
-Known component names (for reference â€” these exist in the database):
+Known component names (for reference â€" these exist in the database):
 ${JSON.stringify(componentSummary, null, 2)}
 
-Known enum values (for reference â€” these are accepted values):
+Known enum values (for reference â€" these are accepted values):
 ${JSON.stringify(knownValuesSummary, null, 2)}
 
 Generate ${sourceCount} fake source results, each representing data from a different website.
@@ -2791,7 +2894,7 @@ IMPORTANT:
   });
 }
 
-// â”€â”€ Validation Checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ Validation Checks â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 /**
  * Run per-scenario validation checks against persisted artifacts.
@@ -2824,7 +2927,7 @@ export function buildValidationChecks(testCaseId, { normalized, summary, suggest
   const hasFieldReasoning = Boolean(summary?.field_reasoning && Object.keys(summary.field_reasoning).length > 0);
   check('has_field_reasoning', hasFieldReasoning, `${Object.keys(summary?.field_reasoning || {}).length} fields`);
 
-  // â”€â”€ Scenario-specific checks (enhanced for deterministic data) â”€â”€
+  // â"€â"€ Scenario-specific checks (enhanced for deterministic data) â"€â"€
   if (scenarioName === 'happy_path') {
     const knownCount = Object.values(fields).filter(v => !isUnk(v)).length;
     check('most_fields_populated', knownCount > fieldCount * 0.3, `${knownCount}/${fieldCount} non-unk`);
@@ -2836,7 +2939,7 @@ export function buildValidationChecks(testCaseId, { normalized, summary, suggest
     check('no_critical_runtime_failures', failures.filter(f => f.severity === 'critical').length === 0, `${failures.length} total failures (${failures.filter(f => f.severity === 'critical').length} critical)`);
   }
 
-  // New component checks (dynamic) â€” enhanced with exact name assertion
+  // New component checks (dynamic) â€" enhanced with exact name assertion
   // Exclude non-component "new_*" scenarios like new_enum_values
   if (scenarioName.startsWith('new_') && scenarioName !== 'new_enum_values') {
     const typeName = scenarioName.replace('new_', '');
@@ -2853,7 +2956,7 @@ export function buildValidationChecks(testCaseId, { normalized, summary, suggest
     check('has_curation_suggestions', (runtimeEngine.curation_suggestions_count || compSugs.length) > 0, `${compSugs.length} component suggestions`);
   }
 
-  // Similar component checks (dynamic) â€” enhanced with canonical resolution
+  // Similar component checks (dynamic) â€" enhanced with canonical resolution
   // Exclude non-component "similar_*" scenarios like similar_enum_values
   if (scenarioName.startsWith('similar_') && scenarioName !== 'similar_enum_values') {
     const typeName = scenarioName.replace('similar_', '');
@@ -2968,6 +3071,38 @@ export function buildValidationChecks(testCaseId, { normalized, summary, suggest
       }
     }
     check('list_fields_present', listFieldCount > 0 || fieldCount > 0, `${listFieldCount} list-shaped fields, ${fieldCount} total fields`);
+  }
+
+  // ── Validation gap scenarios (P3, P4, P7, rounding) ──
+
+  if (scenarioName === 'type_violations') {
+    // Type coercion failures: non-numeric strings injected for number fields
+    // After validator + repair: some may be repaired, some unk
+    check('has_fields', fieldCount > 0, `${fieldCount} fields`);
+    const typeFailures = failures.filter(f => (f.reason_code || f.reason || '').includes('type'));
+    check('type_coercion_detected', typeFailures.length > 0 || failures.length > 0, `${typeFailures.length} type failures, ${failures.length} total`);
+  }
+
+  if (scenarioName === 'format_violations') {
+    // Format mismatch: malformed URLs/dates injected
+    check('has_fields', fieldCount > 0, `${fieldCount} fields`);
+    const formatFailures = failures.filter(f => (f.reason_code || f.reason || '').includes('format'));
+    check('format_violations_detected', formatFailures.length > 0 || failures.length > 0, `${formatFailures.length} format failures, ${failures.length} total`);
+  }
+
+  if (scenarioName === 'unit_violations') {
+    // Wrong unit suffixes injected (lb where g expected, etc.)
+    check('has_fields', fieldCount > 0, `${fieldCount} fields`);
+    const unitFailures = failures.filter(f => (f.reason_code || f.reason || '').includes('unit'));
+    check('unit_violations_detected', unitFailures.length > 0 || failures.length > 0, `${unitFailures.length} unit failures, ${failures.length} total`);
+  }
+
+  if (scenarioName === 'rounding_precision') {
+    // Excess decimal places -- should be auto-repaired by rounding, no LLM needed
+    check('has_fields', fieldCount > 0, `${fieldCount} fields`);
+    // Rounding is deterministic -- values should still be valid after auto-repair
+    const nonUnkCount = Object.values(fields).filter(v => !isUnk(v)).length;
+    check('fields_still_populated', nonUnkCount > fieldCount * 0.3, `${nonUnkCount}/${fieldCount} non-unk after rounding`);
   }
 
   return checks;

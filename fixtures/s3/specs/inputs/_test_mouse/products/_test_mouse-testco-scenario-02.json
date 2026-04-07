@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 2,
     "name": "new_encoder",
-    "description": "Unknown encoder â†’ new_component suggestion",
+    "description": "Unknown encoder -> new_component suggestion",
     "category": "Components"
   }
 }

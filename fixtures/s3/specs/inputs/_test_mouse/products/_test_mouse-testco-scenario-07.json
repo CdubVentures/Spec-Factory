@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 7,
     "name": "similar_sensor",
-    "description": "Sensor alias match (\"Sensor alpha 01\" â†’ \"Sensor Alpha 01\")",
+    "description": "Sensor alias match (\"Sensor alpha 01\" -> \"Sensor Alpha 01\")",
     "category": "Components"
   }
 }

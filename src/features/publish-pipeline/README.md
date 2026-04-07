@@ -1,6 +1,6 @@
 ## Purpose
 
-Single gate for all field data entering the product record. No field value reaches `item_field_state` or `product.json fields[]` without passing through this pipeline. Four sub-modules: `validation/` (pure deterministic checks — COMPLETE, 458 tests), `repair-adapter/` (LLM repair orchestration), `candidate-gate/` (source validate + persist), `publisher/` (resolve + cross-validate + publish).
+Single gate for all field data entering the product record. No field value reaches `item_field_state` or `product.json fields[]` without passing through this pipeline. Four sub-modules: `validation/` (pure deterministic checks — COMPLETE, 458 tests), `repair-adapter/` (LLM repair orchestration — COMPLETE, 83 tests), `candidate-gate/` (source validate + persist), `publisher/` (resolve + cross-validate + publish).
 
 ## Public API (The Contract)
 
@@ -10,6 +10,8 @@ export { submitCandidate } from './candidate-gate/submitCandidate.js';
 export { publishResolved } from './publisher/publishResolved.js';
 export { validateField }   from './validation/validateField.js';
 export { validateRecord }  from './validation/validateRecord.js';
+export { repairField }     from './repair-adapter/repairField.js';
+export { repairCrossField } from './repair-adapter/repairField.js';
 ```
 
 ## Dependencies
