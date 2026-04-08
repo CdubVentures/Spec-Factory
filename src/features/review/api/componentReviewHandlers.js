@@ -51,8 +51,7 @@ function buildReviewFieldRulesPayload(session = null, compiledFieldRules = null)
 
 function isEnumConsistencyReviewEnabled(rule = {}) {
   return isConsumerEnabled(rule, 'enum.match.strategy', 'review')
-    && isConsumerEnabled(rule, 'enum.match.format_hint', 'review')
-    && isConsumerEnabled(rule, 'enum.additional_values', 'review');
+    && isConsumerEnabled(rule, 'enum.match.format_hint', 'review');
 }
 
 export async function handleComponentReviewRoute({ parts, params, method, req, res, context }) {

@@ -8,7 +8,7 @@ import { checkConstraints } from './checks/checkConstraints.js';
  * @param {{ fields: Record<string, *>, fieldRules: Record<string, object>, knownValues?: object, componentDbs?: object, crossRules?: object }} opts
  * @returns {{ valid: boolean, fields: Record<string, *>, perField: Record<string, object>, crossFieldFailures: object[] }}
  */
-export function validateRecord({ fields, fieldRules, knownValues, componentDbs, crossRules }) {
+export function validateRecord({ fields, fieldRules, knownValues, componentDbs, crossRules, consistencyMode }) {
   const safeFields = fields || {};
   const safeRules = fieldRules || {};
   const perField = {};
@@ -18,7 +18,7 @@ export function validateRecord({ fields, fieldRules, knownValues, componentDbs, 
   for (const fieldKey of Object.keys(safeFields)) {
     const fieldRule = safeRules[fieldKey] || null;
     const enumData = knownValues?.enums?.[fieldKey] || null;
-    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData });
+    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData, consistencyMode });
 
     perField[fieldKey] = fieldResult;
     validatedFields[fieldKey] = fieldResult.value;

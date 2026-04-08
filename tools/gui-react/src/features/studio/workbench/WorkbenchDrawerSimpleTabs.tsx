@@ -2,6 +2,7 @@ import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
 import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { TierPicker } from '../../../shared/ui/forms/TierPicker.tsx';
 import {
@@ -142,6 +143,7 @@ export function EnumTab({
   B: BadgeSlot;
 }) {
   const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
+  const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   return (
     <EnumConfigurator
       persistTabKey={`studio:workbench:enumSourceTab:${category}:${fieldKey}`}
@@ -156,6 +158,7 @@ export function EnumTab({
       consistencyMessage={consistencyMessage}
       consistencyError={consistencyError}
       isEgLocked={isEgLocked}
+      enumConsistencyMode={enumConsistencyMode}
       renderLabelSuffix={(path) => <B p={path} />}
     />
   );

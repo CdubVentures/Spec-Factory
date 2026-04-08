@@ -8,7 +8,7 @@
 
 | Layer | Primary files | What it owns |
 |-------|---------------|--------------|
-| Registry SSOT | `src/shared/settingsRegistry.js` | runtime settings (`136`), bootstrap env keys (`3`), UI settings (`4`) |
+| Registry SSOT | `src/shared/settingsRegistry.js` | runtime settings (`137`), bootstrap env keys (`3`), UI settings (`4`) |
 | Manifest assembly | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | env manifest sections + defaults |
 | Config facade | `src/config.js` | public config load/validate API |
 | Config implementation | `src/core/config/configOrchestrator.js`, `src/core/config/configValidator.js`, `src/core/config/dotEnvLoader.js` | load/validate env + defaults |
@@ -58,12 +58,12 @@ Missing keys in config manifest: PORT
 
 | Inventory | Count | Evidence |
 |-----------|-------|----------|
-| Runtime settings registry | `136` | `src/shared/settingsRegistry.js` |
+| Runtime settings registry | `137` | `src/shared/settingsRegistry.js` |
 | Bootstrap env registry | `3` | `src/shared/settingsRegistry.js` |
 | UI settings registry | `4` | `src/shared/settingsRegistry.js` |
-| Total exported registry entries | `143` | `src/shared/settingsRegistry.js` |
+| Total exported registry entries | `144` | `src/shared/settingsRegistry.js` |
 | Manifest sections emitted | `5` | `src/core/config/manifest/index.js` |
-| Total manifest entries | `136` | `src/core/config/manifest/index.js` |
+| Total manifest entries | `137` | `src/core/config/manifest/index.js` |
 
 Manifest sections:
 
@@ -73,7 +73,7 @@ Manifest sections:
 | `discovery` | `1` |
 | `runtime` | `55` |
 | `paths` | `4` |
-| `misc` | `53` |
+| `misc` | `54` |
 
 Declared but currently empty manifest groups in `src/core/config/manifest/index.js`:
 

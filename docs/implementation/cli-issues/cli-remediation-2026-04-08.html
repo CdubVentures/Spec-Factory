@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Remediation — 2026-04-08</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #252536;
+    --surface2: #2d2d42;
+    --border: #3a3a52;
+    --text: #cdd6f4;
+    --text-dim: #9399b2;
+    --text-bright: #f0f0f8;
+    --accent: #89b4fa;
+    --green: #a6e3a1;
+    --red: #f38ba8;
+    --yellow: #f9e2af;
+    --orange: #fab387;
+    --teal: #94e2d5;
+    --mauve: #cba6f7;
+    --code-bg: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--text-bright); font-size: 1.8rem; margin-bottom: 0.3rem; }
+  h2 { color: var(--accent); font-size: 1.35rem; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h3 { color: var(--teal); font-size: 1.1rem; margin: 1.8rem 0 0.6rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; }
+  p { margin-bottom: 0.8rem; }
+  code {
+    background: var(--code-bg);
+    color: var(--mauve);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0.6rem 0 1.2rem;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--text-bright);
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--surface); }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-red { background: rgba(243,139,168,0.15); color: var(--red); }
+  .badge-green { background: rgba(166,227,161,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(249,226,175,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(137,180,250,0.15); color: var(--accent); }
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+  .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+  .metric-label { font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1rem 0;
+  }
+  .finding {
+    background: var(--surface);
+    border-left: 3px solid var(--green);
+    padding: 0.8rem 1rem;
+    margin: 0.6rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .finding.warn { border-left-color: var(--yellow); }
+  .finding.deferred { border-left-color: var(--text-dim); }
+  .finding-title { font-weight: 600; color: var(--text-bright); margin-bottom: 0.3rem; }
+  ul { padding-left: 1.4rem; margin: 0.4rem 0 1rem; }
+  li { margin: 0.3rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .strike { text-decoration: line-through; color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<h1>CLI Remediation Report</h1>
+<p class="subtitle">Completed 2026-04-08 &mdash; follow-up to <code>cli-architecture-audit-2026-04-06.html</code></p>
+
+<div class="metric-grid">
+  <div class="metric"><div class="metric-value">10</div><div class="metric-label">Commands (was 26)</div></div>
+  <div class="metric"><div class="metric-value">8</div><div class="metric-label">Command files</div></div>
+  <div class="metric"><div class="metric-value">1,581</div><div class="metric-label">CLI LOC (was ~2,800)</div></div>
+  <div class="metric"><div class="metric-value">48</div><div class="metric-label">Tests passing</div></div>
+  <div class="metric"><div class="metric-value">16</div><div class="metric-label">Commands retired</div></div>
+  <div class="metric"><div class="metric-value">9</div><div class="metric-label">Files deleted</div></div>
+</div>
+
+<!-- ================================================================== -->
+<h2>1. What was done</h2>
+
+<h3>Phase 1 &mdash; DB access, boundary violations, withSpecDb</h3>
+
+<div class="finding">
+  <div class="finding-title">F1 &amp; F2 fixed: Feature boundary violations &amp; DB path SSOT</div>
+  <ul>
+    <li>Added <code>deriveFullModel</code> barrel export to <code>features/catalog/index.js</code></li>
+    <li>Added <code>buildRuntimeOpsPanels</code> barrel export to <code>features/indexing/api/index.js</code></li>
+    <li>Routed <code>buildJobFromDb</code> import through <code>features/indexing/orchestration/index.js</code> barrel</li>
+    <li>Injected <code>openSpecDbForCategory</code> into pipelineCommands factory &mdash; eliminated <code>PROJECT_ROOT</code> constant and <code>SpecDbForLookup</code> direct import</li>
+    <li>Wired <code>openSpecDbForCategory</code> into dataUtilityCommands (was accepted but never used) and discover command (was missing &mdash; <strong>bug fix: discover was returning 0 products in production</strong>)</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F8 fixed: withSpecDb helper eliminates 12 open/close ceremonies</div>
+  <ul>
+    <li>Created <code>createWithSpecDb(openFn)</code> factory in <code>cliHelpers.js</code> &mdash; DI-friendly, fully tested (4 contract tests)</li>
+    <li>Replaced ceremonies in: reviewCommand (8), exportOverridesCommand (2), batchCommand (1), migrateToSqliteCommand (1)</li>
+    <li>Fixed 2 SpecDb leaks in pipelineCommands (identity lookups opened DB, never closed)</li>
+    <li>Fixed 2 leak-on-throw paths in reviewCommand (<code>layout</code> and <code>suggest</code> actions closed outside <code>finally</code>)</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-title">F5 fixed: migrate-overrides wired into dispatcher</div>
+  <p>115 lines of functional code in <code>exportOverridesCommand.js</code> was unreachable. Now dispatched, with usage text and lazy loader.</p>
+</div>
+
+<h3>Dead command removal &mdash; 16 commands retired</h3>
+
+<p>Audit traced all 26 CLI commands to callers. 12 had zero callers anywhere (no GUI, no npm scripts, no CI). 4 more were npm-script-only legacy with no GUI integration.</p>
+
+<table>
+  <tr><th>Tier</th><th>Commands removed</th><th>Reason</th></tr>
+  <tr>
+    <td>Zero callers</td>
+    <td>
+      <code>category-compile</code>, <code>compile-report</code>, <code>rules-diff</code>,
+      <code>init-category</code>, <code>list-fields</code>, <code>field-report</code>,
+      <code>field-rules-verify</code>, <code>seed-db</code>, <code>seed-checkpoint</code>,
+      <code>generate-types</code>, <code>product-reconcile</code>, <code>run-until-complete</code>
+    </td>
+    <td>No GUI, no scripts, no automated flow calls these</td>
+  </tr>
+  <tr>
+    <td>Legacy / dormant</td>
+    <td>
+      <code>run-one</code>, <code>run-ad-hoc</code>, <code>run-batch</code>, <code>intel-graph-api</code>
+    </td>
+    <td><code>run-one</code>/<code>run-ad-hoc</code>: pre-IndexLab legacy. <code>run-batch</code>: intel system stubbed to empty data. <code>intel-graph-api</code>: standalone admin tool, zero GUI integration.</td>
+  </tr>
+</table>
+
+<h3>Files deleted (9)</h3>
+<table>
+  <tr><th>File</th><th>Type</th></tr>
+  <tr><td><code>src/app/cli/commands/batchCommand.js</code></td><td>Command (run-batch)</td></tr>
+  <tr><td><code>src/app/cli/commands/publishingCommands.js</code></td><td>Command (product-reconcile)</td></tr>
+  <tr><td><code>src/app/cli/commands/dataUtilityCommands.js</code></td><td>Command (seed-db, seed-checkpoint, generate-types)</td></tr>
+  <tr><td><code>src/app/cli/commands/intelGraphApiCommand.js</code></td><td>Command (intel-graph-api)</td></tr>
+  <tr><td><code>src/pipeline/runUntilComplete.js</code></td><td>Backing impl (only consumer: run-until-complete + run-ad-hoc)</td></tr>
+  <tr><td><code>src/features/indexing/orchestration/banditScheduler.js</code></td><td>Backing impl (only consumer: run-batch)</td></tr>
+  <tr><td><code>src/app/api/intelGraphApi.js</code></td><td>Backing impl (only consumer: intel-graph-api)</td></tr>
+  <tr><td><code>src/features/indexing/orchestration/tests/banditScheduler.test.js</code></td><td>Dead test</td></tr>
+  <tr><td><code>src/app/api/tests/intelGraphApi.test.js</code></td><td>Dead test</td></tr>
+</table>
+
+<h3>Files slimmed</h3>
+<table>
+  <tr><th>File</th><th>Before</th><th>After</th><th>Change</th></tr>
+  <tr><td><code>fieldRulesCommands.js</code></td><td>217 LOC / 9 commands</td><td>84 LOC / 2 commands</td><td>Kept <code>compile-rules</code> + <code>validate-rules</code></td></tr>
+  <tr><td><code>pipelineCommands.js</code></td><td>495 LOC / 4 commands</td><td>352 LOC / 1 command</td><td>Kept <code>indexlab</code> only</td></tr>
+  <tr><td><code>spec.js</code></td><td>467 LOC / 26-case dispatcher</td><td>337 LOC / 10-case dispatcher</td><td>Removed 6 lazy loaders + 16 dispatch cases</td></tr>
+</table>
+
+<h3>Other cleanup</h3>
+<ul>
+  <li>Removed 6 dead npm scripts from <code>package.json</code> (<code>run:one</code>, <code>run:adhoc</code>, <code>run:batch</code>, <code>crawl-product</code>, <code>smoke</code>, <code>intel:api</code>)</li>
+  <li>Updated <code>Dockerfile</code> CMD from <code>run-batch</code> to <code>indexlab</code></li>
+  <li>Removed dead <code>openSpecDbForCategory</code> injection into publishingCommands loader</li>
+  <li>Removed dead <code>fsNode</code> import from spec.js (was only needed by migrate-to-sqlite loader, now handled by withSpecDb)</li>
+  <li>Deleted dead imports across 3 files: <code>configValue</code> (dataUtilityCommands, discoverCommand), <code>fsNode</code>/<code>pathNode</code> (dataUtilityCommands, pipelineCommands)</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2>2. Current CLI architecture (post-remediation)</h2>
+
+<h3>Active commands (10)</h3>
+<table>
+  <tr><th>Command</th><th>File</th><th>Caller</th><th>Test</th></tr>
+  <tr>
+    <td><code>indexlab</code></td>
+    <td>pipelineCommands.js (352 LOC)</td>
+    <td>GUI &rarr; <code>POST /process/start</code></td>
+    <td><span class="badge badge-green">characterization</span></td>
+  </tr>
+  <tr>
+    <td><code>compile-rules</code></td>
+    <td>fieldRulesCommands.js (84 LOC)</td>
+    <td>GUI &rarr; <code>POST /studio/:cat/compile</code></td>
+    <td><span class="badge badge-yellow">via compiler.js tests</span></td>
+  </tr>
+  <tr>
+    <td><code>validate-rules</code></td>
+    <td>fieldRulesCommands.js</td>
+    <td>GUI &rarr; <code>POST /studio/:cat/validate-rules</code></td>
+    <td><span class="badge badge-yellow">via compiler.js tests</span></td>
+  </tr>
+  <tr>
+    <td><code>discover</code></td>
+    <td>discoverCommand.js (68 LOC)</td>
+    <td>GUI &rarr; discovery flow</td>
+    <td><span class="badge badge-green">3 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>review</code> (11 subs)</td>
+    <td>reviewCommand.js (336 LOC)</td>
+    <td>GUI + CLI</td>
+    <td><span class="badge badge-green">14 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>export-overrides</code></td>
+    <td>exportOverridesCommand.js (109 LOC)</td>
+    <td>CLI</td>
+    <td><span class="badge badge-green">6 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>migrate-overrides</code></td>
+    <td>exportOverridesCommand.js</td>
+    <td>CLI (newly wired)</td>
+    <td><span class="badge badge-green">3 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>billing-report</code></td>
+    <td>billingReportCommand.js (16 LOC)</td>
+    <td>CLI</td>
+    <td><span class="badge badge-green">2 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>llm-health</code></td>
+    <td>llmHealthCommand.js (18 LOC)</td>
+    <td>CLI</td>
+    <td><span class="badge badge-green">2 tests</span></td>
+  </tr>
+  <tr>
+    <td><code>migrate-to-sqlite</code></td>
+    <td>migrateToSqliteCommand.js (121 LOC)</td>
+    <td>CLI</td>
+    <td><span class="badge badge-green">4 tests</span></td>
+  </tr>
+</table>
+
+<h3>Invocation flow</h3>
+<pre>
+GUI Button Click
+  &rarr; POST /process/start  (processRoutes.js)
+  &rarr; spawn('node', ['src/app/cli/spec.js', 'indexlab', ...args])
+  &rarr; stdout/stderr streamed to GUI via WebSocket
+  &rarr; child.on('exit')
+    &rarr; compileProcessCompletion.js   (cache invalidation)
+    &rarr; indexLabProcessCompletion.js   (run status reconciliation)
+  &rarr; broadcastWs('process-status')
+
+Field Studio: "Compile &amp; Generate"
+  &rarr; POST /studio/:cat/compile  (studioRoutes.js)
+  &rarr; spawn('node', ['src/app/cli/spec.js', 'compile-rules', ...])
+  &rarr; compileProcessCompletion.js   (cache + SQL resync + reseed)
+
+Field Studio: "Validate Rules"
+  &rarr; POST /studio/:cat/validate-rules  (studioRoutes.js)
+  &rarr; spawn('node', ['src/app/cli/spec.js', 'validate-rules', ...])
+</pre>
+
+<h3>DB access pattern (unified)</h3>
+<p>All commands use <code>openSpecDbForCategory(config, category)</code> from <code>cliHelpers.js</code> or the <code>withSpecDb</code> wrapper. No direct <code>new SpecDb()</code> constructions remain in CLI commands. No <code>PROJECT_ROOT</code> hardcoding.</p>
+
+<!-- ================================================================== -->
+<h2>3. Known remaining issues</h2>
+
+<div class="finding warn">
+  <div class="finding-title">run_profile hardcoding &mdash; <span class="badge badge-yellow">open bug</span></div>
+  <p><code>spec.js:294</code> hardcodes <code>output.run_profile = 'standard'</code> regardless of <code>--profile</code> or <code>--thorough</code> CLI flags. The flags are parsed by <code>args.js</code> but never applied to the output. One-liner fix.</p>
+</div>
+
+<div class="finding warn">
+  <div class="finding-title">filterKeysByBrand reads JSON redundantly &mdash; <span class="badge badge-yellow">optimization</span></div>
+  <p><code>discoverCommand.js</code> calls <code>specDb.getAllProducts()</code> (returns brand), then passes product IDs to <code>filterKeysByBrand</code> which re-reads each product JSON from storage to check brand. Should filter from the already-fetched DB rows.</p>
+</div>
+
+<div class="finding deferred">
+  <div class="finding-title">In-process compile/validate &mdash; <span class="badge badge-blue">deferred</span></div>
+  <p>Converting compile/validate from child-process spawning to in-process function calls. The primary value: compile is currently blocked while indexlab runs (they share the global process slot). Three review rounds revealed this requires decoupling compile status from the shared <code>processStatus</code> global state, which powers the app shell, sidebar, and runtime ops UI. This is a state architecture change, not a CLI cleanup &mdash; deferred to a dedicated design session.</p>
+  <p><strong>Blocking issues identified:</strong></p>
+  <ul>
+    <li><code>StudioPageShell.tsx:207</code> disables compile when <code>processStatus.running</code> is true (any process, not just compile)</li>
+    <li><code>setProcessStatus()</code> is shared global state &mdash; a compile response <code>{ running: false }</code> would corrupt an active indexlab run's status</li>
+    <li>Per-category concurrency lock needed (compile writes to <code>_generated/</code>, validate reads from it)</li>
+    <li>Frontend mutation contract tests expect <code>{ running: true }</code> process snapshot responses</li>
+  </ul>
+</div>
+
+<div class="finding deferred">
+  <div class="finding-title">Rebuild contract for migrate-to-sqlite phases 2 &amp; 4 &mdash; <span class="badge badge-blue">deferred</span></div>
+  <p>Phase 2 imports billing JSONL &rarr; SQL. Phase 4 imports learning profiles JSON &rarr; SQL. No reverse path exists. If <code>spec.sqlite</code> is deleted, billing entries and learning profiles are lost. Fix requires schema change + source-key tracking.</p>
+</div>
+
+<div class="finding deferred">
+  <div class="finding-title">pipelineCommands.js still 352 LOC &mdash; <span class="badge badge-blue">deferred</span></div>
+  <p><code>commandIndexLab</code> is the sole remaining command but handles: seed parsing, identity resolution, bridge setup, IPC forwarding, config overrides, checkpoint writing, run summary serialization, and bridge finalization. Under the 700 LOC soft limit. Decomposition is optional &mdash; only valuable if IndexLab orchestration changes frequently.</p>
+</div>
+
+<!-- ================================================================== -->
+<h2>4. Backing implementations kept vs deleted</h2>
+
+<p>When removing CLI commands, backing implementations were checked for other consumers before deletion.</p>
+
+<table>
+  <tr><th>File</th><th>Status</th><th>Reason</th></tr>
+  <tr><td><code>src/ingest/categoryCompile.js</code></td><td><span class="badge badge-green">KEPT</span></td><td>Live consumer: <code>specDbSyncService.js</code> uses it for auto-compilation</td></tr>
+  <tr><td><code>src/features/catalog/products/reconciler.js</code></td><td><span class="badge badge-green">KEPT</span></td><td>Live consumer: <code>catalogRoutes.js</code> uses it for product reconciliation</td></tr>
+  <tr><td><code>src/field-rules/compiler.js</code></td><td><span class="badge badge-green">KEPT</span></td><td>Library with own test suite. Dead exports remain but are harmless.</td></tr>
+  <tr><td><code>src/ingest/fieldRulesVerify.js</code></td><td><span class="badge badge-green">KEPT</span></td><td>Has own tests. Low-priority future cleanup.</td></tr>
+  <tr><td><code>src/build/generate-types.js</code></td><td><span class="badge badge-green">KEPT</span></td><td>Has own tests. Low-priority future cleanup.</td></tr>
+  <tr><td><code>src/pipeline/runUntilComplete.js</code></td><td><span class="badge badge-red">DELETED</span></td><td>Only consumers were <code>run-until-complete</code> + <code>run-ad-hoc</code> CLI commands</td></tr>
+  <tr><td><code>src/features/indexing/orchestration/banditScheduler.js</code></td><td><span class="badge badge-red">DELETED</span></td><td>Only consumer was <code>run-batch</code> CLI command</td></tr>
+  <tr><td><code>src/app/api/intelGraphApi.js</code></td><td><span class="badge badge-red">DELETED</span></td><td>Only consumer was <code>intel-graph-api</code> CLI command</td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>5. Audit findings &mdash; final status</h2>
+
+<p>Status of all 12 findings from the original <code>cli-architecture-audit-2026-04-06.html</code>:</p>
+
+<table>
+  <tr><th>#</th><th>Finding</th><th>Severity</th><th>Status</th></tr>
+  <tr><td>F1</td><td>Feature boundary violations (direct internal imports)</td><td>Critical</td><td><span class="badge badge-green">FIXED</span></td></tr>
+  <tr><td>F2</td><td>DB path resolution (4 competing patterns)</td><td>Critical</td><td><span class="badge badge-green">FIXED</span> (all patterns resolve same in practice; unified as side effect of injection fixes)</td></tr>
+  <tr><td>F3</td><td>Test coverage (7/26 commands tested)</td><td>Critical</td><td><span class="badge badge-green">RESOLVED</span> (16 untested commands retired; 10 active, 8 tested. <code>compile-rules</code>/<code>validate-rules</code> covered by <code>compiler.js</code> tests)</td></tr>
+  <tr><td>F4</td><td>Rebuild contract (migrate-to-sqlite phases 2 &amp; 4)</td><td>Critical</td><td><span class="badge badge-blue">DEFERRED</span></td></tr>
+  <tr><td>F5</td><td>Dead commands (export-overrides / migrate-overrides)</td><td>Medium</td><td><span class="badge badge-green">FIXED</span> (<code>migrate-overrides</code> wired into dispatcher)</td></tr>
+  <tr><td>F6</td><td>Process isolation overkill for pure functions</td><td>Medium</td><td><span class="badge badge-blue">DEFERRED</span> (requires global state decoupling)</td></tr>
+  <tr><td>F7</td><td>pipelineCommands.js 495 LOC monolith</td><td>Medium</td><td><span class="badge badge-green">REDUCED</span> to 352 LOC (removed 3 commands). Single command remains.</td></tr>
+  <tr><td>F8</td><td>SpecDb open/close ceremony duplicated</td><td>Medium</td><td><span class="badge badge-green">FIXED</span> (<code>withSpecDb</code> helper)</td></tr>
+  <tr><td>F9</td><td>Unused <code>_storage</code> parameter in 15+ signatures</td><td>Low</td><td><span class="badge badge-yellow">SKIPPED</span> (convention, not a bug)</td></tr>
+  <tr><td>F10</td><td>reviewCommand.js 11 subcommands in one function</td><td>Low</td><td><span class="badge badge-yellow">SKIPPED</span> (tested and functional)</td></tr>
+  <tr><td>F11</td><td><code>run_profile</code> hardcoded to 'standard'</td><td>Low</td><td><span class="badge badge-yellow">OPEN BUG</span></td></tr>
+  <tr><td>F12</td><td><code>filterKeysByBrand</code> reads JSON for brand lookup</td><td>Low</td><td><span class="badge badge-yellow">OPEN OPTIMIZATION</span></td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>6. Bugs found during remediation</h2>
+
+<table>
+  <tr><th>Bug</th><th>Severity</th><th>Status</th></tr>
+  <tr>
+    <td><strong>discover command returns 0 products in production.</strong> <code>spec.js</code> never injected <code>openSpecDbForCategory</code> into the discover factory. Line 15 did <code>await undefined?.()</code> &rarr; <code>null</code> &rarr; always empty product list. Test passed because mock injected the helper.</td>
+    <td><span class="badge badge-red">High</span></td>
+    <td><span class="badge badge-green">FIXED</span></td>
+  </tr>
+  <tr>
+    <td><strong>2 SpecDb leaks in pipelineCommands.js.</strong> Identity lookups at (former) lines 107&ndash;108 and 392&ndash;393 opened SpecDb instances that were never closed.</td>
+    <td><span class="badge badge-yellow">Medium</span></td>
+    <td><span class="badge badge-green">FIXED</span></td>
+  </tr>
+  <tr>
+    <td><strong>2 leak-on-throw paths in reviewCommand.js.</strong> <code>layout</code> and <code>suggest</code> actions closed specDb outside of <code>finally</code> blocks.</td>
+    <td><span class="badge badge-yellow">Medium</span></td>
+    <td><span class="badge badge-green">FIXED</span></td>
+  </tr>
+  <tr>
+    <td><strong>Dead <code>openSpecDbForCategory</code> param in dataUtilityCommands.</strong> Factory accepted it but never used it, doing inline <code>new SpecDb()</code> instead.</td>
+    <td><span class="badge badge-yellow">Low</span></td>
+    <td><span class="badge badge-green">FIXED</span> (file deleted)</td>
+  </tr>
+</table>
+
+</body>
+</html>

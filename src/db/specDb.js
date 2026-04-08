@@ -35,6 +35,7 @@ import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
 import { createColorEditionFinderStore } from './stores/colorEditionFinderStore.js';
+import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -167,6 +168,18 @@ export class SpecDb {
         _getLatestColorEditionFinderRun: this._getLatestColorEditionFinderRun,
         _deleteColorEditionFinderRunByNumber: this._deleteColorEditionFinderRunByNumber,
         _deleteAllColorEditionFinderRuns: this._deleteAllColorEditionFinderRuns,
+      },
+    });
+    this._fieldCandidateStore = createFieldCandidateStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertFieldCandidate: this._upsertFieldCandidate,
+        _getFieldCandidate: this._getFieldCandidate,
+        _getFieldCandidatesByProductAndField: this._getFieldCandidatesByProductAndField,
+        _getAllFieldCandidatesByProduct: this._getAllFieldCandidatesByProduct,
+        _deleteFieldCandidatesByProduct: this._deleteFieldCandidatesByProduct,
+        _deleteFieldCandidatesByProductAndField: this._deleteFieldCandidatesByProductAndField,
       },
     });
   }
@@ -803,5 +816,14 @@ export class SpecDb {
   getCompiledRules() { return this._fieldStudioMapStore.getCompiledRules(); }
   getBootConfig() { return this._fieldStudioMapStore.getBootConfig(); }
   upsertCompiledRules(compiledRulesJson, bootConfigJson) { return this._fieldStudioMapStore.upsertCompiledRules(compiledRulesJson, bootConfigJson); }
+
+  // --- Field Candidates ---
+
+  upsertFieldCandidate(opts) { this._fieldCandidateStore.upsert(opts); }
+  getFieldCandidate(pid, fk, val) { return this._fieldCandidateStore.get(pid, fk, val); }
+  getFieldCandidatesByProductAndField(pid, fk) { return this._fieldCandidateStore.getByProductAndField(pid, fk); }
+  getAllFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getAllByProduct(pid); }
+  deleteFieldCandidatesByProduct(pid) { this._fieldCandidateStore.deleteByProduct(pid); }
+  deleteFieldCandidatesByProductAndField(pid, fk) { this._fieldCandidateStore.deleteByProductAndField(pid, fk); }
 
 }

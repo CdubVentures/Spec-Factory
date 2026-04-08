@@ -41,5 +41,8 @@ export { mergeDiscoveredEnums } from './validation/mergeDiscoveredEnums.js';
 export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
 export { persistDiscoveredValue } from './persistDiscoveredValues.js';
 
-// TODO: export { submitCandidate } from './candidate-gate/submitCandidate.js';
+export { submitCandidate } from './candidate-gate/submitCandidate.js';
 // TODO: export { publishResolved } from './publisher/publishResolved.js';
+
+// Rebuild contract (reseed surface for deleted-DB recovery)
+export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';

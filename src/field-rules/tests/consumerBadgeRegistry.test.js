@@ -199,7 +199,7 @@ describe('Backward compatibility', () => {
       'contract.type', 'contract.shape', 'contract.unit',
       'priority.required_level',
       'enum.policy', 'enum.source',
-      'enum.match.strategy', 'enum.match.format_hint', 'enum.additional_values',
+      'enum.match.strategy', 'enum.match.format_hint',
       'evidence.min_evidence_refs', 'evidence.conflict_policy',
       'constraints', 'component.type',
     ];

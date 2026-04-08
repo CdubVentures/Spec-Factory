@@ -16,7 +16,7 @@ import { checkRange } from './checks/checkRange.js';
  * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object }} opts
  * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[], unknownReason: string|null, repairPrompt: object|null }}
  */
-export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb }) {
+export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb, consistencyMode }) {
   if (!fieldRule) {
     return result('unk', [], [], null, null);
   }
@@ -31,8 +31,11 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const roundingConfig = fieldRule?.contract?.rounding;
   const rangeConfig = fieldRule?.contract?.range;
   const listRules = fieldRule?.contract?.list_rules;
-  const enumPolicy = knownValues?.policy || fieldRule?.enum?.policy;
+  let enumPolicy = knownValues?.policy || fieldRule?.enum?.policy;
   const enumValues = knownValues?.values;
+  // WHY: consistencyMode overrides 'open' → 'open_prefer_known' so unknown values
+  // trigger P2 LLM prompt for vocabulary normalization. No new LLM calls — existing P2 flow.
+  if (consistencyMode && enumPolicy === 'open' && enumValues?.length > 0) enumPolicy = 'open_prefer_known';
   const matchStrategy = fieldRule?.enum?.match?.strategy || 'exact';
   const formatHint = fieldRule?.enum?.match?.format_hint || null;
   const blockPublishWhenUnk = fieldRule?.priority?.block_publish_when_unk || false;

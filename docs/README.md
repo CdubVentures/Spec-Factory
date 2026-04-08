@@ -65,7 +65,7 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 - [Review Workbench](./04-features/review-workbench.md) - scalar, component, and enum review workflows.
 - [Billing and Learning](./04-features/billing-and-learning.md) - billing rollups and learning artifacts.
 - [Storage and Run Data](./04-features/storage-and-run-data.md) - storage inventory, run deletion, and export surfaces.
-- [Test Mode](./04-features/test-mode.md) - isolated test-category and fixture workflows.
+- [Test Mode](./04-features/test-mode.md) - field contract audit dashboard and isolated test-category workflows.
 
 ### 05. Operations
 
@@ -107,7 +107,7 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 
 - `npm run env:check` failed on 2026-04-07 with `Missing keys in config manifest: PORT`.
 - `npm run gui:build` passed on 2026-04-07.
-- `npm test` passed on 2026-04-07 with `6803` tests and `0` failures.
+- `npm test` last run on 2026-04-07: `7430` tests, `19` failures (active development; run `npm test` for current status).
 - Runtime smoke on 2026-04-07 confirmed:
   - `GET /health` -> `200`
   - `GET /api/v1/categories` -> `["keyboard","monitor","mouse"]`
@@ -126,8 +126,8 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 
 ## Supporting Audit And History Artifacts
 
-- [Base Model Contract Audit](./audits/base-model-contract-audit-2026-04-07.md) - targeted contract audit for the current `base_model` identity split.
-- [Field Catalog Seed Retirement Audit](./audits/field-catalog-seed-retirement-audit-2026-04-07.md) - targeted retirement audit for the dead `_source` seed artifact.
+- [Base Model Contract Audit](./audits/base-model-contract-audit-2026-04-04.md) - targeted contract audit for the current `base_model` identity split.
+- [Field Catalog Seed Retirement Audit](./audits/field-catalog-seed-retirement-audit-2026-04-04.md) - targeted retirement audit for the dead `_source` seed artifact.
 - [Product SSOT Validation Audit](./audits/product-ssot-validation-2026-04-02.md) - targeted audit for the `product.json` and queue SQL SSOT migration.
 - [Implementation Assets](./implementation/README.md) - historical and supplemental implementation subtree; not part of the numbered reading order.
 

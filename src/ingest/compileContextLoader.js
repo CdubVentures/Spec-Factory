@@ -220,17 +220,6 @@ export async function loadCompileContext({
     const manual = toArray(values).map((v) => String(v).trim()).filter(Boolean);
     enumLists[nf] = orderedUniqueStrings([...existing, ...manual]);
   }
-  for (const overrides of [baselineFieldOverrides, mapFieldOverrides, draftFieldOverrides]) {
-    if (!isObject(overrides)) continue;
-    for (const [field, ruleDraft] of Object.entries(overrides)) {
-      const nf = normalizeFieldKey(field);
-      if (!nf) continue;
-      const enumBlock = isObject(ruleDraft?.enum) ? ruleDraft.enum : {};
-      const vals = toArray(enumBlock.additional_values).map((v) => String(v).trim()).filter(Boolean);
-      if (!vals.length) continue;
-      enumLists[nf] = orderedUniqueStrings([...toArray(enumLists[nf]), ...vals]);
-    }
-  }
   // WHY: Color registry is a closed vocabulary. Inject all registered names
   // into enumLists so the compile chain generates closed known_values.
   if (compileColorNames.length > 0) {

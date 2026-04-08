@@ -191,7 +191,7 @@ Do instead:
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `AGENTS.md` | repo-level bans on new mutable JSON databases, GUI `any` / `@ts-ignore`, and implementation-coupled test patterns |
+| source | `CLAUDE.md` | repo-level bans on new mutable JSON databases, GUI `any` / `@ts-ignore`, and implementation-coupled test patterns |
 | source | `src/app/api/guiServerRuntime.js` | runtime assembly and `routeDefinitions` mounting pattern |
 | source | `src/app/api/guiServer.js` | thin launcher role only |
 | source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` exists but is not the mounted route SSOT |

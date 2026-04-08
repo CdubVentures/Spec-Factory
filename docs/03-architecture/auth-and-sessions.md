@@ -41,7 +41,7 @@ No user-role or scope system was verified.
 
 Current behavior gates are feature-state or data-state driven:
 
-- `tools/gui-react/src/registries/pageRegistry.ts` exposes `disabledOnTest` metadata for some tabs based on Field Test state, not user identity.
+- `tools/gui-react/src/registries/pageRegistry.ts` exposes `disabledOnAll` metadata for some tabs based on feature state, not user identity.
 - Category-scoped endpoints rely on the selected category and alias resolution, not on user permissions.
 - Sensitive operations such as storage deletion and runtime settings writes are controlled by endpoint contracts, not by auth middleware.
 

@@ -82,7 +82,7 @@
 |-----------------|--------|------|
 | `npm run gui:build` | pass | 2026-04-07 |
 | `npm test` | pass | 2026-04-07 |
-| `npm run env:check` | fail (`Missing keys in config manifest: PORT`) | 2026-04-04 |
+| `npm run env:check` | fail (`Missing keys in config manifest: PORT`) | 2026-04-07 |
 | Runtime smoke against `createGuiServerRuntime()` | pass for `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/storage/overview` | 2026-04-07 |
 
 ## Read Next
@@ -95,7 +95,7 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `AGENTS.md` | repo-level operating rules |
+| source | `AGENTS.md` | test audit and retirement agent rules |
 | source | `AGENTS.testing.md` | testing rules |
 | source | `AGENTS.testsCleanUp.md` | test-cleanup rules |
 | source | `CLAUDE.md` | LLM-first repo guidance |

@@ -67,13 +67,6 @@ test('tooltip systems do not drift away from each field mapping', async () => {
   assert.deepEqual(orphanSystems, []);
 });
 
-test('enum.additional_values stays present in the published field map', async () => {
-  const harness = await createSystemMappingHarness();
-
-  assert.ok(harness.fieldSystemMap['enum.additional_values']);
-  assert.ok(harness.fieldSystemMap['enum.additional_values'].length >= 1);
-});
-
 test('dead knobs stay out of the published field map', async () => {
   const harness = await createSystemMappingHarness();
   const omittedKnobs = [

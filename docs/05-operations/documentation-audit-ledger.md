@@ -275,6 +275,41 @@ Override functions in `overrideWorkflow.js` no longer perform direct DB sync of 
 | `docs/05-operations/monitoring-and-logging.md` | `EDIT` | Updated validation date; no Intel Graph references were present to remove |
 | `docs/05-operations/spec_factory_knobs_maintenance.md` | `EDIT` | Registry counts verified unchanged (136/3/4 = 143 total), updated validation date |
 
+## 2026-04-07 Deep Verification Pass
+
+### Scope
+
+Systematic deep-verification pass across 8 documentation files. Every file path and factual claim in each document was verified against the live filesystem. This was a path-by-path and claim-by-claim audit, not a surface-level review.
+
+### Documents Verified
+
+| Document | Result | Issues found |
+|----------|--------|-------------|
+| `docs/03-architecture/routing-and-gui.md` | PASS | All 17 route table entries verified. All component file paths exist on disk. `/test-mode` correctly shown inside `AppShell` layout. Navigation groups accurate. |
+| `docs/03-architecture/system-map.md` | PASS | Mermaid diagram accurate. Intel Graph fully removed. All 24 path references verified on disk. Route family count correctly states 15. |
+| `docs/03-architecture/auth-and-sessions.md` | FIX | `disabledOnTest` metadata reference was incorrect; actual code uses `disabledOnAll`. Corrected. No auth middleware files found; all no-auth claims remain true. |
+| `docs/README.md` | FIX | Two audit file links used wrong date (`2026-04-07` instead of actual `2026-04-04`). `test-mode.md` feature doc referenced in TOC but did not exist on disk. Links corrected; feature doc created. |
+| `docs/01-project-overview/conventions.md` | PASS | All canonical ownership entries verified. Placement rule pattern sources exist on disk. Dependency direction claims confirmed. Route family list in ownership table matches live `routeDefinitions` (15 families). |
+| `docs/01-project-overview/glossary.md` | PASS | All 23 glossary term primary file paths verified on disk. Publisher phase count (12 phases, 0-11) confirmed. Discovery enum files confirmed. Field contract audit files confirmed. |
+| `docs/05-operations/spec_factory_knobs_maintenance.md` | PASS | Registry counts verified: RUNTIME=136, BOOTSTRAP=3, UI=4, total=143. All authority surface paths exist on disk. |
+| `docs/05-operations/documentation-audit-ledger.md` | EDIT | Added this second-pass audit section. |
+
+### Fixes Applied
+
+| File | What was fixed |
+|------|----------------|
+| `docs/README.md` line 129 | `base-model-contract-audit-2026-04-07.md` corrected to `base-model-contract-audit-2026-04-04.md` |
+| `docs/README.md` line 130 | `field-catalog-seed-retirement-audit-2026-04-07.md` corrected to `field-catalog-seed-retirement-audit-2026-04-04.md` |
+| `docs/03-architecture/auth-and-sessions.md` line 44 | `disabledOnTest` corrected to `disabledOnAll` |
+| `docs/04-features/test-mode.md` | Created missing feature document for the live `/test-mode` route, backend routes, and field contract audit infrastructure |
+
+### Verification Method
+
+- Every file path mentioned in every document was checked with `Glob` against the live filesystem.
+- Factual claims (route family counts, registry counts, metadata field names, component hierarchy) were verified by reading the actual source files.
+- Auth absence was confirmed by searching for auth middleware files in `src/app/api/`.
+- Intel Graph removal was confirmed by searching all 3 architecture docs for any remaining references.
+
 ## Related Documents
 
 - [README](../README.md) - master entrypoint and reading order for the maintained docs set.

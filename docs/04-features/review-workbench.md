@@ -31,7 +31,7 @@
 2. The GUI loads layout and payload endpoints such as `/review/:category/layout`, `/review/:category/products-index`, `/review/:category/candidates/:productId/:fieldKey`, `/review-components/:category/layout`, and `/review-components/:category/components`.
 3. `src/features/review/api/reviewRoutes.js` builds the payload from catalog rows, SpecDb slot state, candidate lists, and session-derived field rules.
 4. The user accepts a candidate, overrides a value, or runs enum/component review actions.
-5. Mutation handlers in `src/features/review/api/itemMutationRoutes.js`, `src/features/review/api/componentMutationRoutes.js`, or `src/features/review/api/enumMutationRoutes.js` write to `item_field_state`, `component_values`, `list_values`, `candidate_reviews`, and `key_review_*` tables.
+5. Mutation handlers in `src/features/review/api/itemMutationRoutes.js`, `src/features/review/api/componentMutationRoutes.js`, or `src/features/review/api/enumMutationRoutes.js` write to `component_values`, `list_values`, `candidate_reviews`, and `key_review_*` tables. Override values persist to JSON SSOT only; `item_field_state` DB writes have been removed from the override path.
 6. Shared-lane helpers synchronize AI/human review state and may cascade changes into queued products or dependent review rows.
 7. The route layer emits `data-change` events so open review tabs refresh.
 
@@ -89,7 +89,7 @@ sequenceDiagram
   ReviewRoutes->>SpecDb: load products, slot state, candidates, key review rows
   ReviewRoutes-->>ReviewPage: review payload
   ReviewPage->>ItemMut: POST override/manual-override/key-review-accept
-  ItemMut->>SpecDb: update item_field_state + key_review_* + candidate_reviews
+  ItemMut->>SpecDb: update key_review_* + candidate_reviews (item_field_state writes removed)
   ItemMut-->>ReviewPage: mutation result + data-change refresh
 ```
 

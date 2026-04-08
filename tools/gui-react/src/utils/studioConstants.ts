@@ -113,7 +113,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   // Tab 2: Key Navigator - Enum (expanded)
   enum_value_source: 'Where enum values come from. Manual: type values directly. Enum: link to an existing enum list from the Mapping Studio (data_lists.*).',
   enum_detected_values: 'Values currently in the known_values list for this field. Blue = from canonical source. Amber = discovered during pipeline runs (not yet in canonical list).',
-  enum_add_values: 'Manually add known values. Only available when Enum Policy is open or open_prefer_known, or when editing the canonical allowlist in closed mode. New values found by the pipeline appear separately and can be promoted.',
   enum_component_values: 'Entity names from the component database. Shows all components of this type with their maker and aliases.',
 
   // Tab 2: Key Navigator - Evidence

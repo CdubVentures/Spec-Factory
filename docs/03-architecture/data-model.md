@@ -40,17 +40,40 @@
 
 These columns and table changes are not just historical notes; they are part of the current live DB shape.
 
+33 ALTER/DROP statements in `MIGRATIONS` array + 13 secondary indexes in `SECONDARY_INDEXES` template, all in `src/db/specDbMigrations.js`.
+
 | Table | Migration effect | Source |
 |-------|------------------|--------|
 | `component_identity` | adds `review_status`, `aliases_overridden` | `src/db/specDbMigrations.js` |
-| `component_values` | adds `constraints` | `src/db/specDbMigrations.js` |
-| `list_values` | adds `source_timestamp` and hardens `list_id` usage | `src/db/specDbMigrations.js` |
-| `item_field_state` | adds override provenance columns | `src/db/specDbMigrations.js` |
+| `component_values` | adds `constraints`, `component_identity_id` FK | `src/db/specDbMigrations.js` |
+| `list_values` | adds `source_timestamp`, hardens `list_id` FK | `src/db/specDbMigrations.js` |
+| `key_review_state` | adds `item_field_state_id`, `component_value_id`, `component_identity_id`, `list_value_id`, `enum_list_id` FKs | `src/db/specDbMigrations.js` |
+| `llm_route_matrix` | adds `enable_websearch`, `scope` | `src/db/specDbMigrations.js` |
+| `item_field_state` | adds override provenance columns (`override_source`, `override_value`, `override_reason`, `override_provenance`, `overridden_by`, `overridden_at`) | `src/db/specDbMigrations.js` |
 | `product_runs` | adds `storage_state`, `local_path`, `s3_key`, `size_bytes`, `relocated_at` | `src/db/specDbMigrations.js` |
 | `products` | adds `brand_identifier`, `base_model` | `src/db/specDbMigrations.js` |
 | `query_index` | adds `tier` | `src/db/specDbMigrations.js` |
 | `runs` | renames `phase_cursor` to `stage_cursor` | `src/db/specDbMigrations.js` |
+| `field_studio_map` | adds `compiled_rules`, `boot_config` | `src/db/specDbMigrations.js` |
 | SpecDb retired tables | drops legacy `brands` and `artifacts` tables from SpecDb | `src/db/specDbMigrations.js` |
+
+### Secondary Indexes (13, applied after migrations)
+
+| Index | Table | Columns | Notes |
+|-------|-------|---------|-------|
+| `idx_lrm_cat_scope` | `llm_route_matrix` | `(category, scope)` | scope routing lookup |
+| `idx_cv_identity_id` | `component_values` | `(component_identity_id)` | identity FK join |
+| `idx_lv_list_id` | `list_values` | `(list_id)` | list FK join |
+| `ux_krs_grid_slot` | `key_review_state` | `(category, item_field_state_id)` | unique partial WHERE grid_key |
+| `ux_krs_enum_slot` | `key_review_state` | `(category, list_value_id)` | unique partial WHERE enum_key |
+| `ux_krs_component_slot` | `key_review_state` | `(category, component_value_id)` | unique partial WHERE component_key |
+| `ux_krs_component_identity_slot` | `key_review_state` | `(category, component_identity_id, property_key)` | unique partial WHERE component_key |
+| `idx_krs_item_slot` | `key_review_state` | `(item_field_state_id)` | FK lookup |
+| `idx_krs_component_slot` | `key_review_state` | `(component_value_id)` | FK lookup |
+| `idx_krs_component_identity_slot` | `key_review_state` | `(component_identity_id, property_key)` | FK lookup |
+| `idx_krs_list_slot` | `key_review_state` | `(list_value_id, enum_list_id)` | FK lookup |
+| `idx_pr_storage_state` | `product_runs` | `(storage_state)` | storage lifecycle lookup |
+| `idx_prod_brand_id` | `products` | `(category, brand_identifier)` | brand FK join |
 
 ## AppDb
 
@@ -847,6 +870,8 @@ Table constraints: composite primary key on (`query_hash`, `product_id`).
 | `id` | `INTEGER` | `PRIMARY KEY CHECK (id = 1)` | singleton row |
 | `map_json` | `TEXT` | `NOT NULL DEFAULT '{}'` | serialized studio map |
 | `map_hash` | `TEXT` | `NOT NULL DEFAULT ''` | content hash |
+| `compiled_rules` | `TEXT` | `NOT NULL DEFAULT '{}'` | migration-added full compiled field rules from field_rules.json + derived metadata |
+| `boot_config` | `TEXT` | `NOT NULL DEFAULT '{}'` | migration-added pipeline boot config (source_hosts, denylist, search_templates, etc.) |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | timestamp |
 
 ### `field_key_order`
@@ -872,6 +897,45 @@ Table constraints: composite primary key on (`category`, `product_id`).
 | `latest_ran_at` | `TEXT` | `DEFAULT ''` | last run timestamp |
 | `run_count` | `INTEGER` | `DEFAULT 0` | run count |
 
+### `color_edition_finder_runs`
+
+Table constraints: `UNIQUE(category, product_id, run_number)`.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `category` | `TEXT` | `NOT NULL` | category slug |
+| `product_id` | `TEXT` | `NOT NULL` | product identifier |
+| `run_number` | `INTEGER` | `NOT NULL` | sequential run index |
+| `ran_at` | `TEXT` | `DEFAULT ''` | run timestamp |
+| `model` | `TEXT` | `DEFAULT 'unknown'` | LLM model used |
+| `fallback_used` | `INTEGER` | `DEFAULT 0` | fallback flag |
+| `cooldown_until` | `TEXT` | `DEFAULT ''` | cooldown end timestamp |
+| `selected_json` | `TEXT` | `DEFAULT '{}'` | serialized selected color/edition payload |
+| `prompt_json` | `TEXT` | `DEFAULT '{}'` | serialized prompt sent to LLM |
+| `response_json` | `TEXT` | `DEFAULT '{}'` | serialized raw LLM response |
+
+## SpecDb: Candidate Pipeline Tables
+
+### `field_candidates`
+
+Table constraints: `UNIQUE(category, product_id, field_key)`.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | |
+| `category` | `TEXT` | `NOT NULL` | |
+| `product_id` | `TEXT` | `NOT NULL` | |
+| `field_key` | `TEXT` | `NOT NULL` | |
+| `value` | `TEXT` | | validated candidate value |
+| `confidence` | `REAL` | `DEFAULT 0` | extraction confidence |
+| `source_count` | `INTEGER` | `DEFAULT 0` | number of corroborating sources |
+| `sources_json` | `TEXT` | `DEFAULT '[]'` | serialized source evidence array |
+| `validation_json` | `TEXT` | `DEFAULT '{}'` | serialized validation result |
+| `submitted_at` | `TEXT` | `DEFAULT (datetime('now'))` | submission timestamp |
+| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | last update timestamp |
+
+Store: `src/db/stores/fieldCandidateStore.js`
+
 ## SpecDb: Ephemeral Cache Tables
 
 ### `field_audit_cache`
@@ -887,6 +951,65 @@ Table constraints: primary key on `category`. Lifecycle: rebuild=yes, source_edi
 | `fail_count` | `INTEGER` | `NOT NULL DEFAULT 0` | failing checks |
 | `result_json` | `TEXT` | `NOT NULL DEFAULT '{}'` | serialized per-field audit results |
 | `run_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | audit run timestamp |
+
+## Store Modules (`src/db/stores/`)
+
+20 store modules provide the data-access layer between feature code and SpecDb tables. Each store is instantiated with a `db` handle by the SpecDb composition root (`src/db/specDb.js`).
+
+| Store module | Primary tables touched |
+|-------------|----------------------|
+| `artifactStore` | `crawl_sources`, `source_screenshots`, `source_videos` |
+| `billingStore` | `billing_entries` |
+| `colorEditionFinderStore` | `color_edition_finder`, `color_edition_finder_runs` |
+| `componentStore` | `component_identity`, `component_values`, `component_aliases`, `item_component_links` |
+| `crawlLedgerStore` | `url_crawl_ledger` |
+| `deletionStore` | cross-table deletion cascades |
+| `enumListStore` | `enum_lists`, `list_values`, `item_list_links` |
+| `fieldCandidateStore` | `field_candidates` |
+| `fieldKeyOrderStore` | `field_key_order` |
+| `fieldStudioMapStore` | `field_studio_map` |
+| `itemStateStore` | `item_field_state`, `product_review_state` |
+| `keyReviewStore` | `key_review_state`, `key_review_runs`, `key_review_run_sources`, `key_review_audit` |
+| `llmRouteSourceStore` | `llm_route_matrix` |
+| `provenanceStore` | `item_field_state` (override provenance columns) |
+| `purgeStore` | cross-table purge operations |
+| `queueProductStore` | `product_queue`, `products` |
+| `runArtifactStore` | `run_artifacts` |
+| `runMetaStore` | `runs` |
+| `sourceIntelStore` | `crawl_sources`, `source_screenshots` |
+| `telemetryIndexStore` | `knob_snapshots`, `query_index`, `url_index`, `prompt_index` |
+
+Note: `field_audit_cache` is written directly by `src/app/api/routes/testModeRoutes.js`, not via a store module.
+
+## Schema Registries (`src/db/specDbSchema.js`)
+
+### `LLM_ROUTE_COLUMN_REGISTRY` (33 entries)
+
+Single source of truth for all `llm_route_matrix` columns (excluding structural cols `id`, `category`, `created_at`, `updated_at`). Adding a column to the route matrix requires exactly one entry here. Each entry carries `key`, `type` (`string` | `int` | `bool`), `sqlDefault`, and optional `promptFlag` / `componentOnly` flags. `LLM_ROUTE_BOOLEAN_KEYS` is derived from the registry by filtering `type === 'bool'`.
+
+### Per-Table Boolean Key Registries (6 registries)
+
+SSOT for which columns are boolean per table, used by `hydrateRow`/`hydrateRows` in `src/db/specDbHelpers.js` to convert `0`/`1` to `true`/`false` on read.
+
+| Registry constant | Table | Boolean columns |
+|-------------------|-------|-----------------|
+| `COMPONENT_VALUE_BOOLEAN_KEYS` | `component_values` | `needs_review`, `overridden` |
+| `LIST_VALUE_BOOLEAN_KEYS` | `list_values` | `needs_review`, `overridden` |
+| `ITEM_FIELD_STATE_BOOLEAN_KEYS` | `item_field_state` | `overridden`, `needs_ai_review`, `ai_review_complete` |
+| `KEY_REVIEW_STATE_BOOLEAN_KEYS` | `key_review_state` | `ai_confirm_primary_interrupted`, `ai_confirm_shared_interrupted`, `user_override_ai_primary`, `user_override_ai_shared` |
+| `PRODUCT_RUN_BOOLEAN_KEYS` | `product_runs` | `is_latest`, `validated` |
+| `BILLING_ENTRY_BOOLEAN_KEYS` | `billing_entries` | `estimated_usage` |
+
+### `COMPONENT_IDENTITY_PROPERTY_KEYS`
+
+SSOT for synthetic `__`-prefixed property keys on `component_identity` rows: `__name`, `__maker`, `__links`, `__aliases`. Used by `keyReviewStore` SQL exclusions and `features/review` contract shapes to distinguish identity-level properties from normal component values.
+
+## Table Count Summary
+
+| Database | Table count | Notes |
+|----------|-------------|-------|
+| AppDb | 6 | `brands`, `brand_categories`, `brand_renames`, `settings`, `studio_maps`, `color_registry` |
+| SpecDb | 39 | 9 Phase-1 core + 1 candidate pipeline + 6 catalog/queue/route + 4 key-review + 3 billing/sync + 2 runs + 3 content-addressed + 2 frontier + 4 telemetry + 2 field-control-plane + 2 color/edition + 1 audit cache |
 
 ## Validated Against
 

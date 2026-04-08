@@ -228,6 +228,10 @@ export function buildEgEditionFieldRule(ctx) {
       match: { strategy: 'exact' },
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: true },
     },
+    consumers: {
+      'enum.match.strategy': { review: false },
+      'enum.match.format_hint': { review: false },
+    },
     priority: {
       required_level: 'optional',
       availability: 'sometimes',

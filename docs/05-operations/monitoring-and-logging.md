@@ -35,7 +35,7 @@ WebSocket upgrade path: `/ws`
 | `process` | `src/app/api/processRuntime.js` | child stdout/stderr lines | only present while a GUI-started child process is running |
 | `indexlab-event` | `src/app/api/processRuntime.js` | `[{ type: 'runtime-update', run_id, stage, event }]` | lightweight invalidation/update envelopes forwarded from child IPC `__runtime_event` messages |
 | `data-change` | `src/core/events/dataChangeContract.js` | normalized mutation payload | category-aware invalidation/event contract |
-| `test-import-progress` | `src/app/api/routes/testModeRoutes.js` | progress frames with `step`, `status`, and optional `detail` / `summary` | emitted during `_test_*` category creation |
+| `test-import-progress` | no audited live producer in current source | progress frames with `step`, `status`, and optional `detail` / `summary` | subscribed by GUI WebSocket bridge; no backend file currently broadcasts to this channel |
 | `screencast-*` | `src/app/api/processRuntime.js` | retained or live screencast frame payloads keyed by worker subscription | frames are cached in `src/app/api/realtimeBridge.js` for `runtime/screencast/:workerId/last` |
 | `events` | no audited live producer in current source | legacy runtime-event array shape | still filtered by `src/app/api/realtimeBridge.js` and still subscribed by GUI bridge code, but no source file currently broadcasts it outside tests |
 

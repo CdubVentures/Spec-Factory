@@ -245,12 +245,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'val.format': { desc: 'Step 6 — Format Check. Custom regex pattern applied after template registry check.' },
     } },
 
-  { path: 'enum.additional_values', type: 'array', flatAliases: [],
-    section: 'Enum Policy', key: 'Additional Values',
-    consumers: {
-      'rev.enum': { desc: 'Includes custom strings in review-time enum matching and consistency decisions.' },
-    } },
-
   { path: 'enum.aliases', type: 'array', flatAliases: [],
     section: 'Enum Policy', key: 'Enum Aliases',
     consumers: {

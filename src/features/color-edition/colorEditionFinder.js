@@ -11,6 +11,7 @@ import {
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
 import { readColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
+import { submitCandidate } from '../publisher/index.js';
 
 const COOLDOWN_DAYS = 30;
 
@@ -76,7 +77,65 @@ export async function runColorEditionFinder({
     : {};
   const defaultColor = response?.default_color || colors[0] || '';
 
-  const selected = { colors, editions, default_color: defaultColor };
+  // --- Candidate gate: validate before any writes ---
+  // WHY: If any field fails validation, the entire LLM response is compromised.
+  // No candidate writes, no CEF writes, no cooldown. Failure stored for history.
+  const compiled = specDb.getCompiledRules?.();
+  const fieldRules = compiled?.fields || null;
+  const knownValues = compiled?.known_values || null;
+
+  let gateColors = colors;
+  let gateRejections = null;
+
+  if (fieldRules && fieldRules.colors) {
+    const colorsResult = submitCandidate({
+      category: product.category,
+      productId: product.product_id,
+      fieldKey: 'colors',
+      value: colors,
+      confidence: 100,
+      sourceMeta: { source: 'cef', model: String(config.llmModelPlan || 'unknown'), run_id: `cef-${Date.now()}` },
+      fieldRules,
+      knownValues,
+      componentDb: null,
+      specDb,
+      productRoot,
+    });
+
+    if (colorsResult.status === 'rejected') {
+      gateRejections = colorsResult.validationResult.rejections;
+
+      // Store failure run record (historical only — no summary/cooldown update)
+      const now = new Date();
+      const ranAt = now.toISOString();
+      const runNumber = (existing?.run_count || 0) + 1;
+
+      specDb.insertColorEditionFinderRun({
+        category: product.category,
+        product_id: product.product_id,
+        run_number: runNumber,
+        ran_at: ranAt,
+        model: String(config.llmModelPlan || 'unknown'),
+        fallback_used: fallbackUsed,
+        cooldown_until: '',
+        selected: {},
+        prompt: {},
+        response: {
+          status: 'rejected',
+          raw: { colors, editions, default_color: defaultColor },
+          rejections: gateRejections,
+        },
+      });
+
+      return { colors: [], editions: {}, default_color: '', fallbackUsed, rejected: true, rejections: gateRejections };
+    }
+
+    // Use repaired values from the gate (not raw LLM output)
+    gateColors = colorsResult.value;
+  }
+  // If no compiled rules available, gate is skipped — CEF proceeds as before
+
+  const selected = { colors: gateColors, editions, default_color: gateColors[0] || defaultColor };
 
   // Cooldown: 30 days from now
   const now = new Date();
@@ -111,7 +170,7 @@ export async function runColorEditionFinder({
       fallback_used: fallbackUsed,
       selected,
       prompt: { system: systemPrompt, user: userMessage },
-      response: { colors, editions, default_color: defaultColor },
+      response: { colors: gateColors, editions, default_color: selected.default_color },
     },
   });
 
@@ -127,20 +186,20 @@ export async function runColorEditionFinder({
     cooldown_until: cooldownUntil,
     selected,
     prompt: { system: systemPrompt, user: userMessage },
-    response: { colors, editions, default_color: defaultColor },
+    response: { colors: gateColors, editions, default_color: selected.default_color },
   });
 
   // Upsert SQL summary
   specDb.upsertColorEditionFinder({
     category: product.category,
     product_id: product.product_id,
-    colors,
+    colors: gateColors,
     editions: Object.keys(editions),
-    default_color: defaultColor,
+    default_color: selected.default_color,
     cooldown_until: cooldownUntil,
     latest_ran_at: ranAt,
     run_count: (existing?.run_count || 0) + 1,
   });
 
-  return { colors, editions, default_color: defaultColor, fallbackUsed };
+  return { colors: gateColors, editions, default_color: selected.default_color, fallbackUsed, rejected: false };
 }

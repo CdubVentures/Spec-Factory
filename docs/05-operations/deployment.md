@@ -22,11 +22,18 @@
 | Build GUI only | `npm run gui:build` | `package.json` |
 | Start API against built GUI | `npm run gui:api` | `package.json` |
 | Build GUI then start API | `npm run gui:start` | `package.json` |
+| Dev hot-reload frontend | `npm run gui:dev` | `package.json`, `tools/gui-react/vite.config.ts` |
 | Open setup launcher UI | `npm run setup:gui` | `package.json` |
 | Build packaged desktop runtime | `npm run gui:exe` | `package.json`, `tools/build-exe.mjs` |
 | Build packaged setup launcher | `npm run setup:exe` | `package.json`, `tools/build-setup-exe.mjs` |
 | Start IndexLab CLI directly | `npm run run:indexlab` | `package.json`, `src/app/cli/spec.js` |
 | Start IndexLab batch (Docker) | `node src/app/cli/spec.js indexlab --category <category>` | `Dockerfile`, `src/app/cli/spec.js` |
+| Run test suite | `npm test` | `package.json` |
+| Check env/manifest sync | `npm run env:check` | `package.json`, `tools/check-env-example-sync.mjs` |
+| Local smoke test | `npm run smoke:local` | `package.json`, `src/app/cli/smokeLocal.js` |
+| Bootstrap dependencies | `npm run setup:bootstrap` | `package.json`, `tools/setup-deps.mjs` |
+| Discover sources | `npm run discover` / `npm run discover-sources` | `package.json`, `src/app/cli/spec.js` |
+| Render authority diagrams | `npm run docs:render:authority-diagrams` | `package.json`, `tools/render-authority-mermaid.mjs` |
 
 Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-04-04, producing the currently served `tools/gui-react/dist/` bundle. Re-validated 2026-04-07.
 

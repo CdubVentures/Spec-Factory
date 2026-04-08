@@ -22,7 +22,7 @@
 - `src/features/catalog/identity/brandRegistry.js`
 - `src/features/catalog/products/reconciler.js`
 - `src/features/catalog/contracts/catalogShapes.js` - Zod-style shape descriptors for catalog/brand responses
-- `src/queue/queueState.js`
+- `src/db/stores/queueProductStore.js`
 - `src/db/specDb.js`
 
 ## SSOT

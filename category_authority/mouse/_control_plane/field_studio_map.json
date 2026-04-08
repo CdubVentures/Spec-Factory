@@ -3900,6 +3900,14 @@
         "model_strategy": "auto",
         "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
       },
+      "consumers": {
+        "enum.match.format_hint": {
+          "review": false
+        },
+        "enum.match.strategy": {
+          "review": false
+        }
+      },
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -9985,10 +9993,10 @@
           "strategy": "alias"
         },
         "new_value_policy": {},
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": null
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
@@ -11313,10 +11321,10 @@
           "strategy": "alias"
         },
         "new_value_policy": {},
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": null
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,

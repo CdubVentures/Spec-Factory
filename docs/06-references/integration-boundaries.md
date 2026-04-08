@@ -31,7 +31,7 @@
 - Do not assume auth/session infrastructure protects these boundaries; the GUI API is effectively workstation or trusted-network scoped in the verified code.
 - Do not assume the removed relocation/storage-settings feature still exists. The current codebase has no mounted `/storage-settings` route and no mounted `/storage/sync/*` surface.
 - The test-mode field contract audit (`POST /api/v1/test-mode/validate`) is a local compute job — it reads compiled rules and discovered enums from SpecDb, runs contract checks in-process, and writes results back to SpecDb. It has no external integration boundary.
-- The Intel Graph helper API (`intelGraphApi.js`) has been deleted. The orphaned GraphQL proxy route (`POST /api/v1/graphql`) in `infraRoutes.js` still exists on disk but always returns `502` since the helper server is gone.
+- The Intel Graph helper API (`intelGraphApi.js`) has been deleted. The orphaned GraphQL proxy route (`POST /api/v1/graphql`) in `src/app/api/routes/infra/graphqlRoutes.js` (mounted via `infraRoutes.js`) still exists on disk but always returns `502` since the helper server is gone.
 - Treat `docs/implementation/` as supplemental reference only. If it disagrees with numbered docs or live source, numbered docs and source win.
 
 ## Validated Against

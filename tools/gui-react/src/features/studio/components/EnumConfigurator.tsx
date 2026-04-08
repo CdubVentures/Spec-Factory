@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { selectCls, inputCls, labelCls, STUDIO_TIPS } from './studioConstants.ts';
 import { usePersistedTab } from '../../../hooks/useSessionPersistence.ts';
 import type { EnumEntry } from '../../../types/studio.ts';
@@ -20,6 +18,7 @@ interface EnumConfiguratorProps {
   consistencyMessage?: string;
   consistencyError?: string;
   isEgLocked?: boolean;
+  enumConsistencyMode?: boolean;
 }
 
 type SourceTab = 'manual' | 'enum';
@@ -37,11 +36,6 @@ function numN(obj: Record<string, unknown>, path: string, fallback = 0): number 
   const v = getN(obj, path);
   return typeof v === 'number' ? v : (parseInt(String(v), 10) || fallback);
 }
-function arrN(obj: Record<string, unknown>, path: string): string[] {
-  const v = getN(obj, path);
-  return Array.isArray(v) ? v.map(String) : [];
-}
-
 function detectSourceTab(source: string): SourceTab {
   if (source.startsWith('data_lists.')) return 'enum';
   return 'manual';
@@ -57,8 +51,6 @@ function consistencyFormatPlaceholder(fieldKey: string): string {
 // ── Chip styles ──────────────────────────────────────────────────────
 const chipBase = 'inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium';
 const chipBlue = `${chipBase} bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300`;
-const chipGreen = `${chipBase} bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300`;
-
 // ── Tab styles ───────────────────────────────────────────────────────
 const tabBase = 'px-3 py-1.5 text-xs font-medium rounded-t relative';
 const tabActive = `${tabBase} font-semibold border border-b-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 -mb-px z-10`;
@@ -83,6 +75,7 @@ export function EnumConfigurator({
   consistencyMessage = '',
   consistencyError = '',
   isEgLocked = false,
+  enumConsistencyMode = false,
 }: EnumConfiguratorProps) {
   const currentSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
   const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
@@ -99,24 +92,14 @@ export function EnumConfigurator({
 
   // Known values for this field
   const fieldKnownValues = knownValues[fieldKey] || [];
-  const additionalValues = arrN(rule, 'enum.additional_values');
-  const [customValue, setCustomValue] = useState('');
   const consumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
   const consistencyFormatReviewEnabled = consumers?.['enum.match.format_hint']?.review !== false;
-  const customStringReviewEnabled = consumers?.['enum.additional_values']?.review !== false;
   const consistencyFormatHint = strN(rule, 'enum.match.format_hint');
   const hasFormatPattern = consistencyFormatHint.trim().length > 0;
-  const hasCustomStrings = additionalValues.length > 0;
-  const modeConflict = hasFormatPattern && hasCustomStrings;
-  const formatModeActive = hasFormatPattern && !hasCustomStrings;
-  const customModeActive = hasCustomStrings && !hasFormatPattern;
-  const formatPatternLocked = customModeActive;
-  const consistencyLocked = customModeActive || modeConflict;
-  const customValuesLocked = formatModeActive;
-  const reviewToggleFields = ['enum.match.strategy', 'enum.match.format_hint', 'enum.additional_values'] as const;
+  const reviewToggleFields = ['enum.match.strategy', 'enum.match.format_hint'] as const;
   const reviewToggleOn = reviewToggleFields.every((fieldPath) => consumers?.[fieldPath]?.review !== false);
 
-  const hasManual = currentSource === 'yes_no' || additionalValues.length > 0;
+  const hasManual = currentSource === 'yes_no';
   const hasEnum = currentSource.startsWith('data_lists.');
 
   // Derive selected enum list name from source
@@ -128,27 +111,12 @@ export function EnumConfigurator({
   // ── Boolean info banner ────────────────────────────────────────────
   // Boolean template auto-couples to closed/yes_no but the section remains visible
 
-  function handleAdditionalValuesChange(values: string[]) {
-    onUpdate('enum.additional_values', values);
-  }
-
   function handleEnumListSelect(listName: string) {
     if (listName) {
       onUpdate('enum.source', `data_lists.${listName}`);
     } else {
       onUpdate('enum.source', '');
     }
-  }
-
-  function handleQuickAddCustomValue() {
-    const trimmed = customValue.trim();
-    if (!trimmed) return;
-    const exists = additionalValues.some((value) => String(value).trim().toLowerCase() === trimmed.toLowerCase());
-    if (!exists) {
-      onUpdate('enum.additional_values', [...additionalValues, trimmed]);
-    }
-    setActiveTab('manual');
-    setCustomValue('');
   }
 
   function handleReviewModeToggle() {
@@ -170,11 +138,16 @@ export function EnumConfigurator({
       }
     });
     onUpdate('consumers', Object.keys(nextConsumers).length > 0 ? nextConsumers : undefined);
+    // WHY: When consistency is toggled ON and policy is 'open', upgrade to 'open_prefer_known'
+    // so the validator flags unknown values for LLM normalization via P2 prompt.
+    if (nextEnabled && currentPolicy === 'open') {
+      onUpdate('enum.policy', 'open_prefer_known');
+    }
     if (typeof onRunConsistency === 'function') {
       const formatGuidance = consistencyFormatHint.trim() || undefined;
       if (!nextEnabled) {
         void onRunConsistency({ formatGuidance, reviewEnabled: false });
-      } else if (!consistencyLocked) {
+      } else {
         void onRunConsistency({ formatGuidance, reviewEnabled: true });
       }
     }
@@ -220,15 +193,22 @@ export function EnumConfigurator({
       <div className="grid grid-cols-3 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Enum Policy<Tip text={STUDIO_TIPS.enum_policy} /></span>{renderLabelSuffix?.('enum.policy')}</div>
-          <select
-            className={`${selectCls} w-full`}
-            value={currentPolicy}
-            onChange={(e) => onUpdate('enum.policy', e.target.value)}
-          >
-            <option value="open">open</option>
-            <option value="closed">closed</option>
-            <option value="open_prefer_known">open_prefer_known</option>
-          </select>
+          {(enumConsistencyMode || reviewToggleOn) && (currentPolicy === 'open' || currentPolicy === 'open_prefer_known') ? (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded border sf-border-soft sf-surface-alt text-[11px] sf-text-muted" title="Consistency mode active — open overridden to open_prefer_known">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              open_prefer_known <span className="sf-text-subtle">({enumConsistencyMode ? 'global' : 'review'})</span>
+            </div>
+          ) : (
+            <select
+              className={`${selectCls} w-full`}
+              value={currentPolicy}
+              onChange={(e) => onUpdate('enum.policy', e.target.value)}
+            >
+              <option value="open">open</option>
+              <option value="closed">closed</option>
+              <option value="open_prefer_known">open_prefer_known</option>
+            </select>
+          )}
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Match Strategy<Tip text={STUDIO_TIPS.match_strategy} /></span>{renderLabelSuffix?.('enum.match.strategy')}</div>
@@ -288,42 +268,9 @@ export function EnumConfigurator({
                 <div className="text-xs text-gray-500 mb-1">
                   Source: <span className="font-mono text-accent">yes_no</span> (boolean enum)
                 </div>
-              ) : null}
-
-              {/* Manual value entry */}
-              <div>
-                <div className={`${labelCls} flex items-center`}>
-                  <span>Add Values<Tip text={STUDIO_TIPS.enum_add_values} /></span>
-                  {renderLabelSuffix?.('enum.additional_values')}
-                </div>
-                <div className={customValuesLocked ? 'pointer-events-none opacity-50' : ''}>
-                  <TagPicker
-                    values={additionalValues}
-                    onChange={customValuesLocked ? () => {} : handleAdditionalValuesChange}
-                    suggestions={fieldKnownValues}
-                    placeholder="Type to add values..."
-                  />
-                </div>
-                {customValuesLocked ? (
-                  <div className="text-[10px] text-gray-500">
-                    Locked while Format Pattern is active. Clear Format Pattern to edit custom values.
-                  </div>
-                ) : null}
-              </div>
-
-              {additionalValues.length > 0 ? (
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">User-added values ({additionalValues.length}):</div>
-                  <div className="flex flex-wrap gap-1">
-                    {additionalValues.map((v) => (
-                      <span key={v} className={chipGreen}>
-                        {v}
-                        <span className="ml-1 text-[10px] opacity-70">user-added</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+              ) : (
+                <div className="text-xs text-gray-400 italic">No manual source configured.</div>
+              )}
             </div>
           ) : null}
 
@@ -372,22 +319,6 @@ export function EnumConfigurator({
       </div>
 
       <div className="space-y-3">
-        {modeConflict ? (
-          <div className="text-[11px] text-amber-700 dark:text-amber-300">
-            Format Pattern and Custom String are both set. Keep only one mode active.
-          </div>
-        ) : null}
-        {formatModeActive ? (
-          <div className="text-[11px] text-blue-700 dark:text-blue-300">
-            Format Pattern mode is active. Custom String is locked until the pattern is cleared.
-          </div>
-        ) : null}
-        {customModeActive ? (
-          <div className="text-[11px] text-blue-700 dark:text-blue-300">
-            Custom String mode is active. Format Pattern and Consistency are locked until custom values are removed.
-          </div>
-        ) : null}
-
         {typeof onRunConsistency === 'function' ? (
           <div className="space-y-1">
             <div className={`${labelCls} flex items-center`}>
@@ -397,35 +328,40 @@ export function EnumConfigurator({
                 {renderLabelSuffix?.('enum.match.strategy')}
               </span>
             </div>
-            <div className="inline-flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!reviewToggleOn) handleReviewModeToggle();
-                }}
-                disabled={Boolean(consistencyPending)}
-                className={`px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${reviewToggleOn ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}
-                title="Enable review mode for Format Pattern, Consistency, and Custom String."
-              >
-                On
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (reviewToggleOn) handleReviewModeToggle();
-                }}
-                disabled={Boolean(consistencyPending)}
-                className={`px-3 py-1 text-[11px] font-medium border-l border-gray-300 dark:border-gray-600 disabled:opacity-50 ${reviewToggleOn ? 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'bg-gray-700 text-white shadow-inner'}`}
-                title="Disable review mode for Format Pattern, Consistency, and Custom String."
-              >
-                Off
-              </button>
-            </div>
-            <div className="text-[10px] text-gray-500">
-              {reviewToggleOn
-                ? 'ON: review consumers enabled and backend consistency run can execute.'
-                : 'OFF: review consumers disabled and backend consistency is gated.'}
-            </div>
+            {/* WHY: Closed enum already rejects unknowns via P1 — consistency (P2) doesn't apply. Lock OFF. */}
+            {currentPolicy === 'closed' ? (
+              <>
+                <div className="inline-flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden opacity-50">
+                  <button type="button" disabled className="px-3 py-1 text-[11px] font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">On</button>
+                  <button type="button" disabled className="px-3 py-1 text-[11px] font-medium border-l border-gray-300 dark:border-gray-600 bg-gray-700 text-white shadow-inner">Off</button>
+                </div>
+                <div className="text-[10px] text-gray-500">Locked: closed enum rejects unknowns via P1. Consistency not applicable.</div>
+              </>
+            ) : (
+              <>
+                <div className="inline-flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { if (!reviewToggleOn) handleReviewModeToggle(); }}
+                    disabled={Boolean(consistencyPending)}
+                    className={`px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${reviewToggleOn ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}
+                    title="Enable review mode for Format Pattern and Consistency."
+                  >On</button>
+                  <button
+                    type="button"
+                    onClick={() => { if (reviewToggleOn) handleReviewModeToggle(); }}
+                    disabled={Boolean(consistencyPending)}
+                    className={`px-3 py-1 text-[11px] font-medium border-l border-gray-300 dark:border-gray-600 disabled:opacity-50 ${reviewToggleOn ? 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'bg-gray-700 text-white shadow-inner'}`}
+                    title="Disable review mode for Format Pattern and Consistency."
+                  >Off</button>
+                </div>
+                <div className="text-[10px] text-gray-500">
+                  {reviewToggleOn
+                    ? 'ON: review consumers enabled and backend consistency run can execute.'
+                    : 'OFF: review consumers disabled and backend consistency is gated.'}
+                </div>
+              </>
+            )}
           </div>
         ) : null}
 
@@ -440,16 +376,14 @@ export function EnumConfigurator({
           <input
             className={`${inputCls} w-full`}
             value={consistencyFormatHint}
-            disabled={formatPatternLocked || !consistencyFormatReviewEnabled}
+            disabled={!consistencyFormatReviewEnabled || currentPolicy === 'closed'}
             onChange={(event) => onUpdate('enum.match.format_hint', event.target.value)}
-            placeholder={consistencyFormatPlaceholder(fieldKey)}
+            placeholder={currentPolicy === 'closed' ? 'N/A — closed enum' : consistencyFormatPlaceholder(fieldKey)}
           />
           <div className="text-[10px] text-gray-500">
-            {formatPatternLocked
-              ? 'Locked while Custom String mode is active.'
-              : (consistencyFormatReviewEnabled
-                ? 'Review-only guidance. Not used for parse-time input matching.'
-                : 'Off (review consumer disabled).')}
+            {consistencyFormatReviewEnabled
+              ? 'Review-only guidance. Not used for parse-time input matching.'
+              : 'Off (review consumer disabled).'}
           </div>
         </div>
 
@@ -465,57 +399,6 @@ export function EnumConfigurator({
         ) : null}
         {consistencyError ? (
           <div className="text-[11px] text-red-600 dark:text-red-400">{consistencyError}</div>
-        ) : null}
-
-        <div className="space-y-1">
-          <div className={`${labelCls} flex items-center`}>
-            <span className="flex items-center gap-1.5">
-              <span>Custom String</span>
-              <Tip text="Adds manual canonical output strings into enum.additional_values. Use this when exact wording should be available directly to LLM review without pattern inference. Examples: front flare hum, ambient ring (led), 10 zone (rgb)." />
-              {renderLabelSuffix?.('enum.additional_values')}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              className={`${inputCls} w-full`}
-              value={customValue}
-              disabled={customValuesLocked || !customStringReviewEnabled}
-              onChange={(event) => setCustomValue(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  handleQuickAddCustomValue();
-                }
-              }}
-              onBlur={() => {
-                if (customValue.trim()) {
-                  handleQuickAddCustomValue();
-                }
-              }}
-              placeholder="e.g. 10 zone (rgb)"
-            />
-          </div>
-          <div className="text-[10px] text-gray-500">
-            {customValuesLocked
-              ? 'Locked while Format Pattern mode is active.'
-              : (customStringReviewEnabled
-                ? 'Type and press Enter to add.'
-                : 'Off (review consumer disabled).')}
-          </div>
-        </div>
-
-        {/* Tier 2: Manual additions (user-added in Studio) — show outside of manual tab too */}
-        {additionalValues.length > 0 && activeTab !== 'manual' ? (
-          <div>
-            <div className={labelCls}>Manual Additions ({additionalValues.length})</div>
-            <div className="flex flex-wrap gap-1">
-              {additionalValues.map((v) => (
-                <span key={v} className={chipGreen}>
-                  {v}
-                  <span className="ml-1 text-[10px] opacity-70">user-added</span>
-                </span>
-              ))}
-            </div>
-          </div>
         ) : null}
 
         {/* Open policy note */}

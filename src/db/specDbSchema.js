@@ -142,6 +142,24 @@ CREATE INDEX IF NOT EXISTS idx_ill_product ON item_list_links(product_id);
 CREATE INDEX IF NOT EXISTS idx_icl_component ON item_component_links(category, component_type, component_name, component_maker);
 CREATE INDEX IF NOT EXISTS idx_ill_list_value ON item_list_links(list_value_id);
 
+CREATE TABLE IF NOT EXISTS field_candidates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  field_key TEXT NOT NULL,
+  value TEXT,
+  confidence REAL DEFAULT 0,
+  source_count INTEGER DEFAULT 1,
+  sources_json TEXT DEFAULT '[]',
+  validation_json TEXT DEFAULT '{}',
+  submitted_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id, field_key, value)
+);
+
+CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id);
+CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key);
+
 -- Phase 2 tables
 
 CREATE TABLE IF NOT EXISTS products (

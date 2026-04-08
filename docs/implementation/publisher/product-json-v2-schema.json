@@ -93,6 +93,7 @@
         "value": ["black", "white", "pink", "red", "purple",
                   "quartz-pink", "mercury-white", "matte-black",
                   "red+white", "black+red"],
+        "validation": { "valid": true, "repairs": [], "rejections": [] },
         "sources": [
           { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
           { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
@@ -102,6 +103,7 @@
     "default_color": [
       {
         "value": "black",
+        "validation": { "valid": true, "repairs": [], "rejections": [] },
         "sources": [
           { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
           { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
@@ -118,6 +120,7 @@
           "valorant-edition-jett":     { "colors": ["white", "blue"] },
           "star-wars-edition-darth-vader": { "colors": ["black", "red"] }
         },
+        "validation": { "valid": true, "repairs": [], "rejections": [] },
         "sources": [
           { "model": "gemini-2.5-flash-lite", "confidence": 100, "run_id": "cef-run-2", "submitted_at": "2026-04-04T04:34:50.656Z" },
           { "model": "gemini-2.5-flash",      "confidence": 100, "run_id": "cef-run-1", "submitted_at": "2026-04-03T06:33:35.191Z" }
@@ -127,6 +130,13 @@
     "weight": [
       {
         "value": 58,
+        "validation": {
+          "valid": true,
+          "repairs": [
+            { "step": "rounding", "before": 58.2, "after": 58, "rule": "display_decimals=0" }
+          ],
+          "rejections": []
+        },
         "sources": [
           { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/...",  "confidence": 92, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
           { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/...", "confidence": 88, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
@@ -135,6 +145,7 @@
       },
       {
         "value": 57,
+        "validation": { "valid": true, "repairs": [], "rejections": [] },
         "sources": [
           { "artifact": "f9a221bcc340...", "url": "https://www.techpowerup.com/...", "confidence": 60, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
         ]
@@ -143,6 +154,13 @@
     "sensor": [
       {
         "value": "Focus Pro 30K",
+        "validation": {
+          "valid": true,
+          "repairs": [
+            { "step": "normalize", "before": "Focus Pro 30k", "after": "Focus Pro 30K", "rule": "case_preserve_model" }
+          ],
+          "rejections": []
+        },
         "sources": [
           { "artifact": "2db2b3f03aac...", "url": "https://www.razer.com/...",  "confidence": 92, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" },
           { "artifact": "8fa3c1d92b01...", "url": "https://www.rtings.com/...", "confidence": 88, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
@@ -150,6 +168,7 @@
       },
       {
         "value": "Razer Focus Pro 30K",
+        "validation": { "valid": true, "repairs": [], "rejections": [] },
         "sources": [
           { "artifact": "1bc45e233af0...", "url": "https://www.amazon.com/...", "confidence": 75, "run_id": "20260405174747-513f9a", "submitted_at": "2026-04-05T18:00:00.000Z" }
         ]

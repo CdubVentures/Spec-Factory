@@ -28,8 +28,8 @@ This file is supplemental. Canonical behavior still lives in the source files th
 ## Audit Corrections From This Pass
 
 - Older maintenance content described a live `storage-settings` settings surface. The current server does not mount that route family, and `src/features/settings/api/configStorageSettingsHandler.js` does not exist.
-- Older maintenance content described a live storage registry/defaults surface. The current source exports only runtime (`136`), bootstrap (`3`), and UI (`4`) registry entries, while `SETTINGS_DEFAULTS.storage` remains `{}`.
-- Older maintenance content treated the emitted manifest as a 7-section or 10-section current-state object. The current exported `CONFIG_MANIFEST` emits 5 populated sections with 136 entries.
+- Older maintenance content described a live storage registry/defaults surface. The current source exports only runtime (`137`), bootstrap (`3`), and UI (`4`) registry entries, while `SETTINGS_DEFAULTS.storage` remains `{}`.
+- Older maintenance content treated the emitted manifest as a 7-section or 10-section current-state object. The current exported `CONFIG_MANIFEST` emits 5 populated sections with 137 entries.
 - Older maintenance content described source inventories as arrays. The current `sources.json` files store entries under a keyed `sources` object, and enabled state lives under `discovery.enabled`.
 - Older maintenance content implied active run-data relocation. The live storage manager is inventory/maintenance only and currently reports a local backend rooted at the IndexLab runs directory.
 
@@ -39,32 +39,32 @@ This file is supplemental. Canonical behavior still lives in the source files th
 
 | Registry | Count | Evidence |
 |----------|-------|----------|
-| `RUNTIME_SETTINGS_REGISTRY` | `136` | `src/shared/settingsRegistry.js` |
+| `RUNTIME_SETTINGS_REGISTRY` | `137` | `src/shared/settingsRegistry.js` |
 | `BOOTSTRAP_ENV_REGISTRY` | `3` | `src/shared/settingsRegistry.js` |
 | `UI_SETTINGS_REGISTRY` | `4` | `src/shared/settingsRegistry.js` |
-| **Total exported registry entries** | **143** | summed from the three live exported registries |
+| **Total exported registry entries** | **144** | summed from the three live exported registries |
 
 ### Shared Defaults (`SETTINGS_DEFAULTS`)
 
 | Section | Leaf count | Evidence |
 |---------|------------|----------|
-| `runtime` | `136` | `src/shared/settingsDefaults.js` |
+| `runtime` | `137` | `src/shared/settingsDefaults.js` |
 | `convergence` | `0` | `src/shared/settingsDefaults.js` |
 | `storage` | `0` | `src/shared/settingsDefaults.js` |
 | `ui` | `4` | `src/shared/settingsDefaults.js` |
-| `autosave` | `7` | `src/shared/settingsDefaults.js` |
+| `autosave` | `7` | `src/shared/settingsDefaults.js` (`debounceMs`: 6 keys, `statusMs`: 1 key) |
 
 ### Config Manifest
 
 | Metric | Count | Evidence |
 |--------|-------|----------|
 | populated emitted sections | `5` | `src/core/config/manifest/index.js` |
-| total manifest entries | `136` | `src/core/config/manifest/index.js` |
+| total manifest entries | `137` | `src/core/config/manifest/index.js` |
 | section: `llm` | `23` | `src/core/config/manifest/index.js` |
 | section: `discovery` | `1` | `src/core/config/manifest/index.js` |
 | section: `runtime` | `55` | `src/core/config/manifest/index.js` |
 | section: `paths` | `4` | `src/core/config/manifest/index.js` |
-| section: `misc` | `53` | `src/core/config/manifest/index.js` |
+| section: `misc` | `54` | `src/core/config/manifest/index.js` |
 
 Declared but currently unpopulated manifest groups remain `core`, `caching`, `storage`, `security`, and `observability`.
 

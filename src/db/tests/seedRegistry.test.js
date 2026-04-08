@@ -40,6 +40,7 @@ function makeStubReseedDeps() {
       reseedFieldKeyOrderFromJson: stub('reseedFieldKeyOrderFromJson'),
       reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
       reseedOverridesFromJson: stub('reseedOverridesFromJson'),
+      rebuildFieldCandidatesFromJson: stub('rebuildFieldCandidatesFromJson'),
     },
     calls,
   };
@@ -249,7 +250,7 @@ describe('buildReseedSurfaces', () => {
   it('returns exactly 6 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 6);
+    assert.equal(surfaces.length, 7);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -262,7 +263,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map', 'field_candidates'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
@@ -297,7 +298,7 @@ describe('buildReseedSurfaces', () => {
   it('color_edition, llm_route_matrix, overrides, field_key_order, field_studio_map shouldRun is null', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    for (const key of ['color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map']) {
+    for (const key of ['color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map', 'field_candidates']) {
       const entry = surfaces.find(s => s.key === key);
       assert.equal(entry.shouldRun, null, `${key} shouldRun`);
     }
@@ -335,6 +336,17 @@ describe('buildReseedSurfaces', () => {
     assert.ok(call);
     assert.deepEqual(call.args[0], { specDb: fakeDb, helperRoot: '/helpers' });
   });
+
+  it('field_candidates.execute calls deps.rebuildFieldCandidatesFromJson', () => {
+    const { deps, calls } = makeStubReseedDeps();
+    const surfaces = buildReseedSurfaces(deps);
+    const entry = surfaces.find(s => s.key === 'field_candidates');
+    const fakeDb = { name: 'testDb' };
+    entry.execute({ db: fakeDb, productRoot: '/prod' });
+    const call = calls.find(c => c.name === 'rebuildFieldCandidatesFromJson');
+    assert.ok(call);
+    assert.deepEqual(call.args[0], { specDb: fakeDb, productRoot: '/prod' });
+  });
 });
 
 // ── Key uniqueness ──────────────────────────────────────────────────────────
@@ -351,7 +363,7 @@ describe('key uniqueness', () => {
     const keys = allSurfaces.map(s => s.key);
     const unique = new Set(keys);
     assert.equal(unique.size, keys.length, `duplicate keys found: ${keys.filter((k, i) => keys.indexOf(k) !== i)}`);
-    assert.equal(unique.size, 15, 'expected 15 total surfaces');
+    assert.equal(unique.size, 16, 'expected 16 total surfaces');
   });
 });
 

@@ -247,6 +247,21 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: field_studio_map re-seeded${result.manualRemoved > 0 ? ` (${result.manualRemoved} stale manual enums removed)` : ''}`
           : '',
     },
+    {
+      key: 'field_candidates',
+      label: 'Field Candidates',
+      scope: 'reseed',
+      tables: ['field_candidates'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildFieldCandidatesFromJson({
+        specDb: ctx.db,
+        productRoot: ctx.productRoot,
+      }),
+      formatLog: (category, result) =>
+        result.seeded > 0
+          ? `${category}: ${result.seeded} products with ${result.candidates_seeded} candidates re-seeded`
+          : '',
+    },
   ];
 }
 

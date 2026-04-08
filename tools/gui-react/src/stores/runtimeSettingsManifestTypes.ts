@@ -60,6 +60,7 @@ export interface RuntimeSettingDefaults {
   localOutputRoot: string;
   maxRunSeconds: number;
   openaiApiKey: string;
+  enumConsistencyMode: boolean;
   pipelineSchemaEnforcementMode: string;
   runtimeControlFile: string;
   runtimeScreencastEnabled: boolean;

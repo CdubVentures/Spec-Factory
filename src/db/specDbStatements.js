@@ -709,5 +709,38 @@ export function prepareStatements(db) {
     _deleteAllColorEditionFinderRuns: db.prepare(
       'DELETE FROM color_edition_finder_runs WHERE category = ? AND product_id = ?'
     ),
+
+    // --- Field Candidates ---
+
+    _upsertFieldCandidate: db.prepare(`
+      INSERT INTO field_candidates (
+        category, product_id, field_key, value,
+        confidence, source_count, sources_json, validation_json
+      ) VALUES (
+        @category, @product_id, @field_key, @value,
+        @confidence, @source_count, @sources_json, @validation_json
+      )
+      ON CONFLICT(category, product_id, field_key, value) DO UPDATE SET
+        confidence = MAX(excluded.confidence, field_candidates.confidence),
+        source_count = excluded.source_count,
+        sources_json = excluded.sources_json,
+        validation_json = excluded.validation_json,
+        updated_at = datetime('now')
+    `),
+    _getFieldCandidate: db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?'
+    ),
+    _getFieldCandidatesByProductAndField: db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? ORDER BY confidence DESC'
+    ),
+    _getAllFieldCandidatesByProduct: db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? ORDER BY field_key, confidence DESC'
+    ),
+    _deleteFieldCandidatesByProduct: db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ?'
+    ),
+    _deleteFieldCandidatesByProductAndField: db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ?'
+    ),
   };
 }

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Candidate Gate &amp; Publish &mdash; Implementation Plan</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe; --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+  --sf-orange-fg: #fdba74; --sf-orange-bg: rgba(251, 146, 60, 0.15);
+}
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 32px; line-height: 1.5; }
+.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
+.chip-orange { background: var(--sf-orange-bg); color: var(--sf-orange-fg); }
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.callout { border-left: 3px solid var(--sf-accent-strong); padding: 12px 16px; background: var(--sf-accent-glow); border-radius: 0 8px 8px 0; margin: 12px 0; }
+.phase-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.phase-letter { font-size: 28px; font-weight: 900; color: var(--sf-accent-strong); line-height: 1; }
+.sub-table tr.done td { opacity: 0.5; }
+.dep { color: var(--sf-info-fg); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- =============================================================== -->
+
+<div>
+  <h1>Candidate Gate &amp; Publish &mdash; Implementation Plan</h1>
+  <div class="subtitle">
+    Three phases, thirteen sub-steps. Each sub-step has a clear deliverable and a completion proof.
+    Phases build on each other &mdash; no phase starts until the previous phase&rsquo;s proof is green.
+  </div>
+</div>
+
+<!-- ===============================================================
+     OVERVIEW: THE THREE PHASES
+     =============================================================== -->
+
+<div class="panel">
+  <h2>Build Order &amp; Rationale</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Phase A builds the gate. Phase B wires a real source to prove candidates land correctly.
+    Phase C builds resolution and publish &mdash; it can only be proven with real candidates from Phase B.
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>Phase</th><th>Deliverable</th><th>Proof</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-orange-fg);">A</td>
+        <td class="bold">Candidate Gate</td>
+        <td class="small"><code>submitCandidate()</code> &mdash; validate, dual-write to <code>field_candidates</code> table + <code>product.json candidates[]</code></td>
+        <td class="small">Unit tests green. Candidate rows appear in DB + JSON for valid input. Invalid input rejected, never persisted.</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-purple-fg);">B</td>
+        <td class="bold">Wire CEF</td>
+        <td class="small">Color &amp; Edition Finder calls <code>submitCandidate()</code> after each run. First real source proves the gate.</td>
+        <td class="small">CEF run &rarr; candidates appear in <code>field_candidates</code> + <code>product.json candidates[]</code>. Review grid can read them.</td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-success-fg);">C</td>
+        <td class="bold">Publish Resolved</td>
+        <td class="small"><code>publishResolved()</code> &mdash; resolve winners, cross-field validate, dual-write to <code>item_field_state</code> + <code>product.json fields[]</code></td>
+        <td class="small">Full E2E: CEF &rarr; candidate &rarr; resolve &rarr; <code>item_field_state</code> populated. Component fields &rarr; <code>item_component_links</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     PHASE A: CANDIDATE GATE
+     =============================================================== -->
+
+<div class="panel">
+  <div class="phase-header">
+    <div class="phase-letter" style="color:var(--sf-orange-fg);">A</div>
+    <div>
+      <h2 style="margin-bottom:2px;">Candidate Gate &mdash; <code>submitCandidate()</code></h2>
+      <div class="tiny muted">5 sub-steps. Pure orchestration: validate &rarr; dual-write. No LLM, no component resolution.</div>
+    </div>
+  </div>
+
+  <!-- A1 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-orange">A1</span> Schema &mdash; <code>field_candidates</code> table</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Add <code>field_candidates</code> DDL to <code>specDbSchema.js</code>. Add store methods to <code>specDb</code>:
+      <code>upsertFieldCandidate()</code>, <code>getFieldCandidates(productId, fieldKey)</code>,
+      <code>getAllFieldCandidates(productId)</code>, <code>deleteFieldCandidates(productId)</code>.
+      <br/><br/>
+      <strong>Deliverable:</strong> Table exists. Store methods have contract tests (insert, upsert/merge, query, delete).
+    </div>
+    <div class="code-block" style="margin-top:10px;">CREATE TABLE IF NOT EXISTS field_candidates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  field_key TEXT NOT NULL,
+  value TEXT,
+  confidence REAL DEFAULT 0,
+  source_count INTEGER DEFAULT 1,
+  sources_json TEXT DEFAULT '[]',
+  validation_json TEXT DEFAULT '{}',
+  submitted_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id, field_key, value)
+);
+
+CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id);
+CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key);</div>
+    <div class="callout" style="margin-top:10px;">
+      <div class="tiny bold" style="color:var(--sf-accent-strong);">Key design decision</div>
+      <div class="tiny muted">
+        <code>UNIQUE(category, product_id, field_key, value)</code> &mdash; same value from multiple sources merges into
+        one row (sources accumulate in <code>sources_json</code>, <code>source_count</code> increments, <code>confidence</code>
+        takes the max). Different values for the same field = different candidate rows.
+      </div>
+    </div>
+  </div>
+
+  <!-- A2 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-orange">A2</span> Contract &mdash; <code>submitCandidate()</code> boundary</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Define the public function signature, all inputs, outputs, error cases, and invariants.
+      No implementation yet &mdash; just the contract document.
+    </div>
+    <div class="code-block" style="margin-top:10px;"><span style="color:var(--sf-teal-fg);">// src/features/publisher/candidate-gate/submitCandidate.js</span>
+
+submitCandidate({
+  <span style="color:var(--sf-info-fg);">// Identity</span>
+  category,              <span style="color:var(--sf-text-dim);">// 'mouse'</span>
+  productId,             <span style="color:var(--sf-text-dim);">// 'mouse-00345848'</span>
+  fieldKey,              <span style="color:var(--sf-text-dim);">// 'colors', 'weight', 'sensor'</span>
+
+  <span style="color:var(--sf-info-fg);">// Payload</span>
+  value,                 <span style="color:var(--sf-text-dim);">// any shape: scalar, list, record</span>
+  confidence,            <span style="color:var(--sf-text-dim);">// 0-100</span>
+  sourceMeta,            <span style="color:var(--sf-text-dim);">// opaque: { model, run_id } or { artifact, url, run_id } etc.</span>
+
+  <span style="color:var(--sf-info-fg);">// Injected dependencies</span>
+  fieldRules,            <span style="color:var(--sf-text-dim);">// field_rules.json (full rule set)</span>
+  knownValues,           <span style="color:var(--sf-text-dim);">// compiled + discovered enum values</span>
+  componentDb,           <span style="color:var(--sf-text-dim);">// component DB accessors (for checkConstraints)</span>
+  specDb,                <span style="color:var(--sf-text-dim);">// for field_candidates write + persistDiscoveredValue</span>
+  productRoot,           <span style="color:var(--sf-text-dim);">// path to product directory for product.json write</span>
+})
+
+<span style="color:var(--sf-teal-fg);">// Returns:</span>
+&rarr; {
+  status: 'accepted' | 'rejected',
+  candidateId: number | null,     <span style="color:var(--sf-text-dim);">// field_candidates.id (null if rejected)</span>
+  value,                          <span style="color:var(--sf-text-dim);">// post-validation value (may differ from input due to repairs)</span>
+  validationResult,               <span style="color:var(--sf-text-dim);">// full validateField() output</span>
+}</div>
+
+    <div class="small muted" style="margin-top:10px; line-height:1.7;">
+      <strong>Invariants:</strong>
+      <br/>&bull; No value reaches <code>field_candidates</code> without passing <code>validateField()</code>.
+      <br/>&bull; Invalid values are <strong>never persisted</strong> &mdash; not to DB, not to JSON.
+      <br/>&bull; Same (product, field, value) from a new source &rarr; source appended, not duplicated.
+      <br/>&bull; <code>open_prefer_known</code> fields trigger <code>persistDiscoveredValue()</code> on accept.
+      <br/>&bull; Field rule missing for <code>fieldKey</code> &rarr; reject with <code>reason: 'no_field_rule'</code>.
+    </div>
+  </div>
+
+  <!-- A3 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-danger">A3</span> RED &mdash; test matrix for <code>submitCandidate()</code></h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Write the full boundary test matrix. All tests fail (no implementation yet).
+      <br/><br/>
+      <strong>Test categories:</strong>
+    </div>
+    <table style="margin-top:8px;">
+      <thead><tr><th>Category</th><th>Cases</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="bold">Happy path</td>
+          <td class="small">Scalar value accepted &rarr; DB row + JSON candidate entry. List value accepted. Record value accepted.</td>
+        </tr>
+        <tr>
+          <td class="bold">Rejection</td>
+          <td class="small">Shape mismatch rejected. Type mismatch rejected. Closed enum unknown rejected. Range violation rejected. No field rule &rarr; rejected.</td>
+        </tr>
+        <tr>
+          <td class="bold">Repairs</td>
+          <td class="small">Input repaired (normalization, rounding, dedupe) &rarr; repaired value persisted, original not.</td>
+        </tr>
+        <tr>
+          <td class="bold">Source merge</td>
+          <td class="small">Same value submitted twice with different sources &rarr; one candidate row, two entries in <code>sources_json</code>, <code>source_count = 2</code>, confidence = max.</td>
+        </tr>
+        <tr>
+          <td class="bold">Discovery enums</td>
+          <td class="small"><code>open_prefer_known</code> field with new value &rarr; accepted + <code>persistDiscoveredValue()</code> called.</td>
+        </tr>
+        <tr>
+          <td class="bold">Dual-write</td>
+          <td class="small">On accept: DB row exists AND <code>product.json candidates[fieldKey][]</code> entry exists. On reject: neither written.</td>
+        </tr>
+        <tr>
+          <td class="bold">Edge cases</td>
+          <td class="small"><code>value = null</code> &rarr; absence-normalized to unk. Empty string &rarr; absence-normalized. Confidence = 0. Missing sourceMeta fields.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- A4 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-success">A4</span> GREEN &mdash; implement <code>submitCandidate()</code></h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Minimum code to pass the full A3 test matrix.
+      <br/><br/>
+      <strong>Implementation steps (inside the function):</strong>
+      <br/>1. Look up <code>fieldRules[fieldKey]</code> &mdash; reject if missing.
+      <br/>2. Call <code>validateField({ fieldKey, value, fieldRule, knownValues, componentDb })</code>.
+      <br/>3. If <code>validationResult.valid === false</code> &rarr; return <code>{ status: 'rejected' }</code>. No writes.
+      <br/>4. Build source entry: <code>{ ...sourceMeta, confidence, submitted_at: now() }</code>.
+      <br/>5. <strong>DB write:</strong> <code>specDb.upsertFieldCandidate()</code> &mdash; insert or merge source into existing row.
+      <br/>6. <strong>JSON write:</strong> Read <code>product.json</code>, append/merge into <code>candidates[fieldKey][]</code>, write back.
+      <br/>7. If <code>open_prefer_known</code> &rarr; call <code>persistDiscoveredValue()</code>.
+      <br/>8. Return <code>{ status: 'accepted', candidateId, value, validationResult }</code>.
+    </div>
+  </div>
+
+  <!-- A5 -->
+  <div class="card">
+    <h3><span class="chip chip-teal">A5</span> Rebuild contract &mdash; <code>rebuildFieldCandidatesFromJson()</code></h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> If the DB is deleted, rebuild <code>field_candidates</code> from <code>product.json candidates[]</code> for every product.
+      <br/><br/>
+      <strong>Deliverable:</strong> Delete DB &rarr; run rebuild &rarr; all candidate rows restored. Test proves round-trip.
+      <br/><br/>
+      <strong>Audit status:</strong> <code>rebuild yes</code>, <code>source edit yes</code> (per CLAUDE.md Dual-State mandate).
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     PHASE B: WIRE CEF
+     =============================================================== -->
+
+<div class="panel">
+  <div class="phase-header">
+    <div class="phase-letter" style="color:var(--sf-purple-fg);">B</div>
+    <div>
+      <h2 style="margin-bottom:2px;">Wire CEF &mdash; First Real Source</h2>
+      <div class="tiny muted">3 sub-steps. Proves the gate works with live data from Color &amp; Edition Finder.</div>
+    </div>
+  </div>
+
+  <!-- B1 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-purple">B1</span> Contract &mdash; CEF &rarr; candidate mapping</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Define exactly how CEF&rsquo;s output maps to <code>submitCandidate()</code> calls.
+    </div>
+    <table style="margin-top:8px;">
+      <thead><tr><th>CEF Output</th><th>fieldKey</th><th>value</th><th>sourceMeta shape</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono tiny">colors[]</td>
+          <td class="mono tiny">colors</td>
+          <td class="small">The full array: <code>["black", "white", ...]</code></td>
+          <td class="mono tiny">{ model, run_id }</td>
+          <td class="small"><code>default_color</code> derived as <code>colors[0]</code> &mdash; not a separate candidate.</td>
+        </tr>
+        <tr>
+          <td class="mono tiny">editions{}</td>
+          <td class="mono tiny">editions</td>
+          <td class="small">The full record or slug list (per field rule shape)</td>
+          <td class="mono tiny">{ model, run_id }</td>
+          <td class="small">Shape depends on field rule contract. Has nested <code>colors</code> per edition.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:10px;">
+      <div class="tiny bold" style="color:var(--sf-accent-strong);">Wiring point</div>
+      <div class="tiny muted">
+        In <code>colorEditionFinder.js</code>, after <code>mergeColorEditionDiscovery()</code> completes its own JSON + SQL writes,
+        call <code>submitCandidate()</code> for each field. CEF keeps its own tables &mdash; the candidate gate is additive, not a replacement.
+      </div>
+    </div>
+  </div>
+
+  <!-- B2 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-danger">B2</span> RED &rarr; GREEN &mdash; integration test</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Write integration test: mock CEF output &rarr; call submitCandidate for each field &rarr; assert candidates in DB + JSON.
+      <br/><br/>
+      <strong>Test cases:</strong>
+      <br/>&bull; CEF returns <code>colors: ["black", "white"]</code> &rarr; <code>field_candidates</code> row for <code>colors</code> exists, <code>product.json candidates.colors[]</code> exists.
+      <br/>&bull; Second CEF run with same colors &rarr; source appended (not duplicated), <code>source_count = 2</code>.
+      <br/>&bull; Second CEF run with different colors &rarr; second candidate row created.
+      <br/>&bull; CEF returns editions &rarr; candidate row for <code>editions</code> exists.
+      <br/>&bull; Validation repairs applied (e.g. <code>"Grey"</code> &rarr; <code>"gray"</code> via token_map) &rarr; repaired value persisted.
+    </div>
+  </div>
+
+  <!-- B3 -->
+  <div class="card">
+    <h3><span class="chip chip-success">B3</span> GREEN &mdash; wire <code>colorEditionFinder.js</code></h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Add <code>submitCandidate()</code> calls after <code>mergeColorEditionDiscovery()</code>.
+      <br/><br/>
+      <strong>Implementation:</strong>
+      <br/>1. After CEF&rsquo;s own dual-write (its JSON + SQL tables), loop over output fields.
+      <br/>2. For each field (<code>colors</code>, <code>editions</code>), call <code>submitCandidate()</code> with:
+      <br/>&nbsp;&nbsp;&nbsp;<code>category</code>, <code>productId</code>, <code>fieldKey</code>, <code>value</code> (validated output),
+      <br/>&nbsp;&nbsp;&nbsp;<code>confidence: 100</code> (CEF is LLM-backed, self-reported),
+      <br/>&nbsp;&nbsp;&nbsp;<code>sourceMeta: { model, run_id, source: 'cef' }</code>.
+      <br/>3. Log results (accepted/rejected per field).
+      <br/><br/>
+      <strong>Proof:</strong> Run CEF on a real product &rarr; verify <code>field_candidates</code> rows + <code>product.json candidates[]</code> entries via SQL + JSON read.
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     PHASE C: PUBLISH RESOLVED
+     =============================================================== -->
+
+<div class="panel">
+  <div class="phase-header">
+    <div class="phase-letter" style="color:var(--sf-success-fg);">C</div>
+    <div>
+      <h2 style="margin-bottom:2px;">Publish Resolved &mdash; <code>publishResolved()</code></h2>
+      <div class="tiny muted">5 sub-steps. Reads candidates, resolves winners, cross-validates, dual-writes to DB + JSON.</div>
+    </div>
+  </div>
+
+  <!-- C1 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-success">C1</span> Contract &mdash; <code>publishResolved()</code> boundary</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Define the public function signature, resolution algorithm, and write targets.
+    </div>
+    <div class="code-block" style="margin-top:10px;"><span style="color:var(--sf-teal-fg);">// src/features/publisher/publisher/publishResolved.js</span>
+
+publishResolved({
+  <span style="color:var(--sf-info-fg);">// Identity</span>
+  category,
+  productId,
+
+  <span style="color:var(--sf-info-fg);">// Injected dependencies</span>
+  fieldRules,
+  knownValues,
+  componentDb,
+  crossRules,             <span style="color:var(--sf-text-dim);">// cross_validation_rules.json</span>
+  specDb,                 <span style="color:var(--sf-text-dim);">// reads field_candidates, writes item_field_state</span>
+  productRoot,            <span style="color:var(--sf-text-dim);">// reads/writes product.json</span>
+})
+
+<span style="color:var(--sf-teal-fg);">// Returns:</span>
+&rarr; {
+  status: 'published' | 'blocked',
+  resolved: Record&lt;fieldKey, {
+    value,
+    candidateId,          <span style="color:var(--sf-text-dim);">// winning field_candidates.id</span>
+    confidence,
+    sourceCount,
+  }&gt;,
+  crossFieldFailures: [],  <span style="color:var(--sf-text-dim);">// from validateRecord()</span>
+  fieldsWritten: number,
+}</div>
+
+    <div class="small muted" style="margin-top:10px; line-height:1.7;">
+      <strong>Invariants:</strong>
+      <br/>&bull; Only reads from <code>field_candidates</code> &mdash; never from raw source data.
+      <br/>&bull; Every resolved value passes <code>validateRecord()</code> (cross-field) before publish.
+      <br/>&bull; <code>item_field_state.accepted_candidate_id</code> points to the winning <code>field_candidates.id</code>.
+      <br/>&bull; <strong>This is the only path to <code>item_field_state</code>.</strong> No caller writes directly.
+    </div>
+  </div>
+
+  <!-- C2 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-success">C2</span> Contract &mdash; resolution algorithm</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Define how a winner is chosen when multiple candidate values exist for the same field.
+      <br/><br/>
+      <strong>Resolution order (tiebreakers):</strong>
+      <br/>1. <strong>Source count</strong> &mdash; more independent sources agreeing = higher weight.
+      <br/>2. <strong>Max confidence</strong> &mdash; highest confidence among sources for that value.
+      <br/>3. <strong>Recency</strong> &mdash; most recent <code>submitted_at</code> wins ties.
+      <br/><br/>
+      <strong>Single candidate:</strong> If only one candidate value exists for a field, it wins automatically (no scoring needed).
+      <br/><br/>
+      <strong>No candidates:</strong> Field not resolved. No write to <code>item_field_state</code>. Existing row (if any) remains.
+    </div>
+  </div>
+
+  <!-- C3 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-danger">C3</span> RED &rarr; GREEN &mdash; resolution + publish tests</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> Full boundary test matrix. Tests fail first, then implement.
+    </div>
+    <table style="margin-top:8px;">
+      <thead><tr><th>Category</th><th>Cases</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="bold">Single candidate</td>
+          <td class="small">One value for field &rarr; auto-wins. Written to <code>item_field_state</code> + <code>product.json fields[]</code>.</td>
+        </tr>
+        <tr>
+          <td class="bold">Multi-candidate resolution</td>
+          <td class="small">Two values, different source counts &rarr; higher count wins. Same count, different confidence &rarr; higher confidence wins. Same both &rarr; most recent wins.</td>
+        </tr>
+        <tr>
+          <td class="bold">Cross-field validation</td>
+          <td class="small">Resolved set passes <code>validateRecord()</code> &rarr; published. Cross-field failure &rarr; status = 'blocked', failures returned.</td>
+        </tr>
+        <tr>
+          <td class="bold">Dual-write targets</td>
+          <td class="small"><code>item_field_state</code> upserted with value + confidence + <code>accepted_candidate_id</code>. <code>product.json fields[fieldKey]</code> written with value + confidence + resolved_at + sources.</td>
+        </tr>
+        <tr>
+          <td class="bold">Component linking</td>
+          <td class="small">Component field (e.g. <code>sensor</code>) resolved &rarr; <code>item_component_links</code> row written. Non-component field &rarr; no link row.</td>
+        </tr>
+        <tr>
+          <td class="bold">List linking</td>
+          <td class="small">List field (e.g. <code>colors</code>) resolved &rarr; <code>item_list_links</code> rows written (one per list value).</td>
+        </tr>
+        <tr>
+          <td class="bold">No candidates</td>
+          <td class="small">Field with zero candidates &rarr; not resolved. Existing <code>item_field_state</code> row unchanged.</td>
+        </tr>
+        <tr>
+          <td class="bold">Rebuild contract</td>
+          <td class="small">Delete DB &rarr; rebuild from <code>product.json fields[]</code> &rarr; <code>item_field_state</code> restored.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- C4 -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3><span class="chip chip-success">C4</span> GREEN &mdash; implement <code>publishResolved()</code></h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>Implementation steps (inside the function):</strong>
+      <br/>1. <code>specDb.getAllFieldCandidates(productId)</code> &mdash; read all candidates.
+      <br/>2. Group by <code>fieldKey</code>. For each field, run resolution algorithm (C2).
+      <br/>3. Build resolved field set: <code>{ fieldKey: winnerValue, ... }</code>.
+      <br/>4. <code>validateRecord({ fields, fieldRules, knownValues, crossRules, componentDbs })</code> &mdash; cross-field checks.
+      <br/>5. If cross-field failures with <code>action: 'reject'</code> &rarr; return <code>{ status: 'blocked' }</code>.
+      <br/>6. <strong>DB writes</strong> (per resolved field):
+      <br/>&nbsp;&nbsp;&nbsp;a. <code>specDb.upsertItemFieldState()</code> with <code>accepted_candidate_id</code>.
+      <br/>&nbsp;&nbsp;&nbsp;b. If component field &rarr; <code>specDb.upsertItemComponentLink()</code>.
+      <br/>&nbsp;&nbsp;&nbsp;c. If list field &rarr; <code>specDb.upsertItemListLinks()</code> (one per list value).
+      <br/>7. <strong>JSON write:</strong> Update <code>product.json fields[fieldKey]</code> for each resolved field.
+      <br/>8. Return <code>{ status: 'published', resolved, crossFieldFailures, fieldsWritten }</code>.
+    </div>
+  </div>
+
+  <!-- C5 -->
+  <div class="card">
+    <h3><span class="chip chip-teal">C5</span> E2E proof &mdash; full pipeline</h3>
+    <div class="small muted" style="line-height:1.7;">
+      <strong>What:</strong> End-to-end integration test proving the full flow on at least one real product.
+      <br/><br/>
+      <strong>Flow:</strong>
+      <br/>1. CEF runs on a product &rarr; <code>submitCandidate()</code> called for each field.
+      <br/>2. <code>field_candidates</code> rows exist (from Phase B).
+      <br/>3. <code>publishResolved()</code> called &rarr; reads candidates, resolves, cross-validates.
+      <br/>4. <code>item_field_state</code> rows exist with correct values + <code>accepted_candidate_id</code>.
+      <br/>5. <code>product.json fields[]</code> entries exist with value + confidence + resolved_at + sources.
+      <br/>6. For component fields: <code>item_component_links</code> row exists.
+      <br/>7. For list fields: <code>item_list_links</code> rows exist.
+      <br/><br/>
+      <strong>Rebuild proof:</strong> Delete DB &rarr; rebuild from product.json &rarr; all tables restored.
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     DEPENDENCY MAP
+     =============================================================== -->
+
+<div class="panel">
+  <h2>Dependency Map</h2>
+  <div class="small muted" style="margin-bottom:12px;">No step starts until its dependencies are green.</div>
+  <div class="code-block">A1 (schema)
+ &darr;
+A2 (contract) &rarr; A3 (RED) &rarr; A4 (GREEN) &rarr; A5 (rebuild)
+                                                   &darr;
+                                         B1 (CEF contract)
+                                           &darr;
+                                         B2 (RED &rarr; GREEN) &rarr; B3 (wire CEF)
+                                                                    &darr;
+                                                          C1 (contract) &rarr; C2 (resolution algo)
+                                                                                &darr;
+                                                                        C3 (RED &rarr; GREEN) &rarr; C4 (implement) &rarr; C5 (E2E)</div>
+</div>
+
+<!-- ===============================================================
+     WHAT EACH PHASE TOUCHES
+     =============================================================== -->
+
+<div class="panel">
+  <h2>Files Touched Per Phase</h2>
+  <table>
+    <thead><tr><th>Phase</th><th>New Files</th><th>Modified Files</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-orange-fg);">A</td>
+        <td class="small mono">
+          src/features/publisher/candidate-gate/submitCandidate.js<br/>
+          src/features/publisher/candidate-gate/tests/submitCandidate.test.js<br/>
+          src/db/stores/fieldCandidateStore.js<br/>
+          src/db/tests/fieldCandidateStore.test.js
+        </td>
+        <td class="small mono">
+          src/db/specDbSchema.js (add DDL)<br/>
+          src/db/specDb.js (add store methods)<br/>
+          src/features/publisher/index.js (export submitCandidate)
+        </td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-purple-fg);">B</td>
+        <td class="small mono">
+          src/features/publisher/candidate-gate/tests/cefIntegration.test.js
+        </td>
+        <td class="small mono">
+          src/features/color-edition/colorEditionFinder.js (add submitCandidate calls)
+        </td>
+      </tr>
+      <tr>
+        <td class="mono bold" style="color:var(--sf-success-fg);">C</td>
+        <td class="small mono">
+          src/features/publisher/publisher/publishResolved.js<br/>
+          src/features/publisher/publisher/resolveWinner.js<br/>
+          src/features/publisher/publisher/tests/publishResolved.test.js<br/>
+          src/features/publisher/publisher/tests/resolveWinner.test.js
+        </td>
+        <td class="small mono">
+          src/db/specDb.js (if new queries needed)<br/>
+          src/features/publisher/index.js (export publishResolved)<br/>
+          src/features/color-edition/colorEditionFinder.js (add publishResolved call)
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     FUTURE: ADDITIONAL SOURCES
+     =============================================================== -->
+
+<div class="panel">
+  <h2>Future Source Wiring (Post Phase C)</h2>
+  <div class="small muted" style="margin-bottom:12px;">
+    Once the gate and publisher are proven with CEF, additional sources wire in one at a time.
+    Each follows the same pattern: source orchestrator calls <code>submitCandidate()</code>, then <code>publishResolved()</code>.
+  </div>
+  <table>
+    <thead><tr><th>Source</th><th>Wiring Point</th><th>sourceMeta Shape</th><th>Special Cases</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Pipeline Extraction</td>
+        <td class="small">Replace <code>upsertItemFieldState()</code> calls in pipeline orchestrator</td>
+        <td class="mono tiny">{ artifact, url, run_id }</td>
+        <td class="small">Many fields per product per run. Component fields need component_db lookup at publish time.</td>
+      </tr>
+      <tr>
+        <td class="bold">Review Override</td>
+        <td class="small">Replace stub <code>syncItemFieldStateFromPrimaryLaneAccept()</code></td>
+        <td class="mono tiny">{ override_source, overridden_by }</td>
+        <td class="small">Human-set values. Confidence = 100. Should auto-trigger <code>publishResolved()</code>.</td>
+      </tr>
+      <tr>
+        <td class="bold">CLI Manual Entry</td>
+        <td class="small">New CLI command or existing <code>fieldRulesCommands.js</code></td>
+        <td class="mono tiny">{ source: 'cli', entered_by }</td>
+        <td class="small">Single field at a time. Immediate resolve.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>

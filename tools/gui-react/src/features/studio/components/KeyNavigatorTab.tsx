@@ -11,6 +11,7 @@ import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
 import { EnumConfigurator } from "./EnumConfigurator.tsx";
+import { useRuntimeSettingsValueStore } from "../../../stores/runtimeSettingsValueStore.ts";
 import { SystemBadges } from "../workbench/SystemBadges.tsx";
 import {
   useStudioFieldRulesActions,
@@ -118,6 +119,7 @@ export function KeyNavigatorTab({
     false,
   );
 
+  const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   const activeFieldOrder = editedFieldOrder;
   const activeFieldKeys = useMemo(
     () => activeFieldOrder.filter((key) => !key.startsWith("__grp::")),
@@ -693,6 +695,7 @@ export function KeyNavigatorTab({
                   consistencyPending={enumConsistencyPending}
                   consistencyMessage={enumConsistencyMessage}
                   consistencyError={enumConsistencyError}
+                  enumConsistencyMode={enumConsistencyMode}
                 />
               </Section>
 

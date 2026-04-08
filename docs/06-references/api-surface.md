@@ -20,14 +20,16 @@
 |--------|------|---------|------|--------------|----------------|
 | GET | `/health` | root health alias | none | none | `{ ok, service, dist_root, cwd, isPkg, ffmpegAvailable }` |
 | GET | `/api/v1/health` | GUI/API health | none | none | `{ ok, service, dist_root, cwd, isPkg, ffmpegAvailable }` |
+| GET | `/api/v1/` | root health (empty path after prefix strip) | none | none | `{ ok, service, dist_root, cwd, isPkg, ffmpegAvailable }` |
 | GET | `/api/v1/categories` | list authored categories | none | none | `string[]` |
 | POST | `/api/v1/categories` | create category skeleton | none | `{ name }` | `{ ok, slug, categories }` |
 | GET | `/api/v1/searxng/status` | SearXNG local status | none | none | status object |
 | POST | `/api/v1/searxng/start` | start local SearXNG stack | none | none | start result or error |
+| GET | `/api/v1/serper/credit` | Serper.dev credit balance (proxied without leaking API key) | none | none | `{ credit, configured, enabled }` or `500 { error: 'serper_account_check_failed' }` |
 | POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
 | POST | `/api/v1/process/stop` | stop child process | none | `{ force? }` | normalized process status |
 | GET | `/api/v1/process/status` | read child-process status | none | none | normalized process status |
-| POST | `/api/v1/graphql` | proxy GraphQL request to local helper server (orphaned — helper server `intelGraphApi.js` was deleted; always returns `502`) | none | GraphQL JSON body | proxied GraphQL JSON or `502 graphql_proxy_failed` |
+| POST | `/api/v1/graphql` | proxy GraphQL request to local helper server (ORPHANED -- upstream `intelGraphApi.js` was deleted; always returns `502`) | none | GraphQL JSON body | proxied GraphQL JSON or `502 graphql_proxy_failed` |
 
 ## Settings And Configuration Endpoints
 
@@ -135,14 +137,12 @@
 | POST | `/api/v1/catalog/:category/reconcile` | reconcile orphaned catalog state | none | `{ dryRun? }` | reconciliation result |
 | GET | `/api/v1/catalog/:category/products` | list products in category catalog | none | none | product rows |
 | POST | `/api/v1/catalog/:category/products` | add a product | none | `{ brand, base_model, variant? }` | product add result |
-| POST | `/api/v1/catalog/:category/products/seed` | seed queue/catalog from catalog entries | none | `{ mode? }` | seed result |
 | POST | `/api/v1/catalog/:category/products/bulk` | bulk add products | none | `{ brand, rows }` | bulk add result |
 | PUT | `/api/v1/catalog/:category/products/:productId` | update product | none | patch body | update result |
 | DELETE | `/api/v1/catalog/:category/products/:productId` | delete product | none | none | delete result |
 | GET | `/api/v1/catalog/:category` | category catalog overview | none | none | catalog rows |
 | GET | `/api/v1/catalog/all` | merged cross-category catalog | none | none | catalog rows |
 | GET | `/api/v1/product/:category/:productId` | latest product detail bundle | none | none | `{ summary, normalized, provenance, trafficLight, fieldOrder }` |
-| GET | `/api/v1/events/:category` | filtered runtime events | none | none | event rows |
 | GET | `/api/v1/brands` | list brands, optionally filtered by category query param | none | none | brand rows |
 | POST | `/api/v1/brands/seed` | seed brands from active filtering | none | `{ category? }` | seed result |
 | POST | `/api/v1/brands/bulk` | bulk add brands | none | `{ category, names }` | bulk add result |
@@ -213,7 +213,6 @@
 | GET | `/api/v1/review-components/:category/component-impact` | products impacted by a component | none | none | impact payload |
 | GET | `/api/v1/review-components/:category/component-review` | component review queue doc | none | none | review doc |
 | POST | `/api/v1/review-components/:category/component-review-action` | apply component review action | none | `{ review_id, action, merge_target? }` | action result |
-| POST | `/api/v1/review-components/:category/run-component-review-batch` | run batch component review | none | none | batch result |
 | POST | `/api/v1/review-components/:category/component-override` | override component property/identity | none | component mutation body | mutation result |
 | POST | `/api/v1/review-components/:category/component-key-review-confirm` | AI confirm component shared lane | none | component lane body | mutation result |
 | POST | `/api/v1/review-components/:category/enum-override` | add/remove/accept/confirm enum value | none | enum mutation body | mutation result |
@@ -233,33 +232,40 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | source | `src/app/api/guiServerRuntime.js` | mounted route families include `specSeeds`, `colors`, and `colorEditionFinder` in the live runtime |
-| source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, and route parsing |
-| source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
+| source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, category segment scopes, and route parsing |
+| source | `src/app/api/routes/infraRoutes.js` | infra route family composition (health, category, searxng, serper, process, graphql) |
+| source | `src/app/api/routes/infra/healthRoutes.js` | health GET handler (root + `/health`) |
+| source | `src/app/api/routes/infra/categoryRoutes.js` | category list/create endpoints |
+| source | `src/app/api/routes/infra/searxngRoutes.js` | SearXNG status/start endpoints |
+| source | `src/app/api/routes/infra/serperRoutes.js` | Serper credit balance proxy endpoint |
 | source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status surface |
-| source | `src/features/indexing/api/builders/processStartLaunchPlan.js` | `/process/start` launch-plan contract |
-| source | `src/features/settings/api/configRoutes.js` | current settings/config endpoints |
+| source | `src/app/api/routes/infra/graphqlRoutes.js` | orphaned GraphQL proxy (always 502) |
+| source | `src/features/settings/api/configRoutes.js` | config route dispatcher (ui-settings, indexing, llm-settings, runtime-settings, llm-policy) |
 | source | `src/features/settings/api/configUiSettingsHandler.js` | `ui-settings` GET/PUT contract |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `runtime-settings` GET/PUT/POST contract |
 | source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix GET/PUT/reset contract |
-| source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, checklist, and review-metrics payloads |
+| source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, `domain-checklist`, and `review-metrics` payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
-| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints, analytics, and live-crawl surfaces |
+| source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints, analytics, live-crawl, and storage delegation |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | live `/storage/*` inventory and maintenance endpoints |
-| source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |
-| source | `src/features/color-registry/api/colorRoutes.js` | global color registry endpoints |
-| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition-finder endpoints |
-| source | `src/features/catalog/api/catalogRoutes.js` | catalog/product/event endpoints |
-| source | `src/features/catalog/api/brandRoutes.js` | brand endpoints |
-| source | `src/features/studio/api/studioRoutes.js` | studio endpoints including `field-key-order` |
+| source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints (20 GET routes under `/runtime/`) |
+| source | `src/features/color-registry/api/colorRoutes.js` | global color registry CRUD endpoints |
+| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition-finder GET/POST/DELETE endpoints |
+| source | `src/features/catalog/api/catalogRoutes.js` | catalog/product endpoints (no `events` or `products/seed` handler exists) |
+| source | `src/features/catalog/api/brandRoutes.js` | brand CRUD endpoints including rename, seed, bulk, impact, delete |
+| source | `src/features/studio/api/studioRoutes.js` | studio endpoints (17 routes including field-key-order, tooltip-bank, artifacts, invalidate-cache) |
 | source | `src/features/category-authority/api/dataAuthorityRoutes.js` | authority snapshot endpoint |
 | source | `src/features/indexing/api/queueBillingLearningRoutes.js` | queue/billing/learning endpoints |
-| source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy endpoints |
-| source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed endpoints |
-| source | `src/features/review/api/reviewRoutes.js` | review read endpoints and review batch endpoints |
-| source | `src/features/review/api/itemMutationRoutes.js` | scalar review mutation endpoints |
-| source | `src/features/review/api/componentMutationRoutes.js` | component mutation endpoints |
-| source | `src/features/review/api/enumMutationRoutes.js` | enum mutation endpoints |
-| source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | stale client reference to non-live `finalize` path |
+| source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy CRUD endpoints including DELETE |
+| source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed GET/PUT endpoints |
+| source | `src/features/review/api/reviewRoutes.js` | review dispatcher (delegates to field, component, item mutation, component mutation, enum mutation handlers) |
+| source | `src/features/review/api/fieldReviewHandlers.js` | field review read routes (layout, product, products, products-index, candidates, suggest) |
+| source | `src/features/review/api/itemMutationRoutes.js` | scalar review mutation routes (override, manual-override, key-review-confirm, key-review-accept) |
+| source | `src/features/review/api/componentReviewHandlers.js` | component review read routes (layout, components, enums, enum-consistency, component-impact, component-review, component-review-action) |
+| source | `src/features/review/api/componentMutationRoutes.js` | component mutation routes (component-override, component-key-review-confirm) |
+| source | `src/features/review/api/enumMutationRoutes.js` | enum mutation routes (enum-override, enum-rename) |
+| source | `src/features/review/api/routeSharedHelpers.js` | `routeMatches` function confirms `parts[0]/parts[1]/parts[2]` = scope/category/action URL pattern |
+| source | `src/features/review/services/itemMutationService.js` | `resolveItemOverrideMode` confirms override and manual-override action paths |
 | source | `src/app/api/routes/testModeRoutes.js` | test-mode field contract audit endpoints (audit GET + validate POST) |
 | source | `src/app/api/routes/testModeRouteContext.js` | test-mode route context wiring `runFieldContractTests`, `mergeDiscoveredEnums`, `buildDiscoveredEnumMap` |
 

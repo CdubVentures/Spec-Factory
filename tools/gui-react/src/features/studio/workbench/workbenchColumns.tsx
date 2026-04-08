@@ -156,6 +156,7 @@ export function buildColumns(
   onToggleRow: (key: string) => void,
   onToggleAll: () => void,
   allSelected: boolean,
+  enumConsistencyMode = false,
 ): ColumnDef<WorkbenchRow, unknown>[] {
   return [
     // Select checkbox
@@ -332,21 +333,33 @@ export function buildColumns(
       cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
     },
 
-    // Enum policy (inline editable)
+    // Enum policy (inline editable — locked when consistency mode ON)
     {
       accessorKey: 'enumPolicy',
       header: 'Enum Policy',
       size: 120,
-      cell: ({ row }) => (
-        <InlineSelectCell
-          value={row.original.enumPolicy}
-          options={ENUM_POLICY_OPTIONS}
-          editingCell={editingCell}
-          cellId={{ key: row.original.key, column: 'enumPolicy' }}
-          onStartEdit={onStartEdit}
-          onCommit={(v) => onInlineCommit(row.original.key, 'enumPolicy', v)}
-        />
-      ),
+      cell: ({ row }) => {
+        const policy = row.original.enumPolicy;
+        const isOpenOverridden = enumConsistencyMode && (policy === 'open' || policy === 'open_prefer_known');
+        if (isOpenOverridden) {
+          return (
+            <span className="flex items-center gap-1 text-[11px] sf-text-muted" title="Consistency mode: open → open_prefer_known">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              open_prefer_known
+            </span>
+          );
+        }
+        return (
+          <InlineSelectCell
+            value={policy}
+            options={ENUM_POLICY_OPTIONS}
+            editingCell={editingCell}
+            cellId={{ key: row.original.key, column: 'enumPolicy' }}
+            onStartEdit={onStartEdit}
+            onCommit={(v) => onInlineCommit(row.original.key, 'enumPolicy', v)}
+          />
+        );
+      },
     },
 
     // Enum source

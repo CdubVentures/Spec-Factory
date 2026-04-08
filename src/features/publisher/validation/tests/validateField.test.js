@@ -350,3 +350,67 @@ describe('validateField — edge cases', () => {
     assert.equal(r.repairPrompt, null);
   });
 });
+
+// ============================================================
+// consistencyMode — enum policy override
+// ============================================================
+
+describe('validateField — consistencyMode', () => {
+  const kv = { policy: 'open', values: ['alpha', 'beta', 'gamma'] };
+
+  it('mode OFF + open policy + unknown value → valid (unchanged)', () => {
+    const r = validateField({ fieldKey: 'x', value: 'unknown-val', fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv });
+    assert.equal(r.valid, true);
+  });
+
+  it('mode ON + open policy + unknown value → rejected unknown_enum_prefer_known', () => {
+    const r = validateField({ fieldKey: 'x', value: 'unknown-val', fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv, consistencyMode: true });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));
+  });
+
+  it('mode ON + open policy + known value → valid', () => {
+    const r = validateField({ fieldKey: 'x', value: 'alpha', fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv, consistencyMode: true });
+    assert.equal(r.valid, true);
+  });
+
+  it('mode ON + open policy + unk → valid (unk passthrough)', () => {
+    const r = validateField({ fieldKey: 'x', value: 'unk', fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv, consistencyMode: true });
+    assert.equal(r.valid, true);
+  });
+
+  it('mode ON + closed policy → unchanged (still enum_value_not_allowed)', () => {
+    const closedKv = { policy: 'closed', values: ['alpha', 'beta'] };
+    const r = validateField({ fieldKey: 'x', value: 'unknown-val', fieldRule: rule({ enumPolicy: 'closed' }), knownValues: closedKv, consistencyMode: true });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'enum_value_not_allowed'));
+  });
+
+  it('mode ON + open_prefer_known → unchanged (already flags unknowns)', () => {
+    const opkKv = { policy: 'open_prefer_known', values: ['alpha', 'beta'] };
+    const r = validateField({ fieldKey: 'x', value: 'unknown-val', fieldRule: rule({ enumPolicy: 'open_prefer_known' }), knownValues: opkKv, consistencyMode: true });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));
+  });
+
+  it('mode ON + open policy + no enum values → valid (nothing to check)', () => {
+    const emptyKv = { policy: 'open', values: [] };
+    const r = validateField({ fieldKey: 'x', value: 'anything', fieldRule: rule({ enumPolicy: 'open' }), knownValues: emptyKv, consistencyMode: true });
+    assert.equal(r.valid, true);
+  });
+
+  it('mode ON + open policy + null knownValues → valid (no values to check)', () => {
+    const r = validateField({ fieldKey: 'x', value: 'anything', fieldRule: rule({ enumPolicy: 'open' }), knownValues: null, consistencyMode: true });
+    assert.equal(r.valid, true);
+  });
+
+  it('mode ON + open policy + list shape + unknown → rejected', () => {
+    const listKv = { policy: 'open', values: ['alpha', 'beta'] };
+    const r = validateField({
+      fieldKey: 'x', value: ['unknown-item'],
+      fieldRule: rule({ shape: 'list', enumPolicy: 'open', template: 'list_of_tokens_delimited' }),
+      knownValues: listKv, consistencyMode: true,
+    });
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));
+  });
+});

@@ -22,7 +22,7 @@ import { deriveTestValues } from './deriveFailureValues.js';
  *   summary: { totalFields: number, totalChecks: number, passCount: number, failCount: number }
  * }}
  */
-export function runFieldContractTests({ fieldRules, knownValues, componentDbs }) {
+export function runFieldContractTests({ fieldRules, knownValues, componentDbs, consistencyMode }) {
   const fields = fieldRules?.fields || {};
   const fieldKeys = Object.keys(fields);
   const results = [];
@@ -43,7 +43,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs })
 
     // ── Good value check ──────────────────────────────────────────────
     const goodResult = validateField({
-      fieldKey, value: derived.good.value, fieldRule, knownValues: kv, componentDb: compDb,
+      fieldKey, value: derived.good.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
     });
     const goodPass = goodResult.valid;
     checks.push({
@@ -66,7 +66,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs })
     // ── Bad value checks ──────────────────────────────────────────────
     for (const reject of derived.rejects) {
       const badResult = validateField({
-        fieldKey, value: reject.value, fieldRule, knownValues: kv, componentDb: compDb,
+        fieldKey, value: reject.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
       });
 
       const hasExpectedRejection = badResult.rejections.some(
@@ -114,7 +114,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs })
     // ── Repair value checks ───────────────────────────────────────────
     for (const repair of derived.repairs) {
       const repairResult = validateField({
-        fieldKey, value: repair.value, fieldRule, knownValues: kv, componentDb: compDb,
+        fieldKey, value: repair.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
       });
 
       const hasRepair = repairResult.repairs.some(r =>

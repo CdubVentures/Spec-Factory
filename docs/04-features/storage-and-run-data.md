@@ -120,7 +120,7 @@ sequenceDiagram
 | source | `src/features/indexing/api/storageManagerRoutes.js` | actual inventory and maintenance endpoints |
 | source | `src/db/stores/deletionStore.js` | URL-delete and product-history purge result shapes |
 | source | `src/core/storage/storage.js` | local filesystem storage adapter |
-| runtime | `GET /api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-04-04 |
+| runtime | `GET /api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-04-07 |
 
 ## Related Documents
 

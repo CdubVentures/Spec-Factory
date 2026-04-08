@@ -55,7 +55,6 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'enum.match.strategy': [['enum', 'match', 'strategy']],
   'enum.match.format_hint': [['enum', 'match', 'format_hint'], ['enum_match_format_hint']],
   'enum.match.fuzzy_threshold': [['enum', 'match', 'fuzzy_threshold'], ['enum_fuzzy_threshold']],
-  'enum.additional_values': [['enum', 'additional_values']],
   'evidence.required': [['evidence', 'required'], ['evidence_required']],
   'evidence.min_evidence_refs': [['evidence', 'min_evidence_refs'], ['min_evidence_refs']],
   'evidence.conflict_policy': [['evidence', 'conflict_policy']],

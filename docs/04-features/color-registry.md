@@ -25,7 +25,7 @@
 - `src/db/specDbSchema.js` - per-category `color_edition_finder` table stores the SQL summary derived from per-product JSON history.
 - `src/features/color-edition/colorEditionLlmAdapter.js` - builds the finder prompt and LLM call contract.
 - `src/core/llm/buildLlmCallDeps.js` - resolves the configured provider/model runtime used by the finder orchestrator.
-- `src/features/indexing/components/IndexingPage.tsx` - owns the product-scoped finder panel mount.
+- `tools/gui-react/src/features/indexing/components/IndexingPage.tsx` - owns the product-scoped finder panel mount.
 
 ## Flow
 
