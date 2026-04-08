@@ -22,7 +22,7 @@
 ## What This Repo Is
 
 - A local-first operator workbench for category authority, crawl/index runs, review workflows, catalog maintenance, runtime operations, and settings management.
-- A Node.js HTTP plus WebSocket runtime that serves the built GUI and mounts `/api/v1/*` plus `/ws` from `src/app/api/guiServerRuntime.js`.
+- A Node.js HTTP plus WebSocket runtime that serves the built GUI and mounts `/api/v1/*` plus `/ws` from `src/app/api/guiServerRuntime.js`, with 15 route families registered in `routeDefinitions`.
 - A React/Vite/TypeScript GUI in `tools/gui-react/` rendered through `HashRouter` in `tools/gui-react/src/App.tsx`.
 - A SQLite-backed system with one global app database plus per-category spec databases.
 - A repo that also exposes CLI workflows from `src/app/cli/spec.js` with 10 commands: `indexlab`, `compile-rules`, `validate-rules`, `discover`, `review` (with subcommands), `export-overrides`, `migrate-overrides`, `billing-report`, `llm-health`, and `migrate-to-sqlite`.
