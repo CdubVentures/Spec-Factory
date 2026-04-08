@@ -18,18 +18,13 @@ test('health endpoint reports gui-server identity and dist root', async () => {
   assert.equal(result.body?.dist_root, path.resolve('gui-dist'));
 });
 
-test('categories endpoint hides private folders unless includeTest is requested', async () => {
+test('categories endpoint hides private folders', async () => {
   const handler = createInfraRoutesHandler({
-    listDirs: async () => ['mouse', '_global', '_tmp', '_test_keyboard'],
+    listDirs: async () => ['mouse', '_global', '_tmp'],
   });
 
-  const normal = await invokeInfraRoute(handler, ['categories'], 'GET');
-  const includeTest = await invokeInfraRoute(handler, ['categories'], 'GET', {
-    params: 'includeTest=true',
-  });
-
-  assert.deepEqual(normal.body, ['mouse']);
-  assert.deepEqual(includeTest.body, ['mouse', '_test_keyboard']);
+  const result = await invokeInfraRoute(handler, ['categories'], 'GET');
+  assert.deepEqual(result.body, ['mouse']);
 });
 
 test('category creation returns the new slug, public category list, and field count', async () => {

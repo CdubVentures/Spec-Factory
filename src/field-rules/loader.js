@@ -40,9 +40,6 @@ async function resolveCategoryAlias(helperRoot, category) {
   if (!category) {
     return category;
   }
-  if (category.startsWith('_test_') || !category.startsWith('test_')) {
-    return category;
-  }
   const directPath = path.join(helperRoot, category, '_generated', 'field_rules.json');
   if (await fileExists(directPath)) {
     return category;

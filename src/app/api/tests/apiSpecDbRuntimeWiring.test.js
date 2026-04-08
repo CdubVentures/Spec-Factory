@@ -47,67 +47,6 @@ test('specdb runtime reuses seeded db handles immediately', async () => {
   assert.equal(ready, first);
 });
 
-test('specdb runtime resolves aliased unseeded db handles after auto-seed finishes', async () => {
-  const syncCategories = [];
-  let releaseSeed = null;
-  const pendingSeed = new Promise((resolve) => {
-    releaseSeed = resolve;
-  });
-
-  class UnseededDb {
-    constructor({ dbPath, category }) {
-      this.dbPath = dbPath;
-      this.category = category;
-    }
-    isSeeded() {
-      return false;
-    }
-  }
-
-  const runtime = createSpecDbRuntime({
-    resolveCategoryAlias: (value) => (String(value || '').trim() === 'test_mouse' ? '_test_mouse' : String(value || '').trim()),
-    specDbClass: UnseededDb,
-    path,
-    fsSync: {
-      accessSync: () => {
-        throw new Error('missing');
-      },
-      mkdirSync: () => {},
-    },
-    syncSpecDbForCategory: async ({ category }) => {
-      syncCategories.push(category);
-      await pendingSeed;
-      return createSyncResult({
-        components_seeded: 3,
-        list_values_seeded: 4,
-        products_seeded: 5,
-        duration_ms: 1,
-        specdb_sync_version: 7,
-      });
-    },
-    config: { localMode: true },
-    logger: { log: () => {}, error: () => {} },
-  });
-
-  const db = runtime.getSpecDb('test_mouse');
-  assert.ok(db);
-  assert.equal(db.category, '_test_mouse');
-
-  const readyPromise = runtime.getSpecDbReady('test_mouse');
-  let settled = false;
-  void readyPromise.then(() => {
-    settled = true;
-  });
-
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(settled, false);
-
-  releaseSeed();
-  const ready = await readyPromise;
-  assert.equal(ready, db);
-  assert.deepEqual(syncCategories, ['_test_mouse']);
-});
-
 test('specdb runtime keeps the cached db handle available when auto-seed fails', async () => {
   const syncCategories = [];
   const errorLogs = [];

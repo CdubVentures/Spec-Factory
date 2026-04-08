@@ -22,9 +22,6 @@ export function createBootstrapDomainRuntimes({
     markPrimaryLaneReviewedInItemState,
     syncItemFieldStateFromPrimaryLaneAccept,
     syncPrimaryLaneAcceptFromItemSelection,
-    purgeTestModeCategoryState,
-    resetTestModeSharedReviewState,
-    resetTestModeProductReviewState,
   } = createReviewGridStateRuntime({
     resolveExplicitPositiveId,
     resolveGridFieldStateForMutation,
@@ -68,8 +65,6 @@ export function createBootstrapDomainRuntimes({
     ensureGridKeyReviewState, resolveKeyReviewForLaneMutation,
     markPrimaryLaneReviewedInItemState, syncItemFieldStateFromPrimaryLaneAccept,
     syncPrimaryLaneAcceptFromItemSelection,
-    purgeTestModeCategoryState, resetTestModeSharedReviewState,
-    resetTestModeProductReviewState,
     // Review candidate
     normalizeLower, isMeaningfulValue, candidateLooksReference,
     annotateCandidatePrimaryReviews, getPendingItemPrimaryCandidateIds,

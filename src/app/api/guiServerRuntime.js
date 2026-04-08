@@ -12,7 +12,7 @@ import { registerBrandRoutes } from '../../features/catalog/api/brandRoutes.js';
 import { registerStudioRoutes } from '../../features/studio/api/studioRoutes.js';
 import { registerDataAuthorityRoutes } from '../../features/category-authority/api/dataAuthorityRoutes.js';
 import { registerReviewRoutes } from '../../features/review/api/reviewRoutes.js';
-import { registerTestModeRoutes } from './routes/testModeRoutes.js';
+
 import { registerQueueBillingLearningRoutes } from '../../features/indexing/api/queueBillingLearningRoutes.js';
 import { registerSourceStrategyRoutes } from '../../features/indexing/api/sourceStrategyRoutes.js';
 import { registerSpecSeedsRoutes } from '../../features/indexing/api/specSeedsRoutes.js';
@@ -39,7 +39,7 @@ import { createBrandRouteContext } from '../../features/catalog/api/brandRouteCo
 import { createConfigRouteContext } from '../../features/settings/api/configRouteContext.js';
 import { createStudioRouteContext } from '../../features/studio/api/studioRouteContext.js';
 import { createCatalogRouteContext } from '../../features/catalog/api/catalogRouteContext.js';
-import { createTestModeRouteContext } from './routes/testModeRouteContext.js';
+
 import { createIndexlabRouteContext } from '../../features/indexing/api/indexlabRouteContext.js';
 import { createReviewRouteContext } from '../../features/review/api/reviewRouteContext.js';
 import { createGuiStaticFileServer } from './staticFileServer.js';
@@ -116,8 +116,6 @@ export function createGuiServerRuntime({
         ensureGridKeyReviewState, resolveKeyReviewForLaneMutation,
         markPrimaryLaneReviewedInItemState, syncItemFieldStateFromPrimaryLaneAccept,
         syncPrimaryLaneAcceptFromItemSelection,
-        purgeTestModeCategoryState, resetTestModeSharedReviewState,
-        resetTestModeProductReviewState,
         normalizeLower, isMeaningfulValue, candidateLooksReference,
         annotateCandidatePrimaryReviews, getPendingItemPrimaryCandidateIds,
         getPendingComponentSharedCandidateIdsAsync, getPendingEnumSharedCandidateIds,
@@ -192,14 +190,6 @@ export function createGuiServerRuntime({
         readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
         resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
       }),
-      testModeRouteContext: createTestModeRouteContext({
-        jsonRes, readJsonBody, toInt, toUnitRatio, config, storage, HELPER_ROOT,
-        OUTPUT_ROOT, getSpecDb, getSpecDbReady, fs, path, safeReadJson, safeStat,
-        listFiles, resolveCategoryAlias, broadcastWs,
-        purgeTestModeCategoryState, resetTestModeSharedReviewState,
-        resetTestModeProductReviewState, invalidateFieldRulesCache, sessionCache, appDb,
-        logger: createRouteLlmLogger('test-mode'),
-      }),
       indexlabRouteContext: createIndexlabRouteContext({
         jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
         processStatus, readJsonBody, broadcastWs, storage, OUTPUT_ROOT,
@@ -235,7 +225,7 @@ export function createGuiServerRuntime({
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },
       { key: 'queueBillingLearning', registrar: registerQueueBillingLearningRoutes },
       { key: 'review', registrar: registerReviewRoutes },
-      { key: 'testMode', registrar: registerTestModeRoutes },
+
       { key: 'sourceStrategy', registrar: registerSourceStrategyRoutes },
       { key: 'specSeeds', registrar: registerSpecSeedsRoutes },
     ];

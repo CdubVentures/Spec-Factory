@@ -119,7 +119,7 @@ window.TOOLS_AUDIT_INVENTORY = {
     "tools/gui-react/src/pages/runtime",
     "tools/gui-react/src/pages/storage",
     "tools/gui-react/src/pages/storage/__tests__",
-    "tools/gui-react/src/pages/test-mode",
+
     "tools/gui-react/src/registries",
     "tools/gui-react/src/registries/__tests__",
     "tools/gui-react/src/shared",
@@ -783,7 +783,7 @@ window.TOOLS_AUDIT_INVENTORY = {
     "tools/gui-react/src/pages/runtime/ProcessOutput.tsx",
     "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx",
     "tools/gui-react/src/pages/storage/StoragePage.tsx",
-    "tools/gui-react/src/pages/test-mode/TestModePage.tsx",
+
     "tools/gui-react/src/registries/__tests__/pageRegistryContract.test.js",
     "tools/gui-react/src/registries/__tests__/pageRegistryModuleStubs.js",
     "tools/gui-react/src/registries/fieldRuleTaxonomy.ts",
@@ -882,7 +882,7 @@ window.TOOLS_AUDIT_INVENTORY = {
     "tools/gui-react/src/utils/formatting.ts",
     "tools/gui-react/src/utils/keyReview.ts",
     "tools/gui-react/src/utils/studioConstants.ts",
-    "tools/gui-react/src/utils/testMode.ts",
+
     "tools/gui-react/src/vite-env.d.ts",
     "tools/gui-react/tailwind.config.ts",
     "tools/gui-react/tsconfig.json",
@@ -1550,7 +1550,7 @@ window.TOOLS_AUDIT_INVENTORY = {
     "tools/gui-react/src/pages/runtime/ProcessOutput.tsx": 28,
     "tools/gui-react/src/pages/runtime/QueueSnapshot.tsx": 148,
     "tools/gui-react/src/pages/storage/StoragePage.tsx": 9,
-    "tools/gui-react/src/pages/test-mode/TestModePage.tsx": 952,
+
     "tools/gui-react/src/registries/__tests__/pageRegistryContract.test.js": 277,
     "tools/gui-react/src/registries/__tests__/pageRegistryModuleStubs.js": 22,
     "tools/gui-react/src/registries/fieldRuleTaxonomy.ts": 96,
@@ -1649,7 +1649,7 @@ window.TOOLS_AUDIT_INVENTORY = {
     "tools/gui-react/src/utils/formatting.ts": 31,
     "tools/gui-react/src/utils/keyReview.ts": 23,
     "tools/gui-react/src/utils/studioConstants.ts": 197,
-    "tools/gui-react/src/utils/testMode.ts": 8,
+
     "tools/gui-react/src/vite-env.d.ts": 2,
     "tools/gui-react/tailwind.config.ts": 91,
     "tools/gui-react/tsconfig.json": 26,

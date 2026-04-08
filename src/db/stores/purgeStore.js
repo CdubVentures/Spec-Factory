@@ -1,4 +1,4 @@
-// WHY: Centralized bulk purge operations for test-mode category/product cleanup.
+// WHY: Centralized bulk purge operations for category/product cleanup.
 // Moves raw SQL out of reviewGridStateRuntime.js into the DB boundary.
 // All operations use cascading deletes in referential integrity order.
 
@@ -43,7 +43,7 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
   function purgeCategoryState(category) {
     const cat = String(category || '').trim();
-    if (!cat || !cat.startsWith('_test_')) {
+    if (!cat) {
       return { clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0, clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0, clearedCatalogState: 0, clearedArtifacts: 0 };
     }
 
@@ -82,7 +82,7 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       clearedCatalogState += db.prepare('DELETE FROM curation_suggestions WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM component_review_queue WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM llm_route_matrix WHERE category = ?').run(cat).changes;
-      try { clearedCatalogState += db.prepare('DELETE FROM field_test WHERE category = ?').run(cat).changes; } catch { /* table may not exist */ }
+
 
       // Optional tables
       try { clearedArtifacts += db.prepare('DELETE FROM bridge_events WHERE category = ?').run(cat).changes; } catch { /* ignore */ }

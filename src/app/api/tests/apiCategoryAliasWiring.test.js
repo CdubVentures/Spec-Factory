@@ -9,8 +9,6 @@ import {
 test('normalizeCategoryToken canonicalizes casing and separators', () => {
   const cases = [
     [' Mouse Pro ', 'mouse_pro'],
-    ['test-Mouse  ', 'test_mouse'],
-    ['_test_mouse', '_test_mouse'],
     ['Mouse!!!__', 'mouse'],
     [null, ''],
     ['', ''],
@@ -21,12 +19,10 @@ test('normalizeCategoryToken canonicalizes casing and separators', () => {
   }
 });
 
-test('category alias resolver redirects test_ aliases to canonical underscored category when needed', () => {
+test('category alias resolver leaves non-test categories untouched', () => {
   const helperRoot = path.join('C:', 'category_authority');
   const existing = new Set([
-    path.join(helperRoot, '_test_mouse'),
     path.join(helperRoot, 'test_headset'),
-    path.join(helperRoot, '_test_headset'),
     path.join(helperRoot, 'test_keyboard'),
   ]);
 
@@ -37,12 +33,9 @@ test('category alias resolver redirects test_ aliases to canonical underscored c
   });
 
   const cases = [
-    ['test_mouse', '_test_mouse'],
-    ['Test Mouse', '_test_mouse'],
     ['test_keyboard', 'test_keyboard'],
     ['test_headset', 'test_headset'],
     ['test_ghost', 'test_ghost'],
-    ['_test_runtime', '_test_runtime'],
     ['mouse', 'mouse'],
   ];
 

@@ -110,11 +110,6 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['categories'],
     ['categories-real'],
   ]),
-  'test-mode': Object.freeze([
-    ['contract-summary'],
-    ['categories'],
-    ['categories-real'],
-  ]),
   settings: Object.freeze([
     ['ui-settings'],
     ['llm-settings-routes', CATEGORY_TOKEN],
@@ -157,7 +152,6 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'storage',
   'studio',
   'suggestions',
-  'test-mode',
 ]);
 
 export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
@@ -182,9 +176,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'runtime-settings-updated': ['settings', 'indexing'],
   'user-settings-updated': ['settings', 'indexing'],
   'category-created': ['categories'],
-  'test-mode-created': ['test-mode', 'categories'],
-  'test-mode-products-generated': ['test-mode'],
-  'test-mode-deleted': ['test-mode', 'categories'],
   'source-strategy-created': ['source-strategy'],
   'source-strategy-updated': ['source-strategy'],
   'source-strategy-deleted': ['source-strategy'],

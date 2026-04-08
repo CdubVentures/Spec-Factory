@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
@@ -17,7 +17,6 @@ import {
 import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
 import { useCategorySync } from './hooks/useCategorySync.ts';
 import { useWsEventBridge } from './hooks/useWsEventBridge.ts';
-import { useFieldTestNavigation } from './hooks/useFieldTestNavigation.ts';
 
 function ThemeSwatchCard({
   themeId,
@@ -56,10 +55,9 @@ const THEME_RADIUS_LABELS: Record<SfThemeRadiusProfileId, string> = {
 export function AppShell() {
   // ── Composition hooks ─────────────────────────────────────────────
   const { settingsReady, allowDegradedRender, settingsSnapshot } = useSettingsHydration();
-  const { category, testMode, processStatus } = useCategorySync();
+  const { category, processStatus } = useCategorySync();
   const queryClient = useQueryClient();
   useWsEventBridge({ category, queryClient });
-  const { fieldTestTabActive, handleFieldTestToggle } = useFieldTestNavigation({ category, testMode });
 
   // ── Theme ─────────────────────────────────────────────────────────
   const themeColorProfile = useUiStore((s) => s.themeColorProfile);
@@ -228,17 +226,6 @@ export function AppShell() {
                     headerTaskDrawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
                   }`}
                 >
-                  <button
-                    onClick={handleFieldTestToggle}
-                    className={`inline-flex h-full min-w-[96px] items-center justify-center rounded-sm border px-3 text-xs font-semibold leading-none whitespace-nowrap transition-all duration-100 ${
-                      fieldTestTabActive
-                        ? 'sf-shell-field-test-button-active'
-                        : 'sf-shell-field-test-button-idle'
-                    }`}
-                    title="Open Field Test tab"
-                  >
-                    Field Test
-                  </button>
                 </div>
               </div>
             </div>

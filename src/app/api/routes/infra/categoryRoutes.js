@@ -1,9 +1,8 @@
 import { emitDataChange } from '../../../../core/events/dataChangeContract.js';
 
-function filterCategoryDirs(categoryDirs = [], includeTest = false) {
+function filterCategoryDirs(categoryDirs = []) {
   return categoryDirs.filter((category) => {
     if (category === '_global') return false;
-    if (category.startsWith('_test_')) return includeTest;
     return !category.startsWith('_');
   });
 }
@@ -26,8 +25,7 @@ export function createInfraCategoryRoutes({
     }
 
     if (method === 'GET') {
-      const includeTest = params.get('includeTest') === 'true';
-      const categories = filterCategoryDirs(await listDirs(HELPER_ROOT), includeTest);
+      const categories = filterCategoryDirs(await listDirs(HELPER_ROOT));
       return jsonRes(res, 200, categories.length > 0 ? categories : ['mouse']);
     }
 

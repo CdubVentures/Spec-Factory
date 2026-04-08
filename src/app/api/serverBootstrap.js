@@ -45,7 +45,6 @@ export const BOOTSTRAP_RETURN_GROUPS = {
     'ensureGridKeyReviewState', 'resolveKeyReviewForLaneMutation',
     'markPrimaryLaneReviewedInItemState', 'syncItemFieldStateFromPrimaryLaneAccept',
     'syncPrimaryLaneAcceptFromItemSelection',
-    'purgeTestModeCategoryState', 'resetTestModeSharedReviewState', 'resetTestModeProductReviewState',
     'normalizeLower', 'isMeaningfulValue', 'candidateLooksReference',
     'annotateCandidatePrimaryReviews', 'getPendingItemPrimaryCandidateIds',
     'getPendingComponentSharedCandidateIdsAsync', 'getPendingEnumSharedCandidateIds',

@@ -380,7 +380,6 @@ export class SpecDb {
 
   deleteKeyReviewStateRowsByIds(stateIds) { return this._keyReviewStore.deleteKeyReviewStateRowsByIds(stateIds); }
 
-  // ── Purge operations (test-mode cleanup) ──
   deleteKeyReviewStatesByTargetKinds(category, targetKinds) { return this._purgeStore.deleteKeyReviewStatesByTargetKinds(category, targetKinds); }
   purgeCategoryState(category) { return this._purgeStore.purgeCategoryState(category); }
   purgeProductReviewState(category, productId) { return this._purgeStore.purgeProductReviewState(category, productId); }
@@ -650,12 +649,6 @@ export class SpecDb {
   updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v); }
 
   getProductsByFieldValue(fk, v) { return this._itemStateStore.getProductsByFieldValue(fk, v); }
-
-  // --- Field Test ---
-  upsertFieldTest(row) { this._queueProductStore.upsertFieldTest(row); }
-  getFieldTestByCategory() { return this._queueProductStore.getFieldTestByCategory(); }
-  getFieldTestByProduct(pid) { return this._queueProductStore.getFieldTestByProduct(pid); }
-  clearFieldTest() { return this._queueProductStore.clearFieldTest(); }
 
   // --- LLM Route Matrix ---
 

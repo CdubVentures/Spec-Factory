@@ -408,8 +408,7 @@ export function BrandManager() {
   const allCategories = useMemo(() => {
     const set = new Set<string>(categories);
     brands.forEach((b) => b.categories.forEach((c) => set.add(c)));
-    // WHY: Exclude test harness categories — they start with _test_ or are the "tests" directory
-    return [...set].filter((cat) => cat && cat !== "all" && cat !== "tests" && !cat.startsWith("_test_")).sort();
+    return [...set].filter((cat) => cat && cat !== "all" && cat !== "tests").sort();
   }, [categories, brands]);
   const displayBrands = useMemo(() => {
     if (!filterCategory || filterCategory === "all") return brands;

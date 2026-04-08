@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useUiStore } from '../../stores/uiStore.ts';
-import { isTestCategory } from '../../utils/testMode.ts';
 import { GLOBAL_TABS, CATALOG_TABS, OPS_TABS, SETTINGS_TABS, type TabDef } from '../../registries/pageRegistry.ts';
 import { useSerperCreditQuery, creditChipClass, formatCredit } from '../../hooks/useSerperCreditQuery.ts';
 import { hasLlmKeyGateErrors, deriveSerperKeyGateError } from '../../hooks/llmKeyGateHelpers.js';
@@ -12,35 +11,10 @@ import type { IndexingLlmConfigResponse } from '../../features/indexing/types.ts
 const activeCls = 'border-accent text-accent';
 const inactiveCls = 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300/70 dark:hover:text-white';
 const baseCls = 'inline-flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors';
-const disabledCls = `${baseCls} border-transparent opacity-40 cursor-not-allowed text-slate-400/70`;
-
-function TabGroup({ tabs, isTestMode }: { tabs: readonly TabDef[]; isTestMode: boolean }) {
+function TabGroup({ tabs }: { tabs: readonly TabDef[] }) {
   return (
     <>
       {tabs.map((tab) => {
-        const disabled = isTestMode && tab.disabledOnTest;
-        if (disabled) {
-          const title = 'Not available in Field Test';
-          return (
-            <span
-                key={tab.path}
-                className="inline-flex items-center"
-              >
-              {tab.dividerBefore && (
-                <span className="self-center mr-1 text-slate-300 dark:text-white/35 select-none">|</span>
-              )}
-              <span
-                className={disabledCls}
-                title={title}
-              >
-                {tab.label}
-              </span>
-              {tab.dividerAfter && (
-                <span className="self-center ml-1 text-slate-300 dark:text-white/35 select-none">|</span>
-              )}
-            </span>
-          );
-        }
         return (
           <span key={tab.path} className="inline-flex items-center">
             {tab.dividerBefore && (
@@ -89,7 +63,6 @@ const gearIcon = (
 
 export function TabNav() {
   const category = useUiStore((s) => s.category);
-  const testMode = isTestCategory(category);
   const { data: serper } = useSerperCreditQuery();
   const { data: llmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
@@ -109,7 +82,7 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Cross-category surfaces">
           {globalIcon}
         </span>
-        <TabGroup tabs={GLOBAL_TABS} isTestMode={testMode} />
+        <TabGroup tabs={GLOBAL_TABS} />
       </div>
 
       {/* Category group — center */}
@@ -117,8 +90,8 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Scoped to selected category">
           {categoryIcon}
         </span>
-        <TabGroup tabs={CATALOG_TABS} isTestMode={testMode} />
-        <TabGroup tabs={OPS_TABS} isTestMode={testMode} />
+        <TabGroup tabs={CATALOG_TABS} />
+        <TabGroup tabs={OPS_TABS} />
       </div>
 
       {/* Settings group — pushed to far right */}
@@ -126,7 +99,7 @@ export function TabNav() {
         <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`}>
           {gearIcon}
         </span>
-        <TabGroup tabs={SETTINGS_TABS} isTestMode={testMode} />
+        <TabGroup tabs={SETTINGS_TABS} />
         {serper?.configured && (
           <span className="ml-1.5 pl-1.5 border-l sf-border-default inline-flex items-center" title="Serper API credits remaining">
             <Chip

@@ -82,33 +82,6 @@ test('loadFieldRules returns assembled artifacts for downstream systems', async 
   }
 });
 
-test('loadFieldRules resolves test_ aliases to canonical _test_ contracts', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-test-alias-'));
-  const helperRoot = path.join(root, 'category_authority');
-  try {
-    const generatedRoot = path.join(helperRoot, '_test_mouse', '_generated');
-    await writeJson(path.join(generatedRoot, 'field_rules.json'), {
-      category: '_test_mouse',
-      fields: {
-        sensor: {
-          key: 'sensor',
-          contract: { type: 'string' }
-        }
-      }
-    });
-
-    const loaded = await loadFieldRules('test_mouse', {
-      config: {
-        categoryAuthorityRoot: helperRoot
-      }
-    });
-    assert.equal(loaded.category, '_test_mouse');
-    assert.equal(Boolean(loaded.rules?.fields?.sensor), true);
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
-});
-
 test('getFieldRule/getKnownValues/getParseTemplate/getCrossValidationRules expose targeted selectors', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-loader-selectors-'));
   const helperRoot = path.join(root, 'category_authority');

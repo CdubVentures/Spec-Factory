@@ -206,37 +206,11 @@ export function createReviewGridStateRuntime({
     return specDb.getKeyReviewStateById(state.id) || null;
   }
 
-  function resetTestModeSharedReviewState(specDb, category) {
-    if (!specDb || !category) return 0;
-    return specDb.deleteKeyReviewStatesByTargetKinds(category, ['component_key', 'enum_key']);
-  }
-
-  function purgeTestModeCategoryState(specDb, category) {
-    const cat = String(category || '').trim();
-    if (!specDb || !cat || !cat.startsWith('_test_')) {
-      return { clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0, clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0, clearedCatalogState: 0, clearedArtifacts: 0 };
-    }
-    if (typeof specDb.purgeCategoryState !== 'function') {
-      return { clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0, clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0, clearedCatalogState: 0, clearedArtifacts: 0 };
-    }
-    return specDb.purgeCategoryState(cat);
-  }
-
-  function resetTestModeProductReviewState(specDb, category, productId) {
-    if (!specDb || !category || !String(productId || '').trim()) {
-      return { clearedCandidates: 0, clearedKeyReview: 0, clearedFieldState: 0, clearedLinks: 0, clearedSources: 0 };
-    }
-    return specDb.purgeProductReviewState(category, productId);
-  }
-
   return {
     ensureGridKeyReviewState,
     resolveKeyReviewForLaneMutation,
     markPrimaryLaneReviewedInItemState,
     syncItemFieldStateFromPrimaryLaneAccept,
     syncPrimaryLaneAcceptFromItemSelection,
-    purgeTestModeCategoryState,
-    resetTestModeSharedReviewState,
-    resetTestModeProductReviewState,
   };
 }

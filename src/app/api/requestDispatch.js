@@ -12,16 +12,6 @@ const CATEGORY_SEGMENT_SCOPES = new Set([
   'review-components',
 ]);
 
-const TEST_MODE_ACTION_SEGMENTS = new Set([
-  'create',
-  'contract-summary',
-  'status',
-  'generate-products',
-  'run',
-  'validate',
-  'field-test-repairs',
-]);
-
 function defaultIsApiRequest(url) {
   const token = String(url || '');
   return token.startsWith('/api/v1/') || token === '/health';
@@ -34,7 +24,6 @@ function defaultApiErrorLogger(err) {
 export function createApiPathParser({
   resolveCategoryAlias,
   categorySegmentScopes = CATEGORY_SEGMENT_SCOPES,
-  testModeActionSegments = TEST_MODE_ACTION_SEGMENTS,
 } = {}) {
   if (typeof resolveCategoryAlias !== 'function') {
     throw new TypeError('resolveCategoryAlias must be a function');
@@ -52,9 +41,6 @@ export function createApiPathParser({
       });
 
     if (parts[1] && categorySegmentScopes.has(parts[0])) {
-      parts[1] = resolveCategoryAlias(parts[1]);
-    }
-    if (parts[0] === 'test-mode' && parts[1] && !testModeActionSegments.has(parts[1])) {
       parts[1] = resolveCategoryAlias(parts[1]);
     }
     if (

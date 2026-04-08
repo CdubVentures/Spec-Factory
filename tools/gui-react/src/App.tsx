@@ -22,8 +22,6 @@ const LAZY_ROUTES = ROUTE_ENTRIES.map((entry) => ({
   Component: lazyNamedPage(entry.loader, entry.exportName),
 }));
 
-const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage.tsx'), 'TestModePage');
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -63,7 +61,7 @@ export default function App() {
                 ? <Route key={entry.path} index element={wrap(entry.Component)} />
                 : <Route key={entry.path} path={entry.path.slice(1)} element={wrap(entry.Component)} />,
             )}
-            <Route path="test-mode" element={wrap(TestModePage)} />
+
           </Route>
         </Routes>
       </HashRouter>

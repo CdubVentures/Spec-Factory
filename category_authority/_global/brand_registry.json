@@ -322,18 +322,6 @@
       "added_by": "seed",
       "renames": []
     },
-    "novaforge-labs": {
-      "canonical_name": "NovaForge Labs",
-      "identifier": "0321b4ac",
-      "aliases": [],
-      "categories": [
-        "_test_mouse"
-      ],
-      "website": "",
-      "added_at": "2026-04-07 03:31:31",
-      "added_by": "gui",
-      "renames": []
-    },
     "nuphy": {
       "canonical_name": "NuPhy",
       "identifier": "a1426045",
@@ -416,18 +404,6 @@
       ],
       "website": "",
       "added_at": "2026-04-07 04:18:32",
-      "added_by": "gui",
-      "renames": []
-    },
-    "testco": {
-      "canonical_name": "TestCo",
-      "identifier": "92704c39",
-      "aliases": [],
-      "categories": [
-        "_test_mouse"
-      ],
-      "website": "",
-      "added_at": "2026-04-07 03:31:31",
       "added_by": "gui",
       "renames": []
     },

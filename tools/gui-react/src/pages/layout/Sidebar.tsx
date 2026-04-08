@@ -5,8 +5,6 @@ import { useRuntimeStore } from '../../stores/runtimeStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { useCatalogQuery } from '../../hooks/useCatalogQuery.ts';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
-import { isTestCategory, formatTestCategory } from '../../utils/testMode.ts';
-
 const VARIANT_PLACEHOLDERS = new Set(['unk', 'unknown', 'na', 'n/a', 'none', 'null', '']);
 function cleanVariant(v: string): string {
   const s = (v ?? '').trim();
@@ -24,9 +22,6 @@ export function Sidebar() {
   const setSelectedProduct = useProductStore((s) => s.setSelectedProduct);
   const processStatus = useRuntimeStore((s) => s.processStatus);
 
-  const testMode = isTestCategory(category);
-  const realCategories = categories.filter((c) => !isTestCategory(c));
-  const testCategories = categories.filter((c) => isTestCategory(c));
 
   const { data: catalog = [], isLoading: catalogLoading } = useCatalogQuery({
     category,
@@ -158,18 +153,11 @@ export function Sidebar() {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className={`${selectCls}${testMode ? ' border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-600' : ''}`}
+          className={selectCls}
         >
-          {realCategories.map((c) => (
+          {categories.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
-          {testCategories.length > 0 && (
-            <optgroup label="Test Categories">
-              {testCategories.map((c) => (
-                <option key={c} value={c}>{formatTestCategory(c)}</option>
-              ))}
-            </optgroup>
-          )}
         </select>
       </div>
 

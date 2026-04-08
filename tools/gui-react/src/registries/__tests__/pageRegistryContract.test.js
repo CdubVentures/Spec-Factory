@@ -55,7 +55,7 @@ describe('PAGE_REGISTRY structural invariants', () => {
 
   it('optional boolean fields are boolean or undefined', async () => {
     const { PAGE_REGISTRY } = await getModule();
-    const optionalBooleans = ['disabledOnTest', 'dividerAfter', 'dividerBefore'];
+    const optionalBooleans = ['dividerAfter', 'dividerBefore'];
     for (const entry of PAGE_REGISTRY) {
       for (const key of optionalBooleans) {
         const value = entry[key];
@@ -93,31 +93,6 @@ describe('CATALOG_TABS derivation', () => {
     assert.deepEqual(actual, expected);
   });
 
-  it('preserves disabled flags', async () => {
-    const { PAGE_REGISTRY, CATALOG_TABS } = await getModule();
-    const expected = Object.fromEntries(
-      PAGE_REGISTRY
-        .filter((entry) => entry.tabGroup === 'catalog')
-        .map((entry) => [
-          entry.label,
-          {
-
-            disabledOnTest: entry.disabledOnTest,
-          },
-        ]),
-    );
-    const actual = Object.fromEntries(
-      CATALOG_TABS.map((tab) => [
-        tab.label,
-        {
-
-          disabledOnTest: tab.disabledOnTest,
-        },
-      ]),
-    );
-
-    assert.deepEqual(actual, expected);
-  });
 });
 
 describe('OPS_TABS derivation', () => {
@@ -147,31 +122,6 @@ describe('OPS_TABS derivation', () => {
     assert.deepEqual(actual, expected);
   });
 
-  it('preserves disabled flags', async () => {
-    const { PAGE_REGISTRY, OPS_TABS } = await getModule();
-    const expected = Object.fromEntries(
-      PAGE_REGISTRY
-        .filter((entry) => entry.tabGroup === 'ops')
-        .map((entry) => [
-          entry.label,
-          {
-
-            disabledOnTest: entry.disabledOnTest,
-          },
-        ]),
-    );
-    const actual = Object.fromEntries(
-      OPS_TABS.map((tab) => [
-        tab.label,
-        {
-
-          disabledOnTest: tab.disabledOnTest,
-        },
-      ]),
-    );
-
-    assert.deepEqual(actual, expected);
-  });
 });
 
 describe('GLOBAL_TABS derivation', () => {
@@ -201,41 +151,9 @@ describe('GLOBAL_TABS derivation', () => {
     assert.deepEqual(actual, expected);
   });
 
-  it('preserves disabled flags', async () => {
-    const { PAGE_REGISTRY, GLOBAL_TABS } = await getModule();
-    const expected = Object.fromEntries(
-      PAGE_REGISTRY
-        .filter((entry) => entry.tabGroup === 'global')
-        .map((entry) => [
-          entry.label,
-          {
-
-            disabledOnTest: entry.disabledOnTest,
-          },
-        ]),
-    );
-    const actual = Object.fromEntries(
-      GLOBAL_TABS.map((tab) => [
-        tab.label,
-        {
-
-          disabledOnTest: tab.disabledOnTest,
-        },
-      ]),
-    );
-
-    assert.deepEqual(actual, expected);
-  });
 });
 
 describe('ROUTE_ENTRIES derivation', () => {
-  it('does not contain test-mode', async () => {
-    const { ROUTE_ENTRIES } = await getModule();
-    const paths = ROUTE_ENTRIES.map((entry) => entry.path);
-    assert.ok(!paths.includes('/test-mode'), 'test-mode must not be in ROUTE_ENTRIES');
-    assert.ok(!paths.includes('test-mode'), 'test-mode must not be in ROUTE_ENTRIES');
-  });
-
   it('derives route entries directly from the registry page paths and export names', async () => {
     const { PAGE_REGISTRY, ROUTE_ENTRIES } = await getModule();
     assert.deepEqual(

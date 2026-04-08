@@ -2899,36 +2899,6 @@ html[data-sf-theme-mode='dark'] .sf-shell-settings-panel {
   align-items: stretch;
 }
 
-.sf-shell-field-test-button-active {
-  border-color: rgb(var(--sf-color-accent-strong-rgb));
-  background: rgb(var(--sf-color-accent-rgb));
-  color: rgb(var(--sf-color-text-inverse-rgb));
-  box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.28);
-  transform: translateY(1px);
-}
-
-.sf-shell-field-test-button-idle {
-  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.45);
-  color: rgb(var(--sf-color-text-primary-rgb));
-  background: transparent;
-}
-
-.sf-shell-field-test-button-idle:hover {
-  background: rgb(var(--sf-color-text-primary-rgb) / 0.08);
-}
-
-html[data-sf-theme-mode='dark'] .sf-shell-field-test-button-idle {
-  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.72);
-}
-
-html[data-sf-theme-mode='dark'] .sf-shell-field-test-button-idle:hover {
-  background: rgb(var(--sf-color-text-inverse-rgb) / 0.1);
-}
-
-.sf-shell-field-test-button-idle:active {
-  transform: translateY(1px) scale(0.99);
-  box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.22);
-}
 
 .sf-review-actions-drawer {
   border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.62);

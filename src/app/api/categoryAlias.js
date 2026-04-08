@@ -34,12 +34,6 @@ export function createCategoryAliasResolver({
   return function resolveCategoryAlias(category) {
     const normalized = normalizeCategoryToken(category);
     if (!normalized) return normalized;
-    if (normalized.startsWith('_test_')) return normalized;
-    if (!normalized.startsWith('test_')) return normalized;
-
-    if (categoryExists(normalized)) return normalized;
-    const canonicalTestCategory = `_${normalized}`;
-    if (categoryExists(canonicalTestCategory)) return canonicalTestCategory;
     return normalized;
   };
 }

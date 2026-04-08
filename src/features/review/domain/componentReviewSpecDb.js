@@ -30,7 +30,6 @@ import {
   parseReviewItemAttributes,
   safeReadJson,
   listJsonFiles,
-  isTestModeCategory,
   discoveredFromSource,
   enforceNonDiscoveredRows,
   resolveDeclaredComponentPropertyColumns,
@@ -679,9 +678,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
   const normalizedItems = enforceNonDiscoveredRows(items, category);
   const visibleItems = normalizedItems.filter((item) => {
     const linkedCount = Array.isArray(item.linked_products) ? item.linked_products.length : 0;
-    if (isTestModeCategory(category) && item.discovered && linkedCount === 0) {
-      return false;
-    }
     const hasNamePending = Boolean(item.name_tracked?.needs_review) && hasActionableCandidate(item.name_tracked?.candidates);
     const hasMakerPending = Boolean(item.maker_tracked?.needs_review) && hasActionableCandidate(item.maker_tracked?.candidates);
     const hasPropertyPending = propertyColumns.some((key) => {

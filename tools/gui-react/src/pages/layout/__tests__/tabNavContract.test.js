@@ -87,12 +87,6 @@ async function loadTabNavModule() {
           return selector({ category: harness.category || 'mouse' });
         }
       `,
-      '../../utils/testMode': `
-        export function isTestCategory(category) {
-          const harness = globalThis.__tabNavHarness || {};
-          return harness.isTestMode === true || String(category || '').startsWith('_test_');
-        }
-      `,
       '../../hooks/useSerperCreditQuery.ts': `
         export function useSerperCreditQuery() {
           return { data: undefined, isLoading: false, isFetching: false };
@@ -133,28 +127,6 @@ test('TabNav exposes the active route through link semantics instead of relying 
   assert.ok(productLink, 'expected Selected Product nav link');
   assert.equal(productLink?.props?.href, '/product');
   assert.equal(productLink?.props?.['aria-current'], undefined);
-});
-
-test('TabNav disables test-mode tabs without removing still-supported routes', async () => {
-  globalThis.__tabNavHarness = { category: '_test_mouse', currentPath: '/', isTestMode: true };
-  const { TabNav } = await loadTabNavModule();
-  const tree = renderElement(TabNav());
-
-  const anchors = collectNodes(tree, (node) => node.type === 'a');
-  const disabledSpans = collectNodes(
-    tree,
-    (node) => node.type === 'span' && typeof node.props?.title === 'string' && node.props.title.length > 0,
-  );
-
-  const catalogDisabled = disabledSpans.find((node) => node.props?.children === 'Catalog');
-  const runtimeOpsDisabled = disabledSpans.find((node) => node.props?.children === 'Runtime Ops');
-  const storageLink = anchors.find((node) => node.props?.children === 'Storage');
-
-  assert.ok(catalogDisabled, 'expected Catalog to render as disabled text in test mode');
-  assert.equal(catalogDisabled?.props?.title, 'Not available in Field Test');
-  assert.ok(runtimeOpsDisabled, 'expected Runtime Ops to render as disabled text in test mode');
-  assert.equal(runtimeOpsDisabled?.props?.title, 'Not available in Field Test');
-  assert.ok(storageLink, 'expected Storage to remain reachable in test mode');
 });
 
 test('TabNav renders Categories, Brands, and Billing as navigable links in the global group', async () => {

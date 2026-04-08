@@ -16,12 +16,6 @@ test('api path parser aliases scoped category segments', () => {
   assert.deepEqual(catalogPath.parts, ['catalog', 'mouse', 'list']);
   assert.equal(catalogPath.params.get('limit'), '25');
 
-  const testModeCategoryPath = parsePath('/api/v1/test-mode/mice/run');
-  assert.deepEqual(testModeCategoryPath.parts, ['test-mode', 'mouse', 'run']);
-
-  const testModeActionPath = parsePath('/api/v1/test-mode/create');
-  assert.deepEqual(testModeActionPath.parts, ['test-mode', 'create']);
-
   const indexingPath = parsePath('/api/v1/indexing/domain-checklist/mice');
   assert.deepEqual(indexingPath.parts, ['indexing', 'domain-checklist', 'mouse']);
 });

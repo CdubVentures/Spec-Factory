@@ -21,29 +21,13 @@ test('normalizeDiscoveryRows trims discovery sources, infers pipeline-style disc
   assert.equal(result[2].discovered, false);
 });
 
-test('enforceNonDiscoveredRows caps backlog in test mode and preserves non-test categories', () => {
-  const rows = Array.from({ length: 6 }, (_, index) => ({
-    discovery_source: 'reference',
-    discovered: false,
-    name: `item-${index}`,
-  }));
-
-  const testModeResult = enforceNonDiscoveredRows(rows, '_test_mouse');
-  assert.equal(testModeResult.filter((row) => !row.discovered).length, 3);
-
-  const nonTestResult = enforceNonDiscoveredRows([{ discovery_source: 'reference', discovered: false }], 'mouse');
-  assert.equal(nonTestResult[0].discovered, false);
-});
-
-test('enforceNonDiscoveredRows keeps one undiscovered anchor in test mode when all rows would otherwise be discovered', () => {
+test('enforceNonDiscoveredRows normalizes and preserves discovery flags', () => {
   const rows = [
-    { discovery_source: 'pipeline', linked_products: ['mouse-a'] },
-    { discovery_source: 'pipeline', linked_products: [] },
-    { discovery_source: 'discovered', linked_products: ['mouse-b'] },
+    { discovery_source: 'reference', discovered: false },
+    { discovery_source: 'pipeline', discovered: true },
   ];
 
-  const result = enforceNonDiscoveredRows(rows, '_test_mouse');
-
-  assert.equal(result.filter((row) => !row.discovered).length, 1);
-  assert.equal(result[1].discovered, false);
+  const result = enforceNonDiscoveredRows(rows);
+  assert.equal(result[0].discovered, false);
+  assert.equal(result[1].discovered, true);
 });

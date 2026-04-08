@@ -118,17 +118,6 @@ test('category created event invalidates category list queries', () => {
   assert.equal(hasQueryKey(keys, ['categories-real']), true);
 });
 
-test('test mode created event invalidates contract summary query family', () => {
-  const keys = resolveDataChangeInvalidationQueryKeys({
-    message: {
-      type: 'data-change',
-      event: 'test-mode-created',
-    },
-  });
-
-  assert.equal(hasQueryKey(keys, ['contract-summary']), true);
-});
-
 test('source strategy event invalidates category-scoped source strategy query key', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

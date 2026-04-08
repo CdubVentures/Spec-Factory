@@ -116,10 +116,6 @@ export function componentLaneSlug(componentName, componentMaker = '') {
 
 // ── Discovery ───────────────────────────────────────────────────────
 
-export function isTestModeCategory(category) {
-  return String(category || '').trim().toLowerCase().startsWith('_test_');
-}
-
 export function discoveredFromSource(source) {
   const token = normalizeSourceToken(source);
   return token === 'pipeline' || token === 'discovered' || token === 'ai_discovered';
@@ -139,29 +135,8 @@ export function normalizeDiscoveryRows(rows = []) {
   });
 }
 
-export function enforceNonDiscoveredRows(rows = [], category = '') {
-  const normalizedRows = normalizeDiscoveryRows(rows);
-  if (!isTestModeCategory(category) || normalizedRows.length === 0) {
-    return normalizedRows;
-  }
-  const maxNonDiscovered = 3;
-  let nonDiscoveredSeen = 0;
-  const result = normalizedRows.map((row) => {
-    if (!row.discovered) {
-      nonDiscoveredSeen += 1;
-      if (nonDiscoveredSeen > maxNonDiscovered) {
-        return { ...row, discovered: true };
-      }
-    }
-    return row;
-  });
-  const hasNonDiscovered = result.some((row) => !row.discovered);
-  if (!hasNonDiscovered) {
-    const firstUnlinked = result.findIndex((row) => (row?.linked_products?.length || 0) === 0);
-    const anchorIdx = firstUnlinked >= 0 ? firstUnlinked : 0;
-    return result.map((row, index) => (index === anchorIdx ? { ...row, discovered: false } : row));
-  }
-  return result;
+export function enforceNonDiscoveredRows(rows = []) {
+  return normalizeDiscoveryRows(rows);
 }
 
 // ── File I/O ────────────────────────────────────────────────────────
