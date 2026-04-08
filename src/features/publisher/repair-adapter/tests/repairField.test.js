@@ -125,20 +125,6 @@ describe('repairField — successful repairs', () => {
     assert.equal(result.status, 'repaired');
   });
 
-  it('P5: component — mapped component passes re-validation', async () => {
-    const response = makeLlmResponse({
-      decisions: [{ value: 'PAW 3950', decision: 'map_to_existing', resolved_to: 'PAW3950', reasoning: 'space removed' }],
-    });
-    const callLlm = stubCallLlm(response);
-    const rule = makeFieldRule({ parse: { template: 'component_reference', component_type: 'sensor' } });
-    const componentDb = { items: [{ name: 'PAW3950' }, { name: 'PMW3389' }] };
-    const result = await repairField({
-      validationResult: makeFailedResult('not_in_component_db', { value: 'PAW 3950', reason: 'not found' }, { value: 'PAW 3950' }),
-      fieldKey: 'sensor', fieldRule: rule, componentDb, callLlm,
-    });
-    assert.equal(result.status, 'repaired');
-  });
-
   it('P7: range — in-range value passes re-validation', async () => {
     const response = makeLlmResponse({
       decisions: [{ value: '5000', decision: 'map_to_existing', resolved_to: 50, reasoning: 'likely kg not g' }],

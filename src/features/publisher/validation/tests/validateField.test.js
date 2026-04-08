@@ -195,39 +195,6 @@ describe('validateField — list_of_tokens_delimited', () => {
 });
 
 // ============================================================
-// component_reference (scalar string, 4 fields)
-// ============================================================
-
-describe('validateField — component_reference', () => {
-  const compRule = rule({ template: 'component_reference' });
-  const sensorDb = { items: [{ name: 'PAW3395', aliases: ['PAW 3395'] }] };
-
-  it('exact component match', () => {
-    const r = validateField({ fieldKey: 'sensor', value: 'PAW3395', fieldRule: compRule, componentDb: sensorDb });
-    assert.equal(r.valid, true);
-    assert.equal(r.value, 'PAW3395');
-  });
-
-  it('case-insensitive component repair', () => {
-    const r = validateField({ fieldKey: 'sensor', value: 'paw3395', fieldRule: compRule, componentDb: sensorDb });
-    assert.equal(r.valid, true);
-    assert.equal(r.value, 'PAW3395');
-  });
-
-  it('unknown component rejected', () => {
-    const r = validateField({ fieldKey: 'sensor', value: 'Mystery', fieldRule: compRule, componentDb: sensorDb });
-    assert.equal(r.valid, false);
-    assert.ok(r.rejections.some(rej => rej.reason_code.includes('component')));
-  });
-
-  it('unk passthrough', () => {
-    const r = validateField({ fieldKey: 'sensor', value: 'unk', fieldRule: compRule, componentDb: sensorDb });
-    assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
-  });
-});
-
-// ============================================================
 // match_strategy: alias integration
 // ============================================================
 

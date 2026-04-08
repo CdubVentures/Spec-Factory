@@ -11,7 +11,7 @@ import type {
   ContractSummary,
   ContractResponse,
   RunResultItem,
-  ValidationResult,
+  FieldContractAuditResult,
   ImportProgress,
   RunProgress,
   RepairProgress,
@@ -23,6 +23,7 @@ import { CoverageMatrices } from './CoverageMatrices.tsx';
 import { RepairLifecycleProof } from './RepairLifecycleProof.tsx';
 import { DimensionMatrix } from './DimensionMatrix.tsx';
 import { ScenarioCard } from './ScenarioCard.tsx';
+import { FieldContractAudit } from './FieldContractAudit.tsx';
 
 // ── Session storage key ──────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ export function TestModePage() {
   const [testCategory, setTestCategory] = useState<string>((saved.testCategory as string) || '');
   const [generatedProducts, setGeneratedProducts] = useState<TestCase[]>((saved.generatedProducts as TestCase[]) || []);
   const [runResults, setRunResults] = useState<RunResultItem[]>((saved.runResults as RunResultItem[]) || []);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>((saved.validationResult as ValidationResult) || null);
+  const [auditResult, setAuditResult] = useState<FieldContractAuditResult | null>(null);
   const [importSteps, setImportSteps] = useState<ImportProgress[]>([]);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
   const [aiReview, setAiReview] = useState(Boolean(saved.aiReview));
@@ -87,11 +88,10 @@ export function TestModePage() {
         testCategory,
         generatedProducts,
         runResults,
-        validationResult,
         aiReview,
       }));
     } catch { /* sessionStorage full or disabled */ }
-  }, [testCategory, generatedProducts, runResults, validationResult, aiReview]);
+  }, [testCategory, generatedProducts, runResults, aiReview]);
 
   // ── Load status from backend on mount ──────────────────────────────
 
@@ -110,7 +110,7 @@ export function TestModePage() {
         setTestCategory('');
         setGeneratedProducts([]);
         setRunResults([]);
-        setValidationResult(null);
+        setAuditResult(null);
       }
       setStatusLoaded(true);
     }).catch(() => setStatusLoaded(true));
@@ -188,7 +188,7 @@ export function TestModePage() {
       setTestCategory(data.category);
       setGeneratedProducts([]);
       setRunResults([]);
-      setValidationResult(null);
+      setAuditResult(null);
       queryClient.invalidateQueries({ queryKey: ['contract-summary'] });
       setGlobalCategory(data.category);
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -201,7 +201,7 @@ export function TestModePage() {
     onSuccess: (data) => {
       setGeneratedProducts(data.testCases || []);
       setRunResults([]);
-      setValidationResult(null);
+      setAuditResult(null);
     },
   });
 
@@ -242,8 +242,8 @@ export function TestModePage() {
   });
 
   const validateMut = useMutation({
-    mutationFn: () => api.post<ValidationResult>('/test-mode/validate', { category: testCategory }),
-    onSuccess: (data) => setValidationResult(data),
+    mutationFn: () => api.post<FieldContractAuditResult>('/test-mode/validate', { category: testCategory }),
+    onSuccess: (data) => setAuditResult(data),
   });
 
   const deleteMut = useMutation({
@@ -253,7 +253,7 @@ export function TestModePage() {
       setTestCategory('');
       setGeneratedProducts([]);
       setRunResults([]);
-      setValidationResult(null);
+      setAuditResult(null);
       setImportSteps([]);
       importStepsRef.current = [];
       useCollapseStore.getState().setBatch({
@@ -275,7 +275,7 @@ export function TestModePage() {
   const step1Done = Boolean(testCategory);
   const step2Done = generatedProducts.length > 0;
   const step3Done = runResults.length > 0;
-  const step4Done = Boolean(validationResult);
+  const step4Done = Boolean(auditResult);
 
   const groupedProducts = generatedProducts.reduce<Record<string, TestCase[]>>((acc, tc) => {
     const cat = tc.category || 'Other';
@@ -288,19 +288,15 @@ export function TestModePage() {
     return runResults.find((r) => r.testCase?.id === testCaseId);
   }
 
-  function getScenarioChecks(testCaseId: number): import('./types.ts').ValidationCheck[] {
-    return validationResult?.results.filter(r => r.testCaseId === testCaseId) || [];
-  }
-
-  // Section pass counts
+  // Section stats from run results
   function sectionStats(tests: TestCase[]): { pass: number; total: number } {
     let pass = 0;
     let total = 0;
     for (const tc of tests) {
-      const checks = getScenarioChecks(tc.id);
-      if (checks.length === 0) continue;
-      total += checks.length;
-      pass += checks.filter(c => c.pass).length;
+      const result = getRunResult(tc.id);
+      if (!result) continue;
+      total++;
+      if (result.status === 'complete') pass++;
     }
     return { pass, total };
   }
@@ -339,7 +335,7 @@ export function TestModePage() {
         validatePending={validateMut.isPending}
         runProgress={runProgress}
         importSteps={importSteps}
-        validationSummary={validationResult?.summary ?? null}
+        validationSummary={auditResult ? { passed: auditResult.summary.passCount, failed: auditResult.summary.failCount, total: auditResult.summary.totalChecks } : null}
       />
 
       {/* Error */}
@@ -350,18 +346,20 @@ export function TestModePage() {
       {/* Summary Strip */}
       {step3Done && (
         <SummaryStrip
-          validationResult={validationResult}
+          auditSummary={auditResult?.summary ?? null}
           contractSummary={contractData?.summary ?? null}
           runResults={runResults}
           scenarioCount={generatedProducts.length}
         />
       )}
 
+      {/* Field Contract Audit */}
+      {auditResult && <FieldContractAudit audit={auditResult} />}
+
       {/* Coverage Matrices */}
       {contractData?.matrices && (
         <CoverageMatrices
           matrices={contractData.matrices}
-          validationResult={validationResult}
           collapsed={matrixCollapsed}
           onToggle={toggleMatrix}
           summaryLine={contractData.summary
@@ -375,10 +373,7 @@ export function TestModePage() {
 
       {/* Validation Dimension Matrix */}
       {contractData?.scenarioDefs && (
-        <DimensionMatrix
-          scenarioDefs={contractData.scenarioDefs}
-          validationResult={validationResult}
-        />
+        <DimensionMatrix scenarioDefs={contractData.scenarioDefs} />
       )}
 
       {/* Scenario Sections */}
@@ -403,7 +398,6 @@ export function TestModePage() {
                   key={tc.id}
                   testCase={tc}
                   runResult={getRunResult(tc.id)}
-                  checks={getScenarioChecks(tc.id)}
                   testCategory={testCategory}
                   isRunning={isRunning}
                   activeProductId={activeProductId}

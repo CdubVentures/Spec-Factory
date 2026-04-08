@@ -8,8 +8,8 @@
  * O(1) scaling: adding a field key = zero code changes here.
  */
 
-import { validateField } from '../features/publish-pipeline/validation/validateField.js';
-import { buildRepairPrompt } from '../features/publish-pipeline/repair-adapter/promptBuilder.js';
+import { validateField } from '../features/publisher/validation/validateField.js';
+import { buildRepairPrompt } from '../features/publisher/repair-adapter/promptBuilder.js';
 import { deriveTestValues } from './deriveFailureValues.js';
 
 /**

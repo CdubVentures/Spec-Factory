@@ -5,7 +5,7 @@ Single gate for all field data entering the product record. No field value reach
 ## Public API (The Contract)
 
 ```js
-// src/features/publish-pipeline/index.js
+// src/features/publisher/index.js
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
 export { publishResolved } from './publisher/publishResolved.js';
 export { validateField }   from './validation/validateField.js';

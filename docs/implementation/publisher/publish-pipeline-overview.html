@@ -131,7 +131,7 @@ tr:last-child td { border-bottom: none; }
 <div class="panel">
   <h2>2. Feature Structure</h2>
 
-  <div class="code-block" style="margin-bottom:16px;">src/features/publish-pipeline/
+  <div class="code-block" style="margin-bottom:16px;">src/features/publisher/
   index.js                        <span style="color:var(--sf-teal-fg);"># Public API: submitCandidate(), publishResolved()</span>
   validation/                     <span style="color:var(--sf-teal-fg);"># Sub-module 1: pure deterministic checks</span>
     validateField.js              <span style="color:var(--sf-teal-fg);"># Single-field validation (12 steps)</span>
@@ -578,7 +578,7 @@ CREATE TABLE item_field_state (
 <div class="panel">
   <h2>8. Public API</h2>
 
-  <div class="code-block"><span style="color:var(--sf-teal-fg);">// src/features/publish-pipeline/index.js</span>
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">// src/features/publisher/index.js</span>
 <span style="color:var(--sf-teal-fg);">// This is the only thing consumers import.</span>
 
 <span style="color:var(--sf-teal-fg);">// Phase 1: Any source calls this after producing field data.</span>

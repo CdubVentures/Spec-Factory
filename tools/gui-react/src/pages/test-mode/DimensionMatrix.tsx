@@ -1,10 +1,9 @@
-import type { ScenarioDef, ValidationResult } from './types.ts';
+import type { ScenarioDef } from './types.ts';
 
 // ── Types ────────────────────────────────────────────────────────────
 
 interface DimensionMatrixProps {
   scenarioDefs: ScenarioDef[];
-  validationResult: ValidationResult | null;
 }
 
 // WHY: Maps scenario names to the validation steps they exercise.
@@ -29,14 +28,13 @@ type DimCell = { active: boolean; label: string };
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function DimensionMatrix({ scenarioDefs, validationResult }: DimensionMatrixProps) {
+export function DimensionMatrix({ scenarioDefs }: DimensionMatrixProps) {
   if (scenarioDefs.length === 0) return null;
 
   const rows = scenarioDefs.map(sd => ({
     name: sd.name,
     id: sd.id,
     dims: deriveDimensions(sd),
-    pass: isScenarioPassing(sd.id, validationResult),
   }));
 
   return (
@@ -154,9 +152,3 @@ function deriveRepairLabel(sd: ScenarioDef): string | null {
   return null;
 }
 
-function isScenarioPassing(id: number, vr: ValidationResult | null): boolean | null {
-  if (!vr) return null;
-  const checks = vr.results.filter(c => c.testCaseId === id);
-  if (checks.length === 0) return null;
-  return checks.every(c => c.pass);
-}

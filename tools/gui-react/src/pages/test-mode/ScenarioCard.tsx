@@ -4,7 +4,6 @@ import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import type {
   TestCase,
   RunResultItem,
-  ValidationCheck,
   RepairEntry,
   RepairProgress,
   RepairsResponse,
@@ -15,7 +14,6 @@ import type {
 interface ScenarioCardProps {
   testCase: TestCase;
   runResult: RunResultItem | undefined;
-  checks: ValidationCheck[];
   testCategory: string;
   isRunning: boolean;
   activeProductId: string | null;
@@ -52,7 +50,6 @@ const statusPillMap: Record<string, string> = {
 export function ScenarioCard({
   testCase,
   runResult,
-  checks,
   testCategory,
   isRunning,
   activeProductId,
@@ -61,9 +58,6 @@ export function ScenarioCard({
 }: ScenarioCardProps) {
   const productId = runResult?.productId ?? testCase.productId ?? '';
   const isThisRunning = activeProductId === productId && Boolean(productId);
-  const passChecks = checks.filter(c => c.pass).length;
-  const failChecks = checks.filter(c => !c.pass).length;
-  const allPass = checks.length > 0 && failChecks === 0;
   const hasRepairs = (runResult?.repairLog?.total ?? 0) > 0;
 
   // Fetch repair data lazily when repairs exist
@@ -78,13 +72,7 @@ export function ScenarioCard({
   const repairs = repairData?.repairs ?? [];
 
   return (
-    <div className={`sf-surface-card border sf-border-default rounded-lg overflow-hidden ${
-      checks.length > 0
-        ? allPass
-          ? 'border-l-[3px] border-l-[var(--sf-state-success-fg)]'
-          : 'border-l-[3px] border-l-[var(--sf-state-danger-fg)]'
-        : ''
-    }`}>
+    <div className="sf-surface-card border sf-border-default rounded-lg overflow-hidden">
       {/* Top: name + description + badge */}
       <div className="px-4 pt-3.5 pb-2 flex justify-between items-start gap-3">
         <div>
@@ -93,14 +81,7 @@ export function ScenarioCard({
           </div>
           <div className="text-[11px] sf-text-muted mt-0.5">{testCase.description}</div>
         </div>
-        {checks.length > 0 && (
-          <span className={`text-[10px] px-2.5 py-1 rounded-full font-semibold whitespace-nowrap ${
-            allPass ? 'sf-chip-success' : 'sf-chip-danger'
-          }`}>
-            {passChecks}/{passChecks + failChecks}
-          </span>
-        )}
-        {checks.length === 0 && !isThisRunning && runResult && (
+        {!isThisRunning && runResult && (
           <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
             runResult.status === 'error' ? 'sf-chip-danger' :
             runResult.status === 'complete' ? 'sf-chip-success' :
@@ -144,27 +125,6 @@ export function ScenarioCard({
         <div className="px-4 py-2 flex items-center gap-2 text-[10px] sf-text-muted">
           <Spinner className="h-3 w-3" />
           Loading violations...
-        </div>
-      )}
-
-      {/* Check results */}
-      {checks.length > 0 && (
-        <div className="px-4 py-2.5 space-y-0.5">
-          {checks.map((ck, i) => (
-            <div key={i} className="flex items-center gap-2 py-[3px] text-xs">
-              <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] flex-shrink-0 ${
-                ck.pass ? 'sf-chip-success' : 'sf-chip-danger'
-              }`}>
-                {ck.pass ? '\u2713' : '\u2717'}
-              </span>
-              <span className={`text-[11px] ${ck.pass ? 'sf-text-muted' : 'sf-status-text-danger font-medium'}`}>
-                {ck.check}
-              </span>
-              <span className={`text-[10px] ml-auto ${ck.pass ? 'sf-text-subtle' : 'sf-status-text-danger'}`}>
-                {ck.detail}
-              </span>
-            </div>
-          ))}
         </div>
       )}
 

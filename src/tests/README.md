@@ -22,7 +22,7 @@ Test-mode synthetic data generation, per-key field contract audit, and test runn
 
 ## Dependencies
 
-Allowed: `src/core/llm/`, `src/shared/`, `src/features/catalog/identity/` (via public index), `src/features/publish-pipeline/validation/` (validateField, templateDispatch, formatRegistry), `src/features/publish-pipeline/repair-adapter/` (promptBuilder).
+Allowed: `src/core/llm/`, `src/shared/`, `src/features/catalog/identity/` (via public index), `src/features/publisher/validation/` (validateField, templateDispatch, formatRegistry), `src/features/publisher/repair-adapter/` (promptBuilder).
 
 Forbidden: direct imports from other feature internals.
 

@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-06T02:02:54.599Z",
+  "generated_at": "2026-03-06T23:51:58.604Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
@@ -29,10 +29,12 @@
       "feet_material",
       "honeycomb_frame",
       "material",
+      "silent_clicks",
       "weight"
     ],
     "controls": [
-      "switch_life_span"
+      "switch_life_span",
+      "switches_link"
     ],
     "dimensions": [
       "height",
@@ -61,7 +63,6 @@
       "colors",
       "design",
       "discontinued",
-      "editions",
       "encoder_life_span",
       "encoder_steps",
       "encoder_type",
@@ -99,11 +100,9 @@
       "click_latency_list",
       "debounce",
       "hot_swappable",
-      "silent_clicks",
       "switch",
       "switch_brand",
-      "switch_type",
-      "switches_link"
+      "switch_type"
     ]
   },
   "groups": [
@@ -139,7 +138,7 @@
       "group_key": "connectivity"
     },
     {
-      "count": 6,
+      "count": 7,
       "display_name": "Construction",
       "field_keys": [
         "adjustable_weight",
@@ -147,15 +146,17 @@
         "feet_material",
         "honeycomb_frame",
         "material",
+        "silent_clicks",
         "weight"
       ],
       "group_key": "construction"
     },
     {
-      "count": 1,
+      "count": 2,
       "display_name": "controls",
       "field_keys": [
-        "switch_life_span"
+        "switch_life_span",
+        "switches_link"
       ],
       "group_key": "controls"
     },
@@ -203,13 +204,12 @@
       "group_key": "ergonomics"
     },
     {
-      "count": 13,
+      "count": 12,
       "display_name": "General",
       "field_keys": [
         "colors",
         "design",
         "discontinued",
-        "editions",
         "encoder_life_span",
         "encoder_steps",
         "encoder_type",
@@ -249,7 +249,7 @@
       "group_key": "sensor_performance"
     },
     {
-      "count": 10,
+      "count": 8,
       "display_name": "Switches",
       "field_keys": [
         "click_force",
@@ -257,11 +257,9 @@
         "click_latency_list",
         "debounce",
         "hot_swappable",
-        "silent_clicks",
         "switch",
         "switch_brand",
-        "switch_type",
-        "switches_link"
+        "switch_type"
       ],
       "group_key": "switches"
     }

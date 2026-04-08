@@ -1,9 +1,9 @@
-import type { ContractSummary, RunResultItem, ValidationResult } from './types.ts';
+import type { ContractSummary, RunResultItem, FieldContractAuditResult } from './types.ts';
 
 // ── Types ────────────────────────────────────────────────────────────
 
 interface SummaryStripProps {
-  validationResult: ValidationResult | null;
+  auditSummary: FieldContractAuditResult['summary'] | null;
   contractSummary: ContractSummary | null;
   runResults: RunResultItem[];
   scenarioCount: number;
@@ -11,10 +11,8 @@ interface SummaryStripProps {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function SummaryStrip({ validationResult, contractSummary, runResults, scenarioCount }: SummaryStripProps) {
-  // Scenarios passing = all checks pass for that scenario
-  const scenariosPassing = computeScenariosPassing(validationResult, scenarioCount);
-  const checks = validationResult?.summary ?? null;
+export function SummaryStrip({ auditSummary, contractSummary, runResults, scenarioCount }: SummaryStripProps) {
+  const completedScenarios = runResults.filter(r => r.status === 'complete').length;
   const fieldCount = contractSummary?.fieldCount ?? 0;
   const templateCount = Object.keys(contractSummary?.parseTemplates ?? {}).length;
   const componentTypeCount = contractSummary?.componentTypes?.length ?? 0;
@@ -33,17 +31,17 @@ export function SummaryStrip({ validationResult, contractSummary, runResults, sc
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <StatCard
         label="Scenarios"
-        value={`${scenariosPassing}`}
+        value={`${completedScenarios}`}
         valueSuffix={`/${scenarioCount}`}
-        sub="All checks pass"
-        color={scenariosPassing === scenarioCount && scenarioCount > 0 ? 'success' : 'default'}
+        sub="Completed runs"
+        color={completedScenarios === scenarioCount && scenarioCount > 0 ? 'success' : 'default'}
       />
       <StatCard
-        label="Checks"
-        value={checks ? `${checks.passed}` : '-'}
-        valueSuffix={checks ? `/${checks.total}` : ''}
-        sub={checks ? `${checks.passed} passed, ${checks.failed} failed` : 'Run validate'}
-        color={checks && checks.failed === 0 ? 'success' : checks ? 'info' : 'default'}
+        label="Field Checks"
+        value={auditSummary ? `${auditSummary.passCount}` : '-'}
+        valueSuffix={auditSummary ? `/${auditSummary.totalChecks}` : ''}
+        sub={auditSummary ? `${auditSummary.failCount} failed across ${auditSummary.totalFields} fields` : 'Run validate'}
+        color={auditSummary && auditSummary.failCount === 0 ? 'success' : auditSummary ? 'info' : 'default'}
       />
       <StatCard
         label="Fields"
@@ -104,21 +102,9 @@ function StatCard({ label, value, valueSuffix, sub, color }: StatCardProps) {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function computeScenariosPassing(vr: ValidationResult | null, total: number): number {
-  if (!vr) return 0;
-  const byScenario = new Map<number, boolean>();
-  for (const c of vr.results) {
-    const id = c.testCaseId ?? 0;
-    if (!byScenario.has(id)) byScenario.set(id, true);
-    if (!c.pass) byScenario.set(id, false);
-  }
-  return [...byScenario.values()].filter(Boolean).length || (total > 0 ? 0 : 0);
-}
-
 function computeRepairPromptCoverage(results: RunResultItem[]): { label: string; full: boolean } {
   const hasRepairs = results.some(r => r.repairLog && r.repairLog.total > 0);
   if (!hasRepairs) return { label: '-', full: false };
-  // WHY: P1-P7 = 7 prompt types. Coverage = how many distinct types were exercised.
   return { label: '7/7', full: true };
 }
 

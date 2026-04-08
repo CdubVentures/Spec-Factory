@@ -1,6 +1,6 @@
 // WHY: Processes test mode source results through the full field rules pipeline:
 // consensus → validation (authority) → repair → DB persistence.
-// The publish-pipeline validator is the authority for field values and metrics.
+// The publisher validator is the authority for field values and metrics.
 // The old engine (applyRuntimeFieldRules) runs only for curation suggestion discovery.
 
 import { buildRunId } from '../shared/primitives.js';
@@ -101,12 +101,12 @@ export async function runTestProduct({
     extractedValues: resolvedFields,
   });
 
-  // Step 4b: Run publish-pipeline validator on raw resolved fields (AUTHORITY)
+  // Step 4b: Run publisher validator on raw resolved fields (AUTHORITY)
   let validationResult = _validationOverride || null;
   let repairLog = null;
   if (!_validationOverride) {
     try {
-      const { validateRecord } = await import('../features/publish-pipeline/validation/validateRecord.js');
+      const { validateRecord } = await import('../features/publisher/validation/validateRecord.js');
       validationResult = validateRecord({
         fields: resolvedFields,
         fieldRules: fieldRules?.fields || {},
@@ -139,7 +139,7 @@ export async function runTestProduct({
   if (!aiReview && validationResult) {
     try {
       const { buildRepairPrompt: buildPrompt } = await import(
-        '../features/publish-pipeline/repair-adapter/promptBuilder.js'
+        '../features/publisher/repair-adapter/promptBuilder.js'
       );
 
       // Resolve model from config routing (pure config read, no network)
@@ -164,10 +164,9 @@ export async function runTestProduct({
           });
         } else {
           const enumData = knownValues?.enums?.[fieldKey] || null;
-          const componentDb = componentDBs?.[fieldRule?.parse?.component_type] || null;
           const prompt = buildPrompt({
             rejections: perField.rejections, value: perField.value,
-            fieldKey, fieldRule, knownValues: enumData, componentDb,
+            fieldKey, fieldRule, knownValues: enumData,
           });
 
           repairLog.push({
@@ -196,9 +195,9 @@ export async function runTestProduct({
         ({ repairField, repairCrossField, buildRepairPrompt, callLlm } = _repairDeps);
       } else {
         const { buildLlmCallDeps } = await import('../core/llm/buildLlmCallDeps.js');
-        const { createRepairCallLlm } = await import('../features/publish-pipeline/repairLlmAdapter.js');
-        ({ repairField, repairCrossField } = await import('../features/publish-pipeline/repair-adapter/repairField.js'));
-        ({ buildRepairPrompt } = await import('../features/publish-pipeline/repair-adapter/promptBuilder.js'));
+        const { createRepairCallLlm } = await import('../features/publisher/repairLlmAdapter.js');
+        ({ repairField, repairCrossField } = await import('../features/publisher/repair-adapter/repairField.js'));
+        ({ buildRepairPrompt } = await import('../features/publisher/repair-adapter/promptBuilder.js'));
         const baseDeps = buildLlmCallDeps({ config, logger });
         const wrappedDeps = {
           ...baseDeps,
@@ -220,11 +219,10 @@ export async function runTestProduct({
       for (const [fieldKey, perField] of invalidEntries) {
         const fieldRule = (fieldRules?.fields || {})[fieldKey] || null;
         const enumData = knownValues?.enums?.[fieldKey] || null;
-        const componentDb = componentDBs?.[fieldRule?.parse?.component_type] || null;
 
         const prompt = buildRepairPrompt({
           rejections: perField.rejections, value: perField.value,
-          fieldKey, fieldRule, knownValues: enumData, componentDb,
+          fieldKey, fieldRule, knownValues: enumData,
         });
 
         // WHY: Emit progress before each LLM call so the UI shows each repair happening live
@@ -234,7 +232,7 @@ export async function runTestProduct({
 
         const repairResult = await repairField({
           validationResult: perField, fieldKey, fieldRule,
-          knownValues: enumData, componentDb, callLlm,
+          knownValues: enumData, callLlm,
         });
 
         const shape = fieldRule?.contract?.shape || 'scalar';

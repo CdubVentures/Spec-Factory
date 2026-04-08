@@ -9,8 +9,8 @@ import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
 import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
-import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publish-pipeline/repair-adapter/promptBuilder.js';
-import { repairResponseJsonSchema } from '../../../publish-pipeline/repair-adapter/repairResponseSchema.js';
+import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
+import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   'needset': {

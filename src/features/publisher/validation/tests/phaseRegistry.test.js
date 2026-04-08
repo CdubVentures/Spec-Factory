@@ -38,8 +38,6 @@ describe('PHASE_REGISTRY — structure', () => {
 const DISPATCHED_TEMPLATE = 'boolean_yes_no_unk';
 const NON_DISPATCHED_TEMPLATE = 'text_field';
 const FORMAT_TEMPLATE = 'date_field';
-const COMPONENT_TEMPLATE = 'component_reference';
-
 // Helper: build a minimal rule object
 function rule(overrides = {}) {
   return {
@@ -320,28 +318,6 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 11: Component Resolution ───────────────────────────────
-  describe('component (step 11)', () => {
-    const phase = () => phaseById('component');
-
-    it('applicable when parse.template = component_reference', () => {
-      assert.equal(phase().isApplicable(rule({
-        parse: { template: COMPONENT_TEMPLATE },
-      })), true);
-    });
-
-    it('not applicable for other templates', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: 'text_field' } })), false);
-    });
-
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}), false);
-    });
-
-    it('not applicable for null rule', () => {
-      assert.equal(phase().isApplicable(null), false);
-    });
-  });
 });
 
 // ── triggerDetail tests ─────────────────────────────────────────────

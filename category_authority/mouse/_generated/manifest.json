@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "artifact_count": 11,
+  "artifact_count": 12,
   "artifacts": [
     {
       "bytes": 8405,
@@ -28,38 +28,42 @@
       "sha256": "fa3cc0d4c7635cf78d26ee997d0484007c9e7d4cda3d781188e0d69633cdc01b"
     },
     {
-      "bytes": 5472,
+      "bytes": 5433,
       "path": "field_groups.json",
-      "sha256": "f4e19740c722981e63835bebd9819d4fc1473510c562e23eb6f8d1f07a211738"
+      "sha256": "ac40e20911d3d7ccfa78f4ca458132bcd8976282fd5336d5934f196932178507"
     },
     {
-      "bytes": 304259,
+      "bytes": 296107,
       "path": "field_rules.json",
-      "sha256": "87cdb68e80fdd0b216d75a9f0d3afac0f4b11ffcc88c768574712a39eb7a91a0"
+      "sha256": "0d48cad6e3ad96539a79e495bbe14a4a0b22be4d97e3c9f065e6d8b31c396930"
     },
     {
-      "bytes": 356,
+      "bytes": 296107,
+      "path": "field_rules.runtime.json",
+      "sha256": "0d48cad6e3ad96539a79e495bbe14a4a0b22be4d97e3c9f065e6d8b31c396930"
+    },
+    {
+      "bytes": 533,
       "path": "key_migrations.json",
-      "sha256": "d6d431096c05147b4d27746d2d01e45e1007902a7d77daa91b735ff9304518ec"
+      "sha256": "c8fd4d2c74ce4a1b329d37fee6a7cfd7fa7ae9b484fc9d9b041c78c00b5f09e4"
     },
     {
-      "bytes": 5347,
+      "bytes": 2719,
       "path": "known_values.json",
-      "sha256": "e34ba600309684aa5ee7260c26577107092fc6f40db881a0b30603d9ebdab657"
+      "sha256": "53a432f6cfcb1f715d22560ae24cef5e113881263c0f731f93f0dcadd8c6bf08"
     },
     {
-      "bytes": 13025,
+      "bytes": 12878,
       "path": "parse_templates.json",
-      "sha256": "c1fd95874989f81bc36e60611066f7c22c6dcee11329380cd1e401e8a86c5f78"
+      "sha256": "a7ebc0b762264836f812e95c4faaac03c6117d9f93d0b7c15618945a6339710f"
     },
     {
-      "bytes": 70348,
+      "bytes": 69706,
       "path": "ui_field_catalog.json",
-      "sha256": "58dcbe1c006aa5c1e421daed3fdba9d6f45716943cb31bb4fe1b1e1966073e69"
+      "sha256": "6aeda789dd38f5ad05a7844bcb1ca8f261c815354572156ca402aa28a7b9d2e8"
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-04-06T04:04:25.389Z",
-  "source_map_hash": "90008d73ee8bb0931aa5f4b353385ae43b18a5cf2c43d600fe12fb2b849f435d",
+  "generated_at": "2026-03-07T00:26:19.085Z",
   "version": 1
 }

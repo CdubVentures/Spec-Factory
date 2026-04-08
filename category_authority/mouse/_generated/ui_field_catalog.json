@@ -295,6 +295,37 @@
     },
     {
       "aliases": [
+        "editions"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "editions",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "token_list",
+      "key": "editions",
+      "label": "Editions",
+      "order": 10,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "list",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {},
+      "tooltip_key": null,
+      "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.",
+      "tooltip_source": null,
+      "type": "string",
+      "unit": ""
+    },
+    {
+      "aliases": [
         "switch technology",
         "switch type"
       ],
@@ -2886,37 +2917,6 @@
     },
     {
       "aliases": [
-        "editions"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "editions",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "general",
-      "guidance_md": null,
-      "input_control": "token_list",
-      "key": "editions",
-      "label": "Editions",
-      "order": 76,
-      "placeholder": "unk",
-      "prefix": null,
-      "required_level": "optional",
-      "shape": "list",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.",
-      "tooltip_source": null,
-      "type": "string",
-      "unit": ""
-    },
-    {
-      "aliases": [
         "acoustic treatment",
         "sound dampening"
       ],
@@ -3459,6 +3459,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-07T23:43:10.083Z",
+  "generated_at": "2026-04-08T00:41:46.053Z",
   "version": 1
 }

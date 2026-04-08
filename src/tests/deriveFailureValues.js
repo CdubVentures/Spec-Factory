@@ -7,8 +7,8 @@
  * O(1) scaling: adding a field key = zero code changes here.
  */
 
-import { DISPATCHED_TEMPLATE_KEYS } from '../features/publish-pipeline/validation/templateDispatch.js';
-import { FORMAT_REGISTRY } from '../features/publish-pipeline/validation/formatRegistry.js';
+import { DISPATCHED_TEMPLATE_KEYS } from '../features/publisher/validation/templateDispatch.js';
+import { FORMAT_REGISTRY } from '../features/publisher/validation/formatRegistry.js';
 
 /**
  * Derive test values for a single field key from its contract rules.
@@ -361,12 +361,23 @@ function deriveGoodValue(fieldKey, fieldRule, knownValues, componentDb) {
     return { value: 'https://example.com/test', description: 'valid URL' };
   }
 
+  // WHY: Check list shape BEFORE scalar type — list-of-numbers must return an array, not a scalar
+  if (shape === 'list') {
+    if (knownValues?.values?.length > 0) {
+      const items = knownValues.values.slice(0, 2);
+      return { value: items, description: `known list items: ${items.join(', ')}` };
+    }
+    if (type === 'number' || type === 'integer') {
+      return { value: [1, 2], description: 'numeric list' };
+    }
+    return { value: ['test-item-1', 'test-item-2'], description: 'valid list' };
+  }
+
   if (type === 'number' || type === 'integer') {
     let mid = range
       ? ((range.min ?? 0) + (range.max ?? 100)) / 2
       : 50;
 
-    // WHY: Pre-round so the good value doesn't trigger a rounding repair
     if (rounding?.decimals != null) {
       const factor = Math.pow(10, rounding.decimals);
       mid = Math.round(mid * factor) / factor;
@@ -378,18 +389,12 @@ function deriveGoodValue(fieldKey, fieldRule, knownValues, componentDb) {
     return { value: mid, description: `midpoint: ${mid}` };
   }
 
-  if (shape === 'list') {
-    // WHY: For enum list fields, use known values to avoid enum rejection
-    if (knownValues?.values?.length > 0) {
-      const items = knownValues.values.slice(0, 2);
-      return { value: items, description: `known list items: ${items.join(', ')}` };
-    }
-    return { value: ['test-item-1', 'test-item-2'], description: 'valid list' };
-  }
-
-  // Prefer first known enum value
+  // WHY: Use pre-normalized known value so it survives the normalize step (lowercase + hyphens).
+  // Without this, "No" → "no" via normalize, then exact enum check "no" !== "No" → rejection.
   if (knownValues?.values?.length > 0) {
-    return { value: knownValues.values[0], description: `first known: ${knownValues.values[0]}` };
+    const raw = knownValues.values[0];
+    const normalized = raw.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+    return { value: normalized, description: `first known (normalized): ${normalized}` };
   }
 
   return { value: 'test_value', description: 'default string' };

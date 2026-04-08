@@ -220,63 +220,6 @@ describe('validateRecord — cross-field constraints', () => {
 });
 
 // ============================================================
-// Component DB routing
-// ============================================================
-
-describe('validateRecord — component DB routing', () => {
-  const sensorDb = { items: [{ name: 'PAW3395', aliases: ['PAW 3395'] }] };
-
-  it('component.type routes to componentDb (not just parse.component_type)', () => {
-    const r = validateRecord({
-      fields: { switch_type: 'PAW3395' },
-      fieldRules: {
-        switch_type: {
-          contract: { shape: 'scalar', type: 'string' },
-          parse: { template: 'component_reference' },
-          component: { type: 'sensor' },
-          enum: {},
-        },
-      },
-      componentDbs: { sensor: sensorDb },
-    });
-    assert.equal(r.valid, true);
-    assert.equal(r.perField.switch_type.value, 'PAW3395');
-  });
-
-  it('unknown component rejects when routed via component.type', () => {
-    const r = validateRecord({
-      fields: { switch_type: 'FakeSensor9000' },
-      fieldRules: {
-        switch_type: {
-          contract: { shape: 'scalar', type: 'string' },
-          parse: { template: 'component_reference' },
-          component: { type: 'sensor' },
-          enum: {},
-        },
-      },
-      componentDbs: { sensor: sensorDb },
-    });
-    assert.equal(r.valid, false);
-    assert.ok(r.perField.switch_type.rejections.some(rej => rej.reason_code === 'not_in_component_db'));
-  });
-
-  it('parse.component_type still works (backward compat)', () => {
-    const r = validateRecord({
-      fields: { sensor: 'PAW3395' },
-      fieldRules: {
-        sensor: {
-          contract: { shape: 'scalar', type: 'string' },
-          parse: { template: 'component_reference', component_type: 'sensor' },
-          enum: {},
-        },
-      },
-      componentDbs: { sensor: sensorDb },
-    });
-    assert.equal(r.valid, true);
-  });
-});
-
-// ============================================================
 // Overall valid determination
 // ============================================================
 

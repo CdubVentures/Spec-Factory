@@ -183,7 +183,7 @@ export function WorkflowBar({
           {', '}
           <span className="sf-status-text-danger font-semibold">{validationSummary.failed} failed</span>
           {' out of '}
-          {validationSummary.total} checks across {scenarioCount} scenarios.
+          {validationSummary.total} checks across all field keys.
         </div>
       )}
     </div>
