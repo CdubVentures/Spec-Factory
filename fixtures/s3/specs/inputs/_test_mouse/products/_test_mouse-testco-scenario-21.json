@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 21",
-    "model": "Scenario 21 list_fields_dedup",
-    "variant": "list_fields_dedup",
+    "model": "Scenario 21 type_violations",
+    "variant": "type_violations",
     "id": 9021,
     "identifier": "test021a"
   },
   "anchors": {},
   "_testCase": {
     "id": 21,
-    "name": "list_fields_dedup",
-    "description": "All 13 list fields with duplicates -> dedupe + union",
-    "category": "Edge Cases"
+    "name": "type_violations",
+    "description": "Non-numeric strings for 28 number fields -> P3 type coercion repair",
+    "category": "Validation"
   }
 }

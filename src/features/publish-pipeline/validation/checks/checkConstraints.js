@@ -164,10 +164,37 @@ function evaluateComponentDbLookup(rule, fields, componentDbs) {
   const componentName = fields[rule.check.lookup_field];
   if (!componentName || componentName === 'unk') return null;
 
-  const entity = db.items.find(e => e.name === componentName || e.name.toLowerCase() === String(componentName).toLowerCase());
+  const nameLower = String(componentName).toLowerCase();
+  const entity = db.items.find(e => e.name === componentName || e.name.toLowerCase() === nameLower);
   if (!entity) return null;
 
-  // TODO: parse rule.check.compare expression (e.g. "dpi <= sensors[sensor].properties.max_dpi")
-  // For now, this is a placeholder that returns null (no failure) since full DSL parsing is future work.
-  return null;
+  // Parse compare expression: "field <= db[lookup].properties.prop"
+  const compare = rule.check.compare || '';
+  const compareMatch = compare.match(/^(\w+)\s*(<=|>=|<|>)\s*\w+\[\w+\]\.properties\.(\w+)$/);
+  if (!compareMatch) return null;
+
+  const [, fieldName, op, propKey] = compareMatch;
+  const fieldValue = typeof fields[fieldName] === 'number' ? fields[fieldName] : Number(fields[fieldName]);
+  const propValue = entity.properties?.[propKey];
+
+  if (!Number.isFinite(fieldValue) || !Number.isFinite(propValue)) return null;
+
+  // Apply tolerance
+  const tolerance = Number(rule.check.tolerance_percent || 0) / 100;
+  const limit = op === '<=' || op === '<' ? propValue * (1 + tolerance) : propValue * (1 - tolerance);
+
+  const pass = op === '<=' ? fieldValue <= limit
+    : op === '<' ? fieldValue < limit
+    : op === '>=' ? fieldValue >= limit
+    : fieldValue > limit;
+
+  if (pass) return null;
+
+  return {
+    rule_id: rule.rule_id,
+    constraint: compare,
+    pass: false,
+    action: rule.check.on_fail || 'flag_for_review',
+    detail: { field: fieldName, value: fieldValue, property: propKey, limit: propValue, tolerance_percent: rule.check.tolerance_percent },
+  };
 }

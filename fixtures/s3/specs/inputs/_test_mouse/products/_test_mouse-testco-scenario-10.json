@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 10,
     "name": "new_enum_values",
-    "description": "New values for 12 open_prefer_known enums",
+    "description": "New values for 1 open_prefer_known enums",
     "category": "Enums"
   }
 }

@@ -53,15 +53,17 @@ export function normalizeColorList(value) {
 }
 
 // --- parseDate ---
+// WHY: Returns YYYY-MM-DD only. Full ISO timestamps fail the date_field format regex.
 
 export function parseDate(value) {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return value.toISOString();
+    return value.toISOString().slice(0, 10);
   }
   const token = String(value ?? '').trim();
   if (!token) return null;
   const parsed = new Date(token);
-  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+  if (!Number.isFinite(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
 }
 
 // --- parseLatencyList ---

@@ -83,7 +83,7 @@ describe('checkFormat — text_field (no format regex)', () => {
 describe('checkFormat — templates with null regex (always pass)', () => {
   const templates = [
     'number_with_unit', 'integer_field', 'integer_with_unit',
-    'url_field', 'component_reference', 'latency_list_modes_ms',
+    'component_reference', 'latency_list_modes_ms',
     'list_of_numbers_with_unit', 'list_numbers_or_ranges',
   ];
 
@@ -119,6 +119,77 @@ describe('checkFormat — unk passthrough', () => {
 
   it('unk passes date format', () => {
     assert.equal(checkFormat('unk', 'date_field').pass, true);
+  });
+});
+
+// ── url_field ────────────────────────────────────────────────────────────────
+
+describe('checkFormat — url_field', () => {
+  it('valid https URL passes', () => {
+    assert.equal(checkFormat('https://example.com/spec', 'url_field').pass, true);
+  });
+
+  it('valid http URL passes', () => {
+    assert.equal(checkFormat('http://example.com', 'url_field').pass, true);
+  });
+
+  it('non-URL string fails', () => {
+    const r = checkFormat('not a url', 'url_field');
+    assert.equal(r.pass, false);
+    assert.ok(r.reason.includes('url_field'));
+  });
+
+  it('bare domain fails', () => {
+    assert.equal(checkFormat('example.com', 'url_field').pass, false);
+  });
+
+  it('unk passes', () => {
+    assert.equal(checkFormat('unk', 'url_field').pass, true);
+  });
+});
+
+// ── format_hint: custom regex from field rule ────────────────────────────────
+
+describe('checkFormat — custom format_hint regex', () => {
+  // WHY: format_hint is a user-defined regex string from enum.match.format_hint
+  const hint = '^\\d+ Zone \\(RGB\\)$';
+
+  it('matching value passes', () => {
+    const r = checkFormat('3 Zone (RGB)', 'text_field', hint);
+    assert.equal(r.pass, true);
+  });
+
+  it('non-matching value fails', () => {
+    const r = checkFormat('3 rgb zones', 'text_field', hint);
+    assert.equal(r.pass, false);
+    assert.ok(r.reason.includes('format_hint'));
+  });
+
+  it('unk still passes with format_hint', () => {
+    const r = checkFormat('unk', 'text_field', hint);
+    assert.equal(r.pass, true);
+  });
+
+  it('null format_hint → no extra check', () => {
+    const r = checkFormat('anything', 'text_field', null);
+    assert.equal(r.pass, true);
+  });
+
+  it('empty string format_hint → no extra check', () => {
+    const r = checkFormat('anything', 'text_field', '');
+    assert.equal(r.pass, true);
+  });
+
+  it('format_hint runs after template registry check', () => {
+    // WHY: if template registry rejects, format_hint doesn't override that
+    const r = checkFormat('INVALID', 'boolean_yes_no_unk', '^.*$');
+    assert.equal(r.pass, false);
+  });
+
+  it('format_hint applies even when no template registry entry', () => {
+    // text_field has no FORMAT_REGISTRY entry, so format_hint is the only check
+    const r = checkFormat('bad value', 'text_field', '^good$');
+    assert.equal(r.pass, false);
   });
 });
 

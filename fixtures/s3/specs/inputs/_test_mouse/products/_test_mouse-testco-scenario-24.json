@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 24",
-    "model": "Scenario 24 unit_violations",
-    "variant": "unit_violations",
+    "model": "Scenario 24 shape_violations",
+    "variant": "shape_violations",
     "id": 9024,
     "identifier": "test024a"
   },
   "anchors": {},
   "_testCase": {
     "id": 24,
-    "name": "unit_violations",
-    "description": "Wrong unit suffixes for 23 unit fields -> unit conversion repair",
+    "name": "shape_violations",
+    "description": "Wrong shapes for 96 scalar + 7 list fields -> shape rejection (prompt_skipped)",
     "category": "Validation"
   }
 }

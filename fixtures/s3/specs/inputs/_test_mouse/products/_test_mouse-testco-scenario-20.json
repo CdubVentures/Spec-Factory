@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 20",
-    "model": "Scenario 20 multi_source_consensus",
-    "variant": "multi_source_consensus",
+    "model": "Scenario 20 list_fields_dedup",
+    "variant": "list_fields_dedup",
     "id": 9020,
     "identifier": "test020a"
   },
   "anchors": {},
   "_testCase": {
     "id": 20,
-    "name": "multi_source_consensus",
-    "description": "4 sources disagree on key fields -> tier-weighted consensus",
+    "name": "list_fields_dedup",
+    "description": "All 7 list fields with duplicates -> dedupe + union",
     "category": "Edge Cases"
   }
 }

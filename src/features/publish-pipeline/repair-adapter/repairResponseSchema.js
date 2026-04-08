@@ -1,12 +1,11 @@
 import { z, toJSONSchema } from 'zod';
 
-// ── Zod schema (Section 14 universal response) ──────────────────────────────
+// ── Zod schema (universal response) ─────────────────────────────────────────
 
 const decisionSchema = z.object({
   value: z.union([z.string(), z.number(), z.null()]),
   decision: z.enum(['map_to_existing', 'keep_new', 'reject', 'set_unk']),
   resolved_to: z.union([z.string(), z.number(), z.null()]),
-  confidence: z.number().min(0).max(1),
   reasoning: z.string(),
 });
 
@@ -19,11 +18,6 @@ const repairResponseZodSchema = z.object({
 // WHY: Strips $schema key — LLM providers don't expect it.
 const { $schema, ...jsonSchema } = toJSONSchema(repairResponseZodSchema);
 export const repairResponseJsonSchema = jsonSchema;
-
-// ── Confidence thresholds (Section 14) ───────────────────────────────────────
-
-const AUTO_APPLY = 0.8;
-const REVIEW_FLOOR = 0.5;
 
 // ── parseRepairResponse ──────────────────────────────────────────────────────
 
@@ -44,60 +38,51 @@ export function parseRepairResponse(raw) {
 }
 
 // ── applyRepairDecisions ─────────────────────────────────────────────────────
+// WHY: No confidence gating. The 13-step re-validation is the only gate.
+// The LLM's decision + resolved_to is applied unconditionally. If the repaired
+// value doesn't pass re-validation, the repair fails — that's the real check.
 
 /**
  * Apply LLM decisions to produce a repaired value.
  * @param {{ decisions: object[]|null, currentValue: *, shape: string }} opts
- * @returns {{ value: *, confidence: number, applied: object[], skipped: object[] }}
+ * @returns {{ value: *, applied: object[] }}
  */
 export function applyRepairDecisions({ decisions, currentValue, shape }) {
   if (!decisions || decisions.length === 0) {
-    return { value: currentValue, confidence: 0, applied: [], skipped: [] };
+    return { value: currentValue, applied: [] };
   }
 
   const applied = [];
-  const skipped = [];
 
   for (const dec of decisions) {
     if (dec.decision === 'reject' || dec.decision === 'set_unk') {
-      applied.push({ ...dec, resolvedValue: 'unk', flagged: false });
+      applied.push({ ...dec, resolvedValue: 'unk' });
       continue;
     }
 
-    if (dec.confidence < REVIEW_FLOOR) {
-      skipped.push(dec);
-      continue;
-    }
-
-    const flagged = dec.confidence < AUTO_APPLY;
     const resolvedValue = dec.decision === 'keep_new'
       ? dec.resolved_to ?? dec.value
       : dec.resolved_to;
-    applied.push({ ...dec, resolvedValue, flagged });
+    applied.push({ ...dec, resolvedValue });
   }
 
   const value = shape === 'list'
-    ? buildListValue(applied, skipped)
-    : buildScalarValue(applied, skipped, currentValue);
+    ? buildListValue(applied)
+    : buildScalarValue(applied, currentValue);
 
-  const confidences = applied.map(a => a.confidence).filter(c => typeof c === 'number');
-  const confidence = confidences.length > 0 ? Math.min(...confidences) : 0;
-
-  return { value, confidence, applied, skipped };
+  return { value, applied };
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
 
-function buildScalarValue(applied, skipped, currentValue) {
-  if (applied.length === 0 && skipped.length > 0) return 'unk';
+function buildScalarValue(applied, currentValue) {
   if (applied.length === 0) return currentValue;
-
   const dec = applied[0];
   if (dec.decision === 'reject' || dec.decision === 'set_unk') return 'unk';
   return dec.resolvedValue;
 }
 
-function buildListValue(applied, skipped) {
+function buildListValue(applied) {
   const result = [];
   for (const dec of applied) {
     if (dec.decision === 'reject' || dec.decision === 'set_unk') continue;

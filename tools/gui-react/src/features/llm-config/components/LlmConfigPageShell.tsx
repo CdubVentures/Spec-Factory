@@ -68,7 +68,7 @@ function GroupBadge({ group }: { group: LlmPhaseGroup }) {
   return (
     <span
       className="inline-flex items-center gap-0.5"
-      style={{ color: config.color, fontSize: '9px', fontWeight: 700, letterSpacing: '0.03em', marginLeft: '-5px' }}
+      style={{ color: config.color, fontSize: '9px', fontWeight: 700, letterSpacing: '0.03em' }}
     >
       {config.icon}
       {config.label}

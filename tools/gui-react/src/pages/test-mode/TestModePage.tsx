@@ -3,310 +3,71 @@ import { useCollapseStore } from '../../stores/collapseStore.ts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { wsManager } from '../../api/ws.ts';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { useUiStore } from '../../stores/uiStore.ts';
 
-// ── Types ───────────────────────────────────────────────────────────
+import type {
+  TestCase,
+  GenerateResult,
+  ContractSummary,
+  ContractResponse,
+  RunResultItem,
+  ValidationResult,
+  ImportProgress,
+  RunProgress,
+  RepairProgress,
+} from './types.ts';
 
-interface TestCase {
-  id: number;
-  name: string;
-  description: string;
-  category?: string;
-  productId?: string;
+import { WorkflowBar } from './WorkflowBar.tsx';
+import { SummaryStrip } from './SummaryStrip.tsx';
+import { CoverageMatrices } from './CoverageMatrices.tsx';
+import { RepairLifecycleProof } from './RepairLifecycleProof.tsx';
+import { DimensionMatrix } from './DimensionMatrix.tsx';
+import { ScenarioCard } from './ScenarioCard.tsx';
+
+// ── Session storage key ──────────────────────────────────────────────
+
+const LS_KEY = 'test-mode-state';
+
+function loadSaved(): Record<string, unknown> {
+  try { return JSON.parse(sessionStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
 }
 
-interface GenerateResult {
-  ok: boolean;
-  products: string[];
-  testCases: TestCase[];
+// ── Section badge class ──────────────────────────────────────────────
+
+function sectionBadgeClass(passCount: number, total: number): string {
+  if (total === 0) return 'sf-chip-neutral';
+  if (passCount === total) return 'sf-chip-success';
+  if (passCount === 0) return 'sf-chip-danger';
+  return 'sf-chip-warning';
 }
 
-interface RepairLogSummary {
-  total: number;
-  repaired: number;
-  failed: number;
-  rerunRecommended: number;
-  promptSkipped: number;
-}
-
-interface RepairEntry {
-  field: string;
-  promptId: string | null;
-  prompt_in: { system: string; user: string } | null;
-  response_out: unknown;
-  status: string;
-  confidence: number;
-  value_before: string | null;
-  value_after: string | null;
-  flaggedForReview: boolean;
-  error: string | null;
-}
-
-interface RunResultItem {
-  productId: string;
-  status: string;
-  testCase?: TestCase;
-  confidence?: number;
-  coverage?: number;
-  completeness?: number;
-  validated?: boolean;
-  trafficLight?: { green?: number; yellow?: number; red?: number };
-  constraintConflicts?: number;
-  missingRequired?: string[];
-  curationSuggestions?: number;
-  runtimeFailures?: number;
-  durationMs?: number;
-  error?: string;
-  repairLog?: RepairLogSummary | null;
-}
-
-interface ValidationCheck {
-  productId: string;
-  testCase: string;
-  testCaseId?: number;
-  check: string;
-  pass: boolean;
-  detail: string;
-}
-
-interface ValidationResult {
-  results: ValidationCheck[];
-  summary: { passed: number; failed: number; total: number };
-}
-
-interface MatrixRow {
-  id: string;
-  cells: Record<string, string | number | boolean>;
-  testNumbers: number[];
-  expectedBehavior: string;
-  validationStatus?: 'pass' | 'fail' | 'pending';
-}
-
-interface CoverageMatrix {
-  title: string;
-  columns: Array<{ key: string; label: string; width?: string }>;
-  rows: MatrixRow[];
-  summary: Record<string, string | number>;
-}
-
-interface ScenarioDef {
-  id: number;
-  name: string;
-  category: string;
-  desc: string;
-  aiCalls?: string;
-}
-
-interface ContractSummary {
-  fieldCount: number;
-  fieldsByType: Record<string, number>;
-  fieldsByShape: Record<string, number>;
-  enumPolicies: Record<string, number>;
-  parseTemplates: Record<string, number>;
-  componentTypes: Array<{ type: string; itemCount: number; aliasCount: number; propKeys: string[]; varianceKeys: string[]; hasConstraints: boolean }>;
-  requiredFields: string[];
-  criticalFields: string[];
-  rangeConstraints: Record<string, { min: number; max: number }>;
-  crossValidationRules: string[];
-  knownValuesCatalogs: string[];
-  testProductCount: number;
-  listFieldCount: number;
-  componentRefFieldCount: number;
-}
-
-interface ContractResponse {
-  ok: boolean;
-  summary: ContractSummary;
-  matrices: {
-    fieldRules: CoverageMatrix;
-    components: CoverageMatrix;
-    listsEnums: CoverageMatrix;
-  };
-  scenarioDefs?: ScenarioDef[];
-}
-
-interface ImportProgress {
-  step: string;
-  status: 'copying' | 'done' | 'error';
-  file?: string;
-  detail?: string;
-  summary?: { fields: number; components: number; componentItems: number; enums: number; rules: number };
-}
-
-interface RunProgress {
-  index: number;
-  total: number;
-  productId: string;
-  scenarioName: string;
-  status: 'running' | 'complete' | 'error';
-  aiReview?: boolean;
-  error?: string;
-  result?: RunResultItem;
-}
-
-// ── Styles ──────────────────────────────────────────────────────────
-
-import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../shared/ui/buttonClasses.ts';
-import { DrawerShell } from '../../shared/ui/overlay/DrawerShell.tsx';
-
-const btnCls = 'px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors';
-const cardCls = 'border sf-border-default rounded-lg p-3 sf-surface-card';
-const stepDoneCls = 'sf-chip-success';
-const stepActiveCls = 'sf-chip-info';
-const stepIdleCls = 'sf-chip-neutral';
-
-// ── Scenario category colors ────────────────────────────────────────
-const categoryColors: Record<string, string> = {
-  Coverage: 'sf-chip-info',
-  Components: 'sf-llm-soft-badge',
-  Enums: 'sf-chip-warning',
-  Constraints: 'sf-chip-danger',
-  'Edge Cases': 'sf-chip-neutral'
-};
-
-// ── Matrix Table Component ──────────────────────────────────────────
-
-function MatrixTable({ matrix, validationResult, collapsed, onToggle }: {
-  matrix: CoverageMatrix;
-  validationResult: ValidationResult | null;
-  collapsed: boolean;
-  onToggle: () => void;
-}) {
-  // Update validation status from results
-  const rowsWithStatus = matrix.rows.map(row => {
-    if (!validationResult) return row;
-    const relevant = validationResult.results.filter(r =>
-      row.testNumbers.some(t => r.testCaseId === t)
-    );
-    if (relevant.length === 0) return row;
-    const allPass = relevant.every(r => r.pass);
-    const anyFail = relevant.some(r => !r.pass);
-    return { ...row, validationStatus: anyFail ? 'fail' as const : allPass ? 'pass' as const : 'pending' as const };
-  });
-
-  const passCount = rowsWithStatus.filter(r => r.validationStatus === 'pass').length;
-  const failCount = rowsWithStatus.filter(r => r.validationStatus === 'fail').length;
-
-  return (
-    <div className={cardCls}>
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between text-left"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono sf-text-subtle">{collapsed ? '+' : '-'}</span>
-          <span className="text-sm font-semibold sf-text-primary">{matrix.title}</span>
-          <span className="text-[10px] sf-text-subtle">{matrix.rows.length} rows</span>
-          {validationResult && (
-            <span className="text-[10px]">
-              {passCount > 0 && <span className="sf-status-text-success mr-1">{passCount} pass</span>}
-              {failCount > 0 && <span className="sf-status-text-danger">{failCount} fail</span>}
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2 text-[10px] sf-text-subtle">
-          {Object.entries(matrix.summary).map(([k, v]) => (
-            <span key={k} className="font-mono">{k}: {v}</span>
-          ))}
-        </div>
-      </button>
-
-      {!collapsed && (
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-left sf-text-subtle border-b sf-border-default">
-                {validationResult && <th className="pb-1.5 pr-2 w-6"></th>}
-                {matrix.columns.map(col => (
-                  <th key={col.key} className="pb-1.5 pr-2 whitespace-nowrap" style={{ minWidth: col.width }}>
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rowsWithStatus.map(row => (
-                <tr key={row.id} className="border-b sf-border-default hover:opacity-95">
-                  {validationResult && (
-                    <td className="py-1 pr-2">
-                      {row.validationStatus === 'pass' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-success" title="All linked checks passed" />}
-                      {row.validationStatus === 'fail' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-danger" title="One or more linked checks failed" />}
-                      {row.validationStatus === 'pending' && <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-info" title="No validation run yet" />}
-                    </td>
-                  )}
-                  {matrix.columns.map(col => (
-                    <td key={col.key} className="py-1 pr-2 font-mono sf-text-muted whitespace-nowrap">
-                      {col.key === 'testNumbers' || col.key === 'testScenario'
-                        ? String(row.cells[col.key] ?? row.testNumbers?.join(', ') ?? '-')
-                        : col.key === 'expectedBehavior'
-                          ? <span className="whitespace-normal max-w-[250px] inline-block">{row.expectedBehavior}</span>
-                          : String(row.cells[col.key] ?? '-')}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Import Progress Panel ───────────────────────────────────────────
-
-function ImportProgressPanel({ steps }: { steps: ImportProgress[] }) {
-  if (steps.length === 0) return null;
-
-  const complete = steps.find(s => s.step === 'complete');
-
-  return (
-    <div className={cardCls}>
-      <div className="text-sm font-semibold sf-text-primary mb-2">
-        {complete ? 'Import Complete' : 'Importing Field Rules Studio Contract...'}
-      </div>
-      <div className="space-y-1">
-        {steps.filter(s => s.step !== 'complete').map((s, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs">
-            {s.status === 'done' ? (
-              <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-success" title="Completed" />
-            ) : s.status === 'error' ? (
-              <span className="inline-block h-2.5 w-2.5 rounded-full sf-metric-fill-danger" title="Error" />
-            ) : (
-              <Spinner className="h-3 w-3" />
-            )}
-            <span className="font-mono sf-text-muted">{s.step}</span>
-            {s.detail && <span className="sf-text-subtle">({s.detail})</span>}
-          </div>
-        ))}
-      </div>
-      {complete?.summary && (
-        <div className="mt-2 pt-2 border-t sf-border-default text-xs sf-text-muted">
-          {complete.summary.fields} fields, {complete.summary.components} component DBs ({complete.summary.componentItems} items), {complete.summary.enums} enum catalogs, {complete.summary.rules} cross-validation rules
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main Component ──────────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────────────
 
 export function TestModePage() {
-  const LS_KEY = 'test-mode-state';
-  function loadSaved() {
-    try { return JSON.parse(sessionStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
-  }
   const saved = loadSaved();
 
-  const [sourceCategory, setSourceCategory] = useState(saved.sourceCategory || 'mouse');
-  const [testCategory, setTestCategory] = useState(saved.testCategory || '');
-  const [generatedProducts, setGeneratedProducts] = useState<TestCase[]>(saved.generatedProducts || []);
-  const [runResults, setRunResults] = useState<RunResultItem[]>(saved.runResults || []);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(saved.validationResult || null);
-  const [repairDrawerProductId, setRepairDrawerProductId] = useState<string | null>(null);
+  // WHY: sourceCategory is the real category (e.g. "mouse"). Derived from sidebar global state on mount.
+  const globalCategory = useUiStore((s) => s.category);
+  const setGlobalCategory = useUiStore((s) => s.setCategory);
+  const sourceCategory = globalCategory.startsWith('_test_')
+    ? globalCategory.replace(/^_test_/, '')
+    : globalCategory;
+
+  const [testCategory, setTestCategory] = useState<string>((saved.testCategory as string) || '');
+  const [generatedProducts, setGeneratedProducts] = useState<TestCase[]>((saved.generatedProducts as TestCase[]) || []);
+  const [runResults, setRunResults] = useState<RunResultItem[]>((saved.runResults as RunResultItem[]) || []);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>((saved.validationResult as ValidationResult) || null);
   const [importSteps, setImportSteps] = useState<ImportProgress[]>([]);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+  const [aiReview, setAiReview] = useState(Boolean(saved.aiReview));
+  const [statusLoaded, setStatusLoaded] = useState(false);
+  const importStepsRef = useRef<ImportProgress[]>([]);
+  // WHY: Per-product repair progress — shows live LLM calls during AI review
+  const [repairProgressMap, setRepairProgressMap] = useState<Record<string, RepairProgress>>({});
+  // WHY: Track which productId is currently running so cards show running state
+  const [activeProductId, setActiveProductId] = useState<string | null>(null);
+
+  // Matrix collapse state
   const matrixCollapseValues = useCollapseStore((s) => s.values);
   const matrixCollapseToggle = useCollapseStore((s) => s.toggle);
   const matrixCollapsed = {
@@ -314,68 +75,31 @@ export function TestModePage() {
     components: matrixCollapseValues['testMode:matrix:components'] ?? true,
     listsEnums: matrixCollapseValues['testMode:matrix:listsEnums'] ?? true,
   };
-  const [aiReview, setAiReview] = useState(Boolean(saved.aiReview));
-  const [sourcesPerScenario, setSourcesPerScenario] = useState<number>(saved.sourcesPerScenario ?? 0);
-  const [sharedFieldRatioPercent, setSharedFieldRatioPercent] = useState<number>(saved.sharedFieldRatioPercent ?? 40);
-  const [sameValueDuplicatePercent, setSameValueDuplicatePercent] = useState<number>(saved.sameValueDuplicatePercent ?? 30);
-  const [statusLoaded, setStatusLoaded] = useState(false);
-  const importStepsRef = useRef<ImportProgress[]>([]);
+  const toggleMatrix = useCallback((key: string) => {
+    matrixCollapseToggle(`testMode:matrix:${key}`, true);
+  }, [matrixCollapseToggle]);
 
-  // Persist key state to sessionStorage whenever it changes
+  // ── Persist to sessionStorage ──────────────────────────────────────
+
   useEffect(() => {
     try {
       sessionStorage.setItem(LS_KEY, JSON.stringify({
-        sourceCategory,
         testCategory,
         generatedProducts,
         runResults,
         validationResult,
         aiReview,
-        sourcesPerScenario,
-        sharedFieldRatioPercent,
-        sameValueDuplicatePercent,
       }));
     } catch { /* sessionStorage full or disabled */ }
-  }, [
-    sourceCategory,
-    testCategory,
-    generatedProducts,
-    runResults,
-    validationResult,
-    aiReview,
-    sourcesPerScenario,
-    sharedFieldRatioPercent,
-    sameValueDuplicatePercent,
-  ]);
+  }, [testCategory, generatedProducts, runResults, validationResult, aiReview]);
 
-  const setGlobalCategory = useUiStore((s) => s.setCategory);
+  // ── Load status from backend on mount ──────────────────────────────
 
-  // Fetch real categories for the source dropdown (separate key to avoid cache collision with AppShell)
-  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useQuery({
-    queryKey: ['categories-real'],
-    queryFn: () => api.get<string[]>('/categories'),
-  });
-
-  const queryClient = useQueryClient();
-  const normalizedCategories = Array.isArray(categories)
-    ? categories.map((c) => String(c || '').trim()).filter(Boolean)
-    : [];
-  const hasRemoteCategories = normalizedCategories.length > 0;
-  const sourceCategoryOptions = sourceCategory && !normalizedCategories.includes(sourceCategory)
-    ? [sourceCategory, ...normalizedCategories]
-    : normalizedCategories;
-  const generationConfig = {
-    sourcesPerScenario: Number.isFinite(sourcesPerScenario) ? Math.max(0, Math.min(5, sourcesPerScenario)) : 0,
-    sharedFieldRatioPercent: Number.isFinite(sharedFieldRatioPercent) ? Math.max(0, Math.min(100, sharedFieldRatioPercent)) : 40,
-    sameValueDuplicatePercent: Number.isFinite(sameValueDuplicatePercent) ? Math.max(0, Math.min(100, sameValueDuplicatePercent)) : 30,
-  };
-
-  // On mount, verify and restore state from backend (handles cold reload / stale sessionStorage)
   useEffect(() => {
     if (statusLoaded) return;
-    const cat = saved.sourceCategory || sourceCategory;
+    const cat = (saved.sourceCategory as string) || sourceCategory;
     api.get<{ ok: boolean; exists: boolean; testCategory: string; testCases: TestCase[]; runResults: RunResultItem[] }>(
-      `/test-mode/status?sourceCategory=${cat}`
+      `/test-mode/status?sourceCategory=${cat}`,
     ).then((data) => {
       if (data.exists && data.testCategory) {
         setTestCategory(data.testCategory);
@@ -383,7 +107,6 @@ export function TestModePage() {
         if (data.testCases.length > 0) setGeneratedProducts(data.testCases);
         if (data.runResults.length > 0) setRunResults(data.runResults);
       } else if (saved.testCategory) {
-        // Backend says it doesn't exist — clear stale sessionStorage state
         setTestCategory('');
         setGeneratedProducts([]);
         setRunResults([]);
@@ -394,14 +117,16 @@ export function TestModePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch contract summary when test category exists
+  // ── Contract summary query ─────────────────────────────────────────
+
   const { data: contractData } = useQuery({
     queryKey: ['contract-summary', testCategory],
     queryFn: () => api.get<ContractResponse>(`/test-mode/contract-summary?category=${testCategory}`),
     enabled: Boolean(testCategory),
   });
 
-  // WebSocket listener for import + run progress
+  // ── WebSocket: import + run progress ───────────────────────────────
+
   useEffect(() => {
     wsManager.connect();
     const unsub = wsManager.onMessage((channel, data) => {
@@ -420,7 +145,16 @@ export function TestModePage() {
       if (channel === 'test-run-progress') {
         const progress = data as RunProgress;
         setRunProgress(progress);
-        // WHY: Update panels live as each scenario completes — don't wait for the full HTTP response
+        // WHY: Track which product is actively running so the correct card shows live state
+        if (progress.status === 'running') {
+          setActiveProductId(progress.productId);
+          // Clear repair progress for this product — new scenario starting
+          setRepairProgressMap(prev => { const next = { ...prev }; delete next[progress.productId]; return next; });
+        }
+        if (progress.status === 'complete' || progress.status === 'error') {
+          setActiveProductId(null);
+          setRepairProgressMap(prev => { const next = { ...prev }; delete next[progress.productId]; return next; });
+        }
         if ((progress.status === 'complete' || progress.status === 'error') && progress.result) {
           setRunResults(prev => {
             const updated = [...prev];
@@ -431,11 +165,18 @@ export function TestModePage() {
           });
         }
       }
+      // WHY: Per-field repair progress — each LLM call updates the card live
+      if (channel === 'test-repair-progress') {
+        const progress = data as RepairProgress;
+        setRepairProgressMap(prev => ({ ...prev, [progress.productId]: progress }));
+      }
     });
     return unsub;
   }, []);
 
-  // ── Mutations ───────────────────────────────────────────────────
+  // ── Mutations ──────────────────────────────────────────────────────
+
+  const queryClient = useQueryClient();
 
   const createMut = useMutation({
     mutationFn: () => {
@@ -449,7 +190,6 @@ export function TestModePage() {
       setRunResults([]);
       setValidationResult(null);
       queryClient.invalidateQueries({ queryKey: ['contract-summary'] });
-      // Auto-switch global dropdown to the test category & refresh category list
       setGlobalCategory(data.category);
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories-real'] });
@@ -471,12 +211,9 @@ export function TestModePage() {
       return api.post<{ ok: boolean; results: RunResultItem[] }>('/test-mode/run', {
         category: testCategory,
         aiReview,
-        generation: generationConfig,
       });
     },
     onSuccess: (data) => {
-      // WHY: Merge final results — WebSocket already updated most panels live,
-      // but the HTTP response is the authoritative final set
       setRunResults(data.results || []);
       setRunProgress(null);
     },
@@ -489,7 +226,6 @@ export function TestModePage() {
         category: testCategory,
         productId,
         aiReview,
-        generation: generationConfig,
       }),
     onSuccess: (data) => {
       const newResults = data.results || [];
@@ -513,7 +249,6 @@ export function TestModePage() {
   const deleteMut = useMutation({
     mutationFn: () => api.del<{ ok: boolean }>(`/test-mode/${testCategory}`),
     onSuccess: () => {
-      // Switch back to the source category before clearing state
       setGlobalCategory(sourceCategory);
       setTestCategory('');
       setGeneratedProducts([]);
@@ -535,56 +270,13 @@ export function TestModePage() {
 
   const isRunning = createMut.isPending || generateMut.isPending || runAllMut.isPending || runOneMut.isPending || validateMut.isPending;
 
-  // ── Workflow state ─────────────────────────────────────────────
+  // ── Derived state ──────────────────────────────────────────────────
+
   const step1Done = Boolean(testCategory);
   const step2Done = generatedProducts.length > 0;
   const step3Done = runResults.length > 0;
   const step4Done = Boolean(validationResult);
 
-  // Compute disable reasons for tooltips
-  function runAllTooltip(): string {
-    if (isRunning) return 'Another operation is in progress — wait for it to finish.';
-    if (!testCategory) return 'Step 1 required: click "Create" to import the field rules contract first.';
-    if (generatedProducts.length === 0) return 'Step 2 required: click "Generate Products" to create the test scenario product files first.';
-    return `Run all ${generatedProducts.length} test scenarios through the full pipeline: deterministic source data per scenario (no LLM), then consensus + normalization + component resolution + enum matching + constraint solving + variance policies + component constraints + validation + traffic light + export.${aiReview ? ' AI Review enabled: will also run LLM review on flagged component matches.' : ''}`;
-  }
-
-  function validateTooltip(): string {
-    if (isRunning) return 'Another operation is in progress — wait for it to finish.';
-    if (!testCategory) return 'Step 1 required: click "Create" to import the field rules contract first.';
-    if (generatedProducts.length === 0) return 'Step 2 required: click "Generate Products" first.';
-    if (runResults.length === 0) return 'Step 3 required: click "Run All" first — there are no pipeline results to validate yet.';
-    return 'Validate pipeline output against per-scenario contract expectations. Reads the persisted artifacts (normalized.json, summary.json, suggestion files) for each test product and runs assertion checks per scenario: field population, confidence scores, component suggestions (new + alias), enum suggestions (new + similar + closed rejection), variance policy scoring, component constraint violations (e.g., sensor_date <= release_date), range violations, cross-validation, missing required fields, consensus resolution, and list dedup.';
-  }
-
-  // ── Helpers ─────────────────────────────────────────────────────
-
-  function getRunResult(testCaseId: number): RunResultItem | undefined {
-    return runResults.find((r) => r.testCase?.id === testCaseId);
-  }
-
-  function isScenarioRunning(productId?: string): boolean {
-    return Boolean(runProgress && runProgress.status === 'running' && productId && runProgress.productId === productId);
-  }
-
-  function statusBadge(result?: RunResultItem, productId?: string) {
-    if (isScenarioRunning(productId)) {
-      return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-info animate-pulse">running</span>;
-    }
-    if (!result) return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-neutral">pending</span>;
-    if (result.status === 'error') return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-danger">error</span>;
-    return <span className="text-[10px] px-1.5 py-0.5 rounded sf-chip-success">complete</span>;
-  }
-
-  function pct(v?: number) {
-    return v != null ? `${(v * 100).toFixed(1)}%` : '-';
-  }
-
-  const toggleMatrix = useCallback((key: string) => {
-    matrixCollapseToggle(`testMode:matrix:${key}`, true);
-  }, [matrixCollapseToggle]);
-
-  // Group test cases by category
   const groupedProducts = generatedProducts.reduce<Record<string, TestCase[]>>((acc, tc) => {
     const cat = tc.category || 'Other';
     if (!acc[cat]) acc[cat] = [];
@@ -592,571 +284,137 @@ export function TestModePage() {
     return acc;
   }, {});
 
-  // ── Render ──────────────────────────────────────────────────────
+  function getRunResult(testCaseId: number): RunResultItem | undefined {
+    return runResults.find((r) => r.testCase?.id === testCaseId);
+  }
+
+  function getScenarioChecks(testCaseId: number): import('./types.ts').ValidationCheck[] {
+    return validationResult?.results.filter(r => r.testCaseId === testCaseId) || [];
+  }
+
+  // Section pass counts
+  function sectionStats(tests: TestCase[]): { pass: number; total: number } {
+    let pass = 0;
+    let total = 0;
+    for (const tc of tests) {
+      const checks = getScenarioChecks(tc.id);
+      if (checks.length === 0) continue;
+      total += checks.length;
+      pass += checks.filter(c => c.pass).length;
+    }
+    return { pass, total };
+  }
+
+  // ── Error display ──────────────────────────────────────────────────
+
+  const error = createMut.error || generateMut.error || runAllMut.error || validateMut.error || deleteMut.error;
+
+  // ── Render ─────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold sf-text-primary">Test Mode v2</h1>
-        <p className="text-sm sf-text-muted mt-1">
-          Contract-driven pipeline validation — scenarios auto-generated from the field rules contract (universal, any category).
-        </p>
-      </div>
+    <div className="p-6 space-y-5 max-w-[1440px] mx-auto">
+      {/* Workflow Bar */}
+      <WorkflowBar
+        testCategory={testCategory}
+        step1Done={step1Done}
+        step2Done={step2Done}
+        step3Done={step3Done}
+        step4Done={step4Done}
+        scenarioCount={generatedProducts.length}
+        isRunning={isRunning}
+        aiReview={aiReview}
+        onAiToggle={() => setAiReview(prev => !prev)}
+        onCreate={() => createMut.mutate()}
+        onGenerate={() => generateMut.mutate()}
+        onRunAll={() => runAllMut.mutate()}
+        onValidate={() => validateMut.mutate()}
+        onWipeAll={() => {
+          if (confirm(`Wipe all test data for ${testCategory}? This deletes all artifacts and resets to step 1.`)) {
+            deleteMut.mutate();
+          }
+        }}
+        createPending={createMut.isPending}
+        generatePending={generateMut.isPending}
+        runPending={runAllMut.isPending}
+        validatePending={validateMut.isPending}
+        runProgress={runProgress}
+        importSteps={importSteps}
+        validationSummary={validationResult?.summary ?? null}
+      />
 
-      {/* ── Workflow Steps ──────────────────────────────────────── */}
-      <div className={`${cardCls} space-y-3`}>
-        {/* Step indicator */}
-        <div className="flex items-center gap-1 text-[10px] font-medium">
-          <span className={`px-2 py-0.5 rounded-full ${step1Done ? stepDoneCls : stepActiveCls}`}>
-            1. Import{step1Done ? ' done' : ''}
-          </span>
-          <span className="sf-text-subtle">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step2Done ? stepDoneCls : step1Done ? stepActiveCls : stepIdleCls}`}>
-            2. Generate{step2Done ? ' done' : ''}
-          </span>
-          <span className="sf-text-subtle">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step3Done ? stepDoneCls : step2Done ? stepActiveCls : stepIdleCls}`}>
-            3. Run{step3Done ? ' done' : ''}
-          </span>
-          <span className="sf-text-subtle">&rarr;</span>
-          <span className={`px-2 py-0.5 rounded-full ${step4Done ? stepDoneCls : step3Done ? stepActiveCls : stepIdleCls}`}>
-            4. Validate{step4Done ? ' done' : ''}
-          </span>
-          {testCategory && (
-            <span className="ml-auto text-xs font-mono sf-text-subtle">{testCategory}</span>
-          )}
-        </div>
-
-        {/* Buttons row */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[240px]">
-            <label className="text-xs font-medium sf-text-muted block mb-1">Source Category</label>
-            {hasRemoteCategories ? (
-              <select
-                value={sourceCategory}
-                onChange={(e) => setSourceCategory(e.target.value)}
-                className="w-full sf-input"
-                title={categoriesLoading ? 'Loading categories...' : 'Select the source category to clone into Field Test.'}
-              >
-                <option value="" disabled>{categoriesLoading ? 'Loading categories...' : 'Select category'}</option>
-                {sourceCategoryOptions.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                value={sourceCategory}
-                onChange={(e) => setSourceCategory(String(e.target.value || '').trim())}
-                placeholder={categoriesLoading ? 'Loading categories...' : 'Type source category'}
-                className="w-full sf-input"
-                title="Category list unavailable. Type a source category manually."
-              />
-            )}
-            {(categoriesError || (!categoriesLoading && !hasRemoteCategories)) && (
-              <p className="mt-1 text-[11px] sf-status-text-warning">
-                Category list unavailable. Manual category input enabled.
-              </p>
-            )}
-          </div>
-
-          <div className="relative group">
-            <button
-              onClick={() => createMut.mutate()}
-              disabled={isRunning || !sourceCategory}
-              className={btnPrimary}
-              title="Step 1 — Import: Copies the selected category's field rules contract (field_rules.json, known_values.json, cross_validation_rules.json, component DBs) into a test category. This creates an isolated sandbox so tests don't affect production data."
-            >
-              {createMut.isPending ? <Spinner className="h-4 w-4 inline mr-1" /> : null}
-              1. Create
-            </button>
-          </div>
-
-          <div className="relative group">
-            <button
-              onClick={() => generateMut.mutate()}
-              disabled={isRunning || !testCategory}
-              className={btnPrimary}
-              title={!testCategory
-                ? 'Disabled: click "Create" first to import the contract.'
-                : 'Step 2 — Generate: Creates test product JSON files, one per contract-derived scenario (happy path, new components, alias matching, enum validation, range violations, cross-validation, component constraints, variance policies, missing fields, consensus, list dedup). Scenario count is auto-derived from the contract. No LLM calls yet.'
-              }
-            >
-              {generateMut.isPending ? <Spinner className="h-4 w-4 inline mr-1" /> : null}
-              2. Generate
-            </button>
-          </div>
-
-          <div className="relative group">
-            <button
-              onClick={() => runAllMut.mutate()}
-              disabled={isRunning || !testCategory || generatedProducts.length === 0}
-              className={btnPrimary}
-              title={runAllTooltip()}
-            >
-              {runAllMut.isPending ? <Spinner className="h-4 w-4 inline mr-1" /> : null}
-              3. Run All
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setAiReview((prev) => !prev)}
-            className={aiReview ? btnPrimary : btnSecondary}
-            title="When enabled, runs the publish-pipeline validator on all fields and calls the LLM repair adapter (P1-P7 prompts) on rejected fields. Repair prompt in/out is saved to repair.json per product. Off by default (deterministic mode only)."
-          >
-            AI Review {aiReview ? 'On' : 'Off'}
-          </button>
-
-          <div className="flex items-end gap-2">
-            <label className="text-xs sf-text-muted">
-              <span className="inline-flex items-center gap-1">
-                Sources/Scenario
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="0 uses each scenario's default source count. 1-5 overrides all scenarios.">?</span>
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={5}
-                step={1}
-                value={sourcesPerScenario}
-                onChange={(e) => setSourcesPerScenario(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 sf-input"
-                title="0 uses each scenario's default source count. 1-5 overrides all scenarios."
-              />
-            </label>
-            <label className="text-xs sf-text-muted">
-              <span className="inline-flex items-center gap-1">
-                Shared %
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="Percent of non-primary-source fields copied from source 1. Higher = more agreement across sources.">?</span>
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={5}
-                value={sharedFieldRatioPercent}
-                onChange={(e) => setSharedFieldRatioPercent(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 sf-input"
-                title="Percent of non-primary-source fields copied from source 1."
-              />
-            </label>
-            <label className="text-xs sf-text-muted">
-              <span className="inline-flex items-center gap-1">
-                Duplicate %
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full sf-chip-neutral text-[10px]" title="Extra chance to force same-value duplicates even when Shared % would have varied the field.">?</span>
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={5}
-                value={sameValueDuplicatePercent}
-                onChange={(e) => setSameValueDuplicatePercent(Number.parseInt(e.target.value || '0', 10) || 0)}
-                className="block mt-1 w-20 sf-input"
-                title="Extra chance to force same-value duplicates even when Shared % does not."
-              />
-            </label>
-          </div>
-
-          <div className="relative group">
-            <button
-              onClick={() => validateMut.mutate()}
-              disabled={isRunning || !testCategory || runResults.length === 0}
-              className={btnSecondary}
-              title={validateTooltip()}
-            >
-              {validateMut.isPending ? <Spinner className="h-4 w-4 inline mr-1" /> : null}
-              4. Validate
-            </button>
-          </div>
-
-          <button
-            onClick={() => { if (confirm(`Wipe all test data for ${testCategory}? This deletes all artifacts and resets to step 1.`)) deleteMut.mutate(); }}
-            disabled={isRunning || !testCategory}
-            className={btnDanger}
-            title={!testCategory
-              ? 'No test category to wipe.'
-              : `Wipe All — delete "${testCategory}" and all its artifacts, reset UI state back to step 1, and switch back to ${sourceCategory}.`
-            }
-          >
-            Wipe All
-          </button>
-        </div>
-
-        {/* Run progress bar */}
-        {runProgress && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs sf-text-muted">
-              <Spinner className="h-3 w-3" />
-              <span className="font-mono">
-                {runProgress.index + 1}/{runProgress.total}
-              </span>
-              <span className="truncate">{runProgress.scenarioName.replace(/_/g, ' ')}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                runProgress.status === 'running' ? 'sf-chip-info' :
-                runProgress.status === 'complete' ? 'sf-chip-success' :
-                'sf-chip-danger'
-              }`}>{runProgress.status}</span>
-              {runProgress.aiReview && <span className="text-[10px] sf-chip-warning px-1 py-0.5 rounded">AI</span>}
-            </div>
-            <div className="relative h-1.5 rounded-full sf-surface-elevated overflow-hidden">
-              <progress
-                className="sr-only"
-                value={runProgress.index + (runProgress.status === 'running' ? 0 : 1)}
-                max={runProgress.total}
-              />
-              <div className="absolute inset-0 flex">
-                {Array.from({ length: runProgress.total }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 ${
-                      i < runProgress.index ? 'sf-metric-fill-success' :
-                      i === runProgress.index && runProgress.status === 'running' ? 'sf-metric-fill-info animate-pulse' :
-                      i === runProgress.index && runProgress.status === 'error' ? 'sf-metric-fill-danger' :
-                      i === runProgress.index ? 'sf-metric-fill-success' :
-                      ''
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Current step explanation */}
-        <div className="text-[11px] sf-text-muted dark:sf-text-subtle leading-relaxed">
-          {!step1Done && (
-            <span>Select a source category and click <strong>Create</strong> to import its field rules contract into an isolated test sandbox.</span>
-          )}
-          {step1Done && !step2Done && (
-            <span>Contract imported. Click <strong>Generate</strong> to create test product files — one per contract-derived scenario (new components, alias matching, enum rejection, range violations, cross-validation, component constraints, variance policies, consensus, etc.).</span>
-          )}
-          {step2Done && !step3Done && (
-            <span>{generatedProducts.length} test products ready. Click <strong>Run All</strong> to execute each through the full pipeline (deterministic source data per scenario, then consensus + normalization + runtime gate + variance scoring + constraint checking + export). Enable "AI Review" to also run LLM review on flagged component matches.</span>
-          )}
-          {step3Done && !step4Done && (
-            <span>{runResults.filter(r => r.status === 'complete').length}/{generatedProducts.length} scenarios complete. Click <strong>Validate</strong> to run contract assertion checks against the persisted artifacts — covering component suggestions, enum matching, variance policies, constraint violations, range checks, and more (or re-run individual scenarios below).</span>
-          )}
-          {step4Done && (
-            <span>Validation complete: <span className="sf-status-text-success font-medium">{validationResult!.summary.passed} passed</span>, <span className="sf-status-text-danger font-medium">{validationResult!.summary.failed} failed</span> out of {validationResult!.summary.total} checks. Review the matrices and results below.</span>
-          )}
-        </div>
-      </div>
-
-      {/* ── Error display ──────────────────────────────────────── */}
-      {(createMut.error || generateMut.error || runAllMut.error || validateMut.error || deleteMut.error) && (
-        <div className="sf-status sf-status-danger text-sm">
-          {(createMut.error || generateMut.error || runAllMut.error || validateMut.error || deleteMut.error)?.message}
-        </div>
+      {/* Error */}
+      {error && (
+        <div className="sf-status sf-status-danger text-sm">{error.message}</div>
       )}
 
-      {/* ── Import Progress ────────────────────────────────────── */}
-      {importSteps.length > 0 && <ImportProgressPanel steps={importSteps} />}
-
-      {/* ── Coverage Matrices ──────────────────────────────────── */}
-      {contractData?.matrices && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold sf-text-muted">
-            Coverage Matrices
-            {contractData.summary && (
-              <span className="ml-2 text-xs font-normal sf-text-subtle">
-                {contractData.summary.fieldCount} fields, {contractData.summary.componentTypes?.length || 0} component types, {contractData.summary.knownValuesCatalogs?.length || 0} enum catalogs
-              </span>
-            )}
-          </h2>
-
-          <MatrixTable
-            matrix={contractData.matrices.fieldRules}
-            validationResult={validationResult}
-            collapsed={matrixCollapsed.fieldRules}
-            onToggle={() => toggleMatrix('fieldRules')}
-          />
-          <MatrixTable
-            matrix={contractData.matrices.components}
-            validationResult={validationResult}
-            collapsed={matrixCollapsed.components}
-            onToggle={() => toggleMatrix('components')}
-          />
-          <MatrixTable
-            matrix={contractData.matrices.listsEnums}
-            validationResult={validationResult}
-            collapsed={matrixCollapsed.listsEnums}
-            onToggle={() => toggleMatrix('listsEnums')}
-          />
-        </div>
-      )}
-
-      {/* ── Test Cases Grid ────────────────────────────────────── */}
-      {generatedProducts.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold sf-text-muted mb-3">
-            Test Scenarios ({generatedProducts.length})
-            {runResults.length > 0 && (
-              <span className="ml-2 text-xs font-normal sf-text-subtle">
-                {runResults.filter(r => r.status === 'complete').length}/{generatedProducts.length} complete
-              </span>
-            )}
-          </h2>
-
-          {Object.entries(groupedProducts).map(([cat, tests]) => (
-            <div key={cat} className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${categoryColors[cat] || categoryColors['Edge Cases']}`}>
-                  {cat}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {tests.map((tc) => {
-                  const result = getRunResult(tc.id);
-                  const scenarioChecks = validationResult?.results.filter(r => r.testCaseId === tc.id) || [];
-                  const passChecks = scenarioChecks.filter(c => c.pass).length;
-                  const failChecks = scenarioChecks.filter(c => !c.pass).length;
-
-                  return (
-                    <div key={tc.id} className={`${cardCls} ${result?.status === 'error' ? 'sf-border-danger-soft' : ''}`}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold sf-text-primary">
-                          #{tc.id} {tc.name.replace(/_/g, ' ')}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {scenarioChecks.length > 0 && (
-                            <span className="text-[10px]">
-                              <span className="sf-status-text-success">{passChecks}</span>/<span className={failChecks > 0 ? 'sf-status-text-danger' : 'sf-text-subtle'}>{passChecks + failChecks}</span>
-                            </span>
-                          )}
-                          {statusBadge(result, result?.productId || tc.productId)}
-                        </div>
-                      </div>
-                      <p className="text-[11px] sf-text-muted mb-2">{tc.description}</p>
-
-                      {/* Running indicator */}
-                      {isScenarioRunning(result?.productId || tc.productId) && (
-                        <div className="text-[10px] mb-2 px-2 py-1.5 rounded sf-surface-elevated border sf-border-soft flex items-center gap-2">
-                          <Spinner className="h-3 w-3" />
-                          <span className="sf-text-muted font-medium">
-                            {aiReview ? 'Running validation + LLM repair calls...' : 'Running deterministic pipeline...'}
-                          </span>
-                        </div>
-                      )}
-
-                      {result && result.status === 'complete' && (
-                        <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] mb-2">
-                          <div>
-                            <span className="sf-text-subtle block">Conf</span>
-                            <span className="font-mono">{pct(result.confidence)}</span>
-                          </div>
-                          <div>
-                            <span className="sf-text-subtle block">Cov</span>
-                            <span className="font-mono">{pct(result.coverage)}</span>
-                          </div>
-                          <div>
-                            <span className="sf-text-subtle block">Traffic</span>
-                            <span className="font-mono">
-                              <span className="sf-status-text-success">{result.trafficLight?.green ?? 0}</span>{'/'}
-                              <span className="sf-status-text-warning">{result.trafficLight?.yellow ?? 0}</span>{'/'}
-                              <span className="sf-status-text-danger">{result.trafficLight?.red ?? 0}</span>
-                            </span>
-                          </div>
-                          <div>
-                            <span className="sf-text-subtle block">Conflicts</span>
-                            <span className="font-mono">{result.constraintConflicts ?? 0}</span>
-                          </div>
-                          <div>
-                            <span className="sf-text-subtle block">Missing</span>
-                            <span className="font-mono">{result.missingRequired?.length ?? 0}</span>
-                          </div>
-                          <div>
-                            <span className="sf-text-subtle block">Time</span>
-                            <span className="font-mono">{result.durationMs ? `${(result.durationMs / 1000).toFixed(1)}s` : '-'}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {result?.repairLog && result.repairLog.total > 0 && (
-                        <div className="text-[10px] mb-2 px-2 py-1.5 rounded sf-surface-elevated border sf-border-soft">
-                          <span className="font-semibold sf-text-muted">{'\u2695'} Repair:</span>{' '}
-                          <span className="sf-status-text-success">{result.repairLog.repaired} repaired</span>
-                          {result.repairLog.failed > 0 && <span className="sf-status-text-danger">, {result.repairLog.failed} failed</span>}
-                          {result.repairLog.rerunRecommended > 0 && <span className="sf-status-text-warning">, {result.repairLog.rerunRecommended} rerun</span>}
-                          {result.repairLog.promptSkipped > 0 && <span className="sf-text-subtle">, {result.repairLog.promptSkipped} skipped</span>}
-                          <span className="sf-text-dim ml-1">({result.repairLog.total} total)</span>
-                        </div>
-                      )}
-
-                      {result?.error && (
-                        <p className="text-[10px] sf-status-text-danger mb-2 truncate" title={result.error}>
-                          {result.error}
-                        </p>
-                      )}
-
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={() => runOneMut.mutate(result?.productId || tc.productId || '')}
-                          disabled={isRunning || !(result?.productId || tc.productId)}
-                          className={`${btnCls} text-[10px] bg-accent/10 text-accent hover:bg-accent/20`}
-                        >
-                          {runOneMut.isPending ? '...' : 'Run'}
-                        </button>
-                        {result?.status === 'complete' && (
-                          <>
-                            <a
-                              href={`#/review?category=${testCategory}`}
-                              className={`${btnCls} text-[10px] sf-icon-button`}
-                            >
-                              Review
-                            </a>
-                            <a
-                              href={`#/review-components?category=${testCategory}`}
-                              className={`${btnCls} text-[10px] sf-icon-button`}
-                            >
-                              Components
-                            </a>
-                          </>
-                        )}
-                        {/* WHY: Always show Repairs button if repair data exists — works from DB on reload */}
-                        {result?.repairLog && result.repairLog.total > 0 && (
-                          <button
-                            onClick={() => setRepairDrawerProductId(result.productId)}
-                            className={`${btnCls} text-[10px] sf-chip-warning`}
-                          >
-                            Repairs ({result.repairLog.total})
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Validation Results ──────────────────────────────────── */}
-      {validationResult && (
-        <div>
-          <h2 className="text-sm font-semibold sf-text-muted mb-3">
-            Validation Results
-            <span className="ml-2 text-xs font-normal">
-              <span className="sf-status-text-success">{validationResult.summary.passed} passed</span>
-              {' / '}
-              <span className="sf-status-text-danger">{validationResult.summary.failed} failed</span>
-              {' / '}
-              {validationResult.summary.total} total
-            </span>
-          </h2>
-          <div className={cardCls}>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left sf-text-subtle border-b sf-border-default">
-                  <th className="pb-2 pr-3">Product</th>
-                  <th className="pb-2 pr-3">Test Case</th>
-                  <th className="pb-2 pr-3">Check</th>
-                  <th className="pb-2 pr-3">Pass</th>
-                  <th className="pb-2">Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {validationResult.results.map((check, i) => (
-                  <tr key={i} className="border-b sf-border-default">
-                    <td className="py-1.5 pr-3 font-mono text-[10px] sf-text-muted truncate max-w-[120px]" title={check.productId}>
-                      {check.productId}
-                    </td>
-                    <td className="py-1.5 pr-3">{check.testCase}</td>
-                    <td className="py-1.5 pr-3 font-mono">{check.check}</td>
-                    <td className="py-1.5 pr-3">
-                      {check.pass ? (
-                        <span className="sf-status-text-success font-bold">PASS</span>
-                      ) : (
-                        <span className="sf-status-text-danger font-bold">FAIL</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 sf-text-subtle truncate max-w-[200px]" title={check.detail}>
-                      {check.detail}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Repair Log Drawer ───────────────────────────────── */}
-      {repairDrawerProductId && testCategory && (
-        <RepairLogDrawer
-          category={testCategory}
-          productId={repairDrawerProductId}
-          onClose={() => setRepairDrawerProductId(null)}
+      {/* Summary Strip */}
+      {step3Done && (
+        <SummaryStrip
+          validationResult={validationResult}
+          contractSummary={contractData?.summary ?? null}
+          runResults={runResults}
+          scenarioCount={generatedProducts.length}
         />
       )}
-    </div>
-  );
-}
 
-// ── Repair Log Drawer ────────────────────────────────────────────────────────
-
-function RepairLogDrawer({ category, productId, onClose }: {
-  category: string;
-  productId: string;
-  onClose: () => void;
-}) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['test-mode', 'repairs', category, productId],
-    queryFn: () => api.get<{ ok: boolean; repairs: RepairEntry[] }>(
-      `/test-mode/field-test-repairs?category=${encodeURIComponent(category)}&productId=${encodeURIComponent(productId)}`
-    ),
-    enabled: Boolean(category && productId),
-  });
-  const repairs = data?.repairs ?? [];
-
-  return (
-    <DrawerShell title="Repair Log" subtitle={productId} onClose={onClose} width={480}>
-      {isLoading && <div className="p-4"><Spinner className="h-5 w-5" /></div>}
-      {!isLoading && repairs.length === 0 && (
-        <p className="sf-text-dim text-[11px] p-4">No repair attempts for this scenario.</p>
+      {/* Coverage Matrices */}
+      {contractData?.matrices && (
+        <CoverageMatrices
+          matrices={contractData.matrices}
+          validationResult={validationResult}
+          collapsed={matrixCollapsed}
+          onToggle={toggleMatrix}
+          summaryLine={contractData.summary
+            ? `${contractData.summary.fieldCount} fields, ${contractData.summary.componentTypes?.length || 0} component types, ${contractData.summary.knownValuesCatalogs?.length || 0} enum catalogs`
+            : undefined}
+        />
       )}
-      {repairs.map((r, i) => (
-        <div key={i} className="mb-3 sf-surface-elevated rounded-lg p-3 border sf-border-soft">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="font-mono font-bold text-[11px] sf-text-primary">{r.field}</span>
-            {r.promptId && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold sf-chip-info">{r.promptId}</span>
-            )}
-            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-              r.status === 'repaired' ? 'sf-chip-success' :
-              r.status === 'still_failed' ? 'sf-chip-danger' :
-              r.status === 'rerun_recommended' ? 'sf-chip-warning' :
-              'sf-chip-neutral'
-            }`}>{r.status}</span>
-            {r.confidence > 0 && (
-              <span className="sf-text-dim text-[10px]">{(r.confidence * 100).toFixed(0)}%</span>
-            )}
-          </div>
-          {(r.value_before != null || r.value_after != null) && (
-            <div className="text-[10px] mb-2 font-mono">
-              <span className="sf-text-subtle">Before:</span>{' '}
-              <code>{String(r.value_before ?? 'unk')}</code>
-              <span className="mx-1 sf-text-dim">{'\u2192'}</span>
-              <span className="sf-text-subtle">After:</span>{' '}
-              <code>{String(r.value_after ?? 'unk')}</code>
+
+      {/* Repair Lifecycle Proof */}
+      {step3Done && <RepairLifecycleProof runResults={runResults} />}
+
+      {/* Validation Dimension Matrix */}
+      {contractData?.scenarioDefs && (
+        <DimensionMatrix
+          scenarioDefs={contractData.scenarioDefs}
+          validationResult={validationResult}
+        />
+      )}
+
+      {/* Scenario Sections */}
+      {generatedProducts.length > 0 && Object.entries(groupedProducts).map(([cat, tests]) => {
+        const stats = sectionStats(tests);
+        return (
+          <div key={cat}>
+            {/* Section header */}
+            <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b sf-border-default">
+              <h2 className="text-[15px] font-semibold sf-text-primary">{cat}</h2>
+              {stats.total > 0 && (
+                <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${sectionBadgeClass(stats.pass, stats.total)}`}>
+                  {stats.pass}/{stats.total} checks
+                </span>
+              )}
             </div>
-          )}
-          {r.prompt_in && (
-            <details className="mb-1">
-              <summary className="text-[9px] sf-text-dim cursor-pointer font-semibold select-none">Prompt In</summary>
-              <pre className="sf-pre-block text-[10px] mt-1 max-h-48 overflow-auto whitespace-pre-wrap leading-relaxed">{r.prompt_in.user}</pre>
-            </details>
-          )}
-          {r.response_out != null && (
-            <details>
-              <summary className="text-[9px] sf-text-dim cursor-pointer font-semibold select-none">Response Out</summary>
-              <pre className="sf-pre-block text-[10px] mt-1 max-h-48 overflow-auto whitespace-pre-wrap leading-relaxed">{typeof r.response_out === 'string' ? r.response_out : JSON.stringify(r.response_out, null, 2)}</pre>
-            </details>
-          )}
-          {r.error && <p className="text-[10px] sf-status-text-danger mt-1">{r.error}</p>}
-        </div>
-      ))}
-    </DrawerShell>
+
+            {/* Scenario cards */}
+            <div className="space-y-3">
+              {tests.map(tc => (
+                <ScenarioCard
+                  key={tc.id}
+                  testCase={tc}
+                  runResult={getRunResult(tc.id)}
+                  checks={getScenarioChecks(tc.id)}
+                  testCategory={testCategory}
+                  isRunning={isRunning}
+                  activeProductId={activeProductId}
+                  repairProgress={repairProgressMap[getRunResult(tc.id)?.productId ?? tc.productId ?? ''] ?? null}
+                  onRunOne={(pid) => runOneMut.mutate(pid)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

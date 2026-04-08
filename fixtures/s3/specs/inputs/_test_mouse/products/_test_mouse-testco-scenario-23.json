@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 23",
-    "model": "Scenario 23 format_violations",
-    "variant": "format_violations",
+    "model": "Scenario 23 rounding_precision",
+    "variant": "rounding_precision",
     "id": 9023,
     "identifier": "test023a"
   },
   "anchors": {},
   "_testCase": {
     "id": 23,
-    "name": "format_violations",
-    "description": "Malformed values for 6 format-checked fields -> P4 format repair",
+    "name": "rounding_precision",
+    "description": "Excess decimal places for 28 numeric fields -> deterministic rounding repair",
     "category": "Validation"
   }
 }

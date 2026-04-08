@@ -8,9 +8,8 @@ deterministic validation.
 
 RULES:
 - You MUST return valid JSON matching the response schema.
-- Confidence 0.0-1.0: only values ≥ 0.8 will be auto-applied.
-  Values 0.5-0.8 are flagged for human review.
-  Values < 0.5 are treated as rejection.
+- Your repaired value will be re-validated through the same deterministic
+  pipeline that rejected the original. It either passes or fails — binary.
 - You MUST NOT hallucinate new values. If you're unsure, return "unk".
 - For closed enums, you MUST map to an existing registered value or reject.
   You cannot invent new entries for a closed vocabulary.
@@ -57,33 +56,78 @@ export const HALLUCINATION_PATTERNS = `HALLUCINATION RED FLAGS — reject if you
 
 8. PERFECT ROUND NUMBERS for measured values:
    weight: exactly 100g, height: exactly 40mm
-   → Real measurements have some precision. Flag low confidence.`;
+   → Real measurements have some precision. Reject if suspiciously round.`;
+
+// ── Shared field contract block ──────────────────────────────────────────────
+// WHY: Every prompt gets full field context so the LLM can make informed decisions.
+
+export function buildFieldContractBlock(fieldKey, fieldRule, knownValues) {
+  const c = fieldRule?.contract || {};
+  const e = fieldRule?.enum || {};
+  const p = fieldRule?.parse || {};
+
+  const lines = [`FIELD CONTRACT for '${fieldKey}':`];
+
+  const typeParts = [];
+  if (c.type) typeParts.push(`Type: ${c.type}`);
+  if (c.shape) typeParts.push(`Shape: ${c.shape}`);
+  if (c.unit) typeParts.push(`Unit: ${c.unit}`);
+  if (typeParts.length > 0) lines.push(`  ${typeParts.join(' | ')}`);
+
+  if (c.range) {
+    const min = c.range.min != null ? c.range.min : '—';
+    const max = c.range.max != null ? c.range.max : '—';
+    lines.push(`  Range: ${min} to ${max}${c.unit ? ' ' + c.unit : ''}`);
+  }
+
+  if (c.rounding) {
+    lines.push(`  Rounding: ${c.rounding.decimals ?? '?'} decimals (${c.rounding.mode || 'nearest'})`);
+  }
+
+  const enumParts = [];
+  const policy = knownValues?.policy || e.policy;
+  if (policy) enumParts.push(`Enum: ${policy}`);
+  if (knownValues?.values) enumParts.push(`${knownValues.values.length} known values`);
+  if (e.match?.strategy) enumParts.push(`Match: ${e.match.strategy}`);
+  if (e.match?.format_hint) enumParts.push(`Format: ${e.match.format_hint}`);
+  if (enumParts.length > 0) lines.push(`  ${enumParts.join(' | ')}`);
+
+  if (p.template) lines.push(`  Template: ${p.template}`);
+
+  const acceptedFormats = p.accepted_formats;
+  if (Array.isArray(acceptedFormats) && acceptedFormats.length > 0) {
+    lines.push(`  Accepted formats: ${acceptedFormats.join(', ')}`);
+  }
+
+  return lines.join('\n');
+}
 
 // ── Per-field prompt dispatch (O(1) registry) ────────────────────────────────
 
 const EXCLUDED_CODES = new Set(['wrong_shape']);
 
 const PROMPT_REGISTRY = {
-  enum_value_not_allowed: buildEnumPrompt,
-  wrong_type:             buildTypePrompt,
+  enum_value_not_allowed:      buildEnumPrompt,
+  unknown_enum_prefer_known:   buildEnumPrompt,
+  wrong_type:                  buildTypePrompt,
   format_mismatch:        buildFormatPrompt,
-  not_in_component_db:    buildComponentPrompt,
   out_of_range:           buildRangePrompt,
   wrong_unit:             buildUnitPrompt,
+  unit_required:          buildUnitPrompt,
 };
 
 /**
  * Build an LLM repair prompt from validation rejections.
- * @param {{ rejections: object[]|null, value: *, fieldKey: string, fieldRule: object, knownValues?: object, componentDb?: object }} opts
+ * @param {{ rejections: object[]|null, value: *, fieldKey: string, fieldRule: object, knownValues?: object }} opts
  * @returns {{ promptId: string, system: string, user: string, jsonSchema: object, params: object } | null}
  */
-export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, knownValues, componentDb }) {
+export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, knownValues }) {
   if (!rejections || rejections.length === 0 || !fieldKey) return null;
 
   const promptable = rejections.find(r => !EXCLUDED_CODES.has(r.reason_code) && PROMPT_REGISTRY[r.reason_code]);
   if (!promptable) return null;
 
-  const ctx = { value, fieldKey, fieldRule, knownValues, componentDb };
+  const ctx = { value, fieldKey, fieldRule, knownValues };
   const built = PROMPT_REGISTRY[promptable.reason_code](promptable, ctx);
 
   const system = REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS;
@@ -119,13 +163,18 @@ ${constraintList}
 Product context:
 ${relevantFieldValues}
 
-For each constraint failure:
-1. If you can determine the correct value from context, provide it.
-2. If the data is genuinely conflicting, flag which field is more
-   likely wrong and why.
-3. If you cannot resolve, recommend manual review.
+For each constraint failure, create a decision entry where:
+- "value" is the field key that needs fixing (e.g. "battery_hours")
+- "resolved_to" is the corrected field value
+- "decision" is "map_to_existing" to fix, "set_unk" if unknown, or "reject" if irreconcilable
 
-Return: { repairs: [{ field, old_value, new_value, confidence, reasoning }] }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<field_key>", "decision": "map_to_existing|set_unk|reject", "resolved_to": <new value or null>, "reasoning": "..." }]
+}
+Use status "rerun_recommended" if the data is too conflicting to resolve.`;
 
   const system = REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS;
 
@@ -149,21 +198,30 @@ function buildEnumPrompt(rejection, ctx) {
 
   const valueLabel = isClosed ? 'Registered' : 'Known';
   const policyLabel = isClosed ? 'closed' : 'open_prefer_known';
-  const listLabel = isClosed ? 'registeredValuesList' : 'knownValuesList';
+  const matchStrategy = ctx.fieldRule?.enum?.match?.strategy || 'exact';
+  const formatHint = ctx.fieldRule?.enum?.match?.format_hint || null;
+  const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
-  const userMessage = `The field '${ctx.fieldKey}' has enum policy '${policyLabel}'.
+  const userMessage = `${contractBlock}
+
+The field '${ctx.fieldKey}' has enum policy '${policyLabel}' (match: ${matchStrategy}).
 The following values are not in the ${valueLabel.toLowerCase()} vocabulary:
   Unknown: ${JSON.stringify(unknownValues)}
 
 ${valueLabel} values (${values.length} total):
   ${JSON.stringify(values)}
-
+${formatHint ? `\nExpected format pattern: ${formatHint}\nYour repaired value MUST match this pattern.` : ''}
 For each unknown value:
 1. MAP_TO_EXISTING: If it's a synonym/variant of a ${valueLabel.toLowerCase()} value,
-   return the canonical ${valueLabel.toLowerCase()} name + confidence.
+   return the canonical ${valueLabel.toLowerCase()} name.
 2. ${isClosed ? 'REJECT: If it looks hallucinated or nonsensical, reject it.\n   Reason: hallucination_detected | not_a_real_' + ctx.fieldKey : 'KEEP_NEW: If it\'s a genuinely valid new value for this field,\n   confirm it. Explain why it\'s legitimate.\n3. REJECT: If it looks hallucinated, reject it.'}
 ${isClosed ? '\nYou MUST NOT invent new values for a closed enum.' : ''}
-Return: { decisions: [{ value, decision, resolved_to, confidence, reasoning }] }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<the unknown value>", "decision": "map_to_existing|keep_new|reject|set_unk", "resolved_to": "<canonical value or null>", "reasoning": "..." }]
+}`;
 
   return {
     promptId,
@@ -179,8 +237,11 @@ Return: { decisions: [{ value, decision, resolved_to, confidence, reasoning }] }
 function buildTypePrompt(rejection, ctx) {
   const expectedType = rejection.detail.expected || ctx.fieldRule?.contract?.type || 'string';
   const templateType = ctx.fieldRule?.parse?.template || 'text_field';
+  const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
-  const userMessage = `The field '${ctx.fieldKey}' (type: ${expectedType}) received a value that
+  const userMessage = `${contractBlock}
+
+The field '${ctx.fieldKey}' (type: ${expectedType}) received a value that
 could not be deterministically converted:
   Value: ${JSON.stringify(ctx.value)}
   Expected type: ${expectedType}
@@ -193,7 +254,13 @@ Your task:
 3. If the value is nonsensical or hallucinated, return null with
    reason: "hallucination_detected".
 
-Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: "..." }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <extracted value or "unk">, "reasoning": "..." }]
+}
+Use decision "reject" with resolved_to null if hallucinated. Use resolved_to "unk" if genuinely unknown.`;
 
   return {
     promptId: 'P3',
@@ -204,22 +271,30 @@ Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: "..." }`;
 
 function buildFormatPrompt(rejection, ctx) {
   const templateType = ctx.fieldRule?.parse?.template || 'text_field';
+  const formatHint = ctx.fieldRule?.enum?.match?.format_hint || null;
+  const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
-  const userMessage = `The field '${ctx.fieldKey}' value failed format validation after normalization:
+  const userMessage = `${contractBlock}
+
+The field '${ctx.fieldKey}' value failed format validation after normalization:
   Value: '${ctx.value}'
   Expected format: ${rejection.detail.reason || 'unknown'}
   Template: ${templateType}
-
-The value survived lowercase + hyphen + token_map normalization but
-still doesn't match the required format. This suggests the original
-LLM output was genuinely malformed.
+${formatHint ? `  Format pattern: ${formatHint}` : ''}
+The value does not match the required format after normalization.
 
 Decide:
-1. If you can extract a valid value, return it.
+1. If you can extract a valid value, return it.${formatHint ? '\n   Your repaired value MUST match the pattern: ' + formatHint : ''}
 2. If this looks like a hallucination, return null + reason.
 3. If the value is unknown/missing, return 'unk'.
 
-Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: '...' }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <fixed value or "unk">, "reasoning": "..." }]
+}
+Use decision "reject" with resolved_to null if hallucinated.`;
 
   return {
     promptId: 'P4',
@@ -228,40 +303,21 @@ Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: '...' }`;
   };
 }
 
-function buildComponentPrompt(rejection, ctx) {
-  const componentType = ctx.fieldRule?.parse?.component_type || ctx.fieldKey;
-  const items = ctx.componentDb?.items || [];
-  const entityList = items.map(i => i.name).join(', ');
-
-  const userMessage = `The field '${ctx.fieldKey}' (component_reference for '${componentType}') could not
-resolve the value against the component database:
-  Value: '${rejection.detail.value || ctx.value}'
-
-Known ${componentType} entities (${items.length}):
-${entityList || '(empty)'}
-
-Decide:
-1. MAP_TO_EXISTING: If this is a known component under a different name/alias.
-2. KEEP_NEW: If this is a legitimate component not yet in our DB (provide
-   maker + canonical name so we can add it).
-3. REJECT: If this looks hallucinated or is not a real ${componentType}.
-
-Return: { decision, resolved_to, confidence, reasoning }`;
-
-  return {
-    promptId: 'P5',
-    userMessage,
-    params: { rawValue: rejection.detail.value || ctx.value, componentType, entityList, count: items.length },
-  };
-}
-
 function buildRangePrompt(rejection, ctx) {
   const { min, max, actual } = rejection.detail;
   const unit = ctx.fieldRule?.contract?.unit || '';
+  const rounding = ctx.fieldRule?.contract?.rounding;
+  const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
-  const userMessage = `The field '${ctx.fieldKey}' value is outside the expected range:
+  const roundingNote = rounding
+    ? `\nRounding: ${rounding.decimals ?? '?'} decimals (${rounding.mode || 'nearest'}). Your value must respect this precision.`
+    : '';
+
+  const userMessage = `${contractBlock}
+
+The field '${ctx.fieldKey}' value is outside the expected range:
   Value: ${actual ?? ctx.value}${unit ? ' ' + unit : ''}
-  Expected range: ${min != null ? min : '—'} to ${max != null ? max : '—'}${unit ? ' ' + unit : ''}
+  Expected range: ${min != null ? min : '—'} to ${max != null ? max : '—'}${unit ? ' ' + unit : ''}${roundingNote}
 
 This may indicate a hallucinated magnitude, a unit mismatch, or a data entry error.
 
@@ -270,7 +326,13 @@ Decide:
 2. If the value is genuinely unknown, return "unk".
 3. If this looks hallucinated, reject it.
 
-Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: '...' }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <corrected numeric value or "unk">, "reasoning": "..." }]
+}
+Use decision "reject" with resolved_to null if hallucinated.`;
 
   return {
     promptId: 'P7',
@@ -281,16 +343,29 @@ Return: { resolved: <value>, confidence: 0.0-1.0, reasoning: '...' }`;
 
 function buildUnitPrompt(rejection, ctx) {
   const { expected, detected } = rejection.detail;
+  const conversions = ctx.fieldRule?.parse?.unit_conversions;
+  const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
-  const userMessage = `The field '${ctx.fieldKey}' requires unit '${expected}' but the value
+  const conversionNote = conversions && typeof conversions === 'object' && Object.keys(conversions).length > 0
+    ? `\nKnown conversion factors: ${JSON.stringify(conversions)}`
+    : '';
+
+  const userMessage = `${contractBlock}
+
+The field '${ctx.fieldKey}' requires unit '${expected}' but the value
 was given in '${detected}':
   Value: ${JSON.stringify(ctx.value)}
   Expected unit: ${expected}
-  Detected unit: ${detected}
+  Detected unit: ${detected}${conversionNote}
 
 Convert the value to ${expected} and return the numeric result.
 If the value cannot be meaningfully converted, return 'unk'.
-Return: { resolved: number, confidence: 0.0-1.0, reasoning: '...' }`;
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "<the original value>", "decision": "map_to_existing", "resolved_to": <converted number or "unk">, "reasoning": "..." }]
+}`;
 
   return {
     promptId: 'unit_conversion',

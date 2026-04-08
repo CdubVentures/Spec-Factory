@@ -143,6 +143,29 @@ describe('validateRecord — enum routing', () => {
     });
     assert.equal(r.valid, true);
   });
+
+  it('open_prefer_known unknown → invalid with unknown_enum_prefer_known rejection', () => {
+    const r = validateRecord({
+      fields: { shape: 'ergonomic' },
+      fieldRules: { shape: textRule() },
+      knownValues: { enums: { shape: { policy: 'open_prefer_known', values: ['ambidextrous', 'right-handed'] } } },
+    });
+    assert.equal(r.valid, false, 'field with unknown open_prefer_known value should be invalid');
+    const rej = r.perField.shape.rejections;
+    assert.equal(rej.length, 1);
+    assert.equal(rej[0].reason_code, 'unknown_enum_prefer_known');
+    assert.deepStrictEqual(rej[0].detail.unknown, ['ergonomic']);
+  });
+
+  it('open_prefer_known known value → valid, no rejection', () => {
+    const r = validateRecord({
+      fields: { shape: 'ambidextrous' },
+      fieldRules: { shape: textRule() },
+      knownValues: { enums: { shape: { policy: 'open_prefer_known', values: ['ambidextrous', 'right-handed'] } } },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.perField.shape.rejections.length, 0);
+  });
 });
 
 // ============================================================
@@ -193,6 +216,63 @@ describe('validateRecord — cross-field constraints', () => {
       crossRules: { rules: [groupRule()] },
     });
     assert.equal(r.crossFieldFailures.length, 1);
+  });
+});
+
+// ============================================================
+// Component DB routing
+// ============================================================
+
+describe('validateRecord — component DB routing', () => {
+  const sensorDb = { items: [{ name: 'PAW3395', aliases: ['PAW 3395'] }] };
+
+  it('component.type routes to componentDb (not just parse.component_type)', () => {
+    const r = validateRecord({
+      fields: { switch_type: 'PAW3395' },
+      fieldRules: {
+        switch_type: {
+          contract: { shape: 'scalar', type: 'string' },
+          parse: { template: 'component_reference' },
+          component: { type: 'sensor' },
+          enum: {},
+        },
+      },
+      componentDbs: { sensor: sensorDb },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.perField.switch_type.value, 'PAW3395');
+  });
+
+  it('unknown component rejects when routed via component.type', () => {
+    const r = validateRecord({
+      fields: { switch_type: 'FakeSensor9000' },
+      fieldRules: {
+        switch_type: {
+          contract: { shape: 'scalar', type: 'string' },
+          parse: { template: 'component_reference' },
+          component: { type: 'sensor' },
+          enum: {},
+        },
+      },
+      componentDbs: { sensor: sensorDb },
+    });
+    assert.equal(r.valid, false);
+    assert.ok(r.perField.switch_type.rejections.some(rej => rej.reason_code === 'not_in_component_db'));
+  });
+
+  it('parse.component_type still works (backward compat)', () => {
+    const r = validateRecord({
+      fields: { sensor: 'PAW3395' },
+      fieldRules: {
+        sensor: {
+          contract: { shape: 'scalar', type: 'string' },
+          parse: { template: 'component_reference', component_type: 'sensor' },
+          enum: {},
+        },
+      },
+      componentDbs: { sensor: sensorDb },
+    });
+    assert.equal(r.valid, true);
   });
 });
 

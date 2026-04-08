@@ -20,6 +20,7 @@ const badgeInline: Record<ParentGroup, React.CSSProperties> = {
   rev:  { background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' },
   seed: { background: '#ecfccb', color: '#4d7c0f', border: '1px solid #d9f99d' },
   comp: { background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' },
+  val:  { background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0' },
 };
 
 const badgeStyle: React.CSSProperties = {

@@ -16,7 +16,7 @@ const VALID_PARENT_PREFIXES = new Set(Object.keys(PARENT_GROUPS));
 const VALID_TYPES = new Set(['string', 'array', 'filteredArray', 'presence']);
 
 // WHY: sub-consumer key must match parent.name pattern
-const CONSUMER_KEY_RE = /^(idx|eng|rev|seed|comp)\.\w+$/;
+const CONSUMER_KEY_RE = /^(idx|eng|rev|seed|comp|val)\.\w+$/;
 
 describe('Registry entry shape', () => {
   it('every entry has required fields', () => {

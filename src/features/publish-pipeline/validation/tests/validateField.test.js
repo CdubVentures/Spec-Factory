@@ -228,6 +228,135 @@ describe('validateField — component_reference', () => {
 });
 
 // ============================================================
+// match_strategy: alias integration
+// ============================================================
+
+describe('validateField — enum match_strategy: alias', () => {
+  function aliasRule(extra = {}) {
+    return {
+      contract: { shape: 'scalar', type: 'string' },
+      parse: { template: 'text_field' },
+      enum: { policy: 'closed', match: { strategy: 'alias' } },
+      ...extra,
+    };
+  }
+
+  it('case-insensitive enum match → auto-repair to canonical', () => {
+    const r = validateField({
+      fieldKey: 'lighting',
+      value: '3 zone (rgb)',
+      fieldRule: aliasRule(),
+      knownValues: { policy: 'closed', values: ['3 Zone (RGB)', '4 Zone (RGB)', 'None'] },
+    });
+    assert.equal(r.valid, true);
+    // WHY: normalization lowercases first, then enum alias resolves to canonical
+    assert.equal(r.value, '3 Zone (RGB)');
+    assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
+  });
+
+  it('canonical input still resolves (normalize lowercases, alias restores)', () => {
+    const r = validateField({
+      fieldKey: 'lighting',
+      value: '3 Zone (RGB)',
+      fieldRule: aliasRule(),
+      knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.value, '3 Zone (RGB)');
+  });
+
+  it('no match even with alias → reject', () => {
+    const r = validateField({
+      fieldKey: 'lighting',
+      value: '5 Zone (RGB)',
+      fieldRule: aliasRule(),
+      knownValues: { policy: 'closed', values: ['3 Zone (RGB)', '4 Zone (RGB)'] },
+    });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'enum_value_not_allowed'));
+  });
+
+  it('strategy: exact (explicit) — case mismatch rejects', () => {
+    const exactRule = {
+      contract: { shape: 'scalar', type: 'string' },
+      parse: { template: 'text_field' },
+      enum: { policy: 'closed', match: { strategy: 'exact' } },
+    };
+    const r = validateField({
+      fieldKey: 'lighting',
+      value: '3 zone (rgb)',
+      fieldRule: exactRule,
+      knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
+    });
+    // WHY: normalization lowercases, but exact match against '3 Zone (RGB)' fails
+    assert.equal(r.valid, false);
+  });
+});
+
+// ============================================================
+// block_publish_when_unk + unknown_token
+// ============================================================
+
+describe('validateField — block_publish_when_unk', () => {
+  it('unk value rejected when block_publish_when_unk is true', () => {
+    const r = validateField({
+      fieldKey: 'weight',
+      value: null,
+      fieldRule: {
+        contract: { shape: 'scalar', type: 'number' },
+        parse: { template: 'number_with_unit' },
+        priority: { block_publish_when_unk: true },
+      },
+    });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unk_blocks_publish'));
+  });
+
+  it('unk value passes when block_publish_when_unk is false', () => {
+    const r = validateField({
+      fieldKey: 'weight',
+      value: null,
+      fieldRule: {
+        contract: { shape: 'scalar', type: 'number' },
+        parse: { template: 'number_with_unit' },
+        priority: { block_publish_when_unk: false },
+      },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.value, 'unk');
+  });
+
+  it('non-unk value passes regardless of block flag', () => {
+    const r = validateField({
+      fieldKey: 'weight',
+      value: 42,
+      fieldRule: {
+        contract: { shape: 'scalar', type: 'number' },
+        parse: { template: 'number_with_unit' },
+        priority: { block_publish_when_unk: true },
+      },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.value, 42);
+  });
+
+  it('unk-token input (n/a) normalized to unk → blocked', () => {
+    const r = validateField({
+      fieldKey: 'color',
+      value: 'n/a',
+      fieldRule: {
+        contract: { shape: 'scalar', type: 'string' },
+        parse: { template: 'text_field' },
+        priority: { block_publish_when_unk: true },
+      },
+    });
+    // WHY: 'n/a' is an unk token → absence normalizer converts to 'unk' → blocked
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unk_blocks_publish'));
+  });
+});
+
+// ============================================================
 // Edge cases
 // ============================================================
 

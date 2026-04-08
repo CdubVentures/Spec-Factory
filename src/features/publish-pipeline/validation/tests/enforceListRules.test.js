@@ -70,11 +70,13 @@ describe('enforceListRules — max items', () => {
   });
 });
 
-describe('enforceListRules — min items (flag only)', () => {
-  it('below min → flag violation', () => {
+describe('enforceListRules — min items (reject)', () => {
+  it('below min → reject flag', () => {
     const r = enforceListRules([], { min_items: 1 });
     assert.deepStrictEqual(r.values, []);
-    assert.ok(r.repairs.some(rep => rep.rule === 'min_items_violation'));
+    const minRep = r.repairs.find(rep => rep.rule === 'min_items_violation');
+    assert.ok(minRep);
+    assert.equal(minRep.reject, true);
   });
 
   it('meets min → no flag', () => {

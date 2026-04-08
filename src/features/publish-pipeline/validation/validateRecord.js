@@ -18,9 +18,7 @@ export function validateRecord({ fields, fieldRules, knownValues, componentDbs, 
   for (const fieldKey of Object.keys(safeFields)) {
     const fieldRule = safeRules[fieldKey] || null;
     const enumData = knownValues?.enums?.[fieldKey] || null;
-    const componentDb = componentDbs?.[fieldRule?.parse?.component_type] || null;
-
-    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData, componentDb });
+    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData });
 
     perField[fieldKey] = fieldResult;
     validatedFields[fieldKey] = fieldResult.value;

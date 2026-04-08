@@ -276,7 +276,7 @@
       "examples": [],
       "group": "Switch",
       "guidance_md": null,
-      "input_control": "text",
+      "input_control": "component_picker",
       "key": "switch_name",
       "label": "Switch Name",
       "order": 9,
@@ -308,7 +308,7 @@
       "examples": [],
       "group": "Switch",
       "guidance_md": null,
-      "input_control": "text",
+      "input_control": "component_picker",
       "key": "switch_type",
       "label": "Switch Type",
       "order": 10,
@@ -3334,6 +3334,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-05T17:47:37.870Z",
+  "generated_at": "2026-04-07T23:23:06.993Z",
   "version": 1
 }

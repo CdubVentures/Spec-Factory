@@ -1,6 +1,6 @@
 ## Purpose
 
-Test-mode synthetic data generation and test runner infrastructure. Powers the `/api/v1/test-mode/*` endpoints that let users validate indexing pipelines against contract-driven synthetic products.
+Test-mode synthetic data generation, per-key field contract audit, and test runner infrastructure. Powers the `/api/v1/test-mode/*` endpoints.
 
 ## Public API (The Contract)
 
@@ -10,21 +10,24 @@ Test-mode synthetic data generation and test runner infrastructure. Powers the `
 - `buildSeedComponentDB(contractAnalysis, testCategory, options)` — build component identity seeds
 - `loadComponentIdentityPools({ componentTypes, strict })` — load deterministic component identity pools
 - `generateTestSourceResults({ product, fieldRules, ... })` — LLM-based source result generation
-- `buildDeterministicSourceResults({ product, contractAnalysis, ... })` — deterministic (non-LLM) source results
-- `buildValidationChecks(testCaseId, { normalized, summary, ... })` — build validation check suite
-- `buildBaseValues(contractAnalysis, scenarioIdx, options)` — generate base field values for a scenario
+
+**deriveFailureValues.js** exports:
+- `deriveTestValues(fieldKey, fieldRule, knownValues, componentDb)` — derive bad/good values per field key from contract rules
+
+**fieldContractTestRunner.js** exports:
+- `runFieldContractTests({ fieldRules, knownValues, componentDbs })` — per-key field contract audit (validateField + buildRepairPrompt per field)
 
 **testRunner.js** exports:
-- `runTestProduct({ storage, config, job, sourceResults, category })` — stub test product runner (returns identity/metadata only; validation stage not yet wired)
+- `runTestProduct({ config, job, sourceResults, category, ... })` — run full pipeline for a test product
 
 ## Dependencies
 
-Allowed: `src/core/llm/`, `src/shared/`, `src/features/catalog/identity/` (via public index).
+Allowed: `src/core/llm/`, `src/shared/`, `src/features/catalog/identity/` (via public index), `src/features/publish-pipeline/validation/` (validateField, templateDispatch, formatRegistry), `src/features/publish-pipeline/repair-adapter/` (promptBuilder).
 
 Forbidden: direct imports from other feature internals.
 
 ## Domain Invariants
 
-- Output is deterministic for identical inputs (same category + scenario index = same synthetic data).
-- No side effects — all I/O is passed in via `storage`/`config` parameters.
-- Scenario definitions (`SCENARIO_DEFS_DEFAULT`) cover all field-rule edge cases: happy path, missing fields, type mismatches, component references, list dedup, etc.
+- Per-key audit is deterministic: same field rules = same test values = same results.
+- No side effects — all I/O is passed in via parameters.
+- Adding a field key requires zero code changes in test infrastructure (O(1) scaling).

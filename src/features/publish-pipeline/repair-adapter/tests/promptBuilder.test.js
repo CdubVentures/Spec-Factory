@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildRepairPrompt,
   buildCrossFieldRepairPrompt,
+  buildFieldContractBlock,
   REPAIR_SYSTEM_PROMPT,
   HALLUCINATION_PATTERNS,
 } from '../promptBuilder.js';
@@ -151,6 +152,62 @@ describe('buildRepairPrompt — P5 (not_in_component_db)', () => {
   });
 });
 
+// ── P5: component.type fallback + allow_new_components ──────────────────────
+
+describe('buildRepairPrompt — P5 component.type fallback', () => {
+  it('uses component.type when parse.component_type is missing', () => {
+    const rejections = [makeRejection('not_in_component_db', { value: 'FakeSwitch', reason: 'not found' })];
+    const rule = makeFieldRule({
+      parse: { template: 'component_reference' },
+      component: { type: 'switch', allow_new_components: false },
+    });
+    const componentDb = { items: [{ name: 'Cherry MX Red' }] };
+    const result = buildRepairPrompt({ rejections, value: 'FakeSwitch', fieldKey: 'switch_type', fieldRule: rule, componentDb });
+
+    assert.equal(result.promptId, 'P5');
+    assert.equal(result.params.componentType, 'switch');
+    assert.ok(result.user.includes("for 'switch'"));
+  });
+
+  it('shows KEEP_NEW not allowed when allow_new_components is false', () => {
+    const rejections = [makeRejection('not_in_component_db', { value: 'FakeSwitch', reason: 'not found' })];
+    const rule = makeFieldRule({
+      parse: { template: 'component_reference' },
+      component: { type: 'switch', allow_new_components: false },
+    });
+    const componentDb = { items: [{ name: 'Cherry MX Red' }] };
+    const result = buildRepairPrompt({ rejections, value: 'FakeSwitch', fieldKey: 'switch_type', fieldRule: rule, componentDb });
+
+    assert.ok(result.user.includes('NOT allowed'));
+  });
+
+  it('shows KEEP_NEW allowed when allow_new_components is true', () => {
+    const rejections = [makeRejection('not_in_component_db', { value: 'NewSensor', reason: 'not found' })];
+    const rule = makeFieldRule({
+      parse: { template: 'component_reference' },
+      component: { type: 'sensor', allow_new_components: true },
+    });
+    const componentDb = { items: [{ name: 'PAW3395' }] };
+    const result = buildRepairPrompt({ rejections, value: 'NewSensor', fieldKey: 'sensor', fieldRule: rule, componentDb });
+
+    assert.ok(result.user.includes('legitimate component'));
+    assert.ok(!result.user.includes('NOT allowed'));
+  });
+});
+
+// ── unit_required prompt ────────────────────────────────────────────────────
+
+describe('buildRepairPrompt — unit_required', () => {
+  it('builds prompt for bare number missing required unit', () => {
+    const rejections = [makeRejection('unit_required', { expected: 'g', detected: '' })];
+    const rule = makeFieldRule({ contract: { type: 'number', unit: 'g' }, parse: { strict_unit_required: true } });
+    const result = buildRepairPrompt({ rejections, value: '42', fieldKey: 'weight', fieldRule: rule });
+
+    assert.equal(result.promptId, 'unit_conversion');
+    assert.ok(result.user.includes("'g'"));
+  });
+});
+
 // ── P7: out_of_range ─────────────────────────────────────────────────────────
 
 describe('buildRepairPrompt — P7 (out_of_range)', () => {
@@ -213,6 +270,80 @@ describe('buildRepairPrompt — system prompt + schema', () => {
     const result = buildRepairPrompt({ rejections, value: 'abc', fieldKey: 'weight', fieldRule: makeFieldRule() });
     assert.equal(typeof result.jsonSchema, 'object');
     assert.ok(result.jsonSchema.properties);
+  });
+});
+
+// ── Field contract block enrichment ──────────────────────────────────────────
+
+describe('buildRepairPrompt — field contract block', () => {
+  it('P1 includes FIELD CONTRACT block', () => {
+    const rejections = [makeRejection('enum_value_not_allowed', { unknown: ['pink'], policy: 'closed' })];
+    const rule = makeFieldRule({ contract: { type: 'string', shape: 'scalar' }, enum: { policy: 'closed' } });
+    const kv = { policy: 'closed', values: ['black'] };
+    const result = buildRepairPrompt({ rejections, value: 'pink', fieldKey: 'color', fieldRule: rule, knownValues: kv });
+    assert.ok(result.user.includes('FIELD CONTRACT'));
+    assert.ok(result.user.includes("'color'"));
+  });
+
+  it('P3 includes full contract (type, unit, range)', () => {
+    const rejections = [makeRejection('wrong_type', { expected: 'number', reason: 'fail' })];
+    const rule = makeFieldRule({ contract: { type: 'number', unit: 'g', range: { min: 5, max: 500 } } });
+    const result = buildRepairPrompt({ rejections, value: 'abc', fieldKey: 'weight', fieldRule: rule });
+    assert.ok(result.user.includes('FIELD CONTRACT'));
+    assert.ok(result.user.includes('number'));
+    assert.ok(result.user.includes('5 to 500'));
+  });
+
+  it('P7 includes rounding info', () => {
+    const rejections = [makeRejection('out_of_range', { min: 5, max: 500, actual: 5000 })];
+    const rule = makeFieldRule({ contract: { type: 'number', unit: 'g', range: { min: 5, max: 500 }, rounding: { decimals: 1, mode: 'nearest' } } });
+    const result = buildRepairPrompt({ rejections, value: 5000, fieldKey: 'weight', fieldRule: rule });
+    assert.ok(result.user.includes('Rounding'));
+    assert.ok(result.user.includes('1 decimals'));
+  });
+});
+
+describe('buildRepairPrompt — format_hint enrichment', () => {
+  it('P1 includes format_hint when present', () => {
+    const rejections = [makeRejection('enum_value_not_allowed', { unknown: ['3 rgb'], policy: 'closed' })];
+    const rule = makeFieldRule({ enum: { policy: 'closed', match: { strategy: 'alias', format_hint: '^\\d+ Zone \\(RGB\\)$' } } });
+    const kv = { policy: 'closed', values: ['3 Zone (RGB)'] };
+    const result = buildRepairPrompt({ rejections, value: '3 rgb', fieldKey: 'lighting', fieldRule: rule, knownValues: kv });
+    assert.ok(result.user.includes('format_hint') || result.user.includes('Format pattern') || result.user.includes('\\d+ Zone'));
+  });
+
+  it('P1 includes match strategy', () => {
+    const rejections = [makeRejection('enum_value_not_allowed', { unknown: ['pink'], policy: 'closed' })];
+    const rule = makeFieldRule({ enum: { policy: 'closed', match: { strategy: 'alias' } } });
+    const kv = { policy: 'closed', values: ['black'] };
+    const result = buildRepairPrompt({ rejections, value: 'pink', fieldKey: 'color', fieldRule: rule, knownValues: kv });
+    assert.ok(result.user.includes('alias'));
+  });
+
+  it('P4 includes format_hint when present', () => {
+    const rejections = [makeRejection('format_mismatch', { reason: 'bad format' })];
+    const rule = makeFieldRule({ parse: { template: 'text_field' }, enum: { match: { format_hint: '^\\d+ Zone' } } });
+    const result = buildRepairPrompt({ rejections, value: 'bad', fieldKey: 'lighting', fieldRule: rule });
+    assert.ok(result.user.includes('\\d+ Zone'));
+  });
+});
+
+describe('buildRepairPrompt — unit_conversions enrichment', () => {
+  it('unit prompt includes conversion factors when present', () => {
+    const rejections = [makeRejection('wrong_unit', { expected: 'g', detected: 'lb' })];
+    const rule = makeFieldRule({ contract: { unit: 'g' }, parse: { unit_conversions: { lb: 453.592, oz: 28.3495 } } });
+    const result = buildRepairPrompt({ rejections, value: '2.65 lb', fieldKey: 'weight', fieldRule: rule });
+    assert.ok(result.user.includes('453.592'));
+    assert.ok(result.user.includes('conversion factor'));
+  });
+
+  it('unit prompt works without conversions', () => {
+    const rejections = [makeRejection('wrong_unit', { expected: 'g', detected: 'lb' })];
+    const rule = makeFieldRule({ contract: { unit: 'g' } });
+    const result = buildRepairPrompt({ rejections, value: '2.65 lb', fieldKey: 'weight', fieldRule: rule });
+    assert.equal(result.promptId, 'unit_conversion');
+    // Should NOT contain conversion factors
+    assert.equal(result.user.includes('conversion factor'), false);
   });
 });
 

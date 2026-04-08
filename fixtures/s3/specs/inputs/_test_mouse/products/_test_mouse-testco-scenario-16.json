@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 16,
     "name": "min_evidence_refs",
-    "description": "Only 1 source for 8 fields requiring 2+ evidence refs (dpi, height, lngth, polling_rate, sensor, switch, weight, width)",
+    "description": "Only 1 source for 29 fields requiring 2+ evidence refs (actuation_adjustment_step, adjustable_actuation_max, adjustable_actuation_min, adjustable_input_granularity, analog_input, anti_ghosting, bottom_out_force, connection, debounce_time, depth, form_factor, key_count, key_rollover, keycap_thickness, layout_standard, multi_key_latency, polling_rate_wired, polling_rate_wireless, rapid_trigger, scan_rate, single_key_latency, socd_cleaning, sound_dampening, sound_profile, switch_name, switch_type, typing_noise, weight, width)",
     "category": "Edge Cases"
   }
 }

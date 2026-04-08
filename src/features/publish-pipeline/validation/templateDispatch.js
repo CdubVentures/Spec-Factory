@@ -16,6 +16,9 @@ const TEMPLATE_NORMALIZERS = {
   list_of_numbers_with_unit: parsePollingList,
 };
 
+// WHY: Exported for phaseRegistry.js — keeps dispatch applicability in sync with actual templates.
+export const DISPATCHED_TEMPLATE_KEYS = new Set(Object.keys(TEMPLATE_NORMALIZERS));
+
 /**
  * O(1) template dispatch. Routes specialized templates to their normalizer.
  * Returns null for fallthrough templates (handled by the type-branch instead).

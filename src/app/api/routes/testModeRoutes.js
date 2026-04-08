@@ -19,16 +19,12 @@ export function registerTestModeRoutes(ctx) {
     listFiles,
     resolveCategoryAlias,
     broadcastWs,
-    buildTrafficLight,
-    deriveTrafficLightCounts,
-    readLatestArtifacts,
     analyzeContract,
     buildTestProducts,
     generateTestSourceResults,
-    buildDeterministicSourceResults,
     buildSeedComponentDB,
-    buildValidationChecks,
     loadComponentIdentityPools,
+    runFieldContractTests,
     runTestProduct,
     purgeTestModeCategoryState,
     resetTestModeSharedReviewState,
@@ -202,7 +198,7 @@ export function registerTestModeRoutes(ctx) {
           productId: job.productId
         });
 
-        // DB-first: use field_test row if available, fall back to artifacts
+        // DB is SSOT for test run results
         const ftRow = fieldTestRows.get(job.productId);
         if (ftRow) {
           runResults.push({
@@ -226,35 +222,7 @@ export function registerTestModeRoutes(ctx) {
               promptSkipped: ftRow.repair_skipped,
             } : null,
           });
-          continue;
         }
-
-        try {
-          const latest = await readLatestArtifacts(storage, testCategory, job.productId);
-          const summary = latest.summary && typeof latest.summary === 'object'
-            ? latest.summary
-            : null;
-          if (summary && Object.keys(summary).length > 0) {
-            const confidence = toUnitRatio(summary.confidence) ?? toUnitRatio(summary.confidence_percent);
-            const coverage = toUnitRatio(summary.coverage_overall) ?? toUnitRatio(summary.coverage_overall_percent);
-            const completeness = toUnitRatio(summary.completeness_required) ?? toUnitRatio(summary.completeness_required_percent);
-            const trafficLight = deriveTrafficLightCounts({ summary, provenance: latest.provenance }, buildTrafficLight);
-            runResults.push({
-              productId: job.productId,
-              status: 'complete',
-              testCase: job._testCase,
-              confidence,
-              coverage,
-              completeness,
-              trafficLight,
-              constraintConflicts: summary?.constraint_analysis?.contradictionCount || summary?.constraint_analysis?.contradiction_count || 0,
-              missingRequired: Array.isArray(summary?.missing_required_fields) ? summary.missing_required_fields : [],
-              curationSuggestions: summary?.runtime_engine?.curation_suggestions_count || 0,
-              runtimeFailures: (summary?.runtime_engine?.failures || []).length,
-              durationMs: toInt(summary?.duration_ms, 0) || undefined
-            });
-          }
-        } catch { /* no artifacts yet */ }
       }
 
       return jsonRes(res, 200, { ok: true, exists: true, testCategory, testCases, runResults });
@@ -380,6 +348,14 @@ export function registerTestModeRoutes(ctx) {
         ? body.generation
         : {};
 
+      // WHY: Deterministic mode runs per-key field contract audit directly — no products, no sources, no consensus.
+      if (!body.useLlm) {
+        broadcastWs('test-run-progress', { status: 'running', audit: true });
+        const auditResults = runFieldContractTests({ fieldRules, knownValues, componentDbs: componentDBs });
+        broadcastWs('test-run-progress', { status: 'complete', audit: true, summary: auditResults.summary });
+        return jsonRes(res, 200, { ok: true, results: [{ status: 'complete', audit: auditResults }] });
+      }
+
       const results = [];
       const totalProducts = productFiles.length;
       for (let pi = 0; pi < totalProducts; pi++) {
@@ -403,36 +379,28 @@ export function registerTestModeRoutes(ctx) {
         });
 
         try {
-          let sourceResults;
-          if (body.useLlm) {
-            sourceResults = await generateTestSourceResults({
-              product: job,
-              fieldRules,
-              componentDBs,
-              knownValues,
-              config,
-              contractAnalysis,
-              generationOptions,
-            });
-          } else {
-            sourceResults = buildDeterministicSourceResults({
-              product: job,
-              contractAnalysis,
-              fieldRules,
-              componentDBs,
-              knownValues,
-              generationOptions,
-            });
-          }
+          const sourceResults = await generateTestSourceResults({
+            product: job,
+            fieldRules,
+            componentDBs,
+            knownValues,
+            config,
+            contractAnalysis,
+            generationOptions,
+          });
 
           const result = await runTestProduct({
-            storage, config, job, sourceResults, category,
+            config, job, sourceResults, category,
             specDb: runtimeSpecDb,
             fieldRules,
             knownValues,
             componentDBs,
             aiReview: body.aiReview ?? false,
             logger,
+            // WHY: Stream per-field repair progress so the UI shows each LLM call live
+            onProgress: (body.aiReview) ? (progress) => {
+              broadcastWs('test-repair-progress', { productId: job.productId, scenarioName, ...progress });
+            } : null,
           });
           const fullResult = { productId: job.productId, status: 'complete', ...result };
           results.push(fullResult);
@@ -463,9 +431,15 @@ export function registerTestModeRoutes(ctx) {
 
       const resyncSpecDb = body?.resyncSpecDb !== false;
       if (runtimeSpecDb && resyncSpecDb) {
-        // WHY: Preserve field_test rows across purge+resync — they have no file source
+        // WHY: Preserve field_test + curation rows across purge+resync — they have no file source
         let savedFieldTestRows = [];
+        let savedCurationRows = [];
         try { savedFieldTestRows = runtimeSpecDb.getFieldTestByCategory() || []; } catch { /* table may not exist */ }
+        try {
+          const enumSugs = runtimeSpecDb.getCurationSuggestions('enum_value') || [];
+          const compSugs = runtimeSpecDb.getCurationSuggestions('new_component') || [];
+          savedCurationRows = [...enumSugs, ...compSugs];
+        } catch { /* table may not exist */ }
 
         try {
           if (!body.productId) {
@@ -486,9 +460,12 @@ export function registerTestModeRoutes(ctx) {
           });
         }
 
-        // Restore field_test rows after resync
+        // Restore field_test + curation rows after resync
         for (const row of savedFieldTestRows) {
           try { runtimeSpecDb.upsertFieldTest(row); } catch { /* non-fatal */ }
+        }
+        for (const row of savedCurationRows) {
+          try { runtimeSpecDb.upsertCurationSuggestion(row); } catch { /* non-fatal */ }
         }
       }
 
@@ -523,64 +500,34 @@ export function registerTestModeRoutes(ctx) {
         return jsonRes(res, 400, { ok: false, error: 'invalid_test_category' });
       }
 
-      const productsDir = path.join('fixtures', 's3', 'specs', 'inputs', category, 'products');
-      const productFiles = await listFiles(productsDir, '.json');
-      const allChecks = [];
-      let passed = 0;
-      let failed = 0;
-
-      // SQL is now the SSOT for curation suggestions
-      let suggestionsEnums = { suggestions: [] };
-      let suggestionsComponents = { suggestions: [] };
-      let validateSpecDb = null;
-      try {
-        validateSpecDb = await getSpecDbReady(category);
-        if (validateSpecDb) {
-          suggestionsEnums = { suggestions: validateSpecDb.getCurationSuggestions('enum_value') || [] };
-          suggestionsComponents = { suggestions: validateSpecDb.getCurationSuggestions('new_component') || [] };
-        }
-      } catch { /* non-fatal — specDb may not be ready */ }
-
-      let contractAnalysis = null;
-      try {
-        const validateCR = validateSpecDb?.getCompiledRules?.() ?? null;
-        contractAnalysis = await analyzeContract(HELPER_ROOT, category, { compiledRules: validateCR });
-      } catch { /* non-fatal */ }
-      const scenarioDefs = contractAnalysis?.scenarioDefs || null;
-
-      for (const pf of productFiles) {
-        const job = await safeReadJson(path.join(productsDir, pf));
-        if (!job?._testCase) continue;
-
-        const productId = job.productId;
-        const testCase = job._testCase;
-
-        const latest = await readLatestArtifacts(storage, category, productId);
-        const normalizedSpec = latest.normalized;
-        const summary = latest.summary;
-
-        const hasRun = Boolean(summary?.runId || summary?.productId);
-        if (!hasRun) {
-          allChecks.push({ productId, testCase: testCase.name, testCaseId: testCase.id, check: 'has_run', pass: false, detail: 'No output artifacts found' });
-          failed++;
-          continue;
-        }
-
-        const scenarioChecks = buildValidationChecks(testCase.id, {
-          normalized: normalizedSpec,
-          summary,
-          suggestionsEnums,
-          suggestionsComponents,
-          scenarioDefs
-        });
-
-        for (const sc of scenarioChecks) {
-          allChecks.push({ productId, testCase: testCase.name, testCaseId: testCase.id, ...sc });
-          sc.pass ? passed++ : failed++;
+      // WHY: Per-key field contract audit — loads compiled rules and runs every field through validateField
+      const runtimeSpecDb = await getSpecDbReady(category).catch(() => null);
+      const compiledRules = runtimeSpecDb?.getCompiledRules?.() ?? null;
+      let auditFieldRules, auditKnownValues, auditComponentDBs;
+      if (compiledRules?.fields) {
+        auditFieldRules = { fields: compiledRules.fields };
+        auditKnownValues = compiledRules.known_values || {};
+        auditComponentDBs = compiledRules.component_dbs || {};
+      } else {
+        const genDir = path.join(HELPER_ROOT, category, '_generated');
+        auditFieldRules = await safeReadJson(path.join(genDir, 'field_rules.json')) || {};
+        auditKnownValues = await safeReadJson(path.join(genDir, 'known_values.json')) || {};
+        auditComponentDBs = {};
+        const compDbDir = path.join(genDir, 'component_db');
+        const compFiles = await listFiles(compDbDir, '.json').catch(() => []);
+        for (const f of compFiles) {
+          const data = await safeReadJson(path.join(compDbDir, f));
+          if (data) auditComponentDBs[data?.component_type || f.replace('.json', '')] = data;
         }
       }
 
-      return jsonRes(res, 200, { results: allChecks, summary: { passed, failed, total: passed + failed } });
+      const auditResults = runFieldContractTests({
+        fieldRules: auditFieldRules,
+        knownValues: auditKnownValues,
+        componentDbs: auditComponentDBs,
+      });
+
+      return jsonRes(res, 200, auditResults);
     }
 
     // DELETE /api/v1/test-mode/{category}

@@ -246,12 +246,12 @@ export function createQueueProductStore({ db, category, stmts }) {
         category, product_id, scenario_id, scenario_name, scenario_category, scenario_desc, run_id,
         confidence, coverage, completeness, traffic_green, traffic_yellow, traffic_red,
         constraint_conflicts, missing_required, curation_suggestions, runtime_failures, duration_ms,
-        validation_json, repair_json, repair_total, repair_repaired, repair_failed, repair_rerun, repair_skipped
+        fields_json, validation_json, repair_json, repair_total, repair_repaired, repair_failed, repair_rerun, repair_skipped
       ) VALUES (
         @category, @product_id, @scenario_id, @scenario_name, @scenario_category, @scenario_desc, @run_id,
         @confidence, @coverage, @completeness, @traffic_green, @traffic_yellow, @traffic_red,
         @constraint_conflicts, @missing_required, @curation_suggestions, @runtime_failures, @duration_ms,
-        @validation_json, @repair_json, @repair_total, @repair_repaired, @repair_failed, @repair_rerun, @repair_skipped
+        @fields_json, @validation_json, @repair_json, @repair_total, @repair_repaired, @repair_failed, @repair_rerun, @repair_skipped
       )
       ON CONFLICT(category, product_id) DO UPDATE SET
         scenario_id = excluded.scenario_id, scenario_name = excluded.scenario_name,
@@ -261,7 +261,8 @@ export function createQueueProductStore({ db, category, stmts }) {
         traffic_yellow = excluded.traffic_yellow, traffic_red = excluded.traffic_red,
         constraint_conflicts = excluded.constraint_conflicts, missing_required = excluded.missing_required,
         curation_suggestions = excluded.curation_suggestions, runtime_failures = excluded.runtime_failures,
-        duration_ms = excluded.duration_ms, validation_json = excluded.validation_json,
+        duration_ms = excluded.duration_ms, fields_json = excluded.fields_json,
+        validation_json = excluded.validation_json,
         repair_json = excluded.repair_json, repair_total = excluded.repair_total,
         repair_repaired = excluded.repair_repaired, repair_failed = excluded.repair_failed,
         repair_rerun = excluded.repair_rerun, repair_skipped = excluded.repair_skipped,
@@ -285,6 +286,7 @@ export function createQueueProductStore({ db, category, stmts }) {
       curation_suggestions: row.curation_suggestions ?? 0,
       runtime_failures: row.runtime_failures ?? 0,
       duration_ms: row.duration_ms ?? 0,
+      fields_json: row.fields_json ?? null,
       validation_json: row.validation_json ?? null,
       repair_json: row.repair_json ?? null,
       repair_total: row.repair_total ?? 0,

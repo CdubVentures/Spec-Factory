@@ -745,7 +745,7 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "delimiter": ",",
+      "delimiter": "",
       "field": "connection",
       "header_row": 0,
       "manual_values": [
@@ -806,7 +806,7 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "delimiter": ",",
+      "delimiter": "",
       "field": "wireless_technology",
       "header_row": 0,
       "manual_values": [
@@ -1920,7 +1920,7 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "delimiter": ",",
+      "delimiter": "",
       "field": "color",
       "header_row": 0,
       "manual_values": [
@@ -1954,7 +1954,7 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "delimiter": ",",
+      "delimiter": "",
       "field": "included_accessories",
       "header_row": 0,
       "manual_values": [
@@ -2017,7 +2017,7 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "delimiter": ",",
+      "delimiter": "",
       "field": "compatible_os",
       "header_row": 0,
       "manual_values": [
@@ -2035,6 +2035,109 @@
         "difficulty": "easy",
         "effort": 3,
         "required_level": "optional"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "colors",
+      "header_row": 0,
+      "manual_values": [
+        "amber",
+        "beige",
+        "black",
+        "blue",
+        "brown",
+        "coral",
+        "cyan",
+        "dark-blue",
+        "dark-brown",
+        "dark-cyan",
+        "dark-fuchsia",
+        "dark-gray",
+        "dark-green",
+        "dark-indigo",
+        "dark-lime",
+        "dark-orange",
+        "dark-pink",
+        "dark-purple",
+        "dark-red",
+        "dark-rose",
+        "dark-sky",
+        "dark-slate",
+        "dark-stone",
+        "dark-teal",
+        "dark-violet",
+        "dark-yellow",
+        "emerald",
+        "fuchsia",
+        "gold",
+        "gray",
+        "green",
+        "indigo",
+        "ivory",
+        "lavender",
+        "light-amber",
+        "light-blue",
+        "light-brown",
+        "light-coral",
+        "light-cyan",
+        "light-emerald",
+        "light-fuchsia",
+        "light-gray",
+        "light-green",
+        "light-indigo",
+        "light-lime",
+        "light-olive",
+        "light-orange",
+        "light-pink",
+        "light-purple",
+        "light-red",
+        "light-rose",
+        "light-sky",
+        "light-slate",
+        "light-stone",
+        "light-teal",
+        "light-violet",
+        "light-yellow",
+        "lime",
+        "magenta",
+        "maroon",
+        "navy",
+        "olive",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "rose",
+        "salmon",
+        "silver",
+        "sky",
+        "slate",
+        "stone",
+        "teal",
+        "turquoise",
+        "violet",
+        "white",
+        "yellow"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "expected",
+        "difficulty": "medium",
+        "effort": 3,
+        "required_level": "expected"
       },
       "row_end": 0,
       "row_start": 2,
@@ -2094,6 +2197,13 @@
   ],
   "field_overrides": {
     "actuation_adjustment_step": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "actuation step",
         "adjustment step",
@@ -2103,6 +2213,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "actuation_adjustment_step",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2119,7 +2230,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Actuation Adjustment Step",
       "effort": 6,
       "enum": {
         "match": {
@@ -2145,6 +2258,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "actuation_adjustment_step",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2156,6 +2270,7 @@
       "group": "Switch",
       "key": "actuation_adjustment_step",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2248,10 +2363,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "actuation_distance": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "actuation distance",
         "pre-travel"
@@ -2260,6 +2383,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "actuation_distance",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2276,7 +2400,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Actuation Distance",
       "effort": 5,
       "enum": {
         "match": {
@@ -2302,6 +2428,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "actuation_distance",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2313,6 +2440,7 @@
       "group": "Switch",
       "key": "actuation_distance",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2405,10 +2533,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "actuation_force": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "actuation force",
         "operating force"
@@ -2417,6 +2554,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "actuation_force",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2433,7 +2571,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Actuation Force",
       "effort": 5,
       "enum": {
         "match": {
@@ -2459,6 +2599,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "actuation_force",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2470,6 +2611,7 @@
       "group": "Switch",
       "key": "actuation_force",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2564,10 +2706,19 @@
         "tooltip_source": null
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "adjustable_actuation_max": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "maximum actuation",
         "adjustable actuation max",
@@ -2577,6 +2728,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_actuation_max",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2593,7 +2745,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Adjustable Actuation Max",
       "effort": 6,
       "enum": {
         "match": {
@@ -2619,6 +2773,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_actuation_max",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2630,6 +2785,7 @@
       "group": "Switch",
       "key": "adjustable_actuation_max",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2722,10 +2878,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "adjustable_actuation_min": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "minimum actuation",
         "adjustable actuation min",
@@ -2735,6 +2899,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_actuation_min",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -2751,7 +2916,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Adjustable Actuation Min",
       "effort": 6,
       "enum": {
         "match": {
@@ -2777,6 +2944,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_actuation_min",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2788,6 +2956,7 @@
       "group": "Switch",
       "key": "adjustable_actuation_min",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2880,10 +3049,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "adjustable_feet": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "adjustable feet",
         "height adjustment feet"
@@ -2892,6 +3069,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_feet",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -2900,7 +3078,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Adjustable Feet",
       "effort": 3,
       "enum": {
         "match": {
@@ -2926,6 +3106,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_feet",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -2937,6 +3118,7 @@
       "group": "Dimensions",
       "key": "adjustable_feet",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3017,10 +3199,18 @@
         "tooltip_md": "Built-in foot positions for height adjustment.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "adjustable_input_granularity": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "adjustable input granularity",
         "adjustable actuation step"
@@ -3029,6 +3219,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_input_granularity",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3037,7 +3228,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Adjustable Input Granularity",
       "effort": 6,
       "enum": {
         "match": {
@@ -3063,6 +3256,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_input_granularity",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3074,6 +3268,7 @@
       "group": "Performance",
       "key": "adjustable_input_granularity",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3154,10 +3349,18 @@
         "tooltip_md": "Minimum adjustable actuation step size.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "analog_input": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "analog input",
         "controller input",
@@ -3167,6 +3370,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "analog_input",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3175,7 +3379,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Analog Input",
       "effort": 6,
       "enum": {
         "match": {
@@ -3201,6 +3407,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "analog_input",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3212,6 +3419,7 @@
       "group": "Performance",
       "key": "analog_input",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3293,10 +3501,18 @@
         "tooltip_md": "Whether the keyboard can output analog or controller-style input.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "anti_ghosting": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "anti-ghosting",
         "anti ghosting",
@@ -3306,6 +3522,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "anti_ghosting",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3314,7 +3531,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Anti-Ghosting",
       "effort": 3,
       "enum": {
         "match": {
@@ -3340,6 +3559,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "anti_ghosting",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3351,6 +3571,7 @@
       "group": "Performance",
       "key": "anti_ghosting",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3432,10 +3653,18 @@
         "tooltip_md": "Ghosting prevention level.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "arrow_keys": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "arrow keys",
         "dedicated arrows"
@@ -3444,6 +3673,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "arrow_keys",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3452,7 +3682,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Arrow Keys",
       "effort": 3,
       "enum": {
         "match": {
@@ -3478,6 +3710,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "arrow_keys",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3489,6 +3722,7 @@
       "group": "Layout",
       "key": "arrow_keys",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3570,10 +3804,18 @@
         "tooltip_md": "Whether dedicated arrow keys are present.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "backlighting": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "backlighting",
         "lighting"
@@ -3582,6 +3824,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "backlighting",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3590,7 +3833,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Backlighting",
       "effort": 3,
       "enum": {
         "match": {
@@ -3616,6 +3861,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "backlighting",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3627,6 +3873,7 @@
       "group": "Features",
       "key": "backlighting",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3708,10 +3955,18 @@
         "tooltip_md": "Backlight class supported by the keyboard.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "base_model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "base model",
         "series"
@@ -3720,6 +3975,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "base_model",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -3728,7 +3984,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Base Model",
       "effort": 3,
       "enum": {
         "match": {
@@ -3754,6 +4012,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "base_model",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3765,6 +4024,7 @@
       "group": "Identity",
       "key": "base_model",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3845,10 +4105,18 @@
         "tooltip_md": "Base model without bundle suffixes.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "battery_capacity": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "battery capacity"
       ],
@@ -3856,6 +4124,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "battery_capacity",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -3872,7 +4141,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Battery Capacity",
       "effort": 4,
       "enum": {
         "match": {
@@ -3898,6 +4169,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "battery_capacity",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -3909,6 +4181,7 @@
       "group": "Power",
       "key": "battery_capacity",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3997,10 +4270,18 @@
         "tooltip_source": null
       },
       "unit": "mAh",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "battery_life_off": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "battery life (lighting off)",
         "battery life off",
@@ -4010,6 +4291,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "battery_life_off",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4026,7 +4308,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Battery Life (Lighting Off)",
       "effort": 4,
       "enum": {
         "match": {
@@ -4052,6 +4336,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "battery_life_off",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4063,6 +4348,7 @@
       "group": "Power",
       "key": "battery_life_off",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4158,10 +4444,18 @@
         "tooltip_source": null
       },
       "unit": "hours",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "battery_life_rgb": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "battery life (lighting on)",
         "battery life rgb",
@@ -4171,6 +4465,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "battery_life_rgb",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4187,7 +4482,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Battery Life (Lighting On)",
       "effort": 4,
       "enum": {
         "match": {
@@ -4213,6 +4510,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "battery_life_rgb",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4224,6 +4522,7 @@
       "group": "Power",
       "key": "battery_life_rgb",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4319,10 +4618,18 @@
         "tooltip_source": null
       },
       "unit": "hours",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "bluetooth_version": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "bluetooth version",
         "bt version"
@@ -4331,6 +4638,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "bluetooth_version",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4339,7 +4647,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Bluetooth Version",
       "effort": 3,
       "enum": {
         "match": {
@@ -4365,6 +4675,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "bluetooth_version",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4376,6 +4687,7 @@
       "group": "Connectivity",
       "key": "bluetooth_version",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4456,10 +4768,18 @@
         "tooltip_md": "Highest supported Bluetooth version.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "bottom_out_force": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "bottom-out force",
         "bottom out force"
@@ -4468,6 +4788,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "bottom_out_force",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4484,7 +4805,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Bottom-Out Force",
       "effort": 6,
       "enum": {
         "match": {
@@ -4510,6 +4833,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "bottom_out_force",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4521,6 +4845,7 @@
       "group": "Switch",
       "key": "bottom_out_force",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4615,10 +4940,19 @@
         "tooltip_source": null
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "brand",
         "manufacturer"
@@ -4627,6 +4961,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4635,7 +4970,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Brand",
       "effort": 3,
       "enum": {
         "match": {
@@ -4661,6 +4998,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "brand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4672,6 +5010,7 @@
       "group": "Identity",
       "key": "brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4752,10 +5091,18 @@
         "tooltip_md": "Manufacturer brand name.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "cable_length": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cable length",
         "cord length"
@@ -4764,6 +5111,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "cable_length",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -4780,7 +5128,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Cable Length",
       "effort": 3,
       "enum": {
         "match": {
@@ -4806,6 +5156,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cable_length",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4817,6 +5168,7 @@
       "group": "Connectivity",
       "key": "cable_length",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4918,10 +5270,18 @@
         "tooltip_source": null
       },
       "unit": "m",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "cable_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "cable type",
         "included cable"
@@ -4930,6 +5290,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "cable_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -4938,7 +5299,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Cable Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -4964,6 +5327,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -4975,6 +5339,7 @@
       "group": "Connectivity",
       "key": "cable_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5055,10 +5420,18 @@
         "tooltip_md": "Factory cable type.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "case_material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "case material",
         "chassis material"
@@ -5067,6 +5440,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "case_material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5075,7 +5449,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Case Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -5101,6 +5477,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "case_material",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5112,6 +5489,7 @@
       "group": "Build",
       "key": "case_material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5192,10 +5570,18 @@
         "tooltip_md": "Main enclosure material.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "category": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "category",
         "product type"
@@ -5204,6 +5590,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "category",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5212,7 +5599,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Category",
       "effort": 3,
       "enum": {
         "match": {
@@ -5238,6 +5627,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "category",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5249,6 +5639,7 @@
       "group": "Identity",
       "key": "category",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5329,10 +5720,18 @@
         "tooltip_md": "Canonical category slug.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "charging_method": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "charging method",
         "charging"
@@ -5341,6 +5740,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "charging_method",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -5349,7 +5749,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Charging Method",
       "effort": 3,
       "enum": {
         "match": {
@@ -5375,6 +5777,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "charging_method",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5386,6 +5789,7 @@
       "group": "Power",
       "key": "charging_method",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5467,10 +5871,18 @@
         "tooltip_md": "How the keyboard recharges or receives replaceable power.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "color": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "color",
         "colorway"
@@ -5479,6 +5891,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "color",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5492,7 +5905,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Color",
       "effort": 3,
       "enum": {
         "match": {
@@ -5518,6 +5933,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "color",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5529,6 +5945,7 @@
       "group": "General",
       "key": "color",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -5625,10 +6042,205 @@
         "tooltip_md": "Factory color options or primary colorway.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
       "value_form_sample": "list"
     },
+    "colors": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
+      },
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": false
+        },
+        "policy": "closed"
+      },
+      "enum_policy": "closed",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "key": "colors",
+      "parse": {
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {
+          "blue-dark": "dark-blue",
+          "blue-light": "light-blue",
+          "dark blue": "dark-blue",
+          "dark green": "dark-green",
+          "dark red": "dark-red",
+          "gray-light": "light-gray",
+          "green-dark": "dark-green",
+          "green-light": "light-green",
+          "grey": "gray",
+          "light blue": "light-blue",
+          "light gray": "light-gray",
+          "light green": "light-green",
+          "light grey": "light-gray",
+          "light pink": "light-pink",
+          "light red": "light-red",
+          "pink-light": "light-pink",
+          "red-dark": "dark-red",
+          "red-light": "light-red"
+        }
+      },
+      "priority": {
+        "availability": "expected",
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "search_hints": {
+        "content_types": [
+          "product_page",
+          "spec_sheet"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "bestbuy.com",
+          "amazon.com",
+          "mousespecs.org"
+        ],
+        "query_terms": [
+          "colors",
+          "color options",
+          "available colors",
+          "colorways"
+        ]
+      },
+      "ui": {
+        "group": "general",
+        "input_control": "token_list",
+        "label": "Colors",
+        "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray."
+      },
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "amber",
+          "beige",
+          "black",
+          "blue",
+          "brown",
+          "coral",
+          "cyan",
+          "dark-blue",
+          "dark-brown",
+          "dark-cyan",
+          "dark-fuchsia",
+          "dark-gray",
+          "dark-green",
+          "dark-indigo",
+          "dark-lime",
+          "dark-orange",
+          "dark-pink",
+          "dark-purple",
+          "dark-red",
+          "dark-rose",
+          "dark-sky",
+          "dark-slate",
+          "dark-stone",
+          "dark-teal",
+          "dark-violet",
+          "dark-yellow",
+          "emerald",
+          "fuchsia",
+          "gold",
+          "gray",
+          "green",
+          "indigo",
+          "ivory",
+          "lavender",
+          "light-amber",
+          "light-blue",
+          "light-brown",
+          "light-coral",
+          "light-cyan",
+          "light-emerald",
+          "light-fuchsia",
+          "light-gray",
+          "light-green",
+          "light-indigo",
+          "light-lime",
+          "light-olive",
+          "light-orange",
+          "light-pink",
+          "light-purple",
+          "light-red",
+          "light-rose",
+          "light-sky",
+          "light-slate",
+          "light-stone",
+          "light-teal",
+          "light-violet",
+          "light-yellow",
+          "lime",
+          "magenta",
+          "maroon",
+          "navy",
+          "olive",
+          "orange",
+          "pink",
+          "purple",
+          "red",
+          "rose",
+          "salmon",
+          "silver",
+          "sky",
+          "slate",
+          "stone",
+          "teal",
+          "turquoise",
+          "violet",
+          "white",
+          "yellow"
+        ],
+        "mode": "closed"
+      }
+    },
     "compatible_os": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "compatible os",
         "supported operating systems"
@@ -5637,6 +6249,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "compatible_os",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5650,7 +6263,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Compatible OS",
       "effort": 3,
       "enum": {
         "match": {
@@ -5676,6 +6291,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "compatible_os",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5687,6 +6303,7 @@
       "group": "General",
       "key": "compatible_os",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -5783,10 +6400,18 @@
         "tooltip_md": "Operating systems or platforms officially supported.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
       "value_form_sample": "list"
     },
     "connection": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "connection",
         "connectivity mode"
@@ -5795,6 +6420,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "connection",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -5808,7 +6434,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Connection",
       "effort": 3,
       "enum": {
         "match": {
@@ -5834,6 +6462,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "connection",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -5845,6 +6474,7 @@
       "group": "Connectivity",
       "key": "connection",
       "min_evidence_refs": 2,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -5940,10 +6570,18 @@
         "tooltip_md": "Supported connectivity modes.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
       "value_form_sample": "list"
     },
     "debounce_time": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "debounce time",
         "debounce"
@@ -5952,6 +6590,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "debounce_time",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -5968,7 +6607,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Debounce Time",
       "effort": 6,
       "enum": {
         "match": {
@@ -5994,6 +6635,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "debounce_time",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6005,6 +6647,7 @@
       "group": "Performance",
       "key": "debounce_time",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6096,10 +6739,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "depth": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "depth",
         "front to back"
@@ -6108,6 +6759,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "depth",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -6124,7 +6776,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Depth",
       "effort": 3,
       "enum": {
         "match": {
@@ -6150,6 +6804,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "depth",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6161,6 +6816,7 @@
       "group": "Dimensions",
       "key": "depth",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6252,10 +6908,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "detachable_cable": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "detachable cable",
         "removable cable"
@@ -6264,6 +6928,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "detachable_cable",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6272,7 +6937,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Detachable Cable",
       "effort": 2,
       "enum": {
         "match": {
@@ -6298,6 +6965,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "detachable_cable",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6309,6 +6977,7 @@
       "group": "Connectivity",
       "key": "detachable_cable",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6388,10 +7057,18 @@
         "tooltip_md": "Whether the wired cable can be removed from the keyboard.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "discontinued": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "discontinued",
         "end of life"
@@ -6400,6 +7077,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "discontinued",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6408,7 +7086,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Discontinued",
       "effort": 3,
       "enum": {
         "match": {
@@ -6434,6 +7114,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6445,6 +7126,7 @@
       "group": "General",
       "key": "discontinued",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6526,10 +7208,18 @@
         "tooltip_md": "Whether the product is no longer sold by the manufacturer.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "doubleshot": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "doubleshot",
         "double-shot"
@@ -6538,6 +7228,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "doubleshot",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6546,7 +7237,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Doubleshot",
       "effort": 3,
       "enum": {
         "match": {
@@ -6572,6 +7265,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "doubleshot",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6583,6 +7277,7 @@
       "group": "Keycaps",
       "key": "doubleshot",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6664,10 +7359,95 @@
         "tooltip_md": "Whether keycaps are doubleshot molded.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
+    "editions": {
+      "ai_assist": {
+        "max_calls": 1,
+        "max_tokens": 4096,
+        "mode": "advisory",
+        "model_strategy": "auto",
+        "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
+      },
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "item_union": "set_union",
+          "max_items": 50,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open"
+      },
+      "enum_policy": "open",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "key": "editions",
+      "parse": {
+        "delimiters": [
+          ","
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "search_hints": {
+        "content_types": [
+          "product_page"
+        ],
+        "domain_hints": [],
+        "query_terms": [
+          "special edition",
+          "limited edition",
+          "editions",
+          "collaboration",
+          "limited colorway"
+        ]
+      },
+      "ui": {
+        "group": "general",
+        "input_control": "token_list",
+        "label": "Editions",
+        "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness."
+      }
+    },
     "foam_dampening": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "foam dampening",
         "acoustic foam"
@@ -6676,6 +7456,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "foam_dampening",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6684,7 +7465,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Foam Dampening",
       "effort": 3,
       "enum": {
         "match": {
@@ -6710,6 +7493,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "foam_dampening",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6721,6 +7505,7 @@
       "group": "Build",
       "key": "foam_dampening",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6801,10 +7586,18 @@
         "tooltip_md": "Factory-installed foam treatment.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "form_factor": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "form factor",
         "size"
@@ -6813,6 +7606,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "form_factor",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6821,7 +7615,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Form Factor",
       "effort": 3,
       "enum": {
         "match": {
@@ -6847,6 +7643,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "form_factor",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6858,6 +7655,7 @@
       "group": "Layout",
       "key": "form_factor",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6939,10 +7737,18 @@
         "tooltip_md": "Overall keyboard size class.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "function_row": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "function row",
         "f-row"
@@ -6951,6 +7757,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "function_row",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -6959,7 +7766,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Function Row",
       "effort": 3,
       "enum": {
         "match": {
@@ -6985,6 +7794,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "function_row",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -6996,6 +7806,7 @@
       "group": "Layout",
       "key": "function_row",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7077,10 +7888,18 @@
         "tooltip_md": "Whether a dedicated F-row is present.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "gasket_mount": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gasket mount",
         "double gasket"
@@ -7089,6 +7908,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "gasket_mount",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7097,7 +7917,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Gasket Mount",
       "effort": 3,
       "enum": {
         "match": {
@@ -7123,6 +7945,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "gasket_mount",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7134,6 +7957,7 @@
       "group": "Build",
       "key": "gasket_mount",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7214,10 +8038,18 @@
         "tooltip_md": "Whether a gasket isolation mount is used.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "gtin": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "gtin",
         "upc",
@@ -7227,6 +8059,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "gtin",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7235,7 +8068,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "GTIN",
       "effort": 3,
       "enum": {
         "match": {
@@ -7261,6 +8096,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "gtin",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7272,6 +8108,7 @@
       "group": "Identity",
       "key": "gtin",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7353,10 +8190,18 @@
         "tooltip_md": "Trade identifier such as UPC or EAN.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "height_front": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "front height",
         "height front",
@@ -7366,6 +8211,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "height_front",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -7382,7 +8228,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Front Height",
       "effort": 3,
       "enum": {
         "match": {
@@ -7408,6 +8256,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height_front",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7419,6 +8268,7 @@
       "group": "Dimensions",
       "key": "height_front",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7511,10 +8361,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "height_rear": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "rear height",
         "height rear",
@@ -7524,6 +8382,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "height_rear",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -7540,7 +8399,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Rear Height",
       "effort": 3,
       "enum": {
         "match": {
@@ -7566,6 +8427,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height_rear",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7577,6 +8439,7 @@
       "group": "Dimensions",
       "key": "height_rear",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7669,10 +8532,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "hot-swappable",
         "hot swappable",
@@ -7682,6 +8553,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "hot_swappable",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -7690,7 +8562,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Hot-Swappable",
       "effort": 3,
       "enum": {
         "match": {
@@ -7716,6 +8590,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hot_swappable",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7727,6 +8602,7 @@
       "group": "Switch",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7809,10 +8685,19 @@
         "tooltip_md": "Whether switches can be swapped without soldering.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "included_accessories": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "included accessories",
         "in the box"
@@ -7821,6 +8706,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "included_accessories",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -7834,7 +8720,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Included Accessories",
       "effort": 3,
       "enum": {
         "match": {
@@ -7860,6 +8748,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "included_accessories",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -7871,6 +8760,7 @@
       "group": "General",
       "key": "included_accessories",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -7967,10 +8857,18 @@
         "tooltip_md": "Accessories included in the box.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
       "value_form_sample": "list"
     },
     "key_count": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "key count",
         "number of keys"
@@ -7979,6 +8877,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "key_count",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -7991,7 +8890,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Key Count",
       "effort": 3,
       "enum": {
         "match": {
@@ -8017,6 +8918,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "key_count",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8028,6 +8930,7 @@
       "group": "Layout",
       "key": "key_count",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8109,10 +9012,18 @@
         "tooltip_md": "Factory key count.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "key_rollover": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "key rollover",
         "nkro",
@@ -8122,6 +9033,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "key_rollover",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8130,7 +9042,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Key Rollover",
       "effort": 3,
       "enum": {
         "match": {
@@ -8156,6 +9070,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "key_rollover",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8167,6 +9082,7 @@
       "group": "Performance",
       "key": "key_rollover",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8248,10 +9164,18 @@
         "tooltip_md": "Maximum simultaneous key rollover support.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "keycap_material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "keycap material",
         "cap material"
@@ -8260,6 +9184,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "keycap_material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8268,7 +9193,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Keycap Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -8294,6 +9221,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "keycap_material",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8305,6 +9233,7 @@
       "group": "Keycaps",
       "key": "keycap_material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8386,10 +9315,18 @@
         "tooltip_md": "Primary keycap plastic material.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "keycap_profile": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "keycap profile",
         "profile"
@@ -8398,6 +9335,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "keycap_profile",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8406,7 +9344,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Keycap Profile",
       "effort": 3,
       "enum": {
         "match": {
@@ -8432,6 +9372,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "keycap_profile",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8443,6 +9384,7 @@
       "group": "Keycaps",
       "key": "keycap_profile",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8524,10 +9466,18 @@
         "tooltip_md": "Installed keycap profile family.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "keycap_thickness": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "keycap thickness",
         "wall thickness"
@@ -8536,6 +9486,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "keycap_thickness",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -8552,7 +9503,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Keycap Thickness",
       "effort": 6,
       "enum": {
         "match": {
@@ -8578,6 +9531,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "keycap_thickness",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8589,6 +9543,7 @@
       "group": "Keycaps",
       "key": "keycap_thickness",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8681,10 +9636,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "knob_dial": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "knob / dial",
         "knob dial",
@@ -8696,6 +9659,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "knob_dial",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8704,7 +9668,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Knob / Dial",
       "effort": 3,
       "enum": {
         "match": {
@@ -8730,6 +9696,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "knob_dial",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8741,6 +9708,7 @@
       "group": "Features",
       "key": "knob_dial",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8825,10 +9793,18 @@
         "tooltip_md": "Presence of a rotary control.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "layout": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "layout",
         "physical layout"
@@ -8837,6 +9813,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "layout",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8845,7 +9822,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Layout",
       "effort": 3,
       "enum": {
         "match": {
@@ -8871,6 +9850,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "layout",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -8882,6 +9862,7 @@
       "group": "Layout",
       "key": "layout",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8963,10 +9944,18 @@
         "tooltip_md": "Physical key arrangement family.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "layout_standard": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "layout standard",
         "ansi",
@@ -8977,6 +9966,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "layout_standard",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -8985,7 +9975,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Layout Standard",
       "effort": 3,
       "enum": {
         "match": {
@@ -9011,6 +10003,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "layout_standard",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9022,6 +10015,7 @@
       "group": "Layout",
       "key": "layout_standard",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9105,10 +10099,18 @@
         "tooltip_md": "Regional physical key standard.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "legends": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "legends",
         "legend method",
@@ -9118,6 +10120,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "legends",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9126,7 +10129,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Legends",
       "effort": 3,
       "enum": {
         "match": {
@@ -9152,6 +10157,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "legends",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9163,6 +10169,7 @@
       "group": "Keycaps",
       "key": "legends",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9245,10 +10252,18 @@
         "tooltip_md": "Legend printing or molding method.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "macro_keys": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "macro keys",
         "programmable keys"
@@ -9257,6 +10272,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "macro_keys",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9265,7 +10281,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Macro Keys",
       "effort": 3,
       "enum": {
         "match": {
@@ -9291,6 +10309,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "macro_keys",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9302,6 +10321,7 @@
       "group": "Features",
       "key": "macro_keys",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9383,10 +10403,18 @@
         "tooltip_md": "Dedicated or universal macro programmability.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "media_controls": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "media controls",
         "media keys",
@@ -9396,6 +10424,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "media_controls",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9404,7 +10433,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Media Controls",
       "effort": 3,
       "enum": {
         "match": {
@@ -9430,6 +10461,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "media_controls",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9441,6 +10473,7 @@
       "group": "Features",
       "key": "media_controls",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9521,10 +10554,18 @@
         "tooltip_md": "Type of dedicated media playback and volume controls.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "model": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "model",
         "model number"
@@ -9533,6 +10574,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "model",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9541,7 +10583,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Model",
       "effort": 3,
       "enum": {
         "match": {
@@ -9567,6 +10611,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "model",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9578,6 +10623,7 @@
       "group": "Identity",
       "key": "model",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9658,10 +10704,18 @@
         "tooltip_md": "Full model name or number.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "mounting_style": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "mounting style",
         "mount type"
@@ -9670,6 +10724,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "mounting_style",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9678,7 +10733,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Mounting Style",
       "effort": 3,
       "enum": {
         "match": {
@@ -9704,6 +10761,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mounting_style",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9715,6 +10773,7 @@
       "group": "Build",
       "key": "mounting_style",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9795,10 +10854,18 @@
         "tooltip_md": "Internal plate/PCB mounting style.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "mpn": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "mpn",
         "manufacturer part number"
@@ -9807,6 +10874,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "mpn",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9815,7 +10883,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "MPN",
       "effort": 3,
       "enum": {
         "match": {
@@ -9841,6 +10911,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mpn",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9852,6 +10923,7 @@
       "group": "Identity",
       "key": "mpn",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9932,10 +11004,18 @@
         "tooltip_md": "Manufacturer part number.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "multi_device_pairing": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "multi-device pairing",
         "multi device pairing",
@@ -9945,6 +11025,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "multi_device_pairing",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -9953,7 +11034,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Multi-Device Pairing",
       "effort": 3,
       "enum": {
         "match": {
@@ -9979,6 +11062,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "multi_device_pairing",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -9990,6 +11074,7 @@
       "group": "Connectivity",
       "key": "multi_device_pairing",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10071,10 +11156,18 @@
         "tooltip_md": "How many wireless devices can be stored.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "multi_device_pairing_count": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "device count",
         "paired devices",
@@ -10084,6 +11177,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "multi_device_pairing_count",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -10099,7 +11193,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Multi-Device Pairing Count",
       "effort": 3,
       "enum": {
         "match": {
@@ -10125,6 +11221,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "multi_device_pairing_count",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10136,6 +11233,7 @@
       "group": "Connectivity",
       "key": "multi_device_pairing_count",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10215,10 +11313,18 @@
         "tooltip_md": "How many devices can be stored for quick switching.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "multi_key_latency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "multi-key latency",
         "multi key latency",
@@ -10228,6 +11334,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "multi_key_latency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -10244,7 +11351,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Multi-Key Latency",
       "effort": 7,
       "enum": {
         "match": {
@@ -10270,6 +11379,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "multi_key_latency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10281,6 +11391,7 @@
       "group": "Performance",
       "key": "multi_key_latency",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10373,10 +11484,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "numpad": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "numpad",
         "numeric keypad"
@@ -10385,6 +11504,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "numpad",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10393,7 +11513,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Numpad",
       "effort": 3,
       "enum": {
         "match": {
@@ -10419,6 +11541,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "numpad",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10430,6 +11553,7 @@
       "group": "Layout",
       "key": "numpad",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10511,10 +11635,18 @@
         "tooltip_md": "Whether a numpad is present.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "onboard memory",
         "profile memory"
@@ -10523,6 +11655,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "onboard_memory",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10531,7 +11664,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Onboard Memory",
       "effort": 3,
       "enum": {
         "match": {
@@ -10557,6 +11692,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "onboard_memory",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10568,6 +11704,7 @@
       "group": "Features",
       "key": "onboard_memory",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10649,10 +11786,18 @@
         "tooltip_md": "Ability to store profiles onboard.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "onboard_profile_count": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "profile count",
         "onboard profiles",
@@ -10662,6 +11807,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "onboard_profile_count",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -10677,7 +11823,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Onboard Profile Count",
       "effort": 3,
       "enum": {
         "match": {
@@ -10703,6 +11851,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "onboard_profile_count",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10714,6 +11863,7 @@
       "group": "Features",
       "key": "onboard_profile_count",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10794,10 +11944,18 @@
         "tooltip_md": "How many profiles can be stored locally.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "os_mode_switch": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "os mode switch",
         "mac windows switch",
@@ -10807,6 +11965,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "os_mode_switch",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10815,7 +11974,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "OS Mode Switch",
       "effort": 3,
       "enum": {
         "match": {
@@ -10841,6 +12002,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "os_mode_switch",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10852,6 +12014,7 @@
       "group": "Features",
       "key": "os_mode_switch",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10932,10 +12095,18 @@
         "tooltip_md": "Dedicated switch or shortcut for Windows/macOS mode.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "per_key_rgb": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "per-key rgb",
         "per key rgb",
@@ -10945,6 +12116,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "per_key_rgb",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -10953,7 +12125,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Per-Key RGB",
       "effort": 3,
       "enum": {
         "match": {
@@ -10979,6 +12153,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "per_key_rgb",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -10990,6 +12165,7 @@
       "group": "Features",
       "key": "per_key_rgb",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11072,10 +12248,18 @@
         "tooltip_md": "Whether each key can be lit independently.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "plate_material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "plate material",
         "switch plate"
@@ -11084,6 +12268,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "plate_material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11092,7 +12277,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Plate Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -11118,6 +12305,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "plate_material",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11129,6 +12317,7 @@
       "group": "Build",
       "key": "plate_material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11209,10 +12398,18 @@
         "tooltip_md": "Internal switch plate material.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "polling_rate_wired": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "polling rate wired",
         "wired polling rate",
@@ -11222,6 +12419,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "polling_rate_wired",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -11238,7 +12436,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Polling Rate Wired",
       "effort": 3,
       "enum": {
         "match": {
@@ -11264,6 +12464,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "polling_rate_wired",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11275,6 +12476,7 @@
       "group": "Performance",
       "key": "polling_rate_wired",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11366,10 +12568,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "polling_rate_wireless": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "polling rate wireless",
         "wireless polling rate",
@@ -11379,6 +12589,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "polling_rate_wireless",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -11395,7 +12606,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Polling Rate Wireless",
       "effort": 3,
       "enum": {
         "match": {
@@ -11421,6 +12634,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "polling_rate_wireless",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11432,6 +12646,7 @@
       "group": "Performance",
       "key": "polling_rate_wireless",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11523,10 +12738,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "price_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "price range",
         "msrp"
@@ -11535,6 +12758,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "price_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11543,7 +12767,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Price Range",
       "effort": 3,
       "enum": {
         "match": {
@@ -11569,6 +12795,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11580,6 +12807,7 @@
       "group": "General",
       "key": "price_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11661,10 +12889,18 @@
         "tooltip_md": "Typical launch or current street-price band.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "qmk_via_support": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "qmk / via support",
         "qmk via support",
@@ -11675,6 +12911,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "qmk_via_support",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11683,7 +12920,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "QMK / VIA Support",
       "effort": 3,
       "enum": {
         "match": {
@@ -11709,6 +12948,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "qmk_via_support",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11720,6 +12960,7 @@
       "group": "Features",
       "key": "qmk_via_support",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11803,10 +13044,18 @@
         "tooltip_md": "Open firmware and live remapping support.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "rapid_trigger": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "rapid trigger",
         "dynamic reset"
@@ -11815,6 +13064,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "rapid_trigger",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11823,7 +13073,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Rapid Trigger",
       "effort": 3,
       "enum": {
         "match": {
@@ -11849,6 +13101,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "rapid_trigger",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11860,6 +13113,7 @@
       "group": "Performance",
       "key": "rapid_trigger",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11940,10 +13194,18 @@
         "tooltip_md": "Dynamic key reset support.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "release_date": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "release date",
         "launch date"
@@ -11952,6 +13214,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "release_date",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -11960,7 +13223,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Release Date",
       "effort": 3,
       "enum": {
         "match": {
@@ -11986,6 +13251,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -11997,6 +13263,7 @@
       "group": "General",
       "key": "release_date",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12078,10 +13345,18 @@
         "tooltip_md": "Product release or launch date.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "rgb_zones": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "rgb zones",
         "lighting zones"
@@ -12090,6 +13365,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "rgb_zones",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12098,7 +13374,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "RGB Zones",
       "effort": 3,
       "enum": {
         "match": {
@@ -12124,6 +13402,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "rgb_zones",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12135,6 +13414,7 @@
       "group": "Features",
       "key": "rgb_zones",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12216,10 +13496,18 @@
         "tooltip_md": "Lighting zone granularity.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "scan_rate": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "scan rate",
         "key scan rate",
@@ -12229,6 +13517,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "scan_rate",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12245,7 +13534,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Scan Rate",
       "effort": 6,
       "enum": {
         "match": {
@@ -12271,6 +13562,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "scan_rate",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12282,6 +13574,7 @@
       "group": "Performance",
       "key": "scan_rate",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12373,10 +13666,18 @@
         "tooltip_source": null
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "shine_through": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "shine-through",
         "shine through",
@@ -12386,6 +13687,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "shine_through",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12394,7 +13696,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Shine-Through",
       "effort": 3,
       "enum": {
         "match": {
@@ -12420,6 +13724,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "shine_through",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12431,6 +13736,7 @@
       "group": "Keycaps",
       "key": "shine_through",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12513,10 +13819,18 @@
         "tooltip_md": "Whether legends allow light through.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "single_key_latency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "single-key latency",
         "single key latency",
@@ -12526,6 +13840,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "single_key_latency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -12542,7 +13857,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Single-Key Latency",
       "effort": 7,
       "enum": {
         "match": {
@@ -12568,6 +13885,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "single_key_latency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12579,6 +13897,7 @@
       "group": "Performance",
       "key": "single_key_latency",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12671,10 +13990,18 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sku": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sku",
         "stock keeping unit"
@@ -12683,6 +14010,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "sku",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12691,7 +14019,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "SKU",
       "effort": 3,
       "enum": {
         "match": {
@@ -12717,6 +14047,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12728,6 +14059,7 @@
       "group": "Identity",
       "key": "sku",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12808,10 +14140,18 @@
         "tooltip_md": "Retail SKU identifier.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "socd_cleaning": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "socd cleaning",
         "rapid tap",
@@ -12821,6 +14161,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "socd_cleaning",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12829,7 +14170,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "SOCD Cleaning",
       "effort": 3,
       "enum": {
         "match": {
@@ -12855,6 +14198,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "socd_cleaning",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -12866,6 +14210,7 @@
       "group": "Performance",
       "key": "socd_cleaning",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -12947,10 +14292,18 @@
         "tooltip_md": "Simultaneous opposite cardinal direction handling.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "software": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "software",
         "configuration software"
@@ -12959,6 +14312,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "software",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -12967,7 +14321,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Software",
       "effort": 3,
       "enum": {
         "match": {
@@ -12993,6 +14349,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "software",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13004,6 +14361,7 @@
       "group": "Features",
       "key": "software",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13085,10 +14443,18 @@
         "tooltip_md": "Primary software ecosystem.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "software_required": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "software required",
         "driver required"
@@ -13097,6 +14463,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "software_required",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13105,7 +14472,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Software Required",
       "effort": 3,
       "enum": {
         "match": {
@@ -13131,6 +14500,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "software_required",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13142,6 +14512,7 @@
       "group": "General",
       "key": "software_required",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13223,10 +14594,18 @@
         "tooltip_md": "Whether software is required for headline features.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sound_dampening": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sound dampening",
         "acoustic treatment"
@@ -13235,6 +14614,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "sound_dampening",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13243,7 +14623,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Sound Dampening",
       "effort": 5,
       "enum": {
         "match": {
@@ -13269,6 +14651,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sound_dampening",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13280,6 +14663,7 @@
       "group": "Sound",
       "key": "sound_dampening",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13360,10 +14744,18 @@
         "tooltip_md": "Level of factory sound dampening treatment.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sound_profile": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "sound profile",
         "clacky",
@@ -13373,6 +14765,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "sound_profile",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13381,7 +14774,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Sound Profile",
       "effort": 6,
       "enum": {
         "match": {
@@ -13407,6 +14802,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sound_profile",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13418,6 +14814,7 @@
       "group": "Sound",
       "key": "sound_profile",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13499,10 +14896,18 @@
         "tooltip_md": "Subjective acoustic profile.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "south_facing_leds": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "south-facing leds",
         "south facing leds",
@@ -13512,6 +14917,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "south_facing_leds",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13520,7 +14926,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "South-Facing LEDs",
       "effort": 3,
       "enum": {
         "match": {
@@ -13546,6 +14954,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "south_facing_leds",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13557,6 +14966,7 @@
       "group": "Build",
       "key": "south_facing_leds",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13638,10 +15048,18 @@
         "tooltip_md": "Whether the PCB uses south-facing LEDs.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "stabilizer_lubed": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "stabilizer lubed",
         "factory lubed stabilizers"
@@ -13650,6 +15068,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "stabilizer_lubed",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13658,7 +15077,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Stabilizer Lubed",
       "effort": 3,
       "enum": {
         "match": {
@@ -13684,6 +15105,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "stabilizer_lubed",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13695,6 +15117,7 @@
       "group": "Build",
       "key": "stabilizer_lubed",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13775,10 +15198,18 @@
         "tooltip_md": "Factory lube status for stabilizers.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "stabilizer_mount": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "stabilizer mount",
         "stabilizer mounting",
@@ -13788,6 +15219,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "stabilizer_mount",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13796,7 +15228,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Stabilizer Mount",
       "effort": 3,
       "enum": {
         "match": {
@@ -13822,6 +15256,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "stabilizer_mount",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13833,6 +15268,7 @@
       "group": "Build",
       "key": "stabilizer_mount",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -13914,10 +15350,18 @@
         "tooltip_md": "How the stabilizers mount to the plate or PCB.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "stabilizer_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "stabilizer type",
         "stabs"
@@ -13926,6 +15370,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "stabilizer_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -13934,7 +15379,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Stabilizer Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -13960,6 +15407,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "stabilizer_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -13971,6 +15419,7 @@
       "group": "Build",
       "key": "stabilizer_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14051,10 +15500,18 @@
         "tooltip_md": "Stabilizer mounting style.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch brand",
         "switch maker"
@@ -14063,6 +15520,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14071,7 +15529,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Brand",
       "effort": 3,
       "enum": {
         "match": {
@@ -14097,6 +15557,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_brand",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14108,6 +15569,7 @@
       "group": "Switch",
       "key": "switch_brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14189,10 +15651,18 @@
         "tooltip_md": "Switch manufacturer or in-house brand.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_compatibility": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch compatibility",
         "switch support",
@@ -14202,6 +15672,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_compatibility",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14210,7 +15681,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Switch Compatibility",
       "effort": 5,
       "enum": {
         "match": {
@@ -14236,6 +15709,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_compatibility",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14247,6 +15721,7 @@
       "group": "Switch",
       "key": "switch_compatibility",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14328,10 +15803,18 @@
         "tooltip_md": "Which switch families or magnetic formats the board supports.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_feel": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch feel",
         "linear tactile clicky"
@@ -14340,6 +15823,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_feel",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14348,7 +15832,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Feel",
       "effort": 3,
       "enum": {
         "match": {
@@ -14374,6 +15860,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_feel",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14385,6 +15872,7 @@
       "group": "Switch",
       "key": "switch_feel",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14466,10 +15954,19 @@
         "tooltip_md": "User-facing switch feel category.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "switch_lifespan": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch lifespan",
         "durability",
@@ -14479,6 +15976,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_lifespan",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -14495,7 +15993,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Switch Lifespan",
       "effort": 3,
       "enum": {
         "match": {
@@ -14521,6 +16021,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_lifespan",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14532,6 +16033,7 @@
       "group": "Switch",
       "key": "switch_lifespan",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14627,10 +16129,19 @@
         "tooltip_source": null
       },
       "unit": "million keystrokes",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "switch_name": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch name",
         "switch",
@@ -14640,7 +16151,13 @@
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "switch_name",
-      "component": null,
+      "component": {
+        "allow_new_components": true,
+        "require_identity_evidence": true,
+        "source": "component_db.sensor",
+        "type": "sensor"
+      },
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14649,7 +16166,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Name",
       "effort": 3,
       "enum": {
         "match": {
@@ -14660,10 +16179,11 @@
           "mark_needs_curation": true,
           "suggestion_target": "_suggestions/enums.json"
         },
-        "policy": "open",
-        "source": null
+        "policy": "open_prefer_known",
+        "source": "component_db.sensor"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
+      "enum_source": "component_db.sensor",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
@@ -14675,6 +16195,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_name",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14686,11 +16207,12 @@
       "group": "Switch",
       "key": "switch_name",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
+        "template": "component_reference",
         "unit_accepts": [],
         "unit_conversions": {}
       },
@@ -14700,7 +16222,7 @@
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
+      "parse_template": "component_reference",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -14758,7 +16280,7 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "component_picker",
         "label": "Switch Name",
         "order": 9,
         "placeholder": "unk",
@@ -14769,10 +16291,18 @@
         "tooltip_md": "Factory-installed switch model.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_output_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch output type",
         "analog switch",
@@ -14782,6 +16312,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_output_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14790,7 +16321,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Switch Output Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -14816,6 +16349,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_output_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14827,6 +16361,7 @@
       "group": "Switch",
       "key": "switch_output_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -14909,10 +16444,19 @@
         "tooltip_md": "Digital, adjustable, or analog output.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "switch_pin_support": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "pin support",
         "switch pin support",
@@ -14922,6 +16466,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "switch_pin_support",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -14930,7 +16475,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Pin Support",
       "effort": 3,
       "enum": {
         "match": {
@@ -14956,6 +16503,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_pin_support",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -14967,6 +16515,7 @@
       "group": "Switch",
       "key": "switch_pin_support",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15048,10 +16597,18 @@
         "tooltip_md": "Which MX-style switch pin formats the PCB accepts.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "switch type",
         "switch technology"
@@ -15059,7 +16616,13 @@
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "switch_type",
-      "component": null,
+      "component": {
+        "allow_new_components": true,
+        "require_identity_evidence": true,
+        "source": "component_db.switch",
+        "type": "switch"
+      },
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15068,7 +16631,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -15079,10 +16644,11 @@
           "mark_needs_curation": true,
           "suggestion_target": "_suggestions/enums.json"
         },
-        "policy": "open",
-        "source": null
+        "policy": "open_prefer_known",
+        "source": "component_db.switch"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
+      "enum_source": "component_db.switch",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
@@ -15094,6 +16660,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15105,11 +16672,12 @@
       "group": "Switch",
       "key": "switch_type",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
+        "template": "component_reference",
         "unit_accepts": [],
         "unit_conversions": {}
       },
@@ -15119,7 +16687,7 @@
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
+      "parse_template": "component_reference",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -15175,7 +16743,7 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "component_picker",
         "label": "Switch Type",
         "order": 10,
         "placeholder": "unk",
@@ -15186,10 +16754,18 @@
         "tooltip_md": "Underlying switch technology.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "total_travel": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "total travel",
         "travel distance"
@@ -15198,6 +16774,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "total_travel",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -15214,7 +16791,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Total Travel",
       "effort": 4,
       "enum": {
         "match": {
@@ -15240,6 +16819,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "total_travel",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15251,6 +16831,7 @@
       "group": "Switch",
       "key": "total_travel",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15343,10 +16924,19 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "typing_angle": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "typing angle",
         "angle"
@@ -15355,6 +16945,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "typing_angle",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -15371,7 +16962,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Typing Angle",
       "effort": 3,
       "enum": {
         "match": {
@@ -15397,6 +16990,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "typing_angle",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15408,6 +17002,7 @@
       "group": "Dimensions",
       "key": "typing_angle",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15499,10 +17094,18 @@
         "tooltip_source": null
       },
       "unit": "deg",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "typing_noise": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "typing noise",
         "noise level"
@@ -15511,6 +17114,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "typing_noise",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15519,7 +17123,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "hard",
+      "display_name": "Typing Noise",
       "effort": 6,
       "enum": {
         "match": {
@@ -15545,6 +17151,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "typing_noise",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15556,6 +17163,7 @@
       "group": "Sound",
       "key": "typing_noise",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15636,10 +17244,18 @@
         "tooltip_md": "Overall typing loudness.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "usb_passthrough": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "usb passthrough",
         "passthrough port"
@@ -15648,6 +17264,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "usb_passthrough",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15656,7 +17273,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "USB Passthrough",
       "effort": 3,
       "enum": {
         "match": {
@@ -15682,6 +17301,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "usb_passthrough",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15693,6 +17313,7 @@
       "group": "Connectivity",
       "key": "usb_passthrough",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15773,10 +17394,18 @@
         "tooltip_md": "Built-in downstream passthrough.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "variant": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "variant",
         "edition",
@@ -15786,6 +17415,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "variant",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15794,7 +17424,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Variant",
       "effort": 3,
       "enum": {
         "match": {
@@ -15820,6 +17452,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "variant",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15831,6 +17464,7 @@
       "group": "Identity",
       "key": "variant",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -15912,10 +17546,18 @@
         "tooltip_md": "Variant or edition.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "warranty": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "warranty"
       ],
@@ -15923,6 +17565,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "warranty",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -15931,7 +17574,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Warranty",
       "effort": 3,
       "enum": {
         "match": {
@@ -15957,6 +17602,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "warranty",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -15968,6 +17614,7 @@
       "group": "General",
       "key": "warranty",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16048,10 +17695,18 @@
         "tooltip_md": "Official warranty duration or terms.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "weight": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight"
       ],
@@ -16059,6 +17714,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "weight",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -16075,7 +17731,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Weight",
       "effort": 3,
       "enum": {
         "match": {
@@ -16101,6 +17759,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "weight",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16112,6 +17771,7 @@
       "group": "Dimensions",
       "key": "weight",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16224,10 +17884,18 @@
         "tooltip_source": null
       },
       "unit": "kg",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "width": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "width"
       ],
@@ -16235,6 +17903,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "width",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "range": {
@@ -16251,7 +17920,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Width",
       "effort": 3,
       "enum": {
         "match": {
@@ -16277,6 +17948,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16288,6 +17960,7 @@
       "group": "Dimensions",
       "key": "width",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16378,10 +18051,18 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "wired_interface": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "wired interface",
         "wired connector"
@@ -16390,6 +18071,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "wired_interface",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": null,
@@ -16398,7 +18080,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Wired Interface",
       "effort": 3,
       "enum": {
         "match": {
@@ -16424,6 +18108,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "wired_interface",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16435,6 +18120,7 @@
       "group": "Connectivity",
       "key": "wired_interface",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -16515,10 +18201,18 @@
         "tooltip_md": "Physical wired interface.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "wireless_technology": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "wireless technology",
         "wireless mode"
@@ -16527,6 +18221,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "wireless_technology",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -16540,7 +18235,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Wireless Technology",
       "effort": 3,
       "enum": {
         "match": {
@@ -16566,6 +18263,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "wireless_technology",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": null,
@@ -16577,6 +18275,7 @@
       "group": "Connectivity",
       "key": "wireless_technology",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -16672,6 +18371,7 @@
         "tooltip_md": "Wireless transport protocols supported.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "list",
       "value_form_sample": "list"
     }
@@ -16773,6 +18473,85 @@
       "Green",
       "Pink",
       "Two-tone"
+    ],
+    "colors": [
+      "amber",
+      "beige",
+      "black",
+      "blue",
+      "brown",
+      "coral",
+      "cyan",
+      "dark-blue",
+      "dark-brown",
+      "dark-cyan",
+      "dark-fuchsia",
+      "dark-gray",
+      "dark-green",
+      "dark-indigo",
+      "dark-lime",
+      "dark-orange",
+      "dark-pink",
+      "dark-purple",
+      "dark-red",
+      "dark-rose",
+      "dark-sky",
+      "dark-slate",
+      "dark-stone",
+      "dark-teal",
+      "dark-violet",
+      "dark-yellow",
+      "emerald",
+      "fuchsia",
+      "gold",
+      "gray",
+      "green",
+      "indigo",
+      "ivory",
+      "lavender",
+      "light-amber",
+      "light-blue",
+      "light-brown",
+      "light-coral",
+      "light-cyan",
+      "light-emerald",
+      "light-fuchsia",
+      "light-gray",
+      "light-green",
+      "light-indigo",
+      "light-lime",
+      "light-olive",
+      "light-orange",
+      "light-pink",
+      "light-purple",
+      "light-red",
+      "light-rose",
+      "light-sky",
+      "light-slate",
+      "light-stone",
+      "light-teal",
+      "light-violet",
+      "light-yellow",
+      "lime",
+      "magenta",
+      "maroon",
+      "navy",
+      "olive",
+      "orange",
+      "pink",
+      "purple",
+      "red",
+      "rose",
+      "salmon",
+      "silver",
+      "sky",
+      "slate",
+      "stone",
+      "teal",
+      "turquoise",
+      "violet",
+      "white",
+      "yellow"
     ],
     "compatible_os": [
       "Windows",
@@ -17158,6 +18937,8 @@
     "mpn",
     "gtin",
     "category",
+    "colors",
+    "editions",
     "switch_name",
     "switch_type",
     "switch_brand",

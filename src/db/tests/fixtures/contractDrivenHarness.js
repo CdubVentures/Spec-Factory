@@ -7,7 +7,6 @@ import {
   loadComponentIdentityPools,
   buildSeedComponentDB,
   buildTestProducts,
-  buildDeterministicSourceResults,
 } from '../../../tests/testDataProvider.js';
 import {
   buildReviewLayout,
@@ -47,119 +46,6 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, JSON.stringify(value), 'utf8');
 }
 
-function simpleHash(text) {
-  const input = String(text || '');
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-export function sourceResultsToArtifacts(sourceResults, product, contractAnalysis) {
-  const valuesByField = {};
-
-  for (let sourceIndex = 0; sourceIndex < sourceResults.length; sourceIndex += 1) {
-    const source = sourceResults[sourceIndex];
-    for (const fieldCandidate of source.fieldCandidates) {
-      if (!valuesByField[fieldCandidate.field]) valuesByField[fieldCandidate.field] = [];
-      const baseScore = source.tier === 1 ? 0.85 : source.tier === 2 ? 0.65 : 0.45;
-      const hashInput = `${product.productId}::${fieldCandidate.field}::s${sourceIndex}`;
-      const hashOffset = (simpleHash(hashInput) % 15) / 100;
-      const score = Math.round((baseScore + hashOffset) * 100) / 100;
-      valuesByField[fieldCandidate.field].push({
-        value: fieldCandidate.value,
-        score,
-        source_tier: source.tier,
-      });
-    }
-  }
-
-  const fields = {};
-  const provenance = {};
-  for (const [fieldKey, entries] of Object.entries(valuesByField)) {
-    const winner = [...entries].sort((left, right) => {
-      if (left.source_tier !== right.source_tier) return left.source_tier - right.source_tier;
-      return right.score - left.score;
-    })[0];
-    fields[fieldKey] = winner.value;
-    provenance[fieldKey] = { value: winner.value, confidence: winner.score };
-  }
-
-  const normalized = {
-    identity: product.identityLock || {},
-    fields,
-  };
-
-  const raw = contractAnalysis?._raw || {};
-  const requiredFields = contractAnalysis?.summary?.requiredFields || [];
-  const allFieldKeys = raw.fieldKeys || [];
-  const missingRequired = requiredFields.filter((fieldKey) => !fields[fieldKey] || fields[fieldKey] === 'unk');
-  const populatedCount = Object.values(fields).filter((value) => value && value !== 'unk').length;
-  const coverage = allFieldKeys.length > 0
-    ? Math.round((populatedCount / allFieldKeys.length) * 100)
-    : 0;
-  const confidenceValues = Object.values(provenance).map((entry) => entry.confidence);
-  const averageConfidence = confidenceValues.length > 0
-    ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
-    : 0;
-
-  const fieldReasoning = {};
-  for (const fieldKey of Object.keys(fields)) {
-    fieldReasoning[fieldKey] = {
-      value: fields[fieldKey],
-      confidence: provenance[fieldKey]?.confidence || 0,
-      sources: sourceResults.length,
-    };
-  }
-
-  const dependencyRules = product._testCase?.name === 'cross_validation'
-    ? (raw.rules || []).filter((rule) =>
-      String(rule?.requires_field || '').trim() && String(rule?.trigger_field || '').trim())
-    : [];
-  for (const rule of dependencyRules) {
-    const triggerField = String(rule.trigger_field || '').trim();
-    if (!triggerField) continue;
-    if (!fieldReasoning[triggerField]) {
-      fieldReasoning[triggerField] = {
-        value: fields[triggerField],
-        confidence: provenance[triggerField]?.confidence || 0,
-        sources: sourceResults.length,
-      };
-    }
-    fieldReasoning[triggerField] = {
-      ...fieldReasoning[triggerField],
-      unknown_reason: 'dependency_missing',
-    };
-  }
-
-  const summary = {
-    confidence: Math.round(averageConfidence * 100) / 100,
-    coverage_overall_percent: coverage,
-    missing_required_fields: missingRequired,
-    fields_below_pass_target: [],
-    critical_fields_below_pass_target: [],
-    field_reasoning: fieldReasoning,
-    runtime_engine: { failures: [], curation_suggestions_count: 0 },
-    constraint_analysis: product._testCase?.name === 'cross_validation'
-      ? {
-        contradictions: (raw.rules || []).map((rule) => ({
-          fields: [
-            rule.trigger_field,
-            ...(rule.related_fields || []),
-            ...(rule.depends_on || []),
-          ].filter(Boolean),
-          code: 'constraint_conflict',
-          severity: 'error',
-          rule_id: rule.rule_id || 'test',
-        })),
-      }
-      : {},
-  };
-
-  return { normalized, provenance, summary };
-}
 
 export function buildFieldRulesForSeed(contractAnalysis, seedComponentDBs) {
   const raw = contractAnalysis._raw || {};
@@ -227,19 +113,6 @@ export async function createContractDrivenAnalysisHarness() {
       const products = buildTestProducts(CATEGORY, contractAnalysis);
       const productByScenarioId = new Map(products.map((product) => [product._testCase.id, product]));
       const productByScenarioName = new Map(products.map((product) => [product._testCase.name, product]));
-      const productArtifacts = {};
-      for (const product of products) {
-        const sourceResults = buildDeterministicSourceResults({
-          product,
-          contractAnalysis,
-          componentDBs: seedDBs,
-        });
-        productArtifacts[product.productId] = {
-          product,
-          sourceResults,
-          artifacts: sourceResultsToArtifacts(sourceResults, product, contractAnalysis),
-        };
-      }
 
       return {
         CATEGORY,
@@ -249,7 +122,6 @@ export async function createContractDrivenAnalysisHarness() {
         seedDBs,
         fieldRules: buildFieldRulesForSeed(contractAnalysis, seedDBs),
         products,
-        productArtifacts,
         getProductByScenarioId: (scenarioId) => productByScenarioId.get(scenarioId),
         getProductByScenarioName: (scenarioName) => productByScenarioName.get(scenarioName),
       };

@@ -14,7 +14,7 @@ import {
 // WHY: DownstreamSystem kept for EnumConfigurator backward compat (uses 'review' strings).
 export type DownstreamSystem = 'indexlab' | 'seed' | 'review';
 
-export type ParentGroup = 'idx' | 'eng' | 'rev' | 'seed' | 'comp';
+export type ParentGroup = 'idx' | 'eng' | 'rev' | 'seed' | 'comp' | 'val';
 
 // ── Badge configs (5 parent groups, all read-only) ───────────────────
 
@@ -47,6 +47,11 @@ export const PARENT_BADGE_CONFIGS: Record<ParentGroup, {
     label: 'COMP',
     title: 'Component System',
     cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+  },
+  val: {
+    label: 'VAL',
+    title: 'Publish Pipeline Validation',
+    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   },
 };
 

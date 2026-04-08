@@ -1,12 +1,10 @@
-import { buildTrafficLight } from '../../../features/indexing/validation/index.js';
-import { deriveTrafficLightCounts } from '../../../core/llm/llmRouteHelpers.js';
-import { readLatestArtifacts } from '../../../features/review-curation/index.js';
 import {
-  generateTestSourceResults, buildDeterministicSourceResults, buildSeedComponentDB,
-  analyzeContract, buildTestProducts, buildValidationChecks,
+  generateTestSourceResults, buildSeedComponentDB,
+  analyzeContract, buildTestProducts,
   loadComponentIdentityPools,
 } from '../../../tests/testDataProvider.js';
 import { runTestProduct } from '../../../tests/testRunner.js';
+import { runFieldContractTests } from '../../../tests/fieldContractTestRunner.js';
 import { addBrand } from '../../../features/catalog/index.js';
 
 export function createTestModeRouteContext(options = {}) {
@@ -26,10 +24,9 @@ export function createTestModeRouteContext(options = {}) {
   return {
     jsonRes, readJsonBody, toInt, toUnitRatio, config, storage, HELPER_ROOT,
     OUTPUT_ROOT, getSpecDb, getSpecDbReady, fs, path, safeReadJson, safeStat,
-    listFiles, resolveCategoryAlias, broadcastWs, buildTrafficLight,
-    deriveTrafficLightCounts, readLatestArtifacts, analyzeContract,
-    buildTestProducts, generateTestSourceResults, buildDeterministicSourceResults,
-    buildSeedComponentDB, buildValidationChecks, loadComponentIdentityPools,
+    listFiles, resolveCategoryAlias, broadcastWs, analyzeContract,
+    buildTestProducts, generateTestSourceResults,
+    buildSeedComponentDB, loadComponentIdentityPools, runFieldContractTests,
     runTestProduct, purgeTestModeCategoryState,
     resetTestModeSharedReviewState, resetTestModeProductReviewState,
     addBrand, invalidateFieldRulesCache,

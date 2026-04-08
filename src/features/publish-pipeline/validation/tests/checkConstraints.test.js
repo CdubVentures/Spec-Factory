@@ -203,3 +203,75 @@ describe('checkConstraints — multiple rules', () => {
     assert.equal(r.failures[0].rule_id, 'wireless_battery_required');
   });
 });
+
+// --- component_db_lookup ---
+
+describe('checkConstraints — component_db_lookup', () => {
+  const sensorDb = {
+    items: [
+      { name: 'PAW3395', properties: { max_dpi: 26000, ips: 650 } },
+      { name: 'HERO 25K', properties: { max_dpi: 25600, ips: 400 } },
+    ],
+  };
+
+  const dpiRule = {
+    rule_id: 'sensor_dpi_consistency',
+    trigger_field: 'dpi',
+    check: {
+      type: 'component_db_lookup',
+      db: 'sensors',
+      lookup_field: 'sensor',
+      compare: 'dpi <= sensors[sensor].properties.max_dpi',
+      on_fail: 'flag_for_review',
+      tolerance_percent: 5,
+    },
+  };
+
+  it('dpi within sensor max → no failure', () => {
+    const r = checkConstraints(
+      { dpi: 16000, sensor: 'PAW3395' },
+      { rules: [dpiRule] },
+      { sensors: sensorDb },
+    );
+    assert.equal(r.failures.length, 0);
+  });
+
+  it('dpi exceeds sensor max → failure', () => {
+    const r = checkConstraints(
+      { dpi: 30000, sensor: 'PAW3395' },
+      { rules: [dpiRule] },
+      { sensors: sensorDb },
+    );
+    assert.equal(r.failures.length, 1);
+    assert.equal(r.failures[0].rule_id, 'sensor_dpi_consistency');
+    assert.equal(r.failures[0].action, 'flag_for_review');
+  });
+
+  it('dpi within tolerance → no failure', () => {
+    const r = checkConstraints(
+      { dpi: 27000, sensor: 'PAW3395' },
+      { rules: [dpiRule] },
+      { sensors: sensorDb },
+    );
+    // 27000 exceeds 26000 but within 5% tolerance (26000 * 1.05 = 27300)
+    assert.equal(r.failures.length, 0);
+  });
+
+  it('unknown sensor → no failure (entity not found)', () => {
+    const r = checkConstraints(
+      { dpi: 50000, sensor: 'Unknown9000' },
+      { rules: [dpiRule] },
+      { sensors: sensorDb },
+    );
+    assert.equal(r.failures.length, 0);
+  });
+
+  it('unk sensor → no failure (skipped)', () => {
+    const r = checkConstraints(
+      { dpi: 50000, sensor: 'unk' },
+      { rules: [dpiRule] },
+      { sensors: sensorDb },
+    );
+    assert.equal(r.failures.length, 0);
+  });
+});

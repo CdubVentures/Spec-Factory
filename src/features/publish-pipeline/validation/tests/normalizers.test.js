@@ -119,16 +119,24 @@ describe('normalizeColorList', () => {
 });
 
 describe('parseDate', () => {
-  it('ISO date string', () => {
+  it('ISO date string → YYYY-MM-DD only (no timestamp)', () => {
     const result = parseDate('2024-10-01');
-    assert.ok(result);
-    assert.ok(result.startsWith('2024-10-01'));
+    assert.strictEqual(result, '2024-10-01');
   });
 
-  it('Date object', () => {
+  it('Date object → YYYY-MM-DD only', () => {
     const result = parseDate(new Date('2024-10-01'));
-    assert.ok(result);
-    assert.ok(result.startsWith('2024-10-01'));
+    assert.strictEqual(result, '2024-10-01');
+  });
+
+  it('bare year → YYYY-01-01', () => {
+    const result = parseDate('2024');
+    assert.strictEqual(result, '2024-01-01');
+  });
+
+  it('year-month → YYYY-MM-01', () => {
+    const result = parseDate('2024-10');
+    assert.strictEqual(result, '2024-10-01');
   });
 
   it('unparseable string -> null', () => {

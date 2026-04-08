@@ -13,7 +13,7 @@
   "_testCase": {
     "id": 17,
     "name": "tier_preference_override",
-    "description": "6 fields prefer tier2 over tier1 â€\" conflicting values to verify tier2 wins (click_force, click_latency, click_latency_list, sensor_latency, sensor_latency_list, shift_latency)",
+    "description": "23 fields prefer tier2 over tier1 â€\" conflicting values to verify tier2 wins (adjustable_input_granularity, anti_ghosting, case_material, debounce_time, foam_dampening, gasket_mount, key_rollover, mounting_style, multi_key_latency, plate_material, polling_rate_wired, polling_rate_wireless, rapid_trigger, scan_rate, single_key_latency, socd_cleaning, sound_dampening, sound_profile, south_facing_leds, stabilizer_lubed, stabilizer_mount, stabilizer_type, typing_noise)",
     "category": "Edge Cases"
   }
 }

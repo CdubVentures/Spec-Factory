@@ -123,6 +123,91 @@ describe('checkUnit — non-numeric passthrough', () => {
   });
 });
 
+// ── unit_conversions: deterministic conversion ────────────────────────────────
+
+describe('checkUnit — unit_conversions: deterministic convert', () => {
+  const conversions = { lb: 453.592, oz: 28.3495, kg: 1000 };
+
+  it('lb → g conversion via factor', () => {
+    const r = checkUnit('2.65 lb', 'g', ['g'], conversions);
+    assert.equal(r.pass, true);
+    assert.equal(typeof r.value, 'number');
+    // 2.65 * 453.592 = 1202.0188
+    assert.ok(Math.abs(r.value - 1202.0188) < 0.01);
+    assert.equal(r.rule, 'unit_convert');
+  });
+
+  it('oz → g conversion via factor', () => {
+    const r = checkUnit('4.5 oz', 'g', ['g'], conversions);
+    assert.equal(r.pass, true);
+    // 4.5 * 28.3495 = 127.57275
+    assert.ok(Math.abs(r.value - 127.57275) < 0.01);
+    assert.equal(r.rule, 'unit_convert');
+  });
+
+  it('no conversion factor for unit → still rejects', () => {
+    const r = checkUnit('10 stones', 'g', ['g'], conversions);
+    assert.equal(r.pass, false);
+    assert.equal(r.detail.detected, 'stones');
+  });
+
+  it('null conversions → falls back to reject', () => {
+    const r = checkUnit('2.65 lb', 'g', ['g'], null);
+    assert.equal(r.pass, false);
+  });
+
+  it('empty conversions → falls back to reject', () => {
+    const r = checkUnit('2.65 lb', 'g', ['g'], {});
+    assert.equal(r.pass, false);
+  });
+
+  it('accepted unit still passes without conversion', () => {
+    const r = checkUnit('42 g', 'g', ['g'], conversions);
+    assert.equal(r.pass, true);
+    assert.equal(r.value, 42);
+    assert.equal(r.rule, 'strip_same_unit');
+  });
+});
+
+// ── strict_unit_required ─────────────────────────────────────────────────────
+
+describe('checkUnit — strict_unit_required', () => {
+  it('bare number passes when strict is false', () => {
+    const r = checkUnit('42', 'g', ['g'], null, false);
+    assert.equal(r.pass, true);
+    assert.equal(r.value, 42);
+  });
+
+  it('bare number passes when strict is undefined (default)', () => {
+    const r = checkUnit('42', 'g', ['g']);
+    assert.equal(r.pass, true);
+    assert.equal(r.value, 42);
+  });
+
+  it('bare number REJECTS when strict is true', () => {
+    const r = checkUnit('42', 'g', ['g'], null, true);
+    assert.equal(r.pass, false);
+    assert.ok(r.reason.includes('unit_required'));
+  });
+
+  it('number with correct unit passes when strict is true', () => {
+    const r = checkUnit('42 g', 'g', ['g'], null, true);
+    assert.equal(r.pass, true);
+    assert.equal(r.value, 42);
+  });
+
+  it('already-numeric value REJECTS when strict is true', () => {
+    const r = checkUnit(42, 'g', ['g'], null, true);
+    assert.equal(r.pass, false);
+    assert.ok(r.reason.includes('unit_required'));
+  });
+
+  it('unk still passes when strict is true', () => {
+    const r = checkUnit('unk', 'g', ['g'], null, true);
+    assert.equal(r.pass, true);
+  });
+});
+
 describe('checkUnit — default unitAccepts fallback', () => {
   it('uses [expectedUnit] when unitAccepts not provided', () => {
     const r = checkUnit('42 g', 'g');

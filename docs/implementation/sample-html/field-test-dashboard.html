@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Test Dashboard — Spec Factory</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface-2: #232733; --surface-3: #2c3040;
+    --border: #333848; --border-soft: #282d3a;
+    --text: #e4e7ef; --text-muted: #8890a4; --text-dim: #5c6478; --text-subtle: #444b5e;
+    --green: #34d399; --green-bg: rgba(52,211,153,0.08); --green-border: rgba(52,211,153,0.25);
+    --red: #f87171; --red-bg: rgba(248,113,113,0.08); --red-border: rgba(248,113,113,0.25);
+    --yellow: #fbbf24; --yellow-bg: rgba(251,191,36,0.08); --yellow-border: rgba(251,191,36,0.25);
+    --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.08); --blue-border: rgba(96,165,250,0.25);
+    --purple: #a78bfa; --purple-bg: rgba(167,139,250,0.08); --purple-border: rgba(167,139,250,0.25);
+    --cyan: #22d3ee;
+    --r: 8px; --r-lg: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; font-size:13px; }
+  .page { max-width:1440px; margin:0 auto; padding:24px; }
+
+  /* ── Workflow bar ─────────────────────────────── */
+  .workflow-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 20px; margin-bottom:20px; }
+  .wf-title { font-size:18px; font-weight:700; letter-spacing:-0.3px; margin-bottom:4px; }
+  .wf-sub { font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+  .wf-steps { display:flex; align-items:center; gap:6px; margin-bottom:12px; font-size:11px; font-weight:600; }
+  .step-pill { padding:3px 12px; border-radius:16px; }
+  .step-done { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .step-active { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-border); }
+  .step-idle { background:var(--surface-3); color:var(--text-dim); border:1px solid var(--border); }
+  .step-arrow { color:var(--text-dim); font-size:14px; }
+  .wf-buttons { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .btn { padding:6px 16px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; transition:all 0.12s; display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary { background:#3b82f6; color:white; }
+  .btn-primary:hover { background:#2563eb; }
+  .btn-secondary { background:var(--surface-3); color:var(--text-muted); border:1px solid var(--border); }
+  .btn-secondary:hover { border-color:var(--blue); color:var(--blue); }
+  .btn-danger { background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
+  .btn-danger:hover { background:rgba(248,113,113,0.15); }
+  .btn-toggle-on { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .btn-toggle-off { background:var(--surface-3); color:var(--text-dim); border:1px solid var(--border); }
+  .wf-status { font-size:11px; color:var(--text-muted); margin-top:10px; }
+  .wf-status strong { color:var(--green); }
+  .wf-status .fail-ct { color:var(--red); }
+
+  /* ── Summary strip ───────────────────────────── */
+  .summary-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px; }
+  .stat .label { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:6px; }
+  .stat .val { font-size:28px; font-weight:700; letter-spacing:-1px; }
+  .stat .sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .val-green { color:var(--green); } .val-red { color:var(--red); } .val-blue { color:var(--blue); } .val-yellow { color:var(--yellow); } .val-cyan { color:var(--cyan); }
+
+  /* ── Coverage matrices (collapsible) ─────────── */
+  .matrix-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); margin-bottom:12px; overflow:hidden; }
+  .matrix-header { padding:12px 18px; display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+  .matrix-header:hover { background:var(--surface-2); }
+  .matrix-toggle { font-size:11px; font-family:monospace; color:var(--text-dim); width:14px; }
+  .matrix-title { font-size:13px; font-weight:600; }
+  .matrix-meta { font-size:10px; color:var(--text-dim); margin-left:auto; }
+  .matrix-body { padding:0 18px 14px; }
+  .matrix-summary { font-size:11px; color:var(--text-muted); padding:8px 0; display:flex; flex-wrap:wrap; gap:16px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+  .matrix-summary span { display:inline-flex; gap:4px; }
+  .matrix-summary .k { color:var(--text-dim); } .matrix-summary .v { color:var(--text); font-weight:500; }
+
+  /* ── Scenario sections ───────────────────────── */
+  .section { margin-bottom:24px; }
+  .section-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+  .section-header h2 { font-size:15px; font-weight:600; }
+  .cat-badge { font-size:10px; padding:2px 10px; border-radius:10px; font-weight:600; }
+  .cat-pass { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .cat-partial { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow-border); }
+  .cat-fail { background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
+
+  /* ── Scenario card ───────────────────────────── */
+  .sc-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+  .sc-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .sc-card.pass { border-left:3px solid var(--green); }
+  .sc-card.fail { border-left:3px solid var(--red); }
+
+  .sc-top { padding:14px 18px 10px; display:flex; justify-content:space-between; align-items:flex-start; }
+  .sc-name { font-size:14px; font-weight:600; }
+  .sc-desc { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .sc-badge { font-size:10px; padding:3px 10px; border-radius:10px; font-weight:600; white-space:nowrap; }
+  .sc-badge.pass { background:var(--green-bg); color:var(--green); }
+  .sc-badge.fail { background:var(--red-bg); color:var(--red); }
+
+  /* Metrics row */
+  .sc-metrics { display:flex; gap:1px; background:var(--border); }
+  .sc-metric { flex:1; background:var(--surface); padding:8px 14px; text-align:center; }
+  .sc-metric .mv { font-size:16px; font-weight:700; letter-spacing:-0.5px; }
+  .sc-metric .ml { font-size:9px; text-transform:uppercase; letter-spacing:0.7px; color:var(--text-dim); margin-top:2px; }
+
+  /* Checks */
+  .sc-checks { padding:10px 18px; }
+  .ck { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:12px; }
+  .ck-icon { width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; flex-shrink:0; }
+  .ck-pass { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .ck-fail { background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
+  .ck-name { color:var(--text-muted); font-size:11px; }
+  .ck-detail { color:var(--text-dim); font-size:10px; margin-left:auto; }
+
+  /* ── Violation detail rows ───────────────────── */
+  .violations { margin:0 18px 14px; }
+  .violations-header { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--purple); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .v-table { width:100%; border-collapse:collapse; font-size:11px; }
+  .v-table th { text-align:left; padding:6px 10px; font-size:9px; text-transform:uppercase; letter-spacing:0.7px; color:var(--text-dim); background:var(--surface-2); border-bottom:1px solid var(--border); font-weight:600; }
+  .v-table td { padding:8px 10px; border-bottom:1px solid var(--border-soft); vertical-align:top; }
+  .v-table tr:hover td { background:var(--surface-2); }
+  .v-field { font-weight:600; font-family:monospace; font-size:11px; }
+  .v-reason { display:inline-block; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:600; }
+  .v-reason.shape { background:var(--purple-bg); color:var(--purple); }
+  .v-reason.type { background:var(--blue-bg); color:var(--blue); }
+  .v-reason.unit { background:var(--yellow-bg); color:var(--yellow); }
+  .v-reason.format { background:var(--red-bg); color:var(--red); }
+  .v-reason.enum { background:var(--green-bg); color:var(--green); }
+  .v-reason.range { background:rgba(251,146,60,0.1); color:#fb923c; border:1px solid rgba(251,146,60,0.25); }
+  .v-reason.component { background:var(--purple-bg); color:var(--purple); }
+  .pill { padding:2px 8px; border-radius:8px; font-size:9px; font-weight:600; }
+  .pill-repaired { background:var(--green-bg); color:var(--green); }
+  .pill-failed { background:var(--red-bg); color:var(--red); }
+  .pill-skipped { background:var(--yellow-bg); color:var(--yellow); }
+  .v-before { text-decoration:line-through; color:var(--red); font-family:monospace; font-size:10px; }
+  .v-after { color:var(--green); font-family:monospace; font-size:10px; }
+  .v-unk { color:var(--yellow); font-family:monospace; font-size:10px; }
+  .v-model { font-size:9px; color:var(--text-dim); font-family:monospace; }
+
+  /* Expandable prompt/response */
+  details { margin-top:4px; }
+  details summary { font-size:9px; color:var(--text-dim); cursor:pointer; font-weight:600; user-select:none; padding:2px 0; }
+  details summary:hover { color:var(--blue); }
+  .prompt-block { background:var(--surface-3); border:1px solid var(--border); border-radius:6px; padding:10px 12px; margin-top:4px; font-size:10px; font-family:'JetBrains Mono',monospace; line-height:1.6; color:var(--text-muted); white-space:pre-wrap; max-height:200px; overflow-y:auto; }
+
+  /* ── Repair lifecycle proof ──────────────────── */
+  .lifecycle { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; margin-bottom:20px; }
+  .lifecycle h3 { font-size:14px; font-weight:600; margin-bottom:14px; }
+  .lc-flow { display:flex; align-items:center; gap:4px; margin-bottom:14px; flex-wrap:wrap; }
+  .lc-step { padding:6px 14px; border-radius:var(--r); font-size:11px; font-weight:500; background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .lc-arrow { color:var(--text-dim); }
+  .lc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .lc-card { background:var(--surface-2); border-radius:var(--r); padding:14px; border:1px solid var(--border); }
+  .lc-card .lc-label { font-size:9px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-dim); margin-bottom:4px; }
+  .lc-card .lc-val { font-size:20px; font-weight:700; }
+  .lc-card .lc-detail { font-size:10px; color:var(--text-muted); margin-top:3px; }
+
+  /* ── Dimension matrix ────────────────────────── */
+  .dim-table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; }
+  .dim-table th { background:var(--surface-2); color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; font-size:9px; padding:8px 10px; text-align:center; border-bottom:1px solid var(--border); }
+  .dim-table th:first-child { text-align:left; }
+  .dim-table td { padding:7px 10px; border-bottom:1px solid var(--border-soft); text-align:center; }
+  .dim-table td:first-child { text-align:left; font-weight:500; }
+  .dim-table tr:hover td { background:var(--surface-2); }
+  .dot { width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9px; }
+  .dot-yes { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .dot-no { background:var(--surface-3); color:var(--text-dim); border:1px solid var(--border); }
+  .dot-partial { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow-border); }
+
+  /* Responsive */
+  @media(max-width:900px) { .summary-strip { grid-template-columns:repeat(3,1fr); } .lc-grid { grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ════════ WORKFLOW BAR ════════ -->
+<div class="workflow-bar">
+  <div class="wf-title">Test Mode v2</div>
+  <div class="wf-sub">Contract-driven pipeline validation — scenarios auto-generated from the field rules contract (universal, any category).</div>
+
+  <div class="wf-steps">
+    <span class="step-pill step-done">1. Create</span>
+    <span class="step-arrow">&rarr;</span>
+    <span class="step-pill step-done">2. Generate</span>
+    <span class="step-arrow">&rarr;</span>
+    <span class="step-pill step-done">3. Run</span>
+    <span class="step-arrow">&rarr;</span>
+    <span class="step-pill step-done">4. Validate</span>
+    <span style="margin-left:auto;font-size:11px;font-family:monospace;color:var(--text-dim)">_test_mouse</span>
+  </div>
+
+  <div class="wf-buttons">
+    <button class="btn btn-primary">1. Create</button>
+    <button class="btn btn-primary">2. Generate</button>
+    <button class="btn btn-primary">3. Run All</button>
+    <button class="btn btn-toggle-on">AI Review On</button>
+    <button class="btn btn-secondary">4. Validate</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-danger">Wipe All</button>
+  </div>
+
+  <div class="wf-status">
+    Validation complete: <strong>86 passed</strong>, <span class="fail-ct">20 failed</span> out of 106 checks across 26 scenarios.
+  </div>
+</div>
+
+<!-- ════════ SUMMARY STRIP ════════ -->
+<div class="summary-strip">
+  <div class="stat"><div class="label">Scenarios</div><div class="val val-green">16<span style="font-size:14px;color:var(--text-dim)">/26</span></div><div class="sub">All checks pass</div></div>
+  <div class="stat"><div class="label">Checks</div><div class="val val-blue">86<span style="font-size:14px;color:var(--text-dim)">/106</span></div><div class="sub">86 passed, 20 failed</div></div>
+  <div class="stat"><div class="label">Fields</div><div class="val">81</div><div class="sub">12 templates, 4 components</div></div>
+  <div class="stat"><div class="label">Repair Prompts</div><div class="val val-purple">7/7</div><div class="sub">P1-P7 + P6 cross-field</div></div>
+  <div class="stat"><div class="label">Avg Time</div><div class="val val-cyan">3.2s</div><div class="sub">per scenario (AI off)</div></div>
+</div>
+
+<!-- ════════ COVERAGE MATRICES (collapsible, same as current) ════════ -->
+<div class="matrix-card">
+  <div class="matrix-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.matrix-toggle').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
+    <span class="matrix-toggle">-</span>
+    <span class="matrix-title">Field Rules Coverage Matrix</span>
+    <span class="matrix-meta">81 rows</span>
+  </div>
+  <div class="matrix-body">
+    <div class="matrix-summary">
+      <span><span class="k">totalFields:</span> <span class="v">81</span></span>
+      <span><span class="k">types:</span> <span class="v">number:18, string:57, object:2, integer:4</span></span>
+      <span><span class="k">shapes:</span> <span class="v">scalar:68, list:13</span></span>
+      <span><span class="k">parseTemplates:</span> <span class="v">12</span></span>
+      <span><span class="k">requiredOrCritical:</span> <span class="v">14</span></span>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);padding:12px 0">Field rules matrix table rows would render here (same as current implementation)</div>
+  </div>
+</div>
+
+<div class="matrix-card">
+  <div class="matrix-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.matrix-toggle').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
+    <span class="matrix-toggle">+</span>
+    <span class="matrix-title">Component Table Coverage Matrix</span>
+    <span class="matrix-meta">23 rows</span>
+  </div>
+  <div class="matrix-body" style="display:none">
+    <div class="matrix-summary">
+      <span><span class="k">totalTypes:</span> <span class="v">4</span></span>
+      <span><span class="k">totalItems:</span> <span class="v">33</span></span>
+      <span><span class="k">newDiscoveryTested:</span> <span class="v">4/4 types</span></span>
+      <span><span class="k">aliasMatchTested:</span> <span class="v">4/4 types</span></span>
+    </div>
+  </div>
+</div>
+
+<div class="matrix-card">
+  <div class="matrix-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.matrix-toggle').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
+    <span class="matrix-toggle">+</span>
+    <span class="matrix-title">Lists & Enums Coverage Matrix</span>
+    <span class="matrix-meta">37 rows</span>
+  </div>
+  <div class="matrix-body" style="display:none">
+    <div class="matrix-summary">
+      <span><span class="k">totalCatalogs:</span> <span class="v">15</span></span>
+      <span><span class="k">closedCount:</span> <span class="v">2</span></span>
+      <span><span class="k">openPreferKnownCount:</span> <span class="v">13</span></span>
+      <span><span class="k">listFieldCount:</span> <span class="v">13</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ REPAIR LIFECYCLE PROOF ════════ -->
+<div class="lifecycle">
+  <h3>Repair Lifecycle Proof (AI-On)</h3>
+  <div class="lc-flow">
+    <div class="lc-step">1. Validator Rejects</div><span class="lc-arrow">&rarr;</span>
+    <div class="lc-step">2. Build Prompt (P1-P7)</div><span class="lc-arrow">&rarr;</span>
+    <div class="lc-step">3. LLM Repairs</div><span class="lc-arrow">&rarr;</span>
+    <div class="lc-step">4. Re-Validate</div><span class="lc-arrow">&rarr;</span>
+    <div class="lc-step">5. Store or unk</div>
+  </div>
+  <div class="lc-grid">
+    <div class="lc-card"><div class="lc-label">Entries Have Rejections</div><div class="lc-val val-green">100%</div><div class="lc-detail">Every repair entry links to its violation reason</div></div>
+    <div class="lc-card"><div class="lc-label">Repaired Pass Re-Validation</div><div class="lc-val val-green">100%</div><div class="lc-detail">All repaired values confirmed valid</div></div>
+    <div class="lc-card"><div class="lc-label">Failed Set to unk</div><div class="lc-val val-green">100%</div><div class="lc-detail">No invalid values persist in output</div></div>
+    <div class="lc-card"><div class="lc-label">Cross-Field (P6)</div><div class="lc-val val-green">Wired</div><div class="lc-detail">Cross-field repair active when constraints fail</div></div>
+  </div>
+</div>
+
+<!-- ════════ VALIDATION DIMENSION MATRIX ════════ -->
+<div class="matrix-card">
+  <div class="matrix-header">
+    <span class="matrix-toggle">-</span>
+    <span class="matrix-title">Validation Dimension Coverage</span>
+    <span class="matrix-meta">Which scenarios exercise which validation steps</span>
+  </div>
+  <div class="matrix-body">
+    <table class="dim-table">
+      <thead><tr>
+        <th style="width:160px">Scenario</th><th>Shape</th><th>Type</th><th>Unit</th><th>Format</th><th>Enum</th><th>List</th><th>Range</th><th>Round</th><th>Cross</th><th>Comp</th><th>Reject</th><th>Repair</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>happy_path</td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">0</span></td><td><span class="dot dot-no">-</span></td></tr>
+        <tr><td>shape_violations</td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-partial">S</span></td></tr>
+        <tr><td>type_violations</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">P3</span></td></tr>
+        <tr><td>unit_violations</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">UC</span></td></tr>
+        <tr><td>format_violations</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">P4</span></td></tr>
+        <tr><td>closed_enum_reject</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">P1</span></td></tr>
+        <tr><td>list_fields_dedup</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td></tr>
+        <tr><td>rounding_precision</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td></tr>
+        <tr><td>cross_validation</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">P6</span></td></tr>
+        <tr><td>new_*/similar_*</td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-no">-</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">&#10003;</span></td><td><span class="dot dot-yes">P5</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ SCENARIO CARDS — VALIDATION ════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Validation</h2>
+    <span class="cat-badge cat-pass">5/5 passing</span>
+  </div>
+
+  <div class="sc-grid">
+    <!-- type_violations — full violation detail with prompt/response -->
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#22 type_violations</div><div class="sc-desc">Non-numeric strings for 22 number fields &rarr; P3 type coercion repair</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-red">20</div><div class="ml">Rejections</div></div>
+        <div class="sc-metric"><div class="mv val-green">2</div><div class="ml">Repaired</div></div>
+        <div class="sc-metric"><div class="mv val-yellow">18</div><div class="ml">Set to unk</div></div>
+        <div class="sc-metric"><div class="mv">4ms</div><div class="ml">Time</div></div>
+      </div>
+
+      <!-- Violation detail table with expandable prompt/response -->
+      <div class="violations">
+        <div class="violations-header">&#9879; Per-Field Violations &amp; Repairs</div>
+        <table class="v-table">
+          <thead><tr><th>Field</th><th>Violation</th><th>Status</th><th>Before &rarr; After</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="v-field">acceleration</td>
+              <td><span class="v-reason type">wrong_type</span></td>
+              <td><span class="pill pill-repaired">repaired</span></td>
+              <td><span class="v-before">twenty-grams</span> &rarr; <span class="v-after">20</span></td>
+              <td class="v-model">gemini-2.5-flash-lite</td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding:0 10px 8px">
+                <details>
+                  <summary>Prompt &amp; Response</summary>
+                  <div class="prompt-block">SYSTEM: You are a field value validator...
+
+USER: The field "acceleration" has value "twenty-grams" which failed type check.
+Expected: number. Got: string "twenty-grams".
+Parse this into a numeric value if possible, or return "unk".</div>
+                  <div class="prompt-block" style="margin-top:4px;border-color:var(--green-border)">RESPONSE:
+{
+  "status": "repaired",
+  "decisions": [{
+    "value": "twenty-grams",
+    "decision": "map_to_existing",
+    "resolved_to": 20,
+    "confidence": 0.85,
+    "reasoning": "twenty grams = 20g"
+  }]
+}</div>
+                </details>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="v-field">battery_hours</td>
+              <td><span class="v-reason type">wrong_type</span></td>
+              <td><span class="pill pill-failed">still_failed</span></td>
+              <td><span class="v-before">high</span> &rarr; <span class="v-unk">unk</span></td>
+              <td class="v-model">gemini-2.5-flash-lite</td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding:0 10px 8px">
+                <details>
+                  <summary>Prompt &amp; Response</summary>
+                  <div class="prompt-block">SYSTEM: You are a field value validator...
+
+USER: The field "battery_hours" has value "high" which failed type check.
+Expected: number. Got: string "high".
+Parse this into a numeric value if possible, or return "unk".</div>
+                  <div class="prompt-block" style="margin-top:4px;border-color:var(--red-border)">RESPONSE:
+{
+  "status": "repaired",
+  "decisions": [{
+    "value": "high",
+    "decision": "set_unk",
+    "resolved_to": null,
+    "confidence": 0.2,
+    "reasoning": "'high' is not a parseable number"
+  }]
+}</div>
+                </details>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="v-field">click_force</td>
+              <td><span class="v-reason type">wrong_type</span></td>
+              <td><span class="pill pill-failed">still_failed</span></td>
+              <td><span class="v-before">fast</span> &rarr; <span class="v-unk">unk</span></td>
+              <td class="v-model">gemini-2.5-flash-lite</td>
+            </tr>
+
+            <tr style="background:var(--surface-2)">
+              <td colspan="5" style="text-align:center;padding:6px;font-size:10px;color:var(--text-dim)">
+                + 17 more fields with wrong_type rejections
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">type_coercion_detected</span><span class="ck-detail">20 type rejections</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">repair_entries_have_rejections</span><span class="ck-detail">20/20 have reasons</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">failed_repairs_set_unk</span><span class="ck-detail">18/18 set to unk</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">repaired_revalidation_passes</span><span class="ck-detail">2/2 pass re-validation</span></div>
+      </div>
+    </div>
+
+    <!-- shape_violations — compact, with prompt_skipped -->
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#26 shape_violations</div><div class="sc-desc">Wrong shapes for scalar + list fields &rarr; shape rejection (prompt_skipped)</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-red">1</div><div class="ml">Shape Rej</div></div>
+        <div class="sc-metric"><div class="mv val-yellow">1</div><div class="ml">Skipped</div></div>
+        <div class="sc-metric"><div class="mv">0</div><div class="ml">Repaired</div></div>
+        <div class="sc-metric"><div class="mv">3ms</div><div class="ml">Time</div></div>
+      </div>
+      <div class="violations">
+        <div class="violations-header">&#9879; Per-Field Violations &amp; Repairs</div>
+        <table class="v-table">
+          <thead><tr><th>Field</th><th>Violation</th><th>Status</th><th>Before &rarr; After</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="v-field">lift</td>
+              <td><span class="v-reason shape">wrong_shape</span></td>
+              <td><span class="pill pill-skipped">prompt_skipped</span></td>
+              <td><span class="v-before">[wrong, shape]</span> &rarr; <span class="v-unk">unk</span></td>
+              <td class="v-model">n/a (no LLM)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">shape_rejections_detected</span><span class="ck-detail">1 shape rejection</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">failed_repairs_set_unk</span><span class="ck-detail">prompt_skipped &rarr; unk</span></div>
+      </div>
+    </div>
+
+    <!-- closed_enum_reject — enum with P1 repair -->
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#12 closed_enum_reject</div><div class="sc-desc">Invalid values for 2 closed enum fields &rarr; P1 repair</div></div>
+        <div class="sc-badge pass">3/3</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-red">2</div><div class="ml">Enum Rej</div></div>
+        <div class="sc-metric"><div class="mv val-green">2</div><div class="ml">Repaired</div></div>
+        <div class="sc-metric"><div class="mv">0</div><div class="ml">Failed</div></div>
+        <div class="sc-metric"><div class="mv">4ms</div><div class="ml">Time</div></div>
+      </div>
+      <div class="violations">
+        <div class="violations-header">&#9879; Per-Field Violations &amp; Repairs</div>
+        <table class="v-table">
+          <thead><tr><th>Field</th><th>Violation</th><th>Status</th><th>Before &rarr; After</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="v-field">connection</td>
+              <td><span class="v-reason enum">enum_not_allowed</span></td>
+              <td><span class="pill pill-repaired">repaired</span></td>
+              <td><span class="v-before">invalid_conn</span> &rarr; <span class="v-after">wired</span></td>
+              <td class="v-model">gemini-2.5-flash-lite</td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding:0 10px 8px">
+                <details>
+                  <summary>Prompt &amp; Response</summary>
+                  <div class="prompt-block">USER: The field "connection" has value "invalid_conn" which is not in the closed enum.
+Allowed values: [wired, wireless, both]
+Map to an existing value, or reject.</div>
+                  <div class="prompt-block" style="margin-top:4px;border-color:var(--green-border)">RESPONSE:
+{ "status": "repaired", "decisions": [{ "value": "invalid_conn", "decision": "map_to_existing", "resolved_to": "wired", "confidence": 0.45, "reasoning": "Closest match in closed vocabulary" }] }</div>
+                </details>
+              </td>
+            </tr>
+            <tr>
+              <td class="v-field">connectivity</td>
+              <td><span class="v-reason enum">enum_not_allowed</span></td>
+              <td><span class="pill pill-repaired">repaired</span></td>
+              <td><span class="v-before">invalid_bt</span> &rarr; <span class="v-after">bluetooth</span></td>
+              <td class="v-model">gemini-2.5-flash-lite</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">closed_enum_rejections</span><span class="ck-detail">2 enum rejections</span></div>
+      </div>
+    </div>
+
+    <!-- unit_violations — compact -->
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#24 unit_violations</div><div class="sc-desc">Wrong unit suffixes for 23 unit fields</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-red">23</div><div class="ml">Unit Rej</div></div>
+        <div class="sc-metric"><div class="mv val-green">5</div><div class="ml">Repaired</div></div>
+        <div class="sc-metric"><div class="mv val-yellow">18</div><div class="ml">Set to unk</div></div>
+        <div class="sc-metric"><div class="mv">4ms</div><div class="ml">Time</div></div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">unit_violations_detected</span><span class="ck-detail">23 unit rejections, wrong_unit</span></div>
+      </div>
+    </div>
+
+    <!-- rounding + format compact row -->
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#25 rounding_precision</div><div class="sc-desc">Excess decimals &rarr; deterministic auto-repair (no LLM)</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-green">Auto</div><div class="ml">Repair</div></div>
+        <div class="sc-metric"><div class="mv">-</div><div class="ml">LLM</div></div>
+        <div class="sc-metric"><div class="mv">22</div><div class="ml">Fields</div></div>
+        <div class="sc-metric"><div class="mv">4ms</div><div class="ml">Time</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ COVERAGE SCENARIOS ════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Coverage</h2>
+    <span class="cat-badge cat-partial">7/8 checks</span>
+  </div>
+  <div class="sc-grid">
+    <div class="sc-card fail">
+      <div class="sc-top">
+        <div><div class="sc-name">#1 happy_path</div><div class="sc-desc">All 81 fields with valid values</div></div>
+        <div class="sc-badge fail">7/8</div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><div class="mv val-green">81</div><div class="ml">Green</div></div>
+        <div class="sc-metric"><div class="mv">0</div><div class="ml">Yellow</div></div>
+        <div class="sc-metric"><div class="mv">0</div><div class="ml">Red</div></div>
+        <div class="sc-metric"><div class="mv val-blue">0.95</div><div class="ml">Conf</div></div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">has_fields</span><span class="ck-detail">81 fields</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">coverage_threshold</span><span class="ck-detail">100.0%</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">confidence_threshold</span><span class="ck-detail">0.95</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">no_cross_field_failures</span><span class="ck-detail">0 failures</span></div>
+        <div class="ck"><div class="ck-icon ck-fail">&#10007;</div><span class="ck-name" style="color:var(--red)">all_fields_valid</span><span class="ck-detail" style="color:var(--red)">12 invalid fields</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ COMPONENTS ════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Components</h2>
+    <span class="cat-badge cat-partial">4/8 pass</span>
+  </div>
+  <div class="sc-grid" style="grid-template-columns:repeat(auto-fill,minmax(400px,1fr))">
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#3 similar_encoder</div><div class="sc-desc">Alias: "Encoder alpha 01" &rarr; "Encoder Alpha 01"</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">encoder_has_value</span><span class="ck-detail">encoder="encoder-alpha-01"</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">encoder_was_resolved</span><span class="ck-detail">valid=true</span></div>
+      </div>
+    </div>
+    <div class="sc-card fail">
+      <div class="sc-top">
+        <div><div class="sc-name">#2 new_encoder</div><div class="sc-desc">Unknown encoder &rarr; new_component suggestion</div></div>
+        <div class="sc-badge fail">2/5</div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">has_fields</span><span class="ck-detail">81 fields</span></div>
+        <div class="ck"><div class="ck-icon ck-fail">&#10007;</div><span class="ck-name" style="color:var(--red)">encoder_component_suggestion</span><span class="ck-detail" style="color:var(--red)">no encoder suggestion</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ EDGE CASES ════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Edge Cases</h2>
+    <span class="cat-badge cat-partial">4/6 pass</span>
+  </div>
+  <div class="sc-grid" style="grid-template-columns:repeat(auto-fill,minmax(400px,1fr))">
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#21 list_fields_dedup</div><div class="sc-desc">All 13 list fields with duplicates &rarr; dedupe + union</div></div>
+        <div class="sc-badge pass">4/4</div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">list_fields_present</span><span class="ck-detail">13 list-shaped fields</span></div>
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">no_duplicates_in_lists</span><span class="ck-detail">all deduplicated</span></div>
+      </div>
+    </div>
+    <div class="sc-card pass">
+      <div class="sc-top">
+        <div><div class="sc-name">#20 multi_source_consensus</div><div class="sc-desc">4 sources disagree &rarr; tier-weighted consensus</div></div>
+        <div class="sc-badge pass">3/3</div>
+      </div>
+      <div class="sc-checks">
+        <div class="ck"><div class="ck-icon ck-pass">&#10003;</div><span class="ck-name">consensus_resolved_fields</span><span class="ck-detail">Fields resolved despite disagreement</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

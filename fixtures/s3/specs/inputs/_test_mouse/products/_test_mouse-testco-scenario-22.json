@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 22",
-    "model": "Scenario 22 type_violations",
-    "variant": "type_violations",
+    "model": "Scenario 22 unit_violations",
+    "variant": "unit_violations",
     "id": 9022,
     "identifier": "test022a"
   },
   "anchors": {},
   "_testCase": {
     "id": 22,
-    "name": "type_violations",
-    "description": "Non-numeric strings for 22 number fields -> P3 type coercion repair",
+    "name": "unit_violations",
+    "description": "Wrong unit suffixes for 25 unit fields -> unit conversion repair",
     "category": "Validation"
   }
 }

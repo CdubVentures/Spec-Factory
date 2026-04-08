@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Validator Pipeline Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .pipeline { display: flex; flex-direction: column; }
+  .phase { display: grid; grid-template-columns: 56px 1fr; }
+  .phase-line { display: flex; flex-direction: column; align-items: center; }
+  .phase-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; flex-shrink: 0; z-index: 1; }
+  .phase-connector { width: 2px; flex: 1; min-height: 16px; }
+  .phase-content { padding: 4px 0 20px 8px; }
+  .phase-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .phase-desc { font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px; }
+  .phase-always .phase-dot { background: #868e96; } .phase-always .phase-connector { background: #ced4da; }
+  .phase-shortcircuit .phase-dot { background: var(--red); } .phase-shortcircuit .phase-connector { background: #ffc9c9; }
+  .phase-repair .phase-dot { background: var(--green); } .phase-repair .phase-connector { background: #b2f2bb; }
+  .phase-reject .phase-dot { background: var(--orange); } .phase-reject .phase-connector { background: #ffec99; }
+  .phase-both .phase-dot { background: var(--purple); } .phase-both .phase-connector { background: #d0bfff; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-repair { background: var(--green-bg); color: var(--green); }
+  .tag-reject { background: var(--red-bg); color: var(--red); }
+  .tag-shortcircuit { background: var(--orange-bg); color: var(--orange); }
+  .tag-always { background: var(--surface-alt); color: var(--text-muted); }
+  .tag-both { background: var(--purple-bg); color: var(--purple); }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); }
+  .prompt-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); font-weight: 600; font-size: 14px; flex-wrap: wrap; }
+  .prompt-id { display: inline-flex; align-items: center; justify-content: center; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; font-family: var(--mono); color: white; background: var(--accent); }
+  .prompt-body { padding: 14px 16px; font-size: 13px; }
+  .prompt-body p { margin-bottom: 8px; }
+  .prompt-trigger { font-size: 12px; color: var(--text-muted); font-family: var(--mono); background: var(--surface-alt); padding: 3px 8px; border-radius: 3px; }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .conf-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0; font-size: 11px; font-weight: 600; }
+  .conf-segment { display: flex; align-items: center; justify-content: center; color: white; }
+  .conf-auto { background: var(--green); } .conf-flag { background: var(--orange); } .conf-skip { background: var(--red); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; font-size: 13px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .audit-pass { color: var(--green); } .audit-fail { color: var(--red); } .audit-na { color: var(--text-muted); }
+  .audit-icon { font-weight: 700; width: 20px; display: inline-block; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Validator Pipeline Reference</h1>
+  <p>Spec Factory Publish Pipeline &mdash; Deterministic Validation + LLM Repair &mdash; 683 tests, 0 failures</p>
+</div>
+
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">1</span> High-Level Flow</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">LLM Extracts Value</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">13-Step Deterministic Validation</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass" style="min-width:80px;">Pass?</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-pass">Yes &rarr; Done (valid)</div>
+  <span style="width:40px"></span>
+  <div class="flow-box flow-fail">No &rarr; Repair Adapter (Attempt 2)</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-repair">Build Per-Key LLM Prompt (P1&ndash;P7)</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-repair">LLM Returns Repair</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Re-Validate (closed loop)</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-pass">Pass &rarr; Repaired</div>
+  <span style="width:40px"></span>
+  <div class="flow-box flow-fail">Fail &rarr; still_failed / rerun</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">2</span> Full Compiled Knob Audit</div>
+
+<p style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
+  Every knob that exists in compiled <code>field_rules.json</code>, mapped to its consumer.
+  <span class="audit-icon audit-pass">&#10003;</span> = consumed by validator,
+  <span class="audit-icon audit-fail">&#10007;</span> = not consumed (with reason),
+  <span class="audit-icon audit-na">&mdash;</span> = correct exclusion (not a validator concern).
+</p>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">contract.* &mdash; Output Contract</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>contract.type</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 4</td><td>string / number. Coerces safe types, rejects mismatches.</td></tr>
+  <tr><td><code>contract.shape</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 0 + 2</td><td>scalar / list / record. Short-circuits on mismatch.</td></tr>
+  <tr><td><code>contract.unit</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 3</td><td>Strips, converts, or rejects unit suffixes.</td></tr>
+  <tr><td><code>contract.range.min / max</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 10</td><td>Rejects out-of-bounds. No clamping.</td></tr>
+  <tr><td><code>contract.rounding.decimals</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 8</td><td>Auto-repairs to precision.</td></tr>
+  <tr><td><code>contract.rounding.mode</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 8</td><td>nearest / floor / ceil.</td></tr>
+  <tr><td><code>contract.list_rules.dedupe</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>First-occurrence preserved.</td></tr>
+  <tr><td><code>contract.list_rules.sort</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>alpha / numeric / none.</td></tr>
+  <tr><td><code>contract.list_rules.max_items</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>Truncates to limit.</td></tr>
+  <tr><td><code>contract.list_rules.min_items</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>Rejects undersized lists.</td></tr>
+  <tr><td><code>contract.list_rules.item_union</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Multi-source merge strategy. Consumed at compile/ingest layer, not per-value validation.</td></tr>
+  <tr><td><code>contract.unknown_token</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 12</td><td>Configurable unknown token for publish-gate check. Default <code>"unk"</code>.</td></tr>
+  <tr><td><code>contract.unknown_reason_required</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Enforced by pipeline orchestrator, not per-value validation.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">parse.* &mdash; Parse Rules</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>parse.template</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 1 + 6</td><td>Dispatches normalizers + selects format regex.</td></tr>
+  <tr><td><code>parse.unit_accepts</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 3</td><td>Alternate unit forms (e.g. "hours" for "h").</td></tr>
+  <tr><td><code>parse.unit_conversions</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 3</td><td>Deterministic conversion factors (<code>{ lb: 453.592 }</code>).</td></tr>
+  <tr><td><code>parse.strict_unit_required</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 3</td><td>When true, bare numbers without unit suffix are rejected.</td></tr>
+  <tr><td><code>parse.token_map</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 5</td><td>Post-normalization token substitution.</td></tr>
+  <tr><td><code>parse.unit</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Redundant with <code>contract.unit</code>. Validator reads <code>contract.unit</code>.</td></tr>
+  <tr><td><code>parse.delimiters</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>List parsing config. Consumed at extraction/template-dispatch layer before value reaches validator.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">enum.* &mdash; Enum Policy</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>enum.policy</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 9</td><td>closed / open_prefer_known / open.</td></tr>
+  <tr><td><code>enum.match.strategy</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 9</td><td>exact (Set.has) or alias (case-insensitive + normalized).</td></tr>
+  <tr><td><code>enum.match.format_hint</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 6</td><td>Custom regex pattern after template registry check.</td></tr>
+  <tr><td><code>enum.source</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Metadata for upstream enum assembly. Not a validation knob.</td></tr>
+  <tr><td><code>enum.new_value_policy</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Evidence-gated acceptance. Requires evidence context not available to per-value validator.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">priority.* &mdash; Publish Gating</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>priority.block_publish_when_unk</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 12</td><td>Rejects <code>"unk"</code> for fields that block publishing.</td></tr>
+  <tr><td><code>priority.publish_gate</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Category-level gate. Consumed by pipeline orchestrator at record level.</td></tr>
+  <tr><td><code>priority.required_level</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
+  <tr><td><code>priority.availability / difficulty / effort</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">component.* &mdash; Component System</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
+<tbody>
+  <tr><td><code>component.type</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 11</td><td>Via <code>parse.template === 'component_reference'</code> + injected componentDb.</td></tr>
+  <tr><td><code>component.allow_new_components</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 11</td><td>When true, unknown components pass instead of rejecting.</td></tr>
+  <tr><td><code>component.match.*</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Extraction scoring knobs (fuzzy_threshold, weights, scores). Not validation.</td></tr>
+  <tr><td><code>component.ai.*</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Extraction LLM config. Not validation.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Correctly Excluded Namespaces</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Namespace</th><th>Reason</th></tr></thead>
+<tbody>
+  <tr><td><code>evidence.*</code></td><td>Pipeline-level enforcement (min_evidence_refs, conflict_policy, tier_preference)</td></tr>
+  <tr><td><code>search_hints.*</code></td><td>IndexLab search planning only</td></tr>
+  <tr><td><code>ui.*</code></td><td>Display/rendering only</td></tr>
+  <tr><td><code>ai_assist.*</code></td><td>Extraction LLM configuration</td></tr>
+  <tr><td><code>aliases</code></td><td>Extraction search aliases</td></tr>
+  <tr><td><code>variance_policy</code></td><td>Component review, not validation</td></tr>
+  <tr><td><code>field_studio_hints</code></td><td>Spreadsheet mapping metadata</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">3</span> The 13-Step Deterministic Pipeline</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#868e96"></div> Always runs</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Short-circuits on fail</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Auto-repair only</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Reject only</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Repair or reject</div>
+</div>
+
+<div class="pipeline">
+
+  <div class="phase phase-always">
+    <div class="phase-line"><div class="phase-dot">0</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Absence Normalization <span class="tag tag-always">always</span></div>
+      <div class="phase-desc">Canonicalizes null, undefined, empty, and unk-tokens.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.shape</code></dd>
+        <dt>Scalar</dt><dd><code>null</code> / <code>""</code> / <code>"N/A"</code> &rarr; <code>"unk"</code></dd>
+        <dt>List</dt><dd><code>null</code> &rarr; <code>[]</code></dd>
+        <dt>Record</dt><dd><code>null</code> &rarr; <code>{}</code></dd>
+        <dt>Note</dt><dd><code>"none"</code> is semantic, NOT an unk-token</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-repair">
+    <div class="phase-line"><div class="phase-dot">1</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Template Dispatch <span class="tag tag-repair">repair</span></div>
+      <div class="phase-desc">Routes 5 specialized templates to dedicated normalizers. Dispatched values bypass unit + type.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>parse.template</code></dd>
+        <dt>Dispatched</dt><dd><code>boolean_yes_no_unk</code>, <code>list_of_tokens_delimited</code>, <code>date_field</code> (returns YYYY-MM-DD), <code>latency_list_modes_ms</code>, <code>list_of_numbers_with_unit</code></dd>
+        <dt>Fallthrough</dt><dd><code>text_field</code>, <code>number_with_unit</code>, <code>url_field</code>, <code>component_reference</code>, etc.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-shortcircuit">
+    <div class="phase-line"><div class="phase-dot">2</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Shape Check <span class="tag tag-shortcircuit">short-circuit</span></div>
+      <div class="phase-desc">Failure halts entire pipeline. No repair possible.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.shape</code> &mdash; <code>"scalar"</code> / <code>"list"</code> / <code>"record"</code></dd>
+        <dt>Rejection</dt><dd><code>wrong_shape</code> &mdash; excluded from repair prompts (source rerun)</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-both">
+    <div class="phase-line"><div class="phase-dot">3</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Unit Verification <span class="tag tag-both">repair + reject</span> <span class="tag tag-shortcircuit">short-circuit</span></div>
+      <div class="phase-desc">Strips, converts, or rejects unit suffixes. Enforces strict_unit_required.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.unit</code>, <code>parse.unit_accepts</code>, <code>parse.unit_conversions</code>, <code>parse.strict_unit_required</code></dd>
+        <dt>Same unit</dt><dd><code>"42 g"</code> &rarr; <code>42</code> (strip suffix)</dd>
+        <dt>Convertible</dt><dd><code>"2.65 lb"</code> &times; <code>unit_conversions.lb</code> &rarr; <code>1202.02</code></dd>
+        <dt>Strict mode</dt><dd><code>"42"</code> with <code>strict_unit_required: true</code> &rarr; <strong>rejected</strong> (missing unit)</dd>
+        <dt>Unknown unit</dt><dd>Reject <code>wrong_unit</code> / <code>unit_required</code> &rarr; short-circuits</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-both">
+    <div class="phase-line"><div class="phase-dot">4</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Type Check <span class="tag tag-both">repair + reject</span></div>
+      <div class="phase-desc">Safe coercion only. Skipped for dispatched templates.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.type</code> &mdash; <code>"string"</code> / <code>"number"</code></dd>
+        <dt>Coercions</dt><dd><code>"42"&rarr;42</code>, <code>true&rarr;"yes"</code>, <code>42&rarr;"42"</code></dd>
+        <dt>Unk tokens</dt><dd><code>"N/A"</code>, <code>"tbd"</code> &rarr; <code>"unk"</code></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-repair">
+    <div class="phase-line"><div class="phase-dot">5</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">String Normalization <span class="tag tag-repair">repair</span></div>
+      <div class="phase-desc">Deterministic chain for all string values (except <code>"unk"</code>).</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>parse.token_map</code></dd>
+        <dt>Chain</dt><dd>trim &rarr; lowercase &rarr; spaces&rarr;hyphens &rarr; underscores&rarr;hyphens &rarr; collapse &rarr; token_map</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-reject">
+    <div class="phase-line"><div class="phase-dot">6</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Format Check <span class="tag tag-reject">reject</span></div>
+      <div class="phase-desc">Template regex + custom format_hint pattern.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>parse.template</code> (FORMAT_REGISTRY), <code>enum.match.format_hint</code></dd>
+        <dt>Registry</dt><dd><code>boolean_yes_no_unk</code>: <code>/^(yes|no|unk)$/</code><br><code>list_of_tokens</code>: <code>/^[a-z][a-z0-9-]*(\+...)*$/</code><br><code>date_field</code>: <code>/^\d{4}-\d{2}-\d{2}$/</code><br><code>url_field</code>: <code>/^https?:\/\/.+/</code></dd>
+        <dt>Custom</dt><dd><code>format_hint</code> regex applied as additional check</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-both">
+    <div class="phase-line"><div class="phase-dot">7</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">List Rules <span class="tag tag-both">repair + reject</span></div>
+      <div class="phase-desc">List-specific constraints. Rejects undersized lists.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.list_rules</code> &mdash; <code>{ dedupe, sort, min_items, max_items }</code></dd>
+        <dt>Order</dt><dd>Dedupe &rarr; Sort &rarr; Truncate (max) &rarr; <strong>Reject</strong> (min)</dd>
+        <dt>min_items</dt><dd>Produces <code>min_items_violation</code> rejection (not just a flag)</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-repair">
+    <div class="phase-line"><div class="phase-dot">8</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Rounding <span class="tag tag-repair">repair</span></div>
+      <div class="phase-desc">Rounds numeric values. Always repairs, never rejects.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.rounding.decimals</code>, <code>contract.rounding.mode</code></dd>
+        <dt>Modes</dt><dd>nearest (Math.round), floor, ceil</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-both">
+    <div class="phase-line"><div class="phase-dot">9</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Enum Check <span class="tag tag-both">repair + reject</span></div>
+      <div class="phase-desc">Policy + match strategy against known-values list.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>enum.policy</code>, <code>enum.match.strategy</code>, <code>knownValues.values</code></dd>
+        <dt>Policies</dt><dd><strong>closed</strong>: reject &rarr; P1 | <strong>open_prefer_known</strong>: flag &rarr; P2 | <strong>open</strong>: pass</dd>
+        <dt>Match: exact</dt><dd>Strict <code>Set.has(v)</code></dd>
+        <dt>Match: alias</dt><dd>exact &rarr; case-insensitive &rarr; normalized &rarr; auto-repair to canonical</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-reject">
+    <div class="phase-line"><div class="phase-dot">10</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Range Check <span class="tag tag-reject">reject</span></div>
+      <div class="phase-desc">Numeric bounds. Rejects only, never clamps.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>contract.range.min</code>, <code>contract.range.max</code></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-both">
+    <div class="phase-line"><div class="phase-dot">11</div><div class="phase-connector"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Component Resolution <span class="tag tag-both">repair + reject</span></div>
+      <div class="phase-desc">Resolves against component DB. Respects allow_new_components.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>parse.template</code>, <code>componentDb</code>, <code>component.allow_new_components</code></dd>
+        <dt>DB lookup</dt><dd><code>parse.component_type</code> &rarr; fallback <code>component.type</code></dd>
+        <dt>Resolution</dt><dd>exact &rarr; case-insensitive &rarr; alias &rarr; normalized &rarr; normalized alias</dd>
+        <dt>allow_new</dt><dd>When true, unknown components pass (flagged as <code>newComponent</code>)</dd>
+        <dt>Default</dt><dd>Unknown components rejected with <code>not_in_component_db</code></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="phase phase-reject">
+    <div class="phase-line"><div class="phase-dot">12</div><div class="phase-connector" style="min-height:0"></div></div>
+    <div class="phase-content">
+      <div class="phase-title">Publish Gate <span class="tag tag-reject">reject</span></div>
+      <div class="phase-desc">Final gate. Rejects unk values for fields that block publishing.</div>
+      <dl class="detail-grid">
+        <dt>Reads</dt><dd><code>priority.block_publish_when_unk</code>, <code>contract.unknown_token</code></dd>
+        <dt>Behavior</dt><dd>If value === unknown_token and block flag is true &rarr; <code>unk_blocks_publish</code> rejection</dd>
+        <dt>Default token</dt><dd><code>"unk"</code></dd>
+      </dl>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">4</span> Input / Output Shapes</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header" style="background:var(--accent-light);">validateField() &mdash; Input</div>
+    <div class="card-body">
+      <dl class="detail-grid">
+        <dt>fieldKey</dt><dd><code>string</code></dd>
+        <dt>value</dt><dd><code>any</code> &mdash; raw value from LLM</dd>
+        <dt>fieldRule</dt><dd><code>object</code> &mdash; full compiled field rule</dd>
+        <dt>knownValues</dt><dd><code>{ policy, values[] }</code> &mdash; injected from DB</dd>
+        <dt>componentDb</dt><dd><code>{ items: [{ name, aliases? }] }</code></dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header" style="background:var(--green-bg);">validateField() &mdash; Output</div>
+    <div class="card-body">
+      <dl class="detail-grid">
+        <dt>valid</dt><dd><code>boolean</code> &mdash; true only if rejections[] empty</dd>
+        <dt>value</dt><dd><code>any</code> &mdash; possibly repaired</dd>
+        <dt>repairs[]</dt><dd><code>[{ step, before, after, rule }]</code></dd>
+        <dt>rejections[]</dt><dd><code>[{ reason_code, detail }]</code></dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Rejection Codes &rarr; Repair Prompt Mapping</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Rejection Code</th><th>Phase</th><th>Prompt</th><th>Repairable?</th></tr></thead>
+      <tbody>
+        <tr><td><code>wrong_shape</code></td><td>2</td><td>&mdash;</td><td>No (source rerun)</td></tr>
+        <tr><td><code>wrong_unit</code></td><td>3</td><td><code>unit_conversion</code></td><td>Yes</td></tr>
+        <tr><td><code>unit_required</code></td><td>3</td><td><code>unit_conversion</code></td><td>Yes</td></tr>
+        <tr><td><code>wrong_type</code></td><td>4</td><td><code>P3</code></td><td>Yes</td></tr>
+        <tr><td><code>format_mismatch</code></td><td>6</td><td><code>P4</code></td><td>Yes</td></tr>
+        <tr><td><code>min_items_violation</code></td><td>7</td><td>&mdash;</td><td>No (cannot auto-add values)</td></tr>
+        <tr><td><code>enum_value_not_allowed</code></td><td>9</td><td><code>P1</code> / <code>P2</code></td><td>Yes</td></tr>
+        <tr><td><code>unknown_enum_prefer_known</code></td><td>9</td><td><code>P2</code></td><td>Yes</td></tr>
+        <tr><td><code>out_of_range</code></td><td>10</td><td><code>P7</code></td><td>Yes</td></tr>
+        <tr><td><code>not_in_component_db</code></td><td>11</td><td><code>P5</code></td><td>Yes</td></tr>
+        <tr><td><code>unk_blocks_publish</code></td><td>12</td><td>&mdash;</td><td>Source rerun needed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">5</span> Repair Adapter (Per-Key LLM Prompts)</div>
+
+<p style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
+  Every prompt includes the <strong>FIELD CONTRACT block</strong> + the <strong>universal response schema</strong>.
+  No confidence gating &mdash; the 13-step re-validation is the only gate. Binary pass/fail.
+</p>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">Universal Response Schema (all prompts)</div>
+  <div class="card-body">
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5;">{
+  "status": "repaired" | "rerun_recommended",
+  "reason": string | null,
+  "decisions": [{
+    "value": "the failing value",
+    "decision": "map_to_existing" | "keep_new" | "reject" | "set_unk",
+    "resolved_to": "canonical value" | number | null,
+    "reasoning": "why this decision"
+  }]
+}</pre>
+    <dl class="detail-grid" style="margin-top:8px;">
+      <dt>No confidence field</dt><dd>Removed. Re-validation is the only gate.</dd>
+      <dt>All prompts use this</dt><dd>Every Return: instruction matches this exact schema.</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P1</span> Enum (Closed) <span class="prompt-trigger">enum_value_not_allowed (closed)</span></div>
+  <div class="prompt-body"><p>Shows: unknown values, full registered list, policy, match strategy, format_hint. Decisions: <code>map_to_existing</code> or <code>reject</code>. Cannot invent new values.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P2</span> Enum (Open Prefer Known) <span class="prompt-trigger">unknown_enum_prefer_known</span></div>
+  <div class="prompt-body"><p>Same as P1 + allows <code>keep_new</code>. Keep-new values added to known set for re-validation.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P3</span> Type Coercion <span class="prompt-trigger">wrong_type</span></div>
+  <div class="prompt-body"><p>Full contract context. Extract correct type from malformed value or return <code>"unk"</code>.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P4</span> Format Mismatch <span class="prompt-trigger">format_mismatch</span></div>
+  <div class="prompt-body"><p>Shows template + format_hint pattern. Repaired value must match pattern.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P5</span> Component Not Found <span class="prompt-trigger">not_in_component_db</span></div>
+  <div class="prompt-body"><p>Shows all entity names + <code>allow_new_components</code> flag. If false, prompt says "KEEP_NEW is NOT allowed."</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id" style="background:var(--orange);">P6</span> Cross-Field <span class="prompt-trigger">cross-field constraint failures</span></div>
+  <div class="prompt-body"><p>Full product context. <code>value</code> = field key, <code>resolved_to</code> = new field value. Uses same schema as all other prompts.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id">P7</span> Range Violation <span class="prompt-trigger">out_of_range</span></div>
+  <div class="prompt-body"><p>Shows range, unit, rounding precision. Correct magnitude or reject.</p></div>
+</div>
+<div class="prompt-card">
+  <div class="prompt-header"><span class="prompt-id" style="background:var(--teal);">UNIT</span> Unit Conversion <span class="prompt-trigger">wrong_unit / unit_required</span></div>
+  <div class="prompt-body"><p>Shows conversion factors when available. Fires for wrong unit or bare numbers when strict_unit_required.</p></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">6</span> Re-Validation (The Only Gate)</div>
+
+<div class="card">
+  <div class="card-header">Binary Pass/Fail &mdash; No Confidence Tiers</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Decision types</dt><dd><code>map_to_existing</code>, <code>keep_new</code>, <code>reject</code>, <code>set_unk</code></dd>
+      <dt>All applied</dt><dd>Every LLM decision is applied unconditionally. No skipping, no flagging.</dd>
+      <dt>Re-validation</dt><dd>Repaired value re-runs the <strong>full 13-step pipeline</strong></dd>
+      <dt>Pass</dt><dd><code>status: "repaired"</code> &mdash; value accepted</dd>
+      <dt>Fail</dt><dd><code>status: "still_failed"</code> &mdash; LLM repair was wrong, escalate to attempt 3</dd>
+      <dt>keep_new special</dt><dd>Keep-new values temporarily added to known set so enum check passes on re-validation</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">7</span> Escalation Chain</div>
+
+<div class="card">
+  <div class="card-body" style="text-align:center; padding:24px;">
+    <div class="flow-row">
+      <div class="flow-box flow-neutral" style="border-width:3px;">Attempt 1<br><small>13-step deterministic</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair" style="border-width:3px;">Attempt 2<br><small>Repair adapter (P1&ndash;P7)</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-fail" style="border-width:3px;">Attempt 3<br><small>Source LLM rerun</small></div>
+    </div>
+    <div style="margin-top:20px; display:flex; gap:24px; justify-content:center; flex-wrap:wrap;">
+      <div style="background:var(--green-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--green);">Attempt 1 Pass</strong><br>Deterministic &mdash; trusted</div>
+      <div style="background:var(--purple-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--purple);">Attempt 2 Pass</strong><br>LLM repair &rarr; re-validated</div>
+      <div style="background:var(--red-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--red);">All Fail</strong><br>Value &rarr; "unk"</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">8</span> Test Coverage</div>
+
+<div class="card">
+<div class="card-body">
+<table>
+<thead><tr><th>Test File</th><th>Tests</th><th>Covers</th></tr></thead>
+<tbody>
+  <tr><td>checkEnum.test.js</td><td>33</td><td>Exact + alias matching, policies, +atoms, arrays</td></tr>
+  <tr><td>checkFormat.test.js</td><td>60</td><td>4 template formats + custom format_hint + url_field</td></tr>
+  <tr><td>checkUnit.test.js</td><td>40</td><td>Strip, accepts, conversions, strict_unit_required, reject</td></tr>
+  <tr><td>checkType.test.js</td><td>41</td><td>All coercions + unk tokens</td></tr>
+  <tr><td>checkRange.test.js</td><td>25</td><td>Min, max, both, unbounded, non-numeric</td></tr>
+  <tr><td>checkShape.test.js</td><td>28</td><td>All 3 shapes + edge cases</td></tr>
+  <tr><td>validateField.test.js</td><td>37</td><td>E2E: text, number, bool, list, component, alias, block_publish</td></tr>
+  <tr><td>validateRecord.test.js</td><td>28</td><td>Multi-field + cross-field constraints + component DB routing</td></tr>
+  <tr><td>enforceListRules.test.js</td><td>19</td><td>Dedupe, sort, min/max items (reject)</td></tr>
+  <tr><td>applyRounding.test.js</td><td>20</td><td>All modes + edge cases</td></tr>
+  <tr><td>resolveComponent.test.js</td><td>26</td><td>5 resolution levels + allow_new_components</td></tr>
+  <tr><td>checkConstraints.test.js</td><td>26</td><td>4 constraint types</td></tr>
+  <tr><td>Other (normalize, absence, dispatch, etc.)</td><td>196</td><td>Normalizers (date YYYY-MM-DD) + absence + template dispatch + phase registry</td></tr>
+  <tr style="font-weight:700; background:var(--surface-alt);"><td>Validator Subtotal</td><td>579</td><td></td></tr>
+  <tr><td>promptBuilder.test.js</td><td>33</td><td>All prompts + contract block + format_hint + conversions + component fallback + schema alignment</td></tr>
+  <tr><td>repairField.test.js</td><td>25</td><td>Short-circuits, repairs, failures, binary pass/fail re-validation</td></tr>
+  <tr><td>repairResponseSchema.test.js</td><td>37</td><td>Zod schema + decision application</td></tr>
+  <tr><td>consumerBadgeRegistry.test.js</td><td>18</td><td>Extractors + backward compat</td></tr>
+  <tr style="font-weight:700; background:var(--green-bg);"><td>Grand Total</td><td>683</td><td>0 failures</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">9</span> Exact Prompt Examples (from source)</div>
+
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
+  Every prompt is assembled from 3 layers: <strong>System</strong> (universal rules + 8 hallucination patterns),
+  <strong>Field Contract Block</strong> (all parameters for this field), and <strong>Rejection-Specific User Message</strong>.
+  All prompts use the same response schema: <code>{ status, reason, decisions: [{ value, decision, resolved_to, reasoning }] }</code>.
+  No confidence field. Re-validation is the only gate.
+</p>
+
+<!-- ── EXAMPLE 1: P1 Closed Enum ──────────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--red-bg);">
+    <span class="prompt-id">P1</span>
+    Example 1: Closed Enum &mdash; <code>colors</code> field, value <code>"midnight-blue"</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> LLM extracted <code>"midnight-blue"</code> for a list-shaped color field.
+      Alias matching failed (no case-insensitive or normalized match). Enum policy is <code>closed</code> &rarr; rejected.
+    </p>
+    <p style="font-size:12px; font-weight:600; margin-bottom:4px;">What the LLM receives:</p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'colors':
+  Type: string | Shape: list | Unit:
+  Enum: closed | 8 known values | Match: alias
+  Template: list_of_tokens_delimited
+
+The field 'colors' has enum policy 'closed' (match: alias).
+The following values are not in the registered vocabulary:
+  Unknown: ["midnight-blue"]
+
+Registered values (8 total):
+  ["black","white","silver","gray","navy","green","pink","two-tone"]
+
+For each unknown value:
+1. MAP_TO_EXISTING: If it's a synonym/variant of a registered value,
+   return the canonical registered name.
+2. REJECT: If it looks hallucinated or nonsensical, reject it.
+   Reason: hallucination_detected | not_a_real_colors
+
+You MUST NOT invent new values for a closed enum.
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
+}</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>type, shape, enum.policy, match.strategy, knownValues.values (full list), parse.template</dd>
+      <dt>Expected LLM action</dt><dd><code>map_to_existing</code> &rarr; <code>"navy"</code> (midnight-blue is a navy variant) or <code>reject</code></dd>
+      <dt>Re-validation</dt><dd>Repaired value re-runs all 13 steps. Must be in the known values set.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── EXAMPLE 2: P7 Range + Rounding ─────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">
+    <span class="prompt-id">P7</span>
+    Example 2: Range Violation &mdash; <code>weight</code> field, value <code>5000</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> LLM extracted <code>5000</code> for weight (g). Range is 5&ndash;500g.
+      Likely hallucinated magnitude or unit confusion (5000mg = 5g?).
+    </p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'weight':
+  Type: number | Shape: scalar | Unit: g
+  Range: 5 to 500 g
+  Rounding: 0 decimals (nearest)
+  Template: number_with_unit
+
+The field 'weight' value is outside the expected range:
+  Value: 5000 g
+  Expected range: 5 to 500 g
+Rounding: 0 decimals (nearest). Your value must respect this precision.
+
+This may indicate a hallucinated magnitude, a unit mismatch, or a data entry error.
+
+Decide:
+1. If you can determine the correct value, return it.
+2. If the value is genuinely unknown, return "unk".
+3. If this looks hallucinated, reject it.
+
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;the failing value&gt;", "decision": "map_to_existing", "resolved_to": &lt;corrected number or "unk"&gt;, "reasoning": "..." }]
+}
+Use decision "reject" with resolved_to null if hallucinated.</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>type, shape, unit, range.min, range.max, rounding.decimals, rounding.mode, parse.template</dd>
+      <dt>Why rounding matters</dt><dd>LLM must return a whole number (0 decimals). Returning <code>82.3</code> would get rounded to <code>82</code> by step 8.</dd>
+      <dt>Re-validation</dt><dd>Repaired value must pass range check (5&ndash;500) AND rounding won't change it.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── EXAMPLE 3: P5 Component ────────────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">
+    <span class="prompt-id">P5</span>
+    Example 3: Component Not Found &mdash; <code>switch_type</code> field, value <code>"FakeSwitch9000"</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> LLM extracted <code>"FakeSwitch9000"</code> for a component_reference field.
+      The component DB has <code>component.type: "switch"</code> with <code>allow_new_components: true</code>.
+      resolveComponent tried exact &rarr; case-insensitive &rarr; alias &rarr; normalized &mdash; no match.
+    </p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'switch_type':
+  Type: string | Shape: scalar
+  Enum: open_prefer_known | 8 known values | Match: alias
+  Template: component_reference
+
+The field 'switch_type' (component_reference for 'switch') could not
+resolve the value against the component database:
+  Value: 'FakeSwitch9000'
+
+Known switch entities (15):
+Cherry MX Red, Cherry MX Brown, Cherry MX Blue, Gateron G Pro Red,
+Gateron G Pro Brown, Kailh Box White, Kailh Speed Silver, Razer Green,
+Razer Yellow, Logitech GL Tactile, SteelSeries OmniPoint 2.0,
+Keychron K Pro Red, Keychron K Pro Brown, Topre 45g, Romer-G
+
+Decide:
+1. MAP_TO_EXISTING: If this is a known component under a different name/alias.
+2. KEEP_NEW: If this is a legitimate component not yet in our DB (provide
+   maker + canonical name so we can add it).
+3. REJECT: If this looks hallucinated or is not a real switch.
+
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;the failing value&gt;", "decision": "map_to_existing|keep_new|reject", "resolved_to": "&lt;canonical name or null&gt;", "reasoning": "..." }]
+}</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>type, shape, component.type (fallback from parse.component_type), allow_new_components, componentDb.items (full entity list), enum.policy, match.strategy, parse.template</dd>
+      <dt>allow_new = true</dt><dd>LLM may use KEEP_NEW if it's a real switch. If false, prompt says "KEEP_NEW is NOT allowed".</dd>
+      <dt>Re-validation</dt><dd>If KEEP_NEW, the value passes step 11 (allow_new_components flag). If MAP_TO_EXISTING, must resolve in the DB.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── EXAMPLE 4: Unit Conversion ─────────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">
+    <span class="prompt-id" style="background:var(--teal);">UNIT</span>
+    Example 4: Unit Conversion &mdash; <code>weight</code> field, value <code>"2.65 lb"</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> LLM extracted <code>"2.65 lb"</code> for a field expecting grams.
+      <code>unit_conversions</code> has no <code>lb</code> factor (empty <code>{}</code> in this field),
+      so deterministic conversion couldn't fire. Falls through to LLM prompt.
+    </p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'weight':
+  Type: number | Shape: scalar | Unit: g
+  Range: 5 to 500 g
+  Rounding: 0 decimals (nearest)
+  Template: number_with_unit
+
+The field 'weight' requires unit 'g' but the value
+was given in 'lb':
+  Value: "2.65 lb"
+  Expected unit: g
+  Detected unit: lb
+
+Convert the value to g and return the numeric result.
+If the value cannot be meaningfully converted, return 'unk'.
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;the original value&gt;", "decision": "map_to_existing", "resolved_to": &lt;converted number or "unk"&gt;, "reasoning": "..." }]
+}</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>type, shape, unit, range, rounding, parse.template, parse.unit_conversions (shown when non-empty)</dd>
+      <dt>Why no auto-convert?</dt><dd><code>parse.unit_conversions: {}</code> &mdash; no factor for <code>lb</code>. If it had <code>{ lb: 453.592 }</code>, step 3 would have converted deterministically without LLM.</dd>
+      <dt>Re-validation</dt><dd>Converted value must pass range (5&ndash;500g) and rounding (0 decimals).</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── EXAMPLE 5: P2 Open Prefer Known ────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">
+    <span class="prompt-id">P2</span>
+    Example 5: Open Prefer Known &mdash; <code>shape</code> field, value <code>"ergonomic-asymmetric"</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> LLM extracted <code>"ergonomic-asymmetric"</code>. Policy is <code>open_prefer_known</code>.
+      Alias matching tried case-insensitive + normalized &mdash; no match in known values.
+      Flagged as <code>unknown_enum_prefer_known</code> for LLM confirmation.
+    </p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'shape':
+  Type: string | Shape: scalar
+  Enum: open_prefer_known | 3 known values | Match: alias
+  Template: text_field
+
+The field 'shape' has enum policy 'open_prefer_known' (match: alias).
+The following values are not in the known vocabulary:
+  Unknown: ["ergonomic-asymmetric"]
+
+Known values (3 total):
+  ["ambidextrous","right-handed","left-handed"]
+
+For each unknown value:
+1. MAP_TO_EXISTING: If it's a synonym/variant of a known value,
+   return the canonical known name.
+2. KEEP_NEW: If it's a genuinely valid new value for this field,
+   confirm it. Explain why it's legitimate.
+3. REJECT: If it looks hallucinated, reject it.
+
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|keep_new|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
+}</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>type, shape, enum.policy, match.strategy, knownValues.values (full list), parse.template</dd>
+      <dt>KEEP_NEW path</dt><dd>If LLM says <code>keep_new</code>, the value is temporarily added to the known set for re-validation so enum check passes.</dd>
+      <dt>MAP_TO_EXISTING</dt><dd>LLM might map <code>"ergonomic-asymmetric"</code> &rarr; <code>"right-handed"</code> since ergonomic mice are typically right-handed.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── EXAMPLE 6: P6 Cross-Field ──────────────────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">
+    <span class="prompt-id" style="background:var(--orange);">P6</span>
+    Example 6: Cross-Field Constraint &mdash; wireless mouse with <code>battery_hours: "unk"</code>
+  </div>
+  <div class="card-body">
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
+      <strong>Scenario:</strong> Product has <code>connection: "wireless"</code> but <code>battery_hours: "unk"</code>.
+      Cross-field rule <code>wireless_battery_required</code> fires: <code>connection IN ['wireless','hybrid','bluetooth'] &rarr; requires battery_hours</code>.
+    </p>
+<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">Cross-field validation found inconsistencies in product 'Razer Viper V3':
+
+Failing constraints:
+- [wireless_battery_required] conditional: set_unknown_with_reason
+  — {"trigger":"connection=wireless"}
+
+Product context:
+{
+  "brand": "Razer",
+  "model": "Viper V3",
+  "connection": "wireless",
+  "battery_hours": "unk",
+  "weight": 49,
+  "sensor": "Focus Pro 45K"
+}
+
+For each constraint failure, create a decision entry where:
+- "value" is the field key that needs fixing (e.g. "battery_hours")
+- "resolved_to" is the corrected field value
+- "decision" is "map_to_existing" to fix, "set_unk" if unknown, or "reject" if irreconcilable
+
+Return JSON matching this exact schema:
+{
+  "status": "repaired",
+  "reason": null,
+  "decisions": [{ "value": "&lt;field_key&gt;", "decision": "map_to_existing|set_unk|reject", "resolved_to": &lt;new value or null&gt;, "reasoning": "..." }]
+}
+Use status "rerun_recommended" if the data is too conflicting to resolve.</pre>
+    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
+      <dt>Parameters used</dt><dd>All resolved field values (full product context), cross-field rule definitions, product name</dd>
+      <dt>LLM context</dt><dd>Sees the entire product &mdash; can infer battery life from brand/model knowledge or flag for manual review.</dd>
+      <dt>Re-validation</dt><dd>Repaired fields re-run through <code>validateRecord</code> (all per-field + cross-field constraints).</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ── WHAT'S NOT IN THE PROMPT (honest gaps) ─────────────────────────────── -->
+
+<div class="card">
+  <div class="card-header" style="background:var(--red-bg);">What the Prompts Do NOT Include (Honest Gaps)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Missing</th><th>Why</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>list_rules</code> (dedupe, sort, max/min)</td>
+          <td>List rules are deterministic auto-repairs. If the LLM returns a list, step 7 fixes ordering/dupes automatically.</td>
+          <td>None &mdash; re-validation handles it.</td>
+        </tr>
+        <tr>
+          <td><code>token_map</code> entries</td>
+          <td>Token map is applied deterministically in step 5. LLM doesn't need to know synonym mappings.</td>
+          <td>None &mdash; re-validation normalizes.</td>
+        </tr>
+        <tr>
+          <td><code>strict_unit_required</code></td>
+          <td>The unit prompt already tells the LLM to convert to the expected unit. Re-validation enforces the suffix requirement.</td>
+          <td>Low &mdash; re-validation catches bare numbers.</td>
+        </tr>
+        <tr>
+          <td><code>block_publish_when_unk</code></td>
+          <td>This is a publish gate, not a repair instruction. If the LLM returns "unk", step 12 rejects it regardless.</td>
+          <td>None &mdash; the prompt already says "if unsure, return unk" and re-validation rejects it.</td>
+        </tr>
+        <tr>
+          <td>Component aliases/properties</td>
+          <td>P5 shows entity names but not their aliases or property keys. Aliases are used for deterministic matching only.</td>
+          <td>Low &mdash; the LLM sees the canonical names which is sufficient for MAP_TO_EXISTING decisions.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Generated from source &mdash; Spec Factory Publish Pipeline Validator<br>
+  683 tests, 0 failures &mdash; 13-step pipeline, 12 rejection codes, 9 repair prompts
+</div>
+
+</div>
+</body>
+</html>

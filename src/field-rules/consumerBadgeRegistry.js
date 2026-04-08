@@ -59,6 +59,7 @@ export const PARENT_GROUPS = Object.freeze({
   rev:  { label: 'REV',  title: 'LLM Review' },
   seed: { label: 'SEED', title: 'Seed Pipeline' },
   comp: { label: 'COMP', title: 'Component System' },
+  val:  { label: 'VAL',  title: 'Publish Pipeline Validation' },
 });
 
 // ── Registry (SSOT) ──────────────────────────────────────────────────
@@ -93,6 +94,12 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.gate': { desc: 'Derives AI call budget and model tier from effort score.' },
     } },
 
+  { path: 'priority.block_publish_when_unk', type: 'presence', flatAliases: [],
+    section: 'Priority & Effort', key: 'Block Publish When Unk',
+    consumers: {
+      'val.gate': { desc: 'Step 12 — Rejects "unk" values for fields that block publishing.' },
+    } },
+
   // ═══ Contract ════════════════════════════════════════════════════════
 
   { path: 'contract.type', type: 'string', flatAliases: ['data_type', 'type'],
@@ -100,6 +107,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.validate': { desc: 'Validates candidate values match the expected data type (string, number, integer, boolean).' },
       'rev.grid': { desc: 'Flags candidates with type mismatches for correction.' },
+      'val.type': { desc: 'Step 4 — Type Check. Verifies and coerces value type. Safe coercion only (e.g., "42" to 42).' },
     } },
 
   { path: 'contract.shape', type: 'string', flatAliases: ['output_shape', 'shape'],
@@ -108,6 +116,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.validate': { desc: 'Validates output shape (scalar, list, object) matches declaration.' },
       'rev.grid': { desc: 'Flags list values in scalar fields and vice versa.' },
       'seed.schema': { desc: 'Sets up correct storage structure in SpecDb: single value column vs array vs structured object.' },
+      'val.shape': { desc: 'Step 2 — Shape Check. Validates value matches expected shape. Short-circuits pipeline on failure.' },
     } },
 
   { path: 'contract.unit', type: 'string', flatAliases: ['unit'],
@@ -115,48 +124,68 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.normalize': { desc: 'Normalizes extracted values to the declared unit (e.g. "58 grams" to "58g").' },
       'rev.grid': { desc: 'Flags candidates with unexpected or missing units.' },
+      'val.unit': { desc: 'Step 3 — Unit Verification. Strips unit suffix, converts via unit_conversions factors, rejects unknown units.' },
     } },
 
   { path: 'contract.range.min', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'Range Min',
     consumers: {
       'eng.validate': { desc: 'Rejects values below the declared minimum.' },
+      'val.range': { desc: 'Step 10 — Range Check. Rejects values outside bounds. No clamping.' },
     } },
 
   { path: 'contract.range.max', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'Range Max',
     consumers: {
       'eng.validate': { desc: 'Rejects values above the declared maximum.' },
+      'val.range': { desc: 'Step 10 — Range Check. Rejects values outside bounds. No clamping.' },
     } },
 
   { path: 'contract.list_rules', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'List Rules',
     consumers: {
       'eng.list': { desc: 'Applies deduplication, sorting, and item count limits to list-shaped field values.' },
+      'val.list': { desc: 'Step 7 — List Rules. Enforces dedupe, sort, min/max items on list-shaped values.' },
     } },
 
   { path: 'contract.list_rules.dedupe', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'List Dedupe',
     consumers: {
       'eng.list': { desc: 'Removes duplicate entries from list values.' },
+      'val.list': { desc: 'Step 7 — Deduplicates list values, preserving first occurrence.' },
     } },
 
   { path: 'contract.list_rules.sort', type: 'string', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'List Sort',
     consumers: {
       'eng.list': { desc: 'Sorts list values using the declared sort order (asc, desc, none).' },
+      'val.list': { desc: 'Step 7 — Sorts list values (alpha, numeric, or none).' },
     } },
 
   { path: 'contract.list_rules.max_items', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'List Max Items',
     consumers: {
       'eng.list': { desc: 'Truncates list values exceeding the declared maximum item count.' },
+      'val.list': { desc: 'Step 7 — Truncates list to max item count.' },
     } },
 
   { path: 'contract.list_rules.min_items', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'List Min Items',
     consumers: {
       'eng.list': { desc: 'Flags list values with fewer items than the declared minimum.' },
+      'val.list': { desc: 'Step 7 — Rejects lists with fewer items than minimum.' },
+    } },
+
+  { path: 'contract.rounding.decimals', type: 'presence', flatAliases: [],
+    section: 'Contract (Type, Shape, Unit)', key: 'Rounding Decimals',
+    consumers: {
+      'val.rounding': { desc: 'Step 8 — Rounds numeric values to this many decimal places.' },
+    } },
+
+  { path: 'contract.rounding.mode', type: 'string', flatAliases: [],
+    section: 'Contract (Type, Shape, Unit)', key: 'Rounding Mode',
+    consumers: {
+      'val.rounding': { desc: 'Step 8 — Rounding mode: nearest, floor, or ceil.' },
     } },
 
   { path: 'contract.normalization_fn', type: 'string', flatAliases: ['normalization_fn'],
@@ -185,6 +214,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.enum': { desc: 'Enforces enum policy (open, closed, open_prefer_known) during value extraction and matching.' },
       'rev.enum': { desc: 'Enforces enum constraints during candidate scoring. Unknown values in closed enums are flagged.' },
       'seed.schema': { desc: 'Seeds enum policy into SpecDb field meta for downstream query use.' },
+      'val.enum': { desc: 'Step 9 — Enum Check. Validates values against known-values list using policy + match strategy (exact or alias).' },
     } },
 
   { path: 'enum.source', type: 'string', flatAliases: ['enum_source'],
@@ -205,12 +235,14 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Enum Policy', key: 'Match Strategy',
     consumers: {
       'rev.enum': { desc: 'Uses this matching strategy (alias, exact, fuzzy) when comparing candidates to enum values.' },
+      'val.enum': { desc: 'Step 9 — Enum Check. Alias strategy tries case-insensitive + normalized matching before rejecting.' },
     } },
 
   { path: 'enum.match.format_hint', type: 'string', flatAliases: ['enum_match_format_hint'],
     section: 'Enum Policy', key: 'Format Pattern',
     consumers: {
       'rev.enum': { desc: 'Uses this format template as output guidance during enum consistency runs.' },
+      'val.format': { desc: 'Step 6 — Format Check. Custom regex pattern applied after template registry check.' },
     } },
 
   { path: 'enum.additional_values', type: 'array', flatAliases: [],
@@ -264,6 +296,14 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Parse Rules', key: 'Parse Template',
     consumers: {
       'eng.parse': { desc: 'Applies the named parse template (text_field, numeric_field, boolean_yes_no_unk, etc.) to extract values from raw text.' },
+      'val.dispatch': { desc: 'Step 1 — Template Dispatch. Routes specialized templates to dedicated normalizers.' },
+      'val.format': { desc: 'Step 6 — Format Check. Validates value against template regex and custom format_hint pattern.' },
+    } },
+
+  { path: 'parse.strict_unit_required', type: 'presence', flatAliases: [],
+    section: 'Parse Rules', key: 'Strict Unit Required',
+    consumers: {
+      'val.unit': { desc: 'Step 3 — When true, bare numbers without unit suffix are rejected.' },
     } },
 
   // ═══ AI Assist ═══════════════════════════════════════════════════════

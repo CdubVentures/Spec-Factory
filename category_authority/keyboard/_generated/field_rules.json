@@ -3249,12 +3249,8 @@
         "match": {
           "strategy": "exact"
         },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": false
-        },
-        "policy": "open",
-        "source": null
+        "policy": "closed",
+        "source": "data_lists.colors"
       },
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
@@ -3328,23 +3324,10 @@
           "amazon.com",
           "mousespecs.org"
         ],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "colors",
@@ -4376,23 +4359,10 @@
           "product_page"
         ],
         "domain_hints": [],
-        "preferred_content_types": [
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
         ],
         "query_terms": [
           "special edition",
@@ -11587,7 +11557,30 @@
         "switch name"
       ],
       "availability": "sometimes",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.sensor",
+        "type": "sensor"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -11607,7 +11600,7 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": "data_lists.switch_name"
       },
       "evidence": {
@@ -11634,7 +11627,7 @@
       "key": "switch_name",
       "output_shape": "scalar",
       "parse": {
-        "template": "text_field"
+        "template": "component_reference"
       },
       "priority": {
         "availability": "sometimes",
@@ -11687,7 +11680,7 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "component_picker",
         "label": "Switch Name",
         "order": 9,
         "placeholder": "unk",
@@ -11965,7 +11958,39 @@
         "switch type"
       ],
       "availability": "expected",
-      "component": null,
+      "component": {
+        "ai": {
+          "context_level": "properties",
+          "mode": "off",
+          "model_strategy": "auto",
+          "reasoning_note": ""
+        },
+        "allow_new_components": true,
+        "match": {
+          "auto_accept_score": 0.95,
+          "flag_review_score": 0.65,
+          "fuzzy_threshold": 0.75,
+          "name_weight": 0.4,
+          "property_keys": [
+            "switch_feel",
+            "switch_output_type",
+            "actuation_force",
+            "actuation_distance",
+            "bottom_out_force",
+            "total_travel",
+            "switch_lifespan",
+            "hot_swappable"
+          ],
+          "property_weight": 0.6
+        },
+        "priority": {
+          "difficulty": "medium",
+          "effort": 5
+        },
+        "require_identity_evidence": true,
+        "source": "component_db.switch",
+        "type": "switch"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -11985,7 +12010,7 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": "data_lists.switch_type"
       },
       "evidence": {
@@ -12012,7 +12037,7 @@
       "key": "switch_type",
       "output_shape": "scalar",
       "parse": {
-        "template": "text_field"
+        "template": "component_reference"
       },
       "priority": {
         "availability": "expected",
@@ -12063,7 +12088,7 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "component_picker",
         "label": "Switch Type",
         "order": 10,
         "placeholder": "unk",
@@ -13394,7 +13419,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-05T17:47:37.870Z",
+  "generated_at": "2026-04-07T23:23:06.993Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

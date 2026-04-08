@@ -4,16 +4,16 @@
   "identityLock": {
     "brand": "TestCo",
     "base_model": "Scenario 18",
-    "model": "Scenario 18 preserve_all_candidates",
-    "variant": "preserve_all_candidates",
+    "model": "Scenario 18 missing_required",
+    "variant": "missing_required",
     "id": 9018,
     "identifier": "test018a"
   },
   "anchors": {},
   "_testCase": {
     "id": 18,
-    "name": "preserve_all_candidates",
-    "description": "2 fields use preserve_all_candidates â€\" multiple sources merged not resolved (click_latency_list, sensor_latency_list)",
+    "name": "missing_required",
+    "description": "Only 3-4 optional fields -> 12 required fields missing",
     "category": "Edge Cases"
   }
 }

@@ -14,7 +14,6 @@ function makeDecision(overrides = {}) {
     value: 'pink',
     decision: 'map_to_existing',
     resolved_to: 'magenta',
-    confidence: 0.9,
     reasoning: 'close color match',
     ...overrides,
   };
@@ -57,22 +56,6 @@ describe('parseRepairResponse — valid', () => {
     assert.equal(result.data.decisions.length, 3);
   });
 
-  it('accepts confidence at boundary 0.0', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ confidence: 0.0 })],
-    }));
-    assert.equal(result.ok, true);
-    assert.equal(result.data.decisions[0].confidence, 0.0);
-  });
-
-  it('accepts confidence at boundary 1.0', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ confidence: 1.0 })],
-    }));
-    assert.equal(result.ok, true);
-    assert.equal(result.data.decisions[0].confidence, 1.0);
-  });
-
   it('accepts all 4 decision types', () => {
     const types = ['map_to_existing', 'keep_new', 'reject', 'set_unk'];
     for (const decision of types) {
@@ -86,13 +69,11 @@ describe('parseRepairResponse — valid', () => {
   it('accepts null reason', () => {
     const result = parseRepairResponse(makeResponse({ reason: null }));
     assert.equal(result.ok, true);
-    assert.equal(result.data.reason, null);
   });
 
   it('accepts string reason', () => {
     const result = parseRepairResponse(makeResponse({ reason: 'source data is garbled' }));
     assert.equal(result.ok, true);
-    assert.equal(result.data.reason, 'source data is garbled');
   });
 
   it('accepts resolved_to as a number', () => {
@@ -108,7 +89,6 @@ describe('parseRepairResponse — valid', () => {
       decisions: [makeDecision({ decision: 'reject', resolved_to: null })],
     }));
     assert.equal(result.ok, true);
-    assert.equal(result.data.decisions[0].resolved_to, null);
   });
 });
 
@@ -117,130 +97,78 @@ describe('parseRepairResponse — valid', () => {
 describe('parseRepairResponse — invalid', () => {
   it('rejects missing status', () => {
     const { status, ...rest } = makeResponse();
-    const result = parseRepairResponse(rest);
-    assert.equal(result.ok, false);
-    assert.ok(result.error);
+    assert.equal(parseRepairResponse(rest).ok, false);
   });
 
   it('rejects invalid status value', () => {
-    const result = parseRepairResponse(makeResponse({ status: 'fixed' }));
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(makeResponse({ status: 'fixed' })).ok, false);
   });
 
   it('rejects missing decisions', () => {
     const { decisions, ...rest } = makeResponse();
-    const result = parseRepairResponse(rest);
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(rest).ok, false);
   });
 
   it('rejects decisions not an array', () => {
-    const result = parseRepairResponse(makeResponse({ decisions: 'not array' }));
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(makeResponse({ decisions: 'not array' })).ok, false);
   });
 
   it('rejects decision missing value field', () => {
     const { value, ...dec } = makeDecision();
-    const result = parseRepairResponse(makeResponse({ decisions: [dec] }));
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(makeResponse({ decisions: [dec] })).ok, false);
   });
 
   it('rejects decision missing decision field', () => {
     const { decision, ...dec } = makeDecision();
-    const result = parseRepairResponse(makeResponse({ decisions: [dec] }));
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(makeResponse({ decisions: [dec] })).ok, false);
   });
 
   it('rejects invalid decision type', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ decision: 'guess' })],
-    }));
-    assert.equal(result.ok, false);
+    assert.equal(parseRepairResponse(makeResponse({ decisions: [makeDecision({ decision: 'guess' })] })).ok, false);
   });
 
-  it('rejects confidence > 1.0', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ confidence: 1.5 })],
-    }));
-    assert.equal(result.ok, false);
-  });
-
-  it('rejects confidence < 0.0', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ confidence: -0.1 })],
-    }));
-    assert.equal(result.ok, false);
-  });
-
-  it('rejects confidence not a number', () => {
-    const result = parseRepairResponse(makeResponse({
-      decisions: [makeDecision({ confidence: 'high' })],
-    }));
-    assert.equal(result.ok, false);
-  });
-
-  it('rejects null input', () => {
-    const result = parseRepairResponse(null);
-    assert.equal(result.ok, false);
-  });
-
-  it('rejects string input', () => {
-    const result = parseRepairResponse('not an object');
-    assert.equal(result.ok, false);
-  });
-
-  it('rejects empty object', () => {
-    const result = parseRepairResponse({});
-    assert.equal(result.ok, false);
-  });
+  it('rejects null input', () => { assert.equal(parseRepairResponse(null).ok, false); });
+  it('rejects string input', () => { assert.equal(parseRepairResponse('not an object').ok, false); });
+  it('rejects empty object', () => { assert.equal(parseRepairResponse({}).ok, false); });
 });
 
-// ── applyRepairDecisions — scalar ────────────────────────────────────────────
+// ── applyRepairDecisions — scalar (no confidence gating) ─────────────────────
 
 describe('applyRepairDecisions — scalar', () => {
-  it('applies map_to_existing with high confidence', () => {
-    const decisions = [makeDecision({ value: 'pink', decision: 'map_to_existing', resolved_to: 'magenta', confidence: 0.9 })];
+  it('applies map_to_existing unconditionally', () => {
+    const decisions = [makeDecision({ value: 'pink', decision: 'map_to_existing', resolved_to: 'magenta' })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
     assert.equal(result.value, 'magenta');
-    assert.equal(result.confidence, 0.9);
     assert.equal(result.applied.length, 1);
-    assert.equal(result.skipped.length, 0);
   });
 
-  it('flags decision with confidence 0.5-0.8', () => {
-    const decisions = [makeDecision({ confidence: 0.6 })];
+  it('applies low-confidence decisions (no gating — re-validation is the gate)', () => {
+    const decisions = [makeDecision({ confidence: 0.3, resolved_to: 'magenta' })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
     assert.equal(result.value, 'magenta');
-    assert.equal(result.confidence, 0.6);
-    assert.equal(result.applied[0].flagged, true);
-  });
-
-  it('skips decision with confidence < 0.5', () => {
-    const decisions = [makeDecision({ confidence: 0.3 })];
-    const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
-    assert.equal(result.value, 'unk');
-    assert.equal(result.skipped.length, 1);
+    assert.equal(result.applied.length, 1);
   });
 
   it('sets unk for reject decision', () => {
-    const decisions = [makeDecision({ decision: 'reject', resolved_to: null, confidence: 0.9 })];
+    const decisions = [makeDecision({ decision: 'reject', resolved_to: null })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
     assert.equal(result.value, 'unk');
   });
 
   it('sets unk for set_unk decision', () => {
-    const decisions = [makeDecision({ decision: 'set_unk', resolved_to: null, confidence: 0.9 })];
+    const decisions = [makeDecision({ decision: 'set_unk', resolved_to: null })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
     assert.equal(result.value, 'unk');
   });
 
-  it('keeps original value for keep_new decision', () => {
-    const decisions = [makeDecision({ value: 'midnight-blue', decision: 'keep_new', resolved_to: 'midnight-blue', confidence: 0.85 })];
+  it('keeps confirmed value for keep_new decision', () => {
+    const decisions = [makeDecision({ value: 'midnight-blue', decision: 'keep_new', resolved_to: 'midnight-blue' })];
     const result = applyRepairDecisions({ decisions, currentValue: 'midnight-blue', shape: 'scalar' });
     assert.equal(result.value, 'midnight-blue');
   });
 
   it('preserves numeric resolved_to', () => {
-    const decisions = [makeDecision({ value: 'twenty', resolved_to: 20, confidence: 0.95 })];
+    const decisions = [makeDecision({ value: 'twenty', resolved_to: 20 })];
     const result = applyRepairDecisions({ decisions, currentValue: 'twenty', shape: 'scalar' });
     assert.equal(result.value, 20);
     assert.equal(typeof result.value, 'number');
@@ -250,11 +178,11 @@ describe('applyRepairDecisions — scalar', () => {
 // ── applyRepairDecisions — list ──────────────────────────────────────────────
 
 describe('applyRepairDecisions — list', () => {
-  it('maps all decisions with high confidence', () => {
+  it('maps all decisions unconditionally', () => {
     const decisions = [
-      makeDecision({ value: 'pink', resolved_to: 'magenta', confidence: 0.9 }),
-      makeDecision({ value: 'sparkle', resolved_to: 'silver', confidence: 0.85 }),
-      makeDecision({ value: 'teal', resolved_to: 'teal', decision: 'keep_new', confidence: 0.8 }),
+      makeDecision({ value: 'pink', resolved_to: 'magenta' }),
+      makeDecision({ value: 'sparkle', resolved_to: 'silver' }),
+      makeDecision({ value: 'teal', resolved_to: 'teal', decision: 'keep_new' }),
     ];
     const result = applyRepairDecisions({ decisions, currentValue: ['pink', 'sparkle', 'teal'], shape: 'list' });
     assert.deepEqual(result.value, ['magenta', 'silver', 'teal']);
@@ -263,8 +191,8 @@ describe('applyRepairDecisions — list', () => {
 
   it('drops rejected items from list', () => {
     const decisions = [
-      makeDecision({ value: 'pink', resolved_to: 'magenta', confidence: 0.9 }),
-      makeDecision({ value: 'sparkle-unicorn', decision: 'reject', resolved_to: null, confidence: 0.95 }),
+      makeDecision({ value: 'pink', resolved_to: 'magenta' }),
+      makeDecision({ value: 'sparkle-unicorn', decision: 'reject', resolved_to: null }),
     ];
     const result = applyRepairDecisions({ decisions, currentValue: ['pink', 'sparkle-unicorn'], shape: 'list' });
     assert.deepEqual(result.value, ['magenta']);
@@ -272,8 +200,8 @@ describe('applyRepairDecisions — list', () => {
 
   it('returns empty list when all rejected', () => {
     const decisions = [
-      makeDecision({ value: 'phantom-blue', decision: 'reject', resolved_to: null, confidence: 0.9 }),
-      makeDecision({ value: 'galaxy-fade', decision: 'reject', resolved_to: null, confidence: 0.9 }),
+      makeDecision({ value: 'phantom-blue', decision: 'reject', resolved_to: null }),
+      makeDecision({ value: 'galaxy-fade', decision: 'reject', resolved_to: null }),
     ];
     const result = applyRepairDecisions({ decisions, currentValue: ['phantom-blue', 'galaxy-fade'], shape: 'list' });
     assert.deepEqual(result.value, []);

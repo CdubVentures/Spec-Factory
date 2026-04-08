@@ -14,12 +14,14 @@ export function enforceListRules(values, listRules) {
   const repairs = [];
 
   // 1. Dedupe (preserve first occurrence)
+  // WHY: Use JSON.stringify for object comparison — Set uses reference equality which misses duplicate objects
   if (listRules.dedupe) {
     const seen = new Set();
     const before = result.length;
     result = result.filter(v => {
-      if (seen.has(v)) return false;
-      seen.add(v);
+      const key = typeof v === 'object' && v !== null ? JSON.stringify(v) : v;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
     const removed = before - result.length;
@@ -42,9 +44,9 @@ export function enforceListRules(values, listRules) {
     result = result.slice(0, listRules.max_items);
   }
 
-  // 4. Min items (flag only — cannot auto-add values)
+  // 4. Min items — reject undersized lists (cannot auto-add values)
   if (listRules.min_items && result.length < listRules.min_items) {
-    repairs.push({ rule: 'min_items_violation', have: result.length, need: listRules.min_items });
+    repairs.push({ rule: 'min_items_violation', have: result.length, need: listRules.min_items, reject: true });
   }
 
   return { values: result, repairs };

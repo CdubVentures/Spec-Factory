@@ -272,6 +272,7 @@ CREATE TABLE IF NOT EXISTS field_test (
   curation_suggestions INTEGER DEFAULT 0,
   runtime_failures INTEGER DEFAULT 0,
   duration_ms INTEGER DEFAULT 0,
+  fields_json TEXT,
   validation_json TEXT,
   repair_json TEXT,
   repair_total INTEGER DEFAULT 0,

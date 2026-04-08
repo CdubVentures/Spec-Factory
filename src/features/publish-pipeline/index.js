@@ -22,9 +22,11 @@ export { enforceListRules } from './validation/checks/enforceListRules.js';
 export { applyRounding } from './validation/checks/applyRounding.js';
 export { checkRange } from './validation/checks/checkRange.js';
 
-// Phase 6: component + constraints
-export { resolveComponent } from './validation/checks/resolveComponent.js';
+// Phase 6: constraints
 export { checkConstraints } from './validation/checks/checkConstraints.js';
+
+// Phase registry (O(1) phase metadata for UI badges)
+export { PHASE_REGISTRY } from './validation/phaseRegistry.js';
 
 // Phase 7-8: composed pipeline + record orchestrator
 export { validateField } from './validation/validateField.js';

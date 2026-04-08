@@ -9,13 +9,11 @@ import { enforceListRules } from './checks/enforceListRules.js';
 import { applyRounding } from './checks/applyRounding.js';
 import { checkEnum } from './checks/checkEnum.js';
 import { checkRange } from './checks/checkRange.js';
-import { resolveComponent } from './checks/resolveComponent.js';
-
 /**
  * Single-field validation pipeline. Composes all per-field checks in order.
  * Pure function — no DB, no LLM, no side effects.
  *
- * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object, componentDb?: object }} opts
+ * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object }} opts
  * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[], unknownReason: string|null, repairPrompt: object|null }}
  */
 export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb }) {
@@ -28,11 +26,17 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const unit = fieldRule?.contract?.unit || '';
   const template = fieldRule?.parse?.template || 'text_field';
   const unitAccepts = fieldRule?.parse?.unit_accepts;
+  const unitConversions = fieldRule?.parse?.unit_conversions;
+  const strictUnitRequired = fieldRule?.parse?.strict_unit_required || false;
   const roundingConfig = fieldRule?.contract?.rounding;
   const rangeConfig = fieldRule?.contract?.range;
   const listRules = fieldRule?.contract?.list_rules;
   const enumPolicy = knownValues?.policy || fieldRule?.enum?.policy;
   const enumValues = knownValues?.values;
+  const matchStrategy = fieldRule?.enum?.match?.strategy || 'exact';
+  const formatHint = fieldRule?.enum?.match?.format_hint || null;
+  const blockPublishWhenUnk = fieldRule?.priority?.block_publish_when_unk || false;
+  const unknownToken = fieldRule?.contract?.unknown_token || 'unk';
 
   const repairs = [];
   const rejections = [];
@@ -63,7 +67,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
 
   // Step 3: Unit verification (BEFORE type check — needs the unit suffix still present in string)
   if (unit && dispatched === null) {
-    const unitResult = checkUnit(current, unit, unitAccepts);
+    const unitResult = checkUnit(current, unit, unitAccepts, unitConversions, strictUnitRequired);
     if (!unitResult.pass) {
       rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
       return result(current, repairs, rejections, null, null);
@@ -95,7 +99,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   }
 
   // Step 6: Format check
-  const formatResult = checkFormat(current, template);
+  const formatResult = checkFormat(current, template, formatHint);
   if (!formatResult.pass) {
     rejections.push({ reason_code: 'format_mismatch', detail: { reason: formatResult.reason } });
   }
@@ -103,8 +107,10 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   // Step 7: List rules (list-shaped fields only)
   if (shape === 'list' && Array.isArray(current) && listRules) {
     const listResult = enforceListRules(current, listRules);
-    if (listResult.repairs.length > 0) {
-      for (const rep of listResult.repairs) {
+    for (const rep of listResult.repairs) {
+      if (rep.reject) {
+        rejections.push({ reason_code: 'min_items_violation', detail: { have: rep.have, need: rep.need } });
+      } else {
         repairs.push({ step: 'list_rules', before: current, after: listResult.values, rule: rep.rule });
       }
     }
@@ -122,9 +128,16 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
 
   // Step 9: Enum check
   if (enumPolicy && enumValues) {
-    const enumResult = checkEnum(current, enumPolicy, enumValues);
+    const enumResult = checkEnum(current, enumPolicy, enumValues, matchStrategy);
+    if (enumResult.repaired !== undefined) {
+      repairs.push({ step: 'enum_alias', before: current, after: enumResult.repaired, rule: 'alias_resolve' });
+      current = enumResult.repaired;
+    }
     if (!enumResult.pass) {
       rejections.push({ reason_code: 'enum_value_not_allowed', detail: { unknown: enumResult.unknown, policy: enumPolicy } });
+    } else if (enumResult.needsLlm) {
+      // WHY: open_prefer_known unknowns need LLM confirmation via P2 — flag as soft rejection
+      rejections.push({ reason_code: 'unknown_enum_prefer_known', detail: { unknown: enumResult.unknown, policy: enumPolicy } });
     }
   }
 
@@ -136,15 +149,9 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 11: Component resolution (component_reference fields only)
-  if (template === 'component_reference' && componentDb) {
-    const compResult = resolveComponent(current, fieldKey, componentDb);
-    if (compResult.canonical && compResult.repaired) {
-      repairs.push({ step: 'component', before: current, after: compResult.canonical, rule: 'component_resolve' });
-      current = compResult.canonical;
-    } else if (!compResult.pass) {
-      rejections.push({ reason_code: 'not_in_component_db', detail: { value: current, reason: compResult.reason } });
-    }
+  // Step 11: Publish gate — reject unk values for fields that block publishing
+  if (blockPublishWhenUnk && current === unknownToken) {
+    rejections.push({ reason_code: 'unk_blocks_publish', detail: { value: current, field: fieldKey } });
   }
 
   return result(current, repairs, rejections, null, null);
