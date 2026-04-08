@@ -1,37 +1,13 @@
 {
   "category": "mouse",
   "enums": {
-    "cable_type": {
-      "policy": "open",
+    "coating": {
+      "policy": "open_prefer_known",
       "values": [
-        "DisplayPort",
-        "HDMI",
-        "Power cable",
-        "Thunderbolt 3",
-        "Thunderbolt 4",
-        "USB-A to USB-B",
-        "USB-C"
-      ]
-    },
-    "category": {
-      "policy": "open",
-      "values": [
-        "monitor"
-      ]
-    },
-    "color": {
-      "policy": "open",
-      "values": [
-        "Black",
-        "Dark Gray",
-        "Gray",
-        "Gunmetal",
-        "Matte Black",
-        "Matte White",
-        "Platinum Silver",
-        "Silver",
-        "Space Gray",
-        "White"
+        "A",
+        "help",
+        "matte",
+        "rubber grips"
       ]
     },
     "colors": {
@@ -116,73 +92,175 @@
         "yellow"
       ]
     },
-    "discontinued": {
+    "connection": {
+      "policy": "open_prefer_known",
+      "values": [
+        "bluetooth",
+        "hybrid",
+        "wired",
+        "wireless"
+      ]
+    },
+    "connectivity": {
+      "policy": "open_prefer_known",
+      "values": [
+        "1",
+        "2.4GHz Dongle",
+        "2.4GHz RF Dongle",
+        "2.4GHz WIFI Dongle",
+        "2.5",
+        "n/a",
+        "unk"
+      ]
+    },
+    "encoder_steps": {
+      "policy": "closed",
+      "values": [
+        "16",
+        "18",
+        "20",
+        "24",
+        "25",
+        "26",
+        "30",
+        "5",
+        "59"
+      ]
+    },
+    "feet_material": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Glass",
+        "l",
+        "PTFE",
+        "PTFE (95%)",
+        "PTFE (Black-Dyed)",
+        "PTFE (Teflon)",
+        "PTFE (Virgin-Grade)"
+      ]
+    },
+    "form_factor": {
+      "policy": "open_prefer_known",
+      "values": [
+        "ambidextrous",
+        "left",
+        "right"
+      ]
+    },
+    "front_flare": {
+      "policy": "open_prefer_known",
+      "values": [
+        "flat",
+        "inward",
+        "outward"
+      ]
+    },
+    "hump": {
+      "policy": "open_prefer_known",
+      "values": [
+        "back - front",
+        "back - rear",
+        "back mid",
+        "front",
+        "middle"
+      ]
+    },
+    "lighting": {
+      "policy": "open_prefer_known",
+      "values": [
+        "1 zone (led)",
+        "1 zone (rgb)",
+        "2 zone (led)",
+        "2 zone (rgb)",
+        "3 zone (led)",
+        "3 zone (rgb)",
+        "4 zone (led)",
+        "4 zone (rgb)",
+        "5 zone (led)",
+        "5 zone (rgb)",
+        "6 zone (led)",
+        "6 zone (rgb)",
+        "7 zone (led)",
+        "7 zone (rgb)",
+        "8 zone (rgb)",
+        "9 zone (rgb)",
+        "none"
+      ]
+    },
+    "mcu": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Holtek HT32F52352",
+        "Nordic nRF52832",
+        "Nordic nRF52833",
+        "Nordic nRF52840",
+        "Nuvoton M484SIDAE",
+        "NXP LPC11U68",
+        "NXP LPC54605J512",
+        "STM32",
+        "STM32F072CBU6",
+        "STM32L412C8U6",
+        "Ti CC2462R",
+        "unk",
+        "unspecified"
+      ]
+    },
+    "sensor_type": {
+      "policy": "open_prefer_known",
+      "values": [
+        "laser",
+        "optical",
+        "unk"
+      ]
+    },
+    "shape": {
+      "policy": "open_prefer_known",
+      "values": [
+        "asymmetrical",
+        "ergonomic",
+        "symmetrical"
+      ]
+    },
+    "switch_type": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Black Shell Blue Dot",
+        "Corsair Quickstrike",
+        "D2FC-F-7N (20M)",
+        "eqwe",
+        "Haptic Inductive Trigger System (HITS)",
+        "Kailh GM 4.0",
+        "LK Optical V2",
+        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
+        "mechanical",
+        "Omron",
+        "Omron D2FC-7N",
+        "Omron D2FC-7N (60M)",
+        "Omron D2FC-F-K",
+        "Omron D2FC-F-K (50M)",
+        "Omron D2FP-FN2",
+        "optical",
+        "optical / mechanical",
+        "optical-mechanical",
+        "ROG 70M",
+        "ROG Micro Switch II",
+        "ROG Micro Switches",
+        "ROG Optical Micro Switches",
+        "Transparent Crystal Shell White Dot",
+        "TTC Optical Microswitch",
+        "unk",
+        "unspecified",
+        "yay"
+      ]
+    },
+    "yes_no": {
       "policy": "open",
       "values": [
-        "No",
-        "Yes"
-      ]
-    },
-    "frc": {
-      "policy": "open_prefer_known",
-      "values": [
-        "No",
-        "Yes"
-      ]
-    },
-    "native_colors": {
-      "policy": "open_prefer_known",
-      "values": [
-        "1.07 billion",
-        "16.2 million",
-        "16.7 million"
-      ]
-    },
-    "panel_bit_depth": {
-      "policy": "open_prefer_known",
-      "values": [
-        "10-bit",
-        "10-bit + FRC",
-        "12-bit",
-        "6-bit",
-        "6-bit + FRC",
-        "8-bit",
-        "8-bit + FRC"
-      ]
-    },
-    "price_range": {
-      "policy": "open",
-      "values": [
-        "Budget (Under $200)",
-        "High-end ($1000–$2000)",
-        "Mid-range ($200–$500)",
-        "Premium ($500–$1000)",
-        "Ultra-premium ($2000+)"
-      ]
-    },
-    "subpixel_layout": {
-      "policy": "open_prefer_known",
-      "values": [
-        "BGR",
-        "Pentile (RGBG)",
-        "QD RGB",
-        "RGB",
-        "RGB Stripe",
-        "RWBG",
-        "WRGB"
-      ]
-    },
-    "warranty": {
-      "policy": "open",
-      "values": [
-        "1 year",
-        "2 years",
-        "3 years",
-        "4 years",
-        "5 years"
+        "yes",
+        "no"
       ]
     }
   },
-  "generated_at": "2026-04-08T00:41:46.053Z",
+  "generated_at": "2026-04-06T07:30:16.577Z",
   "version": 1
 }

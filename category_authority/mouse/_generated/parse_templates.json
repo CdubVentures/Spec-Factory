@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-03-06T23:51:58.604Z",
+  "generated_at": "2026-04-06T02:02:54.599Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -260,6 +260,13 @@
       "patterns": [],
       "template": "number_with_unit",
       "unit": "dpi"
+    },
+    "editions": {
+      "context_keywords": [
+        "editions"
+      ],
+      "patterns": [],
+      "template": "list_of_tokens_delimited"
     },
     "encoder": {
       "patterns": [],
@@ -554,7 +561,7 @@
         "switches_link"
       ],
       "patterns": [],
-      "template": "text_field"
+      "template": "url_field"
     },
     "thumb_rest": {
       "patterns": [],
