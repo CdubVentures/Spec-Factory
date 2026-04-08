@@ -1,6 +1,6 @@
 ## Purpose
 
-Single gate for all field data entering the product record. No field value reaches `item_field_state` or `product.json fields[]` without passing through this pipeline. Four sub-modules: `validation/` (pure deterministic checks — COMPLETE, 458 tests), `repair-adapter/` (LLM repair orchestration — COMPLETE, 83 tests), `candidate-gate/` (source validate + persist), `publisher/` (resolve + cross-validate + publish).
+Single gate for all field data entering the product record. No field value reaches `item_field_state` or `product.json fields[]` without passing through this pipeline. Sub-modules: `validation/` (12-step pure deterministic checks + discovery enum merge), `repair-adapter/` (LLM repair orchestration, P1-P4/P6-P7/UNIT prompts), `candidate-gate/` (source validate + persist), `publisher/` (resolve + cross-validate + publish). Component resolution (sensor/switch/encoder/material name matching) is a review-phase concern, not a validation gate.
 
 ## Public API (The Contract)
 
@@ -12,6 +12,9 @@ export { validateField }   from './validation/validateField.js';
 export { validateRecord }  from './validation/validateRecord.js';
 export { repairField }     from './repair-adapter/repairField.js';
 export { repairCrossField } from './repair-adapter/repairField.js';
+export { mergeDiscoveredEnums }  from './validation/mergeDiscoveredEnums.js';
+export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
+export { persistDiscoveredValue } from './persistDiscoveredValues.js';
 ```
 
 ## Dependencies

@@ -20,6 +20,15 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
   });
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
+  // WHY: Runtime engine reads compiled rules from specDb — seed them so the range gate works.
+  specDb.upsertCompiledRules(JSON.stringify({
+    fields: {
+      weight: {
+        required_level: 'required',
+        contract: { type: 'number', shape: 'scalar', unit: 'g', range: { min: 30, max: 200 } },
+      },
+    },
+  }));
   await seedReviewCandidates(harness, '10');
   await seedLatestArtifacts(harness);
   await setOverrideFromCandidate({

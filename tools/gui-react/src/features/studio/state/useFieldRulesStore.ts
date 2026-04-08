@@ -50,6 +50,7 @@ interface FieldRulesState {
   reset: () => void;
   clearRenames: () => void;
   clearEdited: () => void;
+  clearEditedKeys: (keys: readonly string[]) => void;
   clearGroupsDirty: () => void;
 
   updateField: (key: string, path: string, value: unknown) => void;
@@ -139,6 +140,22 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       for (const [k, rule] of Object.entries(state.editedRules)) {
         const { _edited: _, ...rest } = rule;
         cleaned[k] = rest;
+      }
+      return { editedRules: cleaned };
+    });
+  },
+
+  clearEditedKeys: (keys) => {
+    set((state) => {
+      const keySet = new Set(keys);
+      const cleaned: RuleMap = {};
+      for (const [k, rule] of Object.entries(state.editedRules)) {
+        if (keySet.has(k)) {
+          const { _edited: _, ...rest } = rule;
+          cleaned[k] = rest;
+        } else {
+          cleaned[k] = rule;
+        }
       }
       return { editedRules: cleaned };
     });

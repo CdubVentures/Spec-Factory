@@ -1,8 +1,8 @@
 # Documentation Audit Ledger
 
-> **Purpose:** Record the 2026-04-04 documentation audit dispositions, major divergences, deletions, and final validation proof for the maintained documentation surface.
+> **Purpose:** Record the documentation audit dispositions, major divergences, deletions, and final validation proof for the maintained documentation surface.
 > **Prerequisites:** [../README.md](../README.md), [known-issues.md](./known-issues.md), [spec_factory_knobs_maintenance.md](./spec_factory_knobs_maintenance.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Scope
 
@@ -222,6 +222,58 @@
 | runtime | `GET /api/v1/categories` | live categories contract |
 | runtime | `GET /api/v1/process/status` | live runtime-status contract |
 | runtime | `GET /api/v1/storage/overview` | live storage overview contract |
+
+## 2026-04-07 Audit Pass
+
+### Scope
+
+Targeted update pass to align operations documentation with codebase changes since 2026-04-04. Not a full Markdown surface re-audit; focused on five files in `docs/05-operations/`.
+
+### Infrastructure Deletions Confirmed
+
+| Deleted file | What it was |
+|--------------|-------------|
+| `src/app/api/intelGraphApi.js` | Intel Graph helper server |
+| `src/app/api/tests/intelGraphApi.test.js` | Intel Graph test |
+| `src/app/cli/commands/batchCommand.js` | `run-batch` CLI command |
+| `src/app/cli/commands/dataUtilityCommands.js` | data utility CLI commands |
+| `src/app/cli/commands/publishingCommands.js` | publishing CLI commands |
+| `src/app/cli/commands/intelGraphApiCommand.js` | Intel Graph CLI command |
+| `src/features/indexing/orchestration/banditScheduler.js` | bandit scheduler |
+| `src/pipeline/runUntilComplete.js` | pipeline run-until-complete loop |
+
+The `intel:api` npm script has been removed from `package.json`. The `Dockerfile` CMD now runs `node src/app/cli/spec.js indexlab --category mouse` instead of the deleted `run-batch` command.
+
+### Additions Confirmed
+
+| New surface | What it is |
+|-------------|------------|
+| `src/app/api/routes/testModeRoutes.js` | test-mode route family |
+| `src/app/api/routes/testModeRouteContext.js` | test-mode route context factory |
+| `src/features/publisher/buildDiscoveredEnumMap.js` | discovery enum builder |
+| `src/features/publisher/persistDiscoveredValues.js` | discovery enum persistence |
+| `src/features/publisher/validation/mergeDiscoveredEnums.js` | discovery enum merge |
+| `src/tests/` | field contract audit infrastructure |
+| `field_audit_cache` table in `specDbSchema.js` | field audit cache DB table |
+| `tools/gui-react/src/pages/test-mode/` | test-mode GUI page |
+
+### Route Registry Drift
+
+`routeDefinitions` in `guiServerRuntime.js` now defines 15 route families. `GUI_API_ROUTE_ORDER` in `routeRegistry.js` still lists only 13, missing `testMode` and `specSeeds`.
+
+### Review Domain Change
+
+Override functions in `overrideWorkflow.js` no longer perform direct DB sync of `item_field_state`. Overrides write to JSON SSOT and rely on the publisher pipeline for DB projection.
+
+### File Dispositions (This Pass)
+
+| File | Disposition | What was corrected |
+|------|-------------|-------------------|
+| `docs/05-operations/deployment.md` | `EDIT` | Dockerfile CMD updated to `indexlab`, removed `run-batch`/`batchCommand.js`/`intelGraphApi.js` references, updated validation date |
+| `docs/05-operations/documentation-audit-ledger.md` | `EDIT` | Added 2026-04-07 audit pass section documenting infrastructure deletions, additions, and drift |
+| `docs/05-operations/known-issues.md` | `EDIT` | Updated `GUI_API_ROUTE_ORDER` issue with specific missing entries, added override DB sync and deleted infrastructure issues, updated validation date |
+| `docs/05-operations/monitoring-and-logging.md` | `EDIT` | Updated validation date; no Intel Graph references were present to remove |
+| `docs/05-operations/spec_factory_knobs_maintenance.md` | `EDIT` | Registry counts verified unchanged (136/3/4 = 143 total), updated validation date |
 
 ## Related Documents
 

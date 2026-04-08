@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStorage } from '../../../../../core/storage/storage.js';
 import { resolveOverrideFilePath } from '../../overrideWorkflow.js';
+import { readProductFromConsolidated } from '../../../../../shared/consolidatedOverrides.js';
 import { SpecDb } from '../../../../../db/specDb.js';
 
 export async function createReviewOverrideHarness(
@@ -231,36 +232,16 @@ export async function seedReviewProductPayload(
   );
 }
 
-export async function readOverridePayload({ config, category, productId, specDb }) {
-  // WHY: Phase E3 — read from SQL when specDb available, file fallback for legacy tests
-  if (specDb) {
-    const reviewState = specDb.getProductReviewState(productId);
-    const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
-    const overrides = {};
-    for (const row of overriddenRows) {
-      let provenance = null;
-      if (row.override_provenance) {
-        try { provenance = JSON.parse(row.override_provenance); } catch { /* keep null */ }
-      }
-      overrides[row.field_key] = {
-        field: row.field_key,
-        override_source: row.override_source || 'candidate_selection',
-        override_value: row.override_value || row.value || '',
-        override_reason: row.override_reason || null,
-        override_provenance: provenance,
-        overridden_by: row.overridden_by || null,
-        overridden_at: row.overridden_at || row.updated_at || null,
-        candidate_id: row.accepted_candidate_id || '',
-        value: row.override_value || row.value || '',
-        set_at: row.overridden_at || row.updated_at || null,
-      };
-    }
+export async function readOverridePayload({ config, category, productId }) {
+  // WHY: Read from consolidated JSON SSOT — DB sync removed from overrideWorkflow.
+  const entry = await readProductFromConsolidated({ config, category, productId });
+  if (entry) {
     return {
       version: 1,
       category,
       product_id: productId,
-      review_status: reviewState?.review_status || 'in_progress',
-      overrides,
+      review_status: entry.review_status || 'in_progress',
+      overrides: entry.overrides || {},
     };
   }
   const overridePath = resolveOverrideFilePath({ config, category, productId });

@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified runtime topology, entrypoints, persistence boundaries, and sidecar integrations for the live Spec Factory stack.
 > **Prerequisites:** [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../02-dependencies/external-services.md](../02-dependencies/external-services.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Runtime Topology
 
@@ -26,7 +26,6 @@ graph TD
   Output["Output Root (.workspace/output via src/core/config/runtimeArtifactRoots.js)"]
   IndexLab["IndexLab Root (.workspace/runs via src/core/config/runtimeArtifactRoots.js)"]
   Storage["Local Storage Adapter (src/core/storage/storage.js)"]
-  Graphql["Optional GraphQL Helper (src/app/api/intelGraphApi.js)"]
   Searxng["Optional SearXNG Sidecar (tools/searxng/docker-compose.yml)"]
   Llm["Provider-routed LLM Clients (src/core/llm/providers/index.js)"]
 
@@ -51,7 +50,6 @@ graph TD
   Dispatch --> AppDb
   Dispatch --> SpecDb
   Dispatch --> Storage
-  Dispatch --> Graphql
   Proc --> Searxng
   Proc --> Llm
 ```
@@ -78,14 +76,13 @@ graph TD
 | Category authority root | `category_authority/` | file-backed control plane and generated artifacts |
 | Runtime roots | `src/core/config/runtimeArtifactRoots.js` | `.workspace/output`, `.workspace/runs`, settings root defaults |
 | Storage adapter | `src/core/storage/storage.js` | currently local backend |
-| GraphQL helper | `src/app/api/intelGraphApi.js` | separate optional local server |
 | SearXNG compose stack | `tools/searxng/docker-compose.yml` | optional sidecar search engine |
 | LLM provider boundary | `src/core/llm/providers/index.js` | provider registry for routed model calls |
 
 ## Topology Notes
 
 - The GUI and API are served by the same Node process. The repo does not contain a separate deployed frontend service.
-- The GUI route SSOT is `tools/gui-react/src/registries/pageRegistry.ts`. The API route SSOT is the `routeDefinitions` array in `src/app/api/guiServerRuntime.js`.
+- The GUI route SSOT is `tools/gui-react/src/registries/pageRegistry.ts`. The API route SSOT is the `routeDefinitions` array in `src/app/api/guiServerRuntime.js` (15 mounted families).
 - `src/app/api/requestDispatch.js` treats only `/health` and `/api/v1/*` as API traffic. Everything else falls through to `src/app/api/staticFileServer.js`.
 - `src/app/api/realtimeBridge.js` is now a WebSocket bridge plus screencast-frame cache. `setupWatchers()` currently returns `null`; the older file-watcher model is not active.
 - Persistent state is split across:
@@ -93,7 +90,7 @@ graph TD
   - per-category SpecDb files at `.workspace/db/<category>/spec.sqlite`
   - file-backed authority content in `category_authority/`
   - runtime artifacts in `.workspace/output` and `.workspace/runs`
-- Observed runtime smoke on 2026-04-04 through `createGuiServerRuntime()` confirmed:
+- Observed runtime smoke on 2026-04-07 through `createGuiServerRuntime()` confirmed:
   - `GET /health` returns `200`
   - `GET /api/v1/categories` returns category slugs
   - `GET /api/v1/process/status` returns a process snapshot

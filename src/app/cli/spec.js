@@ -20,23 +20,10 @@ function usage() {
     'Usage: node src/app/cli/spec.js <command> [options]',
     '',
     'Commands:',
-    '  run-one --s3key <key> [--local] [--dry-run]',
     '  indexlab --category <category> --seed <product_id|s3key|url|title> [--product-id <id>] [--s3key <key>] [--brand <brand>] [--model <model>] [--variant <variant>] [--sku <sku>] [--fields <csv>] [--providers <csv>] [--out <dir>] [--run-id <run_id>] [--local]',
-    '  run-ad-hoc <category> <brand> <model> [<variant>] [--until-complete] [--max-rounds <n>] [--local]',
-    '  run-ad-hoc --category <category> --brand <brand> --model <model> [--variant <variant>] [--until-complete] [--max-rounds <n>] [--local]',
-    '  run-batch --category <category> [--brand <brand>] [--strategy <explore|exploit|mixed|bandit>] [--local] [--dry-run]',
-    '  run-until-complete --s3key <key> [--max-rounds <n>] [--local]',
-    '  category-compile --category <category> [--field-studio-source <path>] [--map <path>] [--local]',
     '  compile-rules --category <category> [--field-studio-source <path>] [--map <path>] [--dry-run] [--watch] [--watch-seconds <n>] [--max-events <n>] [--local]',
     '  compile-rules --all [--dry-run] [--local]',
-    '  compile-report --category <category> [--local]',
-    '  rules-diff --category <category> [--local]',
     '  validate-rules --category <category> [--local]',
-    '  init-category --category <category> [--template electronics] [--local]',
-    '  list-fields --category <category> [--group <group>] [--required-level <level>] [--local]',
-    '  field-report --category <category> [--format md|json] [--local]',
-    '  field-rules-verify --category <category> [--fixture <path>] [--strict-bytes] [--local]',
-    '  generate-types --category <category> [--out-dir <path>] [--local]',
     '  discover --category <category> [--brand <brand>] [--local]',
     '  review layout --category <category> [--local]',
     '  review queue --category <category> [--status needs_review|queued|...] [--limit <n>] [--local]',
@@ -51,13 +38,9 @@ function usage() {
     '  review suggest --category <category> --type enum|component|alias --field <field> --value <value> --evidence-url <url> --evidence-quote <quote> [--canonical <value>] [--reason <text>] [--reviewer <id>] [--product-id <id>] [--local]',
     '  billing-report [--month YYYY-MM] [--local]',
     '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
-
-    '  intel-graph-api --category <category> [--host <host>] [--port <port>] [--local]',
-    '  product-reconcile --category <category> [--dry-run] [--local]',
-    '  seed-db --category <category> [--local]',
-    '  seed-checkpoint --category <category> [--out <path>] [--local]',
-    '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
+    '  export-overrides --category <category> [--local]',
     '  migrate-overrides --category <category> [--local]',
+    '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
     '',
     'Global options:',
     '  --env <path>   Path to dotenv file (default: .env)',
@@ -127,6 +110,44 @@ function createLazyLoader(factory) {
   };
 }
 
+const loadPipelineCommands = createLazyLoader(async () => {
+  const [
+    { createPipelineCommands },
+    { runProduct },
+    { IndexLabRuntimeBridge },
+  ] = await Promise.all([
+    import('./commands/pipelineCommands.js'),
+    import('../../pipeline/runProduct.js'),
+    import('../../indexlab/runtimeBridge.js'),
+  ]);
+  return createPipelineCommands({
+    asBool,
+    toPosixKey,
+    runProduct,
+    IndexLabRuntimeBridge,
+    defaultIndexLabRoot,
+    openSpecDbForCategory,
+    withSpecDb,
+  });
+});
+
+const loadFieldRulesCommands = createLazyLoader(async () => {
+  const [
+    { createFieldRulesCommands },
+    compiler,
+  ] = await Promise.all([
+    import('./commands/fieldRulesCommands.js'),
+    import('../../field-rules/compiler.js'),
+  ]);
+  return createFieldRulesCommands({
+    asBool,
+    compileRules: compiler.compileRules,
+    compileRulesAll: compiler.compileRulesAll,
+    watchCompileRules: compiler.watchCompileRules,
+    validateRules: compiler.validateRules,
+  });
+});
+
 const loadReviewCommandHandler = createLazyLoader(async () => {
   const [{ createReviewCommand }, reviewDomain] = await Promise.all([
     import('./commands/reviewCommand.js'),
@@ -184,17 +205,6 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
   });
 });
 
-
-const loadIntelGraphApiCommandHandler = createLazyLoader(async () => {
-  const [{ createIntelGraphApiCommand }, { startIntelGraphApi }] = await Promise.all([
-    import('./commands/intelGraphApiCommand.js'),
-    import('../api/intelGraphApi.js'),
-  ]);
-  return createIntelGraphApiCommand({
-    startIntelGraphApi,
-  });
-});
-
 const loadBillingReportCommandHandler = createLazyLoader(async () => {
   const [{ createBillingReportCommand }, { buildBillingReport }] = await Promise.all([
     import('./commands/billingReportCommand.js'),
@@ -224,165 +234,28 @@ const loadMigrateToSqliteCommandHandler = createLazyLoader(async () => {
   });
 });
 
-const loadFieldRulesCommands = createLazyLoader(async () => {
-  const [
-    { createFieldRulesCommands },
-    { compileCategoryFieldStudio },
-    compiler,
-    { verifyGeneratedFieldRules },
-  ] = await Promise.all([
-    import('./commands/fieldRulesCommands.js'),
-    import('../../ingest/categoryCompile.js'),
-    import('../../field-rules/compiler.js'),
-    import('../../ingest/fieldRulesVerify.js'),
-  ]);
-  return createFieldRulesCommands({
-    asBool,
-    compileCategoryFieldStudio,
-    compileRules: compiler.compileRules,
-    compileRulesAll: compiler.compileRulesAll,
-    readCompileReport: compiler.readCompileReport,
-    rulesDiff: compiler.rulesDiff,
-    watchCompileRules: compiler.watchCompileRules,
-    validateRules: compiler.validateRules,
-    initCategory: compiler.initCategory,
-    listFields: compiler.listFields,
-    fieldReport: compiler.fieldReport,
-    verifyGeneratedFieldRules,
-  });
-});
-
-const loadPublishingCommands = createLazyLoader(async () => {
-  const [
-    { createPublishingCommands },
-    { reconcileOrphans },
-  ] = await Promise.all([
-    import('./commands/publishingCommands.js'),
-    import('../../features/catalog/products/reconciler.js'),
-  ]);
-  return createPublishingCommands({
-    asBool,
-    reconcileOrphans,
-  });
-});
-
-const loadDataUtilityCommands = createLazyLoader(async () => {
-  const [
-    { createDataUtilityCommands },
-    { EventLogger },
-    { generateTypesForCategory },
-  ] = await Promise.all([
-    import('./commands/dataUtilityCommands.js'),
-    import('../../logger.js'),
-    import('../../build/generate-types.js'),
-  ]);
-  return createDataUtilityCommands({
-    asBool,
-    EventLogger,
-    generateTypesForCategory,
-    openSpecDbForCategory,
-  });
-});
-
-const loadBatchCommandGroup = createLazyLoader(async () => {
-  const [
-    { createBatchCommand },
-    { loadCategoryConfig },
-    { rankBatchWithBandit },
-    { runProduct },
-  ] = await Promise.all([
-    import('./commands/batchCommand.js'),
-    import('../../categories/loader.js'),
-    import('../../features/indexing/orchestration/banditScheduler.js'),
-    import('../../pipeline/runProduct.js'),
-  ]);
-  return createBatchCommand({
-    loadCategoryConfig,
-    loadSourceIntel: async () => ({ data: { domains: {} } }),
-    rankBatchWithBandit,
-    runProduct,
-    withSpecDb,
-  });
-});
-
-const loadPipelineCommands = createLazyLoader(async () => {
-  const [
-    { createPipelineCommands },
-    { runProduct },
-    { runUntilComplete },
-    { IndexLabRuntimeBridge },
-  ] = await Promise.all([
-    import('./commands/pipelineCommands.js'),
-    import('../../pipeline/runProduct.js'),
-    import('../../pipeline/runUntilComplete.js'),
-    import('../../indexlab/runtimeBridge.js'),
-  ]);
-  return createPipelineCommands({
-    asBool,
-    toPosixKey,
-    runProduct,
-    runUntilComplete,
-    IndexLabRuntimeBridge,
-    defaultIndexLabRoot,
-    openSpecDbForCategory,
-    withSpecDb,
-  });
-});
-
 async function executeCommand({ command, config, storage, args }) {
   switch (command) {
-    case 'run-one':
-      return (await loadPipelineCommands()).commandRunOne(config, storage, args);
     case 'indexlab':
       return (await loadPipelineCommands()).commandIndexLab(config, storage, args);
-    case 'run-ad-hoc':
-      return (await loadPipelineCommands()).commandRunAdHoc(config, storage, args);
-    case 'run-until-complete':
-      return (await loadPipelineCommands()).commandRunUntilComplete(config, storage, args);
-    case 'category-compile':
-      return (await loadFieldRulesCommands()).commandCategoryCompile(config, storage, args);
     case 'compile-rules':
       return (await loadFieldRulesCommands()).commandCompileRules(config, storage, args);
-    case 'compile-report':
-      return (await loadFieldRulesCommands()).commandCompileReport(config, storage, args);
-    case 'rules-diff':
-      return (await loadFieldRulesCommands()).commandRulesDiff(config, storage, args);
     case 'validate-rules':
       return (await loadFieldRulesCommands()).commandValidateRules(config, storage, args);
-    case 'init-category':
-      return (await loadFieldRulesCommands()).commandInitCategory(config, storage, args);
-    case 'list-fields':
-      return (await loadFieldRulesCommands()).commandListFields(config, storage, args);
-    case 'field-report':
-      return (await loadFieldRulesCommands()).commandFieldReport(config, storage, args);
-    case 'field-rules-verify':
-      return (await loadFieldRulesCommands()).commandFieldRulesVerify(config, storage, args);
-    case 'generate-types':
-      return (await loadDataUtilityCommands()).commandGenerateTypes(config, storage, args);
-    case 'run-batch':
-      return (await loadBatchCommandGroup()).commandRunBatch(config, storage, args);
     case 'discover':
       return (await loadDiscoverCommandHandler())(config, storage, args);
     case 'review':
       return (await loadReviewCommandHandler())(config, storage, args);
     case 'export-overrides':
       return (await loadExportOverridesCommandHandler())(config, storage, args);
+    case 'migrate-overrides':
+      return (await loadMigrateOverridesCommandHandler())(config, storage, args);
     case 'billing-report':
       return (await loadBillingReportCommandHandler())(config, storage, args);
     case 'llm-health':
       return (await loadLlmHealthCommandHandler())(config, storage, args);
-    case 'intel-graph-api':
-      return (await loadIntelGraphApiCommandHandler())(config, storage, args);
-    case 'product-reconcile':
-      return (await loadPublishingCommands()).commandProductReconcile(config, storage, args);
-    case 'seed-db':
-      return (await loadDataUtilityCommands()).commandSeedDb(config, storage, args);
-    case 'seed-checkpoint':
-      return (await loadDataUtilityCommands()).commandSeedCheckpoint(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
-    case 'migrate-overrides':
-      return (await loadMigrateOverridesCommandHandler())(config, storage, args);
     default:
       throw new Error(`Unknown command: ${command}`);
   }
@@ -416,8 +289,6 @@ export async function executeCli(argv, { env = {}, stdout = process.stdout, stde
     }
     const storage = createStorage(config);
 
-    // BUG: the lazy-loader refactor briefly left executeCli() calling the
-    // removed dispatchCliCommand() symbol, breaking every top-level CLI command.
     const output = await executeCommand({ command, config, storage, args });
 
     if (output && typeof output === 'object') {

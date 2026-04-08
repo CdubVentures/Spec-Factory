@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "artifact_count": 11,
+  "artifact_count": 12,
   "artifacts": [
     {
       "bytes": 8405,
@@ -33,9 +33,14 @@
       "sha256": "f4e19740c722981e63835bebd9819d4fc1473510c562e23eb6f8d1f07a211738"
     },
     {
-      "bytes": 304259,
+      "bytes": 292525,
       "path": "field_rules.json",
-      "sha256": "87cdb68e80fdd0b216d75a9f0d3afac0f4b11ffcc88c768574712a39eb7a91a0"
+      "sha256": "33767e79e90c463e1400a7fe41af0dc58c4f3ebea7ea0815893f8dbfed6d12cf"
+    },
+    {
+      "bytes": 301886,
+      "path": "field_rules.runtime.json",
+      "sha256": "e35d2bbeeb81fd2021f0a63003ec44e1fe7c900cdcae41afc03fad1b32d37f8d"
     },
     {
       "bytes": 356,
@@ -59,7 +64,7 @@
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-04-06T04:04:25.389Z",
-  "source_map_hash": "90008d73ee8bb0931aa5f4b353385ae43b18a5cf2c43d600fe12fb2b849f435d",
+  "generated_at": "2026-04-08T03:48:34.692Z",
+  "source_map_hash": "a770a4d28a606c7a370139e33b39d4d05bbe6c0111343d236cb8021b74136be0",
   "version": 1
 }

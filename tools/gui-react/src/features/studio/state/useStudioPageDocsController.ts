@@ -88,11 +88,10 @@ export function useStudioPageDocsController({
   registeredColors,
 }: UseStudioPageDocsControllerInput): UseStudioPageDocsControllerResult {
   const hydrated = useRef(false);
-  // WHY: After save, clearEdited makes hasUnsavedEdits=false before the query
-  // refetch completes. Authority sync rehydrates with STALE cache → snap-back.
-  // This skips ONE rehydration. We do NOT update authorityVersionRef when
-  // suppressing, so the next run (with fresh data) still rehydrates.
-  const suppressRehydrationRef = useRef(false);
+  // WHY: During save+refetch, hasUnsavedEdits stays true (clearEdited deferred)
+  // which prevents authority sync from rehydrating with stale data.
+  // Also suppresses false conflict dialogs caused by our own save.
+  const saveInProgressRef = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>(
     'idle',
   );
@@ -104,13 +103,12 @@ export function useStudioPageDocsController({
   const { saveMapMut, saveStudioDocsMut, saveFieldKeyOrderMut } = useStudioPersistenceAuthority({
     category,
     onStudioDocsSaved: () => {
-      suppressRehydrationRef.current = true;
+      // WHY: Synchronous — no race conditions. The local Zustand store already
+      // has the correct values. Just strip _edited flags. The WebSocket broadcast
+      // from the server + the 10s authority poll handle downstream reconciliation.
       fieldRulesActions.clearRenames();
       fieldRulesActions.clearEdited();
       fieldRulesActions.clearGroupsDirty();
-      invalidateFieldRulesQueries(queryClient, category);
-      // WHY: refetch compileStale after save — map_hash changed in SQL
-      queryClient.invalidateQueries({ queryKey: ['studio', category] });
     },
   });
   const previousCategoryRef = useRef(category);
@@ -136,6 +134,17 @@ export function useStudioPageDocsController({
       (rule) => Boolean(rule?._edited),
     );
     const nextVersion = authoritySnapshotVersion;
+    const next = String(nextVersion || '').trim();
+    const previous = String(authorityVersionRef.current || '').trim();
+    const versionChanged = Boolean(next) && next !== previous;
+
+    // WHY: Capture and clear saveInProgress on the first version change after
+    // our own save. This one-cycle grace suppresses the false conflict dialog
+    // caused by the server reflecting our save back through WebSocket/poll.
+    const wasSaveInProgress = saveInProgressRef.current;
+    if (versionChanged && wasSaveInProgress) {
+      saveInProgressRef.current = false;
+    }
 
     const action = decideStudioAuthorityAction({
       category,
@@ -159,20 +168,18 @@ export function useStudioPageDocsController({
       fieldRulesActions.hydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
     }
     let didRehydrate = false;
-    if (action.rehydrate) {
-      if (suppressRehydrationRef.current) {
-        // WHY: Skip stale-data rehydration. Do NOT update authorityVersionRef
-        // so the next run (after refetch) still sees versionChanged=true.
-        suppressRehydrationRef.current = false;
-      } else {
-        fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
-        hydrated.current = false;
-        didRehydrate = true;
-      }
+    // WHY: When wasSaveInProgress, our own save caused this version change.
+    // The local store already has correct values — skip rehydrating with
+    // potentially stale server data (authority snapshot resolves before payload).
+    const skipRehydrate = action.rehydrate && wasSaveInProgress;
+    if (action.rehydrate && !wasSaveInProgress) {
+      fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors);
+      hydrated.current = false;
+      didRehydrate = true;
     }
     if (
       shouldOpenStudioAuthorityConflict({
-        conflict: action.conflict,
+        conflict: action.conflict && !wasSaveInProgress,
         nextVersion,
         pendingVersion: authorityConflictVersion,
         ignoredVersion: ignoredConflictVersionRef.current,
@@ -182,7 +189,7 @@ export function useStudioPageDocsController({
       setAuthorityConflictDetectedAt(new Date().toISOString());
     }
 
-    if ((action.hydrate || didRehydrate) && hasServerRules) {
+    if ((action.hydrate || didRehydrate || skipRehydrate) && hasServerRules) {
       authorityVersionRef.current = nextVersion;
       ignoredConflictVersionRef.current = '';
       setAuthorityConflictVersion('');
@@ -257,6 +264,7 @@ export function useStudioPageDocsController({
       if (nextFingerprint) {
         lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
       }
+      saveInProgressRef.current = true;
       saveStudioDocs(payload, {
         onSuccess: () => {
           lastStudioAutoSaveFingerprintRef.current = nextFingerprint;
@@ -268,6 +276,9 @@ export function useStudioPageDocsController({
               SETTINGS_AUTOSAVE_STATUS_MS.studioSavedIndicatorReset,
             );
           }
+        },
+        onError: () => {
+          saveInProgressRef.current = false;
         },
       });
     },

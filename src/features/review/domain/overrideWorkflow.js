@@ -165,39 +165,8 @@ export async function setOverrideFromCandidate({
     [normalizedField]: entry
   };
 
-  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
-  if (specDb) {
-    try {
-      specDb.upsertItemFieldState({
-        productId,
-        fieldKey: normalizedField,
-        value: String(candidate.value || '').trim(),
-        confidence: 1.0,
-        source: 'user',
-        acceptedCandidateId: candidate.candidate_id || null,
-        overridden: true,
-        needsAiReview: false,
-        aiReviewComplete: true,
-        overrideSource: 'candidate_selection',
-        overrideValue: String(candidate.value || '').trim(),
-        overrideReason: reason || null,
-        overrideProvenance: entry.override_provenance || null,
-        overriddenBy: reviewer || null,
-        overriddenAt: setAt
-      });
-      specDb.syncItemListLinkForFieldValue({
-        productId,
-        fieldKey: normalizedField,
-        value: String(candidate.value || '').trim(),
-      });
-      specDb.upsertProductReviewState({
-        productId,
-        reviewStatus: 'in_progress',
-        reviewStartedAt: startedAt,
-      });
-    } catch { /* best-effort */ }
-  }
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
@@ -278,39 +247,8 @@ export async function setManualOverride({
     }
   };
 
-  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
-  if (specDb) {
-    try {
-      specDb.upsertItemFieldState({
-        productId,
-        fieldKey: normalizedField,
-        value: nextValue,
-        confidence: 1.0,
-        source: 'user',
-        acceptedCandidateId: null,
-        overridden: true,
-        needsAiReview: false,
-        aiReviewComplete: true,
-        overrideSource: 'manual_entry',
-        overrideValue: nextValue,
-        overrideReason: reason || null,
-        overrideProvenance: normalizedEvidence || null,
-        overriddenBy: reviewer || null,
-        overriddenAt: setAt
-      });
-      specDb.syncItemListLinkForFieldValue({
-        productId,
-        fieldKey: normalizedField,
-        value: nextValue,
-      });
-      specDb.upsertProductReviewState({
-        productId,
-        reviewStatus: 'in_progress',
-        reviewStartedAt: startedAt,
-      });
-    } catch { /* best-effort */ }
-  }
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
@@ -401,31 +339,8 @@ export async function approveGreenOverrides({
   current.updated_at = nowIso();
   current.overrides = overrides;
 
-  // WHY: Overlap 0d — JSON SSOT first, SQL is derived cache
+  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
-  if (approvedFields.length > 0 && specDb) {
-    try {
-      for (const field of approvedFields) {
-        const entry = overrides[field];
-        if (!entry) continue;
-        specDb.upsertItemFieldState({
-          productId,
-          fieldKey: field,
-          value: entry.override_value || entry.value || '',
-          confidence: 1.0,
-          source: 'user',
-          overridden: true,
-          acceptedCandidateId: entry.candidate_id || null,
-          overrideSource: 'bulk_approve_green',
-          overrideValue: entry.override_value || entry.value || '',
-          overrideReason: String(reason || '').trim() || 'bulk_approve_green',
-          overrideProvenance: entry.override_provenance || null,
-          overriddenBy: reviewer || 'bulk_approve',
-          overriddenAt: entry.set_at || nowIso()
-        });
-      }
-    } catch { /* best-effort SQL write */ }
-  }
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
   return {
@@ -700,38 +615,7 @@ export async function finalizeOverrides({
     writeStorageJson(storage, latest.summaryKey, nextSummary)
   ]);
 
-  // Write finalized overrides to SpecDb
-  if (specDb) {
-    try {
-      const tx = specDb.db.transaction(() => {
-        for (const row of appliedRows) {
-          specDb.upsertItemFieldState({
-            productId,
-            fieldKey: row.field,
-            value: row.value,
-            confidence: 1.0,
-            source: 'user',
-            acceptedCandidateId: row.candidate_id || null,
-            overridden: true,
-            needsAiReview: false,
-            aiReviewComplete: true
-          });
-          specDb.syncItemListLinkForFieldValue({
-            productId,
-            fieldKey: row.field,
-            value: row.value,
-          });
-        }
-      });
-      tx();
-      specDb.upsertProductReviewState({
-        productId,
-        reviewStatus: saveAsDraft ? 'draft' : 'approved',
-        reviewedBy: reviewer || null,
-        reviewedAt: nowIso(),
-      });
-    } catch { /* best-effort */ }
-  }
+  // WHY: DB sync removed — will route through publisher pipeline. JSON writes above are the durable SSOT.
 
   const review = reviewKeys(storage, category, productId);
   const report = {

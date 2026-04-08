@@ -29,6 +29,7 @@ export function useStudioFieldRulesActions() {
   const reset = useFieldRulesStore((state) => state.reset);
   const clearRenames = useFieldRulesStore((state) => state.clearRenames);
   const clearEdited = useFieldRulesStore((state) => state.clearEdited);
+  const clearEditedKeys = useFieldRulesStore((state) => state.clearEditedKeys);
   const clearGroupsDirty = useFieldRulesStore((state) => state.clearGroupsDirty);
   const updateField = useFieldRulesStore((state) => state.updateField);
   const setEgToggle = useFieldRulesStore((state) => state.setEgToggle);
@@ -47,6 +48,7 @@ export function useStudioFieldRulesActions() {
     reset,
     clearRenames,
     clearEdited,
+    clearEditedKeys,
     clearGroupsDirty,
     updateField,
     setEgToggle,

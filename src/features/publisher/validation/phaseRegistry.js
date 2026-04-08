@@ -204,4 +204,16 @@ export const PHASE_REGISTRY = [
       return parts.length > 0 ? parts.join(', ') : 'Range configured';
     },
   },
+  {
+    id: 'publish_gate',
+    title: 'Publish Gate',
+    order: 11,
+    description: 'Rejects unknown values for fields that block publishing.',
+    behaviorNote: 'Final gate. Rejects unk values when block_publish_when_unk is true.',
+    isApplicable: (rule) => Boolean(rule?.priority?.block_publish_when_unk),
+    triggerDetail: (rule) => {
+      const token = rule?.contract?.unknown_token || 'unk';
+      return `Blocks publish when value is "${token}"`;
+    },
+  },
 ];

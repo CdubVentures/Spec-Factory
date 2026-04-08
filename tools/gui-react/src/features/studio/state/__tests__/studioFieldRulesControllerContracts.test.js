@@ -97,6 +97,7 @@ test('studioFieldRulesController exposes mutation methods and snapshot getter th
     'addKey',
     'bulkAddKeys',
     'clearEdited',
+    'clearEditedKeys',
     'clearGroupsDirty',
     'clearRenames',
     'hydrate',

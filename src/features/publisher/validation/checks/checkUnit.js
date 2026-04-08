@@ -65,7 +65,9 @@ export function checkUnit(value, expectedUnit, unitAccepts, unitConversions, str
   const isAccepted = accepts.some(u => u.toLowerCase() === detectedLower);
 
   if (isAccepted) {
-    return { pass: true, value: numericPart, rule: 'strip_same_unit' };
+    // WHY: Distinguish canonical unit from accepted alternates so audit can trace the rule.
+    const isCanonical = detectedLower === expectedUnit.toLowerCase();
+    return { pass: true, value: numericPart, rule: isCanonical ? 'strip_same_unit' : 'unit_accepts' };
   }
 
   // WHY: Attempt deterministic conversion before rejecting.

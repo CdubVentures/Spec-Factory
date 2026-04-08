@@ -707,6 +707,17 @@ CREATE TABLE IF NOT EXISTS color_edition_finder_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_cefr_product
   ON color_edition_finder_runs(category, product_id);
+
+-- Field contract audit cache (full audit result per category, rebuild from re-run)
+CREATE TABLE IF NOT EXISTS field_audit_cache (
+  category TEXT PRIMARY KEY,
+  total_fields INTEGER NOT NULL DEFAULT 0,
+  total_checks INTEGER NOT NULL DEFAULT 0,
+  pass_count INTEGER NOT NULL DEFAULT 0,
+  fail_count INTEGER NOT NULL DEFAULT 0,
+  result_json TEXT NOT NULL DEFAULT '{}',
+  run_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

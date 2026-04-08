@@ -226,6 +226,13 @@ export function AppShell() {
                     headerTaskDrawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
                   }`}
                 >
+                  <Link
+                    to="/test-mode"
+                    className="inline-flex h-full min-w-[96px] items-center justify-center rounded-sm border px-3 text-xs font-semibold leading-none whitespace-nowrap transition-all duration-100 sf-shell-field-test-button-idle"
+                    title="Field Contract Audit"
+                  >
+                    Field Audit
+                  </Link>
                 </div>
               </div>
             </div>

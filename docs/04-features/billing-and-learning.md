@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified cost artifact surfaces exposed after indexing activity completes.
 > **Prerequisites:** [indexing-lab.md](./indexing-lab.md), [../03-architecture/data-model.md](../03-architecture/data-model.md)
-> **Last validated:** 2026-04-02
+> **Last validated:** 2026-04-07
 
 ## Entry Points
 

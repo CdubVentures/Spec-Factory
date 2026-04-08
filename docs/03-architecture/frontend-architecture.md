@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified GUI framework, rendering model, route composition, state ownership, and client-side transport boundaries with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md), [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Framework And Rendering Model
 
@@ -69,6 +69,8 @@ tools/gui-react/src/main.tsx
 | `useWsEventBridge()` | `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts` | bridges websocket events into React Query invalidation/state updates |
 | `useFieldTestNavigation()` | `tools/gui-react/src/pages/layout/hooks/useFieldTestNavigation.ts` | controls Field Test shortcut behavior |
 
+`AppShell.tsx` also renders a "Field Audit" header button that links to `/test-mode`.
+
 ## Client Transport Boundaries
 
 | Transport | Files | Notes |
@@ -83,7 +85,8 @@ tools/gui-react/src/main.tsx
 |---------|-------|-------|
 | registry-owned route inventory | `tools/gui-react/src/registries/pageRegistry.ts` | one entry per tabbed page |
 | feature-owned pages | `tools/gui-react/src/features/**/components/*Page.tsx` | preferred home for complex routed surfaces |
-| page wrappers / legacy pages | `tools/gui-react/src/pages/**` | still used for overview, product, billing, storage, LLM settings, test mode, and component review |
+| page wrappers / legacy pages | `tools/gui-react/src/pages/**` | still used for overview, product, billing, storage, LLM settings, and component review |
+| standalone test-mode page | `tools/gui-react/src/pages/test-mode/TestModePage.tsx`, `tools/gui-react/src/pages/test-mode/FieldContractAudit.tsx`, `tools/gui-react/src/pages/test-mode/types.ts` | mounted directly in `App.tsx`, not in `PAGE_REGISTRY` |
 | shell-only layout | `tools/gui-react/src/pages/layout/*` | route-independent navigation and frame |
 
 ## Feature Ownership By Route Group
@@ -94,6 +97,7 @@ tools/gui-react/src/main.tsx
 | catalog | `/`, `/product`, `/catalog`, `/studio` | `tools/gui-react/src/pages/overview/OverviewPage.tsx`, `tools/gui-react/src/pages/product/ProductPage.tsx`, `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
 | ops | `/indexing`, `/runtime-ops`, `/review`, `/review-components`, `/llm-settings`, `/storage` | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`, `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx` |
 | settings | `/llm-config`, `/pipeline-settings` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` |
+| standalone | `/test-mode` | `tools/gui-react/src/pages/test-mode/TestModePage.tsx` (field contract audit; mounted in `App.tsx`, not in `PAGE_REGISTRY`) |
 
 ## Verified Constraints
 

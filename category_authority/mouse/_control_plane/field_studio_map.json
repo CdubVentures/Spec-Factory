@@ -9667,12 +9667,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "integer",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "integer",
       "difficulty": "medium",
       "display_name": "Sensor Brand",
       "effort": 6,
@@ -9721,7 +9721,7 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
+        "template": "integer_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -9771,7 +9771,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "integer",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,

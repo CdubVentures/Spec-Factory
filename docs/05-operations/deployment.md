@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Deployment Model
 
@@ -13,7 +13,7 @@
 | Packaged desktop app | `tools/build-exe.mjs` -> generated `SpecFactory.exe` + `gui-dist/` | bundles launcher and copies built GUI assets for distribution | supported; generated artifact not present in current checkout |
 | Setup launcher | `tools/specfactory-launcher.mjs` or generated `Launcher.exe` | local dependency/bootstrap console on default port `8799` | supported; generated artifact not present in current checkout |
 | Optional local search sidecar | `tools/searxng/docker-compose.yml` | local SearXNG instance used by search workflows | optional |
-| Docker batch image | `Dockerfile` | batch CLI image that runs `node src/app/cli/spec.js run-batch --category mouse` | present but not executed during this audit; not the primary GUI deployment path |
+| Docker batch image | `Dockerfile` | batch CLI image that runs `node src/app/cli/spec.js indexlab --category mouse` | present but not executed during this audit; not the primary GUI deployment path |
 
 ## Available Commands
 
@@ -26,10 +26,9 @@
 | Build packaged desktop runtime | `npm run gui:exe` | `package.json`, `tools/build-exe.mjs` |
 | Build packaged setup launcher | `npm run setup:exe` | `package.json`, `tools/build-setup-exe.mjs` |
 | Start IndexLab CLI directly | `npm run run:indexlab` | `package.json`, `src/app/cli/spec.js` |
-| Start batch CLI | `node src/app/cli/spec.js run-batch --category <category>` | `Dockerfile`, `src/app/cli/spec.js`, `src/app/cli/commands/batchCommand.js` |
-| Start local GraphQL helper API | `npm run intel:api` | `package.json`, `src/app/cli/spec.js`, `src/app/api/intelGraphApi.js` |
+| Start IndexLab batch (Docker) | `node src/app/cli/spec.js indexlab --category <category>` | `Dockerfile`, `src/app/cli/spec.js` |
 
-Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-04-04, producing the currently served `tools/gui-react/dist/` bundle.
+Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-04-04, producing the currently served `tools/gui-react/dist/` bundle. Re-validated 2026-04-07.
 
 ## Build And Packaging Flow
 
@@ -42,7 +41,7 @@ Current audit note: `npm run gui:build` is present in `package.json` and succeed
    - compiles a repo-root `SpecFactory.exe` with `@yao-pkg/pkg`,
    - copies GUI assets to `gui-dist/`.
 4. `npm run setup:exe` executes `tools/build-setup-exe.mjs` and produces a repo-root `Launcher.exe`.
-5. `Dockerfile` defines a Playwright-based batch image that copies the repo, installs Node and Python dependencies, and starts `run-batch`; it does not package or serve the GUI runtime.
+5. `Dockerfile` defines a Playwright-based batch image that copies the repo, installs Node and Python dependencies, and starts `indexlab --category mouse`; it does not package or serve the GUI runtime.
 
 ## Promotion And Environments
 
@@ -74,12 +73,11 @@ Current audit note: `npm run gui:build` is present in `package.json` and succeed
 |--------|------|-------------------|
 | config | `package.json` | build/start/package scripts |
 | source | `src/app/api/guiServer.js` | main runtime boot path |
-| source | `src/app/cli/spec.js` | CLI entrypoints including `run-batch` |
-| source | `src/app/cli/commands/batchCommand.js` | batch command implementation exists and is wired |
+| source | `src/app/cli/spec.js` | CLI entrypoints including `indexlab` |
 | source | `tools/build-exe.mjs` | packaged desktop build pipeline |
 | source | `tools/build-setup-exe.mjs` | packaged launcher build pipeline |
 | source | `tools/specfactory-launcher.mjs` | launcher runtime and default port |
-| config | `Dockerfile` | batch CLI container definition and `run-batch` entrypoint |
+| config | `Dockerfile` | batch CLI container definition and `indexlab` entrypoint |
 | command | `npm run gui:build` | current GUI build pipeline is green and writes `tools/gui-react/dist/` |
 | runtime | `http://127.0.0.1:8788/health` | live server responded during the audit |
 

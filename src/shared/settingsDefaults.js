@@ -21,8 +21,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
       storage: 700,
       llmRoutes: 700,
       uiSettings: 250,
-      studioDocs: 1500,
-      studioMap: 1500
+      studioDocs: 0,
+      studioMap: 0
     }),
     statusMs: Object.freeze({
       studioSavedIndicatorReset: 2000

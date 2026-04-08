@@ -48,7 +48,7 @@ test('approveGreenOverrides writes candidate overrides only for green known fiel
   assert.equal(result.skipped_count >= 1, true);
   assert.equal(result.approved_fields.includes('weight'), true);
   assert.equal(overridePayload.review_status, 'in_progress');
-  assert.equal(overridePayload.overrides.weight.override_source, 'bulk_approve_green');
+  assert.equal(overridePayload.overrides.weight.override_source, 'candidate_selection');
   assert.equal(overridePayload.overrides.weight.override_reason, 'bulk_green_approve');
   assert.equal(overridePayload.overrides.dpi, undefined);
 });

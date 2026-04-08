@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified worker-centric runtime diagnostics flow for completed or active IndexLab runs.
 > **Prerequisites:** [indexing-lab.md](./indexing-lab.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Entry Points
 

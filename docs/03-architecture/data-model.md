@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the live AppDb and SpecDb schema, migration deltas, and canonical-versus-derived data boundaries with exact file paths.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Persistence Topology
 
@@ -871,6 +871,22 @@ Table constraints: composite primary key on (`category`, `product_id`).
 | `cooldown_until` | `TEXT` | `DEFAULT ''` | cooldown end timestamp |
 | `latest_ran_at` | `TEXT` | `DEFAULT ''` | last run timestamp |
 | `run_count` | `INTEGER` | `DEFAULT 0` | run count |
+
+## SpecDb: Ephemeral Cache Tables
+
+### `field_audit_cache`
+
+Table constraints: primary key on `category`. Lifecycle: rebuild=yes, source_edit=no. Ephemeral audit cache — delete DB, re-run audit via `POST /api/v1/test-mode/validate`, and it repopulates. Written directly by `src/app/api/routes/testModeRoutes.js`, not via a store module.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `category` | `TEXT` | `PRIMARY KEY` | category slug |
+| `total_fields` | `INTEGER` | `NOT NULL DEFAULT 0` | total audited fields |
+| `total_checks` | `INTEGER` | `NOT NULL DEFAULT 0` | total validation checks |
+| `pass_count` | `INTEGER` | `NOT NULL DEFAULT 0` | passing checks |
+| `fail_count` | `INTEGER` | `NOT NULL DEFAULT 0` | failing checks |
+| `result_json` | `TEXT` | `NOT NULL DEFAULT '{}'` | serialized per-field audit results |
+| `run_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | audit run timestamp |
 
 ## Validated Against
 

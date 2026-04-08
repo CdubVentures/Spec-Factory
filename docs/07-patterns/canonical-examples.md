@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified repository patterns for adding common work items without inventing new structure.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Adding A New API Endpoint
 
@@ -207,9 +207,9 @@ test('ui-settings PUT persists toggles to AppDb', async (t) => {
 
 ## Adding A New Background Job
 
-Based on `src/app/cli/commands/batchCommand.js` and `src/app/cli/spec.js`.
+Based on `src/app/cli/spec.js` and the `createLazyLoader` + command-factory pattern used by remaining CLI commands (e.g., `src/app/cli/commands/pipelineCommands.js`, `src/app/cli/commands/fieldRulesCommands.js`).
 
-Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/app/cli/spec.js` wires that handler into the dispatcher; the worker stays separately testable.
+Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/app/cli/spec.js` wires that handler into the dispatcher via `createLazyLoader`; the worker stays separately testable.
 
 ```js
 // src/features/example/exampleBatch.js
@@ -316,7 +316,7 @@ export async function addExampleItem({ config, name, tags = [] }) {
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |
 | source | `src/core/events/dataChangeContract.js` | canonical `emitDataChange` import path for route examples |
 | source | `src/features/settings/api/tests/uiSettingsRoutes.test.js` | Node `node:test` structure with route-handler invocation and persistence assertions |
-| source | `src/app/cli/commands/batchCommand.js` | thin CLI command factory pattern |
+| source | `src/app/cli/commands/pipelineCommands.js` | thin CLI command factory pattern (replaces deleted `batchCommand.js`) |
 | source | `src/app/cli/spec.js` | CLI command wrapper and lazy-loader registration pattern |
 | source | `src/features/catalog/identity/brandRegistry.js` | service-function options object and structured return pattern |
 

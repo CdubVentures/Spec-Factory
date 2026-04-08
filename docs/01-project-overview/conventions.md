@@ -2,7 +2,7 @@
 
 > **Purpose:** Capture the repo rules, extension points, and anti-assumptions an LLM needs before editing.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Hard Rules
 
@@ -22,7 +22,7 @@
 
 | Concern | Source of truth | Do not assume |
 |---------|-----------------|---------------|
-| Mounted backend route order | `src/app/api/guiServerRuntime.js` `routeDefinitions` | `src/app/api/routeRegistry.js` is only the registry builder, not the mounted-order authority |
+| Mounted backend route order | `src/app/api/guiServerRuntime.js` `routeDefinitions` (15 route families: infra, config, indexlab, runtimeOps, catalog, brand, color, colorEditionFinder, studio, dataAuthority, queueBillingLearning, review, sourceStrategy, specSeeds, testMode) | `src/app/api/routeRegistry.js` is only the registry builder, not the mounted-order authority |
 | GUI routed pages | `tools/gui-react/src/registries/pageRegistry.ts` | `tools/gui-react/src/App.tsx` alone is not the page inventory |
 | GUI shell | `tools/gui-react/src/pages/layout/AppShell.tsx` | Page components should not reimplement app shell framing |
 | API calls from GUI | `tools/gui-react/src/api/client.ts` and feature hooks built on top of it | Raw `fetch` scattered through page components |
@@ -35,7 +35,7 @@
 |----------------|------------|----------------|
 | Backend route family | `src/features/<feature>/api/` or `src/app/api/routes/` | `src/features/color-registry/api/colorRoutes.js`, `src/app/api/routes/infraRoutes.js` |
 | Route-context construction | `src/features/<feature>/api/*RouteContext.js` or `src/app/api/*RouteContext.js` | `src/features/color-registry/api/colorRouteContext.js`, `src/features/indexing/api/runtimeOpsRouteContext.js` |
-| CLI command | `src/app/cli/commands/` plus loader wiring in `src/app/cli/spec.js` | `src/app/cli/commands/batchCommand.js` |
+| CLI command | `src/app/cli/commands/` plus loader wiring in `src/app/cli/spec.js` | `src/app/cli/commands/pipelineCommands.js` |
 | GUI page | `tools/gui-react/src/features/**` or `tools/gui-react/src/pages/**` with registry entry in `tools/gui-react/src/registries/pageRegistry.ts` | `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx` |
 | Shared backend persistence | `src/db/` or authored files under `category_authority/` | New mutable JSON stores outside established roots |
 | Doc update | `CLAUDE.md` or `docs/01-` through `docs/07-` | Reintroducing unnumbered current-state doc trees |
@@ -55,7 +55,7 @@
   - `src/shared/settingsRegistry.js`
   - `src/core/config/manifest.js`
   - `src/features/settings-authority/`
-- `PORT` is currently referenced but missing from the manifest coverage script baseline; `npm run env:check` fails on that mismatch as of 2026-04-04.
+- `PORT` is currently referenced but missing from the manifest coverage script baseline; `npm run env:check` fails on that mismatch as of 2026-04-07.
 
 ## Runtime And Storage Rules
 
@@ -80,10 +80,10 @@
 
 | Command / proof | Result | Date |
 |-----------------|--------|------|
-| `npm run gui:build` | pass | 2026-04-04 |
-| `npm test` | pass (`6803` tests, `0` failures) | 2026-04-04 |
+| `npm run gui:build` | pass | 2026-04-07 |
+| `npm test` | pass | 2026-04-07 |
 | `npm run env:check` | fail (`Missing keys in config manifest: PORT`) | 2026-04-04 |
-| Runtime smoke against `createGuiServerRuntime()` | pass for `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/storage/overview` | 2026-04-04 |
+| Runtime smoke against `createGuiServerRuntime()` | pass for `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/storage/overview` | 2026-04-07 |
 
 ## Read Next
 
@@ -104,9 +104,9 @@
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | frontend route registry convention |
 | source | `tools/gui-react/src/App.tsx` | registry-driven `HashRouter` assembly |
 | source | `package.json` | Node test runner convention |
-| command | `npm run gui:build` | GUI build validation result on 2026-04-04 |
-| command | `npm run env:check` | env-check failure baseline on 2026-04-04 |
-| command | `npm test` | test-suite validation result on 2026-04-04 |
+| command | `npm run gui:build` | GUI build validation result on 2026-04-07 |
+| command | `npm run env:check` | env-check failure baseline on 2026-04-07 |
+| command | `npm test` | test-suite validation result on 2026-04-07 |
 
 ## Related Documents
 

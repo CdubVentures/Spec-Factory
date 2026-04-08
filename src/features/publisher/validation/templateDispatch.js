@@ -4,16 +4,18 @@ import {
   parseDate,
   parseLatencyList,
   parsePollingList,
+  parseNumberListWithRanges,
 } from './normalizers.js';
 
 // WHY: O(1) dispatch. Adding a template = add one entry here. Zero pipeline changes.
 // Templates not in this map fall through to the type-branch (checkType handles them).
 const TEMPLATE_NORMALIZERS = {
-  boolean_yes_no_unk:        normalizeBoolean,
-  list_of_tokens_delimited:  normalizeColorList,
-  date_field:                parseDate,
-  latency_list_modes_ms:     parseLatencyList,
-  list_of_numbers_with_unit: parsePollingList,
+  boolean_yes_no_unk:                normalizeBoolean,
+  list_of_tokens_delimited:          normalizeColorList,
+  date_field:                        parseDate,
+  latency_list_modes_ms:             parseLatencyList,
+  list_of_numbers_with_unit:         parsePollingList,
+  list_numbers_or_ranges_with_unit:  parseNumberListWithRanges,
 };
 
 // WHY: Exported for phaseRegistry.js — keeps dispatch applicability in sync with actual templates.

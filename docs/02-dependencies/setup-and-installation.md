@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified local setup path from install to a running GUI/API server.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@
    npm run env:check
    ```
 
-   Current observed result on 2026-04-04:
+   Current observed result on 2026-04-07:
 
    ```text
    Missing keys in config manifest: PORT
@@ -137,10 +137,10 @@
 
 | Proof | Result |
 |------|--------|
-| `npm run gui:build` | pass on 2026-04-04 |
-| `npm test` | pass on 2026-04-04 with `6803` tests and `0` failures |
-| `npm run env:check` | fail on 2026-04-04 with `Missing keys in config manifest: PORT` |
-| Runtime smoke | `/health`, `/api/v1/categories`, `/api/v1/process/status`, and `/api/v1/storage/overview` all returned `200` on 2026-04-04 |
+| `npm run gui:build` | pass on 2026-04-07 |
+| `npm test` | pass on 2026-04-07 with `6803` tests and `0` failures |
+| `npm run env:check` | fail on 2026-04-07 with `Missing keys in config manifest: PORT` |
+| Runtime smoke | `/health`, `/api/v1/categories`, `/api/v1/process/status`, and `/api/v1/storage/overview` all returned `200` on 2026-04-07 |
 
 ## Validated Against
 
@@ -152,13 +152,13 @@
 | source | `src/app/cli/spec.js` | CLI entrypoint |
 | source | `tools/specfactory-launcher.mjs` | helper launcher path |
 | source | `tools/check-env-example-sync.mjs` | env-check implementation |
-| command | `npm run gui:build` | successful build on 2026-04-04 |
-| command | `npm test` | successful test-suite run on 2026-04-04 |
-| command | `npm run env:check` | current manifest coverage failure on 2026-04-04 |
-| runtime | `GET /health` | live server health contract on 2026-04-04 |
-| runtime | `GET /api/v1/categories` | category API response on 2026-04-04 |
-| runtime | `GET /api/v1/process/status` | process-status response on 2026-04-04 |
-| runtime | `GET /api/v1/storage/overview` | storage inventory response on 2026-04-04 |
+| command | `npm run gui:build` | successful build on 2026-04-07 |
+| command | `npm test` | successful test-suite run on 2026-04-07 |
+| command | `npm run env:check` | current manifest coverage failure on 2026-04-07 |
+| runtime | `GET /health` | live server health contract on 2026-04-07 |
+| runtime | `GET /api/v1/categories` | category API response on 2026-04-07 |
+| runtime | `GET /api/v1/process/status` | process-status response on 2026-04-07 |
+| runtime | `GET /api/v1/storage/overview` | storage inventory response on 2026-04-07 |
 
 ## Related Documents
 

@@ -1,8 +1,8 @@
 # Review Workbench
 
-> **Purpose:** Document the verified scalar, component, and enum review flows from the GUI to review mutation handlers and SQLite state.
+> **Purpose:** Document the verified scalar, component, and enum review flows from the GUI to review mutation handlers and SQLite state. Override functions no longer write directly to DB; overrides persist to JSON SSOT and sync through the publisher pipeline.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [catalog-and-product-selection.md](./catalog-and-product-selection.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-04-07
 
 ## Entry Points
 
@@ -18,6 +18,8 @@
 ## Dependencies
 
 - `src/features/review-curation/index.js`
+- `src/features/review/domain/overrideWorkflow.js` - override accept/manual/approve/finalize (no longer writes to DB directly)
+- `src/features/review/domain/reviewGridStateRuntime.js` - grid state sync (`syncItemFieldStateFromPrimaryLaneAccept` is now a no-op stub)
 - `src/db/specDb.js`
 - `src/field-rules/sessionCache.js`
 - `src/features/indexing/index.js`
@@ -33,9 +35,22 @@
 6. Shared-lane helpers synchronize AI/human review state and may cascade changes into queued products or dependent review rows.
 7. The route layer emits `data-change` events so open review tabs refresh.
 
+## Override DB Sync Removal
+
+Direct DB sync has been removed from the core override workflow functions in `src/features/review/domain/overrideWorkflow.js`:
+
+- `setOverrideFromCandidate()` no longer calls `specDb.upsertItemFieldState` / `syncItemListLinkForFieldValue`.
+- `setManualOverride()` no longer writes to specDb.
+- `approveGreenOverrides()` no longer batch-writes to specDb.
+- `finalizeOverrides()` no longer runs transactional DB writes.
+- `syncItemFieldStateFromPrimaryLaneAccept()` in `reviewGridStateRuntime.js` is now a no-op stub.
+
+Overrides persist to JSON SSOT only; DB sync is deferred to the publisher pipeline. Grid review UI state (`key_review_state`) still writes to DB normally.
+
 ## Side Effects
 
-- Writes accepted field values, component aliases/values, enum rows, candidate review state, and key review state into SQLite.
+- Writes key review state (`key_review_state` tables) into SQLite for grid UI state.
+- Override values persist to JSON SSOT only; DB field-state sync is handled by the publisher pipeline.
 - May write component override JSON under `category_authority/{category}/_overrides/components/`.
 
 ## Error Paths
@@ -86,6 +101,8 @@ sequenceDiagram
 | source | `src/features/review/api/itemMutationRoutes.js` | Scalar review mutations |
 | source | `src/features/review/api/componentMutationRoutes.js` | Component review mutations |
 | source | `src/features/review/api/enumMutationRoutes.js` | Enum review mutations |
+| source | `src/features/review/domain/overrideWorkflow.js` | Override functions: DB sync removed, JSON SSOT only |
+| source | `src/features/review/domain/reviewGridStateRuntime.js` | `syncItemFieldStateFromPrimaryLaneAccept` confirmed as no-op stub |
 | source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | Scalar review GUI |
 | source | `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` | Component review GUI |
 

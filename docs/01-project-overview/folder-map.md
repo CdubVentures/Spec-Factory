@@ -2,7 +2,7 @@
 
 > **Purpose:** Give the LLM an annotated repo tree before it starts scanning files.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Root Tree
 
@@ -54,14 +54,15 @@
 
 | Path | Purpose | Key files |
 |------|---------|-----------|
-| `src/app/api/` | Server runtime, bootstrap, dispatch, and route registration | `guiServer.js`, `guiServerRuntime.js`, `guiServerHttpAssembly.js`, `routeRegistry.js`, `routes/infraRoutes.js` |
+| `src/app/api/` | Server runtime, bootstrap, dispatch, and route registration | `guiServer.js`, `guiServerRuntime.js`, `guiServerHttpAssembly.js`, `routeRegistry.js`, `routes/infraRoutes.js`, `routes/testModeRoutes.js` |
 | `src/app/cli/` | Command factories used by `src/app/cli/spec.js` | `commands/` |
 | `src/core/` | Config manifest, LLM client plumbing, runtime roots, cross-cutting utilities | `config/manifest.js`, `config/runtimeArtifactRoots.js`, `llm/` |
 | `src/db/` | SQLite schemas, migrations, and stores | `appDb.js`, `specDb.js`, `specDbMigrations.js`, `stores/` |
-| `src/features/` | Feature-first backend code | `catalog/`, `category-authority/`, `color-edition/`, `color-registry/`, `crawl/`, `indexing/`, `review/`, `settings/`, `studio/` |
+| `src/features/` | Feature-first backend code | `catalog/`, `category-authority/`, `color-edition/`, `color-registry/`, `crawl/`, `extraction/`, `indexing/`, `publisher/`, `review/`, `review-curation/`, `settings/`, `settings-authority/`, `studio/` |
 | `src/indexlab/` | Runtime bridge and run artifact helpers | `runtimeBridge.js`, `runtimeBridgeEventHandlers.js` |
-| `src/pipeline/` | Crawl/run orchestration | `runProduct.js`, `runUntilComplete.js` |
+| `src/pipeline/` | Crawl/run orchestration | `runProduct.js` |
 | `src/shared/` | Shared registries, defaults, generic helpers, tests | `settingsRegistry.js`, `tests/` |
+| `src/tests/` | Field contract test runner and test value derivation | `fieldContractTestRunner.js`, `deriveFailureValues.js` |
 
 ## `tools/` Tree
 

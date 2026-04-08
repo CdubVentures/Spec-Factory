@@ -409,6 +409,29 @@ async function collectListSeedRows(fieldRules, config, category) {
     }
   }
 
+  // WHY: Read discovered enum values (pipeline-accumulated, durable JSON record).
+  // Satisfies rebuild contract: delete .sqlite → seed → list_values reconstructed from JSON.
+  const discoveredPath = path.join(config.localOutputRoot || path.resolve('.workspace', 'output'), category, 'discovered_enums.json');
+  const discoveredDoc = await readJsonIfExists(discoveredPath);
+  if (isObject(discoveredDoc?.values)) {
+    for (const [fieldKey, entries] of Object.entries(discoveredDoc.values)) {
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        const val = String(entry?.value || '').trim();
+        if (!val) continue;
+        rows.push({
+          fieldKey,
+          value: val,
+          normalizedValue: normalizeToken(val),
+          source: 'pipeline',
+          enumPolicy: null,
+          needsReview: true,
+          sourceTimestamp: entry.first_seen_at || null
+        });
+      }
+    }
+  }
+
   return rows;
 }
 
@@ -637,6 +660,16 @@ async function seedListValues(db, fieldRules, config, category) {
   for (const [fieldKey, policy] of policyByField) {
     const knownNormalized = knownByField.get(fieldKey) || new Set();
     reEvaluateEnumPolicy(db, fieldKey, policy, knownNormalized);
+  }
+
+  // WHY: Auto-create enum_lists for open_prefer_known fields that have no curated
+  // values yet. This enables the discovery-enum self-tightening loop — discovered
+  // pipeline values accumulate here over time.
+  const fields = fieldRules?.rules?.fields || fieldRules?.fields || {};
+  for (const [fieldKey, rule] of Object.entries(fields)) {
+    if (rule?.enum?.policy === 'open_prefer_known') {
+      db.ensureEnumList(fieldKey, 'auto_discovery');
+    }
   }
 
   return { count };

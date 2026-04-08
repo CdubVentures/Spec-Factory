@@ -92,3 +92,56 @@ export function parsePollingList(value) {
     .filter(entry => Number.isFinite(entry));
   return [...new Set(values)].sort((a, b) => b - a);
 }
+
+// --- parseNumberListWithRanges ---
+// WHY: Handles "1.2, 2.4-3.2 mm" → [1.2, 2.4, 3.2].
+// Splits by delimiters, expands ranges into endpoints, strips unit suffixes.
+
+const RANGE_SEP = /[-\u2013]/; // hyphen or en-dash
+
+function extractNum(token) {
+  const m = String(token).trim().match(/^(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseNumberListWithRanges(value) {
+  if (value === null || value === undefined) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map(v => typeof v === 'number' && Number.isFinite(v) ? v : extractNum(String(v)))
+      .filter(v => v !== null);
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) return [value];
+
+  const str = String(value ?? '').trim();
+  if (!str) return [];
+  const lower = str.toLowerCase();
+  if (UNK_TOKENS.has(lower) || lower === 'n/a') return [];
+
+  // Split by delimiters: comma, slash, pipe, semicolon
+  const tokens = str.split(/[,/|;]+/).map(t => t.trim()).filter(Boolean);
+  const result = [];
+
+  for (const token of tokens) {
+    // WHY: Try range first — "2.4-3.2" or "2.4mm-3.2mm" or "2.4 - 3.2"
+    // Strip unit suffixes from each side before parsing.
+    const rangeParts = token.split(RANGE_SEP);
+    if (rangeParts.length === 2) {
+      const lo = extractNum(rangeParts[0]);
+      const hi = extractNum(rangeParts[1]);
+      if (lo !== null && hi !== null) {
+        result.push(lo, hi);
+        continue;
+      }
+    }
+    // Single number (with optional unit suffix)
+    const n = extractNum(token);
+    if (n !== null) result.push(n);
+  }
+
+  return result;
+}

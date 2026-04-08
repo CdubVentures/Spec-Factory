@@ -1,4 +1,4 @@
-import { parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
+import { parseCsvList, looksHttpUrl } from '../cliHelpers.js';
 import pathNode from 'node:path';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { buildProductId } from '../../../shared/primitives.js';
@@ -17,28 +17,11 @@ export function createPipelineCommands({
   asBool,
   toPosixKey,
   runProduct,
-  runUntilComplete,
   IndexLabRuntimeBridge,
   defaultIndexLabRoot,
   openSpecDbForCategory,
   withSpecDb,
 }) {
-  async function commandRunOne(config, storage, args) {
-    const s3Key =
-      args.s3key || 'specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json';
-
-    const result = await runProduct({ storage, config, s3Key });
-    const urlsCrawled = result.crawlResults?.length ?? 0;
-    const urlsSuccessful = result.crawlResults?.filter((r) => r.success).length ?? 0;
-    return {
-      command: 'run-one',
-      productId: result.productId,
-      runId: result.runId,
-      urls_crawled: urlsCrawled,
-      urls_successful: urlsSuccessful,
-    };
-  }
-
   async function commandIndexLab(config, storage, args) {
     const category = String(args.category || 'mouse').trim();
     const seed = String(args.seed || '').trim();
@@ -363,124 +346,7 @@ export function createPipelineCommands({
     }
   }
 
-  async function commandRunAdHoc(config, storage, args) {
-    const positional = args._ || [];
-    const category = String(args.category || positional[0] || 'mouse').trim();
-    const brand = String(args.brand || positional[1] || '').trim();
-    const model = String(args.model || positional[2] || '').trim();
-    const variant = String(args.variant || positional.slice(3).join(' ') || '').trim();
-
-    if (!brand || !model) {
-      throw new Error('run-ad-hoc requires <category> <brand> <model> or --brand/--model');
-    }
-
-    await assertCategorySchemaReady({ category, storage, config });
-
-    // WHY: Reuse existing product_id when brand+model match — prevents duplicate
-    // random hex IDs for the same product across runs.
-    let productId = String(args['product-id'] || '').trim();
-    if (!productId) {
-      try {
-        productId = await withSpecDb(config, category, (lookupDb) => {
-          const allRows = lookupDb?.getAllProducts?.() || [];
-          const match = allRows.find((r) =>
-            String(r.brand || '').trim().toLowerCase() === brand.toLowerCase() &&
-            String(r.base_model || '').trim().toLowerCase() === model.toLowerCase() &&
-            String(r.variant || '').trim().toLowerCase() === variant.toLowerCase()
-          );
-          return match?.product_id || buildProductId(category);
-        });
-      } catch { productId = buildProductId(category); }
-    }
-
-    const identityLock = {
-      brand,
-      base_model: model,
-      model: deriveFullModel(model, variant),
-      variant,
-      sku: String(args.sku || '').trim(),
-      mpn: String(args.mpn || '').trim(),
-      gtin: String(args.gtin || '').trim()
-    };
-
-    const anchors = parseJsonArg('anchors-json', args['anchors-json'], {});
-    const requirements = parseJsonArg('requirements-json', args['requirements-json'], null);
-
-    const job = {
-      productId,
-      category,
-      identityLock,
-      anchors
-    };
-    if (requirements) {
-      job.requirements = requirements;
-    }
-
-    const s3Key =
-      args.s3key || toPosixKey('specs/inputs', category, 'products', `${productId}.json`);
-
-    await storage.writeObject(
-      s3Key,
-      Buffer.from(JSON.stringify(job, null, 2), 'utf8'),
-      { contentType: 'application/json' }
-    );
-
-    if (asBool(args['until-complete'], false)) {
-      const maxRounds = Math.max(1, Number.parseInt(String(args['max-rounds'] || '0'), 10) || 0);
-      const completed = await runUntilComplete({
-        storage,
-        config,
-        s3key: s3Key,
-        maxRounds: maxRounds || undefined,
-      });
-      return {
-        command: 'run-ad-hoc',
-        until_complete: true,
-        s3Key,
-        productId: completed.productId,
-        ...completed
-      };
-    }
-
-    const result = await runProduct({ storage, config, s3Key });
-    return {
-      command: 'run-ad-hoc',
-      s3Key,
-      productId: result.productId,
-      runId: result.runId,
-      validated: result.summary?.validated,
-      validated_reason: result.summary?.validated_reason,
-      confidence: result.summary?.confidence,
-      completeness_required_percent: result.summary?.completeness_required_percent,
-      coverage_overall_percent: result.summary?.coverage_overall_percent,
-      runBase: result.exportInfo?.runBase,
-      latestBase: result.exportInfo?.latestBase,
-      finalBase: result.finalExport?.final_base || null
-    };
-  }
-
-  async function commandRunUntilComplete(config, storage, args) {
-    const s3key = String(args.s3key || '').trim();
-    if (!s3key) {
-      throw new Error('run-until-complete requires --s3key <key>');
-    }
-    const maxRounds = Math.max(1, Number.parseInt(String(args['max-rounds'] || '0'), 10) || 0);
-    const result = await runUntilComplete({
-      storage,
-      config,
-      s3key,
-      maxRounds: maxRounds || undefined,
-    });
-    return {
-      command: 'run-until-complete',
-      ...result
-    };
-  }
-
   return {
-    commandRunOne,
     commandIndexLab,
-    commandRunAdHoc,
-    commandRunUntilComplete,
   };
 }

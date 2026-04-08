@@ -15,7 +15,9 @@ export function checkType(value, expectedType, templateType) {
     return { pass: false, reason: `expected string, got ${typeof value}` };
   }
 
-  if (expectedType === 'number') {
+  // WHY: 'integer' is treated identically to 'number' at the type-check layer.
+  // Integer enforcement (whole-number) is handled by contract.rounding.decimals=0.
+  if (expectedType === 'number' || expectedType === 'integer') {
     if (typeof value === 'number' && Number.isFinite(value)) return { pass: true };
 
     if (typeof value === 'string') {
@@ -30,10 +32,10 @@ export function checkType(value, expectedType, templateType) {
           return { pass: true, repaired: parsed, rule: 'string_to_number' };
         }
       }
-      return { pass: false, reason: `expected number, got non-numeric string: "${value}"` };
+      return { pass: false, reason: `expected ${expectedType}, got non-numeric string: "${value}"` };
     }
 
-    return { pass: false, reason: `expected number, got ${typeof value}` };
+    return { pass: false, reason: `expected ${expectedType}, got ${typeof value}` };
   }
 
   return { pass: false, reason: `unsupported type: ${expectedType}` };

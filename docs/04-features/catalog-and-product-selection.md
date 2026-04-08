@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to SQL storage and per-product rebuild files.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-31
+> **Last validated:** 2026-04-07
 
 ## Entry Points
 

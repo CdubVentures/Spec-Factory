@@ -131,24 +131,24 @@ tr:last-child td { border-bottom: none; }
 
   <div class="code-block" style="margin-bottom:16px;">src/features/validation/
   index.js                    <span style="color:var(--sf-teal-fg);"># Public API: validateField(), validateRecord()</span>
-  validateField.js            <span style="color:var(--sf-teal-fg);"># Core: single-field validation pipeline (12 steps)</span>
+  validateField.js            <span style="color:var(--sf-teal-fg);"># Core: single-field validation pipeline (12 steps: 0-11)</span>
   validateRecord.js           <span style="color:var(--sf-teal-fg);"># Orchestrator: validate all fields in a record + cross-field</span>
+  mergeDiscoveredEnums.js     <span style="color:var(--sf-teal-fg);"># Pure merge: compiled + DB-discovered known values</span>
   checks/
-    checkShape.js             <span style="color:var(--sf-teal-fg);"># Step 1: scalar / list / record shape gate</span>
-    checkType.js              <span style="color:var(--sf-teal-fg);"># Step 2: type verification + coercion</span>
+    checkShape.js             <span style="color:var(--sf-teal-fg);"># Step 2: scalar / list / record shape gate</span>
+    checkType.js              <span style="color:var(--sf-teal-fg);"># Step 4: type verification + coercion</span>
     checkUnit.js              <span style="color:var(--sf-teal-fg);"># Step 3: unit verification (reject wrong unit)</span>
-    checkFormat.js            <span style="color:var(--sf-teal-fg);"># Step 4: format regex per template</span>
+    checkFormat.js            <span style="color:var(--sf-teal-fg);"># Step 6: format regex per template</span>
     normalize.js              <span style="color:var(--sf-teal-fg);"># Step 5: trim, lowercase, token_map</span>
-    checkEnum.js              <span style="color:var(--sf-teal-fg);"># Step 6: enum policy (closed / open_prefer_known / open)</span>
+    checkEnum.js              <span style="color:var(--sf-teal-fg);"># Step 9: enum policy (closed / open_prefer_known / open)</span>
     enforceListRules.js       <span style="color:var(--sf-teal-fg);"># Step 7: dedupe, sort, min/max</span>
-    applyRounding.js          <span style="color:var(--sf-teal-fg);"># Step 8: display_decimals rounding</span>
-    checkRange.js             <span style="color:var(--sf-teal-fg);"># Step 9: min/max bounds</span>
-    checkConstraints.js       <span style="color:var(--sf-teal-fg);"># Step 10: cross-field constraint expressions</span>
-    resolveComponent.js       <span style="color:var(--sf-teal-fg);"># Step 11: component_db lookup for component_reference fields</span>
+    applyRounding.js          <span style="color:var(--sf-teal-fg);"># Step 8: precision rounding</span>
+    checkRange.js             <span style="color:var(--sf-teal-fg);"># Step 10: min/max bounds</span>
+    checkConstraints.js       <span style="color:var(--sf-teal-fg);"># Cross-field constraint expressions (in validateRecord)</span>
   templateDispatch.js         <span style="color:var(--sf-teal-fg);"># parse.template → normalizer lookup (O(1) dispatch)</span>
   formatRegistry.js           <span style="color:var(--sf-teal-fg);"># template → format_regex mapping</span>
   tests/
-    validateField.test.js     <span style="color:var(--sf-teal-fg);"># Full pipeline: all 12 templates × pass/fail/repair</span>
+    validateField.test.js     <span style="color:var(--sf-teal-fg);"># Full pipeline: all templates × pass/fail/repair</span>
     checkShape.test.js
     checkType.test.js
     checkUnit.test.js

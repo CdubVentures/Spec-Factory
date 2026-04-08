@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Global Notes
 
@@ -27,7 +27,7 @@
 | POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
 | POST | `/api/v1/process/stop` | stop child process | none | `{ force? }` | normalized process status |
 | GET | `/api/v1/process/status` | read child-process status | none | none | normalized process status |
-| POST | `/api/v1/graphql` | proxy GraphQL request to local helper server | none | GraphQL JSON body | proxied GraphQL JSON or `502` |
+| POST | `/api/v1/graphql` | proxy GraphQL request to local helper server (orphaned — helper server `intelGraphApi.js` was deleted; always returns `502`) | none | GraphQL JSON body | proxied GraphQL JSON or `502 graphql_proxy_failed` |
 
 ## Settings And Configuration Endpoints
 
@@ -225,13 +225,8 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
-| POST | `/api/v1/test-mode/create` | create `_test_*` category from a source category | none | `{ sourceCategory? }` | `{ ok, category, contractSummary }` |
-| GET | `/api/v1/test-mode/contract-summary` | read test-mode contract summary | none | none | `{ ok, summary, matrices, scenarioDefs }` |
-| GET | `/api/v1/test-mode/status` | read test-mode fixture/run status | none | none | `{ ok, exists, testCategory, testCases, runResults }` |
-| POST | `/api/v1/test-mode/generate-products` | generate synthetic products | none | `{ category }` | `{ ok, products, testCases }` |
-| POST | `/api/v1/test-mode/run` | run synthetic products through consensus + validation pipeline | none | `{ category, productId?, useLlm?, aiReview?, resetState?, resyncSpecDb? }` | `{ ok, results }` with per-product `{ productId, status, confidence, coverage, trafficLight, ... }` |
-| POST | `/api/v1/test-mode/validate` | validate synthetic run outputs | none | `{ category }` | validation results + summary |
-| DELETE | `/api/v1/test-mode/:category` | delete `_test_*` category artifacts | none | none | `{ ok, deleted }` |
+| GET | `/api/v1/test-mode/audit` | read cached field contract audit from `field_audit_cache` table | none | query param: `category` | `{ cached: true, run_at, ...auditResults }` or `{ cached: false }` |
+| POST | `/api/v1/test-mode/validate` | run full field contract audit, persist results to DB, return results | none | `{ category }` | `FieldContractAuditResult` with `{ summary: { totalFields, totalChecks, passCount, failCount }, ... }` |
 
 ## Validated Against
 
@@ -265,8 +260,8 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/review/api/componentMutationRoutes.js` | component mutation endpoints |
 | source | `src/features/review/api/enumMutationRoutes.js` | enum mutation endpoints |
 | source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | stale client reference to non-live `finalize` path |
-| source | `src/app/api/routes/testModeRoutes.js` | test-mode endpoints |
-| source | `src/app/api/routes/testModeRouteContext.js` | stubbed test-mode run context |
+| source | `src/app/api/routes/testModeRoutes.js` | test-mode field contract audit endpoints (audit GET + validate POST) |
+| source | `src/app/api/routes/testModeRouteContext.js` | test-mode route context wiring `runFieldContractTests`, `mergeDiscoveredEnums`, `buildDiscoveredEnumMap` |
 
 ## Related Documents
 

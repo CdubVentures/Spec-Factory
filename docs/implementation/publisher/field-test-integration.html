@@ -154,7 +154,8 @@ tr:last-child td { border-bottom: none; }
       <div class="flow-node-detail">
         <code>runTestProduct()</code> resolves the best value per field from the synthetic sources,
         then calls <code>validateRecord()</code> which runs every value through the 12-step deterministic pipeline:
-        shape &rarr; type &rarr; unit &rarr; format &rarr; normalize &rarr; enum &rarr; list rules &rarr; rounding &rarr; range &rarr; constraints &rarr; component resolution.
+        absence &rarr; template dispatch &rarr; shape &rarr; unit &rarr; type &rarr; normalize &rarr; format &rarr; list rules &rarr; rounding &rarr; enum &rarr; range &rarr; publish gate.
+        Cross-field constraints run separately in <code>validateRecord</code>. Component resolution is a review-phase concern.
         <br/><br/>
         Produces: validated fields, per-field rejections, per-field repairs, cross-field constraint results, curation suggestions.
       </div>

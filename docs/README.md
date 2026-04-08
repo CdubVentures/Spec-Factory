@@ -2,7 +2,7 @@
 
 > **Purpose:** Provide the master table of contents and strict reading order for the maintained LLM-first documentation set.
 > **Prerequisites:** `../CLAUDE.md`
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 Spec Factory is a local-first product-spec indexing, review, authority-authoring, and runtime-operations workbench. The live runtime is assembled in `src/app/api/guiServerRuntime.js`, started by `src/app/api/guiServer.js`, served to the browser from `tools/gui-react/dist/`, backed by `.workspace/db/app.sqlite` plus `.workspace/db/<category>/spec.sqlite`, and extended by feature-first backend code under `src/features/` and GUI code under `tools/gui-react/src/features/`.
 
@@ -105,10 +105,10 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 
 ## Current Validation Snapshot
 
-- `npm run env:check` failed on 2026-04-04 with `Missing keys in config manifest: PORT`.
-- `npm run gui:build` passed on 2026-04-04.
-- `npm test` passed on 2026-04-04 with `6803` tests and `0` failures.
-- Runtime smoke on 2026-04-04 confirmed:
+- `npm run env:check` failed on 2026-04-07 with `Missing keys in config manifest: PORT`.
+- `npm run gui:build` passed on 2026-04-07.
+- `npm test` passed on 2026-04-07 with `6803` tests and `0` failures.
+- Runtime smoke on 2026-04-07 confirmed:
   - `GET /health` -> `200`
   - `GET /api/v1/categories` -> `["keyboard","monitor","mouse"]`
   - `GET /api/v1/process/status` -> `200`
@@ -126,8 +126,8 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 
 ## Supporting Audit And History Artifacts
 
-- [Base Model Contract Audit](./audits/base-model-contract-audit-2026-04-04.md) - targeted contract audit for the current `base_model` identity split.
-- [Field Catalog Seed Retirement Audit](./audits/field-catalog-seed-retirement-audit-2026-04-04.md) - targeted retirement audit for the dead `_source` seed artifact.
+- [Base Model Contract Audit](./audits/base-model-contract-audit-2026-04-07.md) - targeted contract audit for the current `base_model` identity split.
+- [Field Catalog Seed Retirement Audit](./audits/field-catalog-seed-retirement-audit-2026-04-07.md) - targeted retirement audit for the dead `_source` seed artifact.
 - [Product SSOT Validation Audit](./audits/product-ssot-validation-2026-04-02.md) - targeted audit for the `product.json` and queue SQL SSOT migration.
 - [Implementation Assets](./implementation/README.md) - historical and supplemental implementation subtree; not part of the numbered reading order.
 
@@ -143,11 +143,11 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route and tab inventory |
 | source | `src/features/indexing/api/indexlabRoutes.js` | `/storage/*` delegation path |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | storage inventory and maintenance endpoints |
-| command | `npm run env:check` | failing env-check baseline on 2026-04-04 |
-| command | `npm run gui:build` | successful GUI build baseline on 2026-04-04 |
-| command | `npm test` | successful full-suite baseline on 2026-04-04 |
-| runtime | `GET /health` | live health smoke result on 2026-04-04 |
-| runtime | `GET /api/v1/storage/overview` | live storage smoke result on 2026-04-04 |
+| command | `npm run env:check` | failing env-check baseline on 2026-04-07 |
+| command | `npm run gui:build` | successful GUI build baseline on 2026-04-07 |
+| command | `npm test` | successful full-suite baseline on 2026-04-07 |
+| runtime | `GET /health` | live health smoke result on 2026-04-07 |
+| runtime | `GET /api/v1/storage/overview` | live storage smoke result on 2026-04-07 |
 
 ## Related Documents
 

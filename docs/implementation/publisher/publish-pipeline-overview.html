@@ -97,16 +97,17 @@ tr:last-child td { border-bottom: none; }
   <h2>1. The Problem</h2>
   <div class="grid-2" style="gap:16px;">
     <div class="card">
-      <h3><span class="chip chip-danger">Today</span></h3>
+      <h3><span class="chip chip-warning">In Progress</span></h3>
       <div class="small muted" style="line-height:1.7;">
-        Multiple sources produce field data (color &amp; edition finder, pipeline extraction, review overrides, CLI).
-        Each source writes directly to <code>item_field_state</code> + <code>product.json</code> with <strong>zero validation</strong>.
+        <strong>Review domain DB writes unhooked.</strong> The 5 direct <code>upsertItemFieldState</code> calls
+        in <code>overrideWorkflow.js</code> and <code>reviewGridStateRuntime.js</code> have been removed.
+        Override data still persists to consolidated JSON (durable SSOT).
         <br/><br/>
-        There is no gate. No check against Field Studio rules. Hallucinated values, wrong types, wrong units,
-        invalid enums, malformed tokens &mdash; all reach the product record unchecked.
+        <strong>Remaining:</strong> <code>seed.js</code> (rebuild contract) and skeleton slot initialization
+        in <code>reviewGridData.js</code> (DB init, not value publishing) still write directly.
         <br/><br/>
-        The engine (<code>src/engine/</code>) exists but only covers 2 callers (review path), has 11 proven gaps,
-        and is not universal.
+        <strong>Next:</strong> Build <code>candidate-gate/</code> and <code>publisher/</code> sub-modules,
+        then re-wire review domain through the publish pipeline.
       </div>
     </div>
     <div class="card">
@@ -134,7 +135,7 @@ tr:last-child td { border-bottom: none; }
   <div class="code-block" style="margin-bottom:16px;">src/features/publisher/
   index.js                        <span style="color:var(--sf-teal-fg);"># Public API: submitCandidate(), publishResolved()</span>
   validation/                     <span style="color:var(--sf-teal-fg);"># Sub-module 1: pure deterministic checks</span>
-    validateField.js              <span style="color:var(--sf-teal-fg);"># Single-field validation (12 steps)</span>
+    validateField.js              <span style="color:var(--sf-teal-fg);"># Single-field validation (12 steps: 0-11)</span>
     validateRecord.js             <span style="color:var(--sf-teal-fg);"># Full-record validation + cross-field</span>
     checks/                       <span style="color:var(--sf-teal-fg);"># One file per check dimension</span>
       checkShape.js
@@ -247,7 +248,7 @@ tr:last-child td { border-bottom: none; }
         For each field the source produced:
         <br/><strong>1.</strong> Load the field rule from Field Studio (<code>field_rules.json</code>)
         <br/><strong>2.</strong> Call <code>validateField({ fieldKey, value, fieldRule, knownValues, componentDb })</code>
-        <br/><strong>3.</strong> The 12 deterministic checks run: shape &rarr; type &rarr; unit &rarr; format &rarr; normalize &rarr; enum &rarr; list rules &rarr; rounding &rarr; range &rarr; component &rarr; sanity bounds
+        <br/><strong>3.</strong> The 12 deterministic checks run: absence &rarr; template dispatch &rarr; shape &rarr; unit &rarr; type &rarr; normalize &rarr; format &rarr; list rules &rarr; rounding &rarr; enum &rarr; range &rarr; publish gate. (Component resolution is a review-phase concern, not a validation step.)
       </div>
     </div>
 

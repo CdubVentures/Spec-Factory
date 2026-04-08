@@ -2,7 +2,7 @@
 
 > **Purpose:** Declare the live stack and exact dependency identities so an LLM does not guess frameworks or services.
 > **Prerequisites:** [../01-project-overview/scope.md](../01-project-overview/scope.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Runtime Truth
 
@@ -118,9 +118,9 @@ tools/gui-react/package-lock.json
 
 | Proof | Result |
 |------|--------|
-| `npm run gui:build` | pass on 2026-04-04 |
-| `npm test` | pass on 2026-04-04 |
-| `npm run env:check` | fail on 2026-04-04 with `Missing keys in config manifest: PORT` |
+| `npm run gui:build` | pass on 2026-04-07 |
+| `npm test` | pass on 2026-04-07 |
+| `npm run env:check` | fail on 2026-04-07 with `Missing keys in config manifest: PORT` |
 
 ## Read Next
 

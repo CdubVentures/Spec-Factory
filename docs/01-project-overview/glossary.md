@@ -2,7 +2,7 @@
 
 > **Purpose:** Define project-specific terms and overloaded names so an arriving LLM does not substitute generic meanings.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 | Term | Meaning in this repo | Primary files |
 |------|----------------------|---------------|
@@ -28,6 +28,9 @@
 | Test mode | Isolated test-category tooling exposed through the standalone `/test-mode` GUI route and matching backend routes | `tools/gui-react/src/pages/test-mode/TestModePage.tsx`, `src/app/api/routes/testModeRoutes.js` |
 | Color registry | Shared global color registry backed by AppDb and a JSON mirror under `_global` authority content | `src/features/color-registry/api/colorRoutes.js`, `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx` |
 | Color edition finder | LLM-assisted color-edition lookup surface embedded alongside color workflows | `src/features/color-edition/api/colorEditionFinderRoutes.js`, `tools/gui-react/src/features/color-edition-finder/components/ColorEditionFinderPanel.tsx` |
+| Discovery enums | Self-tightening vocabulary: pipeline-discovered enum values merged with curated known_values for validation. DB-first with O(1) scaling | `src/features/publisher/buildDiscoveredEnumMap.js`, `src/features/publisher/validation/mergeDiscoveredEnums.js`, `src/features/publisher/persistDiscoveredValues.js` |
+| Field contract audit | Automated test harness that validates every field rule against synthesized good/reject/repair values. Cached in `field_audit_cache` table | `src/tests/fieldContractTestRunner.js`, `src/tests/deriveFailureValues.js`, `src/app/api/routes/testModeRoutes.js` |
+| Publisher | 12-phase validation pipeline (phases 0-11) for field value validation, normalization, repair, discovery enum support, and publish gating. Exports 22 named symbols | `src/features/publisher/index.js`, `src/features/publisher/validation/phaseRegistry.js` |
 
 ## Validated Against
 
@@ -46,6 +49,12 @@
 | source | `src/features/settings/api/configLlmSettingsHandler.js` | LLM settings terminology |
 | source | `src/features/color-registry/api/colorRoutes.js` | Color Registry terminology |
 | source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | Color Edition Finder terminology |
+| source | `src/features/publisher/index.js` | Publisher public API and phase inventory |
+| source | `src/features/publisher/validation/phaseRegistry.js` | 12-phase registry (phases 0-11) |
+| source | `src/features/publisher/buildDiscoveredEnumMap.js` | Discovery enum map builder |
+| source | `src/features/publisher/validation/mergeDiscoveredEnums.js` | Discovery enum merger |
+| source | `src/tests/fieldContractTestRunner.js` | Field contract test runner |
+| source | `src/app/api/routes/testModeRoutes.js` | Test-mode route registration |
 
 ## Related Documents
 

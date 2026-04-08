@@ -157,6 +157,7 @@ const storeMap = {
   field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore', color_edition_finder_runs: 'colorEditionFinderStore',
   brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
+  field_audit_cache: 'testModeRoutes (direct)',
 };
 
 // ── Persistence classification map ──
@@ -185,6 +186,8 @@ const persistenceMap = {
   url_index: 'db-only', prompt_index: 'db-only',
   // System
   data_authority_sync: 'system',
+  // DB-only ephemeral (audit cache, rebuilt on re-run)
+  field_audit_cache: 'db-only',
 };
 
 const persistenceStatus = {
@@ -437,6 +440,12 @@ const lifecycleMap = {
     'Per-run LLM discovery detail rebuilds from the per-product JSON mirror.',
     'yes'
   ),
+  field_audit_cache: life(
+    'Re-run via POST /api/v1/test-mode/validate',
+    'yes',
+    'no',
+    'Ephemeral cache of field contract audit results. Delete DB → re-run audit → repopulates.'
+  ),
   brands: life(
     'category_authority/_global/brand_registry.json',
     'yes',
@@ -498,6 +507,7 @@ const specDbGroups = [
   { label: 'Field Studio', tables: ['field_studio_map', 'field_key_order'] },
   { label: 'Crawl Ledger', tables: ['url_crawl_ledger', 'query_cooldowns'] },
   { label: 'Color & Edition', tables: ['color_edition_finder', 'color_edition_finder_runs'] },
+  { label: 'Field Audit', tables: ['field_audit_cache'] },
 ];
 
 const appDbGroups = [
@@ -1163,6 +1173,8 @@ const cqrsCompliance = {
   key_review_runs: true, key_review_run_sources: true, key_review_audit: true,
   knob_snapshots: true, query_index: true, url_index: true, prompt_index: true,
   bridge_events: true, curation_suggestions: true,
+  // DB-only ephemeral — audit cache, rebuilt on re-run
+  field_audit_cache: true,
   // System-managed — auto-recreated
   data_authority_sync: true,
   // Deferred — not scoped, missing write-back paths
@@ -1625,7 +1637,7 @@ filter?.addEventListener('input', () => {
 </html>`;
 
 export function writeSchemaReferenceFile() {
-  const outPath = path.join(root, 'docs/data-structure/schema-reference.html');
+  const outPath = path.join(root, 'docs/data-structure-html/schema-reference.html');
   fs.writeFileSync(outPath, html, 'utf8');
   return {
     outPath,

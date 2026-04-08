@@ -356,21 +356,8 @@ export async function readReviewProductPayload({ storage, config = {}, category,
 }
 
 export async function listOverrideDocs(helperRoot, category, { specDb = null } = {}) {
-  // WHY: Phase E3 — SQL is sole source for override docs
-  if (specDb) {
-    try {
-      const productIds = specDb.listApprovedProductIds();
-      const out = [];
-      for (const pid of productIds) {
-        const doc = await readOverrideFile(null, { specDb, category, productId: pid });
-        if (doc) {
-          out.push({ path: `sql://overrides/${category}/${pid}`, payload: doc });
-        }
-      }
-      return out;
-    } catch { /* SQL read failed — fall through to consolidated */ }
-  }
-  // WHY: Overlap 0d — fallback to consolidated JSON
+  // WHY: DB writes removed from overrideWorkflow — product_review_state may be empty.
+  // Always read from consolidated JSON (the durable SSOT).
   try {
     const { readConsolidatedOverrides } = await import('../../../shared/consolidatedOverrides.js');
     const consolidated = await readConsolidatedOverrides({ config: { categoryAuthorityRoot: helperRoot }, category });

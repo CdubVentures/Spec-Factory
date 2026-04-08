@@ -12,6 +12,8 @@ import { registerBrandRoutes } from '../../features/catalog/api/brandRoutes.js';
 import { registerStudioRoutes } from '../../features/studio/api/studioRoutes.js';
 import { registerDataAuthorityRoutes } from '../../features/category-authority/api/dataAuthorityRoutes.js';
 import { registerReviewRoutes } from '../../features/review/api/reviewRoutes.js';
+import { registerTestModeRoutes } from './routes/testModeRoutes.js';
+import { createTestModeRouteContext } from './routes/testModeRouteContext.js';
 
 import { registerQueueBillingLearningRoutes } from '../../features/indexing/api/queueBillingLearningRoutes.js';
 import { registerSourceStrategyRoutes } from '../../features/indexing/api/sourceStrategyRoutes.js';
@@ -185,6 +187,11 @@ export function createGuiServerRuntime({
         getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
         reviewLayoutByCategory, appDb,
       }),
+      testModeRouteContext: createTestModeRouteContext({
+        jsonRes, readJsonBody, HELPER_ROOT,
+        getSpecDbReady, path, safeReadJson,
+        listFiles, resolveCategoryAlias,
+      }),
       catalogRouteContext: createCatalogRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
         readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
@@ -228,6 +235,7 @@ export function createGuiServerRuntime({
 
       { key: 'sourceStrategy', registrar: registerSourceStrategyRoutes },
       { key: 'specSeeds', registrar: registerSpecSeedsRoutes },
+      { key: 'testMode', registrar: registerTestModeRoutes },
     ];
 
     const serveStaticFile = createGuiStaticFileServer({

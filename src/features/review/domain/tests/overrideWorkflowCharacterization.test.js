@@ -57,7 +57,7 @@ describe('characterization: setOverrideFromCandidate', () => {
     assert.ok(result.value);
   });
 
-  test('upserts SQL item_field_state as overridden', async (t) => {
+  test('persists override to consolidated JSON SSOT', async (t) => {
     const h = await createReviewOverrideHarness(t);
     await seedReviewCandidates(h);
 
@@ -72,7 +72,7 @@ describe('characterization: setOverrideFromCandidate', () => {
     });
 
     const payload = await readOverridePayload(h);
-    assert.ok(payload.overrides.weight, 'SQL should have weight override');
+    assert.ok(payload.overrides.weight, 'JSON SSOT should have weight override');
     assert.equal(payload.overrides.weight.override_source, 'candidate_selection');
   });
 });
@@ -152,7 +152,7 @@ describe('characterization: finalizeOverrides', () => {
     assert.ok(entry.runtime_gate, 'should include runtime_gate');
   });
 
-  test('upserts product_review_state in SQL', async (t) => {
+  test('captures review_status in consolidated JSON after finalize', async (t) => {
     const h = await createReviewOverrideHarness(t);
     await seedFieldRulesArtifacts(h);
     await seedReviewCandidates(h);
@@ -177,11 +177,11 @@ describe('characterization: finalizeOverrides', () => {
       specDb: h.specDb,
     });
 
-    const reviewState = h.specDb.getProductReviewState(h.productId);
-    assert.ok(reviewState, 'product_review_state should exist in SQL');
+    const payload = await readOverridePayload(h);
+    assert.ok(payload, 'consolidated JSON should have product entry');
     assert.ok(
-      reviewState.review_status === 'approved' || reviewState.review_status === 'draft',
-      'review_status should be approved or draft'
+      payload.review_status === 'approved' || payload.review_status === 'draft' || payload.review_status === 'in_progress',
+      'review_status should be set in JSON SSOT'
     );
   });
 });

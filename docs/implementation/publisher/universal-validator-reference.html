@@ -1269,8 +1269,10 @@ Return: { repairs: [{ field, old_value, new_value, confidence, reasoning }] }"</
   </div>
 
   <div class="small muted" style="margin-bottom:16px;">
-    Component reference fields (sensor, switch, encoder, material) must resolve to an entity in the component_db.
-    The validator checks exact name match first, then aliases. If no match → LLM repair.
+    <strong style="color:var(--sf-warning-fg);">NOTE: Component resolution is a REVIEW-PHASE concern, not a validation step.</strong>
+    Component reference fields (sensor, switch, encoder, material) are validated as plain strings by the deterministic pipeline.
+    Matching against the component_db (exact → alias → fuzzy) is handled during the review/curation phase, not in <code>validateField</code>.
+    The code below is the <em>planned</em> review-phase logic, not current validator behavior.
   </div>
 
   <div class="code-block" style="margin-bottom:16px;"><span style="color:var(--sf-teal-fg);">// Component DB lookup</span>

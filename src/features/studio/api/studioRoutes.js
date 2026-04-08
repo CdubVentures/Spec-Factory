@@ -240,15 +240,14 @@ export function registerStudioRoutes(ctx) {
       const maxPendingInput = Number.parseInt(String(body?.maxPending ?? ''), 10);
       const maxPending = Number.isFinite(maxPendingInput) ? Math.max(1, Math.min(200, maxPendingInput)) : 120;
 
-      const enumCompiledRules = runtimeSpecDb?.getCompiledRules?.() ?? null;
-      const knownValuesDoc = enumCompiledRules?.known_values || null;
+      // WHY: Read from live list_values DB (not compiled blob) so discovered
+      // enum values are included. Matches componentReviewHandlers pattern.
       const session = await sessionCache.getSessionRules(category);
+      const listRows = runtimeSpecDb ? (runtimeSpecDb.getListValues(field) || []) : [];
       const knownValues = dedupeEnumValues(
-        Array.isArray(knownValuesDoc?.enums?.[field]?.values)
-          ? knownValuesDoc.enums[field].values
-          : Array.isArray(knownValuesDoc?.fields?.[field])
-            ? knownValuesDoc.fields[field]
-            : []
+        listRows
+          .filter((row) => !Boolean(row?.needs_review))
+          .map((row) => row?.value)
       );
       // WHY: Phase E3 — SQL is sole source for pending enum values
       const pendingValues = runtimeSpecDb
@@ -464,10 +463,9 @@ export function registerStudioRoutes(ctx) {
           specDb.upsertFieldStudioMap(JSON.stringify(normalizedFieldStudioMap), mapHash);
         }
 
-        // SECONDARY: export to JSON file (fire-and-forget, for compile/git)
-        const fileResult = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config }).catch((err) => {
+        // SECONDARY: export to JSON file (true fire-and-forget, for compile/git)
+        saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config }).catch((err) => {
           console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
-          return { file_path: '', map_hash: mapHash, field_studio_map: normalizedFieldStudioMap };
         });
 
         sessionCache.invalidateSessionCache(category);
@@ -484,7 +482,7 @@ export function registerStudioRoutes(ctx) {
           },
         });
         return jsonRes(res, 200, {
-          file_path: fileResult.file_path || '',
+          file_path: '',
           map_hash: mapHash,
           field_studio_map: normalizedFieldStudioMap,
         });

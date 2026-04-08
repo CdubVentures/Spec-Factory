@@ -100,9 +100,9 @@ export function MappingStudioTab({
     "studio:drawer:enumSection",
     false,
   );
-  const studioMapAutoSaveDelaySeconds = (
-    SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap / 1000
-  ).toFixed(1);
+  const studioMapAutoSaveLabel = SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap > 0
+    ? `saved after ${(SETTINGS_AUTOSAVE_DEBOUNCE_MS.studioMap / 1000).toFixed(1)}s of inactivity`
+    : 'saved instantly on change';
 
   const mapSeedVersion = useMemo(() => {
     const componentSourceCount = Array.isArray(wbMap.component_sources)
@@ -475,7 +475,7 @@ export function MappingStudioTab({
               text={
                 autoSaveMapLocked
                   ? "Locked"
-                  : `Auto-Save Mapping\n\nWhen enabled, mapping changes are automatically\nsaved after ${studioMapAutoSaveDelaySeconds}s of inactivity.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: On. Setting persists across sessions.`
+                  : `Auto-Save Mapping\n\nWhen enabled, mapping changes are automatically\n${studioMapAutoSaveLabel}.\n\nWhat gets saved:\n\u2022 Tooltip source configuration\n\u2022 Component source mappings\n\u2022 Enum / data list definitions\n\nDefault: On. Setting persists across sessions.`
               }
             />
           </span>

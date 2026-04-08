@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified server entrypoints, bootstrap phases, route families, persistence boundaries, realtime bridge, and error handling for the live backend.
 > **Prerequisites:** [system-map.md](./system-map.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Entrypoints And Composition Roots
 
@@ -15,7 +15,6 @@
 | dispatch layer | `src/app/api/requestDispatch.js` | CORS, OPTIONS, API detection, handler iteration, 404/500 envelopes |
 | static asset server | `src/app/api/staticFileServer.js` | serves `tools/gui-react/dist/` for non-API requests |
 | CLI entrypoint | `src/app/cli/spec.js` | operator CLI used by child-process runs |
-| optional GraphQL helper | `src/app/api/intelGraphApi.js` | separate local helper API, not part of the main route tree |
 
 ## Bootstrap Phases
 
@@ -80,9 +79,9 @@ The live route-order array in `src/app/api/guiServerRuntime.js` is:
 10. `dataAuthority`
 11. `queueBillingLearning`
 12. `review`
-13. `testMode`
-14. `sourceStrategy`
-15. `specSeeds`
+13. `sourceStrategy`
+14. `specSeeds`
+15. `testMode`
 
 `src/app/api/routeRegistry.js` exports `GUI_API_ROUTE_ORDER`, but it is not the mounted SSOT because it omits the live `specSeeds` family.
 
@@ -100,7 +99,7 @@ The live route-order array in `src/app/api/guiServerRuntime.js` is:
 | `dataAuthority` | `/data-authority/:category/*` | `src/features/category-authority/api/dataAuthorityRoutes.js` |
 | `queueBillingLearning` | `/queue/*`, `/billing/*`, `/learning/*` | `src/features/indexing/api/queueBillingLearningRoutes.js` |
 | `review` | `/review/*`, `/review-components/*` | `src/features/review/api/reviewRoutes.js` |
-| `testMode` | `/test-mode/*` | `src/app/api/routes/testModeRoutes.js` |
+| `testMode` | `/test-mode/audit` (GET), `/test-mode/validate` (POST) | `src/app/api/routes/testModeRoutes.js`, `src/app/api/routes/testModeRouteContext.js` |
 | `sourceStrategy` | `/source-strategy/*` | `src/features/indexing/api/sourceStrategyRoutes.js` |
 | `specSeeds` | `/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js` |
 

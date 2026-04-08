@@ -36,5 +36,10 @@ export { validateRecord } from './validation/validateRecord.js';
 export { repairField, repairCrossField } from './repair-adapter/repairField.js';
 export { createRepairCallLlm } from './repairLlmAdapter.js';
 
+// Phase 10: discovery enum support (self-tightening vocabulary)
+export { mergeDiscoveredEnums } from './validation/mergeDiscoveredEnums.js';
+export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
+export { persistDiscoveredValue } from './persistDiscoveredValues.js';
+
 // TODO: export { submitCandidate } from './candidate-gate/submitCandidate.js';
 // TODO: export { publishResolved } from './publisher/publishResolved.js';

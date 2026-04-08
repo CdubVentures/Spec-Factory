@@ -69,7 +69,7 @@ describe('checkUnit — unit_accepts multi-form', () => {
     const r = checkUnit('120 hours', 'h', ['h', 'hours']);
     assert.equal(r.pass, true);
     assert.strictEqual(r.value, 120);
-    assert.equal(r.rule, 'strip_same_unit');
+    assert.equal(r.rule, 'unit_accepts');
   });
 
   it('"120 h" for h field with unit_accepts ["h", "hours"]', () => {

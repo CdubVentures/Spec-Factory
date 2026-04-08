@@ -58,12 +58,12 @@ describe('markPrimaryLaneReviewedInItemState — characterization', () => {
   }));
 });
 
-describe('syncItemFieldStateFromPrimaryLaneAccept — characterization', () => {
-  it('upserts item_field_state from keyReviewState selected value', () => withTempSpecDb(async (specDb) => {
+describe('syncItemFieldStateFromPrimaryLaneAccept — no-op stub (DB writes removed, publisher wiring pending)', () => {
+  it('does not modify item_field_state (no-op stub)', () => withTempSpecDb(async (specDb) => {
     const runtime = makeRuntime();
     seedItemFieldState(specDb, { value: 'old-value' });
 
-    const krs = {
+    runtime.syncItemFieldStateFromPrimaryLaneAccept(specDb, CATEGORY, {
       target_kind: 'grid_key',
       item_identifier: 'mouse-1',
       field_key: 'dpi',
@@ -71,13 +71,12 @@ describe('syncItemFieldStateFromPrimaryLaneAccept — characterization', () => {
       selected_value: 'new-value',
       confidence_score: 0.95,
       ai_confirm_primary_status: 'confirmed',
-    };
-    runtime.syncItemFieldStateFromPrimaryLaneAccept(specDb, CATEGORY, krs);
+    });
 
-    const updated = specDb.db.prepare(
+    const row = specDb.db.prepare(
       'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ?'
     ).get(CATEGORY, 'mouse-1', 'dpi');
-    assert.equal(updated.value, 'new-value');
+    assert.equal(row.value, 'old-value', 'value should remain unchanged — function is a no-op');
   }));
 
   it('is a no-op when target_kind is not grid_key', () => withTempSpecDb(async (specDb) => {
@@ -97,55 +96,13 @@ describe('syncItemFieldStateFromPrimaryLaneAccept — characterization', () => {
     assert.equal(row.value, 'original');
   }));
 
-  it('skips when selected value is not meaningful and no current row exists', () => withTempSpecDb(async (specDb) => {
+  it('does not throw for any input', () => withTempSpecDb(async (specDb) => {
     const runtime = makeRuntime();
-
-    runtime.syncItemFieldStateFromPrimaryLaneAccept(specDb, CATEGORY, {
-      target_kind: 'grid_key',
-      item_identifier: 'no-product',
-      field_key: 'no-field',
-      selected_value: 'unknown',
-      selected_candidate_id: null,
-    });
-
-    const row = specDb.db.prepare(
-      'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ?'
-    ).get(CATEGORY, 'no-product', 'no-field');
-    assert.equal(row, undefined);
-  }));
-
-  it('falls back to current value when selected_value is empty', () => withTempSpecDb(async (specDb) => {
-    const runtime = makeRuntime();
-    seedItemFieldState(specDb, { value: 'existing-value', confidence: 0.8 });
-
-    runtime.syncItemFieldStateFromPrimaryLaneAccept(specDb, CATEGORY, {
-      target_kind: 'grid_key',
-      item_identifier: 'mouse-1',
-      field_key: 'dpi',
-      selected_value: null,
-      selected_candidate_id: null,
-      confidence_score: 0.99,
-      ai_confirm_primary_status: 'confirmed',
-    });
-
-    const row = specDb.db.prepare(
-      'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ?'
-    ).get(CATEGORY, 'mouse-1', 'dpi');
-    assert.equal(row.value, 'existing-value');
-  }));
-
-  it('does not throw when syncItemListLinkForFieldValue fails', () => withTempSpecDb(async (specDb) => {
-    const runtime = makeRuntime();
-    seedItemFieldState(specDb, { value: '16000' });
-
     runtime.syncItemFieldStateFromPrimaryLaneAccept(specDb, CATEGORY, {
       target_kind: 'grid_key',
       item_identifier: 'mouse-1',
       field_key: 'dpi',
       selected_value: '16000',
-      selected_candidate_id: null,
-      confidence_score: 0.9,
-      ai_confirm_primary_status: 'confirmed',
     });
     assert.ok(true, 'did not throw');
   }));

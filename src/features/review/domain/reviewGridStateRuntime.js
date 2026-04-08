@@ -128,43 +128,13 @@ export function createReviewGridStateRuntime({
     } catch { /* best-effort sync */ }
   }
 
+  // WHY: DB write removed — will route through publisher pipeline when review is re-wired.
   function syncItemFieldStateFromPrimaryLaneAccept(specDb, category, keyReviewState) {
     if (!specDb || !keyReviewState) return;
     if (keyReviewState.target_kind !== 'grid_key') return;
     const productId = String(keyReviewState.item_identifier || '').trim();
     const fieldKey = String(keyReviewState.field_key || '').trim();
     if (!productId || !fieldKey) return;
-
-    const current = specDb.getItemFieldStateByProductAndField(productId, fieldKey) || null;
-    const selectedCandidateId = String(keyReviewState.selected_candidate_id || '').trim() || null;
-    const selectedValue = keyReviewState.selected_value ?? current?.value ?? null;
-    if (!isMeaningfulValue(selectedValue) && !current) return;
-
-    const confidenceScore = Number.isFinite(Number(keyReviewState.confidence_score))
-      ? Number(keyReviewState.confidence_score)
-      : Number(current?.confidence || 0);
-    const aiStatus = String(keyReviewState?.ai_confirm_primary_status || '').trim().toLowerCase();
-    const aiConfirmed = aiStatus === 'confirmed';
-    const source = String(current?.source || '').trim() || 'pipeline';
-
-    specDb.upsertItemFieldState({
-      productId,
-      fieldKey,
-      value: selectedValue,
-      confidence: confidenceScore,
-      source,
-      acceptedCandidateId: selectedCandidateId || current?.accepted_candidate_id || null,
-      overridden: false,
-      needsAiReview: !aiConfirmed,
-      aiReviewComplete: aiConfirmed,
-    });
-    try {
-      specDb.syncItemListLinkForFieldValue({
-        productId,
-        fieldKey,
-        value: selectedValue,
-      });
-    } catch { /* best-effort list-link sync */ }
   }
 
   function syncPrimaryLaneAcceptFromItemSelection({

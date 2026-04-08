@@ -16,6 +16,8 @@ function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportNam
   });
 }
 
+const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage.tsx'), 'TestModePage');
+
 // WHY: Computed once at module scope so lazy components are created once, not per render.
 const LAZY_ROUTES = ROUTE_ENTRIES.map((entry) => ({
   ...entry,
@@ -61,7 +63,7 @@ export default function App() {
                 ? <Route key={entry.path} index element={wrap(entry.Component)} />
                 : <Route key={entry.path} path={entry.path.slice(1)} element={wrap(entry.Component)} />,
             )}
-
+            <Route path="test-mode" element={wrap(TestModePage)} />
           </Route>
         </Routes>
       </HashRouter>

@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live GUI routes, shared layouts, navigation groups, and client/server boundaries with exact file ownership.
 > **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md), [backend-architecture.md](./backend-architecture.md)
-> **Last validated:** 2026-04-04
+> **Last validated:** 2026-04-07
 
 ## Route Source Of Truth
 
@@ -34,7 +34,7 @@
 | `/storage` | `StoragePage` | none | lazy import from `tools/gui-react/src/pages/storage/StoragePage.tsx`; `useStorageOverview()` and `useStorageRuns()` | `AppShell` | storage inventory and destructive maintenance actions |
 | `/llm-config` | `LlmConfigPage` | none | lazy import from `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`; `useLlmPolicyAuthority()` plus `/indexing/llm-config` queries | `AppShell` | global LLM policy, provider, and budget configuration |
 | `/pipeline-settings` | `PipelineSettingsPage` | none | lazy import from `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`; runtime settings, source strategy, and spec seed authorities | `AppShell` | runtime and pipeline control surface |
-| `/test-mode` | `TestModePage` | none | lazy import from `tools/gui-react/src/pages/test-mode/TestModePage.tsx`; page-local test-mode queries/mutations | `AppShell` | synthetic fixture generation and validation |
+| `/test-mode` | `TestModePage` | none | lazy import from `tools/gui-react/src/pages/test-mode/TestModePage.tsx`; renders `FieldContractAudit.tsx`; page-local test-mode queries/mutations | `AppShell` | field contract audit dashboard (hardcoded in `App.tsx`, not from `PAGE_REGISTRY`) |
 
 ## Navigation Groups
 
