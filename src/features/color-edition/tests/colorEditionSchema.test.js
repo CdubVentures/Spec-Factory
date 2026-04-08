@@ -15,8 +15,8 @@ describe('colorEditionFinderResponseSchema', () => {
     const result = colorEditionFinderResponseSchema.parse(input);
     assert.deepEqual(result.colors, ['black', 'white', 'black+red']);
     assert.deepEqual(result.editions, {
-      'launch-edition': { colors: ['black'] },
-      'cyberpunk-2077-edition': { colors: ['black+red'] },
+      'launch-edition': { display_name: '', colors: ['black'] },
+      'cyberpunk-2077-edition': { display_name: '', colors: ['black+red'] },
     });
     assert.equal(result.default_color, 'black');
   });
@@ -67,5 +67,48 @@ describe('colorEditionFinderResponseSchema', () => {
       default_color: 'black',
     };
     assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  // ── color_names ──
+
+  it('parses color_names map alongside colors', () => {
+    const input = {
+      colors: ['black', 'white+silver'],
+      color_names: { 'white+silver': 'Frost White' },
+      default_color: 'black',
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.color_names, { 'white+silver': 'Frost White' });
+  });
+
+  it('color_names defaults to empty object when omitted', () => {
+    const input = { colors: ['black'], default_color: 'black' };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.color_names, {});
+  });
+
+  // ── edition display_name ──
+
+  it('parses edition display_name alongside colors', () => {
+    const input = {
+      colors: ['black', 'black+orange'],
+      editions: {
+        'cod-bo6-edition': { display_name: 'Call of Duty: Black Ops 6 Edition', colors: ['black+orange'] },
+      },
+      default_color: 'black',
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.editions['cod-bo6-edition'].display_name, 'Call of Duty: Black Ops 6 Edition');
+    assert.deepEqual(result.editions['cod-bo6-edition'].colors, ['black+orange']);
+  });
+
+  it('edition display_name defaults to empty string when omitted', () => {
+    const input = {
+      colors: ['black'],
+      editions: { 'launch-edition': { colors: ['black'] } },
+      default_color: 'black',
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.editions['launch-edition'].display_name, '');
   });
 });

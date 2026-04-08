@@ -34,7 +34,7 @@ SQL store (wired through specDb, not imported directly):
 ## Dependencies
 
 - **Allowed**: `src/core/config/runtimeArtifactRoots.js` (path resolution), `src/core/llm/` (LLM client + routing)
-- **Cross-feature (via public API)**: `src/features/studio` (`getEgPresetForKey`), `src/features/indexing` (`createPhaseCallLlm`)
+- **Cross-feature (via public API)**: `src/features/studio` (`getEgPresetForKey`), `src/features/indexing` (`createPhaseCallLlm`), `src/features/publisher` (`submitCandidate` — candidate gate)
 - **SQL store**: `src/db/stores/colorEditionFinderStore.js` (wired via specDb)
 - **LLM phase**: Registered as `colorFinder` in `src/core/config/llmPhaseDefs.js`
 - **Forbidden**: Other feature internals (only public API imports)
@@ -50,3 +50,4 @@ SQL store (wired through specDb, not imported directly):
 - **Closed enum at prompt level**: LLM must map all discovered colors to registered atoms
 - **Run history as source log**: each LLM call stored in `runs` array with full prompt + response
 - **Cooldown derived from latest run**: deleting the latest run recalculates cooldown from the new latest
+- **Candidate gate (all-or-nothing)**: Before CEF writes anything, `submitCandidate()` validates `colors` against Field Studio rules. If validation fails, the entire run is rejected — no CEF writes, no candidates, no cooldown. Failure stored in `color_edition_finder_runs` with `response.status = 'rejected'`. On success, repaired values (not raw LLM output) flow to CEF tables and `field_candidates`. Gate skipped gracefully if compiled rules not available (test environments).

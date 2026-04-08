@@ -15,7 +15,6 @@ export function useColorEditionFinderQuery(category: string, productId: string) 
       `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
     enabled: Boolean(category) && Boolean(productId),
-    refetchInterval: 10_000,
   });
 }
 

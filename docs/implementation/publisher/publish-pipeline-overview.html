@@ -263,7 +263,7 @@ tr:last-child td { border-bottom: none; }
         <div class="flow-node-detail">
           Dual-write:
           <br/>&bull; <code>product.json</code> &rarr; <code>candidates[fieldKey][]</code> (append)
-          <br/>&bull; DB candidate table (with source, run_id, confidence, validation result)
+          <br/>&bull; <code>field_candidates</code> table &mdash; <code>status: 'candidate'</code> (with source, confidence, validation result)
           <br/><br/>
           Includes any repairs applied (normalization, rounding, dedupe, etc.)
         </div>
@@ -310,13 +310,14 @@ tr:last-child td { border-bottom: none; }
         <span class="chip chip-success">PUBLISH</span> Write resolved values
       </div>
       <div class="flow-node-detail">
-        Dual-write the resolved, validated, cross-field-checked values:
+        Write the resolved, validated, cross-field-checked values:
+        <br/>&bull; <code>field_candidates</code> &rarr; winner row marked <code>status: 'resolved'</code> (primary DB table)
         <br/>&bull; <code>product.json</code> &rarr; <code>fields[fieldKey]</code> (with value, confidence, resolved_at, sources[])
-        <br/>&bull; <code>item_field_state</code> &rarr; upsert row (category, product_id, field_key, value, confidence, source)
+        <br/>&bull; <code>item_field_state</code> &rarr; backward-compat sync (with <code>accepted_candidate_id</code> pointing to <code>field_candidates.id</code>)
         <br/>&bull; <code>item_component_links</code> &rarr; for component_reference fields
         <br/>&bull; <code>item_list_links</code> &rarr; for list-shaped fields
         <br/><br/>
-        <strong>This is the only path to <code>item_field_state</code>.</strong> No caller writes directly.
+        <strong><code>field_candidates</code> is the primary DB table.</strong> <code>item_field_state</code> is synced for 39 legacy consumers.
       </div>
     </div>
 
@@ -498,28 +499,33 @@ tr:last-child td { border-bottom: none; }
     <div class="card">
       <h3>SQLite (Runtime Projection)</h3>
       <div class="small muted" style="line-height:1.7;">
-        <code>specDb &rarr; item_field_state</code>
+        <strong>Primary table:</strong> <code>field_candidates</code>
+        <br/>Candidates + resolved winner in one table.
+        <br/><code>status: 'candidate' | 'resolved'</code>
+        <br/>Multiple rows per (product, field) &mdash; one per distinct value.
         <br/><br/>
-        <strong>Publish write:</strong>
-        <br/>Upsert per (category, product_id, field_key).
-        <br/>Value, confidence, source, resolved metadata.
+        <strong>Backward-compat sync:</strong> <code>item_field_state</code>
+        <br/>One resolved row per (product, field). Synced by <code>publishResolved()</code>.
+        <br/>39 legacy consumers read from this table.
         <br/><br/>
         <strong>Related tables:</strong>
         <br/><code>item_component_links</code> &mdash; component_reference fields
         <br/><code>item_list_links</code> &mdash; list-shaped fields
       </div>
 
-      <div class="code-block" style="margin-top:12px;"><span style="color:var(--sf-teal-fg);">-- item_field_state (existing table)</span>
-CREATE TABLE item_field_state (
-  id           INTEGER PRIMARY KEY,
-  category     TEXT NOT NULL,
-  product_id   TEXT NOT NULL,
-  field_key    TEXT NOT NULL,
-  value        TEXT,
-  confidence   REAL DEFAULT 0,
-  source       TEXT DEFAULT 'pipeline',
-  ...
-  UNIQUE(category, product_id, field_key)
+      <div class="code-block" style="margin-top:12px;"><span style="color:var(--sf-teal-fg);">-- field_candidates (primary — candidates + resolved)</span>
+CREATE TABLE field_candidates (
+  id              INTEGER PRIMARY KEY,
+  category        TEXT NOT NULL,
+  product_id      TEXT NOT NULL,
+  field_key       TEXT NOT NULL,
+  value           TEXT,
+  confidence      REAL DEFAULT 0,
+  source_count    INTEGER DEFAULT 1,
+  sources_json    TEXT DEFAULT '[]',
+  validation_json TEXT DEFAULT '{}',
+  status          TEXT DEFAULT 'candidate',
+  UNIQUE(category, product_id, field_key, value)
 );</div>
     </div>
   </div>
@@ -547,26 +553,26 @@ CREATE TABLE item_field_state (
         <td class="small">Pure functions. 18 modules, 12 check dimensions, O(1) dispatch. Zero engine imports.</td>
         <td><span class="chip chip-success">COMPLETE &mdash; 458 tests</span></td>
       </tr>
-      <tr>
-        <td class="mono bold" style="color:var(--sf-accent-strong);">2</td>
+      <tr style="background:var(--sf-success-bg);">
+        <td class="mono bold" style="color:var(--sf-success-fg);">2</td>
         <td class="bold">repair-adapter/</td>
         <td class="mono tiny">validation/</td>
         <td class="small">LLM repair orchestration. Takes repairPrompt from validator, calls LLM, re-validates. 3-attempt escalation chain.</td>
-        <td><span class="chip chip-warning">NEXT</span></td>
+        <td><span class="chip chip-success">COMPLETE</span></td>
       </tr>
-      <tr>
-        <td class="mono bold" style="color:var(--sf-accent-strong);">3</td>
+      <tr style="background:var(--sf-success-bg);">
+        <td class="mono bold" style="color:var(--sf-success-fg);">3</td>
         <td class="bold">candidate-gate/</td>
-        <td class="mono tiny">validation/, repair-adapter/</td>
-        <td class="small">Source-side gate. Calls <code>validateField()</code>, optionally repairs, dual-writes candidate.</td>
-        <td><span class="chip chip-neutral">PLANNED</span></td>
+        <td class="mono tiny">validation/</td>
+        <td class="small">Source-side gate. <code>submitCandidate()</code> validates per-field, dual-writes to <code>field_candidates</code> table + <code>product.json candidates[]</code>. Rebuild contract via <code>seedRegistry.js</code>. CEF wired as first source (all-or-nothing gate). 94 tests.</td>
+        <td><span class="chip chip-success">COMPLETE &mdash; 94 tests</span></td>
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
         <td class="bold">publisher/</td>
         <td class="mono tiny">validation/</td>
-        <td class="small">Resolves candidates, calls <code>validateRecord()</code> for cross-field, dual-writes resolved values.</td>
-        <td><span class="chip chip-neutral">PLANNED</span></td>
+        <td class="small">Resolves candidates, calls <code>validateRecord()</code> for cross-field, dual-writes resolved values to <code>item_field_state</code> + <code>product.json fields[]</code>.</td>
+        <td><span class="chip chip-warning">NEXT</span></td>
       </tr>
     </tbody>
   </table>

@@ -22,6 +22,8 @@ import { registerColorRoutes } from '../../features/color-registry/api/colorRout
 import { createColorRouteContext } from '../../features/color-registry/api/colorRouteContext.js';
 import { registerColorEditionFinderRoutes } from '../../features/color-edition/api/colorEditionFinderRoutes.js';
 import { createColorEditionFinderRouteContext } from '../../features/color-edition/api/colorEditionFinderRouteContext.js';
+import { registerPublisherRoutes } from '../../features/publisher/api/publisherRoutes.js';
+import { createPublisherRouteContext } from '../../features/publisher/api/publisherRouteContext.js';
 import { createRouteLlmLogger } from '../../core/llm/createRouteLlmLogger.js';
 import { registerRuntimeOpsRoutes } from '../../features/indexing/api/runtimeOpsRoutes.js';
 import {
@@ -177,6 +179,9 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
         logger: createRouteLlmLogger('color-edition-finder'),
       }),
+      publisherRouteContext: createPublisherRouteContext({
+        jsonRes, getSpecDb,
+      }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,
         getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, appDb,
@@ -233,6 +238,7 @@ export function createGuiServerRuntime({
       { key: 'queueBillingLearning', registrar: registerQueueBillingLearningRoutes },
       { key: 'review', registrar: registerReviewRoutes },
 
+      { key: 'publisher', registrar: registerPublisherRoutes },
       { key: 'sourceStrategy', registrar: registerSourceStrategyRoutes },
       { key: 'specSeeds', registrar: registerSpecSeedsRoutes },
       { key: 'testMode', registrar: registerTestModeRoutes },

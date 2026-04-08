@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-08T03:46:46.694Z",
+  "generated_at": "2026-04-08T08:00:04.500Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -484,7 +484,7 @@
     },
     "sensor_brand": {
       "patterns": [],
-      "template": "text_field"
+      "template": "integer_field"
     },
     "sensor_date": {
       "patterns": [],

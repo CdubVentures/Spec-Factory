@@ -52,6 +52,12 @@ function seedCompiledRules(specDb) {
         enum: { policy: 'closed', match: { strategy: 'exact' } },
         priority: {},
       },
+      editions: {
+        contract: { shape: 'record', type: 'string', unknown_token: 'unk' },
+        parse: { template: null },
+        enum: { policy: 'open', match: { strategy: 'exact' } },
+        priority: {},
+      },
     },
     known_values: {
       colors: { policy: 'closed', values: ['black', 'white', 'red', 'blue', 'green', 'pink', 'purple', 'gray', 'yellow', 'orange'] },
@@ -301,5 +307,84 @@ describe('CEF candidate gate integration', () => {
     // Candidates exist
     const candidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
     assert.ok(candidates.length >= 1);
+  });
+
+  // --- 8. Editions candidate written with reconciled colors ---
+  it('editions candidate has reconciled colors matching repaired colors', async () => {
+    const pid = 'mouse-ed-recon';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['Black', 'Red'],
+        editions: { 'Cyberpunk Edition': { colors: ['Black'] }, 'Halo Edition': { colors: ['Red'] } },
+        default_color: 'Black',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+
+    // Editions candidate in DB has reconciled colors
+    const edCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
+    assert.equal(edCandidates.length, 1);
+    const edValue = JSON.parse(edCandidates[0].value);
+    assert.deepEqual(edValue['Cyberpunk Edition'].colors, ['black']); // Black → black
+    assert.deepEqual(edValue['Halo Edition'].colors, ['red']); // Red → red
+
+    // product.json also has reconciled editions
+    const pj = readProductJson(pid);
+    assert.ok(pj.candidates.editions);
+    const jsonEd = pj.candidates.editions[0].value;
+    assert.deepEqual(jsonEd['Cyberpunk Edition'].colors, ['black']);
+  });
+
+  // --- 9. Editions record passes shape=record validation ---
+  it('editions record with nested colors passes validation', async () => {
+    const pid = 'mouse-ed-shape';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'white'],
+        editions: { 'Launch Edition': { colors: ['black'] } },
+        default_color: 'black',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+    assert.ok(result.editions['Launch Edition']);
+    assert.deepEqual(result.editions['Launch Edition'].colors, ['black']);
+  });
+
+  // --- 10. Empty editions passes validation ---
+  it('empty editions record passes validation', async () => {
+    const pid = 'mouse-ed-empty';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+    assert.deepEqual(result.editions, {});
   });
 });

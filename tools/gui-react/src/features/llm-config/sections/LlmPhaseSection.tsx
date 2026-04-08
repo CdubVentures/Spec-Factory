@@ -123,14 +123,14 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       </SettingRow>
       <SettingRow label="Max Output Tokens" tip="Maximum output tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
-          {phaseOverrides[overrideKey]?.maxOutputTokens == null && <GlobalDefaultIcon />}
+          {phaseOverrides[overrideKey]?.maxOutputTokens == null && !resolved.disableLimits && <GlobalDefaultIcon />}
           <input
             className={inputCls}
             type="number"
             min={0}
             step={1}
             value={phaseOverrides[overrideKey]?.maxOutputTokens ?? ''}
-            placeholder={`↩ ${resolved.maxOutputTokens ?? 'auto'}`}
+            placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxOutputTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
               const raw = e.target.value;
@@ -141,14 +141,14 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       </SettingRow>
       <SettingRow label="Max Context Tokens" tip="Maximum context window tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
-          {phaseOverrides[overrideKey]?.maxContextTokens == null && <GlobalDefaultIcon />}
+          {phaseOverrides[overrideKey]?.maxContextTokens == null && !resolved.disableLimits && <GlobalDefaultIcon />}
           <input
             className={inputCls}
             type="number"
             min={128}
             step={1}
             value={phaseOverrides[overrideKey]?.maxContextTokens ?? ''}
-            placeholder={`↩ ${resolved.maxContextTokens ?? 'auto'}`}
+            placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxContextTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
               const raw = e.target.value;
@@ -159,14 +159,14 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       </SettingRow>
       <SettingRow label="Timeout (ms)" tip="LLM request timeout for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
-          {phaseOverrides[overrideKey]?.timeoutMs == null && <GlobalDefaultIcon />}
+          {phaseOverrides[overrideKey]?.timeoutMs == null && !resolved.disableLimits && <GlobalDefaultIcon />}
           <input
             className={inputCls}
             type="number"
             min={1000}
             step={1000}
             value={phaseOverrides[overrideKey]?.timeoutMs ?? ''}
-            placeholder={`↩ ${resolved.timeoutMs ?? 'auto'}`}
+            placeholder={resolved.disableLimits ? '600000 (10 min)' : `↩ ${resolved.timeoutMs ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
               const raw = e.target.value;

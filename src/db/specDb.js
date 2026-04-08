@@ -180,6 +180,9 @@ export class SpecDb {
         _getAllFieldCandidatesByProduct: this._getAllFieldCandidatesByProduct,
         _deleteFieldCandidatesByProduct: this._deleteFieldCandidatesByProduct,
         _deleteFieldCandidatesByProductAndField: this._deleteFieldCandidatesByProductAndField,
+        _getFieldCandidatesPaginated: this._getFieldCandidatesPaginated,
+        _countFieldCandidates: this._countFieldCandidates,
+        _getFieldCandidatesStats: this._getFieldCandidatesStats,
       },
     });
   }
@@ -825,5 +828,8 @@ export class SpecDb {
   getAllFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getAllByProduct(pid); }
   deleteFieldCandidatesByProduct(pid) { this._fieldCandidateStore.deleteByProduct(pid); }
   deleteFieldCandidatesByProductAndField(pid, fk) { this._fieldCandidateStore.deleteByProductAndField(pid, fk); }
+  getFieldCandidatesPaginated(opts) { return this._fieldCandidateStore.getPaginated(opts); }
+  countFieldCandidates() { return this._fieldCandidateStore.count(); }
+  getFieldCandidatesStats() { return this._fieldCandidateStore.stats(); }
 
 }

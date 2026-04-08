@@ -48,6 +48,9 @@ export const MIGRATIONS = [
   // compiled_rules holds full engine artifacts, boot_config holds pipeline boot data.
   `ALTER TABLE field_studio_map ADD COLUMN compiled_rules TEXT NOT NULL DEFAULT '{}'`,
   `ALTER TABLE field_studio_map ADD COLUMN boot_config TEXT NOT NULL DEFAULT '{}'`,
+  // WHY: candidate-gate needs status tracking on field_candidates to distinguish
+  // unresolved candidates from resolved ones.
+  `ALTER TABLE field_candidates ADD COLUMN status TEXT DEFAULT 'candidate'`,
 ];
 
 export const SECONDARY_INDEXES = `

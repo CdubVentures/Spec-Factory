@@ -70,6 +70,7 @@ const REGISTRY: ColorRegistryEntry[] = [
   { name: 'black', hex: '#000000', css_var: '--color-black' },
   { name: 'white', hex: '#ffffff', css_var: '--color-white' },
   { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+  { name: 'silver', hex: '#c0c0c0', css_var: '--color-silver' },
 ];
 
 // ── deriveFinderKpiCards ────────────────────────────────────────────
@@ -150,22 +151,27 @@ describe('deriveSelectedStateDisplay', () => {
     assert.equal(display.defaultColorHex, '');
   });
 
-  it('maps colors with hex from registry and marks isDefault', () => {
+  it('maps colors with hex, hexParts, and displayName from registry and marks isDefault', () => {
     const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
     assert.equal(display.colors.length, 3);
     assert.equal(display.colors[0].name, 'black');
     assert.equal(display.colors[0].hex, '#000000');
+    assert.deepEqual(display.colors[0].hexParts, ['#000000']);
+    assert.equal(display.colors[0].displayName, '');
     assert.equal(display.colors[0].isDefault, true);
     assert.equal(display.colors[1].name, 'white');
     assert.equal(display.colors[1].hex, '#ffffff');
+    assert.deepEqual(display.colors[1].hexParts, ['#ffffff']);
+    assert.equal(display.colors[1].displayName, '');
     assert.equal(display.colors[1].isDefault, false);
   });
 
-  it('resolves multi-color hex from first atom', () => {
+  it('resolves multi-color hex from first atom and hexParts for all atoms', () => {
     const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
     const multiColor = display.colors.find(c => c.name === 'black+red');
     assert.ok(multiColor);
     assert.equal(multiColor.hex, '#000000');
+    assert.deepEqual(multiColor.hexParts, ['#000000', '#ef4444']);
     assert.equal(multiColor.isDefault, false);
   });
 
@@ -194,7 +200,7 @@ describe('deriveSelectedStateDisplay', () => {
     assert.deepEqual(display.editions[0].pairedColors, []);
   });
 
-  it('returns empty hex for unknown color', () => {
+  it('returns empty hex and hexParts for unknown color', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
       selected: {
@@ -206,6 +212,38 @@ describe('deriveSelectedStateDisplay', () => {
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.equal(display.colors[0].name, 'unknown-color');
     assert.equal(display.colors[0].hex, '');
+    assert.deepEqual(display.colors[0].hexParts, ['']);
+  });
+
+  it('populates displayName from color_names and edition display_name', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      selected: {
+        colors: ['black', 'white+silver'],
+        color_names: { 'white+silver': 'Frost White' },
+        editions: {
+          'cod-bo6-edition': { display_name: 'Call of Duty: Black Ops 6 Edition', colors: ['black'] },
+        },
+        default_color: 'black',
+      },
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    assert.equal(display.colors[0].displayName, '');
+    assert.equal(display.colors[1].displayName, 'Frost White');
+    assert.equal(display.editions[0].displayName, 'Call of Duty: Black Ops 6 Edition');
+  });
+
+  it('resolves hexParts with partial unknowns in combo', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      selected: {
+        colors: ['black+unknown+red'],
+        editions: {},
+        default_color: 'black+unknown+red',
+      },
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    assert.deepEqual(display.colors[0].hexParts, ['#000000', '', '#ef4444']);
   });
 
   it('sets ssotRunNumber to run_count', () => {

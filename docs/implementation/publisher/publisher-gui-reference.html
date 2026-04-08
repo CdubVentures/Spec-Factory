@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Publisher Tab &mdash; GUI Reference</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.15);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe; --sf-purple-bg: rgba(88, 28, 135, 0.3);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.3);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.15);
+  --sf-orange-fg: #fdba74; --sf-orange-bg: rgba(251, 146, 60, 0.15);
+}
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 32px; line-height: 1.5; }
+.root { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 17px; font-weight: 700; color: var(--sf-accent-strong); margin-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-muted); margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--sf-text-muted); margin-top: 4px; }
+.panel { background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft); border-radius: 12px; padding: 24px; }
+.card { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 10px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger { background: var(--sf-danger-bg); color: var(--sf-danger-fg); }
+.chip-accent { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1px solid var(--sf-accent-strong); }
+.chip-teal { background: var(--sf-teal-bg); color: var(--sf-teal-fg); }
+.chip-info { background: var(--sf-info-bg); color: var(--sf-info-fg); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-purple { background: var(--sf-purple-bg); color: var(--sf-purple-fg); }
+.chip-orange { background: var(--sf-orange-bg); color: var(--sf-orange-fg); }
+.mono { font-family: var(--sf-font-mono); }
+.dim { color: var(--sf-text-dim); }
+.muted { color: var(--sf-text-muted); }
+.small { font-size: 11px; }
+.tiny { font-size: 10px; }
+.bold { font-weight: 700; }
+.code-block { background: var(--sf-surface-elevated); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px; font-family: var(--sf-font-mono); font-size: 11px; line-height: 1.6; color: var(--sf-text-muted); white-space: pre-wrap; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sf-text-dim); padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--sf-border-soft-alpha); color: var(--sf-text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.callout { border-left: 3px solid var(--sf-accent-strong); padding: 12px 16px; background: var(--sf-accent-glow); border-radius: 0 8px 8px 0; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="root">
+
+<!-- =============================================================== -->
+
+<div>
+  <h1>Publisher Tab &mdash; GUI Reference</h1>
+  <div class="subtitle">
+    Live audit log for the publish pipeline. Every <code>submitCandidate()</code> call visible in one table.
+    Filterable by date, product, brand, field, source, and status.
+    Sits between Runtime Ops and Review Grid in the main navigation.
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 1: WHAT IT SHOWS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>1. What It Shows</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    One row per candidate submission. The table is a direct read of the <code>field_candidates</code> table +
+    <code>product.json candidates[]</code>. Every call to <code>submitCandidate()</code> produces a row.
+    Failed runs (rejected by the gate) also appear &mdash; they have <code>status: 'rejected'</code> in the source&rsquo;s
+    failure history (e.g. <code>color_edition_finder_runs</code>).
+  </div>
+
+  <div class="card">
+    <h3>Table Columns</h3>
+    <table>
+      <thead><tr><th>Column</th><th>Source</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="bold">Submitted</td>
+          <td class="mono tiny">submitted_at</td>
+          <td class="small">Timestamp. Sortable, filterable by date range.</td>
+        </tr>
+        <tr>
+          <td class="bold">Product</td>
+          <td class="mono tiny">product_id</td>
+          <td class="small">Product ID. Clickable &rarr; links to product detail / review grid.</td>
+        </tr>
+        <tr>
+          <td class="bold">Brand</td>
+          <td class="mono tiny">JOIN products</td>
+          <td class="small">Brand name (from products table). Filterable.</td>
+        </tr>
+        <tr>
+          <td class="bold">Field</td>
+          <td class="mono tiny">field_key</td>
+          <td class="small">Field key (e.g. <code>colors</code>, <code>weight</code>, <code>sensor</code>). Filterable.</td>
+        </tr>
+        <tr>
+          <td class="bold">Value</td>
+          <td class="mono tiny">value</td>
+          <td class="small">Post-validation value. For lists/records: truncated preview, expandable.</td>
+        </tr>
+        <tr>
+          <td class="bold">Status</td>
+          <td class="mono tiny">status</td>
+          <td class="small"><span class="chip chip-success">candidate</span> or <span class="chip chip-teal">resolved</span>. Filterable.</td>
+        </tr>
+        <tr>
+          <td class="bold">Confidence</td>
+          <td class="mono tiny">confidence</td>
+          <td class="small">0&ndash;100. Color-coded: green &ge;80, yellow 50&ndash;79, red &lt;50.</td>
+        </tr>
+        <tr>
+          <td class="bold">Sources</td>
+          <td class="mono tiny">source_count</td>
+          <td class="small">Number of independent sources. Badge with count.</td>
+        </tr>
+        <tr>
+          <td class="bold">Source</td>
+          <td class="mono tiny">sources_json[0].source</td>
+          <td class="small">Primary source type: <code>cef</code>, <code>pipeline</code>, <code>override</code>, <code>cli</code>. Chip colored by type.</td>
+        </tr>
+        <tr>
+          <td class="bold">Repairs</td>
+          <td class="mono tiny">validation_json.repairs</td>
+          <td class="small">Repair count badge. Expandable: shows before &rarr; after for each repair step.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 2: FILTERS
+     =============================================================== -->
+
+<div class="panel">
+  <h2>2. Filters</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Filter bar at top of table. All filters are combinable (AND logic). URL-synced for shareability.
+  </div>
+
+  <table>
+    <thead><tr><th>Filter</th><th>Type</th><th>Options</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bold">Date range</td>
+        <td class="small">Date picker</td>
+        <td class="small">Last 24h, last 7d, last 30d, custom range. Default: last 7d.</td>
+      </tr>
+      <tr>
+        <td class="bold">Product</td>
+        <td class="small">Search / dropdown</td>
+        <td class="small">Type-ahead search by product ID, brand, or model name.</td>
+      </tr>
+      <tr>
+        <td class="bold">Brand</td>
+        <td class="small">Multi-select dropdown</td>
+        <td class="small">All brands in category. Select one or more.</td>
+      </tr>
+      <tr>
+        <td class="bold">Field</td>
+        <td class="small">Multi-select dropdown</td>
+        <td class="small">All field keys. Select one or more.</td>
+      </tr>
+      <tr>
+        <td class="bold">Source</td>
+        <td class="small">Chips</td>
+        <td class="small">cef | pipeline | override | cli | all</td>
+      </tr>
+      <tr>
+        <td class="bold">Status</td>
+        <td class="small">Chips</td>
+        <td class="small">candidate | resolved | all</td>
+      </tr>
+      <tr>
+        <td class="bold">Has repairs</td>
+        <td class="small">Toggle</td>
+        <td class="small">Show only rows where repairs were applied.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===============================================================
+     SECTION 3: ROW EXPAND / DETAIL
+     =============================================================== -->
+
+<div class="panel">
+  <h2>3. Row Expansion (Detail View)</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Clicking a row expands an inline detail panel showing the full validation history.
+  </div>
+
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3>Validation Detail</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>Repairs applied:</strong>
+        <br/>Table of { step, before, after, rule } &mdash; e.g. <code>normalize: "Black" &rarr; "black"</code>
+        <br/><br/>
+        <strong>Rejections:</strong>
+        <br/>If any soft rejections (e.g. <code>unknown_enum_prefer_known</code>), show them with detail.
+        <br/><br/>
+        <strong>Full value:</strong>
+        <br/>For lists/records &mdash; formatted JSON view of the complete value.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Source Detail</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>All sources:</strong>
+        <br/>Table of sources with confidence, run_id, submitted_at, source-specific metadata.
+        <br/><br/>
+        <strong>CEF sources:</strong> model name, run_id
+        <br/><strong>Pipeline sources:</strong> artifact hash, URL, run_id
+        <br/><strong>Override sources:</strong> overridden_by, reason
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 4: DATA SOURCE
+     =============================================================== -->
+
+<div class="panel">
+  <h2>4. Data Source</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    The table reads from the <code>field_candidates</code> SQL table (category-scoped specDb).
+    This is the primary DB table for the publisher pipeline.
+  </div>
+
+  <div class="code-block"><span style="color:var(--sf-teal-fg);">-- Query for publisher table (with brand join)</span>
+SELECT
+  fc.id, fc.product_id, fc.field_key, fc.value,
+  fc.confidence, fc.source_count, fc.sources_json,
+  fc.validation_json, fc.status, fc.submitted_at,
+  p.brand, p.model, p.variant
+FROM field_candidates fc
+LEFT JOIN products p ON fc.product_id = p.product_id AND fc.category = p.category
+WHERE fc.category = ?
+ORDER BY fc.submitted_at DESC
+LIMIT 100 OFFSET ?</div>
+
+  <div class="callout" style="margin-top:12px;">
+    <div class="tiny bold" style="color:var(--sf-accent-strong);">API endpoint needed</div>
+    <div class="tiny muted">
+      <code>GET /api/v1/publisher/:category/candidates</code>
+      <br/>Query params: <code>page</code>, <code>limit</code>, <code>product_id</code>, <code>brand</code>, <code>field_key</code>, <code>source</code>, <code>status</code>, <code>since</code>, <code>until</code>, <code>has_repairs</code>
+      <br/>Returns: <code>{ rows: [...], total: number, page: number }</code>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 5: NAVIGATION PLACEMENT
+     =============================================================== -->
+
+<div class="panel">
+  <h2>5. Navigation Placement</h2>
+
+  <div class="code-block"><span style="color:var(--sf-text-dim);">App Shell top nav (left to right):</span>
+
+Dashboard | Studio | <span style="color:var(--sf-warning-fg);">Runtime Ops</span> | <span style="color:var(--sf-accent-strong); font-weight:700;">Publisher</span> | <span style="color:var(--sf-teal-fg);">Review Grid</span> | Settings</div>
+
+  <div class="small muted" style="margin-top:12px;">
+    The Publisher tab sits between Runtime Ops and Review Grid.
+    It shows the pipeline&rsquo;s validation activity &mdash; what went in, what came out, what was repaired or rejected.
+    The Review Grid shows the resolved product state for human review.
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 6: SUMMARY STATS BAR
+     =============================================================== -->
+
+<div class="panel">
+  <h2>6. Summary Stats Bar</h2>
+
+  <div class="small muted" style="margin-bottom:16px;">
+    Top of the page, above the filter bar. Quick-glance metrics for the current filter scope.
+  </div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <div class="card" style="flex:1; min-width:120px; text-align:center;">
+      <div class="tiny dim">TOTAL CANDIDATES</div>
+      <div class="bold" style="font-size:20px; color:var(--sf-text-primary);">1,247</div>
+    </div>
+    <div class="card" style="flex:1; min-width:120px; text-align:center;">
+      <div class="tiny dim">RESOLVED</div>
+      <div class="bold" style="font-size:20px; color:var(--sf-success-fg);">892</div>
+    </div>
+    <div class="card" style="flex:1; min-width:120px; text-align:center;">
+      <div class="tiny dim">PENDING</div>
+      <div class="bold" style="font-size:20px; color:var(--sf-warning-fg);">355</div>
+    </div>
+    <div class="card" style="flex:1; min-width:120px; text-align:center;">
+      <div class="tiny dim">REPAIRS APPLIED</div>
+      <div class="bold" style="font-size:20px; color:var(--sf-info-fg);">186</div>
+    </div>
+    <div class="card" style="flex:1; min-width:120px; text-align:center;">
+      <div class="tiny dim">PRODUCTS</div>
+      <div class="bold" style="font-size:20px; color:var(--sf-purple-fg);">43</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 7: IMPLEMENTATION NOTES
+     =============================================================== -->
+
+<div class="panel">
+  <h2>7. Implementation Notes</h2>
+
+  <div class="grid-2" style="gap:16px;">
+    <div class="card">
+      <h3>Backend</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>New API route:</strong> <code>src/features/publisher/api/publisherRoutes.js</code>
+        <br/><strong>New route context:</strong> <code>src/features/publisher/api/publisherRouteContext.js</code>
+        <br/><br/>
+        <strong>New store method:</strong> <code>specDb.getFieldCandidatesPaginated()</code>
+        <br/>Supports filtering, pagination, brand join.
+        <br/><br/>
+        <strong>New store method:</strong> <code>specDb.getFieldCandidatesStats()</code>
+        <br/>Returns aggregate counts for summary bar.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Frontend</h3>
+      <div class="small muted" style="line-height:1.7;">
+        <strong>New page:</strong> <code>tools/gui-react/src/pages/publisher/PublisherPage.tsx</code>
+        <br/><strong>New query hook:</strong> <code>usePublisherCandidatesQuery()</code>
+        <br/><br/>
+        <strong>Table component:</strong> Reuse existing table primitives from <code>src/shared/</code>.
+        <br/><strong>Filter bar:</strong> URL-synced via query params.
+        <br/><strong>Row expansion:</strong> Inline detail panel (validation + sources).
+        <br/><br/>
+        <strong>Nav registration:</strong> Add &ldquo;Publisher&rdquo; tab in <code>AppShell.tsx</code> nav items.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     SECTION 8: MOCK TABLE
+     =============================================================== -->
+
+<div class="panel">
+  <h2>8. Table Mockup</h2>
+
+  <div class="small muted" style="margin-bottom:12px;">Representative rows showing typical publisher table data.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Submitted</th>
+        <th>Product</th>
+        <th>Brand</th>
+        <th>Field</th>
+        <th>Value</th>
+        <th>Status</th>
+        <th>Conf</th>
+        <th>Src</th>
+        <th>Repairs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono tiny">Apr 8 20:57</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">colors</td>
+        <td class="small">["black", "white", "pink"]</td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td class="mono">100</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-info">2</span></td>
+      </tr>
+      <tr>
+        <td class="mono tiny">Apr 8 20:57</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">editions</td>
+        <td class="small">{"Cyberpunk 2077 Ed...": ...}</td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td class="mono">100</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+      <tr>
+        <td class="mono tiny">Apr 8 18:30</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">weight</td>
+        <td class="small">63</td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td class="mono">92</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-info">1</span></td>
+      </tr>
+      <tr>
+        <td class="mono tiny">Apr 8 18:30</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">sensor</td>
+        <td class="small">HERO 2</td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td class="mono">88</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+      <tr>
+        <td class="mono tiny">Apr 8 16:15</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">weight</td>
+        <td class="small">58</td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td class="mono">75</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-info">1</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /root -->
+</body>
+</html>

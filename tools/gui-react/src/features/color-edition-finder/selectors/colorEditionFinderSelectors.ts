@@ -2,12 +2,15 @@ import type { ColorEditionFinderResult, ColorEditionFinderSelected, ColorRegistr
 
 export interface ColorPill {
   readonly name: string;
+  readonly displayName: string;
   readonly hex: string;
+  readonly hexParts: readonly string[];
   readonly isDefault: boolean;
 }
 
 export interface EditionBlock {
   readonly slug: string;
+  readonly displayName: string;
   readonly pairedColors: readonly ColorPill[];
 }
 
@@ -105,13 +108,17 @@ export function deriveFinderStatusChip(result: ColorEditionFinderResult | null):
   return { label: `Run ${result.run_count}`, tone: 'success' };
 }
 
+function resolveHexParts(name: string, hexMap: Map<string, string>): string[] {
+  return name.split('+').map(atom => hexMap.get(atom.trim()) || '');
+}
+
 function resolveHex(name: string, hexMap: Map<string, string>): string {
   const firstAtom = name.split('+')[0] || name;
   return hexMap.get(firstAtom) || hexMap.get(name) || '';
 }
 
-function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>): ColorPill {
-  return { name, hex: resolveHex(name, hexMap), isDefault: name === defaultColor };
+function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = ''): ColorPill {
+  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor };
 }
 
 export function deriveSelectedStateDisplay(
@@ -124,12 +131,14 @@ export function deriveSelectedStateDisplay(
 
   const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
   const sel = result.selected;
+  const colorNamesMap = sel.color_names ?? {};
 
-  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap));
+  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || ''));
 
   const editions = Object.entries(sel.editions).map(([slug, ed]) => ({
     slug,
-    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap)),
+    displayName: ed.display_name || '',
+    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '')),
   }));
 
   return {

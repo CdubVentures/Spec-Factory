@@ -7,7 +7,7 @@ Single gate for all field data entering the product record. No field value reach
 ```js
 // src/features/publisher/index.js
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
-export { publishResolved } from './publisher/publishResolved.js';
+export { publishResolved } from './publisher/publishResolved.js';  // TODO: Phase C
 export { validateField }   from './validation/validateField.js';
 export { validateRecord }  from './validation/validateRecord.js';
 export { repairField }     from './repair-adapter/repairField.js';
@@ -15,6 +15,7 @@ export { repairCrossField } from './repair-adapter/repairField.js';
 export { mergeDiscoveredEnums }  from './validation/mergeDiscoveredEnums.js';
 export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
 export { persistDiscoveredValue } from './persistDiscoveredValues.js';
+export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';
 ```
 
 ## Dependencies

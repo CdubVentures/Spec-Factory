@@ -54,15 +54,21 @@ function buildSelectedSection(previousRuns) {
 
   const latest = previousRuns[previousRuns.length - 1];
   const sel = latest.selected || {};
-  const colorList = sel.colors?.join(', ') || 'none';
+  const colorNames = sel.color_names || {};
   const defaultColor = sel.default_color || '?';
   const editions = sel.editions || {};
   const editionKeys = Object.keys(editions);
 
+  const colorList = sel.colors
+    ?.map(c => colorNames[c] ? `${c} (${colorNames[c]})` : c)
+    .join(', ') || 'none';
+
   const editionLines = editionKeys.length > 0
     ? editionKeys.map(slug => {
-      const ec = editions[slug]?.colors || [];
-      return `  ${slug}: ${ec.join(', ') || 'no colors'}`;
+      const ed = editions[slug] || {};
+      const ec = ed.colors || [];
+      const label = ed.display_name ? `${slug} (${ed.display_name})` : slug;
+      return `  ${label}: ${ec.join(', ') || 'no colors'}`;
     })
     : ['  (none)'];
 
@@ -138,7 +144,8 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     // ── Response contract ──
     'Return JSON:',
     '- "colors": all product colors (first = default). Registered atoms or "+"-joined combos.',
-    '- "editions": object keyed by slug, each with "colors" array for that edition. Empty object if none.',
+    '- "color_names": object mapping each color to its manufacturer marketing name (e.g. "white+silver": "Frost White"). Omit plain single-atom colors where the atom IS the name.',
+    '- "editions": object keyed by slug, each with "display_name" (manufacturer name) and "colors" array. Empty object if none.',
     '- "default_color": must equal colors[0].',
   ].filter(s => s !== null).filter(Boolean).join('\n');
 }

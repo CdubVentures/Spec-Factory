@@ -14,9 +14,9 @@ export { PHASE_REGISTRY } from './phaseRegistry.js';
 
 Returns `{ valid, value, confidence, repairs[], rejections[], unknownReason, repairPrompt }`.
 
-### `validateRecord({ fields, fieldRules, knownValues?, componentDbs?, crossRules? })`
+### `validateRecord({ fields, fieldRules, knownValues?, consistencyMode? })`
 
-Returns `{ valid, fields, perField, crossFieldFailures[] }`.
+Returns `{ valid, fields, perField }`. Cross-field constraints are out of scope for the validator.
 
 ### `PHASE_REGISTRY`
 

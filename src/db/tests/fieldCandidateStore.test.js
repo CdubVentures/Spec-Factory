@@ -203,4 +203,119 @@ describe('fieldCandidateStore', () => {
     assert.equal(row.source_count, 2);
     assert.equal(row.sources_json.length, 2);
   });
+
+  it('status defaults to candidate, can be set to resolved', () => {
+    // Default status
+    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-status', value: '58' }));
+    const candidateRow = db.getFieldCandidate('mouse-status', 'weight', '58');
+    assert.equal(candidateRow.status, 'candidate');
+
+    // Set to resolved
+    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-status', value: '58', status: 'resolved' }));
+    const resolvedRow = db.getFieldCandidate('mouse-status', 'weight', '58');
+    assert.equal(resolvedRow.status, 'resolved');
+  });
+
+  // --- Paginated query tests ---
+
+  it('getPaginated returns rows with limit and offset', () => {
+    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-page', fieldKey: 'weight', value: '50' }));
+    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-page', fieldKey: 'weight', value: '51' }));
+    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-page', fieldKey: 'sensor', value: 'PAW3395' }));
+
+    const page1 = db.getFieldCandidatesPaginated({ limit: 2, offset: 0 });
+    assert.ok(page1.length <= 2);
+
+    const page2 = db.getFieldCandidatesPaginated({ limit: 2, offset: 2 });
+    assert.ok(page2.length >= 0);
+    // No overlap between pages
+    const page1Ids = new Set(page1.map(r => r.id));
+    for (const row of page2) {
+      assert.ok(!page1Ids.has(row.id), 'pages should not overlap');
+    }
+  });
+
+  it('getPaginated hydrates JSON columns', () => {
+    db.upsertFieldCandidate(sampleCandidate({
+      productId: 'mouse-page-json',
+      fieldKey: 'weight',
+      value: '99',
+      sourcesJson: [{ artifact: 'abc', confidence: 80, run_id: 'run-1' }],
+      validationJson: { valid: true, repairs: [{ step: 'unit', before: '99g', after: '99', rule: 'strip_unit' }], rejections: [] },
+    }));
+
+    const rows = db.getFieldCandidatesPaginated({ limit: 100, offset: 0 });
+    const match = rows.find(r => r.product_id === 'mouse-page-json' && r.value === '99');
+    assert.ok(match);
+    assert.ok(Array.isArray(match.sources_json));
+    assert.equal(match.sources_json[0].artifact, 'abc');
+    assert.ok(typeof match.validation_json === 'object');
+    assert.equal(match.validation_json.repairs[0].step, 'unit');
+  });
+
+  it('count returns total number of candidates for category', () => {
+    const total = db.countFieldCandidates();
+    assert.ok(typeof total === 'number');
+    assert.ok(total > 0);
+  });
+
+  it('stats returns aggregate counts', () => {
+    // Ensure we have at least one resolved and one with repairs
+    db.upsertFieldCandidate(sampleCandidate({
+      productId: 'mouse-stats-r',
+      fieldKey: 'weight',
+      value: '77',
+      status: 'resolved',
+      validationJson: { valid: true, repairs: [{ step: 'unit', before: '77g', after: '77', rule: 'strip_unit' }], rejections: [] },
+    }));
+    db.upsertFieldCandidate(sampleCandidate({
+      productId: 'mouse-stats-c',
+      fieldKey: 'weight',
+      value: '78',
+      status: 'candidate',
+      validationJson: { valid: true, repairs: [], rejections: [] },
+    }));
+
+    const stats = db.getFieldCandidatesStats();
+    assert.ok(typeof stats.total === 'number');
+    assert.ok(typeof stats.resolved === 'number');
+    assert.ok(typeof stats.pending === 'number');
+    assert.ok(typeof stats.repaired === 'number');
+    assert.ok(typeof stats.products === 'number');
+    assert.ok(stats.total > 0);
+    assert.ok(stats.resolved >= 1, 'should have at least 1 resolved');
+    assert.ok(stats.pending >= 1, 'should have at least 1 pending');
+    assert.ok(stats.repaired >= 1, 'should have at least 1 repaired');
+    assert.ok(stats.products >= 1, 'should have at least 1 product');
+  });
+
+  it('validation_json with llmRepair roundtrips through upsert', () => {
+    db.upsertFieldCandidate(sampleCandidate({
+      productId: 'mouse-llm',
+      fieldKey: 'sensor',
+      value: 'pixart-3395',
+      validationJson: {
+        valid: true,
+        repairs: [{ step: 'normalize', before: 'PixArt 3395', after: 'pixart-3395', rule: 'normalize_chain' }],
+        rejections: [],
+        llmRepair: {
+          promptId: 'P2',
+          status: 'repaired',
+          decisions: [
+            { value: 'PixArt 3395', decision: 'map_to_existing', resolved_to: 'pixart-3395', reasoning: 'Matches known PAW3395 variant' },
+          ],
+        },
+      },
+    }));
+
+    const row = db.getFieldCandidate('mouse-llm', 'sensor', 'pixart-3395');
+    assert.ok(row);
+    assert.ok(row.validation_json.llmRepair);
+    assert.equal(row.validation_json.llmRepair.promptId, 'P2');
+    assert.equal(row.validation_json.llmRepair.status, 'repaired');
+    assert.equal(row.validation_json.llmRepair.decisions.length, 1);
+    assert.equal(row.validation_json.llmRepair.decisions[0].decision, 'map_to_existing');
+    assert.equal(row.validation_json.llmRepair.decisions[0].resolved_to, 'pixart-3395');
+    assert.equal(row.validation_json.llmRepair.decisions[0].reasoning, 'Matches known PAW3395 variant');
+  });
 });

@@ -1,0 +1,77 @@
+export interface PublisherSourceEntry {
+  confidence: number;
+  run_id?: string;
+  submitted_at?: string;
+  model?: string;
+  artifact?: string;
+  url?: string;
+  source?: string;
+  overridden_by?: string;
+  reason?: string;
+}
+
+export interface PublisherRepairEntry {
+  step: string;
+  before: unknown;
+  after: unknown;
+  rule: string;
+}
+
+export interface PublisherRejectionEntry {
+  reason_code: string;
+  detail?: Record<string, unknown>;
+}
+
+export interface PublisherLlmRepairDecision {
+  value: string;
+  decision: 'map_to_existing' | 'keep_new' | 'set_unk' | 'reject';
+  resolved_to?: string | null;
+  reasoning?: string;
+}
+
+export interface PublisherLlmRepair {
+  promptId: string | null;
+  status: string | null;
+  decisions: PublisherLlmRepairDecision[] | null;
+}
+
+export interface PublisherValidationJson {
+  valid?: boolean;
+  repairs: PublisherRepairEntry[];
+  rejections: PublisherRejectionEntry[];
+  llmRepair?: PublisherLlmRepair;
+}
+
+export interface PublisherCandidateRow {
+  id: number;
+  category: string;
+  product_id: string;
+  field_key: string;
+  value: string | null;
+  confidence: number;
+  source_count: number;
+  sources_json: PublisherSourceEntry[];
+  validation_json: PublisherValidationJson;
+  status: 'candidate' | 'resolved';
+  submitted_at: string;
+  updated_at: string;
+  brand?: string;
+  model?: string;
+  variant?: string;
+}
+
+export interface PublisherStats {
+  total: number;
+  resolved: number;
+  pending: number;
+  repaired: number;
+  products: number;
+}
+
+export interface PublisherCandidatesResponse {
+  rows: PublisherCandidateRow[];
+  total: number;
+  page: number;
+  limit: number;
+  stats: PublisherStats;
+}

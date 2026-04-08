@@ -11,6 +11,7 @@ export const GUI_API_ROUTE_ORDER = [
   'dataAuthority',
   'queueBillingLearning',
   'review',
+  'publisher',
   'sourceStrategy',
 ];
 

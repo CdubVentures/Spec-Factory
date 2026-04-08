@@ -9,7 +9,9 @@ import { z } from 'zod';
  */
 export const colorEditionFinderResponseSchema = z.object({
   colors: z.array(z.string()),
+  color_names: z.record(z.string(), z.string()).default({}),
   editions: z.record(z.string(), z.object({
+    display_name: z.string().default(''),
     colors: z.array(z.string()),
   })).default({}),
   default_color: z.string().default(''),

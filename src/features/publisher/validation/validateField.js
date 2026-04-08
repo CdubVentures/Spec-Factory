@@ -82,7 +82,8 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   }
 
   // Step 4: Type check (only for fallthrough templates — dispatched values already typed)
-  if (dispatched === null) {
+  // WHY: Records are shape-checked (must be object); property types are domain-specific.
+  if (dispatched === null && shape !== 'record') {
     const typeResult = checkType(current, type, template);
     if (typeResult.repaired !== undefined) {
       repairs.push({ step: 'type_coerce', before: current, after: typeResult.repaired, rule: typeResult.rule });

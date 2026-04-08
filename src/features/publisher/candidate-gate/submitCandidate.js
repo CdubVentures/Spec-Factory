@@ -33,6 +33,7 @@ export function submitCandidate({
   category, productId, fieldKey,
   value, confidence, sourceMeta,
   fieldRules, knownValues, componentDb, specDb, productRoot,
+  repairHistory,
 }) {
   // --- Guard: identity ---
   if (!productId || !fieldKey) {
@@ -71,7 +72,24 @@ export function submitCandidate({
   const repairedValue = validationResult.value;
   const serialized = serializeValue(repairedValue);
   const sourceEntry = { ...sourceMeta, confidence, submitted_at: new Date().toISOString() };
-  const validationRecord = { valid: true, repairs: validationResult.repairs, rejections: validationResult.rejections };
+  // WHY: Filter out no-op repairs where before === after (template dispatch may log these)
+  const actualRepairs = validationResult.repairs.filter(r => {
+    if (Array.isArray(r.before) && Array.isArray(r.after)) {
+      return JSON.stringify(r.before) !== JSON.stringify(r.after);
+    }
+    return r.before !== r.after;
+  });
+  const validationRecord = { valid: true, repairs: actualRepairs, rejections: validationResult.rejections };
+
+  // WHY: If the source ran LLM repair before submitting, preserve the full repair context
+  // so the publisher GUI can show prompt ID, decisions, and reasoning.
+  if (repairHistory) {
+    validationRecord.llmRepair = {
+      promptId: repairHistory.promptId ?? null,
+      status: repairHistory.status ?? null,
+      decisions: repairHistory.decisions ?? null,
+    };
+  }
 
   // --- Source merge ---
   const existing = specDb.getFieldCandidate(productId, fieldKey, serialized);

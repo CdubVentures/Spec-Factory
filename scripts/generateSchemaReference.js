@@ -155,6 +155,7 @@ const storeMap = {
   knob_snapshots: 'telemetryIndexStore', query_index: 'telemetryIndexStore', url_index: 'telemetryIndexStore', prompt_index: 'telemetryIndexStore',
   data_authority_sync: 'specDb (direct)',
   field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore', color_edition_finder_runs: 'colorEditionFinderStore',
+  field_candidates: 'fieldCandidateStore',
   brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
   field_audit_cache: 'testModeRoutes (direct)',
@@ -167,6 +168,7 @@ const persistenceMap = {
   runs: 'json', run_artifacts: 'json', crawl_sources: 'json',
   url_crawl_ledger: 'json', query_cooldowns: 'json',
   color_edition_finder: 'json', color_edition_finder_runs: 'json',
+  field_candidates: 'json',
   llm_route_matrix: 'json', field_key_order: 'json', field_studio_map: 'json',
   brands: 'json', brand_categories: 'json', brand_renames: 'json',
   settings: 'json', studio_maps: 'json', color_registry: 'json',
@@ -440,6 +442,13 @@ const lifecycleMap = {
     'Per-run LLM discovery detail rebuilds from the per-product JSON mirror.',
     'yes'
   ),
+  field_candidates: life(
+    '.workspace/products/{pid}/product.json → candidates[]',
+    'yes',
+    'yes',
+    'Validated candidate values per (product, field, value). Rebuilds from product.json candidates[]. Status column tracks candidate vs resolved.',
+    'yes'
+  ),
   field_audit_cache: life(
     'Re-run via POST /api/v1/test-mode/validate',
     'yes',
@@ -507,6 +516,7 @@ const specDbGroups = [
   { label: 'Field Studio', tables: ['field_studio_map', 'field_key_order'] },
   { label: 'Crawl Ledger', tables: ['url_crawl_ledger', 'query_cooldowns'] },
   { label: 'Color & Edition', tables: ['color_edition_finder', 'color_edition_finder_runs'] },
+  { label: 'Publisher Pipeline', tables: ['field_candidates'] },
   { label: 'Field Audit', tables: ['field_audit_cache'] },
 ];
 
@@ -1164,6 +1174,7 @@ const cqrsCompliance = {
   runs: true, run_artifacts: true, crawl_sources: true,
   url_crawl_ledger: true, query_cooldowns: true,
   color_edition_finder: true, color_edition_finder_runs: true,
+  field_candidates: true,
   llm_route_matrix: true, field_key_order: true, field_studio_map: true,
   brands: true, brand_categories: true, brand_renames: true,
   settings: true, studio_maps: true, color_registry: true,

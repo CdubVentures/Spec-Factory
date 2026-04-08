@@ -715,16 +715,17 @@ export function prepareStatements(db) {
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, value,
-        confidence, source_count, sources_json, validation_json
+        confidence, source_count, sources_json, validation_json, status
       ) VALUES (
         @category, @product_id, @field_key, @value,
-        @confidence, @source_count, @sources_json, @validation_json
+        @confidence, @source_count, @sources_json, @validation_json, @status
       )
       ON CONFLICT(category, product_id, field_key, value) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
         source_count = excluded.source_count,
         sources_json = excluded.sources_json,
         validation_json = excluded.validation_json,
+        status = excluded.status,
         updated_at = datetime('now')
     `),
     _getFieldCandidate: db.prepare(
@@ -742,5 +743,30 @@ export function prepareStatements(db) {
     _deleteFieldCandidatesByProductAndField: db.prepare(
       'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ?'
     ),
+
+    // --- Field Candidates — paginated (publisher GUI) ---
+
+    _getFieldCandidatesPaginated: db.prepare(`
+      SELECT fc.*, p.brand, p.model, p.variant
+      FROM field_candidates fc
+      LEFT JOIN products p ON fc.product_id = p.product_id AND fc.category = p.category
+      WHERE fc.category = ?
+      ORDER BY fc.submitted_at DESC
+      LIMIT ? OFFSET ?
+    `),
+
+    _countFieldCandidates: db.prepare(
+      'SELECT COUNT(*) AS total FROM field_candidates WHERE category = ?'
+    ),
+
+    _getFieldCandidatesStats: db.prepare(`
+      SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved,
+        SUM(CASE WHEN status = 'candidate' THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN json_array_length(json_extract(validation_json, '$.repairs')) > 0 THEN 1 ELSE 0 END) AS repaired,
+        COUNT(DISTINCT product_id) AS products
+      FROM field_candidates WHERE category = ?
+    `),
   };
 }

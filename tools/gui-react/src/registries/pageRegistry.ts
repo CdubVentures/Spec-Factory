@@ -44,7 +44,8 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
 
   // ── Ops group ───────────────────────────────────────────────────
   { path: '/indexing',           label: 'Indexing Lab',        tabGroup: 'ops', loader: () => import('../features/indexing/components/IndexingPage.tsx'),              exportName: 'IndexingPage' },
-  { path: '/runtime-ops',        label: 'Runtime Ops',         tabGroup: 'ops', loader: () => import('../features/runtime-ops/components/RuntimeOpsPage.tsx'),        exportName: 'RuntimeOpsPage',          dividerAfter: true },
+  { path: '/runtime-ops',        label: 'Runtime Ops',         tabGroup: 'ops', loader: () => import('../features/runtime-ops/components/RuntimeOpsPage.tsx'),        exportName: 'RuntimeOpsPage' },
+  { path: '/publisher',          label: 'Publisher',           tabGroup: 'ops', loader: () => import('../pages/publisher/PublisherPage.tsx'),                         exportName: 'PublisherPage',           dividerAfter: true },
   { path: '/review',             label: 'Review Grid',         tabGroup: 'ops', loader: () => import('../features/review/components/ReviewPage.tsx'),                 exportName: 'ReviewPage',             disabledOnAll: true },
   { path: '/review-components',  label: 'Review Components',   tabGroup: 'ops', loader: () => import('../pages/component-review/ComponentReviewPage.tsx'),            exportName: 'ComponentReviewPage',    disabledOnAll: true },
   { path: '/llm-settings',       label: 'Review LLM',         tabGroup: 'ops', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        dividerAfter: true },

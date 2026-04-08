@@ -567,9 +567,13 @@ export async function callLlmWithRouting({
       message: error.message
     });
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
-    const fallbackMaxTokens = phaseTokenCap > 0
-      ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
-      : fallbackTokenCap;
+    // WHY: fallback must also respect disableLimits — both primary and fallback
+    // get uncapped tokens when the user toggles "disable limits" for the phase.
+    const fallbackMaxTokens = phaseDisableLimits
+      ? 0
+      : (phaseTokenCap > 0
+        ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
+        : fallbackTokenCap);
 
     // WHY: Fallback panel has its own thinking/web/reasoning flags, independent
     // of the primary panel. Resolve them separately so the fallback call uses

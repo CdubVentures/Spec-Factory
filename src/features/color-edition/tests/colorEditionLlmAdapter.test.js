@@ -58,10 +58,12 @@ describe('buildColorEditionFinderPrompt', () => {
     assert.ok(prompt.includes('kebab-case') || prompt.includes('kebab'), 'edition format');
   });
 
-  it('includes response contract with colors, editions, default_color', () => {
+  it('includes response contract with colors, color_names, editions, default_color', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.ok(prompt.includes('colors'), 'colors in contract');
+    assert.ok(prompt.includes('color_names'), 'color_names in contract');
     assert.ok(prompt.includes('editions'), 'editions in contract');
+    assert.ok(prompt.includes('display_name'), 'display_name in contract');
     assert.ok(prompt.includes('default_color'), 'default_color in contract');
   });
 
@@ -91,6 +93,25 @@ describe('buildColorEditionFinderPrompt', () => {
     assert.ok(prompt.includes('black'), 'selected color listed');
     assert.ok(prompt.includes('white'), 'selected color listed');
     assert.ok(prompt.includes('launch-edition'), 'selected edition listed');
+  });
+
+  it('subsequent run: shows color marketing names and edition display names in selected section', () => {
+    const prompt = buildColorEditionFinderPrompt({
+      colorNames, colors, product,
+      previousRuns: [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+        selected: {
+          colors: ['black', 'white+silver'],
+          color_names: { 'white+silver': 'Frost White' },
+          editions: {
+            'cod-bo6-edition': { display_name: 'Call of Duty: Black Ops 6 Edition', colors: ['black+orange'] },
+          },
+          default_color: 'black',
+        },
+      }],
+    });
+    assert.ok(prompt.includes('Frost White'), 'color marketing name in selected section');
+    assert.ok(prompt.includes('Call of Duty: Black Ops 6 Edition'), 'edition display name in selected section');
   });
 
   it('subsequent run: directs LLM to validate, discover, select, omit-to-reject', () => {
@@ -164,6 +185,7 @@ describe('COLOR_EDITION_FINDER_SPEC', () => {
   it('system is a function and jsonSchema has expected properties', () => {
     assert.equal(typeof COLOR_EDITION_FINDER_SPEC.system, 'function');
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.colors);
+    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.color_names);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.editions);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.default_color);
   });

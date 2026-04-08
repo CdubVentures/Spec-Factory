@@ -25,7 +25,7 @@ function hydrateRow(row) {
  */
 export function createFieldCandidateStore({ db, category, stmts }) {
 
-  function upsert({ productId, fieldKey, value, confidence, sourceCount, sourcesJson, validationJson }) {
+  function upsert({ productId, fieldKey, value, confidence, sourceCount, sourcesJson, validationJson, status }) {
     stmts._upsertFieldCandidate.run({
       category,
       product_id: String(productId || ''),
@@ -35,6 +35,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       source_count: sourceCount ?? 1,
       sources_json: JSON.stringify(Array.isArray(sourcesJson) ? sourcesJson : []),
       validation_json: JSON.stringify(validationJson ?? {}),
+      status: status || 'candidate',
     });
   }
 
@@ -64,5 +65,26 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     stmts._deleteFieldCandidatesByProductAndField.run(category, String(productId || ''), String(fieldKey || ''));
   }
 
-  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField };
+  function getPaginated({ limit = 100, offset = 0 } = {}) {
+    return stmts._getFieldCandidatesPaginated
+      .all(category, limit, offset)
+      .map(hydrateRow);
+  }
+
+  function count() {
+    return stmts._countFieldCandidates.get(category)?.total ?? 0;
+  }
+
+  function stats() {
+    const row = stmts._getFieldCandidatesStats.get(category);
+    return {
+      total: row?.total ?? 0,
+      resolved: row?.resolved ?? 0,
+      pending: row?.pending ?? 0,
+      repaired: row?.repaired ?? 0,
+      products: row?.products ?? 0,
+    };
+  }
+
+  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats };
 }

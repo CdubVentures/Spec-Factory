@@ -97,7 +97,7 @@
 
 <div class="header">
   <h1>Validator Pipeline Reference</h1>
-  <p>Spec Factory Publish Pipeline &mdash; Deterministic Validation + LLM Repair + Discovery Enums &mdash; 588 unit tests + 1,428 field audit checks across 4 categories, 0 failures</p>
+  <p>Spec Factory Publish Pipeline &mdash; Deterministic Validation + LLM Repair + Discovery Enums &mdash; 562 unit tests + 1,428 field audit checks across 4 categories, 0 failures</p>
 </div>
 
 <div class="container">
@@ -513,10 +513,7 @@
   <div class="prompt-header"><span class="prompt-id">P4</span> Format Mismatch <span class="prompt-trigger">format_mismatch</span></div>
   <div class="prompt-body"><p>Shows template + format_hint pattern. Repaired value must match pattern.</p></div>
 </div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id" style="background:var(--orange);">P6</span> Cross-Field <span class="prompt-trigger">cross-field constraint failures</span></div>
-  <div class="prompt-body"><p>Full product context. <code>value</code> = field key, <code>resolved_to</code> = new field value. Uses same schema as all other prompts.</p></div>
-</div>
+<!-- P6 Cross-Field removed — cross-field constraints are not part of the validator module -->
 <div class="prompt-card">
   <div class="prompt-header"><span class="prompt-id">P7</span> Range Violation <span class="prompt-trigger">out_of_range</span></div>
   <div class="prompt-body"><p>Shows range, unit, rounding precision. Correct magnitude or reject.</p></div>
@@ -578,14 +575,14 @@
   <tr><td>checkRange.test.js</td><td>25</td><td>Min, max, both, unbounded, non-numeric</td></tr>
   <tr><td>checkShape.test.js</td><td>28</td><td>All 3 shapes + edge cases</td></tr>
   <tr><td>validateField.test.js</td><td>37</td><td>E2E: text, number, bool, list, component, alias, block_publish</td></tr>
-  <tr><td>validateRecord.test.js</td><td>28</td><td>Multi-field + cross-field constraints + component DB routing</td></tr>
+  <tr><td>validateRecord.test.js</td><td>17</td><td>Multi-field per-field validation orchestration</td></tr>
   <tr><td>enforceListRules.test.js</td><td>19</td><td>Dedupe, sort, min/max items (reject)</td></tr>
   <tr><td>applyRounding.test.js</td><td>20</td><td>All modes + edge cases</td></tr>
   <tr><td><s>resolveComponent.test.js</s></td><td>&mdash;</td><td>Component resolution is a review-phase concern, not validator. No tests in validator module.</td></tr>
-  <tr><td>checkConstraints.test.js</td><td>26</td><td>4 constraint types</td></tr>
+  <tr><td><s>checkConstraints.test.js</s></td><td>&mdash;</td><td>Cross-field constraints removed from validator module. Not a per-field validation concern.</td></tr>
   <tr><td>parseNumberListWithRanges.test.js</td><td>29</td><td>Range parsing ("1.2, 2.4-3.2 mm" &rarr; [1.2, 2.4, 3.2]), units, arrays, absence</td></tr>
   <tr><td>Other (normalize, absence, dispatch, etc.)</td><td>196</td><td>Normalizers (date YYYY-MM-DD) + absence + template dispatch + phase registry (12 phases)</td></tr>
-  <tr style="font-weight:700; background:var(--surface-alt);"><td>Validator Subtotal</td><td>588</td><td></td></tr>
+  <tr style="font-weight:700; background:var(--surface-alt);"><td>Validator Subtotal</td><td>551</td><td></td></tr>
   <tr><td>promptBuilder.test.js</td><td>33</td><td>All prompts + contract block + format_hint + conversions + component fallback + schema alignment</td></tr>
   <tr><td>repairField.test.js</td><td>25</td><td>Short-circuits, repairs, failures, binary pass/fail re-validation</td></tr>
   <tr><td>repairResponseSchema.test.js</td><td>37</td><td>Zod schema + decision application</td></tr>
@@ -594,13 +591,13 @@
   <tr><td>mergeDiscoveredEnums.test.js</td><td>17</td><td>Pure merge: compiled + discovered, dedup, case-insensitive, edge cases</td></tr>
   <tr><td>buildDiscoveredEnumMap.test.js</td><td>8</td><td>DB reader bridge: pipeline filtering, overridden exclusion, null safety</td></tr>
   <tr><td>persistDiscoveredValues.test.js</td><td>10</td><td>Post-validation persistence: skip guards, insert with source=pipeline</td></tr>
-  <tr style="font-weight:700; background:var(--surface-alt);"><td>Unit Test Total</td><td>588</td><td>0 failures</td></tr>
+  <tr style="font-weight:700; background:var(--surface-alt);"><td>Unit Test Total</td><td>551</td><td>0 failures</td></tr>
   <tr><td colspan="3" style="padding:8px 0;"></td></tr>
   <tr><td>Field Audit: mouse</td><td>279</td><td>81 fields, every knob exercised</td></tr>
   <tr><td>Field Audit: keyboard</td><td>368</td><td>103 fields, every knob exercised</td></tr>
   <tr><td>Field Audit: monitor</td><td>413</td><td>113 fields, every knob exercised</td></tr>
   <tr><td>Field Audit: _test_keyboard</td><td>368</td><td>103 fields, every knob exercised</td></tr>
-  <tr style="font-weight:700; background:var(--green-bg);"><td>Grand Total</td><td>2,016</td><td>588 unit + 1,428 field audit &mdash; 0 failures</td></tr>
+  <tr style="font-weight:700; background:var(--green-bg);"><td>Grand Total</td><td>1,979</td><td>551 unit + 1,428 field audit &mdash; 0 failures</td></tr>
 </tbody>
 </table>
 </div>
@@ -794,53 +791,7 @@ Return JSON matching this exact schema:
   </div>
 </div>
 
-<!-- ── EXAMPLE 6: P6 Cross-Field ──────────────────────────────────────────── -->
-
-<div class="card">
-  <div class="card-header" style="background:var(--orange-bg);">
-    <span class="prompt-id" style="background:var(--orange);">P6</span>
-    Example 5: Cross-Field Constraint &mdash; wireless mouse with <code>battery_hours: "unk"</code>
-  </div>
-  <div class="card-body">
-    <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
-      <strong>Scenario:</strong> Product has <code>connection: "wireless"</code> but <code>battery_hours: "unk"</code>.
-      Cross-field rule <code>wireless_battery_required</code> fires: <code>connection IN ['wireless','hybrid','bluetooth'] &rarr; requires battery_hours</code>.
-    </p>
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">Cross-field validation found inconsistencies in product 'Razer Viper V3':
-
-Failing constraints:
-- [wireless_battery_required] conditional: set_unknown_with_reason
-  — {"trigger":"connection=wireless"}
-
-Product context:
-{
-  "brand": "Razer",
-  "model": "Viper V3",
-  "connection": "wireless",
-  "battery_hours": "unk",
-  "weight": 49,
-  "sensor": "Focus Pro 45K"
-}
-
-For each constraint failure, create a decision entry where:
-- "value" is the field key that needs fixing (e.g. "battery_hours")
-- "resolved_to" is the corrected field value
-- "decision" is "map_to_existing" to fix, "set_unk" if unknown, or "reject" if irreconcilable
-
-Return JSON matching this exact schema:
-{
-  "status": "repaired",
-  "reason": null,
-  "decisions": [{ "value": "&lt;field_key&gt;", "decision": "map_to_existing|set_unk|reject", "resolved_to": &lt;new value or null&gt;, "reasoning": "..." }]
-}
-Use status "rerun_recommended" if the data is too conflicting to resolve.</pre>
-    <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
-      <dt>Parameters used</dt><dd>All resolved field values (full product context), cross-field rule definitions, product name</dd>
-      <dt>LLM context</dt><dd>Sees the entire product &mdash; can infer battery life from brand/model knowledge or flag for manual review.</dd>
-      <dt>Re-validation</dt><dd>Repaired fields re-run through <code>validateRecord</code> (all per-field + cross-field constraints).</dd>
-    </dl>
-  </div>
-</div>
+<!-- P6 Cross-Field example removed — cross-field constraints are not part of the validator module -->
 
 <!-- ── WHAT'S NOT IN THE PROMPT (honest gaps) ─────────────────────────────── -->
 
@@ -969,7 +920,7 @@ Use status "rerun_recommended" if the data is too conflicting to resolve.</pre>
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from source &mdash; Spec Factory Publish Pipeline Validator<br>
-  2,016 checks (588 unit + 1,428 field audit), 0 failures &mdash; 12-step pipeline, 4 categories, 400 fields, 10 rejection codes, 8 repair prompts, discovery enums
+  1,979 checks (551 unit + 1,428 field audit), 0 failures &mdash; 12-step pipeline, 4 categories, 400 fields, 10 rejection codes, 7 repair prompts, discovery enums
 </div>
 
 </div>

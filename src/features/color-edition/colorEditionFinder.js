@@ -6,14 +6,47 @@
  */
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { resolvePhaseModel } from '../../core/llm/client/routing.js';
 import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
 import { readColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
-import { submitCandidate } from '../publisher/index.js';
+import { submitCandidate, validateField } from '../publisher/index.js';
+import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 const COOLDOWN_DAYS = 30;
+
+function reconcileEditionColors(editions, repairMap) {
+  const result = {};
+  for (const [name, meta] of Object.entries(editions)) {
+    result[name] = {
+      ...meta,
+      colors: Array.isArray(meta.colors)
+        ? meta.colors.map(c => repairMap[c] ?? c)
+        : meta.colors,
+    };
+  }
+  return result;
+}
+
+function storeFailureAndReturn({ specDb, product, existing, model, rejections, raw }) {
+  const now = new Date();
+  const runNumber = (existing?.run_count || 0) + 1;
+  specDb.insertColorEditionFinderRun({
+    category: product.category,
+    product_id: product.product_id,
+    run_number: runNumber,
+    ran_at: now.toISOString(),
+    model,
+    fallback_used: false,
+    cooldown_until: '',
+    selected: {},
+    prompt: {},
+    response: { status: 'rejected', raw, rejections },
+  });
+  return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections };
+}
 
 /**
  * Run the Color & Edition Finder for a single product.
@@ -37,6 +70,8 @@ export async function runColorEditionFinder({
   productRoot,
   _callLlmOverride = null,
 }) {
+  productRoot = productRoot || defaultProductRoot();
+  const resolvedModel = resolvePhaseModel(config, 'colorFinder') || resolvedModel;
   const allColors = appDb.listColors();
   const colorNames = allColors.map(c => c.name);
 
@@ -48,36 +83,30 @@ export async function runColorEditionFinder({
   const callLlm = _callLlmOverride
     || createColorEditionFinderCallLlm(buildLlmCallDeps({ config, logger }));
 
-  // Call LLM
+  // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
+  // primary→fallback internally. A single try/catch is sufficient —
+  // if both primary and fallback fail, the error propagates here.
   let response;
-  let fallbackUsed = false;
-
   try {
     response = await callLlm({ colorNames, colors: allColors, product, previousRuns });
   } catch (err) {
-    logger?.warn?.('color_edition_finder_primary_failed', {
+    logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
       error: err.message,
     });
-    try {
-      fallbackUsed = true;
-      response = await callLlm({ colorNames, colors: allColors, product, previousRuns });
-    } catch (fallbackErr) {
-      logger?.error?.('color_edition_finder_fallback_failed', {
-        product_id: product.product_id,
-        error: fallbackErr.message,
-      });
-      return { colors: [], editions: {}, default_color: '', fallbackUsed: true };
-    }
+    return { colors: [], editions: {}, default_color: '', fallbackUsed: false };
   }
 
   const colors = Array.isArray(response?.colors) ? response.colors : [];
+  const colorNamesMap = (response?.color_names && typeof response.color_names === 'object' && !Array.isArray(response.color_names))
+    ? response.color_names
+    : {};
   const editions = (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions))
     ? response.editions
     : {};
   const defaultColor = response?.default_color || colors[0] || '';
 
-  // --- Candidate gate: validate before any writes ---
+  // --- Candidate gate: validate ALL fields before any writes ---
   // WHY: If any field fails validation, the entire LLM response is compromised.
   // No candidate writes, no CEF writes, no cooldown. Failure stored for history.
   const compiled = specDb.getCompiledRules?.();
@@ -85,57 +114,71 @@ export async function runColorEditionFinder({
   const knownValues = compiled?.known_values || null;
 
   let gateColors = colors;
-  let gateRejections = null;
+  let gateEditions = editions;
 
   if (fieldRules && fieldRules.colors) {
-    const colorsResult = submitCandidate({
-      category: product.category,
-      productId: product.product_id,
-      fieldKey: 'colors',
-      value: colors,
-      confidence: 100,
-      sourceMeta: { source: 'cef', model: String(config.llmModelPlan || 'unknown'), run_id: `cef-${Date.now()}` },
-      fieldRules,
-      knownValues,
-      componentDb: null,
-      specDb,
-      productRoot,
+    const cefRunId = `cef-${Date.now()}`;
+    const cefSourceMeta = { source: 'cef', model: resolvedModel, run_id: cefRunId };
+
+    // Step 1: Validate colors (pure — no writes yet)
+    const colorsValidation = validateField({
+      fieldKey: 'colors', value: colors,
+      fieldRule: fieldRules.colors,
+      knownValues: knownValues?.colors || null,
     });
+    const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
-    if (colorsResult.status === 'rejected') {
-      gateRejections = colorsResult.validationResult.rejections;
-
-      // Store failure run record (historical only — no summary/cooldown update)
-      const now = new Date();
-      const ranAt = now.toISOString();
-      const runNumber = (existing?.run_count || 0) + 1;
-
-      specDb.insertColorEditionFinderRun({
-        category: product.category,
-        product_id: product.product_id,
-        run_number: runNumber,
-        ran_at: ranAt,
-        model: String(config.llmModelPlan || 'unknown'),
-        fallback_used: fallbackUsed,
-        cooldown_until: '',
-        selected: {},
-        prompt: {},
-        response: {
-          status: 'rejected',
-          raw: { colors, editions, default_color: defaultColor },
-          rejections: gateRejections,
-        },
-      });
-
-      return { colors: [], editions: {}, default_color: '', fallbackUsed, rejected: true, rejections: gateRejections };
+    if (colorsHardRejects.length > 0) {
+      return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor } });
     }
 
-    // Use repaired values from the gate (not raw LLM output)
-    gateColors = colorsResult.value;
+    // Step 2: Build repair map from colors validation
+    // WHY: Repairs may be array-level (template_dispatch: ['Black','Red'] → ['black','red']).
+    // Zip before/after arrays element-by-element to build per-value map.
+    const repairMap = {};
+    for (const r of colorsValidation.repairs) {
+      if (Array.isArray(r.before) && Array.isArray(r.after)) {
+        for (let i = 0; i < r.before.length; i++) {
+          if (r.before[i] !== r.after[i]) repairMap[r.before[i]] = r.after[i];
+        }
+      } else if (r.before !== r.after) {
+        repairMap[r.before] = r.after;
+      }
+    }
+    gateColors = colorsValidation.value;
+
+    // Step 3: Reconcile edition colors through repair map
+    gateEditions = reconcileEditionColors(editions, repairMap);
+
+    // Step 4: Validate editions (pure — no writes yet)
+    if (fieldRules.editions) {
+      const editionsValidation = validateField({
+        fieldKey: 'editions', value: gateEditions,
+        fieldRule: fieldRules.editions,
+        knownValues: knownValues?.editions || null,
+      });
+      const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
+
+      if (editionsHardRejects.length > 0) {
+        return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor } });
+      }
+    }
+
+    // Step 5: ALL passed → write both candidates
+    submitCandidate({
+      category: product.category, productId: product.product_id,
+      fieldKey: 'colors', value: gateColors, confidence: 100,
+      sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+    });
+    submitCandidate({
+      category: product.category, productId: product.product_id,
+      fieldKey: 'editions', value: gateEditions, confidence: 100,
+      sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+    });
   }
   // If no compiled rules available, gate is skipped — CEF proceeds as before
 
-  const selected = { colors: gateColors, editions, default_color: gateColors[0] || defaultColor };
+  const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 
   // Cooldown: 30 days from now
   const now = new Date();
@@ -166,11 +209,11 @@ export async function runColorEditionFinder({
       last_ran_at: ranAt,
     },
     run: {
-      model: String(config.llmModelPlan || 'unknown'),
-      fallback_used: fallbackUsed,
+      model: resolvedModel,
+      fallback_used: false,
       selected,
       prompt: { system: systemPrompt, user: userMessage },
-      response: { colors: gateColors, editions, default_color: selected.default_color },
+      response: { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: selected.default_color },
     },
   });
 
@@ -181,12 +224,12 @@ export async function runColorEditionFinder({
     product_id: product.product_id,
     run_number: latestRun.run_number,
     ran_at: ranAt,
-    model: String(config.llmModelPlan || 'unknown'),
-    fallback_used: fallbackUsed,
+    model: resolvedModel,
+    fallback_used: false,
     cooldown_until: cooldownUntil,
     selected,
     prompt: { system: systemPrompt, user: userMessage },
-    response: { colors: gateColors, editions, default_color: selected.default_color },
+    response: { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: selected.default_color },
   });
 
   // Upsert SQL summary
@@ -194,12 +237,12 @@ export async function runColorEditionFinder({
     category: product.category,
     product_id: product.product_id,
     colors: gateColors,
-    editions: Object.keys(editions),
+    editions: Object.keys(gateEditions),
     default_color: selected.default_color,
     cooldown_until: cooldownUntil,
     latest_ran_at: ranAt,
     run_count: (existing?.run_count || 0) + 1,
   });
 
-  return { colors: gateColors, editions, default_color: selected.default_color, fallbackUsed, rejected: false };
+  return { colors: gateColors, editions: gateEditions, default_color: selected.default_color, fallbackUsed: false, rejected: false };
 }

@@ -13,7 +13,8 @@ export interface ColorEditionFinderEditionDetail {
 /** The paired selected state: colors + editions with their colors + default. */
 export interface ColorEditionFinderSelected {
   readonly colors: readonly string[];
-  readonly editions: Readonly<Record<string, { readonly colors: readonly string[] }>>;
+  readonly color_names?: Readonly<Record<string, string>>;
+  readonly editions: Readonly<Record<string, { readonly display_name?: string; readonly colors: readonly string[] }>>;
   readonly default_color: string;
 }
 

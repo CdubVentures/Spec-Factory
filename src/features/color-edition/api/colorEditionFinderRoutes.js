@@ -1,4 +1,18 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+
+function cleanProductJsonCandidates(productId, fieldKeys) {
+  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    if (!data.candidates) return;
+    for (const key of fieldKeys) delete data.candidates[key];
+    data.updated_at = new Date().toISOString();
+    fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
+  } catch { /* product.json may not exist */ }
+}
 
 export function registerColorEditionFinderRoutes(ctx) {
   const {
@@ -111,6 +125,11 @@ export function registerColorEditionFinderRoutes(ctx) {
       specDb.deleteColorEditionFinderRunByNumber(productId, runNumber);
       const updated = deleteColorEditionFinderRun({ productId, runNumber });
 
+      // Clean up candidates for CEF fields
+      specDb.deleteFieldCandidatesByProductAndField(productId, 'colors');
+      specDb.deleteFieldCandidatesByProductAndField(productId, 'editions');
+      cleanProductJsonCandidates(productId, ['colors', 'editions']);
+
       if (updated) {
         // Sync SQL summary from recalculated state
         specDb.upsertColorEditionFinder({
@@ -151,6 +170,11 @@ export function registerColorEditionFinderRoutes(ctx) {
       deleteColorEditionFinderAll({ productId });
       specDb.deleteAllColorEditionFinderRuns(productId);
       specDb.deleteColorEditionFinder(productId);
+
+      // Clean up candidates for CEF fields
+      specDb.deleteFieldCandidatesByProductAndField(productId, 'colors');
+      specDb.deleteFieldCandidatesByProductAndField(productId, 'editions');
+      cleanProductJsonCandidates(productId, ['colors', 'editions']);
 
       emitDataChange({
         broadcastWs,

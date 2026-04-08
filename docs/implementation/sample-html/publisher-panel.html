@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publisher Panel — Spec Factory</title>
+<style>
+  :root {
+    --bg: #060b1a; --bg-end: #0f1a35; --surface: #0a1330; --elevated: #111f41; --panel: #0d1834;
+    --border: #243a65; --border-alpha: rgba(36, 58, 101, 0.6);
+    --text: #ecf1ff; --text-muted: #adc2eb; --text-subtle: #94a3b8; --text-dim: #6b7fa0;
+    --accent: #6366f1; --accent-strong: #818cf8; --accent-glow: rgba(99, 102, 241, 0.12);
+    --success-fg: #86efac; --success-bg: rgba(34, 197, 94, 0.2); --success-border: rgba(34, 197, 94, 0.42);
+    --warning-fg: #fcd34d; --warning-bg: rgba(234, 179, 8, 0.2); --warning-border: rgba(234, 179, 8, 0.4);
+    --danger-fg: #f87171; --danger-bg: rgba(248, 113, 113, 0.2); --danger-border: rgba(248, 113, 113, 0.42);
+    --info-fg: #93c5fd; --info-bg: rgba(14, 165, 233, 0.2); --info-border: rgba(14, 165, 233, 0.4);
+    --purple-fg: #d8b4fe; --purple-bg: rgba(88, 28, 135, 0.4);
+    --teal-fg: #5eead4; --teal-bg: rgba(19, 78, 74, 0.4);
+    --orange-fg: #fdba74; --orange-bg: rgba(251, 146, 60, 0.2);
+    --neutral-fg: #94a3b8; --neutral-bg: rgba(148, 163, 184, 0.24);
+    --cyan: #22d3ee;
+    --font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+    --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+    --r: 8px; --r-lg: 12px; --r-sm: 4px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font-ui); background: linear-gradient(180deg, var(--bg), var(--bg-end)); color: var(--text); min-height: 100vh; line-height: 1.45; font-size: 13px; }
+  .page { max-width: 1440px; margin: 0 auto; padding: 24px; }
+
+  /* ── Page header ─────────────────────────────── */
+  .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
+  .page-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .cat-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; background: var(--accent-glow); color: var(--accent-strong); border: 1px solid rgba(99, 102, 241, 0.3); }
+
+  /* ── Summary strip ───────────────────────────── */
+  .summary-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; }
+  .stat .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px; }
+  .stat .val { font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+  .stat .sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .val-green { color: var(--success-fg); }
+  .val-yellow { color: var(--warning-fg); }
+  .val-blue { color: var(--info-fg); }
+  .val-purple { color: var(--purple-fg); }
+  .val-cyan { color: var(--cyan); }
+  .val-text { color: var(--text); }
+
+  /* ── Filter bar ──────────────────────────────── */
+  .filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); white-space: nowrap; }
+  .filter-input { background: var(--elevated); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; color: var(--text); font-family: var(--font-ui); outline: none; min-width: 100px; }
+  .filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15); }
+  .filter-input::placeholder { color: var(--text-dim); }
+  .filter-select { background: var(--elevated); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; color: var(--text); font-family: var(--font-ui); outline: none; cursor: pointer; -webkit-appearance: none; appearance: none; min-width: 90px; }
+  .filter-divider { width: 1px; height: 24px; background: var(--border); }
+
+  /* filter chip toggles */
+  .chip-group { display: flex; gap: 4px; }
+  .chip-toggle { display: inline-flex; align-items: center; gap: 3px; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.12s; border: 1px solid transparent; user-select: none; }
+  .chip-toggle.off { background: var(--neutral-bg); color: var(--text-dim); }
+  .chip-toggle.on-success { background: var(--success-bg); color: var(--success-fg); border-color: var(--success-border); }
+  .chip-toggle.on-teal { background: var(--teal-bg); color: var(--teal-fg); border-color: rgba(94, 234, 212, 0.42); }
+  .chip-toggle.on-purple { background: var(--purple-bg); color: var(--purple-fg); border-color: rgba(216, 180, 254, 0.42); }
+  .chip-toggle.on-orange { background: var(--orange-bg); color: var(--orange-fg); border-color: rgba(253, 186, 116, 0.42); }
+  .chip-toggle.on-info { background: var(--info-bg); color: var(--info-fg); border-color: var(--info-border); }
+  .chip-toggle.on-accent { background: var(--accent-glow); color: var(--accent-strong); border-color: rgba(99, 102, 241, 0.35); }
+  .chip-toggle.on-danger { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-border); }
+
+  /* toggle switch */
+  .toggle-container { display: flex; align-items: center; gap: 6px; }
+  .toggle { width: 28px; height: 16px; border-radius: 8px; background: var(--neutral-bg); border: 1px solid var(--border); position: relative; cursor: pointer; transition: all 0.15s; }
+  .toggle.active { background: var(--info-bg); border-color: var(--info-border); }
+  .toggle-knob { width: 10px; height: 10px; border-radius: 50%; background: var(--text-dim); position: absolute; top: 2px; left: 2px; transition: all 0.15s; }
+  .toggle.active .toggle-knob { left: 14px; background: var(--info-fg); }
+
+  /* ── Data table ──────────────────────────────── */
+  .table-shell { background: linear-gradient(180deg, var(--elevated), var(--surface)); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+
+  .data-table thead { background: linear-gradient(180deg, var(--elevated), var(--panel)); }
+  .data-table th {
+    padding: 8px 10px;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  .data-table th:hover { color: var(--text); }
+  .data-table th .sort-icon { font-size: 9px; margin-left: 3px; opacity: 0.5; }
+  .data-table th.sorted .sort-icon { opacity: 1; color: var(--accent-strong); }
+
+  .data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border-alpha);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .data-table tbody tr { transition: background-color 120ms ease; cursor: pointer; }
+  .data-table tbody tr:hover { background: rgba(13, 24, 52, 0.55); }
+  .data-table tbody tr.expanded { background: rgba(99, 102, 241, 0.08); }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+
+  /* column widths */
+  .col-expand { width: 28px; }
+  .col-date { width: 110px; }
+  .col-product { width: 140px; }
+  .col-brand { width: 90px; }
+  .col-field { width: 90px; }
+  .col-value { width: auto; }
+  .col-status { width: 80px; }
+  .col-conf { width: 52px; }
+  .col-sources { width: 52px; }
+  .col-source { width: 72px; }
+  .col-repairs { width: 60px; }
+
+  /* expand chevron */
+  .expand-btn { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 10px; transition: all 0.12s; }
+  .expand-btn:hover { background: var(--accent-glow); color: var(--accent-strong); }
+  .expand-btn.open { transform: rotate(90deg); color: var(--accent-strong); }
+
+  /* cell helpers */
+  .mono { font-family: var(--font-mono); font-size: 11px; }
+  .small { font-size: 11px; }
+  .tiny { font-size: 10px; }
+  .dim { color: var(--text-dim); }
+  .muted { color: var(--text-muted); }
+  .bold { font-weight: 700; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* value preview */
+  .value-preview { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+  /* chips in table */
+  .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; }
+  .chip-success { background: var(--success-bg); color: var(--success-fg); }
+  .chip-teal { background: var(--teal-bg); color: var(--teal-fg); }
+  .chip-purple { background: var(--purple-bg); color: var(--purple-fg); }
+  .chip-orange { background: var(--orange-bg); color: var(--orange-fg); }
+  .chip-info { background: var(--info-bg); color: var(--info-fg); }
+  .chip-neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
+  .chip-danger { background: var(--danger-bg); color: var(--danger-fg); }
+  .chip-warning { background: var(--warning-bg); color: var(--warning-fg); }
+  .chip-accent { background: var(--accent-glow); color: var(--accent-strong); border: 1px solid rgba(99, 102, 241, 0.3); }
+
+  /* confidence bar */
+  .conf-cell { display: flex; align-items: center; gap: 4px; }
+  .conf-bar { width: 24px; height: 6px; border-radius: 3px; background: var(--neutral-bg); overflow: hidden; flex-shrink: 0; }
+  .conf-fill { height: 100%; border-radius: 3px; }
+  .conf-high { background: var(--success-fg); }
+  .conf-mid { background: var(--warning-fg); }
+  .conf-low { background: var(--danger-fg); }
+
+  /* ── Expanded row detail ─────────────────────── */
+  .detail-row td { padding: 0 !important; border-bottom: 1px solid var(--border) !important; }
+  .detail-panel { background: rgba(13, 24, 52, 0.55); padding: 16px 20px; display: flex; gap: 16px; }
+  .detail-col { flex: 1; min-width: 0; }
+  .detail-section { background: var(--elevated); border: 1px solid var(--border-alpha); border-radius: var(--r); padding: 14px; margin-bottom: 10px; }
+  .detail-section:last-child { margin-bottom: 0; }
+  .detail-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .detail-title .count { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--accent-glow); color: var(--accent-strong); }
+
+  /* repair table */
+  .repair-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .repair-table th { text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); background: rgba(10, 19, 48, 0.5); border-bottom: 1px solid var(--border-alpha); font-weight: 600; }
+  .repair-table td { padding: 6px 8px; border-bottom: 1px solid rgba(36, 58, 101, 0.3); vertical-align: top; color: var(--text-muted); }
+  .repair-table tr:last-child td { border-bottom: none; }
+  .repair-table tr:hover td { background: rgba(99, 102, 241, 0.04); }
+
+  .repair-arrow { color: var(--accent-strong); margin: 0 4px; font-size: 10px; }
+  .repair-before { color: var(--danger-fg); font-family: var(--font-mono); font-size: 11px; text-decoration: line-through; opacity: 0.7; }
+  .repair-after { color: var(--success-fg); font-family: var(--font-mono); font-size: 11px; }
+  .repair-rule { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; background: var(--purple-bg); color: var(--purple-fg); }
+
+  /* source table */
+  .source-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .source-table th { text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); background: rgba(10, 19, 48, 0.5); border-bottom: 1px solid var(--border-alpha); font-weight: 600; }
+  .source-table td { padding: 6px 8px; border-bottom: 1px solid rgba(36, 58, 101, 0.3); vertical-align: top; color: var(--text-muted); }
+  .source-table tr:last-child td { border-bottom: none; }
+  .source-table tr:hover td { background: rgba(99, 102, 241, 0.04); }
+
+  /* full value display */
+  .full-value { background: rgba(10, 19, 48, 0.6); border: 1px solid var(--border-alpha); border-radius: 6px; padding: 10px 12px; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-muted); white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .full-value .json-key { color: var(--info-fg); }
+  .full-value .json-str { color: var(--success-fg); }
+  .full-value .json-num { color: var(--orange-fg); }
+  .full-value .json-bool { color: var(--purple-fg); }
+
+  /* soft rejection callout */
+  .soft-rejection { background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
+  .soft-rejection-label { font-size: 10px; font-weight: 700; color: var(--warning-fg); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .soft-rejection-detail { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Pagination ──────────────────────────────── */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); margin-top: 12px; }
+  .pagination-info { font-size: 11px; color: var(--text-dim); }
+  .pagination-controls { display: flex; align-items: center; gap: 4px; }
+  .page-btn { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); background: var(--elevated); color: var(--text-muted); cursor: pointer; transition: all 0.12s; }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent-strong); }
+  .page-btn.active { background: var(--accent-glow); color: var(--accent-strong); border-color: rgba(99, 102, 241, 0.35); }
+  .page-btn.disabled { opacity: 0.3; pointer-events: none; }
+  .per-page { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
+
+  /* ── Design label ────────────────────────────── */
+  .design-label { text-align: center; font-size: 13px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; padding: 6px 16px; background: var(--accent-glow); border: 1px solid var(--border-alpha); border-radius: 6px; }
+  .section-gap { margin-top: 40px; }
+  hr.divider { border: none; height: 1px; background: var(--border-alpha); margin: 24px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DESIGN LABEL
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="design-label">Publisher Panel — Full Design Preview</div>
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 1: PAGE HEADER
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="page-title">Publisher</span>
+      <span class="cat-chip">mouse</span>
+    </div>
+    <div class="page-subtitle">Validation audit log &mdash; every candidate submission, repair, and rejection.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 2: SUMMARY STATS
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="summary-strip">
+  <div class="stat">
+    <div class="label">Total Candidates</div>
+    <div class="val val-text">1,247</div>
+    <div class="sub">all time</div>
+  </div>
+  <div class="stat">
+    <div class="label">Resolved</div>
+    <div class="val val-green">892</div>
+    <div class="sub">71.5% of total</div>
+  </div>
+  <div class="stat">
+    <div class="label">Pending</div>
+    <div class="val val-yellow">355</div>
+    <div class="sub">awaiting publish</div>
+  </div>
+  <div class="stat">
+    <div class="label">Repairs Applied</div>
+    <div class="val val-blue">186</div>
+    <div class="sub">14.9% of accepted</div>
+  </div>
+  <div class="stat">
+    <div class="label">Products</div>
+    <div class="val val-purple">43</div>
+    <div class="sub">with candidates</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 3: FILTER BAR
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="filter-bar">
+  <!-- Date range -->
+  <div class="filter-group">
+    <span class="filter-label">Date</span>
+    <div class="chip-group">
+      <span class="chip-toggle off">24h</span>
+      <span class="chip-toggle on-accent">7d</span>
+      <span class="chip-toggle off">30d</span>
+      <span class="chip-toggle off">All</span>
+    </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <!-- Product search -->
+  <div class="filter-group">
+    <span class="filter-label">Product</span>
+    <input type="text" class="filter-input" placeholder="Search ID or model..." style="min-width:160px;">
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <!-- Field filter -->
+  <div class="filter-group">
+    <span class="filter-label">Field</span>
+    <select class="filter-select">
+      <option>All fields</option>
+      <option>colors</option>
+      <option>editions</option>
+      <option>weight</option>
+      <option>sensor</option>
+      <option>dpi</option>
+      <option>polling_rate</option>
+      <option>switch_type</option>
+    </select>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <!-- Source chips -->
+  <div class="filter-group">
+    <span class="filter-label">Source</span>
+    <div class="chip-group">
+      <span class="chip-toggle on-accent">All</span>
+      <span class="chip-toggle off">CEF</span>
+      <span class="chip-toggle off">Pipeline</span>
+      <span class="chip-toggle off">Override</span>
+    </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <!-- Status chips -->
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <div class="chip-group">
+      <span class="chip-toggle on-accent">All</span>
+      <span class="chip-toggle off">Candidate</span>
+      <span class="chip-toggle off">Resolved</span>
+    </div>
+  </div>
+
+  <div class="filter-divider"></div>
+
+  <!-- Repairs toggle -->
+  <div class="filter-group">
+    <span class="filter-label">Repairs only</span>
+    <div class="toggle-container">
+      <div class="toggle">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 4: DATA TABLE
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="table-shell">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-expand"></th>
+        <th class="col-date sorted">Submitted <span class="sort-icon">&#x25BC;</span></th>
+        <th class="col-product">Product</th>
+        <th class="col-brand">Brand</th>
+        <th class="col-field">Field</th>
+        <th class="col-value">Value</th>
+        <th class="col-status">Status</th>
+        <th class="col-conf">Conf</th>
+        <th class="col-sources">Src#</th>
+        <th class="col-source">Source</th>
+        <th class="col-repairs">Repairs</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- ── Row 1: colors with repairs (EXPANDED) ─────────── -->
+      <tr class="expanded">
+        <td><button class="expand-btn open">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 20:57</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">colors</td>
+        <td><span class="value-preview">["black", "white", "pink", "light-blue"]</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">2</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-info">2</span></td>
+      </tr>
+
+      <!-- ── Expanded detail for Row 1 ─────────────────────── -->
+      <tr class="detail-row">
+        <td colspan="11">
+          <div class="detail-panel">
+
+            <!-- LEFT: Validation detail -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4.5 4.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Validation Detail
+                </div>
+                <div style="margin-bottom:12px;">
+                  <div class="detail-title" style="margin-bottom:6px;">Repairs Applied <span class="count">2</span></div>
+                  <table class="repair-table">
+                    <thead><tr><th>Step</th><th>Before</th><th></th><th>After</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td class="mono tiny">normalize</td>
+                        <td><span class="repair-before">Black</span></td>
+                        <td class="repair-arrow">&rarr;</td>
+                        <td><span class="repair-after">black</span></td>
+                        <td><span class="repair-rule">token_map</span></td>
+                      </tr>
+                      <tr>
+                        <td class="mono tiny">normalize</td>
+                        <td><span class="repair-before">Sky Blue</span></td>
+                        <td class="repair-arrow">&rarr;</td>
+                        <td><span class="repair-after">light-blue</span></td>
+                        <td><span class="repair-rule">token_map</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="soft-rejection">
+                  <div class="soft-rejection-label">Soft Rejection (accepted)</div>
+                  <div class="soft-rejection-detail">
+                    <span class="mono tiny">unknown_enum_prefer_known</span> &mdash; value <span class="mono" style="color:var(--warning-fg);">"light-blue"</span> not in known list but accepted under open_prefer_known policy.
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l2 3H2V2zM2 5h12v9H2V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  Full Value
+                </div>
+                <div class="full-value">[
+  <span class="json-str">"black"</span>,
+  <span class="json-str">"white"</span>,
+  <span class="json-str">"pink"</span>,
+  <span class="json-str">"light-blue"</span>
+]</div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Source detail -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Source History <span class="count">2 sources</span>
+                </div>
+                <table class="source-table">
+                  <thead><tr><th>Model</th><th>Confidence</th><th>Run ID</th><th>Submitted</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="chip chip-purple" style="font-size:9px;">gemini-2.5-flash</span></td>
+                      <td class="mono tiny">100</td>
+                      <td class="mono tiny dim">cef-run-7a3b</td>
+                      <td class="mono tiny dim">Apr 8 20:57</td>
+                    </tr>
+                    <tr>
+                      <td><span class="chip chip-purple" style="font-size:9px;">gemini-2.5-flash-lite</span></td>
+                      <td class="mono tiny">100</td>
+                      <td class="mono tiny dim">cef-run-5e12</td>
+                      <td class="mono tiny dim">Apr 7 14:22</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Candidate Metadata
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                  <div>
+                    <span class="dim tiny">CANDIDATE ID</span>
+                    <div class="mono" style="color:var(--text);">142</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">STATUS</span>
+                    <div><span class="chip chip-success" style="font-size:9px;">candidate</span></div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">MAX CONFIDENCE</span>
+                    <div class="mono" style="color:var(--success-fg);">100</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">SOURCE COUNT</span>
+                    <div class="mono" style="color:var(--text);">2</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">FIRST SEEN</span>
+                    <div class="mono dim">Apr 7 14:22</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">LAST UPDATED</span>
+                    <div class="mono dim">Apr 8 20:57</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </td>
+      </tr>
+
+      <!-- ── Row 2: editions (no repairs) ──────────────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 20:57</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">editions</td>
+        <td><span class="value-preview">{"Cyberpunk 2077 Edition": {"colors": ...}}</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+      <!-- ── Row 3: weight with 1 repair (resolved) ───────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 18:30</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">weight</td>
+        <td><span class="value-preview">63</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:92%"></div></div>
+            <span class="mono tiny">92</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">3</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-info">1</span></td>
+      </tr>
+
+      <!-- ── Row 4: sensor (resolved, no repairs) ──────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 18:30</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">sensor</td>
+        <td><span class="value-preview">HERO 2</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:88%"></div></div>
+            <span class="mono tiny">88</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">2</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+      <!-- ── Row 5: weight (candidate, mid confidence) ─────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 16:15</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">weight</td>
+        <td><span class="value-preview">58</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-mid" style="width:75%"></div></div>
+            <span class="mono tiny">75</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-info">1</span></td>
+      </tr>
+
+      <!-- ── Row 6: dpi (candidate) ────────────────────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 15:42</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">dpi</td>
+        <td><span class="value-preview">32000</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:95%"></div></div>
+            <span class="mono tiny">95</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">2</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+      <!-- ── Row 7: polling_rate (candidate, low conf) ─────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 14:05</td>
+        <td class="mono tiny">mouse-00488912</td>
+        <td class="small">SteelSeries</td>
+        <td class="mono tiny">polling_rate</td>
+        <td><span class="value-preview">8000</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-low" style="width:40%"></div></div>
+            <span class="mono tiny">40</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+      <!-- ── Row 8: switch_type (resolved) ─────────────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 12:33</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">switch_type</td>
+        <td><span class="value-preview">Razer Optical Gen-3</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">2</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+      <!-- ── Row 9: colors with repairs ────────────────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 7 22:10</td>
+        <td class="mono tiny">mouse-00488912</td>
+        <td class="small">SteelSeries</td>
+        <td class="mono tiny">colors</td>
+        <td><span class="value-preview">["black", "white", "nova-gray"]</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-info">3</span></td>
+      </tr>
+
+      <!-- ── Row 10: weight override ───────────────────────── -->
+      <tr>
+        <td><button class="expand-btn">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 7 19:45</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">weight</td>
+        <td><span class="value-preview">59</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-warning">override</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 5: PAGINATION
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="pagination">
+  <div class="pagination-info">Showing <strong>1&ndash;10</strong> of <strong>1,247</strong> candidates</div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div class="per-page">
+      Rows:
+      <select class="filter-select" style="min-width:60px;">
+        <option>25</option>
+        <option>50</option>
+        <option selected>100</option>
+      </select>
+    </div>
+    <div class="pagination-controls">
+      <button class="page-btn disabled">&laquo; Prev</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span class="dim tiny">...</span>
+      <button class="page-btn">13</button>
+      <button class="page-btn">Next &raquo;</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 6: EXPANDED ROW — PIPELINE SOURCE EXAMPLE
+     ═══════════════════════════════════════════════════════════════════ -->
+<hr class="divider">
+<div class="design-label section-gap">Expanded Row Variant — Pipeline Source with Repair</div>
+<br>
+
+<div class="table-shell">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-expand"></th>
+        <th class="col-date">Submitted</th>
+        <th class="col-product">Product</th>
+        <th class="col-brand">Brand</th>
+        <th class="col-field">Field</th>
+        <th class="col-value">Value</th>
+        <th class="col-status">Status</th>
+        <th class="col-conf">Conf</th>
+        <th class="col-sources">Src#</th>
+        <th class="col-source">Source</th>
+        <th class="col-repairs">Repairs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="expanded">
+        <td><button class="expand-btn open">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 18:30</td>
+        <td class="mono tiny">mouse-00291004</td>
+        <td class="small">Logitech</td>
+        <td class="mono tiny">weight</td>
+        <td><span class="value-preview">63</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:92%"></div></div>
+            <span class="mono tiny">92</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">3</td>
+        <td><span class="chip chip-orange">pipeline</span></td>
+        <td><span class="chip chip-info">1</span></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="11">
+          <div class="detail-panel">
+
+            <!-- LEFT: Validation detail -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4.5 4.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Validation Detail
+                </div>
+                <div style="margin-bottom:12px;">
+                  <div class="detail-title" style="margin-bottom:6px;">Repairs Applied <span class="count">1</span></div>
+                  <table class="repair-table">
+                    <thead><tr><th>Step</th><th>Before</th><th></th><th>After</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td class="mono tiny">unit_strip</td>
+                        <td><span class="repair-before">63g</span></td>
+                        <td class="repair-arrow">&rarr;</td>
+                        <td><span class="repair-after">63</span></td>
+                        <td><span class="repair-rule">strip_unit</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l2 3H2V2zM2 5h12v9H2V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  Full Value
+                </div>
+                <div class="full-value"><span class="json-num">63</span></div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Source detail — PIPELINE variant -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Source History <span class="count">3 sources</span>
+                </div>
+                <table class="source-table">
+                  <thead><tr><th>Artifact</th><th>Confidence</th><th>Run ID</th><th>Submitted</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td class="mono tiny" style="color:var(--teal-fg);">2db2b3f0...</td>
+                      <td class="mono tiny">92</td>
+                      <td class="mono tiny dim">run-4a821</td>
+                      <td class="mono tiny dim">Apr 8 18:30</td>
+                    </tr>
+                    <tr>
+                      <td class="mono tiny" style="color:var(--teal-fg);">8fc91de2...</td>
+                      <td class="mono tiny">85</td>
+                      <td class="mono tiny dim">run-3b107</td>
+                      <td class="mono tiny dim">Apr 7 11:05</td>
+                    </tr>
+                    <tr>
+                      <td class="mono tiny" style="color:var(--teal-fg);">c4a0e7b1...</td>
+                      <td class="mono tiny">78</td>
+                      <td class="mono tiny dim">run-2e993</td>
+                      <td class="mono tiny dim">Apr 6 09:22</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Candidate Metadata
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                  <div>
+                    <span class="dim tiny">CANDIDATE ID</span>
+                    <div class="mono" style="color:var(--text);">98</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">STATUS</span>
+                    <div><span class="chip chip-teal" style="font-size:9px;">resolved</span></div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">MAX CONFIDENCE</span>
+                    <div class="mono" style="color:var(--success-fg);">92</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">SOURCE COUNT</span>
+                    <div class="mono" style="color:var(--text);">3</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">FIRST SEEN</span>
+                    <div class="mono dim">Apr 6 09:22</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">LAST UPDATED</span>
+                    <div class="mono dim">Apr 8 18:30</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 7: EXPANDED ROW — RECORD VALUE (Editions)
+     ═══════════════════════════════════════════════════════════════════ -->
+<hr class="divider">
+<div class="design-label section-gap">Expanded Row Variant — Record Value (Editions)</div>
+<br>
+
+<div class="table-shell">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-expand"></th>
+        <th class="col-date">Submitted</th>
+        <th class="col-product">Product</th>
+        <th class="col-brand">Brand</th>
+        <th class="col-field">Field</th>
+        <th class="col-value">Value</th>
+        <th class="col-status">Status</th>
+        <th class="col-conf">Conf</th>
+        <th class="col-sources">Src#</th>
+        <th class="col-source">Source</th>
+        <th class="col-repairs">Repairs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="expanded">
+        <td><button class="expand-btn open">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 8 20:57</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">editions</td>
+        <td><span class="value-preview">{"Cyberpunk 2077 Edition": {"colors": ...}}</span></td>
+        <td><span class="chip chip-success">candidate</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-purple">cef</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="11">
+          <div class="detail-panel">
+
+            <!-- LEFT: Validation + full value -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4.5 4.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Validation Detail
+                </div>
+                <div style="font-size:11px; color:var(--text-dim); padding: 4px 0;">
+                  No repairs or rejections &mdash; value passed all checks.
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l2 3H2V2zM2 5h12v9H2V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  Full Value (record)
+                </div>
+                <div class="full-value">{
+  <span class="json-key">"Cyberpunk 2077 Edition"</span>: {
+    <span class="json-key">"colors"</span>: [<span class="json-str">"black"</span>, <span class="json-str">"yellow"</span>]
+  },
+  <span class="json-key">"Halo Infinite Edition"</span>: {
+    <span class="json-key">"colors"</span>: [<span class="json-str">"black"</span>, <span class="json-str">"green"</span>, <span class="json-str">"blue"</span>]
+  },
+  <span class="json-key">"Bape Edition"</span>: {
+    <span class="json-key">"colors"</span>: [<span class="json-str">"black"</span>, <span class="json-str">"green"</span>]
+  }
+}</div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Source detail -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Source History <span class="count">1 source</span>
+                </div>
+                <table class="source-table">
+                  <thead><tr><th>Model</th><th>Confidence</th><th>Run ID</th><th>Submitted</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="chip chip-purple" style="font-size:9px;">gemini-2.5-flash</span></td>
+                      <td class="mono tiny">100</td>
+                      <td class="mono tiny dim">cef-run-7a3b</td>
+                      <td class="mono tiny dim">Apr 8 20:57</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Candidate Metadata
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                  <div>
+                    <span class="dim tiny">CANDIDATE ID</span>
+                    <div class="mono" style="color:var(--text);">143</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">STATUS</span>
+                    <div><span class="chip chip-success" style="font-size:9px;">candidate</span></div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">MAX CONFIDENCE</span>
+                    <div class="mono" style="color:var(--success-fg);">100</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">SOURCE COUNT</span>
+                    <div class="mono" style="color:var(--text);">1</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">FIRST SEEN</span>
+                    <div class="mono dim">Apr 8 20:57</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">LAST UPDATED</span>
+                    <div class="mono dim">Apr 8 20:57</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 8: EXPANDED ROW — OVERRIDE SOURCE
+     ═══════════════════════════════════════════════════════════════════ -->
+<hr class="divider">
+<div class="design-label section-gap">Expanded Row Variant — Override Source</div>
+<br>
+
+<div class="table-shell">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="col-expand"></th>
+        <th class="col-date">Submitted</th>
+        <th class="col-product">Product</th>
+        <th class="col-brand">Brand</th>
+        <th class="col-field">Field</th>
+        <th class="col-value">Value</th>
+        <th class="col-status">Status</th>
+        <th class="col-conf">Conf</th>
+        <th class="col-sources">Src#</th>
+        <th class="col-source">Source</th>
+        <th class="col-repairs">Repairs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="expanded">
+        <td><button class="expand-btn open">&#x25B6;</button></td>
+        <td class="mono tiny">Apr 7 19:45</td>
+        <td class="mono tiny">mouse-00345848</td>
+        <td class="small">Razer</td>
+        <td class="mono tiny">weight</td>
+        <td><span class="value-preview">59</span></td>
+        <td><span class="chip chip-teal">resolved</span></td>
+        <td>
+          <div class="conf-cell">
+            <div class="conf-bar"><div class="conf-fill conf-high" style="width:100%"></div></div>
+            <span class="mono tiny">100</span>
+          </div>
+        </td>
+        <td class="mono tiny" style="text-align:center;">1</td>
+        <td><span class="chip chip-warning">override</span></td>
+        <td><span class="chip chip-neutral">0</span></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="11">
+          <div class="detail-panel">
+
+            <!-- LEFT: Validation -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4.5 4.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Validation Detail
+                </div>
+                <div style="font-size:11px; color:var(--text-dim); padding: 4px 0;">
+                  No repairs or rejections &mdash; override values bypass LLM repair (human-asserted).
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l2 3H2V2zM2 5h12v9H2V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  Full Value
+                </div>
+                <div class="full-value"><span class="json-num">59</span></div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Source detail — OVERRIDE variant -->
+            <div class="detail-col">
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Source History <span class="count">1 source</span>
+                </div>
+                <table class="source-table">
+                  <thead><tr><th>Source Type</th><th>Overridden By</th><th>Reason</th><th>Submitted</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="chip chip-warning" style="font-size:9px;">human override</span></td>
+                      <td class="mono tiny" style="color:var(--text);">admin</td>
+                      <td class="small muted">Manufacturer spec sheet shows 59g, not 58g</td>
+                      <td class="mono tiny dim">Apr 7 19:45</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="detail-section">
+                <div class="detail-title">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Candidate Metadata
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                  <div>
+                    <span class="dim tiny">CANDIDATE ID</span>
+                    <div class="mono" style="color:var(--text);">127</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">STATUS</span>
+                    <div><span class="chip chip-teal" style="font-size:9px;">resolved</span></div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">MAX CONFIDENCE</span>
+                    <div class="mono" style="color:var(--success-fg);">100</div>
+                  </div>
+                  <div>
+                    <span class="dim tiny">PREVIOUS VALUE</span>
+                    <div class="mono" style="color:var(--danger-fg); text-decoration: line-through;">58</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SECTION 9: IMPLEMENTATION ARCHITECTURE
+     ═══════════════════════════════════════════════════════════════════ -->
+<hr class="divider">
+<div class="design-label section-gap">Implementation Architecture</div>
+<br>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+  <div class="stat" style="padding:18px;">
+    <div class="label" style="margin-bottom:10px;">Backend</div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.7;">
+      <strong style="color:var(--text);">API Route:</strong> <code style="color:var(--teal-fg);">src/features/publisher/api/publisherRoutes.js</code>
+      <br><code style="color:var(--accent-strong); font-size:10px;">GET /api/v1/publisher/:category/candidates</code>
+      <br><br>
+      <strong style="color:var(--text);">Query Params:</strong>
+      <br><code style="font-size:10px; color:var(--text-dim);">page, limit, product_id, brand, field_key, source, status, since, until, has_repairs</code>
+      <br><br>
+      <strong style="color:var(--text);">New Store Methods:</strong>
+      <br><code style="font-size:10px; color:var(--teal-fg);">specDb.getFieldCandidatesPaginated(filters)</code>
+      <br><code style="font-size:10px; color:var(--teal-fg);">specDb.getFieldCandidatesStats(filters)</code>
+      <br><br>
+      <strong style="color:var(--text);">Response Shape:</strong>
+      <br><code style="font-size:10px; color:var(--text-dim);">{ rows: [...], total: number, page: number, stats: { total, resolved, pending, repaired, products } }</code>
+    </div>
+  </div>
+
+  <div class="stat" style="padding:18px;">
+    <div class="label" style="margin-bottom:10px;">Frontend</div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.7;">
+      <strong style="color:var(--text);">Page:</strong> <code style="color:var(--teal-fg);">tools/gui-react/src/pages/publisher/PublisherPage.tsx</code>
+      <br><br>
+      <strong style="color:var(--text);">Query Hook:</strong> <code style="color:var(--teal-fg);">usePublisherCandidatesQuery(category, filters)</code>
+      <br><br>
+      <strong style="color:var(--text);">Table:</strong> Reuse <code style="font-size:10px; color:var(--accent-strong);">DataTable</code> from <code style="font-size:10px;">src/shared/ui/data-display/</code>
+      <br>with <code style="font-size:10px; color:var(--accent-strong);">renderExpandedRow</code> for detail panels
+      <br><br>
+      <strong style="color:var(--text);">Nav:</strong> Register in <code style="font-size:10px; color:var(--teal-fg);">pageRegistry.ts</code>
+      <br>Ops group, after Runtime Ops, before Review Grid
+      <br><br>
+      <strong style="color:var(--text);">Column Defs:</strong> <code style="font-size:10px; color:var(--teal-fg);">publisherColumns.tsx</code>
+      <br>Separate file, @tanstack/react-table ColumnDef array
+    </div>
+  </div>
+
+</div>
+
+<br><br>
+</div><!-- /page -->
+</body>
+</html>

@@ -95,23 +95,23 @@ tr:last-child td { border-bottom: none; }
   <table>
     <thead><tr><th>#</th><th>Phase</th><th>Deliverable</th><th>Proof</th></tr></thead>
     <tbody>
-      <tr>
-        <td class="mono bold" style="color:var(--sf-orange-fg);">A</td>
-        <td class="bold">Candidate Gate</td>
-        <td class="small"><code>submitCandidate()</code> &mdash; validate, dual-write to <code>field_candidates</code> table + <code>product.json candidates[]</code></td>
-        <td class="small">Unit tests green. Candidate rows appear in DB + JSON for valid input. Invalid input rejected, never persisted.</td>
+      <tr style="background:var(--sf-success-bg);">
+        <td class="mono bold" style="color:var(--sf-success-fg);">A</td>
+        <td class="bold">Candidate Gate <span class="chip chip-success">COMPLETE</span></td>
+        <td class="small"><code>submitCandidate()</code> &mdash; validate, dual-write to <code>field_candidates</code> table + <code>product.json candidates[]</code>. Rebuild contract via <code>seedRegistry.js</code>.</td>
+        <td class="small">94 tests green. A1 schema + store (10), A2-A4 submitCandidate (12), A5 rebuild + seed registry (6 + 66).</td>
+      </tr>
+      <tr style="background:var(--sf-success-bg);">
+        <td class="mono bold" style="color:var(--sf-success-fg);">B</td>
+        <td class="bold">Wire CEF <span class="chip chip-success">COMPLETE</span></td>
+        <td class="small">CEF validates <strong>colors + editions</strong> through gate before writing. All-or-nothing: if either fails, entire run rejected. Repair map reconciles edition color references to match repaired colors. Editions stored as full record with per-edition color metadata.</td>
+        <td class="small">13 tests green (10 gate integration + 4 E2E with real field rules). 9 existing CEF tests preserved via graceful degradation. Validate-all-then-write pattern prevents partial candidates.</td>
       </tr>
       <tr>
-        <td class="mono bold" style="color:var(--sf-purple-fg);">B</td>
-        <td class="bold">Wire CEF</td>
-        <td class="small">Color &amp; Edition Finder calls <code>submitCandidate()</code> after each run. First real source proves the gate.</td>
-        <td class="small">CEF run &rarr; candidates appear in <code>field_candidates</code> + <code>product.json candidates[]</code>. Review grid can read them.</td>
-      </tr>
-      <tr>
-        <td class="mono bold" style="color:var(--sf-success-fg);">C</td>
-        <td class="bold">Publish Resolved</td>
-        <td class="small"><code>publishResolved()</code> &mdash; resolve winners, cross-field validate, dual-write to <code>item_field_state</code> + <code>product.json fields[]</code></td>
-        <td class="small">Full E2E: CEF &rarr; candidate &rarr; resolve &rarr; <code>item_field_state</code> populated. Component fields &rarr; <code>item_component_links</code>.</td>
+        <td class="mono bold" style="color:var(--sf-warning-fg);">C</td>
+        <td class="bold">Publish Resolved <span class="chip chip-warning">NEXT</span></td>
+        <td class="small"><code>publishResolved()</code> &mdash; resolve winners, cross-field validate, mark winner as <code>status: 'resolved'</code> in <code>field_candidates</code>, dual-write to <code>product.json fields[]</code> + <code>item_field_state</code> (backward compat).</td>
+        <td class="small">Full E2E: CEF &rarr; candidate &rarr; resolve &rarr; <code>field_candidates</code> winner marked resolved. <code>product.json fields[]</code> populated. <code>item_field_state</code> synced for legacy consumers.</td>
       </tr>
     </tbody>
   </table>
@@ -377,7 +377,7 @@ submitCandidate({
     <div class="phase-letter" style="color:var(--sf-success-fg);">C</div>
     <div>
       <h2 style="margin-bottom:2px;">Publish Resolved &mdash; <code>publishResolved()</code></h2>
-      <div class="tiny muted">5 sub-steps. Reads candidates, resolves winners, cross-validates, dual-writes to DB + JSON.</div>
+      <div class="tiny muted">5 sub-steps. Reads candidates from <code>field_candidates</code>, resolves winners, cross-validates, marks winner as <code>status: 'resolved'</code>, writes to <code>product.json fields[]</code> + <code>item_field_state</code> (backward compat).</div>
     </div>
   </div>
 
@@ -399,7 +399,7 @@ publishResolved({
   knownValues,
   componentDb,
   crossRules,             <span style="color:var(--sf-text-dim);">// cross_validation_rules.json</span>
-  specDb,                 <span style="color:var(--sf-text-dim);">// reads field_candidates, writes item_field_state</span>
+  specDb,                 <span style="color:var(--sf-text-dim);">// reads field_candidates, marks resolved, syncs item_field_state</span>
   productRoot,            <span style="color:var(--sf-text-dim);">// reads/writes product.json</span>
 })
 
@@ -420,8 +420,9 @@ publishResolved({
       <strong>Invariants:</strong>
       <br/>&bull; Only reads from <code>field_candidates</code> &mdash; never from raw source data.
       <br/>&bull; Every resolved value passes <code>validateRecord()</code> (cross-field) before publish.
-      <br/>&bull; <code>item_field_state.accepted_candidate_id</code> points to the winning <code>field_candidates.id</code>.
-      <br/>&bull; <strong>This is the only path to <code>item_field_state</code>.</strong> No caller writes directly.
+      <br/>&bull; Winner marked <code>status: 'resolved'</code> in <code>field_candidates</code> &mdash; the primary DB table.
+      <br/>&bull; <code>item_field_state</code> synced for backward compatibility (39 legacy consumers). <code>accepted_candidate_id</code> points to <code>field_candidates.id</code>.
+      <br/>&bull; <code>product.json fields[]</code> is the durable SSOT for resolved values.
     </div>
   </div>
 
@@ -453,7 +454,7 @@ publishResolved({
       <tbody>
         <tr>
           <td class="bold">Single candidate</td>
-          <td class="small">One value for field &rarr; auto-wins. Written to <code>item_field_state</code> + <code>product.json fields[]</code>.</td>
+          <td class="small">One value for field &rarr; auto-wins. Marked <code>status: 'resolved'</code> in <code>field_candidates</code>. Written to <code>product.json fields[]</code>. Synced to <code>item_field_state</code>.</td>
         </tr>
         <tr>
           <td class="bold">Multi-candidate resolution</td>
@@ -464,8 +465,8 @@ publishResolved({
           <td class="small">Resolved set passes <code>validateRecord()</code> &rarr; published. Cross-field failure &rarr; status = 'blocked', failures returned.</td>
         </tr>
         <tr>
-          <td class="bold">Dual-write targets</td>
-          <td class="small"><code>item_field_state</code> upserted with value + confidence + <code>accepted_candidate_id</code>. <code>product.json fields[fieldKey]</code> written with value + confidence + resolved_at + sources.</td>
+          <td class="bold">Write targets</td>
+          <td class="small"><code>field_candidates</code> winner row: <code>status = 'resolved'</code>. <code>product.json fields[fieldKey]</code>: value + confidence + resolved_at + sources. <code>item_field_state</code>: backward-compat sync with <code>accepted_candidate_id</code>.</td>
         </tr>
         <tr>
           <td class="bold">Component linking</td>
@@ -477,7 +478,7 @@ publishResolved({
         </tr>
         <tr>
           <td class="bold">No candidates</td>
-          <td class="small">Field with zero candidates &rarr; not resolved. Existing <code>item_field_state</code> row unchanged.</td>
+          <td class="small">Field with zero candidates &rarr; not resolved. No status change. Existing rows unchanged.</td>
         </tr>
         <tr>
           <td class="bold">Rebuild contract</td>
@@ -492,17 +493,18 @@ publishResolved({
     <h3><span class="chip chip-success">C4</span> GREEN &mdash; implement <code>publishResolved()</code></h3>
     <div class="small muted" style="line-height:1.7;">
       <strong>Implementation steps (inside the function):</strong>
-      <br/>1. <code>specDb.getAllFieldCandidates(productId)</code> &mdash; read all candidates.
+      <br/>1. <code>specDb.getAllFieldCandidatesByProduct(productId)</code> &mdash; read all candidates.
       <br/>2. Group by <code>fieldKey</code>. For each field, run resolution algorithm (C2).
       <br/>3. Build resolved field set: <code>{ fieldKey: winnerValue, ... }</code>.
       <br/>4. <code>validateRecord({ fields, fieldRules, knownValues, crossRules, componentDbs })</code> &mdash; cross-field checks.
       <br/>5. If cross-field failures with <code>action: 'reject'</code> &rarr; return <code>{ status: 'blocked' }</code>.
-      <br/>6. <strong>DB writes</strong> (per resolved field):
-      <br/>&nbsp;&nbsp;&nbsp;a. <code>specDb.upsertItemFieldState()</code> with <code>accepted_candidate_id</code>.
+      <br/>6. <strong>Primary DB write</strong> (per resolved field):
+      <br/>&nbsp;&nbsp;&nbsp;a. <code>specDb.upsertFieldCandidate({ ...winner, status: 'resolved' })</code> &mdash; mark winner in <code>field_candidates</code>.
       <br/>&nbsp;&nbsp;&nbsp;b. If component field &rarr; <code>specDb.upsertItemComponentLink()</code>.
       <br/>&nbsp;&nbsp;&nbsp;c. If list field &rarr; <code>specDb.upsertItemListLinks()</code> (one per list value).
-      <br/>7. <strong>JSON write:</strong> Update <code>product.json fields[fieldKey]</code> for each resolved field.
-      <br/>8. Return <code>{ status: 'published', resolved, crossFieldFailures, fieldsWritten }</code>.
+      <br/>7. <strong>Backward compat sync:</strong> <code>specDb.upsertItemFieldState()</code> with <code>accepted_candidate_id = field_candidates.id</code> (for 39 legacy consumers).
+      <br/>8. <strong>JSON write:</strong> Update <code>product.json fields[fieldKey]</code> for each resolved field.
+      <br/>9. Return <code>{ status: 'published', resolved, crossFieldFailures, fieldsWritten }</code>.
     </div>
   </div>
 
@@ -513,15 +515,16 @@ publishResolved({
       <strong>What:</strong> End-to-end integration test proving the full flow on at least one real product.
       <br/><br/>
       <strong>Flow:</strong>
-      <br/>1. CEF runs on a product &rarr; <code>submitCandidate()</code> called for each field.
-      <br/>2. <code>field_candidates</code> rows exist (from Phase B).
+      <br/>1. CEF runs on a product &rarr; <code>submitCandidate()</code> called for colors + editions.
+      <br/>2. <code>field_candidates</code> rows exist with <code>status: 'candidate'</code> (from Phase B).
       <br/>3. <code>publishResolved()</code> called &rarr; reads candidates, resolves, cross-validates.
-      <br/>4. <code>item_field_state</code> rows exist with correct values + <code>accepted_candidate_id</code>.
+      <br/>4. Winning <code>field_candidates</code> row has <code>status: 'resolved'</code>.
       <br/>5. <code>product.json fields[]</code> entries exist with value + confidence + resolved_at + sources.
-      <br/>6. For component fields: <code>item_component_links</code> row exists.
-      <br/>7. For list fields: <code>item_list_links</code> rows exist.
+      <br/>6. <code>item_field_state</code> rows synced (backward compat) with <code>accepted_candidate_id</code>.
+      <br/>7. For component fields: <code>item_component_links</code> row exists.
+      <br/>8. For list fields: <code>item_list_links</code> rows exist.
       <br/><br/>
-      <strong>Rebuild proof:</strong> Delete DB &rarr; rebuild from product.json &rarr; all tables restored.
+      <strong>Rebuild proof:</strong> Delete DB &rarr; rebuild from product.json &rarr; <code>field_candidates</code> + <code>item_field_state</code> restored.
     </div>
   </div>
 </div>

@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS field_candidates (
   source_count INTEGER DEFAULT 1,
   sources_json TEXT DEFAULT '[]',
   validation_json TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
   submitted_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, product_id, field_key, value)

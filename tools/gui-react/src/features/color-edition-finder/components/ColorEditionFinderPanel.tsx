@@ -47,6 +47,31 @@ function toneToValueClass(tone: string): string {
   return 'text-[var(--sf-token-accent-strong)]';
 }
 
+/* ── Color circle (mirrors site's getCircleStyle gradient logic) ──── */
+
+function colorCircleStyle(hexParts: readonly string[]): React.CSSProperties {
+  const colors = hexParts.filter(Boolean);
+  if (colors.length === 0) return { backgroundColor: 'var(--sf-text-muted)' };
+  if (colors.length === 1) return { backgroundColor: colors[0] };
+  if (colors.length === 2) {
+    return { background: `linear-gradient(45deg, ${colors[0]} 50%, ${colors[1]} 50%)` };
+  }
+  const angle = 360 / colors.length;
+  const stops = colors.map((c, i) => `${c} ${i * angle}deg ${(i + 1) * angle}deg`);
+  const from = colors.length === 3 ? 240 : (270 - angle / 2);
+  return { background: `conic-gradient(from ${from}deg, ${stops.join(', ')})` };
+}
+
+function ColorSwatch({ hexParts, size = 'md' }: { readonly hexParts: readonly string[]; readonly size?: 'sm' | 'md' }) {
+  const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+  return (
+    <span
+      className={`inline-block ${sizeClass} rounded-sm border border-white/10 shrink-0`}
+      style={colorCircleStyle(hexParts)}
+    />
+  );
+}
+
 /* ── Sub-components ───────────────────────────────────────────────── */
 
 function FinderKpiCard({ value, label, tone }: KpiCard) {
@@ -64,14 +89,12 @@ function FinderKpiCard({ value, label, tone }: KpiCard) {
 
 function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-mono font-semibold sf-text-primary">
-      {pill.hex && (
-        <span
-          className="inline-block w-3.5 h-3.5 rounded-sm border border-white/10 shrink-0"
-          style={{ backgroundColor: pill.hex }}
-        />
+    <span className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-semibold sf-text-primary">
+      <ColorSwatch hexParts={pill.hexParts} />
+      {pill.displayName && (
+        <span className="sf-text-primary">{pill.displayName}</span>
       )}
-      {pill.name}
+      <span className="font-mono sf-text-subtle">{pill.name}</span>
       {pill.isDefault && (
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--sf-token-accent-strong)] shrink-0" />
       )}
@@ -117,18 +140,18 @@ function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay
             <div className="flex flex-col gap-2">
               {display.editions.map(ed => (
                 <div key={ed.slug} className="sf-surface-panel border sf-border-soft rounded-md px-3 py-2">
-                  <div className="text-[12px] font-mono font-bold sf-chip-purple mb-1.5 inline-block px-1.5 py-0.5 rounded">
-                    {ed.slug}
+                  <div className="mb-1.5 inline-flex items-center gap-1.5">
+                    {ed.displayName && (
+                      <span className="text-[12px] font-semibold sf-text-primary">{ed.displayName}</span>
+                    )}
+                    <span className="text-[12px] font-mono font-bold sf-chip-purple inline-block px-1.5 py-0.5 rounded">
+                      {ed.slug}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {ed.pairedColors.map(pc => (
                       <span key={pc.name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-elevated rounded text-[10px] font-mono sf-text-muted">
-                        {pc.hex && (
-                          <span
-                            className="inline-block w-2.5 h-2.5 rounded-sm border border-white/10"
-                            style={{ backgroundColor: pc.hex }}
-                          />
-                        )}
+                        <ColorSwatch hexParts={pc.hexParts} size="sm" />
                         {pc.name}
                       </span>
                     ))}
@@ -158,11 +181,10 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
         <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Selected Output</div>
         <div className="flex flex-wrap gap-1 mb-1">
           {selColors.map(name => {
-            const firstAtom = name.split('+')[0] || name;
-            const hex = hexMap.get(firstAtom) || hexMap.get(name) || '';
+            const parts = name.split('+').map(a => hexMap.get(a.trim()) || '');
             return (
               <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-panel rounded text-[10px] font-mono sf-text-primary">
-                {hex && <span className="inline-block w-2.5 h-2.5 rounded-sm border border-white/10" style={{ backgroundColor: hex }} />}
+                <ColorSwatch hexParts={parts} size="sm" />
                 {name}
               </span>
             );
