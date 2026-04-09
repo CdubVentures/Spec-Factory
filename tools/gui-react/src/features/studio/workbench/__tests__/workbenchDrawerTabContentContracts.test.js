@@ -64,9 +64,6 @@ async function loadWorkbenchDrawerTabContentModule() {
           export function ContractTab(props) {
             return { type: 'ContractTab', props };
           }
-          export function ParseTab(props) {
-            return { type: 'ParseTab', props };
-          }
           export function EnumTab(props) {
             return { type: 'EnumTab', props };
           }
@@ -120,13 +117,11 @@ test('WorkbenchDrawerTabContent routes contract tab props without rendering unre
   );
 
   const contractNode = collectNodes(tree, (node) => node.type === 'ContractTab')[0];
-  const parseNode = collectNodes(tree, (node) => node.type === 'ParseTab')[0];
 
   assert.ok(contractNode);
   assert.equal(contractNode.props.fieldKey, 'dpi');
   assert.equal(contractNode.props.rule.priority.required_level, 'required');
   assert.equal(typeof contractNode.props.onUpdate, 'function');
-  assert.equal(parseNode, undefined);
 });
 
 test('WorkbenchDrawerTabContent routes enum and preview tabs with their feature data', async () => {

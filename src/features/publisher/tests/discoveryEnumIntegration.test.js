@@ -11,7 +11,7 @@ import { buildStudioKnownValuesFromSpecDb } from '../../studio/api/studioRouteHe
 function makeFieldRule(policy = 'open_prefer_known', extra = {}) {
   return {
     contract: { shape: 'scalar', type: 'string', unknown_token: 'unk' },
-    parse: { template: 'text_field' },
+    parse: {},
     enum: { policy, match: { strategy: 'alias' } },
     ...extra,
   };

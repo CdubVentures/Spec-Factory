@@ -131,6 +131,19 @@ test('source strategy event invalidates category-scoped source strategy query ke
   assert.equal(hasQueryKey(keys, ['source-strategy', 'mouse']), true);
 });
 
+test('process-completed event invalidates indexlab product-history and run-list queries', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'process-completed',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true);
+  assert.equal(hasQueryKey(keys, ['indexlab', 'product-history', 'mouse']), true);
+});
+
 test('spec-seeds event invalidates category-scoped spec-seeds query key (not broad fallback)', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

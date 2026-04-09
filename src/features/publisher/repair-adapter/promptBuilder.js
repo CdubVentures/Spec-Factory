@@ -92,8 +92,6 @@ export function buildFieldContractBlock(fieldKey, fieldRule, knownValues) {
   if (e.match?.format_hint) enumParts.push(`Format: ${e.match.format_hint}`);
   if (enumParts.length > 0) lines.push(`  ${enumParts.join(' | ')}`);
 
-  if (p.template) lines.push(`  Template: ${p.template}`);
-
   const acceptedFormats = p.accepted_formats;
   if (Array.isArray(acceptedFormats) && acceptedFormats.length > 0) {
     lines.push(`  Accepted formats: ${acceptedFormats.join(', ')}`);
@@ -236,7 +234,7 @@ Return JSON matching this exact schema:
 
 function buildTypePrompt(rejection, ctx) {
   const expectedType = rejection.detail.expected || ctx.fieldRule?.contract?.type || 'string';
-  const templateType = ctx.fieldRule?.parse?.template || 'text_field';
+  const resolvedType = ctx.fieldRule?.contract?.type || 'string';
   const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
   const userMessage = `${contractBlock}
@@ -245,7 +243,7 @@ The field '${ctx.fieldKey}' (type: ${expectedType}) received a value that
 could not be deterministically converted:
   Value: ${JSON.stringify(ctx.value)}
   Expected type: ${expectedType}
-  Template: ${templateType}
+  Template: ${resolvedType}
 
 Your task:
 1. If the value contains the answer in a different format, extract it.
@@ -265,12 +263,12 @@ Use decision "reject" with resolved_to null if hallucinated. Use resolved_to "un
   return {
     promptId: 'P3',
     userMessage,
-    params: { rawValue: ctx.value, expectedType, templateType },
+    params: { rawValue: ctx.value, expectedType, resolvedType },
   };
 }
 
 function buildFormatPrompt(rejection, ctx) {
-  const templateType = ctx.fieldRule?.parse?.template || 'text_field';
+  const resolvedType = ctx.fieldRule?.contract?.type || 'string';
   const formatHint = ctx.fieldRule?.enum?.match?.format_hint || null;
   const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
@@ -279,7 +277,7 @@ function buildFormatPrompt(rejection, ctx) {
 The field '${ctx.fieldKey}' value failed format validation after normalization:
   Value: '${ctx.value}'
   Expected format: ${rejection.detail.reason || 'unknown'}
-  Template: ${templateType}
+  Template: ${resolvedType}
 ${formatHint ? `  Format pattern: ${formatHint}` : ''}
 The value does not match the required format after normalization.
 
@@ -299,7 +297,7 @@ Use decision "reject" with resolved_to null if hallucinated.`;
   return {
     promptId: 'P4',
     userMessage,
-    params: { normalizedValue: ctx.value, templateType, formatReason: rejection.detail.reason },
+    params: { normalizedValue: ctx.value, resolvedType, formatReason: rejection.detail.reason },
   };
 }
 

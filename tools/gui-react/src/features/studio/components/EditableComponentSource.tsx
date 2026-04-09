@@ -126,7 +126,6 @@ export function EditableComponentSource({
   function getInheritedInfo(fieldKey: string): {
     type: string;
     unit: string;
-    template: string;
     evidenceRefs: number;
     constraints: string[];
     enumPolicy: string;
@@ -167,7 +166,6 @@ export function EditableComponentSource({
     return {
       type: contractType,
       unit: String(contract.unit || ""),
-      template: String(parse?.template || parse?.parse_template || ""),
       evidenceRefs: Number(
         evidence?.min_refs || evidence?.min_evidence_refs || 0,
       ),
@@ -1277,14 +1275,6 @@ export function EditableComponentSource({
                                       {inherited.unit}
                                     </span>
                                     <StaticBadges fieldPath="contract.unit" />
-                                  </span>
-                                ) : null}
-                                {inherited.template ? (
-                                  <span className="inline-flex items-center gap-0.5">
-                                    <span className="sf-review-ai-pending-badge px-1.5 py-0.5 rounded text-[10px]">
-                                      {inherited.template}
-                                    </span>
-                                    <StaticBadges fieldPath="parse.template" />
                                   </span>
                                 ) : null}
                                 {inherited.evidenceRefs > 0 ? (

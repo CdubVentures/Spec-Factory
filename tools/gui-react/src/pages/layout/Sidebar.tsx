@@ -5,6 +5,7 @@ import { useRuntimeStore } from '../../stores/runtimeStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { useCatalogQuery } from '../../hooks/useCatalogQuery.ts';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { OperationsTracker } from '../../features/operations/index.ts';
 const VARIANT_PLACEHOLDERS = new Set(['unk', 'unknown', 'na', 'n/a', 'none', 'null', '']);
 function cleanVariant(v: string): string {
   const s = (v ?? '').trim();
@@ -221,7 +222,9 @@ export function Sidebar() {
       </div>
 
 
-      <div className="border-t border-white/10 pt-3">
+      <OperationsTracker />
+
+      <div className="border-t border-white/10 pt-3 mt-auto">
         {processStatus.running && (
           <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">PID {processStatus.pid} running</p>
         )}

@@ -10,23 +10,12 @@ function assertObject(name, value) {
   }
 }
 
-// WHY: SQL-first catalog builder. Reads directly from specDb (products + product_queue
-// tables) for the GUI dropdown.
-
-function buildQueueLookup(queueRows) {
-  const map = new Map();
-  for (const row of queueRows) {
-    if (row.product_id) map.set(row.product_id, row);
-  }
-  return map;
-}
+// WHY: SQL-first catalog builder. Reads directly from specDb (products table) for the GUI dropdown.
 
 async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
-  const queueRows = specDb.getAllQueueProducts?.() || [];
-  const queueLookup = buildQueueLookup(queueRows);
 
   const seen = new Map();
 
@@ -39,8 +28,6 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
     if (!brand || !base_model) continue;
     if (seen.has(pid)) continue;
 
-    const summary = specDb.getSummaryForProduct?.(pid) || null;
-    const qp = queueLookup.get(pid) || {};
     const hasFinal = await storage.objectExists(`final/${category}/${pid}/normalized.json`).catch(() => false);
 
     seen.set(pid, {
@@ -52,14 +39,14 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
       model,
       base_model,
       variant,
-      status: qp.status || (summary ? 'complete' : 'pending'),
+      status: row.status || 'active',
       hasFinal,
-      validated: !!(summary?.validated),
-      confidence: summary?.confidence || 0,
-      coverage: (summary?.coverage_overall_percent || 0) / 100,
-      fieldsFilled: summary?.fields_filled || 0,
-      fieldsTotal: summary?.fields_total || 0,
-      lastRun: summary?.lastRun || summary?.generated_at || '',
+      validated: false,
+      confidence: 0,
+      coverage: 0,
+      fieldsFilled: 0,
+      fieldsTotal: 0,
+      lastRun: '',
       inActive: true,
     });
   }

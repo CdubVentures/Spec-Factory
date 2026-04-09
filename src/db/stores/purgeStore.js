@@ -77,8 +77,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
       // Catalog
       clearedCatalogState += db.prepare('DELETE FROM products WHERE category = ?').run(cat).changes;
-      clearedCatalogState += db.prepare('DELETE FROM product_queue WHERE category = ?').run(cat).changes;
-      clearedCatalogState += db.prepare('DELETE FROM product_runs WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM curation_suggestions WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM component_review_queue WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM llm_route_matrix WHERE category = ?').run(cat).changes;

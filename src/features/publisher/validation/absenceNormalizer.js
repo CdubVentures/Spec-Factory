@@ -3,13 +3,12 @@ import { UNK_TOKENS } from './unkTokens.js';
 /**
  * Canonicalizes absence values before shape check (Step 0).
  * @param {*} value - Raw field value
- * @param {'scalar'|'list'|'record'} shape - Expected shape from field contract
- * @returns {*} Canonical form: 'unk' for scalar absence, [] for list, {} for record.
+ * @param {'scalar'|'list'} shape - Expected shape from field contract
+ * @returns {*} Canonical form: 'unk' for scalar absence, [] for list.
  */
 export function normalizeAbsence(value, shape) {
   if (value === null || value === undefined) {
     if (shape === 'list') return [];
-    if (shape === 'record') return {};
     return 'unk';
   }
 

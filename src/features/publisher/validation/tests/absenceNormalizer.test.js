@@ -66,17 +66,8 @@ describe('normalizeAbsence — list', () => {
   }
 });
 
-describe('normalizeAbsence — record', () => {
-  const cases = [
-    [null,        'record', {},       'null + record -> {}'],
-    [undefined,   'record', {},       'undefined + record -> {}'],
-    [{},          'record', {},       'empty record passes through'],
-    [{ a: 1 },   'record', { a: 1 }, 'non-empty record passes through'],
-  ];
-
-  for (const [input, shape, expected, label] of cases) {
-    it(label, () => {
-      assert.deepStrictEqual(normalizeAbsence(input, shape), expected);
-    });
-  }
+describe('normalizeAbsence — record shape retired', () => {
+  it('null + record falls through to scalar default (unk)', () => {
+    assert.strictEqual(normalizeAbsence(null, 'record'), 'unk');
+  });
 });

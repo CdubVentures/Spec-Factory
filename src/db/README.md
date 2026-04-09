@@ -14,9 +14,9 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
   - Key review: `getKeyReviewState`, `setKeyReviewState`
   - Provenance: `getProvenanceForProduct(category, productId)` → flat `{ [fieldKey]: { value, confidence, host, evidence: [...] } }`
   - Normalized: `getNormalizedForProduct(productId)` → `{ identity: { brand, base_model, model, variant }, fields: { [fieldKey]: value } }`
-  - Summary: `getSummaryForProduct(productId)` → full summary object from `product_runs.summary_json`
-  - Traffic Light: `getTrafficLightForProduct(productId)` → `summary.traffic_light` extraction
-  - Billing / source intel / queue product stores
+  - Summary: `getSummaryForProduct(productId)` → stub (returns null, pre-wired for future data source)
+  - Traffic Light: `getTrafficLightForProduct(productId)` → stub (returns null, pre-wired for future data source)
+  - Billing / source intel / product stores
   - `close()` — cleanup
 - `specDbSchema.js` → `SCHEMA` — DDL string for table/index creation
 - `specDbHelpers.js` → `normalizeListLinkToken`, `expandListLinkValues`, `toPositiveInteger`, `toBoolInt`, `toBand`, `buildDefaultLlmRoutes`

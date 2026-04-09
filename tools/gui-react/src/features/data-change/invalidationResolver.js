@@ -118,6 +118,7 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ]),
   storage: Object.freeze([
     ['indexlab', 'runs'],
+    ['indexlab', 'product-history', CATEGORY_TOKEN],
   ]),
   'source-strategy': Object.freeze([
     ['source-strategy', CATEGORY_TOKEN],
@@ -157,7 +158,7 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
 
 export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
-  'process-completed': ['studio', 'review-layout', 'component', 'enum'],
+  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
   'catalog-product-add': ['catalog', 'queue', 'identity'],
   'catalog-product-update': ['catalog', 'queue', 'identity'],

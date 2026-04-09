@@ -2,7 +2,6 @@
 import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
 import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
 import { KeyContractSection } from "./key-sections/KeyContractSection.tsx";
-import { KeyParseRulesSection } from "./key-sections/KeyParseRulesSection.tsx";
 import { KeyEvidenceSection } from "./key-sections/KeyEvidenceSection.tsx";
 import { KeyStickyHeader } from "./key-sections/KeyStickyHeader.tsx";
 import { KeyHintsSection } from "./key-sections/KeyHintsSection.tsx";
@@ -541,11 +540,8 @@ export function KeyNavigatorTab({
 
               {/*ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Field Coupling Summary ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
               {(() => {
-                const pt = strN(
-                  currentRule,
-                  "parse.template",
-                  strN(currentRule, "parse_template"),
-                );
+                const contractType = strN(currentRule, "contract.type");
+                const contractShape = strN(currentRule, "contract.shape", "scalar");
                 const es = strN(
                   currentRule,
                   "enum.source",
@@ -559,22 +555,23 @@ export function KeyNavigatorTab({
                 const ct = strN(currentRule, "component.type");
                 const chipCls =
                   "px-2 py-0.5 text-[11px] rounded-full font-medium";
-                const isComponent = pt === "component_reference";
-                const isBoolean = pt === "boolean_yes_no_unk";
-                const isNumeric = [
-                  "number_with_unit",
-                  "list_of_numbers_with_unit",
-                  "list_numbers_or_ranges_with_unit",
-                ].includes(pt);
+                const isComponent = !!ct;
+                const isBoolean = contractType === "boolean";
+                const isNumeric = ["number", "integer", "range", "mixed_number_range"].includes(contractType);
                 return (
                   <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded border sf-border-default sf-bg-surface-soft sf-dk-surface-800a50 text-xs">
                     <span className="sf-text-subtle font-medium mr-1">
-                      Pipeline:
+                      Contract:
                     </span>
                     <span
                       className={`${chipCls} ${isComponent ? "sf-review-ai-pending-badge" : isBoolean ? "sf-chip-info-strong" : isNumeric ? "sf-chip-orange-strong" : "sf-chip-success-strong"}`}
                     >
-                      {pt || "none"}
+                      {contractType || "none"}
+                    </span>
+                    <span
+                      className={`${chipCls} sf-bg-surface-soft-strong sf-text-muted sf-dk-surface-700 dark:sf-text-subtle`}
+                    >
+                      {contractShape}
                     </span>
                     <span className="sf-text-subtle">|</span>
                     <span className="sf-text-muted">
@@ -622,15 +619,6 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               />
 
-              <KeyParseRulesSection
-                selectedKey={selectedKey}
-                currentRule={currentRule}
-                updateField={updateField}
-                category={category}
-                BadgeRenderer={B}
-                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
-                disabled={isSelectedEgLocked}
-              />
 
               {/* ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Enum ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
               <Section
@@ -645,10 +633,9 @@ export function KeyNavigatorTab({
                   rule={currentRule}
                   knownValues={knownValues}
                   enumLists={enumLists}
-                  parseTemplate={strN(
+                  contractType={strN(
                     currentRule,
-                    "parse.template",
-                    strN(currentRule, "parse_template"),
+                    "contract.type",
                   )}
                   onUpdate={(path, value) =>
                     updateField(selectedKey, path, value)

@@ -117,9 +117,7 @@
       "group": "performance",
       "key": "adaptive_sync",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -239,9 +237,7 @@
       "group": "display_panel",
       "key": "aspect_ratio",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -360,9 +356,7 @@
       "group": "connectivity",
       "key": "audio_output",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -480,9 +474,7 @@
       "group": "color_image_quality",
       "key": "backlight_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -601,9 +593,7 @@
       "group": "identity",
       "key": "base_model",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -727,15 +717,7 @@
       "group": "color_image_quality",
       "key": "black_uniformity",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -853,9 +835,7 @@
       "group": "identity",
       "key": "brand",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -981,16 +961,7 @@
       "group": "color_image_quality",
       "key": "brightness_hdr_peak",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1117,16 +1088,7 @@
       "group": "color_image_quality",
       "key": "brightness_sdr",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1204,12 +1166,12 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "number",
         "unit": "mm",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Cable Length",
       "effort": 3,
@@ -1247,9 +1209,7 @@
       "group": "general",
       "key": "cable_length",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1364,9 +1324,7 @@
       "group": "general",
       "key": "cable_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1496,8 +1454,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -1612,9 +1569,7 @@
       "group": "identity",
       "key": "category",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -1740,8 +1695,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -1827,11 +1781,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "hard",
       "display_name": "Color Accuracy (ΔE)",
       "effort": 6,
@@ -1869,9 +1823,7 @@
       "group": "color_image_quality",
       "key": "color_accuracy_delta_e",
       "output_shape": "scalar",
-      "parse": {
-        "template": "integer_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1997,14 +1949,7 @@
       "group": "color_image_quality",
       "key": "color_gamut_adobe_rgb",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2128,14 +2073,7 @@
       "group": "color_image_quality",
       "key": "color_gamut_dci_p3",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2260,14 +2198,7 @@
       "group": "color_image_quality",
       "key": "color_gamut_srgb",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2392,7 +2323,6 @@
           "|",
           ";"
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {
           "blue-dark": "dark-blue",
           "blue-light": "light-blue",
@@ -2525,9 +2455,7 @@
       "group": "color_image_quality",
       "key": "contrast_ratio",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2645,9 +2573,7 @@
       "group": "color_image_quality",
       "key": "contrast_ratio_dynamic",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2721,11 +2647,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Crosshair Overlay",
       "effort": 3,
@@ -2763,9 +2689,7 @@
       "group": "features",
       "key": "crosshair_overlay",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2881,9 +2805,7 @@
       "group": "display_panel",
       "key": "curve_radius",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2958,11 +2880,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Curved",
       "effort": 3,
@@ -3000,9 +2922,7 @@
       "group": "display_panel",
       "key": "curved",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3077,11 +2997,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Daisy Chain (DP Out)",
       "effort": 3,
@@ -3119,9 +3039,7 @@
       "group": "connectivity",
       "key": "daisy_chain",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3246,14 +3164,7 @@
       "group": "dimensions_weight",
       "key": "depth",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3326,11 +3237,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
       "effort": 3,
@@ -3368,9 +3279,7 @@
       "group": "general",
       "key": "discontinued",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3486,9 +3395,7 @@
       "group": "connectivity",
       "key": "display_stream_compression",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3607,9 +3514,7 @@
       "group": "connectivity",
       "key": "displayport_ports",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3729,9 +3634,7 @@
       "group": "connectivity",
       "key": "displayport_version",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3804,6 +3707,14 @@
       "availability": "sometimes",
       "component": null,
       "constraints": [],
+      "consumers": {
+        "enum.match.format_hint": {
+          "review": false
+        },
+        "enum.match.strategy": {
+          "review": false
+        }
+      },
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -3858,8 +3769,7 @@
       "parse": {
         "delimiters": [
           ","
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -3967,9 +3877,7 @@
       "group": "power",
       "key": "energy_rating",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4087,9 +3995,7 @@
       "group": "connectivity",
       "key": "ethernet_rj45",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4165,11 +4071,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Factory Calibrated",
       "effort": 3,
@@ -4207,9 +4113,7 @@
       "group": "color_image_quality",
       "key": "factory_calibrated",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4283,11 +4187,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Flicker-Free",
       "effort": 3,
@@ -4325,9 +4229,7 @@
       "group": "features",
       "key": "flicker_free",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4455,15 +4357,7 @@
       "group": "features",
       "key": "flicker_frequency",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4586,9 +4480,7 @@
       "group": "display_panel",
       "key": "frc",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4704,9 +4596,7 @@
       "group": "color_image_quality",
       "key": "gradient_handling",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4837,15 +4727,7 @@
       "group": "color_image_quality",
       "key": "gray_uniformity_50",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4963,9 +4845,7 @@
       "group": "identity",
       "key": "gtin",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -5080,9 +4960,7 @@
       "group": "connectivity",
       "key": "hdmi_ports",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5202,9 +5080,7 @@
       "group": "connectivity",
       "key": "hdmi_version",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5336,8 +5212,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "expected",
@@ -5419,11 +5294,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Headphone Jack",
       "effort": 3,
@@ -5461,9 +5336,7 @@
       "group": "connectivity",
       "key": "headphone_jack",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5589,14 +5462,7 @@
       "group": "dimensions_weight",
       "key": "height",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -5712,9 +5578,7 @@
       "group": "ergonomics",
       "key": "height_adjustment",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5841,14 +5705,7 @@
       "group": "dimensions_weight",
       "key": "height_with_stand",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5973,15 +5830,7 @@
       "group": "color_image_quality",
       "key": "horizontal_viewing_angle",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6111,14 +5960,7 @@
       "group": "performance",
       "key": "input_lag",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6244,14 +6086,7 @@
       "group": "performance",
       "key": "input_lag_120hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6382,14 +6217,7 @@
       "group": "performance",
       "key": "input_lag_60hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6520,14 +6348,7 @@
       "group": "performance",
       "key": "input_lag_max_refresh",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6607,11 +6428,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "KVM Switch",
       "effort": 3,
@@ -6649,9 +6470,7 @@
       "group": "connectivity",
       "key": "kvm_switch",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6735,11 +6554,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "medium",
       "display_name": "Local Dimming Zones",
       "effort": 4,
@@ -6777,9 +6596,7 @@
       "group": "color_image_quality",
       "key": "local_dimming_zones",
       "output_shape": "scalar",
-      "parse": {
-        "template": "integer_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6855,11 +6672,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Low Blue Light",
       "effort": 3,
@@ -6897,9 +6714,7 @@
       "group": "features",
       "key": "low_blue_light",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7016,9 +6831,7 @@
       "group": "features",
       "key": "macos_compatibility",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7139,9 +6952,7 @@
       "group": "general",
       "key": "material",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7268,15 +7079,7 @@
       "group": "performance",
       "key": "max_refresh_rate_displayport",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7410,15 +7213,7 @@
       "group": "performance",
       "key": "max_refresh_rate_hdmi",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7543,9 +7338,7 @@
       "group": "features",
       "key": "microphone",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7660,9 +7453,7 @@
       "group": "identity",
       "key": "model",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7738,11 +7529,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Blur Reduction",
       "effort": 3,
@@ -7780,9 +7571,7 @@
       "group": "performance",
       "key": "motion_blur_reduction",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7899,9 +7688,7 @@
       "group": "identity",
       "key": "mpn",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7974,13 +7761,8 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "rounding": {
-          "decimals": 2,
-          "mode": "nearest"
-        },
         "shape": "scalar",
         "type": "string",
-        "unit": "M",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -8022,9 +7804,7 @@
       "group": "display_panel",
       "key": "native_colors",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8067,7 +7847,7 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "number",
+        "input_control": "text",
         "label": "Native Colors",
         "order": 21,
         "placeholder": "unk",
@@ -8141,9 +7921,7 @@
       "group": "features",
       "key": "osd_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8217,11 +7995,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Overdrive",
       "effort": 3,
@@ -8259,9 +8037,7 @@
       "group": "performance",
       "key": "overdrive",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8388,15 +8164,7 @@
       "group": "performance",
       "key": "overshoot_120hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8526,15 +8294,7 @@
       "group": "performance",
       "key": "overshoot_60hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8664,15 +8424,7 @@
       "group": "performance",
       "key": "overshoot_max_refresh",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8795,9 +8547,7 @@
       "group": "display_panel",
       "key": "panel_bit_depth",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8916,9 +8666,7 @@
       "group": "display_panel",
       "key": "panel_coating",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9037,9 +8785,7 @@
       "group": "display_panel",
       "key": "panel_manufacturer",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9158,9 +8904,7 @@
       "group": "display_panel",
       "key": "panel_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -9243,11 +8987,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "PiP / PbP",
       "effort": 3,
@@ -9285,9 +9029,7 @@
       "group": "features",
       "key": "pip_pbp",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9364,11 +9106,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Pivot / Portrait",
       "effort": 3,
@@ -9406,9 +9148,7 @@
       "group": "ergonomics",
       "key": "pivot_rotation",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9535,14 +9275,7 @@
       "group": "display_panel",
       "key": "pixel_density",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ppi",
-        "unit_accepts": [
-          "ppi"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9668,14 +9401,7 @@
       "group": "power",
       "key": "power_consumption_max",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9800,14 +9526,7 @@
       "group": "power",
       "key": "power_consumption_typical",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9927,9 +9646,7 @@
       "group": "general",
       "key": "price_range",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10046,9 +9763,7 @@
       "group": "features",
       "key": "ps5_compatibility",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10179,15 +9894,7 @@
       "group": "color_image_quality",
       "key": "reflections",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10318,15 +10025,7 @@
       "group": "performance",
       "key": "refresh_rate",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -10407,11 +10106,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "date",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "date",
       "difficulty": "medium",
       "display_name": "Release Date",
       "effort": 3,
@@ -10449,14 +10148,7 @@
       "group": "general",
       "key": "release_date",
       "output_shape": "scalar",
-      "parse": {
-        "accepted_formats": [
-          "YYYY-MM-DD",
-          "YYYY-MM",
-          "YYYY"
-        ],
-        "template": "date_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10573,9 +10265,7 @@
       "group": "display_panel",
       "key": "resolution",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -10706,14 +10396,7 @@
       "group": "performance",
       "key": "response_time_120hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10845,14 +10528,7 @@
       "group": "performance",
       "key": "response_time_60hz",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10985,14 +10661,7 @@
       "group": "performance",
       "key": "response_time_gtg",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11120,14 +10789,7 @@
       "group": "performance",
       "key": "response_time_mprt",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11254,17 +10916,7 @@
       "group": "display_panel",
       "key": "screen_size",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "in",
-        "unit_accepts": [
-          "in",
-          "inch",
-          "inches",
-          "\""
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11380,9 +11032,7 @@
       "group": "identity",
       "key": "sku",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11497,9 +11147,7 @@
       "group": "features",
       "key": "speakers",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11618,9 +11266,7 @@
       "group": "display_panel",
       "key": "subpixel_layout",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11736,9 +11382,7 @@
       "group": "ergonomics",
       "key": "swivel_range",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11855,9 +11499,7 @@
       "group": "color_image_quality",
       "key": "text_clarity",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11980,9 +11622,7 @@
       "group": "connectivity",
       "key": "thunderbolt_ports",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12101,9 +11741,7 @@
       "group": "connectivity",
       "key": "thunderbolt_version",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12221,9 +11859,7 @@
       "group": "ergonomics",
       "key": "tilt_range",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12342,9 +11978,7 @@
       "group": "connectivity",
       "key": "usb_c_ports",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12462,9 +12096,7 @@
       "group": "connectivity",
       "key": "usb_hub",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12591,14 +12223,7 @@
       "group": "features",
       "key": "usb_power_delivery_watts",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12675,11 +12300,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Variable Refresh Rate",
       "effort": 3,
@@ -12717,9 +12342,7 @@
       "group": "performance",
       "key": "variable_refresh_rate",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12833,9 +12456,7 @@
       "group": "identity",
       "key": "variant",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -12961,15 +12582,7 @@
       "group": "color_image_quality",
       "key": "vertical_viewing_angle",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13091,9 +12704,7 @@
       "group": "dimensions_weight",
       "key": "vesa_mount",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13214,9 +12825,7 @@
       "group": "performance",
       "key": "vrr_range",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13291,11 +12900,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wall Mountable",
       "effort": 3,
@@ -13333,9 +12942,7 @@
       "group": "ergonomics",
       "key": "wall_mountable",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13452,9 +13059,7 @@
       "group": "general",
       "key": "warranty",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13571,9 +13176,7 @@
       "group": "features",
       "key": "webcam",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13701,16 +13304,7 @@
       "group": "dimensions_weight",
       "key": "weight_with_stand",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13836,16 +13430,7 @@
       "group": "dimensions_weight",
       "key": "weight_without_stand",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -13921,11 +13506,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wide Color Gamut",
       "effort": 3,
@@ -13963,9 +13548,7 @@
       "group": "color_image_quality",
       "key": "wide_color_gamut",
       "output_shape": "scalar",
-      "parse": {
-        "template": "boolean_yes_no_unk"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -14092,14 +13675,7 @@
       "group": "dimensions_weight",
       "key": "width",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -14216,9 +13792,7 @@
       "group": "features",
       "key": "xbox_series_xs_compatibility",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -14282,7 +13856,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-07T23:43:28.529Z",
+  "generated_at": "2026-04-09T07:49:24.931Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

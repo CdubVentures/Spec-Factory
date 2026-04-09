@@ -5,7 +5,6 @@ import {
   DepsTab,
   EnumTab,
   EvidenceTab,
-  ParseTab,
   PreviewTab,
   SearchTab,
   type BadgeSlot,
@@ -53,9 +52,6 @@ export function WorkbenchDrawerTabContent({
 }: WorkbenchDrawerTabContentProps) {
   if (activeTab === 'contract') {
     return <ContractTab fieldKey={fieldKey} rule={rule} onUpdate={onUpdate} B={B} />;
-  }
-  if (activeTab === 'parse') {
-    return <ParseTab rule={rule} onUpdate={onUpdate} B={B} />;
   }
   if (activeTab === 'enum') {
     return (

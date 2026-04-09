@@ -44,14 +44,6 @@ export function normalizeBoolean(value) {
   return null;
 }
 
-// --- normalizeColorList ---
-
-export function normalizeColorList(value) {
-  return parseList(value)
-    .map(entry => toStringSafe(entry).toLowerCase())
-    .filter(Boolean);
-}
-
 // --- parseDate ---
 // WHY: Returns YYYY-MM-DD only. Full ISO timestamps fail the date_field format regex.
 
@@ -64,33 +56,6 @@ export function parseDate(value) {
   const parsed = new Date(token);
   if (!Number.isFinite(parsed.getTime())) return null;
   return parsed.toISOString().slice(0, 10);
-}
-
-// --- parseLatencyList ---
-
-export function parseLatencyList(value) {
-  const parts = parseList(value);
-  const out = [];
-  for (const part of parts) {
-    const match = String(part).match(/([\d.]+)\s*(wireless|wired|bluetooth|usb|2\.4g|2\.4ghz)?/i);
-    if (!match) continue;
-    const latency = asNumber(match[1]);
-    if (latency === null) continue;
-    out.push({
-      value: latency,
-      mode: toStringSafe(match[2] || 'default').toLowerCase(),
-    });
-  }
-  return out;
-}
-
-// --- parsePollingList ---
-
-export function parsePollingList(value) {
-  const values = parseList(value)
-    .map(entry => Number.parseInt(String(entry).replace(/,/g, '').trim(), 10))
-    .filter(entry => Number.isFinite(entry));
-  return [...new Set(values)].sort((a, b) => b - a);
 }
 
 // --- parseNumberListWithRanges ---

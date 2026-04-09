@@ -71,9 +71,6 @@ export function DepsTab({
             const v = e.target.value;
             if (!v) {
               onUpdate('component', null);
-              if (strN(rule, 'parse.template') === 'component_reference') {
-                onUpdate('parse.template', 'text_field');
-              }
             } else {
               onUpdate('component', {
                 type: v,
@@ -81,7 +78,6 @@ export function DepsTab({
                 allow_new_components: true,
                 require_identity_evidence: true,
               });
-              onUpdate('parse.template', 'component_reference');
               onUpdate('enum.source', `component_db.${v}`);
               onUpdate('enum.policy', 'open_prefer_known');
               onUpdate('enum.match.strategy', 'alias');
@@ -102,7 +98,7 @@ export function DepsTab({
               component_reference
             </span>
             <span className={TEXT_GRAY_400}>
-              Parse: <span className="font-mono">{strN(rule, 'parse.template')}</span>
+              Type: <span className="font-mono">{strN(rule, 'component.type')}</span>
               {' | '}Enum: <span className="font-mono">{strN(rule, 'enum.source')}</span>
             </span>
           </div>
@@ -225,7 +221,6 @@ export function DepsTab({
                           const fieldRule = editedRules[prop.field_key || ''] as Record<string, unknown> | undefined;
                           const enumSrc = fieldRule ? strN(fieldRule, 'enum.source') : '';
                           const contractType = fieldRule ? strN(fieldRule, 'contract.type') : '';
-                          const parseTemplate = fieldRule ? strN(fieldRule, 'parse.template') : '';
                           const isBool = contractType === 'boolean';
                           const hasEnum = !!enumSrc;
                           const isComponentDb = hasEnum && enumSrc.startsWith('component_db');
@@ -251,7 +246,7 @@ export function DepsTab({
                                 className={`text-[9px] px-1 rounded shrink-0 ${vp === 'override_allowed' ? 'sf-chip-teal-strong' : isLocked ? 'sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-subtle' : 'sf-chip-info-soft'}`}
                                 title={lockReason || (vp === 'override_allowed' ? 'Products can override this value without triggering review' : `Variance: ${vp}`)}
                               >{vp === 'override_allowed' ? 'override' : vp}</span>
-                              {parseTemplate ? <span className="text-[9px] px-1 rounded sf-bg-surface-soft sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle shrink-0">{parseTemplate}</span> : null}
+                              {contractType ? <span className="text-[9px] px-1 rounded sf-bg-surface-soft sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle shrink-0">{contractType}</span> : null}
                               {isBool ? <span className="text-[9px] px-1 rounded sf-chip-warning-strong shrink-0">boolean: yes / no</span> : null}
                               {isComponentDb ? <span className="text-[9px] px-1 rounded sf-review-ai-pending-badge shrink-0 truncate max-w-[120px]" title={enumSrc}>enum.db: {enumSrc.replace(/^component_db\./, '')}</span> : null}
                               {isExtEnum ? <span className="text-[9px] px-1 rounded sf-review-ai-pending-badge shrink-0 truncate max-w-[120px]" title={enumSrc}>enum: {enumSrc.replace(/^(known_values|data_lists)\./, '')}</span> : null}

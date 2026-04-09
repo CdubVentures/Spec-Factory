@@ -16,14 +16,6 @@ export interface WorkbenchRow {
   contractUnit: string;
   unknownToken: string;
 
-  // Parse
-  parseTemplate: string;
-  parseUnit: string;
-  unitAccepts: string;
-  allowUnitless: boolean;
-  allowRanges: boolean;
-  strictUnitRequired: boolean;
-
   // Enum
   enumPolicy: string;
   enumSource: string;
@@ -74,4 +66,4 @@ export interface WorkbenchRow {
 
 export type ColumnPreset = 'minimal' | 'contract' | 'parsing' | 'enums' | 'evidence' | 'search' | 'debug' | 'all';
 
-export type DrawerTab = 'contract' | 'parse' | 'enum' | 'evidence' | 'search' | 'deps' | 'preview';
+export type DrawerTab = 'contract' | 'enum' | 'evidence' | 'search' | 'deps' | 'preview';

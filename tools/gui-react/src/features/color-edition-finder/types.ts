@@ -18,6 +18,12 @@ export interface ColorEditionFinderSelected {
   readonly default_color: string;
 }
 
+/** Validation rejection detail from the candidate gate. */
+export interface ColorEditionFinderRejection {
+  readonly reason_code: string;
+  readonly detail: Readonly<Record<string, unknown>>;
+}
+
 /** A single historical run entry with full prompt/response audit trail. */
 export interface ColorEditionFinderRunEntry {
   readonly run_number: number;
@@ -27,7 +33,13 @@ export interface ColorEditionFinderRunEntry {
   readonly cooldown_until: string;
   readonly selected: ColorEditionFinderSelected;
   readonly prompt: { readonly system: string; readonly user: string };
-  readonly response: ColorEditionFinderSelected;
+  // WHY: Successful runs store ColorEditionFinderSelected; rejected runs store
+  // { status: 'rejected', raw, rejections }. Union via optional fields.
+  readonly response: ColorEditionFinderSelected & {
+    readonly status?: 'rejected';
+    readonly raw?: Readonly<Record<string, unknown>>;
+    readonly rejections?: readonly ColorEditionFinderRejection[];
+  };
 }
 
 export interface ColorEditionFinderResult {

@@ -2,7 +2,7 @@ import { recordDataChangeBroadcast } from './dataPropagationCounters.js';
 
 export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
-  'process-completed': ['studio', 'review-layout', 'component', 'enum'],
+  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
   'catalog-product-add': ['catalog', 'queue', 'identity'],
   'catalog-product-update': ['catalog', 'queue', 'identity'],
@@ -17,6 +17,8 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'color-update': ['color-registry'],
   'color-delete': ['color-registry'],
   'color-edition-finder-run': ['color-edition-finder'],
+  'color-edition-finder-run-deleted': ['color-edition-finder'],
+  'color-edition-finder-deleted': ['color-edition-finder'],
   'spec-seeds-updated': ['spec-seeds'],
   'llm-settings-updated': ['settings', 'indexing'],
   'llm-settings-reset': ['settings', 'indexing'],

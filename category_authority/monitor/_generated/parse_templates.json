@@ -1,6 +1,6 @@
 {
   "category": "monitor",
-  "generated_at": "2026-04-07T02:57:47.555Z",
+  "generated_at": "2026-04-09T07:49:24.931Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -172,14 +172,14 @@
         "G-Sync"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "aspect_ratio": {
       "context_keywords": [
         "aspect ratio"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "audio_output": {
       "context_keywords": [
@@ -187,7 +187,7 @@
         "audio output"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "backlight_type": {
       "context_keywords": [
@@ -196,23 +196,22 @@
         "illumination"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "base_model": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "black_uniformity": {
       "context_keywords": [
         "black uniformity"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "brand": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "brightness_hdr_peak": {
       "context_keywords": [
@@ -221,8 +220,7 @@
         "peak brightness"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "nits"
+      "type": "number"
     },
     "brightness_sdr": {
       "context_keywords": [
@@ -231,22 +229,21 @@
         "typical brightness"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "nits"
+      "type": "number"
     },
     "cable_length": {
       "context_keywords": [
         "cable length"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "number"
     },
     "cable_type": {
       "context_keywords": [
         "cable type"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "cables_included": {
       "context_keywords": [
@@ -255,18 +252,18 @@
         "included cables"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "category": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "color": {
       "context_keywords": [
         "chassis color"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "color_accuracy_delta_e": {
       "context_keywords": [
@@ -275,7 +272,7 @@
         "delta E"
       ],
       "patterns": [],
-      "template": "integer_field"
+      "type": "integer"
     },
     "color_gamut_adobe_rgb": {
       "context_keywords": [
@@ -283,8 +280,7 @@
         "Adobe RGB gamut"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "color_gamut_dci_p3": {
       "context_keywords": [
@@ -292,8 +288,7 @@
         "P3 gamut"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "color_gamut_srgb": {
       "context_keywords": [
@@ -301,15 +296,14 @@
         "sRGB gamut"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "colors": {
       "context_keywords": [
         "colors"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "contrast_ratio": {
       "context_keywords": [
@@ -318,7 +312,7 @@
         "static contrast"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "contrast_ratio_dynamic": {
       "context_keywords": [
@@ -326,7 +320,7 @@
         "dynamic contrast"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "crosshair_overlay": {
       "context_keywords": [
@@ -335,7 +329,7 @@
         "on-screen crosshair"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "curve_radius": {
       "context_keywords": [
@@ -343,14 +337,14 @@
         "curve radius"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "curved": {
       "context_keywords": [
         "curved display"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "daisy_chain": {
       "context_keywords": [
@@ -359,22 +353,21 @@
         "MST"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "depth": {
       "context_keywords": [
         "thickness"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "discontinued": {
       "context_keywords": [
         "end of life"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "display_stream_compression": {
       "context_keywords": [
@@ -382,7 +375,7 @@
         "DSC"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "displayport_ports": {
       "context_keywords": [
@@ -391,7 +384,7 @@
         "DP"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "displayport_version": {
       "context_keywords": [
@@ -400,14 +393,14 @@
         "DP version"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "editions": {
       "context_keywords": [
         "editions"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "energy_rating": {
       "context_keywords": [
@@ -416,7 +409,7 @@
         "Energy Star"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "ethernet_rj45": {
       "context_keywords": [
@@ -425,7 +418,7 @@
         "RJ45"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "factory_calibrated": {
       "context_keywords": [
@@ -433,7 +426,7 @@
         "pre-calibrated"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "flicker_free": {
       "context_keywords": [
@@ -441,7 +434,7 @@
         "flicker-free"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "flicker_frequency": {
       "context_keywords": [
@@ -450,8 +443,7 @@
         "PWM frequency"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "Hz"
+      "type": "number"
     },
     "frc": {
       "context_keywords": [
@@ -460,7 +452,7 @@
         "FRC"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "string"
     },
     "gradient_handling": {
       "context_keywords": [
@@ -468,7 +460,7 @@
         "gradient handling"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "gray_uniformity_50": {
       "context_keywords": [
@@ -476,12 +468,11 @@
         "gray uniformity 50%"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "gtin": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "hdmi_ports": {
       "context_keywords": [
@@ -489,7 +480,7 @@
         "HDMI ports"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "hdmi_version": {
       "context_keywords": [
@@ -498,7 +489,7 @@
         "HDMI version"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "hdr_support": {
       "context_keywords": [
@@ -507,7 +498,7 @@
         "HDR support"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "headphone_jack": {
       "context_keywords": [
@@ -516,7 +507,7 @@
         "headphone jack"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "height": {
       "context_keywords": [
@@ -525,8 +516,7 @@
         "panel height"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "height_adjustment": {
       "context_keywords": [
@@ -534,15 +524,14 @@
         "height adjustment"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "height_with_stand": {
       "context_keywords": [
         "height with stand"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "horizontal_viewing_angle": {
       "context_keywords": [
@@ -550,8 +539,7 @@
         "viewing angle horizontal"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "deg"
+      "type": "number"
     },
     "input_lag": {
       "context_keywords": [
@@ -559,8 +547,7 @@
         "input lag"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "input_lag_120hz": {
       "context_keywords": [
@@ -568,8 +555,7 @@
         "input lag 120Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "input_lag_60hz": {
       "context_keywords": [
@@ -577,8 +563,7 @@
         "input lag 60Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "input_lag_max_refresh": {
       "context_keywords": [
@@ -586,8 +571,7 @@
         "input lag max refresh"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "kvm_switch": {
       "context_keywords": [
@@ -595,7 +579,7 @@
         "KVM switch"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "local_dimming_zones": {
       "context_keywords": [
@@ -604,7 +588,7 @@
         "local dimming"
       ],
       "patterns": [],
-      "template": "integer_field"
+      "type": "integer"
     },
     "low_blue_light": {
       "context_keywords": [
@@ -613,7 +597,7 @@
         "low blue light"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "macos_compatibility": {
       "context_keywords": [
@@ -621,14 +605,14 @@
         "macOS compatibility"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "material": {
       "context_keywords": [
         "body material"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "max_refresh_rate_displayport": {
       "context_keywords": [
@@ -637,8 +621,7 @@
         "max refresh rate displayport"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "Hz"
+      "type": "number"
     },
     "max_refresh_rate_hdmi": {
       "context_keywords": [
@@ -647,8 +630,7 @@
         "max refresh rate hdmi"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "Hz"
+      "type": "number"
     },
     "microphone": {
       "context_keywords": [
@@ -657,11 +639,11 @@
         "microphone"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "model": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "motion_blur_reduction": {
       "context_keywords": [
@@ -671,11 +653,11 @@
         "motion blur reduction"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "mpn": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "native_colors": {
       "context_keywords": [
@@ -684,7 +666,7 @@
         "number of colors"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "osd_type": {
       "context_keywords": [
@@ -693,14 +675,14 @@
         "OSD type"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "overdrive": {
       "context_keywords": [
         "response time overdrive"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "overshoot_120hz": {
       "context_keywords": [
@@ -708,8 +690,7 @@
         "overshoot 120Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "overshoot_60hz": {
       "context_keywords": [
@@ -717,8 +698,7 @@
         "overshoot 60Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "overshoot_max_refresh": {
       "context_keywords": [
@@ -726,8 +706,7 @@
         "overshoot max refresh"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "panel_bit_depth": {
       "context_keywords": [
@@ -736,7 +715,7 @@
         "panel bit depth"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "panel_coating": {
       "context_keywords": [
@@ -745,7 +724,7 @@
         "surface treatment"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "panel_manufacturer": {
       "context_keywords": [
@@ -753,7 +732,7 @@
         "panel manufacturer"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "panel_type": {
       "context_keywords": [
@@ -762,7 +741,7 @@
         "panel type"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "pip_pbp": {
       "context_keywords": [
@@ -772,7 +751,7 @@
         "PiP"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "pivot_rotation": {
       "context_keywords": [
@@ -781,7 +760,7 @@
         "rotation"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "pixel_density": {
       "context_keywords": [
@@ -790,8 +769,7 @@
         "PPI"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ppi"
+      "type": "number"
     },
     "power_consumption_max": {
       "context_keywords": [
@@ -799,8 +777,7 @@
         "maximum power consumption"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "W"
+      "type": "number"
     },
     "power_consumption_typical": {
       "context_keywords": [
@@ -808,8 +785,7 @@
         "typical power"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "W"
+      "type": "number"
     },
     "price_range": {
       "context_keywords": [
@@ -818,7 +794,7 @@
         "retail price"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "ps5_compatibility": {
       "context_keywords": [
@@ -826,7 +802,7 @@
         "PS5 compatibility"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "reflections": {
       "context_keywords": [
@@ -834,8 +810,7 @@
         "total reflections"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "%"
+      "type": "number"
     },
     "refresh_rate": {
       "context_keywords": [
@@ -843,8 +818,7 @@
         "refresh rate"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "Hz"
+      "type": "number"
     },
     "release_date": {
       "context_keywords": [
@@ -852,7 +826,7 @@
         "release date"
       ],
       "patterns": [],
-      "template": "date_field"
+      "type": "date"
     },
     "resolution": {
       "context_keywords": [
@@ -860,7 +834,7 @@
         "native resolution"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "response_time_120hz": {
       "context_keywords": [
@@ -868,8 +842,7 @@
         "response time 120Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "response_time_60hz": {
       "context_keywords": [
@@ -877,8 +850,7 @@
         "response time 60Hz"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "response_time_gtg": {
       "context_keywords": [
@@ -887,8 +859,7 @@
         "response time"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "response_time_mprt": {
       "context_keywords": [
@@ -896,8 +867,7 @@
         "MPRT"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "screen_size": {
       "context_keywords": [
@@ -906,19 +876,18 @@
         "screen size"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "in"
+      "type": "number"
     },
     "sku": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "speakers": {
       "context_keywords": [
         "built-in speakers"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "subpixel_layout": {
       "context_keywords": [
@@ -926,7 +895,7 @@
         "subpixel structure"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "swivel_range": {
       "context_keywords": [
@@ -934,7 +903,7 @@
         "swivel range"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "text_clarity": {
       "context_keywords": [
@@ -942,7 +911,7 @@
         "text clarity"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "thunderbolt_ports": {
       "context_keywords": [
@@ -951,7 +920,7 @@
         "Thunderbolt ports"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "thunderbolt_version": {
       "context_keywords": [
@@ -961,7 +930,7 @@
         "Thunderbolt version"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "tilt_range": {
       "context_keywords": [
@@ -970,7 +939,7 @@
         "tilt range"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "usb_c_ports": {
       "context_keywords": [
@@ -979,7 +948,7 @@
         "USB-C"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "usb_hub": {
       "context_keywords": [
@@ -987,7 +956,7 @@
         "USB ports"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "usb_power_delivery_watts": {
       "context_keywords": [
@@ -996,8 +965,7 @@
         "USB-C PD"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "W"
+      "type": "number"
     },
     "variable_refresh_rate": {
       "context_keywords": [
@@ -1005,11 +973,11 @@
         "VRR"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "variant": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "vertical_viewing_angle": {
       "context_keywords": [
@@ -1017,8 +985,7 @@
         "viewing angle vertical"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "deg"
+      "type": "number"
     },
     "vesa_mount": {
       "context_keywords": [
@@ -1027,7 +994,7 @@
         "VESA mount"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "vrr_range": {
       "context_keywords": [
@@ -1036,7 +1003,7 @@
         "VRR range"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "wall_mountable": {
       "context_keywords": [
@@ -1044,7 +1011,7 @@
         "wall mountable"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "warranty": {
       "context_keywords": [
@@ -1053,7 +1020,7 @@
         "warranty period"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "webcam": {
       "context_keywords": [
@@ -1062,7 +1029,7 @@
         "integrated webcam"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "weight_with_stand": {
       "context_keywords": [
@@ -1070,8 +1037,7 @@
         "weight with stand"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "g"
+      "type": "number"
     },
     "weight_without_stand": {
       "context_keywords": [
@@ -1079,8 +1045,7 @@
         "weight without stand"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "g"
+      "type": "number"
     },
     "wide_color_gamut": {
       "context_keywords": [
@@ -1088,7 +1053,7 @@
         "wide gamut"
       ],
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "width": {
       "context_keywords": [
@@ -1097,8 +1062,7 @@
         "panel width"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "xbox_series_xs_compatibility": {
       "context_keywords": [
@@ -1107,7 +1071,7 @@
         "Xbox Series X compatibility"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     }
   },
   "version": 1

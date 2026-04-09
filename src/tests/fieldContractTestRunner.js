@@ -32,8 +32,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
   for (const fieldKey of fieldKeys) {
     const fieldRule = fields[fieldKey];
     const kv = knownValues?.enums?.[fieldKey] || null;
-    const template = fieldRule?.parse?.template || 'text_field';
-    const compType = template === 'component_reference' ? fieldKey : null;
+    const compType = fieldRule?.parse?.component_type || null;
     const compDb = compType
       ? (componentDbs?.[compType] || componentDbs?.[compType + 's'] || null)
       : null;
@@ -187,63 +186,56 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   const e = fieldRule?.enum || {};
   const pri = fieldRule?.priority || {};
   const comp = fieldRule?.component || {};
-  const template = p.template || 'text_field';
   const knobs = [];
 
-  // contract.*
-  if (c.shape) knobs.push({ knob: 'contract.shape', value: c.shape, step: 2, action: 'reject', code: 'wrong_shape' });
-  if (c.type) knobs.push({ knob: 'contract.type', value: c.type, step: 4, action: 'reject+llm', code: 'wrong_type', prompt: 'P3' });
-  if (c.unit && c.unit !== 'none') knobs.push({ knob: 'contract.unit', value: c.unit, step: 3, action: 'reject+llm', code: 'wrong_unit', prompt: 'unit_conversion' });
+  // contract.* — step numbers match phaseRegistry order (0-10)
+  if (c.shape) knobs.push({ knob: 'contract.shape', value: c.shape, step: 1, action: 'reject', code: 'wrong_shape' });
+  if (c.type) knobs.push({ knob: 'contract.type', value: c.type, step: 3, action: 'reject+llm', code: 'wrong_type', prompt: 'P3' });
+  if (c.unit && c.unit !== 'none') knobs.push({ knob: 'contract.unit', value: c.unit, step: 2, action: 'reject+llm', code: 'wrong_unit', prompt: 'unit_conversion' });
   if (c.range?.min != null || c.range?.max != null) {
-    knobs.push({ knob: 'contract.range', value: `${c.range.min ?? '—'} to ${c.range.max ?? '—'}`, step: 10, action: 'reject+llm', code: 'out_of_range', prompt: 'P7' });
+    knobs.push({ knob: 'contract.range', value: `${c.range.min ?? '—'} to ${c.range.max ?? '—'}`, step: 9, action: 'reject+llm', code: 'out_of_range', prompt: 'P7' });
   }
   if (c.rounding?.decimals != null) {
-    knobs.push({ knob: 'contract.rounding', value: `${c.rounding.decimals} decimals (${c.rounding.mode || 'nearest'})`, step: 8, action: 'deterministic', code: null });
+    knobs.push({ knob: 'contract.rounding', value: `${c.rounding.decimals} decimals (${c.rounding.mode || 'nearest'})`, step: 7, action: 'deterministic', code: null });
   }
-  if (c.list_rules?.dedupe) knobs.push({ knob: 'contract.list_rules.dedupe', value: 'true', step: 7, action: 'deterministic', code: null });
-  if (c.list_rules?.sort && c.list_rules.sort !== 'none') knobs.push({ knob: 'contract.list_rules.sort', value: c.list_rules.sort, step: 7, action: 'deterministic', code: null });
-  if (c.list_rules?.max_items) knobs.push({ knob: 'contract.list_rules.max_items', value: String(c.list_rules.max_items), step: 7, action: 'deterministic', code: null });
-  if (c.list_rules?.min_items && c.list_rules.min_items > 0) knobs.push({ knob: 'contract.list_rules.min_items', value: String(c.list_rules.min_items), step: 7, action: 'reject', code: 'min_items_violation' });
+  if (c.list_rules?.dedupe) knobs.push({ knob: 'contract.list_rules.dedupe', value: 'true', step: 6, action: 'deterministic', code: null });
+  if (c.list_rules?.sort && c.list_rules.sort !== 'none') knobs.push({ knob: 'contract.list_rules.sort', value: c.list_rules.sort, step: 6, action: 'deterministic', code: null });
+  if (c.list_rules?.max_items) knobs.push({ knob: 'contract.list_rules.max_items', value: String(c.list_rules.max_items), step: 6, action: 'deterministic', code: null });
+  if (c.list_rules?.min_items && c.list_rules.min_items > 0) knobs.push({ knob: 'contract.list_rules.min_items', value: String(c.list_rules.min_items), step: 6, action: 'reject', code: 'min_items_violation' });
   if (c.unknown_token) knobs.push({ knob: 'contract.unknown_token', value: c.unknown_token, step: 0, action: 'info', code: null });
 
   // parse.*
-  if (p.template) knobs.push({ knob: 'parse.template', value: p.template, step: 1, action: 'dispatch', code: null });
-  if (p.unit_accepts?.length > 0) knobs.push({ knob: 'parse.unit_accepts', value: p.unit_accepts.join(', '), step: 3, action: 'deterministic', code: null });
-  if (p.unit_conversions && Object.keys(p.unit_conversions).length > 0) {
-    knobs.push({ knob: 'parse.unit_conversions', value: Object.entries(p.unit_conversions).map(([k, v]) => `${k}→${v}`).join(', '), step: 3, action: 'llm_repair', code: 'wrong_unit', prompt: 'unit_conversion' });
-  }
-  if (p.strict_unit_required) knobs.push({ knob: 'parse.strict_unit_required', value: 'true', step: 3, action: 'reject+llm', code: 'wrong_unit', prompt: 'unit_conversion' });
   if (p.token_map && Object.keys(p.token_map).length > 0) {
-    knobs.push({ knob: 'parse.token_map', value: `${Object.keys(p.token_map).length} entries`, step: 5, action: 'deterministic', code: null });
+    knobs.push({ knob: 'parse.token_map', value: `${Object.keys(p.token_map).length} entries`, step: 4, action: 'deterministic', code: null });
   }
 
   // enum.* — always show policy and strategy, not just when "active"
   const enumPolicy = knownValues?.policy || e.policy;
   if (enumPolicy) {
     if (enumPolicy === 'closed') {
-      knobs.push({ knob: 'enum.policy', value: 'closed', step: 9, action: 'reject+llm', code: 'enum_value_not_allowed', prompt: 'P1' });
+      knobs.push({ knob: 'enum.policy', value: 'closed', step: 8, action: 'reject+llm', code: 'enum_value_not_allowed', prompt: 'P1' });
     } else if (enumPolicy === 'open_prefer_known') {
-      knobs.push({ knob: 'enum.policy', value: 'open_prefer_known', step: 9, action: 'reject+llm', code: 'unknown_enum_prefer_known', prompt: 'P2' });
+      knobs.push({ knob: 'enum.policy', value: 'open_prefer_known', step: 8, action: 'reject+llm', code: 'unknown_enum_prefer_known', prompt: 'P2' });
     } else {
-      knobs.push({ knob: 'enum.policy', value: enumPolicy, step: 9, action: 'info', code: null });
+      knobs.push({ knob: 'enum.policy', value: enumPolicy, step: 8, action: 'info', code: null });
     }
   }
   if (e.match?.strategy) {
-    knobs.push({ knob: 'enum.match.strategy', value: e.match.strategy, step: 9, action: e.match.strategy === 'alias' ? 'deterministic' : 'info', code: null });
+    knobs.push({ knob: 'enum.match.strategy', value: e.match.strategy, step: 8, action: e.match.strategy === 'alias' ? 'deterministic' : 'info', code: null });
   }
-  if (e.match?.format_hint) knobs.push({ knob: 'enum.match.format_hint', value: e.match.format_hint, step: 6, action: 'reject+llm', code: 'format_mismatch', prompt: 'P4' });
+  if (e.match?.format_hint) knobs.push({ knob: 'enum.match.format_hint', value: e.match.format_hint, step: 5, action: 'reject+llm', code: 'format_mismatch', prompt: 'P4' });
   if (knownValues?.values?.length > 0) {
-    knobs.push({ knob: 'enum.known_values', value: `${knownValues.values.length} values`, step: 9, action: 'info', code: null });
+    knobs.push({ knob: 'enum.known_values', value: `${knownValues.values.length} values`, step: 8, action: 'info', code: null });
   }
 
   // priority.*
-  if (pri.block_publish_when_unk) knobs.push({ knob: 'priority.block_publish_when_unk', value: 'true', step: 12, action: 'reject', code: 'unk_blocks_publish' });
+  if (pri.block_publish_when_unk) knobs.push({ knob: 'priority.block_publish_when_unk', value: 'true', step: 10, action: 'reject', code: 'unk_blocks_publish' });
 
-  // component.*
-  if (template === 'component_reference') {
+  // component.* — informational, no dedicated validation step in pipeline
+  if (p.component_type) {
     const itemCount = componentDb?.items?.length ?? 0;
-    knobs.push({ knob: 'component.type', value: `${itemCount} items in DB`, step: 11, action: 'reject+llm', code: 'not_in_component_db', prompt: 'P5' });
-    if (comp.allow_new_components) knobs.push({ knob: 'component.allow_new_components', value: 'true', step: 11, action: 'pass-through', code: null });
+    knobs.push({ knob: 'component.type', value: `${p.component_type} (${itemCount} items in DB)`, step: null, action: 'info', code: null });
+    if (comp.allow_new_components) knobs.push({ knob: 'component.allow_new_components', value: 'true', step: null, action: 'pass-through', code: null });
   }
 
   return knobs;

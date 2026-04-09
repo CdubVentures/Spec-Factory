@@ -1,7 +1,7 @@
 /**
  * Shape validation (Step 1). Short-circuits pipeline on failure.
  * @param {*} value - Field value (post-absence-normalization)
- * @param {'scalar'|'list'|'record'} expectedShape
+ * @param {'scalar'|'list'} expectedShape
  * @returns {{ pass: boolean, reason?: string }}
  */
 export function checkShape(value, expectedShape) {
@@ -21,13 +21,6 @@ export function checkShape(value, expectedShape) {
   if (expectedShape === 'list') {
     if (!Array.isArray(value)) {
       return { pass: false, reason: `expected array, got ${typeof value}` };
-    }
-    return { pass: true };
-  }
-
-  if (expectedShape === 'record') {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return { pass: false, reason: 'expected object/record' };
     }
     return { pass: true };
   }

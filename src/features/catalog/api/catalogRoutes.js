@@ -17,7 +17,6 @@ export function registerCatalogRoutes(ctx) {
     catalogAddProductsBulk,
     catalogUpdateProduct,
     catalogRemoveProduct,
-    upsertQueueProduct,
     readJsonlEvents,
     fs,
     path,
@@ -52,24 +51,6 @@ export function registerCatalogRoutes(ctx) {
     return 0;
   }
 
-
-  function makeQueueUpsert(category) {
-    const defaultCategory = String(category || '').trim().toLowerCase();
-    return async (args = {}) => {
-      if (!upsertQueueProduct) return null;
-      const queueCategory = String(args.category || defaultCategory || '').trim().toLowerCase();
-      return upsertQueueProduct({
-        ...args,
-        category: queueCategory,
-        specDb: resolveSpecDb(queueCategory),
-      });
-    };
-  }
-
-  async function removeQueueEntry() {
-    return false;
-  }
-
   return async function handleCatalogRoutes(parts, params, method, req, res) {
     // POST /api/v1/catalog/{cat}/reconcile  { dryRun?: boolean }
     if (parts[0] === 'catalog' && parts[1] && parts[2] === 'reconcile' && method === 'POST') {
@@ -100,7 +81,6 @@ export function registerCatalogRoutes(ctx) {
           brand: body.brand || '',
           rows,
           storage,
-          upsertQueue: makeQueueUpsert(category),
           appDb,
         });
         if (result?.ok) {
@@ -131,7 +111,6 @@ export function registerCatalogRoutes(ctx) {
           base_model: body.base_model || '',
           variant: body.variant || '',
           storage,
-          upsertQueue: makeQueueUpsert(category),
           appDb,
         });
         if (result?.ok) {
@@ -157,7 +136,6 @@ export function registerCatalogRoutes(ctx) {
           productId: parts[3],
           patch: body,
           storage,
-          upsertQueue: makeQueueUpsert(category),
           specDb: resolveSpecDb(category),
           appDb,
         });

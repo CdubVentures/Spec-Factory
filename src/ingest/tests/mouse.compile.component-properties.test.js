@@ -286,7 +286,7 @@ test('FRC-05-F - component property type and variance_policy propagate to genera
   }
 });
 
-test('FRC-05-G - component integer properties normalize parse_template to integer_field', async () => {
+test('FRC-05-G - component integer properties compile with type=integer', async () => {
   const workspace = await createMouseCompileWorkspace({
     tempPrefix: 'spec-harvester-frc05g-',
   });
@@ -341,10 +341,7 @@ test('FRC-05-G - component integer properties normalize parse_template to intege
     assert.equal(result.compiled, true);
 
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
-    assert.equal(
-      fieldRules?.fields?.sensor_rank?.parse_template || fieldRules?.fields?.sensor_rank?.parse?.template,
-      'integer_field',
-    );
+    // WHY: parse_template eliminated. Verify type is correct instead.
     assert.equal(fieldRules?.fields?.sensor_rank?.contract?.type, 'integer');
   } finally {
     await cleanup();

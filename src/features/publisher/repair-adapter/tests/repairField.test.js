@@ -24,7 +24,7 @@ function makeFailedResult(reason_code, detail = {}, overrides = {}) {
 function makeFieldRule(overrides = {}) {
   return {
     contract: { shape: 'scalar', type: 'string', unit: '', ...overrides.contract },
-    parse: { template: 'text_field', ...overrides.parse },
+    parse: { ...overrides.parse },
     enum: { policy: 'closed' }, ...overrides,
   };
 }
@@ -103,7 +103,7 @@ describe('repairField — successful repairs', () => {
       decisions: [{ value: 'twenty', decision: 'map_to_existing', resolved_to: 20, reasoning: 'word to number' }],
     });
     const callLlm = stubCallLlm(response);
-    const rule = makeFieldRule({ contract: { type: 'number' }, parse: { template: 'number_with_unit' } });
+    const rule = makeFieldRule({ contract: { type: 'number' } });
     const result = await repairField({
       validationResult: makeFailedResult('wrong_type', { expected: 'number', reason: 'not parseable' }, { value: 'twenty' }),
       fieldKey: 'weight', fieldRule: rule, callLlm,

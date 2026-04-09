@@ -62,17 +62,6 @@ export function KeyComponentsSection({
               const v = e.target.value;
               if (!v) {
                 updateField(selectedKey, "component", null);
-                // Clear component reference coupling
-                if (
-                  strN(currentRule, "parse.template") ===
-                  "component_reference"
-                ) {
-                  updateField(
-                    selectedKey,
-                    "parse.template",
-                    "text_field",
-                  );
-                }
               } else {
                 updateField(selectedKey, "component", {
                   type: v,
@@ -80,12 +69,7 @@ export function KeyComponentsSection({
                   allow_new_components: true,
                   require_identity_evidence: true,
                 });
-                // Cascade: Component DB -> Parse Template + Enum + UI
-                updateField(
-                  selectedKey,
-                  "parse.template",
-                  "component_reference",
-                );
+                // Cascade: Component DB -> Enum + UI
                 updateField(
                   selectedKey,
                   "enum.source",
@@ -121,15 +105,8 @@ export function KeyComponentsSection({
           <>
             <div className="col-span-3 flex items-end">
               <div className="flex items-center gap-3 text-xs">
-                <span className="px-2 py-0.5 rounded-full sf-review-ai-pending-badge font-medium">
-                  component_reference
-                </span>
                 <span className="sf-text-subtle">
-                  Parse:{" "}
-                  <span className="font-mono">
-                    {strN(currentRule, "parse.template")}
-                  </span>
-                  {" | "}Enum:{" "}
+                  Enum:{" "}
                   <span className="font-mono">
                     {strN(currentRule, "enum.source")}
                   </span>
@@ -455,9 +432,6 @@ export function KeyComponentsSection({
                           const contractType = fieldRule
                             ? strN(fieldRule, "contract.type")
                             : "";
-                          const parseTemplate = fieldRule
-                            ? strN(fieldRule, "parse.template")
-                            : "";
                           const enumSrc = fieldRule
                             ? strN(fieldRule, "enum.source")
                             : "";
@@ -511,11 +485,6 @@ export function KeyComponentsSection({
                                   ? "override"
                                   : vp}
                               </span>
-                              {parseTemplate ? (
-                                <span className="text-[9px] px-1 rounded sf-bg-surface-soft sf-text-subtle sf-dk-surface-800 dark:sf-text-muted shrink-0">
-                                  {parseTemplate}
-                                </span>
-                              ) : null}
                               {isBool ? (
                                 <span className="text-[9px] px-1 rounded sf-chip-warning-soft shrink-0">
                                   boolean: yes / no

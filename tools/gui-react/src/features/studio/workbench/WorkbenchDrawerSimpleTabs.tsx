@@ -1,6 +1,5 @@
 import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
 import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
@@ -8,7 +7,6 @@ import { TierPicker } from '../../../shared/ui/forms/TierPicker.tsx';
 import {
   parseBoundedIntInput,
 } from '../state/numericInputHelpers.ts';
-import { PARSE_TEMPLATES, isUnitBearingTemplate, resolveOutputType } from '../state/parseTemplateRegistry.ts';
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
 } from '../state/studioNumericKnobBounds.ts';
@@ -25,8 +23,6 @@ import {
   labelCls,
   selectCls,
   STUDIO_TIPS,
-  UNITS,
-  UNIT_ACCEPTS_SUGGESTIONS,
 } from '../components/studioConstants.ts';
 import type {
   ComponentDbResponse,
@@ -40,80 +36,7 @@ const TEXT_GRAY_400 = 'sf-text-subtle';
 const TEXT_GRAY_500 = 'sf-text-subtle';
 const SECTION_HEADING_CLASS = `text-xs font-semibold ${TEXT_GRAY_500} mt-4`;
 const MUTED_ITALIC_TEXT_CLASS = `text-xs ${TEXT_GRAY_400} italic`;
-const PREVIEW_LABEL_CLASS = `text-[10px] ${TEXT_GRAY_400} mb-1 font-medium`;
 const MUTED_TEXT_XS_CLASS = `text-xs ${TEXT_GRAY_400}`;
-
-export function ParseTab({
-  rule,
-  onUpdate,
-  B,
-}: {
-  rule: Record<string, unknown>;
-  onUpdate: (path: string, val: unknown) => void;
-  B: BadgeSlot;
-}) {
-  const pt = strN(rule, 'parse.template', strN(rule, 'parse_template'));
-  const showUnits = isUnitBearingTemplate(pt);
-
-  return (
-    <div className="space-y-3">
-      <div>
-        <div className={`${labelCls} flex items-center`}><span>Parse Template<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.parse_template} /></span><B p="parse.template" /></div>
-        <select className={`${selectCls} w-full`} value={pt} onChange={(e) => onUpdate('parse.template', e.target.value)}>
-          {PARSE_TEMPLATES.map((t) => (
-            <option key={t} value={t}>{t || 'none'}</option>
-          ))}
-        </select>
-      </div>
-
-      {pt && (
-        <div className="flex items-center gap-2">
-          <span className={PREVIEW_LABEL_CLASS}>Output type:</span>
-          <span className="px-1.5 py-0.5 text-[10px] rounded sf-chip-neutral font-mono">
-            {resolveOutputType(pt)}
-          </span>
-        </div>
-      )}
-
-      {showUnits && (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className={`${labelCls} flex items-center`}><span>Parse Unit<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.parse_unit} /></span><B p="parse.unit" /></div>
-              <ComboSelect value={strN(rule, 'parse.unit')} onChange={(v) => onUpdate('parse.unit', v)} options={UNITS} placeholder="e.g. g" />
-            </div>
-            <div>
-              <div className={`${labelCls} flex items-center`}><span>Unit Accepts<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unit_accepts} /></span><B p="parse.unit_accepts" /></div>
-              <TagPicker values={arrN(rule, 'parse.unit_accepts')} onChange={(v) => onUpdate('parse.unit_accepts', v)} suggestions={UNIT_ACCEPTS_SUGGESTIONS} placeholder="g, grams..." />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.allow_unitless')} onChange={(e) => onUpdate('parse.allow_unitless', e.target.checked)} className="rounded sf-border-soft" />
-              Allow unitless<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.allow_unitless} />
-              <B p="parse.allow_unitless" />
-            </label>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.allow_ranges')} onChange={(e) => onUpdate('parse.allow_ranges', e.target.checked)} className="rounded sf-border-soft" />
-              Allow ranges<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.allow_ranges} />
-              <B p="parse.allow_ranges" />
-            </label>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={boolN(rule, 'parse.strict_unit_required')} onChange={(e) => onUpdate('parse.strict_unit_required', e.target.checked)} className="rounded sf-border-soft" />
-              Strict unit<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.strict_unit_required} />
-              <B p="parse.strict_unit_required" />
-            </label>
-          </div>
-        </>
-      )}
-      {!showUnits && pt && (
-        <div className={MUTED_ITALIC_TEXT_CLASS}>
-          Unit settings hidden - {pt.replace(/_/g, ' ')} template does not use units.
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function EnumTab({
   category,
@@ -142,7 +65,7 @@ export function EnumTab({
   isEgLocked?: boolean;
   B: BadgeSlot;
 }) {
-  const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
+  const contractType = strN(rule, 'contract.type', 'string');
   const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   return (
     <EnumConfigurator
@@ -151,7 +74,7 @@ export function EnumTab({
       rule={rule}
       knownValues={knownValues}
       enumLists={enumLists}
-      parseTemplate={parseTemplate}
+      contractType={contractType}
       onUpdate={onUpdate}
       onRunConsistency={onRunConsistency}
       consistencyPending={consistencyPending}

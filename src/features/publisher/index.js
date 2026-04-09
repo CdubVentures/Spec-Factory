@@ -4,11 +4,10 @@
 // Phase 1: core gates
 export { normalizeAbsence } from './validation/absenceNormalizer.js';
 export { checkShape } from './validation/checks/checkShape.js';
-export { checkType } from './validation/checks/checkType.js';
+export { coerceByType } from './validation/typeCoercion.js';
 
-// Phase 2: normalization + template dispatch
+// Phase 2: normalization
 export { normalizeValue, applyTokenMap } from './validation/checks/normalize.js';
-export { dispatchTemplate } from './validation/templateDispatch.js';
 
 // Phase 3: unit + format
 export { checkUnit } from './validation/checks/checkUnit.js';

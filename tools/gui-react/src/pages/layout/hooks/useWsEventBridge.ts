@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { useRuntimeStore } from '../../../stores/runtimeStore.ts';
 import { useEventsStore } from '../../../stores/eventsStore.ts';
+import { useOperationsStore, type Operation } from '../../../stores/operationsStore.ts';
 import { useIndexLabStore, type IndexLabEvent } from '../../../stores/indexlabStore.ts';
 import type { ProcessStatus, RuntimeEvent } from '../../../types/events.ts';
 import { useWsSubscription } from '../../../hooks/useWsSubscription.ts';
@@ -66,6 +67,11 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
     if (channel === 'indexlab-event' && Array.isArray(data)) {
       appendIndexLabEvents(data as IndexLabEvent[]);
     }
+    if (channel === 'operations' && data && typeof data === 'object') {
+      const msg = data as { action?: string; operation?: Operation; id?: string };
+      if (msg.action === 'upsert' && msg.operation) useOperationsStore.getState().upsert(msg.operation);
+      if (msg.action === 'remove' && msg.id) useOperationsStore.getState().remove(msg.id);
+    }
     if (channel === 'data-change' && data && typeof data === 'object') {
       const msg = data as { type?: string; event?: string; category?: string; categories?: string[] };
       const eventName = String(
@@ -88,7 +94,7 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
   }, [appendEvents, appendIndexLabEvents, appendProcessOutput, category, queryClient, setProcessStatus]);
 
   useWsSubscription({
-    channels: ['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event'],
+    channels: ['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event', 'operations'],
     category,
     onMessage: handleWsMessage,
   });

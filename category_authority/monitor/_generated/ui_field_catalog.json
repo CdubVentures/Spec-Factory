@@ -521,7 +521,7 @@
       "tooltip_key": "curved",
       "tooltip_md": "Whether the display is curved",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -637,7 +637,7 @@
       "examples": [],
       "group": "Display Panel",
       "guidance_md": null,
-      "input_control": "number",
+      "input_control": "text",
       "key": "native_colors",
       "label": "Native Colors",
       "order": 21,
@@ -1200,7 +1200,7 @@
       "tooltip_key": "variable_refresh_rate",
       "tooltip_md": "Whether the monitor supports variable refresh rate",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1231,7 +1231,7 @@
       "tooltip_key": "overdrive",
       "tooltip_md": "Whether overdrive/response time boost is available",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1265,7 +1265,7 @@
       "tooltip_key": "motion_blur_reduction",
       "tooltip_md": "Backlight strobing for motion clarity (ELMB, DyAc, ULMB, BFI)",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1525,7 +1525,7 @@
       "tooltip_key": "color_accuracy_delta_e",
       "tooltip_md": "Average color error measured as Delta E (lower is better)",
       "tooltip_source": null,
-      "type": "number",
+      "type": "integer",
       "unit": ""
     },
     {
@@ -1590,7 +1590,7 @@
       "tooltip_key": "factory_calibrated",
       "tooltip_md": "Whether the monitor ships factory-calibrated with dE < 2",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1656,7 +1656,7 @@
       "tooltip_key": "local_dimming_zones",
       "tooltip_md": "Number of local dimming zones (for FALD / Mini-LED backlight)",
       "tooltip_source": null,
-      "type": "number",
+      "type": "integer",
       "unit": ""
     },
     {
@@ -1688,7 +1688,7 @@
       "tooltip_key": "wide_color_gamut",
       "tooltip_md": "Whether the monitor supports wide color gamut (typically >90% DCI-P3)",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2272,7 +2272,7 @@
       "tooltip_key": "headphone_jack",
       "tooltip_md": "Whether the monitor has a 3.5mm headphone output",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2336,7 +2336,7 @@
       "tooltip_key": "kvm_switch",
       "tooltip_md": "Built-in KVM switch for multi-computer control",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2369,7 +2369,7 @@
       "tooltip_key": "daisy_chain",
       "tooltip_md": "DisplayPort output for daisy-chaining multiple monitors",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2724,7 +2724,7 @@
       "tooltip_key": "pivot_rotation",
       "tooltip_md": "Whether the stand supports 90° pivot rotation for portrait mode",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2756,7 +2756,7 @@
       "tooltip_key": "wall_mountable",
       "tooltip_md": "Whether the monitor is wall-mountable",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2887,7 +2887,7 @@
       "tooltip_key": "pip_pbp",
       "tooltip_md": "Picture-in-Picture / Picture-by-Picture multi-source display",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2919,7 +2919,7 @@
       "tooltip_key": "flicker_free",
       "tooltip_md": "Whether the backlight is flicker-free (DC dimming)",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2985,7 +2985,7 @@
       "tooltip_key": "low_blue_light",
       "tooltip_md": "Built-in blue light reduction / eye care mode",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -3018,7 +3018,7 @@
       "tooltip_key": "crosshair_overlay",
       "tooltip_md": "Built-in on-screen crosshair/aim-point overlay for gaming",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -3343,7 +3343,7 @@
       "tooltip_key": "release_date",
       "tooltip_md": "Product release/launch date",
       "tooltip_source": null,
-      "type": "string",
+      "type": "date",
       "unit": ""
     },
     {
@@ -3407,7 +3407,7 @@
       "tooltip_key": "discontinued",
       "tooltip_md": "Whether the product is discontinued",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -3502,7 +3502,7 @@
       "tooltip_key": "cable_length",
       "tooltip_md": "Included cable length in mm",
       "tooltip_source": null,
-      "type": "string",
+      "type": "number",
       "unit": "mm"
     },
     {
@@ -3630,6 +3630,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-07T23:43:28.529Z",
+  "generated_at": "2026-04-09T07:49:24.931Z",
   "version": 1
 }

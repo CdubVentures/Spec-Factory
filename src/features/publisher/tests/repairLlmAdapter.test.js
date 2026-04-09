@@ -189,7 +189,7 @@ describe('integration: adapter + repairField', () => {
         repairPrompt: null,
       },
       fieldKey: 'color',
-      fieldRule: { contract: { shape: 'scalar', type: 'string' }, parse: { template: 'text_field' } },
+      fieldRule: { contract: { shape: 'scalar', type: 'string' }, parse: {} },
       knownValues,
       callLlm,
     });

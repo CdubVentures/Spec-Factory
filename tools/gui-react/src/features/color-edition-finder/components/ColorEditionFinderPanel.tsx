@@ -28,6 +28,7 @@ import {
 } from '../selectors/colorEditionFinderSelectors.ts';
 import type { KpiCard, SelectedStateDisplay, RunHistoryRow, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
+import { useOperationsStore } from '../../../stores/operationsStore.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -66,7 +67,7 @@ function ColorSwatch({ hexParts, size = 'md' }: { readonly hexParts: readonly st
   const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
   return (
     <span
-      className={`inline-block ${sizeClass} rounded-sm border border-white/10 shrink-0`}
+      className={`inline-block ${sizeClass} rounded-sm border sf-border-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] shrink-0`}
       style={colorCircleStyle(hexParts)}
     />
   );
@@ -285,12 +286,27 @@ function buildRunHistoryColumns(
       size: 180,
     },
     {
-      id: 'status',
-      header: '',
-      cell: ({ row }) => row.original.isLatest
-        ? <Chip label="LATEST \u00B7 SSOT" className="sf-chip-teal-strong" />
-        : null,
-      size: 100,
+      id: 'validation',
+      header: 'Status',
+      cell: ({ row }) => {
+        const { validationStatus, rejectionSummary, isLatest } = row.original;
+        return (
+          <div className="flex items-center gap-1.5">
+            {validationStatus === 'rejected' ? (
+              <Chip label="Rejected" className="sf-chip-danger" />
+            ) : (
+              <Chip label="Valid" className="sf-chip-success" />
+            )}
+            {isLatest && <Chip label="LATEST \u00B7 SSOT" className="sf-chip-teal-strong" />}
+            {rejectionSummary && (
+              <span className="text-[9px] font-mono sf-text-muted truncate max-w-[180px]" title={rejectionSummary}>
+                {rejectionSummary}
+              </span>
+            )}
+          </div>
+        );
+      },
+      size: 240,
     },
     {
       id: 'actions',
@@ -372,7 +388,16 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const modelDisplay = resolvedModel?.effectiveModel || 'not configured';
   const webSearchEnabled = resolvedModel?.webSearch ?? false;
 
-  const runStatus = runMut.isPending ? 'running'
+  // WHY: Derive running state from the operations store (per-product), not from
+  // the mutation hook (per-component-instance). This way "Running" reflects
+  // the actual operation, survives navigation, and doesn't block other products.
+  const ops = useOperationsStore((s) => s.operations);
+  const isRunningCef = useMemo(
+    () => [...ops.values()].some((o) => o.type === 'cef' && o.productId === productId && o.status === 'running'),
+    [ops, productId],
+  );
+
+  const runStatus = isRunningCef ? 'running'
     : runMut.isError ? 'error'
     : runMut.isSuccess ? 'success'
     : 'idle';
@@ -411,10 +436,10 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
         <button
           onClick={(e) => { e.stopPropagation(); runMut.mutate(); }}
-          disabled={runMut.isPending}
+          disabled={isRunningCef}
           className="ml-auto px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {runMut.isPending ? 'Running...' : 'Run Now'}
+          {isRunningCef ? 'Running...' : 'Run Now'}
         </button>
       </div>
 

@@ -1,76 +1,10 @@
-import { PRODUCT_RUN_BOOLEAN_KEYS } from '../specDbSchema.js';
-import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
-
 /**
- * Product, Run, Curation, Component Review store.
+ * Product, Curation, Component Review store.
  * Extracted from SpecDb.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
 export function createQueueProductStore({ db, category, stmts }) {
-  // --- Product Runs ---
-
-  function upsertProductRun(row) {
-    if (row.is_latest) {
-      db.prepare(`UPDATE product_runs SET is_latest = 0 WHERE category = ? AND product_id = ? AND is_latest = 1`)
-        .run(category, row.product_id);
-    }
-    stmts._upsertProductRun.run({
-      category,
-      product_id: row.product_id || '',
-      run_id: row.run_id || '',
-      is_latest: row.is_latest ? 1 : 0,
-      summary_json: typeof row.summary === 'object' ? JSON.stringify(row.summary) : (row.summary_json ?? null),
-      validated: row.validated ? 1 : 0,
-      confidence: row.confidence ?? 0,
-      cost_usd_run: row.cost_usd_run ?? 0,
-      sources_attempted: row.sources_attempted ?? 0,
-      run_at: row.run_at || new Date().toISOString()
-    });
-  }
-
-  function getLatestProductRun(productId) {
-    const row = hydrateRow(PRODUCT_RUN_BOOLEAN_KEYS, db
-      .prepare('SELECT * FROM product_runs WHERE category = ? AND product_id = ? AND is_latest = 1')
-      .get(category, productId));
-    if (row?.summary_json) try { row.summary = JSON.parse(row.summary_json); } catch { /* */ }
-    return row || null;
-  }
-
-  function getProductRuns(productId) {
-    return hydrateRows(PRODUCT_RUN_BOOLEAN_KEYS, db
-      .prepare('SELECT * FROM product_runs WHERE category = ? AND product_id = ? ORDER BY run_at DESC')
-      .all(category, productId));
-  }
-
-  // --- Run Storage Location ---
-
-  function updateRunStorageLocation({ productId, runId, storageState, localPath, s3Key, sizeBytes, relocatedAt }) {
-    stmts._updateRunStorageLocation.run({
-      category,
-      product_id: productId || '',
-      run_id: runId || '',
-      storage_state: storageState || 'live',
-      local_path: localPath || '',
-      s3_key: s3Key || '',
-      size_bytes: sizeBytes ?? 0,
-      relocated_at: relocatedAt || '',
-    });
-  }
-
-  function getRunStorageLocation({ productId, runId }) {
-    return stmts._getRunStorageLocation.get(category, productId || '', runId || '') || null;
-  }
-
-  function listRunsByStorageState(storageState) {
-    return hydrateRows(PRODUCT_RUN_BOOLEAN_KEYS,
-      stmts._listRunsByStorageState.all(category, storageState || 'live'));
-  }
-
-  function countRunsByStorageState() {
-    return stmts._countRunsByStorageState.all(category);
-  }
-
   // --- Products ---
 
   function upsertProduct(row) {
@@ -239,13 +173,6 @@ export function createQueueProductStore({ db, category, stmts }) {
   }
 
   return {
-    upsertProductRun,
-    getLatestProductRun,
-    getProductRuns,
-    updateRunStorageLocation,
-    getRunStorageLocation,
-    listRunsByStorageState,
-    countRunsByStorageState,
     upsertProduct,
     getProduct,
     getAllProducts,

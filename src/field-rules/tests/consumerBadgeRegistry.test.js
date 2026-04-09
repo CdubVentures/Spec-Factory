@@ -70,16 +70,17 @@ describe('Registry integrity', () => {
     assert.equal(paths.length, unique.size, `duplicate paths: ${paths.filter((p, i) => paths.indexOf(p) !== i)}`);
   });
 
-  it('all 13 sub-consumers appear at least once', () => {
+  it('all 12 sub-consumers appear at least once', () => {
     const allKeys = new Set();
     for (const entry of CONSUMER_BADGE_REGISTRY) {
       for (const key of Object.keys(entry.consumers)) {
         allKeys.add(key);
       }
     }
+    // WHY: eng.parse removed — parse.template retired in type-driven normalization.
     const expected = [
       'idx.needset', 'idx.search',
-      'eng.validate', 'eng.normalize', 'eng.enum', 'eng.parse', 'eng.list', 'eng.component', 'eng.gate',
+      'eng.validate', 'eng.normalize', 'eng.enum', 'eng.list', 'eng.component', 'eng.gate',
       'rev.grid', 'rev.flag', 'rev.enum', 'rev.component',
       'seed.schema', 'seed.component',
     ];

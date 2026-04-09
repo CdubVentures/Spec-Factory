@@ -427,7 +427,7 @@ export async function seedBrandsFromCatalog({ config, appDb, category = 'all', e
  *
  * @returns {{ ok, oldSlug, newSlug, identifier, oldName, newName, cascaded_products, cascade_failures, cascade_results[] }}
  */
-export async function renameBrand({ config, appDb, slug, newName, storage, upsertQueue, getSpecDb = null }) {
+export async function renameBrand({ config, appDb, slug, newName, storage, getSpecDb = null }) {
   const oldSlug = String(slug ?? '').trim();
   if (!oldSlug) return { ok: false, error: 'slug_required' };
 

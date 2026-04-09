@@ -1,7 +1,6 @@
 import { normalizeAbsence } from './absenceNormalizer.js';
-import { dispatchTemplate } from './templateDispatch.js';
+import { coerceByType } from './typeCoercion.js';
 import { checkShape } from './checks/checkShape.js';
-import { checkType } from './checks/checkType.js';
 import { checkUnit } from './checks/checkUnit.js';
 import { normalizeValue } from './checks/normalize.js';
 import { checkFormat } from './checks/checkFormat.js';
@@ -12,6 +11,9 @@ import { checkRange } from './checks/checkRange.js';
 /**
  * Single-field validation pipeline. Composes all per-field checks in order.
  * Pure function — no DB, no LLM, no side effects.
+ *
+ * Type-driven: contract.type determines coercion. contract.shape determines cardinality.
+ * parse.template is not read — all routing is by type.
  *
  * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object }} opts
  * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[], unknownReason: string|null, repairPrompt: object|null }}
@@ -24,10 +26,6 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const shape = fieldRule?.contract?.shape || 'scalar';
   const type = fieldRule?.contract?.type || 'string';
   const unit = fieldRule?.contract?.unit || '';
-  const template = fieldRule?.parse?.template || 'text_field';
-  const unitAccepts = fieldRule?.parse?.unit_accepts;
-  const unitConversions = fieldRule?.parse?.unit_conversions;
-  const strictUnitRequired = fieldRule?.parse?.strict_unit_required || false;
   const roundingConfig = fieldRule?.contract?.rounding;
   const rangeConfig = fieldRule?.contract?.range;
   const listRules = fieldRule?.contract?.list_rules;
@@ -52,25 +50,17 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     current = absent;
   }
 
-  // Step 1: Template dispatch (specialized normalizers)
-  const dispatched = dispatchTemplate(template, current);
-  if (dispatched !== null) {
-    if (dispatched !== current) {
-      repairs.push({ step: 'template_dispatch', before: current, after: dispatched, rule: `dispatch:${template}` });
-    }
-    current = dispatched;
-  }
-
-  // Step 2: Shape check — SHORT-CIRCUIT on failure
+  // Step 1: Shape check — SHORT-CIRCUIT on failure
+  // WHY: Shape before coercion prevents data corruption (the [object Object] bug).
   const shapeResult = checkShape(current, shape);
   if (!shapeResult.pass) {
     rejections.push({ reason_code: 'wrong_shape', detail: { expected: shape, reason: shapeResult.reason } });
     return result(current, repairs, rejections, null, null);
   }
 
-  // Step 3: Unit verification (BEFORE type check — needs the unit suffix still present in string)
-  if (unit && dispatched === null) {
-    const unitResult = checkUnit(current, unit, unitAccepts, unitConversions, strictUnitRequired);
+  // Step 2: Unit verification (BEFORE type coercion — needs unit suffix still in string)
+  if (unit) {
+    const unitResult = checkUnit(current, unit);
     if (!unitResult.pass) {
       rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
       return result(current, repairs, rejections, null, null);
@@ -81,10 +71,24 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 4: Type check (only for fallthrough templates — dispatched values already typed)
-  // WHY: Records are shape-checked (must be object); property types are domain-specific.
-  if (dispatched === null && shape !== 'record') {
-    const typeResult = checkType(current, type, template);
+  // Step 3: Type coercion — driven by contract.type
+  if (shape === 'list' && Array.isArray(current)) {
+    const coerced = [];
+    for (const el of current) {
+      const r = coerceByType(el, type);
+      if (r.repaired !== undefined) {
+        repairs.push({ step: 'type_coerce', before: el, after: r.repaired, rule: r.rule });
+        coerced.push(r.repaired);
+      } else if (!r.pass) {
+        rejections.push({ reason_code: 'wrong_type', detail: { expected: type, reason: r.reason, element: el } });
+        coerced.push(el);
+      } else {
+        coerced.push(r.value ?? el);
+      }
+    }
+    current = coerced;
+  } else {
+    const typeResult = coerceByType(current, type);
     if (typeResult.repaired !== undefined) {
       repairs.push({ step: 'type_coerce', before: current, after: typeResult.repaired, rule: typeResult.rule });
       current = typeResult.repaired;
@@ -93,8 +97,18 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 5: String normalization (trim, lowercase, hyphens, token_map)
-  if (typeof current === 'string' && current !== 'unk') {
+  // Step 4: String normalization (trim, lowercase, hyphens, token_map)
+  // WHY: List elements need the same normalization chain as scalars so
+  // self-healing works (e.g. ['Black','White'] → ['black','white']).
+  if (shape === 'list' && Array.isArray(current)) {
+    const normalized = current.map(el =>
+      typeof el === 'string' && el !== 'unk' ? normalizeValue(el, fieldRule) : el
+    );
+    if (JSON.stringify(normalized) !== JSON.stringify(current)) {
+      repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
+      current = normalized;
+    }
+  } else if (typeof current === 'string' && current !== 'unk') {
     const normalized = normalizeValue(current, fieldRule);
     if (normalized !== current) {
       repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
@@ -102,13 +116,13 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 6: Format check
-  const formatResult = checkFormat(current, template, formatHint);
+  // Step 5: Format check
+  const formatResult = checkFormat(current, type, formatHint);
   if (!formatResult.pass) {
     rejections.push({ reason_code: 'format_mismatch', detail: { reason: formatResult.reason } });
   }
 
-  // Step 7: List rules (list-shaped fields only)
+  // Step 6: List rules (list-shaped fields only)
   if (shape === 'list' && Array.isArray(current) && listRules) {
     const listResult = enforceListRules(current, listRules);
     for (const rep of listResult.repairs) {
@@ -121,7 +135,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     current = listResult.values;
   }
 
-  // Step 8: Rounding (numeric fields only)
+  // Step 7: Rounding (numeric fields only)
   if (roundingConfig) {
     const roundResult = applyRounding(current, roundingConfig);
     if (roundResult.repaired) {
@@ -130,7 +144,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     current = roundResult.value;
   }
 
-  // Step 9: Enum check
+  // Step 8: Enum check
   if (enumPolicy && enumValues) {
     const enumResult = checkEnum(current, enumPolicy, enumValues, matchStrategy);
     if (enumResult.repaired !== undefined) {
@@ -145,7 +159,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 10: Range check (numeric fields only)
+  // Step 9: Range check (numeric fields only)
   if (rangeConfig) {
     const rangeResult = checkRange(current, rangeConfig);
     if (!rangeResult.pass) {
@@ -153,7 +167,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 11: Publish gate — reject unk values for fields that block publishing
+  // Step 10: Publish gate — reject unk values for fields that block publishing
   if (blockPublishWhenUnk && current === unknownToken) {
     rejections.push({ reason_code: 'unk_blocks_publish', detail: { value: current, field: fieldKey } });
   }

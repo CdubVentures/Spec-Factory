@@ -5,6 +5,7 @@ import path from 'node:path';
 import { bootstrapServer } from './serverBootstrap.js';
 import { createGuiServerHttpAssembly } from './guiServerHttpAssembly.js';
 import { registerInfraRoutes } from './routes/infraRoutes.js';
+import { initOperationsRegistry } from '../../core/operations/index.js';
 import { registerConfigRoutes } from '../../features/settings/api/configRoutes.js';
 import { registerIndexlabRoutes } from '../../features/indexing/api/indexlabRoutes.js';
 import { registerCatalogRoutes } from '../../features/catalog/api/catalogRoutes.js';
@@ -128,6 +129,8 @@ export function createGuiServerRuntime({
         buildCatalog, patchCompiledComponentDb,
       },
     } = bootstrapServer({ projectRoot });
+
+    initOperationsRegistry({ broadcastWs });
 
     const resolvedDistRoot = distRoot
       ? path.resolve(projectRoot, distRoot)

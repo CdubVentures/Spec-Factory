@@ -53,7 +53,7 @@ function seedCompiledRules(specDb) {
         priority: {},
       },
       editions: {
-        contract: { shape: 'record', type: 'string', unknown_token: 'unk' },
+        contract: { shape: 'list', type: 'string', unknown_token: 'unk' },
         parse: { template: null },
         enum: { policy: 'open', match: { strategy: 'exact' } },
         priority: {},
@@ -341,18 +341,26 @@ describe('CEF candidate gate integration', () => {
 
     assert.equal(result.rejected, false);
 
-    // Editions candidate in DB has reconciled colors
+    // Editions candidate in DB stores normalized slug list (field rule: shape=list, type=string)
     const edCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
     assert.equal(edCandidates.length, 1);
     const edValue = JSON.parse(edCandidates[0].value);
-    assert.deepEqual(edValue['Cyberpunk Edition'].colors, ['black']); // Black → black
-    assert.deepEqual(edValue['Halo Edition'].colors, ['red']); // Red → red
+    assert.ok(Array.isArray(edValue), 'editions candidate is slug array');
+    // WHY: slugs are normalized (lowercase, spaces→hyphens) by the validation pipeline
+    assert.ok(edValue.includes('cyberpunk-edition'));
+    assert.ok(edValue.includes('halo-edition'));
 
-    // product.json also has reconciled editions
+    // Edition details preserved in candidate metadata (original keys)
+    const edMeta = edCandidates[0].metadata_json;
+    assert.deepEqual(edMeta.edition_details?.['Cyberpunk Edition']?.colors, ['black']);
+    assert.deepEqual(edMeta.edition_details?.['Halo Edition']?.colors, ['red']);
+
+    // product.json also has normalized slug list
     const pj = readProductJson(pid);
     assert.ok(pj.candidates.editions);
     const jsonEd = pj.candidates.editions[0].value;
-    assert.deepEqual(jsonEd['Cyberpunk Edition'].colors, ['black']);
+    assert.ok(Array.isArray(jsonEd));
+    assert.ok(jsonEd.includes('cyberpunk-edition'));
   });
 
   // --- 9. Editions record passes shape=record validation ---

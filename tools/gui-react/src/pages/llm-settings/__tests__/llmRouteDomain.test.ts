@@ -38,7 +38,6 @@ function makeRow(overrides: Partial<LlmRouteRow> = {}): LlmRouteRow {
     studio_tooltip_or_description_sent_when_present: false,
     studio_enum_options_sent_when_present: false,
     studio_component_variance_constraints_sent_in_component_review: false,
-    studio_parse_template_sent_direct_in_extract_review: true,
     studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: false,
     studio_required_level_sent_in_extract_review: true,
     studio_component_entity_set_sent_when_component_field: false,
@@ -151,7 +150,6 @@ describe('applyContextPack', () => {
     const result = applyContextPack(row, 'minimal');
     strictEqual(result.studio_key_navigation_sent_in_extract_review, true);
     strictEqual(result.studio_contract_rules_sent_in_extract_review, true);
-    strictEqual(result.studio_parse_template_sent_direct_in_extract_review, true);
     strictEqual(result.studio_required_level_sent_in_extract_review, true);
     strictEqual(result.studio_evidence_policy_sent_direct_in_extract_review, true);
     strictEqual(result.studio_send_booleans_prompted_to_model, false);

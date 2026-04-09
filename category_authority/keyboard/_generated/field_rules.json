@@ -126,16 +126,7 @@
       "group": "switch",
       "key": "actuation_adjustment_step",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -266,16 +257,7 @@
       "group": "switch",
       "key": "actuation_distance",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -407,17 +389,7 @@
       "group": "switch",
       "key": "actuation_force",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -550,16 +522,7 @@
       "group": "switch",
       "key": "adjustable_actuation_max",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -691,16 +654,7 @@
       "group": "switch",
       "key": "adjustable_actuation_min",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -822,9 +776,7 @@
       "group": "dimensions",
       "key": "adjustable_feet",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -945,9 +897,7 @@
       "group": "performance",
       "key": "adjustable_input_granularity",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1069,9 +1019,7 @@
       "group": "performance",
       "key": "analog_input",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1194,9 +1142,7 @@
       "group": "performance",
       "key": "anti_ghosting",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1318,9 +1264,7 @@
       "group": "layout",
       "key": "arrow_keys",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1442,9 +1386,7 @@
       "group": "features",
       "key": "backlighting",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1566,9 +1508,7 @@
       "group": "identity",
       "key": "base_model",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -1697,14 +1637,7 @@
       "group": "power",
       "key": "battery_capacity",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mAh",
-        "unit_accepts": [
-          "mAh"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1835,17 +1768,7 @@
       "group": "power",
       "key": "battery_life_off",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1978,17 +1901,7 @@
       "group": "power",
       "key": "battery_life_rgb",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2111,9 +2024,7 @@
       "group": "connectivity",
       "key": "bluetooth_version",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2243,17 +2154,7 @@
       "group": "switch",
       "key": "bottom_out_force",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2376,9 +2277,7 @@
       "group": "identity",
       "key": "brand",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -2508,22 +2407,7 @@
       "group": "connectivity",
       "key": "cable_length",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "m",
-        "unit_accepts": [
-          "m",
-          "meter",
-          "meters",
-          "ft",
-          "feet"
-        ],
-        "unit_conversions": {
-          "feet": 0.3048,
-          "ft": 0.3048
-        }
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2644,9 +2528,7 @@
       "group": "connectivity",
       "key": "cable_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2767,9 +2649,7 @@
       "group": "build",
       "key": "case_material",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2890,9 +2770,7 @@
       "group": "identity",
       "key": "category",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -3013,9 +2891,7 @@
       "group": "power",
       "key": "charging_method",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3149,8 +3025,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "expected",
@@ -3282,7 +3157,6 @@
           "|",
           ";"
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {
           "blue-dark": "dark-blue",
           "blue-light": "light-blue",
@@ -3426,8 +3300,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -3562,8 +3435,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "expected",
@@ -3694,16 +3566,7 @@
       "group": "performance",
       "key": "debounce_time",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3833,16 +3696,7 @@
       "group": "dimensions",
       "key": "depth",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -3963,9 +3817,7 @@
       "group": "connectivity",
       "key": "detachable_cable",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4085,9 +3937,7 @@
       "group": "general",
       "key": "discontinued",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4209,9 +4059,7 @@
       "group": "keycaps",
       "key": "doubleshot",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4288,6 +4136,14 @@
       "availability": "sometimes",
       "component": null,
       "constraints": [],
+      "consumers": {
+        "enum.match.format_hint": {
+          "review": false
+        },
+        "enum.match.strategy": {
+          "review": false
+        }
+      },
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -4342,8 +4198,7 @@
       "parse": {
         "delimiters": [
           ","
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -4450,9 +4305,7 @@
       "group": "build",
       "key": "foam_dampening",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4573,9 +4426,7 @@
       "group": "layout",
       "key": "form_factor",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -4697,9 +4548,7 @@
       "group": "layout",
       "key": "function_row",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4821,9 +4670,7 @@
       "group": "build",
       "key": "gasket_mount",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4945,9 +4792,7 @@
       "group": "identity",
       "key": "gtin",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -5079,16 +4924,7 @@
       "group": "dimensions",
       "key": "height_front",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5220,16 +5056,7 @@
       "group": "dimensions",
       "key": "height_rear",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5352,9 +5179,7 @@
       "group": "switch",
       "key": "hot_swappable",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5490,8 +5315,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -5580,11 +5404,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Key Count",
       "effort": 3,
@@ -5622,9 +5446,7 @@
       "group": "layout",
       "key": "key_count",
       "output_shape": "scalar",
-      "parse": {
-        "template": "integer_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -5747,9 +5569,7 @@
       "group": "performance",
       "key": "key_rollover",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5871,9 +5691,7 @@
       "group": "keycaps",
       "key": "keycap_material",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5995,9 +5813,7 @@
       "group": "keycaps",
       "key": "keycap_profile",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6128,16 +5944,7 @@
       "group": "keycaps",
       "key": "keycap_thickness",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6262,9 +6069,7 @@
       "group": "features",
       "key": "knob_dial",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6389,9 +6194,7 @@
       "group": "layout",
       "key": "layout",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6515,9 +6318,7 @@
       "group": "layout",
       "key": "layout_standard",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -6642,9 +6443,7 @@
       "group": "keycaps",
       "key": "legends",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6767,9 +6566,7 @@
       "group": "features",
       "key": "macro_keys",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6892,9 +6689,7 @@
       "group": "features",
       "key": "media_controls",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7015,9 +6810,7 @@
       "group": "identity",
       "key": "model",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7138,9 +6931,7 @@
       "group": "build",
       "key": "mounting_style",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7261,9 +7052,7 @@
       "group": "identity",
       "key": "mpn",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7385,9 +7174,7 @@
       "group": "connectivity",
       "key": "multi_device_pairing",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7476,11 +7263,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Multi-Device Pairing Count",
       "effort": 3,
@@ -7518,9 +7305,7 @@
       "group": "connectivity",
       "key": "multi_device_pairing_count",
       "output_shape": "scalar",
-      "parse": {
-        "template": "integer_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7650,16 +7435,7 @@
       "group": "performance",
       "key": "multi_key_latency",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7781,9 +7557,7 @@
       "group": "layout",
       "key": "numpad",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7905,9 +7679,7 @@
       "group": "features",
       "key": "onboard_memory",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7996,11 +7768,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Onboard Profile Count",
       "effort": 3,
@@ -8038,9 +7810,7 @@
       "group": "features",
       "key": "onboard_profile_count",
       "output_shape": "scalar",
-      "parse": {
-        "template": "integer_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8162,9 +7932,7 @@
       "group": "features",
       "key": "os_mode_switch",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8286,9 +8054,7 @@
       "group": "features",
       "key": "per_key_rgb",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8411,9 +8177,7 @@
       "group": "build",
       "key": "plate_material",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8544,15 +8308,7 @@
       "group": "performance",
       "key": "polling_rate_wired",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8684,15 +8440,7 @@
       "group": "performance",
       "key": "polling_rate_wireless",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8814,9 +8562,7 @@
       "group": "general",
       "key": "price_range",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8940,9 +8686,7 @@
       "group": "features",
       "key": "qmk_via_support",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9066,9 +8810,7 @@
       "group": "performance",
       "key": "rapid_trigger",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9147,11 +8889,11 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
+        "type": "date",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "date",
       "difficulty": "easy",
       "display_name": "Release Date",
       "effort": 3,
@@ -9189,9 +8931,7 @@
       "group": "general",
       "key": "release_date",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9313,9 +9053,7 @@
       "group": "features",
       "key": "rgb_zones",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9447,15 +9185,7 @@
       "group": "performance",
       "key": "scan_rate",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9578,9 +9308,7 @@
       "group": "keycaps",
       "key": "shine_through",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9713,16 +9441,7 @@
       "group": "performance",
       "key": "single_key_latency",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9844,9 +9563,7 @@
       "group": "identity",
       "key": "sku",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -9968,9 +9685,7 @@
       "group": "performance",
       "key": "socd_cleaning",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10092,9 +9807,7 @@
       "group": "features",
       "key": "software",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10216,9 +9929,7 @@
       "group": "general",
       "key": "software_required",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10340,9 +10051,7 @@
       "group": "sound",
       "key": "sound_dampening",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10464,9 +10173,7 @@
       "group": "sound",
       "key": "sound_profile",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10588,9 +10295,7 @@
       "group": "build",
       "key": "south_facing_leds",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10712,9 +10417,7 @@
       "group": "build",
       "key": "stabilizer_lubed",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10836,9 +10539,7 @@
       "group": "build",
       "key": "stabilizer_mount",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10960,9 +10661,7 @@
       "group": "build",
       "key": "stabilizer_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11083,9 +10782,7 @@
       "group": "switch",
       "key": "switch_brand",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11208,9 +10905,7 @@
       "group": "switch",
       "key": "switch_compatibility",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11332,9 +11027,7 @@
       "group": "switch",
       "key": "switch_feel",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11467,17 +11160,7 @@
       "group": "switch",
       "key": "switch_lifespan",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "million keystrokes",
-        "unit_accepts": [
-          "million keystrokes",
-          "million keypresses",
-          "million",
-          "M"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11626,9 +11309,7 @@
       "group": "switch",
       "key": "switch_name",
       "output_shape": "scalar",
-      "parse": {
-        "template": "component_reference"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": true,
@@ -11753,9 +11434,7 @@
       "group": "switch",
       "key": "switch_output_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11880,9 +11559,7 @@
       "group": "switch",
       "key": "switch_pin_support",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12036,9 +11713,7 @@
       "group": "switch",
       "key": "switch_type",
       "output_shape": "scalar",
-      "parse": {
-        "template": "component_reference"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -12169,16 +11844,7 @@
       "group": "switch",
       "key": "total_travel",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12310,16 +11976,7 @@
       "group": "dimensions",
       "key": "typing_angle",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "degree",
-          "degrees"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12440,9 +12097,7 @@
       "group": "sound",
       "key": "typing_noise",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12563,9 +12218,7 @@
       "group": "connectivity",
       "key": "usb_passthrough",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12687,9 +12340,7 @@
       "group": "identity",
       "key": "variant",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -12810,9 +12461,7 @@
       "group": "general",
       "key": "warranty",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12941,28 +12590,7 @@
       "group": "dimensions",
       "key": "weight",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "kg",
-        "unit_accepts": [
-          "kg",
-          "kilogram",
-          "kilograms",
-          "g",
-          "gram",
-          "grams",
-          "lb",
-          "lbs"
-        ],
-        "unit_conversions": {
-          "g": 0.001,
-          "gram": 0.001,
-          "grams": 0.001,
-          "lb": 0.453592,
-          "lbs": 0.453592
-        }
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -13090,16 +12718,7 @@
       "group": "dimensions",
       "key": "width",
       "output_shape": "scalar",
-      "parse": {
-        "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ]
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -13219,9 +12838,7 @@
       "group": "connectivity",
       "key": "wired_interface",
       "output_shape": "scalar",
-      "parse": {
-        "template": "text_field"
-      },
+      "parse": {},
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13354,8 +12971,7 @@
           "/",
           "|",
           ";"
-        ],
-        "template": "list_of_tokens_delimited"
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -13419,7 +13035,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-08T00:49:53.413Z",
+  "generated_at": "2026-04-09T07:40:00.114Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

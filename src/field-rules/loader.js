@@ -313,7 +313,7 @@ export function normalizeParseTemplates(rawParseTemplates = {}, fieldRules = {})
       }
       const parse = isObject(fieldRule.parse) ? fieldRule.parse : {};
       templates[fieldKey] = {
-        template: String(parse.template || '').trim(),
+        type: String(fieldRule?.contract?.type || 'string').trim(),
         patterns: []
       };
     }
@@ -550,7 +550,7 @@ export async function getParseTemplate(category, fieldKey, options = {}) {
     return null;
   }
   return {
-    template: String(parse.template || '').trim(),
+    type: String(fieldRule?.contract?.type || 'string').trim(),
     patterns: []
   };
 }

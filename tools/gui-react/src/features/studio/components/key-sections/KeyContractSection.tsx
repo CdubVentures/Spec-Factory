@@ -96,7 +96,8 @@ export function KeyContractSection({
             <option value="boolean">boolean</option>
             <option value="date">date</option>
             <option value="url">url</option>
-            <option value="enum">enum</option>
+            <option value="range">range</option>
+            <option value="mixed_number_range">mixed_number_range</option>
           </select>
         </div>
         <div>
@@ -127,8 +128,6 @@ export function KeyContractSection({
           >
             <option value="scalar">scalar</option>
             <option value="list">list</option>
-            <option value="structured">structured</option>
-            <option value="key_value">key_value</option>
           </select>
         </div>
         <div>

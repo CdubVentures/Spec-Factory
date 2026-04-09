@@ -14,10 +14,7 @@ function makeLoadedPayload() {
           },
           data_type: 'string',
           output_shape: 'list',
-          parse: {
-            template: 'list_of_tokens_delimited'
-          },
-          parse_template: 'list_of_tokens_delimited',
+          parse: {},
           enum: {
             policy: 'closed',
             source: 'data_lists.connection'
@@ -31,7 +28,7 @@ function makeLoadedPayload() {
           component_db_ref: 'sensor',
           consumers: {
             'contract.shape': { seed: false },
-            'parse.template': { indexlab: false },
+            // WHY: parse.template retired — removed from consumer gate paths
             'enum.source': { indexlab: false },
             constraints: { indexlab: false },
             'component.type': { seed: false }
@@ -70,13 +67,14 @@ test('projectFieldRulesForConsumer strips indexlab-disabled paths and linked art
   const projected = projectFieldRulesForConsumer(loaded, 'indexlab');
 
   const rule = projected.rules.fields.connection;
-  assert.equal(rule.parse?.template, undefined);
-  assert.equal(rule.parse_template, undefined);
+  // WHY: parse.template retired. Verify enum.source still stripped.
   assert.equal(rule.enum?.source, undefined);
   assert.equal(rule.enum_source, undefined);
   assert.equal(rule.constraints, undefined);
   assert.equal(projected.knownValues?.enums?.connection, undefined);
-  assert.equal(projected.parseTemplates?.templates?.connection, undefined);
+  // WHY: Extraction patterns (parseTemplates) always pass through — they're needed
+  // regardless of consumer gate settings. Only field-rule knobs get gated.
+  assert.ok(projected.parseTemplates?.templates?.connection, 'extraction patterns always pass through');
   assert.equal(projected.crossValidation.length, 0);
 });
 

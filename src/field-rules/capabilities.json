@@ -152,14 +152,14 @@
       "description": "Weighted effort score for search budget allocation"
     },
     "parse.template": {
-      "status": "live",
-      "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
-      "description": "Parse template for value normalization"
+      "status": "retired",
+      "consumer": "none",
+      "description": "RETIRED: replaced by contract.type in type-driven normalization"
     },
     "parse.unit": {
-      "status": "live",
-      "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
-      "description": "Expected unit for parsing"
+      "status": "retired",
+      "consumer": "none",
+      "description": "RETIRED: redundant with contract.unit. Removed in unit normalization Phase 1."
     },
     "parse.delimiters": {
       "status": "live",

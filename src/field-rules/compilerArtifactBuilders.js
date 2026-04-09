@@ -23,7 +23,6 @@ export function normalizePatterns(value) {
       out.push({
         regex: item.regex.trim(),
         group: Number.isFinite(Number(item.group)) ? Number(item.group) : 1,
-        ...(item.unit ? { unit: String(item.unit) } : {}),
         ...(item.convert ? { convert: String(item.convert) } : {})
       });
     }
@@ -42,8 +41,8 @@ export function buildParseTemplates(fieldRules = {}) {
       continue;
     }
     const parse = isObject(fieldRule.parse) ? fieldRule.parse : {};
-    const templateName = String(parse.template || '').trim();
-    const templateDef = isObject(templateLibrary[templateName]) ? templateLibrary[templateName] : {};
+    const typeName = String(fieldRule?.contract?.type || 'string').trim();
+    const templateDef = isObject(templateLibrary[typeName]) ? templateLibrary[typeName] : {};
     const patterns = [
       ...normalizePatterns(parse.patterns),
       ...normalizePatterns(templateDef.patterns),
@@ -67,10 +66,9 @@ export function buildParseTemplates(fieldRules = {}) {
 
     templates[fieldKey] = {
       patterns,
-      ...(templateName ? { template: templateName } : {}),
+      ...(typeName ? { type: typeName } : {}),
       ...(contextKeywords.length ? { context_keywords: [...new Set(contextKeywords)] } : {}),
       ...(negativeKeywords.length ? { negative_keywords: [...new Set(negativeKeywords)] } : {}),
-      ...(parse.unit ? { unit: String(parse.unit) } : {}),
       ...(parse.post_process ? { post_process: String(parse.post_process) } : {})
     };
   }

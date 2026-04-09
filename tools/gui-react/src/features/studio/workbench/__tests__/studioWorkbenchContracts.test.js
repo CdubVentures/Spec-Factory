@@ -34,7 +34,7 @@ async function loadWorkbenchInlineEditContracts() {
   });
 }
 
-test('studio workbench contracts keep parse-unit and publish-gate authorable after IDX-only retirement', async () => {
+test('studio workbench contracts keep publish-gate authorable after IDX-only retirement', async () => {
   const [
     { buildWorkbenchRows },
     { ALL_COLUMN_IDS_WITH_LABELS, getPresetVisibility },
@@ -50,7 +50,7 @@ test('studio workbench contracts keep parse-unit and publish-gate authorable aft
     {
       weight: {
         ui: { label: 'Weight', group: 'specs' },
-        parse: { unit: 'g' },
+        contract: { unit: 'g' },
         priority: { publish_gate: true },
       },
     },
@@ -59,21 +59,18 @@ test('studio workbench contracts keep parse-unit and publish-gate authorable aft
   );
 
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].parseUnit, 'g');
+  assert.equal(rows[0].contractUnit, 'g');
   assert.equal(rows[0].publishGate, true);
 
   const columnIds = ALL_COLUMN_IDS_WITH_LABELS.map((entry) => entry.id);
-  assert.equal(columnIds.includes('parseUnit'), true);
+  assert.equal(columnIds.includes('contractUnit'), true);
   assert.equal(columnIds.includes('publishGate'), true);
 
-  const parsingPreset = getPresetVisibility('parsing');
   const minimalPreset = getPresetVisibility('minimal');
   const evidencePreset = getPresetVisibility('evidence');
-  assert.equal(parsingPreset.parseUnit, true);
   assert.equal(minimalPreset.publishGate, true);
   assert.equal(evidencePreset.publishGate, true);
 
   assert.equal(resolveWorkbenchInlineEditPath('publishGate'), 'priority.publish_gate');
-  assert.equal(resolveWorkbenchInlineEditPath('parseTemplate'), 'parse.template');
   assert.equal(resolveWorkbenchInlineEditPath('unknownColumn'), '');
 });

@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-08T08:00:04.500Z",
+  "generated_at": "2026-04-09T09:14:59.461Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
@@ -87,7 +87,9 @@
       "sensor_brand",
       "sensor_date",
       "sensor_latency",
-      "sensor_latency_list",
+      "sensor_latency_bluetooth",
+      "sensor_latency_wired",
+      "sensor_latency_wireless",
       "sensor_link",
       "sensor_type",
       "shift_latency",
@@ -96,7 +98,9 @@
     "switches": [
       "click_force",
       "click_latency",
-      "click_latency_list",
+      "click_latency_bluetooth",
+      "click_latency_wired",
+      "click_latency_wireless",
       "debounce",
       "hot_swappable",
       "silent_clicks",
@@ -223,7 +227,7 @@
       "group_key": "general"
     },
     {
-      "count": 19,
+      "count": 21,
       "display_name": "Sensor & Performance",
       "field_keys": [
         "acceleration",
@@ -240,7 +244,9 @@
         "sensor_brand",
         "sensor_date",
         "sensor_latency",
-        "sensor_latency_list",
+        "sensor_latency_bluetooth",
+        "sensor_latency_wired",
+        "sensor_latency_wireless",
         "sensor_link",
         "sensor_type",
         "shift_latency",
@@ -249,12 +255,14 @@
       "group_key": "sensor_performance"
     },
     {
-      "count": 10,
+      "count": 12,
       "display_name": "Switches",
       "field_keys": [
         "click_force",
         "click_latency",
-        "click_latency_list",
+        "click_latency_bluetooth",
+        "click_latency_wired",
+        "click_latency_wireless",
         "debounce",
         "hot_swappable",
         "silent_clicks",

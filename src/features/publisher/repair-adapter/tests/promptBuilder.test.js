@@ -14,7 +14,7 @@ import {
 function makeFieldRule(overrides = {}) {
   return {
     contract: { shape: 'scalar', type: 'string', unit: '', ...overrides.contract },
-    parse: { template: 'text_field', ...overrides.parse },
+    parse: { ...overrides.parse },
     ...overrides,
   };
 }
@@ -97,7 +97,7 @@ describe('buildRepairPrompt — P2 (enum open_prefer_known)', () => {
 describe('buildRepairPrompt — P3 (wrong_type)', () => {
   it('builds P3 prompt for type coercion failure', () => {
     const rejections = [makeRejection('wrong_type', { expected: 'number', reason: 'not parseable' })];
-    const rule = makeFieldRule({ contract: { type: 'number' }, parse: { template: 'number_with_unit' } });
+    const rule = makeFieldRule({ contract: { type: 'number' } });
     const result = buildRepairPrompt({ rejections, value: 'twenty grams', fieldKey: 'weight', fieldRule: rule });
 
     assert.equal(result.promptId, 'P3');
@@ -105,7 +105,7 @@ describe('buildRepairPrompt — P3 (wrong_type)', () => {
     assert.ok(result.user.includes('number'));
     assert.equal(result.params.rawValue, 'twenty grams');
     assert.equal(result.params.expectedType, 'number');
-    assert.equal(result.params.templateType, 'number_with_unit');
+    assert.equal(result.params.resolvedType, 'number');
   });
 });
 
@@ -114,13 +114,13 @@ describe('buildRepairPrompt — P3 (wrong_type)', () => {
 describe('buildRepairPrompt — P4 (format_mismatch)', () => {
   it('builds P4 prompt for format mismatch', () => {
     const rejections = [makeRejection('format_mismatch', { reason: 'does not match url pattern' })];
-    const rule = makeFieldRule({ parse: { template: 'url_field' } });
+    const rule = makeFieldRule({ contract: { type: 'url' } });
     const result = buildRepairPrompt({ rejections, value: 'not a url', fieldKey: 'spec_url', fieldRule: rule });
 
     assert.equal(result.promptId, 'P4');
     assert.ok(result.user.includes('not a url'));
     assert.equal(result.params.normalizedValue, 'not a url');
-    assert.equal(result.params.templateType, 'url_field');
+    assert.equal(result.params.resolvedType, 'url');
   });
 });
 
@@ -251,7 +251,7 @@ describe('buildRepairPrompt — format_hint enrichment', () => {
 
   it('P4 includes format_hint when present', () => {
     const rejections = [makeRejection('format_mismatch', { reason: 'bad format' })];
-    const rule = makeFieldRule({ parse: { template: 'text_field' }, enum: { match: { format_hint: '^\\d+ Zone' } } });
+    const rule = makeFieldRule({ enum: { match: { format_hint: '^\\d+ Zone' } } });
     const result = buildRepairPrompt({ rejections, value: 'bad', fieldKey: 'lighting', fieldRule: rule });
     assert.ok(result.user.includes('\\d+ Zone'));
   });

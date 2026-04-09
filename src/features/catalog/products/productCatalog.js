@@ -29,7 +29,6 @@ export async function addProduct({
   base_model,
   variant = '',
   storage = null,
-  upsertQueue = null,
   specDb = null,
   appDb = null,
 }) {
@@ -80,11 +79,6 @@ export async function addProduct({
     });
   } catch { /* best-effort: pipeline still works without product.json */ }
 
-  // Upsert queue entry
-  if (upsertQueue) {
-    await upsertQueue({ storage, category: cat, productId: pid, s3key: '', patch: { status: 'pending', next_action_hint: 'fast_pass' } });
-  }
-
   return { ok: true, productId: pid, product };
 }
 
@@ -99,7 +93,6 @@ export async function addProductsBulk({
   brand = '',
   rows = [],
   storage = null,
-  upsertQueue = null,
   specDb = null,
   appDb = null,
 }) {
@@ -210,16 +203,6 @@ export async function addProductsBulk({
         });
       } catch { /* best-effort */ }
 
-      if (upsertQueue) {
-        await upsertQueue({
-          storage,
-          category: cat,
-          productId: pid,
-          s3key: '',
-          patch: { status: 'pending', next_action_hint: 'fast_pass' }
-        });
-      }
-
       created += 1;
       results.push({ ...normalizedResult, status: 'created' });
     } catch (error) {
@@ -255,7 +238,6 @@ export async function updateProduct({
   productId,
   patch = {},
   storage = null,
-  upsertQueue = null,
   specDb = null,
   appDb = null,
 }) {
@@ -296,10 +278,6 @@ export async function updateProduct({
     status: updatedStatus,
     updated_at: nowIso()
   };
-
-  if (upsertQueue) {
-    await upsertQueue({ storage, category: cat, productId, s3key: '', patch: { status: 'pending' }, specDb });
-  }
 
   return { ok: true, productId, product: updated };
 }

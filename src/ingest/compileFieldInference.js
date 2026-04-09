@@ -105,44 +105,6 @@ export function inferUnitByField(key) {
   return '';
 }
 
-export function inferParseTemplate({ key, type, shape, enumValues = [], componentType = '' }) {
-  const token = normalizeFieldKey(key);
-  if (componentType) {
-    return 'component_reference';
-  }
-  if (type === 'boolean') {
-    return 'boolean_yes_no_unk';
-  }
-  if (shape === 'range') {
-    return 'range_number';
-  }
-  if (shape === 'list' && isNumericContractType(type)) {
-    return 'list_of_numbers_with_unit';
-  }
-  if (shape === 'list' && type === 'string') {
-    const enumSet = new Set(enumValues.map((value) => normalizeToken(value)));
-    if (enumSet.has('wired') || enumSet.has('wireless') || enumSet.has('hybrid') || token.includes('connect')) {
-      return 'mode_tagged_list';
-    }
-    return 'list_of_tokens_delimited';
-  }
-  if (isNumericContractType(type)) {
-    if (inferUnitByField(token)) {
-      return 'number_with_unit';
-    }
-    return 'integer_with_unit';
-  }
-  return 'text_field';
-}
-
-export function canonicalParseTemplate(template = '') {
-  const token = normalizeToken(template);
-  if (token === 'boolean_yes_no_unknown') {
-    return 'boolean_yes_no_unk';
-  }
-  return token;
-}
-
 export function inferFromSamples(key, samples = []) {
   const normalized = toArray(samples).map((sample) => normalizeText(sample)).filter(Boolean).slice(0, 200);
   const numericCount = normalized.filter((value) => /^-?\d+(\.\d+)?$/.test(value)).length;

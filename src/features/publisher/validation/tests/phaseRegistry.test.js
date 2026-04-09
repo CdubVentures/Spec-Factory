@@ -5,8 +5,8 @@ import { PHASE_REGISTRY } from '../phaseRegistry.js';
 // ── Registry structure tests ────────────────────────────────────────
 
 describe('PHASE_REGISTRY — structure', () => {
-  it('exports exactly 12 phases', () => {
-    assert.equal(PHASE_REGISTRY.length, 12);
+  it('exports exactly 11 phases', () => {
+    assert.equal(PHASE_REGISTRY.length, 11);
   });
 
   it('every entry has required fields', () => {
@@ -23,28 +23,33 @@ describe('PHASE_REGISTRY — structure', () => {
 
   it('order values are unique and sequential from 0', () => {
     const orders = PHASE_REGISTRY.map((p) => p.order);
-    const expected = Array.from({ length: 12 }, (_, i) => i);
+    const expected = Array.from({ length: 11 }, (_, i) => i);
     assert.deepEqual(orders, expected);
   });
 
   it('ids are unique', () => {
     const ids = PHASE_REGISTRY.map((p) => p.id);
-    assert.equal(new Set(ids).size, 12);
+    assert.equal(new Set(ids).size, 11);
+  });
+
+  it('does not contain template_dispatch phase', () => {
+    const ids = PHASE_REGISTRY.map((p) => p.id);
+    assert.ok(!ids.includes('template_dispatch'));
+  });
+
+  it('contains type_coerce phase (replaces type)', () => {
+    const ids = PHASE_REGISTRY.map((p) => p.id);
+    assert.ok(ids.includes('type_coerce'));
   });
 });
 
 // ── Applicability predicate tests (table-driven) ────────────────────
 
-const DISPATCHED_TEMPLATE = 'boolean_yes_no_unk';
-const NON_DISPATCHED_TEMPLATE = 'text_field';
-const FORMAT_TEMPLATE = 'date_field';
-// Helper: build a minimal rule object
 function rule(overrides = {}) {
   return {
     contract: { shape: 'scalar', type: 'string', ...(overrides.contract || {}) },
-    parse: { template: 'text_field', ...(overrides.parse || {}) },
+    parse: { ...(overrides.parse || {}) },
     enum: { ...(overrides.enum || {}) },
-    component: { ...(overrides.component || {}) },
     ...overrides,
   };
 }
@@ -55,84 +60,42 @@ function phaseById(id) {
 
 describe('PHASE_REGISTRY — isApplicable predicates', () => {
 
-  // ── Step 0: Absence Normalization ───────────────────────────────
-  describe('absence (step 0)', () => {
+  // ── absence ───────────────────────────────────────────────────
+  describe('absence', () => {
     const phase = () => phaseById('absence');
 
     it('always applicable — default rule', () => {
       assert.equal(phase().isApplicable(rule()), true);
     });
 
-    it('always applicable — empty rule', () => {
-      assert.equal(phase().isApplicable({}), true);
-    });
-
     it('always applicable — null rule', () => {
       assert.equal(phase().isApplicable(null), true);
     });
   });
 
-  // ── Step 1: Template Dispatch ───────────────────────────────────
-  describe('template_dispatch (step 1)', () => {
-    const phase = () => phaseById('template_dispatch');
-
-    it('applicable when parse.template is a dispatched template', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: DISPATCHED_TEMPLATE } })), true);
-    });
-
-    it('not applicable for text_field (fallthrough)', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: NON_DISPATCHED_TEMPLATE } })), false);
-    });
-
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}), false);
-    });
-
-    it('not applicable for null rule', () => {
-      assert.equal(phase().isApplicable(null), false);
-    });
-  });
-
-  // ── Step 2: Shape Check ─────────────────────────────────────────
-  describe('shape (step 2)', () => {
+  // ── shape ─────────────────────────────────────────────────────
+  describe('shape', () => {
     const phase = () => phaseById('shape');
 
     it('always applicable — default rule', () => {
       assert.equal(phase().isApplicable(rule()), true);
     });
 
-    it('always applicable — empty rule', () => {
-      assert.equal(phase().isApplicable({}), true);
-    });
-
     it('always applicable — null rule', () => {
       assert.equal(phase().isApplicable(null), true);
     });
   });
 
-  // ── Step 3: Unit Verification ───────────────────────────────────
-  describe('unit (step 3)', () => {
+  // ── unit ──────────────────────────────────────────────────────
+  describe('unit', () => {
     const phase = () => phaseById('unit');
 
-    it('applicable when contract.unit is truthy and NOT dispatched', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { unit: 'g' },
-        parse: { template: NON_DISPATCHED_TEMPLATE },
-      })), true);
+    it('applicable when contract.unit is truthy', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { unit: 'g' } })), true);
     });
 
     it('not applicable when contract.unit is empty', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { unit: '' },
-        parse: { template: NON_DISPATCHED_TEMPLATE },
-      })), false);
-    });
-
-    it('not applicable when template is dispatched (even with unit)', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { unit: 'g' },
-        parse: { template: DISPATCHED_TEMPLATE },
-      })), false);
+      assert.equal(phase().isApplicable(rule({ contract: { unit: '' } })), false);
     });
 
     it('not applicable for empty rule', () => {
@@ -144,30 +107,9 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 4: Type Check ──────────────────────────────────────────
-  describe('type (step 4)', () => {
-    const phase = () => phaseById('type');
-
-    it('applicable when template is NOT dispatched', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: NON_DISPATCHED_TEMPLATE } })), true);
-    });
-
-    it('not applicable when template IS dispatched', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: DISPATCHED_TEMPLATE } })), false);
-    });
-
-    it('applicable for empty rule (defaults to text_field = not dispatched)', () => {
-      assert.equal(phase().isApplicable({}), true);
-    });
-
-    it('applicable for null rule', () => {
-      assert.equal(phase().isApplicable(null), true);
-    });
-  });
-
-  // ── Step 5: String Normalization ────────────────────────────────
-  describe('normalize (step 5)', () => {
-    const phase = () => phaseById('normalize');
+  // ── type_coerce ───────────────────────────────────────────────
+  describe('type_coerce', () => {
+    const phase = () => phaseById('type_coerce');
 
     it('always applicable — default rule', () => {
       assert.equal(phase().isApplicable(rule()), true);
@@ -182,20 +124,41 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 6: Format Check ────────────────────────────────────────
-  describe('format (step 6)', () => {
+  // ── normalize ─────────────────────────────────────────────────
+  describe('normalize', () => {
+    const phase = () => phaseById('normalize');
+
+    it('always applicable — default rule', () => {
+      assert.equal(phase().isApplicable(rule()), true);
+    });
+
+    it('always applicable — null rule', () => {
+      assert.equal(phase().isApplicable(null), true);
+    });
+  });
+
+  // ── format ────────────────────────────────────────────────────
+  describe('format', () => {
     const phase = () => phaseById('format');
 
-    it('applicable when parse.template is in FORMAT_REGISTRY', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: FORMAT_TEMPLATE } })), true);
+    it('applicable when type has FORMAT_REGISTRY entry (boolean)', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { type: 'boolean' } })), true);
     });
 
-    it('applicable for boolean_yes_no_unk (also in format registry)', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: 'boolean_yes_no_unk' } })), true);
+    it('applicable when type has FORMAT_REGISTRY entry (date)', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { type: 'date' } })), true);
     });
 
-    it('not applicable for text_field (not in format registry)', () => {
-      assert.equal(phase().isApplicable(rule({ parse: { template: NON_DISPATCHED_TEMPLATE } })), false);
+    it('applicable when type has FORMAT_REGISTRY entry (url)', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { type: 'url' } })), true);
+    });
+
+    it('not applicable for string type (no format registry entry)', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { type: 'string' } })), false);
+    });
+
+    it('applicable when format_hint is set (even for string)', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { type: 'string' }, enum: { match: { format_hint: '^\\d+$' } } })), true);
     });
 
     it('not applicable for empty rule', () => {
@@ -207,30 +170,20 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 7: List Rules ──────────────────────────────────────────
-  describe('list_rules (step 7)', () => {
+  // ── list_rules ────────────────────────────────────────────────
+  describe('list_rules', () => {
     const phase = () => phaseById('list_rules');
 
     it('applicable when shape=list AND list_rules exists', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { shape: 'list', list_rules: { sort: 'alpha' } },
-      })), true);
+      assert.equal(phase().isApplicable(rule({ contract: { shape: 'list', list_rules: { sort: 'alpha' } } })), true);
     });
 
     it('not applicable when shape=list but no list_rules', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { shape: 'list' },
-      })), false);
+      assert.equal(phase().isApplicable(rule({ contract: { shape: 'list' } })), false);
     });
 
-    it('not applicable when shape=scalar (even with list_rules)', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { shape: 'scalar', list_rules: { sort: 'alpha' } },
-      })), false);
-    });
-
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}), false);
+    it('not applicable when shape=scalar', () => {
+      assert.equal(phase().isApplicable(rule({ contract: { shape: 'scalar', list_rules: { sort: 'alpha' } } })), false);
     });
 
     it('not applicable for null rule', () => {
@@ -238,56 +191,37 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 8: Rounding ────────────────────────────────────────────
-  describe('rounding (step 8)', () => {
+  // ── rounding ──────────────────────────────────────────────────
+  describe('rounding', () => {
     const phase = () => phaseById('rounding');
 
     it('applicable when contract.rounding exists', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { rounding: { precision: 2 } },
-      })), true);
+      assert.equal(phase().isApplicable(rule({ contract: { rounding: { precision: 2 } } })), true);
     });
 
     it('not applicable when no rounding config', () => {
       assert.equal(phase().isApplicable(rule()), false);
     });
 
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}), false);
-    });
-
     it('not applicable for null rule', () => {
       assert.equal(phase().isApplicable(null), false);
     });
   });
 
-  // ── Step 9: Enum Check ──────────────────────────────────────────
-  describe('enum (step 9)', () => {
+  // ── enum ──────────────────────────────────────────────────────
+  describe('enum', () => {
     const phase = () => phaseById('enum');
 
-    it('applicable when enum.policy is set AND knownValuesCount > 0', () => {
-      assert.equal(phase().isApplicable(
-        rule({ enum: { policy: 'closed' } }),
-        { knownValuesCount: 5 },
-      ), true);
+    it('applicable when enum.policy set AND knownValuesCount > 0', () => {
+      assert.equal(phase().isApplicable(rule({ enum: { policy: 'closed' } }), { knownValuesCount: 5 }), true);
     });
 
-    it('not applicable when enum.policy is set but knownValuesCount = 0', () => {
-      assert.equal(phase().isApplicable(
-        rule({ enum: { policy: 'closed' } }),
-        { knownValuesCount: 0 },
-      ), false);
+    it('not applicable when knownValuesCount = 0', () => {
+      assert.equal(phase().isApplicable(rule({ enum: { policy: 'closed' } }), { knownValuesCount: 0 }), false);
     });
 
-    it('not applicable when no enum.policy (even with known values)', () => {
-      assert.equal(phase().isApplicable(
-        rule(),
-        { knownValuesCount: 10 },
-      ), false);
-    });
-
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}, {}), false);
+    it('not applicable when no enum.policy', () => {
+      assert.equal(phase().isApplicable(rule(), { knownValuesCount: 10 }), false);
     });
 
     it('not applicable for null rule', () => {
@@ -295,22 +229,16 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
-  // ── Step 10: Range Check ────────────────────────────────────────
-  describe('range (step 10)', () => {
+  // ── range ─────────────────────────────────────────────────────
+  describe('range', () => {
     const phase = () => phaseById('range');
 
     it('applicable when contract.range exists', () => {
-      assert.equal(phase().isApplicable(rule({
-        contract: { range: { min: 0, max: 100 } },
-      })), true);
+      assert.equal(phase().isApplicable(rule({ contract: { range: { min: 0, max: 100 } } })), true);
     });
 
     it('not applicable when no range config', () => {
       assert.equal(phase().isApplicable(rule()), false);
-    });
-
-    it('not applicable for empty rule', () => {
-      assert.equal(phase().isApplicable({}), false);
     });
 
     it('not applicable for null rule', () => {
@@ -318,6 +246,22 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     });
   });
 
+  // ── publish_gate ──────────────────────────────────────────────
+  describe('publish_gate', () => {
+    const phase = () => phaseById('publish_gate');
+
+    it('applicable when block_publish_when_unk is true', () => {
+      assert.equal(phase().isApplicable({ priority: { block_publish_when_unk: true } }), true);
+    });
+
+    it('not applicable when flag is false', () => {
+      assert.equal(phase().isApplicable({ priority: { block_publish_when_unk: false } }), false);
+    });
+
+    it('not applicable for null rule', () => {
+      assert.equal(phase().isApplicable(null), false);
+    });
+  });
 });
 
 // ── triggerDetail tests ─────────────────────────────────────────────
@@ -333,9 +277,8 @@ describe('PHASE_REGISTRY — triggerDetail', () => {
         range: { min: 0, max: 100 },
         list_rules: { sort: 'alpha', dedupe: true },
       },
-      parse: { template: 'boolean_yes_no_unk', unit_accepts: ['g', 'kg'], token_map: { na: 'unk' } },
+      parse: { token_map: { na: 'unk' } },
       enum: { policy: 'closed' },
-      component: { type: 'chipset' },
     });
     const ctx = { knownValuesCount: 5 };
 

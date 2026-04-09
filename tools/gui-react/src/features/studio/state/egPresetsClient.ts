@@ -72,7 +72,7 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
       unknown_reason_required: true,
     },
     parse: {
-      template: 'list_of_tokens_delimited',
+
       delimiters: [',', '/', '|', ';'],
       token_map: {
         grey: 'gray',
@@ -95,9 +95,9 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
         'light red': 'light-red',
       },
     },
-    enum_policy: 'open',
+    enum_policy: 'closed',
     enum: {
-      policy: 'open',
+      policy: 'closed',
       match: { strategy: 'exact' },
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
     },
@@ -146,7 +146,7 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
       unknown_reason_required: true,
     },
     parse: {
-      template: 'list_of_tokens_delimited',
+
       delimiters: [','],
       token_map: {},
     },

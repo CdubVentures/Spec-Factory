@@ -2,15 +2,12 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkbenchRow, ColumnPreset } from './workbenchTypes.ts';
 
-import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
 import {
   REQUIRED_LEVEL_OPTIONS,
   AI_MODE_OPTIONS as _AI_MODE_VALUES,
   AI_MODEL_STRATEGY_OPTIONS,
   ENUM_POLICY_OPTIONS,
 } from '../../../registries/fieldRuleTaxonomy.ts';
-
-const PARSE_TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 
 // WHY: Workbench AI mode dropdown includes blank option for "auto/unset"
 const AI_MODE_OPTIONS = ['', ..._AI_MODE_VALUES];
@@ -270,69 +267,6 @@ export function buildColumns(
       cell: ({ getValue }) => <span className="font-mono text-xs text-gray-500">{getValue() as string}</span>,
     },
 
-    // Parse template (inline editable)
-    {
-      accessorKey: 'parseTemplate',
-      header: 'Parse Template',
-      size: 160,
-      cell: ({ row }) => (
-        <InlineSelectCell
-          value={row.original.parseTemplate}
-          options={PARSE_TEMPLATE_OPTIONS}
-          editingCell={editingCell}
-          cellId={{ key: row.original.key, column: 'parseTemplate' }}
-          onStartEdit={onStartEdit}
-          onCommit={(v) => onInlineCommit(row.original.key, 'parseTemplate', v)}
-        />
-      ),
-    },
-
-    // Parse unit
-    {
-      accessorKey: 'parseUnit',
-      header: 'Parse Unit',
-      size: 80,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="font-mono text-xs">{v}</span> : <span className="text-gray-300">\u2014</span>;
-      },
-    },
-
-    // Unit accepts
-    {
-      accessorKey: 'unitAccepts',
-      header: 'Unit Accepts',
-      size: 140,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="text-xs text-gray-500 truncate">{v}</span> : <span className="text-gray-300">\u2014</span>;
-      },
-    },
-
-    // Allow unitless
-    {
-      accessorKey: 'allowUnitless',
-      header: 'Unitless',
-      size: 70,
-      cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
-    },
-
-    // Allow ranges
-    {
-      accessorKey: 'allowRanges',
-      header: 'Ranges',
-      size: 70,
-      cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
-    },
-
-    // Strict unit required
-    {
-      accessorKey: 'strictUnitRequired',
-      header: 'Strict Unit',
-      size: 80,
-      cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
-    },
-
     // Enum policy (inline editable — locked when consistency mode ON)
     {
       accessorKey: 'enumPolicy',
@@ -570,7 +504,7 @@ const ALWAYS_VISIBLE = ['select', 'status', 'group', 'displayName'];
 const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   minimal: [
     ...ALWAYS_VISIBLE,
-    'requiredLevel', 'contractType', 'parseTemplate', 'enumPolicy', 'publishGate',
+    'requiredLevel', 'contractType', 'enumPolicy', 'publishGate',
   ],
   contract: [
     ...ALWAYS_VISIBLE,
@@ -581,11 +515,10 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   parsing: [
     ...ALWAYS_VISIBLE,
-    'parseTemplate', 'parseUnit', 'unitAccepts', 'allowUnitless', 'allowRanges', 'strictUnitRequired',
   ],
   enums: [
     ...ALWAYS_VISIBLE,
-    'enumPolicy', 'enumSource', 'matchStrategy', 'knownValuesCount', 'parseTemplate',
+    'enumPolicy', 'enumSource', 'matchStrategy', 'knownValuesCount',
   ],
   evidence: [
     ...ALWAYS_VISIBLE,
@@ -598,7 +531,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   debug: [
     ...ALWAYS_VISIBLE,
-    'requiredLevel', 'contractType', 'parseTemplate', 'enumPolicy', 'enumSource',
+    'requiredLevel', 'contractType', 'enumPolicy', 'enumSource',
     'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'conflictPolicy', 'draftDirty',
     'aiMode', 'aiModelStrategy', 'aiMaxCalls',
   ],
@@ -628,12 +561,6 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'contractShape', label: 'Shape' },
   { id: 'contractUnit', label: 'Unit' },
   { id: 'unknownToken', label: 'Unk Token' },
-  { id: 'parseTemplate', label: 'Parse Template' },
-  { id: 'parseUnit', label: 'Parse Unit' },
-  { id: 'unitAccepts', label: 'Unit Accepts' },
-  { id: 'allowUnitless', label: 'Allow Unitless' },
-  { id: 'allowRanges', label: 'Allow Ranges' },
-  { id: 'strictUnitRequired', label: 'Strict Unit' },
   { id: 'enumPolicy', label: 'Enum Policy' },
   { id: 'enumSource', label: 'Enum Source' },
   { id: 'matchStrategy', label: 'Match Strategy' },

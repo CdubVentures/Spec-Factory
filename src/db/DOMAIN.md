@@ -27,7 +27,7 @@ stores/
   keyReviewStore.js        — 15 methods: key_review_state + key_review_runs + key_review_run_sources + key_review_audit
   billingStore.js          —  5 methods: billing_entries
   sourceIntelStore.js      —  3 methods: bridge_events
-  queueProductStore.js     — 23 methods: product_queue + product_runs + products + curation_suggestions + component_review_queue
+  queueProductStore.js     — 11 methods: products + curation_suggestions + component_review_queue
   llmRouteSourceStore.js   —  4 methods: llm_route_matrix
 ```
 

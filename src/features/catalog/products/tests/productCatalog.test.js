@@ -39,14 +39,6 @@ function mockStorage() {
   };
 }
 
-// Mock upsertQueue
-function mockUpsertQueue() {
-  const calls = [];
-  const fn = async (args) => { calls.push(args); };
-  fn.calls = calls;
-  return fn;
-}
-
 const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
 
 // --- addProduct ---
@@ -54,11 +46,10 @@ const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
 test('addProduct: creates product with hex-based productId', async () => {
   const config = await tmpConfig();
   const storage = mockStorage();
-  const upsertQueue = mockUpsertQueue();
   try {
     const result = await addProduct({
       config, category: 'mouse', brand: 'Logitech', base_model: 'G Pro X Superlight 2',
-      storage, upsertQueue
+      storage
     });
 
     assert.equal(result.ok, true);

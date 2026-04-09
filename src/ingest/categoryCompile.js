@@ -32,8 +32,6 @@ export { _validateFieldStudioMap as validateFieldStudioMap };
 import {
   reconcileKeyMigrationsForFieldSet,
   findKeyMigrationCycle,
-  inferParseTemplate,
-  canonicalParseTemplate,
   enforceExpectationPriority
 } from './compileFieldInference.js';
 import {
@@ -45,7 +43,7 @@ import {
 } from './compileComponentHelpers.js';
 import {
   mergeFieldOverride,
-  parseRulesForTemplate,
+  defaultParseRules,
   buildFieldRuleDraft,
   buildStudioFieldRule
 } from './compileFieldRuleBuilder.js';
@@ -296,8 +294,7 @@ export async function compileCategoryFieldStudio({
         type: 'component_db',
         ref: componentType
       };
-      merged.parse_template = 'component_reference';
-      merged.parse_rules = parseRulesForTemplate('component_reference', { componentType });
+      merged.parse_rules = defaultParseRules(merged.type || 'string', merged.shape || 'scalar', { componentType });
       merged.enum_policy = 'open_prefer_known';
       merged.vocab = {
         ...(merged.vocab || {}),
@@ -324,10 +321,10 @@ export async function compileCategoryFieldStudio({
       };
       merged.new_value_policy = null;
     }
-    if ((merged.type === 'boolean' || merged.parse_template === 'boolean_yes_no_unknown') && !toArray(enumLists[field]).length && !toArray(enumLists.yes_no).length) {
+    if (merged.type === 'boolean' && !toArray(enumLists[field]).length && !toArray(enumLists.yes_no).length) {
       enumLists.yes_no = ['yes', 'no'];
     }
-    if ((merged.type === 'boolean' || merged.parse_template === 'boolean_yes_no_unknown')
+    if (merged.type === 'boolean'
       && (merged.enum_policy === 'closed' || merged.enum_policy === 'closed_with_curation')
       && (!isObject(merged.enum_source) || !normalizeText(merged.enum_source.ref))) {
       merged.enum_source = {
@@ -343,14 +340,7 @@ export async function compileCategoryFieldStudio({
         };
       }
     }
-    if (merged.parse_template === 'latency_list_modes_ms' && (!isObject(merged.object_schema) || Object.keys(merged.object_schema).length === 0)) {
-      merged.object_schema = {
-        mode: { type: 'string' },
-        ms: { type: 'number' },
-        source_host: { type: 'string' },
-        method: { type: 'string' }
-      };
-    }
+    // WHY: latency_list_modes_ms template retired. Latency fields split into scalar keys in Phase 3.
     if (!isObject(merged.ui)) {
       merged.ui = {};
     }
@@ -383,80 +373,13 @@ export async function compileCategoryFieldStudio({
       ...toArray(enumLists[outputField]),
       ...toArray(enumLists[normalizeFieldKey(label)])
     ]);
-    let mergedParseTemplate = normalizeToken(merged.parse_template || merged.parse?.template || '');
-    if (!mergedParseTemplate) {
-      mergedParseTemplate = inferParseTemplate({
-        key: outputField,
-        type: mergedType,
-        shape: mergedShape,
-        enumValues: mergedEnumValues,
-        componentType
-      });
-    }
-    const listParseTemplates = new Set([
-      'list_of_tokens_delimited',
-      'list_of_numbers_with_unit',
-      'list_numbers_or_ranges_with_unit',
-      'latency_list_modes_ms',
-      'mode_tagged_list',
-      'mode_tagged_values'
-    ]);
-    if (listParseTemplates.has(mergedParseTemplate) && mergedShape !== 'list') {
-      mergedParseTemplate = inferParseTemplate({
-        key: outputField,
-        type: mergedType,
-        shape: mergedShape,
-        enumValues: mergedEnumValues,
-        componentType
-      });
-      if (listParseTemplates.has(mergedParseTemplate) && mergedShape !== 'list') {
-        mergedParseTemplate = mergedType === 'string' ? 'text_field' : mergedParseTemplate;
-      }
-    }
-    if (mergedShape === 'list' && ['text_field', 'string', 'enum_string'].includes(mergedParseTemplate)) {
-      mergedParseTemplate = inferParseTemplate({
-        key: outputField,
-        type: mergedType,
-        shape: mergedShape,
-        enumValues: mergedEnumValues,
-        componentType
-      });
-    }
-    const scalarNumericParseTemplates = new Set([
-      'number_with_unit',
-      'integer_with_unit',
-      'range_number',
-    ]);
-    const isMergedNumericType = isNumericContractType(mergedType);
-    if (!isMergedNumericType && scalarNumericParseTemplates.has(mergedParseTemplate)) {
-      mergedParseTemplate = normalizeFieldKey(outputField).includes('date') ? 'date_field' : 'text_field';
-      merged.parse_rules = {};
-    }
-    if (
-      isMergedNumericType
-      && ['text_field', 'string', 'enum_string', 'date_field'].includes(mergedParseTemplate)
-    ) {
-      mergedParseTemplate = inferParseTemplate({
-        key: outputField,
-        type: mergedType,
-        shape: mergedShape,
-        enumValues: mergedEnumValues,
-        componentType,
-      });
-    }
-    if (
-      isMergedNumericType
-      && !normalizeText(merged.unit || '')
-      && ['number_with_unit', 'integer_with_unit'].includes(mergedParseTemplate)
-    ) {
-      mergedParseTemplate = 'integer_field';
-      merged.parse_rules = {};
-    }
-    merged.parse_template = canonicalParseTemplate(mergedParseTemplate);
+    // WHY: Type-driven — no parse_template inference or reconciliation.
+    // Type+shape is the contract. parse_template is not emitted.
+    delete merged.parse_template;
     if (!isObject(merged.parse)) {
       merged.parse = {};
     }
-    merged.parse.template = merged.parse_template;
+    delete merged.parse.template;
     if (!isObject(merged.parse_rules)) {
       merged.parse_rules = {};
     }
@@ -468,15 +391,15 @@ export async function compileCategoryFieldStudio({
         min_items: asInt(existingListRules.min_items, 0),
         max_items: asInt(existingListRules.max_items, 100)
       };
-      if (
-        ['list_of_tokens_delimited', 'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit', 'latency_list_modes_ms'].includes(mergedParseTemplate)
-        && toArray(merged.parse_rules.delimiters).length === 0
-      ) {
-        merged.parse_rules.delimiters = [',', '/', '|', ';'];
+      // WHY: Default delimiters for list fields — ensures deterministic output across compile cycles.
+      const defaultDelimiters = [',', '/', '|', ';'];
+      if (toArray(merged.parse_rules.delimiters).length === 0) {
+        merged.parse_rules.delimiters = defaultDelimiters;
       }
-    }
-    if (mergedShape === 'object' && !isObject(merged.object_schema)) {
-      merged.object_schema = {};
+      if (!isObject(merged.parse)) merged.parse = {};
+      if (toArray(merged.parse.delimiters).length === 0) {
+        merged.parse.delimiters = [...merged.parse_rules.delimiters];
+      }
     }
 
     if (isObject(merged.selection_policy) && Object.keys(merged.selection_policy).length > 0 && !normalizeText(merged.selection_policy.source_field)) {

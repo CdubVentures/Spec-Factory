@@ -29,6 +29,8 @@ export interface RunHistoryRow {
   readonly colorCount: number;
   readonly editionCount: number;
   readonly isLatest: boolean;
+  readonly validationStatus: 'valid' | 'rejected';
+  readonly rejectionSummary: string;
   readonly selected: ColorEditionFinderSelected;
   readonly systemPrompt: string;
   readonly userMessage: string;
@@ -158,17 +160,31 @@ export function deriveRunHistoryRows(
 
   return [...result.runs]
     .sort((a, b) => b.run_number - a.run_number)
-    .map(run => ({
-      runNumber: run.run_number,
-      ranAt: run.ran_at,
-      model: run.model,
-      fallbackUsed: run.fallback_used,
-      colorCount: run.selected?.colors?.length ?? 0,
-      editionCount: Object.keys(run.selected?.editions ?? {}).length,
-      isLatest: run.run_number === maxRunNumber,
-      selected: run.selected,
-      systemPrompt: run.prompt?.system ?? '',
-      userMessage: run.prompt?.user ?? '',
-      responseJson: JSON.stringify(run.response, null, 2),
-    }));
+    .map(run => {
+      const isRejected = run.response?.status === 'rejected';
+      const rejections = isRejected ? (run.response.rejections ?? []) : [];
+      const rejectionSummary = rejections
+        .map(r => {
+          const detail = r.detail as Record<string, unknown>;
+          const reason = detail?.reason ?? detail?.expected ?? r.reason_code;
+          return `${r.reason_code}: ${String(reason)}`;
+        })
+        .join('; ');
+
+      return {
+        runNumber: run.run_number,
+        ranAt: run.ran_at,
+        model: run.model,
+        fallbackUsed: run.fallback_used,
+        colorCount: run.selected?.colors?.length ?? 0,
+        editionCount: Object.keys(run.selected?.editions ?? {}).length,
+        isLatest: run.run_number === maxRunNumber,
+        validationStatus: isRejected ? 'rejected' as const : 'valid' as const,
+        rejectionSummary,
+        selected: run.selected,
+        systemPrompt: run.prompt?.system ?? '',
+        userMessage: run.prompt?.user ?? '',
+        responseJson: JSON.stringify(run.response, null, 2),
+      };
+    });
 }

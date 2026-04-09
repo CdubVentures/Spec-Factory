@@ -47,22 +47,24 @@ test('deriveTypeGroup and areTypesCompatible keep key-constraint type classifica
     await loadStudioConstraintGroups();
 
   assert.equal(
-    deriveTypeGroup({
-      contract: { type: 'integer' },
-    }),
+    deriveTypeGroup({ contract: { type: 'integer' } }),
     'numeric',
   );
   assert.equal(
-    deriveTypeGroup({
-      parse: { template: 'date_field' },
-    }),
+    deriveTypeGroup({ contract: { type: 'number' } }),
+    'numeric',
+  );
+  assert.equal(
+    deriveTypeGroup({ contract: { type: 'date' } }),
     'date',
   );
   assert.equal(
-    deriveTypeGroup({
-      parse: { template: 'boolean_yes_no_unk' },
-    }),
+    deriveTypeGroup({ contract: { type: 'boolean' } }),
     'boolean',
+  );
+  assert.equal(
+    deriveTypeGroup({ contract: { type: 'string' } }),
+    'string',
   );
   assert.equal(deriveTypeGroup({}), 'string');
 

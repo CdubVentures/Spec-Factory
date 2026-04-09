@@ -13,7 +13,8 @@ const COMPONENT_TEMPLATE_TYPES: Record<string, string> = {
   material: 'material',
 };
 
-import { UNIT_BEARING_TEMPLATES as NUMBER_PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
+import { TYPE_COUPLING_MAP, isUnitBearingType } from '../state/typeShapeRegistry.ts';
+import type { FieldType } from '../state/typeShapeRegistry.ts';
 
 const PRIORITY_SIGNAL_PATHS = new Set([
   'priority.required_level',
@@ -81,59 +82,22 @@ function applyLegacyAliasCoupling(
   if (path === 'evidence.min_evidence_refs') rule.min_evidence_refs = value;
   if (path === 'enum.policy') rule.enum_policy = value;
   if (path === 'enum.source') rule.enum_source = value;
-  if (path === 'parse.template') rule.parse_template = value;
+  // WHY: parse.template eliminated. No legacy alias sync needed.
   if (path === 'ui.group') rule.group = value;
   if (path === 'ui.label') rule.display_name = value;
 }
 
-function applyParseTemplateCoupling({
-  rule,
-  key,
-  value,
-}: {
-  rule: Record<string, unknown>;
-  key: string;
-  value: unknown;
-}): void {
-  const template = String(value || '');
-  if (template === 'boolean_yes_no_unk') {
-    setNestedRuleValue(rule, 'enum.policy', 'closed');
-    setNestedRuleValue(rule, 'enum.source', 'yes_no');
-    setNestedRuleValue(rule, 'enum.match.strategy', 'exact');
-    rule.enum_policy = 'closed';
-    rule.enum_source = 'yes_no';
-    setNestedRuleValue(rule, 'ui.input_control', 'text');
-    return;
-  }
-
-  if (template === 'component_reference') {
-    const componentType = COMPONENT_TEMPLATE_TYPES[key] || '';
-    if (componentType) {
-      setNestedRuleValue(rule, 'component.type', componentType);
-      setNestedRuleValue(rule, 'enum.source', `component_db.${componentType}`);
-      rule.enum_source = `component_db.${componentType}`;
-    }
-    setNestedRuleValue(rule, 'enum.policy', 'open_prefer_known');
-    setNestedRuleValue(rule, 'enum.match.strategy', 'alias');
-    rule.enum_policy = 'open_prefer_known';
-    setNestedRuleValue(rule, 'ui.input_control', 'component_picker');
-    return;
-  }
-
-  if (NUMBER_PARSE_TEMPLATES.has(template)) {
-    setNestedRuleValue(rule, 'ui.input_control', 'number');
-    return;
-  }
-  if (template === 'url_field') {
-    setNestedRuleValue(rule, 'ui.input_control', 'url');
-    return;
-  }
-  if (template === 'date_field') {
-    setNestedRuleValue(rule, 'ui.input_control', 'date');
-    return;
-  }
-  if (template === 'list_of_tokens_delimited' || template === 'token_list') {
-    setNestedRuleValue(rule, 'ui.input_control', 'multi_select');
+// WHY: O(1) type-driven coupling. When contract.type changes, apply side-effects from TYPE_COUPLING_MAP.
+// Adding coupling for a new type = one entry in the map, not a new if/else branch.
+function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void {
+  const type = String(value || '') as FieldType;
+  const effects = TYPE_COUPLING_MAP[type];
+  if (!effects) return;
+  for (const [path, effectValue] of Object.entries(effects)) {
+    setNestedRuleValue(rule, path, effectValue);
+    // WHY: Legacy alias sync for enum_policy/enum_source at top level.
+    if (path === 'enum.policy') rule.enum_policy = effectValue;
+    if (path === 'enum.source') rule.enum_source = effectValue;
   }
 }
 
@@ -248,12 +212,8 @@ export function applyStudioRuleCommand({
   setNestedRuleValue(rule, normalizedPath, command.value);
   applyLegacyAliasCoupling(rule, normalizedPath, command.value);
 
-  if (normalizedPath === 'parse.template') {
-    applyParseTemplateCoupling({
-      rule,
-      key: String(key || '').trim(),
-      value: command.value,
-    });
+  if (normalizedPath === 'contract.type') {
+    applyTypeCoupling(rule, command.value);
   }
 
   if (normalizedPath === 'enum.source') {

@@ -13,7 +13,7 @@ function sampleFieldRules() {
   return {
     weight: {
       contract: { shape: 'scalar', type: 'number', unknown_token: 'unk' },
-      parse: { template: 'number_with_unit' },
+      parse: {},
       enum: { policy: 'open' },
       priority: {},
     },
@@ -22,19 +22,19 @@ function sampleFieldRules() {
         shape: 'list', type: 'string', unknown_token: 'unk',
         list_rules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 },
       },
-      parse: { template: 'list_of_tokens_delimited' },
+      parse: {},
       enum: { policy: 'closed', match: { strategy: 'exact' } },
       priority: {},
     },
     sensor_brand: {
       contract: { shape: 'scalar', type: 'string', unknown_token: 'unk' },
-      parse: { template: 'text_field' },
+      parse: {},
       enum: { policy: 'open_prefer_known', match: { strategy: 'alias' } },
       priority: {},
     },
     coating: {
       contract: { shape: 'scalar', type: 'string', unknown_token: 'unk' },
-      parse: { template: 'text_field' },
+      parse: {},
       enum: { policy: 'closed', match: { strategy: 'exact' } },
       priority: {},
     },

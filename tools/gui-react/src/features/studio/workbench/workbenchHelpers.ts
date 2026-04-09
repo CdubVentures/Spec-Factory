@@ -115,13 +115,6 @@ export function buildWorkbenchRows(
       contractUnit: strN(r, 'contract.unit'),
       unknownToken: strN(r, 'contract.unknown_token', 'unk'),
 
-      parseTemplate: strN(r, 'parse.template', strN(r, 'parse_template')),
-      parseUnit: strN(r, 'parse.unit'),
-      unitAccepts: arrN(r, 'parse.unit_accepts').join(', '),
-      allowUnitless: boolN(r, 'parse.allow_unitless'),
-      allowRanges: boolN(r, 'parse.allow_ranges'),
-      strictUnitRequired: boolN(r, 'parse.strict_unit_required'),
-
       enumPolicy: strN(r, 'enum.policy', strN(r, 'enum_policy', 'open')),
       enumSource: strN(r, 'enum.source', strN(r, 'enum_source')),
       matchStrategy: strN(r, 'enum.match.strategy', 'alias'),

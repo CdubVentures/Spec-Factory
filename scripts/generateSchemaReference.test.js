@@ -63,16 +63,6 @@ test('detectTableUsage treats specDb product accessors as products table usage',
   assert.equal(detectTableUsage(usageText, 'products'), true);
 });
 
-test('detectTableUsage treats specDb run accessors as product_runs table usage', () => {
-  const usageText = `
-    export function getLatestRun(specDb, productId) {
-      return specDb.getLatestProductRun(productId);
-    }
-  `;
-
-  assert.equal(detectTableUsage(usageText, 'product_runs'), true);
-});
-
 test('detectTableUsage treats appDb category accessors as brand_categories table usage', () => {
   const usageText = `
     export function assignCategories(appDb, identifier, categories) {

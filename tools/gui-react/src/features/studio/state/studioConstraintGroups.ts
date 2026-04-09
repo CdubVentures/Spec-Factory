@@ -2,6 +2,7 @@ export const CONSTRAINT_OPS = ['<=', '>=', '<', '>', '==', '!=', 'requires'] as 
 
 export type FieldTypeGroup = 'numeric' | 'date' | 'boolean' | 'string';
 
+// WHY: Type-driven derivation. contract.type is the sole source — no parse.template fallback.
 export function deriveTypeGroup(
   rule: Record<string, unknown>,
 ): FieldTypeGroup {
@@ -9,17 +10,10 @@ export function deriveTypeGroup(
     rule.contract && typeof rule.contract === 'object'
       ? (rule.contract as Record<string, unknown>)
       : {};
-  const parse =
-    rule.parse && typeof rule.parse === 'object'
-      ? (rule.parse as Record<string, unknown>)
-      : {};
   const contractType = String(contract.type || '').trim().toLowerCase();
-  const parseTemplate = String(parse.template || '').trim().toLowerCase();
-  if (contractType === 'integer' || contractType === 'number') {
-    return 'numeric';
-  }
-  if (parseTemplate === 'date_field') return 'date';
-  if (parseTemplate === 'boolean_yes_no_unk') return 'boolean';
+  if (contractType === 'integer' || contractType === 'number') return 'numeric';
+  if (contractType === 'date') return 'date';
+  if (contractType === 'boolean') return 'boolean';
   return 'string';
 }
 

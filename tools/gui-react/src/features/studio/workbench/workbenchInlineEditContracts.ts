@@ -1,6 +1,5 @@
 const WORKBENCH_INLINE_EDIT_PATHS: Record<string, string> = {
   requiredLevel: 'priority.required_level',
-  parseTemplate: 'parse.template',
   enumPolicy: 'enum.policy',
   publishGate: 'priority.publish_gate',
   aiMode: 'ai_assist.mode',

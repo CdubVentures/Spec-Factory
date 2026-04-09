@@ -908,7 +908,7 @@
       "tooltip_key": "key_count",
       "tooltip_md": "Factory key count.",
       "tooltip_source": null,
-      "type": "number",
+      "type": "integer",
       "unit": ""
     },
     {
@@ -1424,7 +1424,7 @@
       "tooltip_key": "multi_device_pairing_count",
       "tooltip_md": "How many devices can be stored for quick switching.",
       "tooltip_source": null,
-      "type": "number",
+      "type": "integer",
       "unit": ""
     },
     {
@@ -2207,7 +2207,7 @@
       "tooltip_key": "onboard_profile_count",
       "tooltip_md": "How many profiles can be stored locally.",
       "tooltip_source": null,
-      "type": "number",
+      "type": "integer",
       "unit": ""
     },
     {
@@ -3045,7 +3045,7 @@
       "tooltip_key": "release_date",
       "tooltip_md": "Product release or launch date.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "date",
       "unit": ""
     },
     {
@@ -3334,6 +3334,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-08T00:49:53.413Z",
+  "generated_at": "2026-04-09T07:40:00.114Z",
   "version": 1
 }

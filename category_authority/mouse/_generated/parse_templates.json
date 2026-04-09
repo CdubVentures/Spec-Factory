@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-08T08:00:04.500Z",
+  "generated_at": "2026-04-09T09:14:59.461Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -172,16 +172,15 @@
         "max acceleration"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "g"
+      "type": "number"
     },
     "adjustable_scroll_wheel": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "adjustable_weight": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "battery_hours": {
       "context_keywords": [
@@ -191,64 +190,79 @@
         "battery_hours"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "h"
+      "type": "number"
     },
     "bluetooth": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "cable_type": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "click_force": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "gf"
+      "type": "number"
     },
     "click_latency": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
-    "click_latency_list": {
+    "click_latency_bluetooth": {
+      "context_keywords": [
+        "click latency (bluetooth)",
+        "click latency bluetooth"
+      ],
       "patterns": [],
-      "template": "latency_list_modes_ms",
-      "unit": "ms"
+      "type": "number"
+    },
+    "click_latency_wired": {
+      "context_keywords": [
+        "click latency (wired)",
+        "click latency wired"
+      ],
+      "patterns": [],
+      "type": "number"
+    },
+    "click_latency_wireless": {
+      "context_keywords": [
+        "click latency (wireless)",
+        "click latency wireless"
+      ],
+      "patterns": [],
+      "type": "number"
     },
     "coating": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "colors": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "computer_side_connector": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "connection": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "connectivity": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "debounce": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "design": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "discontinued": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "dpi": {
       "context_keywords": [
@@ -258,23 +272,22 @@
         "maximum dpi"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "dpi"
+      "type": "number"
     },
     "editions": {
       "context_keywords": [
         "editions"
       ],
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "encoder": {
       "patterns": [],
-      "template": "component_reference"
+      "type": "string"
     },
     "encoder_brand": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "encoder_life_span": {
       "context_keywords": [
@@ -282,11 +295,11 @@
         "encoder_life_span"
       ],
       "patterns": [],
-      "template": "integer_field"
+      "type": "number"
     },
     "encoder_link": {
       "patterns": [],
-      "template": "url_field"
+      "type": "url"
     },
     "encoder_steps": {
       "context_keywords": [
@@ -294,7 +307,7 @@
         "encoder_steps"
       ],
       "patterns": [],
-      "template": "integer_field"
+      "type": "number"
     },
     "encoder_type": {
       "context_keywords": [
@@ -302,35 +315,35 @@
         "encoder_type"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "feet_material": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "flawless_sensor": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "string"
     },
     "form_factor": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "front_flare": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "grip": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "hand_size": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "hardware_acceleration": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "height": {
       "context_keywords": [
@@ -339,20 +352,19 @@
         "overall height"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "honeycomb_frame": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "hot_swappable": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "hump": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "ips": {
       "context_keywords": [
@@ -361,8 +373,7 @@
         "max ips"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ips"
+      "type": "number"
     },
     "lift": {
       "context_keywords": [
@@ -372,16 +383,15 @@
         "lod"
       ],
       "patterns": [],
-      "template": "list_numbers_or_ranges_with_unit",
-      "unit": "mm"
+      "type": "mixed_number_range"
     },
     "lift_settings": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "lighting": {
       "patterns": [],
-      "template": "list_of_tokens_delimited"
+      "type": "string"
     },
     "lngth": {
       "context_keywords": [
@@ -391,50 +401,47 @@
         "overall length"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "material": {
       "patterns": [],
-      "template": "component_reference"
+      "type": "string"
     },
     "mcu": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "mcu_link": {
       "patterns": [],
-      "template": "url_field"
+      "type": "url"
     },
     "middle_buttons": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "none"
+      "type": "integer"
     },
     "motion_sync": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "mouse_side_connector": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "nvidia_reflex": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "onboard_memory": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "onboard_memory_value": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "none"
+      "type": "integer"
     },
     "paracord": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "polling_rate": {
       "context_keywords": [
@@ -445,25 +452,23 @@
         "report rate"
       ],
       "patterns": [],
-      "template": "list_of_numbers_with_unit",
-      "unit": "Hz"
+      "type": "number"
     },
     "price_range": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "profile_switching": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "programmable_buttons": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "none"
+      "type": "integer"
     },
     "release_date": {
       "patterns": [],
-      "template": "date_field"
+      "type": "date"
     },
     "releasing_force": {
       "context_keywords": [
@@ -471,76 +476,91 @@
         "releasing_force"
       ],
       "patterns": [],
-      "template": "integer_with_unit",
-      "unit": "g"
+      "type": "number"
     },
     "rgb": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "sensor": {
       "patterns": [],
-      "template": "component_reference"
+      "type": "string"
     },
     "sensor_brand": {
       "patterns": [],
-      "template": "integer_field"
+      "type": "string"
     },
     "sensor_date": {
       "patterns": [],
-      "template": "date_field"
+      "type": "string"
     },
     "sensor_latency": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
-    "sensor_latency_list": {
+    "sensor_latency_bluetooth": {
+      "context_keywords": [
+        "sensor latency (bluetooth)",
+        "sensor latency bluetooth"
+      ],
       "patterns": [],
-      "template": "latency_list_modes_ms",
-      "unit": "ms"
+      "type": "number"
+    },
+    "sensor_latency_wired": {
+      "context_keywords": [
+        "sensor latency (wired)",
+        "sensor latency wired"
+      ],
+      "patterns": [],
+      "type": "number"
+    },
+    "sensor_latency_wireless": {
+      "context_keywords": [
+        "sensor latency (wireless)",
+        "sensor latency wireless"
+      ],
+      "patterns": [],
+      "type": "number"
     },
     "sensor_link": {
       "patterns": [],
-      "template": "url_field"
+      "type": "url"
     },
     "sensor_type": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "shape": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "shift_latency": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "ms"
+      "type": "number"
     },
     "side_buttons": {
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "none"
+      "type": "integer"
     },
     "silent_clicks": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "sku": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "smoothing": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "switch": {
       "patterns": [],
-      "template": "component_reference"
+      "type": "string"
     },
     "switch_brand": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "switch_life_span": {
       "context_keywords": [
@@ -548,11 +568,11 @@
         "switch_life_span"
       ],
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "switch_type": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "switches_link": {
       "context_keywords": [
@@ -561,15 +581,15 @@
         "switches_link"
       ],
       "patterns": [],
-      "template": "url_field"
+      "type": "url"
     },
     "thumb_rest": {
       "patterns": [],
-      "template": "text_field"
+      "type": "string"
     },
     "tilt_scroll_wheel": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     },
     "weight": {
       "context_keywords": [
@@ -579,8 +599,7 @@
         "weight_g"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "g"
+      "type": "number"
     },
     "width": {
       "context_keywords": [
@@ -589,12 +608,11 @@
         "width_mm"
       ],
       "patterns": [],
-      "template": "number_with_unit",
-      "unit": "mm"
+      "type": "number"
     },
     "wireless_charging": {
       "patterns": [],
-      "template": "boolean_yes_no_unk"
+      "type": "boolean"
     }
   },
   "version": 1

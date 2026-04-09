@@ -90,7 +90,7 @@ describe('EG lock guards', async () => {
       const preset = {
         key: 'colors',
         contract: { type: 'string', shape: 'list' },
-        parse: { template: 'list_of_tokens_delimited', delimiters: [',', '/', '|', ';'] },
+        parse: { delimiters: [',', '/', '|', ';'] },
         ui: { label: 'Colors', input_control: 'token_list' },
         search_hints: { domain_hints: [], content_types: [], query_terms: [] },
       };

@@ -27,7 +27,7 @@
       "tooltip_key": "release_date",
       "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "date",
       "unit": ""
     },
     {
@@ -56,7 +56,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -230,7 +230,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -375,7 +375,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Bluetooth' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -433,7 +433,7 @@
       "tooltip_key": "paracord",
       "tooltip_md": "Define 'Paracord' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -462,7 +462,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Wireless Charging' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -525,7 +525,7 @@
       "tooltip_key": "adjustable_weight",
       "tooltip_md": "Define 'Adjustable Weight' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -612,7 +612,7 @@
       "tooltip_key": "honeycomb_frame",
       "tooltip_md": "Define 'Honeycomb Frame' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -641,7 +641,7 @@
       "tooltip_key": "silent_clicks",
       "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1065,7 +1065,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'MCU Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "url",
       "unit": ""
     },
     {
@@ -1123,7 +1123,7 @@
       "tooltip_key": null,
       "tooltip_md": "Sensor manufacturer brand (e.g., PixArt). Prefer component DB if sensor identified.",
       "tooltip_source": null,
-      "type": "integer",
+      "type": "string",
       "unit": ""
     },
     {
@@ -1181,7 +1181,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Sensor Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "url",
       "unit": ""
     },
     {
@@ -1272,32 +1272,99 @@
       "unit": "ms"
     },
     {
-      "aliases": [],
+      "aliases": [
+        "sensor latency (bluetooth)",
+        "sensor latency bluetooth"
+      ],
       "array_handling": "none",
       "availability": "sometimes",
-      "canonical_key": "sensor_latency_list",
+      "canonical_key": "sensor_latency_bluetooth",
       "difficulty": "hard",
-      "display_decimals": 0,
+      "display_decimals": 2,
       "display_mode": "all",
-      "effort": 9,
+      "effort": 8,
       "examples": [],
       "group": "Sensor & Performance",
       "guidance_md": null,
-      "input_control": "structured_list_editor",
-      "key": "sensor_latency_list",
-      "label": "Sensor Latency (By Mode)",
-      "order": 52,
+      "input_control": "number",
+      "key": "sensor_latency_bluetooth",
+      "label": "Sensor Latency (Bluetooth)",
+      "order": 51,
       "placeholder": "unk",
       "prefix": null,
       "required_level": "optional",
-      "shape": "list",
+      "shape": "scalar",
       "short_label": null,
       "suffix": "ms",
       "surfaces": {},
-      "tooltip_key": "sensor_latency_list",
-      "tooltip_md": "Latency values by mode (wired/wireless/bluetooth) when available. Rare; do not guess. Structured list preferred: e.g., '1.1 wired, 1.3 wireless'.",
+      "tooltip_key": "sensor_latency",
+      "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "object",
+      "type": "number",
+      "unit": "ms"
+    },
+    {
+      "aliases": [
+        "sensor latency (wired)",
+        "sensor latency wired"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "sensor_latency_wired",
+      "difficulty": "hard",
+      "display_decimals": 2,
+      "display_mode": "all",
+      "effort": 8,
+      "examples": [],
+      "group": "Sensor & Performance",
+      "guidance_md": null,
+      "input_control": "number",
+      "key": "sensor_latency_wired",
+      "label": "Sensor Latency (Wired)",
+      "order": 51,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": "ms",
+      "surfaces": {},
+      "tooltip_key": "sensor_latency",
+      "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+      "tooltip_source": "hbs_tooltipsMouse.js",
+      "type": "number",
+      "unit": "ms"
+    },
+    {
+      "aliases": [
+        "sensor latency (wireless)",
+        "sensor latency wireless"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "sensor_latency_wireless",
+      "difficulty": "hard",
+      "display_decimals": 2,
+      "display_mode": "all",
+      "effort": 8,
+      "examples": [],
+      "group": "Sensor & Performance",
+      "guidance_md": null,
+      "input_control": "number",
+      "key": "sensor_latency_wireless",
+      "label": "Sensor Latency (Wireless)",
+      "order": 51,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": "ms",
+      "surfaces": {},
+      "tooltip_key": "sensor_latency",
+      "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+      "tooltip_source": "hbs_tooltipsMouse.js",
+      "type": "number",
       "unit": "ms"
     },
     {
@@ -1454,7 +1521,7 @@
       "placeholder": "unk",
       "prefix": null,
       "required_level": "expected",
-      "shape": "scalar",
+      "shape": "list",
       "short_label": null,
       "suffix": "g",
       "surfaces": {},
@@ -1495,7 +1562,7 @@
       "tooltip_key": "lift",
       "tooltip_md": "Lift-off distance (LOD) in mm. May be a range or set; normalize ranges to {min,max}.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "number",
+      "type": "mixed_number_range",
       "unit": "mm"
     },
     {
@@ -1553,7 +1620,7 @@
       "tooltip_key": "motion_sync",
       "tooltip_md": "Define 'Motion Sync' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1582,7 +1649,7 @@
       "tooltip_key": "hardware_acceleration",
       "tooltip_md": "Define 'Hardware Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1611,7 +1678,7 @@
       "tooltip_key": "smoothing",
       "tooltip_md": "Define 'Smoothing' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1640,7 +1707,7 @@
       "tooltip_key": "nvidia_reflex",
       "tooltip_md": "Define 'NVIDIA Reflex' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1756,7 +1823,7 @@
       "tooltip_key": "hot_swappable",
       "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -1818,32 +1885,99 @@
       "unit": "ms"
     },
     {
-      "aliases": [],
+      "aliases": [
+        "click latency (bluetooth)",
+        "click latency bluetooth"
+      ],
       "array_handling": "none",
       "availability": "sometimes",
-      "canonical_key": "click_latency_list",
+      "canonical_key": "click_latency_bluetooth",
       "difficulty": "hard",
-      "display_decimals": 0,
+      "display_decimals": 2,
       "display_mode": "all",
-      "effort": 9,
+      "effort": 8,
       "examples": [],
       "group": "Switches",
       "guidance_md": null,
-      "input_control": "structured_list_editor",
-      "key": "click_latency_list",
-      "label": "Click Latency (By Mode)",
-      "order": 71,
+      "input_control": "number",
+      "key": "click_latency_bluetooth",
+      "label": "Click Latency (Bluetooth)",
+      "order": 70,
       "placeholder": "unk",
       "prefix": null,
       "required_level": "optional",
-      "shape": "list",
+      "shape": "scalar",
       "short_label": null,
       "suffix": "ms",
       "surfaces": {},
-      "tooltip_key": "click_latency_list",
-      "tooltip_md": "Click latency values by mode when available. Rare; do not guess. Structured list preferred: e.g., '1.1 wired, 1.3 wireless'.",
+      "tooltip_key": "click_latency",
+      "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "object",
+      "type": "number",
+      "unit": "ms"
+    },
+    {
+      "aliases": [
+        "click latency (wired)",
+        "click latency wired"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "click_latency_wired",
+      "difficulty": "hard",
+      "display_decimals": 2,
+      "display_mode": "all",
+      "effort": 8,
+      "examples": [],
+      "group": "Switches",
+      "guidance_md": null,
+      "input_control": "number",
+      "key": "click_latency_wired",
+      "label": "Click Latency (Wired)",
+      "order": 70,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": "ms",
+      "surfaces": {},
+      "tooltip_key": "click_latency",
+      "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+      "tooltip_source": "hbs_tooltipsMouse.js",
+      "type": "number",
+      "unit": "ms"
+    },
+    {
+      "aliases": [
+        "click latency (wireless)",
+        "click latency wireless"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "click_latency_wireless",
+      "difficulty": "hard",
+      "display_decimals": 2,
+      "display_mode": "all",
+      "effort": 8,
+      "examples": [],
+      "group": "Switches",
+      "guidance_md": null,
+      "input_control": "number",
+      "key": "click_latency_wireless",
+      "label": "Click Latency (Wireless)",
+      "order": 70,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "scalar",
+      "short_label": null,
+      "suffix": "ms",
+      "surfaces": {},
+      "tooltip_key": "click_latency",
+      "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+      "tooltip_source": "hbs_tooltipsMouse.js",
+      "type": "number",
       "unit": "ms"
     },
     {
@@ -1959,7 +2093,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'Encoder Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "string",
+      "type": "url",
       "unit": ""
     },
     {
@@ -2052,7 +2186,7 @@
       "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
-      "unit": "none"
+      "unit": ""
     },
     {
       "aliases": [
@@ -2113,7 +2247,7 @@
       "tooltip_md": "Count of middle buttons (wheel click + extra middle buttons).",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
-      "unit": "none"
+      "unit": ""
     },
     {
       "aliases": [
@@ -2174,7 +2308,7 @@
       "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
-      "unit": "none"
+      "unit": ""
     },
     {
       "aliases": [
@@ -2234,7 +2368,7 @@
       "tooltip_key": "tilt_scroll_wheel",
       "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2263,7 +2397,7 @@
       "tooltip_key": "adjustable_scroll_wheel",
       "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2324,7 +2458,7 @@
       "tooltip_key": "onboard_memory",
       "tooltip_md": "Define 'Onboard Memory' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2354,7 +2488,7 @@
       "tooltip_md": "Define 'Onboard Memory (Value)' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
       "type": "integer",
-      "unit": "none"
+      "unit": ""
     },
     {
       "aliases": [],
@@ -2382,7 +2516,7 @@
       "tooltip_key": "profile_switching",
       "tooltip_md": "Define 'Profile Switching' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -2415,10 +2549,10 @@
       "tooltip_key": null,
       "tooltip_md": "",
       "tooltip_source": null,
-      "type": "string",
+      "type": "url",
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-08T08:00:04.500Z",
+  "generated_at": "2026-04-09T09:14:59.461Z",
   "version": 1
 }

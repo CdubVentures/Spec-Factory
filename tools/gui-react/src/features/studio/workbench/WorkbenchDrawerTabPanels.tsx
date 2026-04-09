@@ -3,7 +3,6 @@ export { DepsTab } from './WorkbenchDrawerDepsTab.tsx';
 export {
   EnumTab,
   EvidenceTab,
-  ParseTab,
   PreviewTab,
   SearchTab,
   type BadgeSlot,

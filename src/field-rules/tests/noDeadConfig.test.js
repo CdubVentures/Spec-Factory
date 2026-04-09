@@ -34,7 +34,7 @@ test('capabilities.json exists and is valid JSON', async () => {
 
 test('every knob has a valid status (live, ui_only, or deferred)', async () => {
   const cap = await loadCapabilities();
-  const validStatuses = new Set(['live', 'ui_only', 'deferred']);
+  const validStatuses = new Set(['live', 'ui_only', 'deferred', 'retired']);
   const invalid = [];
   for (const [knob, config] of Object.entries(cap.knobs)) {
     if (!validStatuses.has(config.status)) {

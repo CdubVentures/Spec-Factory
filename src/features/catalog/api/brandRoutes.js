@@ -17,7 +17,6 @@ export function registerBrandRoutes(ctx) {
     renameBrand,
     getBrandImpactAnalysis,
     resolveCategoryAlias,
-    upsertQueueProduct,
     broadcastWs,
     getSpecDb,
     brandRegistryPath,
@@ -153,14 +152,6 @@ export function registerBrandRoutes(ctx) {
             slug: brandSlug,
             newName: body.name,
             storage,
-            upsertQueue: async (args = {}) => {
-              const queueCategory = String(args.category || '').trim().toLowerCase();
-              return upsertQueueProduct({
-                ...args,
-                category: queueCategory,
-                specDb: resolveSpecDb(queueCategory),
-              });
-            },
             getSpecDb: resolveSpecDb,
           });
           if (!renameResult.ok && renameResult.error) {

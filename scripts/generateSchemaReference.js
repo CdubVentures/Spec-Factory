@@ -146,7 +146,7 @@ const storeMap = {
   enum_lists: 'enumListStore', list_values: 'enumListStore',
   item_field_state: 'itemStateStore', item_component_links: 'itemStateStore', item_list_links: 'itemStateStore', product_review_state: 'itemStateStore',
   key_review_state: 'keyReviewStore', key_review_runs: 'keyReviewStore', key_review_run_sources: 'keyReviewStore', key_review_audit: 'keyReviewStore',
-  product_queue: 'queueProductStore', products: 'queueProductStore', product_runs: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
+  products: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
   llm_route_matrix: 'llmRouteSourceStore',
   bridge_events: 'sourceIntelStore',
   crawl_sources: 'artifactStore', source_screenshots: 'artifactStore', source_videos: 'artifactStore',
@@ -164,7 +164,7 @@ const storeMap = {
 // ── Persistence classification map ──
 const persistenceMap = {
   // JSON-backed
-  products: 'json', product_queue: 'json', product_runs: 'json',
+  products: 'json',
   runs: 'json', run_artifacts: 'json', crawl_sources: 'json',
   url_crawl_ledger: 'json', query_cooldowns: 'json',
   color_edition_finder: 'json', color_edition_finder_runs: 'json',
@@ -265,13 +265,6 @@ const lifecycleMap = {
     'Product identity rows rebuild from product checkpoints.',
     'yes'
   ),
-  product_queue: life(
-    '.workspace/products/{pid}/product.json',
-    'yes',
-    'yes',
-    'Queue recovery is checkpoint-backed for fresh rebuilds.',
-    'yes'
-  ),
   curation_suggestions: life(
     'none',
     'no',
@@ -283,13 +276,6 @@ const lifecycleMap = {
     'no',
     'na',
     'Runtime queue state only.'
-  ),
-  product_runs: life(
-    '.workspace/runs/{runId}/run.json',
-    'yes',
-    'yes',
-    'Run-product link rows rebuild from run checkpoints.',
-    'yes'
   ),
   llm_route_matrix: life(
     'category_authority/{cat}/_control_plane/llm_route_matrix.json',
@@ -504,7 +490,7 @@ const specDbGroups = [
   { label: 'Component Identity', tables: ['component_identity', 'component_aliases', 'component_values'] },
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
   { label: 'Item State', tables: ['item_field_state', 'item_component_links', 'item_list_links', 'product_review_state'] },
-  { label: 'Catalog & Queue', tables: ['products', 'product_queue', 'product_runs', 'curation_suggestions', 'component_review_queue'] },
+  { label: 'Catalog & Queue', tables: ['products', 'curation_suggestions', 'component_review_queue'] },
   { label: 'LLM Route Configuration', tables: ['llm_route_matrix'] },
   { label: 'Key Review', tables: ['key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'] },
   { label: 'Billing', tables: ['billing_entries'] },
@@ -1170,7 +1156,7 @@ const strictStatus = {
 // ✗ = not compliant (deferred scope, missing write-back, or durability gap)
 const cqrsCompliance = {
   // JSON-backed strict yes — full dual-write, rebuild both ways
-  products: true, product_queue: true, product_runs: true,
+  products: true,
   runs: true, run_artifacts: true, crawl_sources: true,
   url_crawl_ledger: true, query_cooldowns: true,
   color_edition_finder: true, color_edition_finder_runs: true,

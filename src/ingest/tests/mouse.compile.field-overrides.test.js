@@ -108,50 +108,30 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
     click_latency: {
       priority: { required_level: 'expected', availability: 'sometimes', difficulty: 'hard', effort: 8 },
       contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
-      parse: { template: 'number_with_unit', unit: 'ms', unit_accepts: ['ms'], strict_unit_required: true },
+      parse: {},
       evidence: { required: true, min_evidence_refs: 1, tier_preference: ['tier2', 'tier1', 'tier3'], conflict_policy: 'resolve_by_tier_else_unknown' },
-      selection_policy: { source_field: 'click_latency_list' },
     },
-    click_latency_list: {
-      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 9 },
-      contract: {
-        type: 'object',
-        shape: 'list',
-        unit: 'ms',
-        value_form: 'set',
-        object_schema: {
-          mode: { type: 'string' },
-          ms: { type: 'number' },
-          source_host: { type: 'string', required: false },
-          method: { type: 'string', required: false },
-        },
-      },
-      parse: { template: 'latency_list_modes_ms' },
-      evidence: { required: true, min_evidence_refs: 1, tier_preference: ['tier2', 'tier1', 'tier3'], conflict_policy: 'preserve_all_candidates' },
+    click_latency_wired: {
+      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 8 },
+      contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
+      parse: {},
     },
-    sensor_latency_list: {
-      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 9 },
-      contract: {
-        type: 'object',
-        shape: 'list',
-        unit: 'ms',
-        value_form: 'set',
-        object_schema: {
-          mode: { type: 'string' },
-          ms: { type: 'number' },
-          source_host: { type: 'string', required: false },
-          method: { type: 'string', required: false },
-        },
-      },
-      parse: { template: 'latency_list_modes_ms' },
+    sensor_latency_wired: {
+      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 8 },
+      contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
+      parse: {},
     },
     click_force: {
       priority: { required_level: 'optional', availability: 'rare', difficulty: 'hard', effort: 6 },
       contract: { type: 'number', shape: 'scalar', unit: 'gf', rounding: { decimals: 0, mode: 'nearest' }, value_form: 'single' },
-      parse: { template: 'number_with_unit', unit: 'gf', unit_accepts: ['gf', 'g'], strict_unit_required: true },
+      parse: {},
     },
   };
   fieldStudioMap.field_overrides = inlineOverrides;
+  // WHY: New latency scalar fields must be in selected_keys for the compiler to include them.
+  if (!fieldStudioMap.selected_keys.includes('click_latency_wired')) {
+    fieldStudioMap.selected_keys.push('click_latency_wired', 'sensor_latency_wired');
+  }
 
   try {
     await saveFieldStudioMap({
@@ -178,15 +158,14 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
     }
 
     const clickLatency = fieldRules.fields?.click_latency || {};
-    const clickLatencyList = fieldRules.fields?.click_latency_list || {};
-    const sensorLatencyList = fieldRules.fields?.sensor_latency_list || {};
+    const clickLatencyWired = fieldRules.fields?.click_latency_wired || {};
+    const sensorLatencyWired = fieldRules.fields?.sensor_latency_wired || {};
     const clickForce = fieldRules.fields?.click_force || {};
     assert.equal(clickLatency?.contract?.shape || clickLatency?.shape, 'scalar');
-    assert.equal(clickLatencyList?.contract?.shape || clickLatencyList?.shape, 'list');
-    assert.equal(clickLatencyList?.parse?.template || clickLatencyList?.parse_template, 'latency_list_modes_ms');
-    assert.equal(sensorLatencyList?.parse?.template || sensorLatencyList?.parse_template, 'latency_list_modes_ms');
+    assert.equal(clickLatencyWired?.contract?.shape || clickLatencyWired?.shape, 'scalar');
+    assert.equal(clickLatencyWired?.contract?.type || clickLatencyWired?.type, 'number');
+    assert.equal(sensorLatencyWired?.contract?.type || sensorLatencyWired?.type, 'number');
     assert.equal(clickForce?.contract?.unit || clickForce?.unit, 'gf');
-    assert.equal(clickLatency?.selection_policy?.source_field, 'click_latency_list');
   } finally {
     await cleanup();
   }

@@ -7,14 +7,14 @@ import { validateRecord } from '../validateRecord.js';
 function numRule(unit, { rounding, range } = {}) {
   return {
     contract: { shape: 'scalar', type: 'number', unit, ...(rounding ? { rounding } : {}), ...(range ? { range } : {}) },
-    parse: { template: 'number_with_unit', unit_accepts: [unit] },
+    parse: {},
     enum: {},
     ui: rounding ? { display_decimals: rounding.decimals } : {},
   };
 }
 
 function textRule() {
-  return { contract: { shape: 'scalar', type: 'string' }, parse: { template: 'text_field' }, enum: {}, ui: {} };
+  return { contract: { shape: 'scalar', type: 'string' }, parse: {}, enum: {}, ui: {} };
 }
 
 // ============================================================

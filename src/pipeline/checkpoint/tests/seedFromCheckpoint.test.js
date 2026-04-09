@@ -71,21 +71,6 @@ describe('seedFromCheckpoint: crawl', () => {
     assert.deepEqual(run.counters, { urls_crawled: 3, urls_successful: 2, urls_blocked: 1, urls_failed: 0, urls_timeout_rescued: 0 });
   });
 
-  test('seeds product_runs with is_latest and summary', () => {
-    const db = createHarness();
-    seedFromCheckpoint({ specDb: db, checkpoint: makeCrawlCheckpoint() });
-    const pr = db.getLatestProductRun('mouse-razer-viper');
-    assert.ok(pr);
-    assert.equal(pr.run_id, 'run-seed-001');
-    assert.equal(pr.is_latest, true);
-    assert.equal(pr.validated, true);
-    assert.equal(pr.confidence, 0.85);
-    assert.equal(pr.sources_attempted, 3);
-    assert.ok(pr.summary);
-    assert.equal(pr.summary.validated, true);
-    assert.equal(pr.summary.confidence, 0.85);
-  });
-
   test('seeds needset run_artifact', () => {
     const db = createHarness();
     seedFromCheckpoint({ specDb: db, checkpoint: makeCrawlCheckpoint() });
@@ -261,17 +246,6 @@ describe('seedFromCheckpoint: product', () => {
     assert.equal(product.status, 'active');
   });
 
-  test('seeds product_queue with status=complete', () => {
-    const db = createHarness();
-    seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
-    // WHY: getQueueProduct removed from SpecDb — query raw SQL directly.
-    const q = db.db.prepare('SELECT * FROM product_queue WHERE product_id = ?').get('mouse-razer-viper');
-    assert.ok(q);
-    assert.equal(q.status, 'complete');
-    assert.equal(q.last_run_id, 'run-seed-001');
-    assert.equal(q.rounds_completed, 2);
-  });
-
   test('returns correct summary', () => {
     const db = createHarness();
     const result = seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
@@ -307,17 +281,6 @@ describe('seedFromCheckpoint: validation', () => {
       () => seedFromCheckpoint({ specDb: null, checkpoint: makeCrawlCheckpoint() }),
       /requires specDb/,
     );
-  });
-
-  test('idempotency: crawl seeded twice → same row count', () => {
-    const db = createHarness();
-    const cp = makeCrawlCheckpoint();
-    seedFromCheckpoint({ specDb: db, checkpoint: cp });
-    seedFromCheckpoint({ specDb: db, checkpoint: cp });
-    const sources = db.getCrawlSourcesByProduct('mouse-razer-viper');
-    assert.equal(sources.length, 2);
-    const runs = db.getProductRuns('mouse-razer-viper');
-    assert.equal(runs.length, 1);
   });
 
   test('idempotency: product seeded twice → same row', () => {

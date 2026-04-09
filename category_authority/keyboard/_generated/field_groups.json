@@ -1,6 +1,6 @@
 {
   "category": "keyboard",
-  "generated_at": "2026-03-18T18:39:54.507Z",
+  "generated_at": "2026-04-09T07:40:00.114Z",
   "group_index": {
     "build": [
       "case_material",
@@ -49,8 +49,10 @@
     ],
     "general": [
       "color",
+      "colors",
       "compatible_os",
       "discontinued",
+      "editions",
       "included_accessories",
       "price_range",
       "release_date",
@@ -195,12 +197,14 @@
       "group_key": "features"
     },
     {
-      "count": 8,
+      "count": 10,
       "display_name": "General",
       "field_keys": [
         "color",
+        "colors",
         "compatible_os",
         "discontinued",
+        "editions",
         "included_accessories",
         "price_range",
         "release_date",

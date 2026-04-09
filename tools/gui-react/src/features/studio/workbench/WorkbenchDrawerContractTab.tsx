@@ -423,16 +423,15 @@ export function ContractTab({
                 'evidence.min_evidence_refs',
                 numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
               );
-              const parseTemplate = strN(rule, 'parse.template', strN(rule, 'parse_template'));
               const componentType = strN(rule, 'component.type', strN(rule, 'component_type'));
 
               const guidanceParts: string[] = [];
               if (rl === 'identity') guidanceParts.push('Identity field - must exactly match the product.');
-              if (componentType || parseTemplate === 'component_reference') {
+              if (componentType) {
                 const ct = componentType || enumSource.replace('component_db.', '');
                 guidanceParts.push(`Component ref (${ct}). Match to known names/aliases.`);
               }
-              if (type === 'boolean' || parseTemplate?.startsWith('boolean_')) {
+              if (type === 'boolean') {
                 guidanceParts.push('Boolean - determine yes or no from explicit evidence.');
               } else if ((type === 'number' || type === 'integer') && unit) {
                 guidanceParts.push(`Numeric - extract exact value in ${unit}.`);
@@ -440,7 +439,7 @@ export function ContractTab({
                 guidanceParts.push('URL - extract full, valid URL.');
               } else if (type === 'date' || fieldKey.includes('date')) {
                 guidanceParts.push('Date - extract actual date from official sources.');
-              } else if (type === 'string' && !componentType && !parseTemplate?.startsWith('boolean_')) {
+              } else if (type === 'string' && !componentType) {
                 guidanceParts.push('Text - extract exact value as stated.');
               }
               if (shape === 'list') guidanceParts.push('Multiple values - extract all distinct.');

@@ -10,20 +10,15 @@ interface Props {
 }
 
 import { REQUIRED_LEVEL_OPTIONS as REQUIRED_OPTIONS, ENUM_POLICY_OPTIONS as POLICY_OPTIONS } from '../../../registries/fieldRuleTaxonomy.ts';
-import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
-
-const TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 
 export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
   const [bulkRequired, setBulkRequired] = useState('');
-  const [bulkTemplate, setBulkTemplate] = useState('');
   const [bulkPolicy, setBulkPolicy] = useState('');
   const [bulkPubGate, setBulkPubGate] = useState<boolean | null>(null);
   const [bulkMinRefs, setBulkMinRefs] = useState('');
 
   function handleApply() {
     if (bulkRequired) onApply('priority.required_level', bulkRequired);
-    if (bulkTemplate) onApply('parse.template', bulkTemplate);
     if (bulkPolicy) onApply('enum.policy', bulkPolicy);
     if (bulkPubGate !== null) onApply('priority.publish_gate', bulkPubGate);
     if (bulkMinRefs !== '') onApply(
@@ -37,13 +32,12 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
     );
     // Reset
     setBulkRequired('');
-    setBulkTemplate('');
     setBulkPolicy('');
     setBulkPubGate(null);
     setBulkMinRefs('');
   }
 
-  const hasChanges = bulkRequired || bulkTemplate || bulkPolicy || bulkPubGate !== null || bulkMinRefs !== '';
+  const hasChanges = bulkRequired || bulkPolicy || bulkPubGate !== null || bulkMinRefs !== '';
 
   const selCls = 'px-1.5 py-1 text-xs border sf-border-soft rounded sf-input';
 
@@ -57,14 +51,6 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
         <select className={selCls} value={bulkRequired} onChange={(e) => setBulkRequired(e.target.value)}>
           <option value="">\u2014</option>
           {REQUIRED_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-      </label>
-
-      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
-        Template:
-        <select className={selCls} value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)}>
-          <option value="">\u2014</option>
-          {TEMPLATE_OPTIONS.filter(Boolean).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       </label>
 

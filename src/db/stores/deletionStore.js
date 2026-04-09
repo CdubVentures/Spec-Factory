@@ -59,7 +59,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
     // Step 1: Check if run exists
     const runExists = db.prepare('SELECT 1 FROM runs WHERE run_id = ?').get(rid)
-      || db.prepare('SELECT 1 FROM product_runs WHERE run_id = ?').get(rid)
       || db.prepare('SELECT 1 FROM crawl_sources WHERE run_id = ?').get(rid);
     if (!runExists) return { ok: false, run_id: rid, reason: 'run_not_found' };
 
@@ -85,7 +84,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
       // Phase 5 — Run metadata
       totalDeleted += db.prepare('DELETE FROM run_artifacts WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM product_runs WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM runs WHERE run_id = ?').run(rid).changes;
 
       // Phase 7 — Accumulated tables (conditional cleanup)
@@ -115,7 +113,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
         cp.runs_completed = Math.max(0, (cp.runs_completed || 0) - 1);
         // Update latest_run_id to the next most recent surviving run
         if (cp.latest_run_id === rid) {
-          const surviving = db.prepare('SELECT run_id FROM product_runs WHERE product_id = ? ORDER BY run_at DESC LIMIT 1').get(pid);
+          const surviving = db.prepare('SELECT run_id FROM runs WHERE product_id = ? AND category = ? ORDER BY started_at DESC LIMIT 1').get(pid, cat);
           cp.latest_run_id = surviving?.run_id || '';
         }
         cp.updated_at = new Date().toISOString();
@@ -261,9 +259,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     if (!pid) throw new Error('deleteProductHistory requires productId');
 
     // Step 1: Collect all run_ids for this product
-    const runIdsFromRuns = db.prepare('SELECT run_id FROM runs WHERE product_id = ? AND category = ?').all(pid, cat).map((r) => r.run_id);
-    const runIdsFromProductRuns = db.prepare('SELECT run_id FROM product_runs WHERE product_id = ? AND category = ?').all(pid, cat).map((r) => r.run_id);
-    const allRunIds = [...new Set([...runIdsFromRuns, ...runIdsFromProductRuns])];
+    const allRunIds = db.prepare('SELECT run_id FROM runs WHERE product_id = ? AND category = ?').all(pid, cat).map((r) => r.run_id);
 
     let totalDeleted = 0;
 
@@ -312,18 +308,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
         const ph = placeholders(allRunIds);
         totalDeleted += db.prepare(`DELETE FROM run_artifacts WHERE run_id IN (${ph})`).run(...allRunIds).changes;
       }
-      totalDeleted += db.prepare('DELETE FROM product_runs WHERE product_id = ? AND category = ?').run(pid, cat).changes;
       totalDeleted += db.prepare('DELETE FROM runs WHERE product_id = ? AND category = ?').run(pid, cat).changes;
-
-      // Phase 8 — Reset product_queue (don't delete)
-      db.prepare(`UPDATE product_queue SET
-        status = 'idle', attempts_total = 0, retry_count = 0,
-        cost_usd_total = 0, rounds_completed = 0, last_run_id = NULL,
-        last_urls_attempted = NULL, last_error = NULL,
-        last_started_at = NULL, last_completed_at = NULL,
-        dirty_flags = NULL, last_summary = NULL,
-        updated_at = datetime('now')
-      WHERE product_id = ? AND category = ?`).run(pid, cat);
     });
     tx();
 

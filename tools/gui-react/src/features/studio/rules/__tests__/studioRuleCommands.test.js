@@ -12,47 +12,84 @@ async function loadRuleCommands() {
   );
 }
 
-test('studio rule commands preserve boolean template side effects and edited marker', async () => {
+test('studio rule commands apply boolean type coupling and edited marker', async () => {
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();
   const rule = {};
 
   applyStudioRuleCommand({
     rule,
-    key: 'availability',
-    command: createSetFieldValueCommand('parse.template', 'boolean_yes_no_unk'),
+    key: 'bluetooth',
+    command: createSetFieldValueCommand('contract.type', 'boolean'),
   });
 
-  assert.equal(rule.parse?.template, 'boolean_yes_no_unk');
-  assert.equal(rule.parse_template, 'boolean_yes_no_unk');
+  assert.equal(rule.contract?.type, 'boolean');
   assert.equal(rule.enum?.policy, 'closed');
   assert.equal(rule.enum_policy, 'closed');
   assert.equal(rule.enum?.source, 'yes_no');
   assert.equal(rule.enum_source, 'yes_no');
-  assert.equal(rule.enum?.match?.strategy, 'exact');
   assert.equal(rule.ui?.input_control, 'text');
   assert.equal(rule._edited, true);
 });
 
-test('studio rule commands preserve component template inference for known component keys', async () => {
+test('studio rule commands apply url type coupling', async () => {
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();
   const rule = {};
 
   applyStudioRuleCommand({
     rule,
-    key: 'sensor',
-    command: createSetFieldValueCommand('parse.template', 'component_reference'),
+    key: 'sensor_link',
+    command: createSetFieldValueCommand('contract.type', 'url'),
   });
 
-  assert.equal(rule.parse?.template, 'component_reference');
-  assert.equal(rule.component?.type, 'sensor');
-  assert.equal(rule.enum?.source, 'component_db.sensor');
-  assert.equal(rule.enum_source, 'component_db.sensor');
-  assert.equal(rule.enum?.policy, 'open_prefer_known');
-  assert.equal(rule.enum_policy, 'open_prefer_known');
-  assert.equal(rule.enum?.match?.strategy, 'alias');
-  assert.equal(rule.ui?.input_control, 'component_picker');
+  assert.equal(rule.contract?.type, 'url');
+  assert.equal(rule.ui?.input_control, 'url');
+});
+
+test('studio rule commands apply date type coupling', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {};
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'release_date',
+    command: createSetFieldValueCommand('contract.type', 'date'),
+  });
+
+  assert.equal(rule.contract?.type, 'date');
+  assert.equal(rule.ui?.input_control, 'date');
+});
+
+test('studio rule commands apply number type coupling', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {};
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'weight',
+    command: createSetFieldValueCommand('contract.type', 'number'),
+  });
+
+  assert.equal(rule.contract?.type, 'number');
+  assert.equal(rule.ui?.input_control, 'number');
+});
+
+test('studio rule commands apply no coupling for string type', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {};
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'shape',
+    command: createSetFieldValueCommand('contract.type', 'string'),
+  });
+
+  assert.equal(rule.contract?.type, 'string');
+  assert.equal(rule.ui?.input_control, undefined);
 });
 
 test('studio rule commands keep enum source and policy input-control coupling stable', async () => {

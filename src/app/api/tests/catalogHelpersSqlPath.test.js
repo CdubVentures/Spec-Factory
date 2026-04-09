@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { createCatalogBuilder } from '../catalogHelpers.js';
-import { createCatalogSummary } from './helpers/appApiTestBuilders.js';
-
 // WHY: Contract tests for the SQL-based catalog builder path.
 
 function cleanVariant(variant) {
@@ -12,11 +10,9 @@ function cleanVariant(variant) {
   return String(variant).trim();
 }
 
-function createMockSpecDb({ products = [], queueProducts = [], summaries = {} } = {}) {
+function createMockSpecDb({ products = [] } = {}) {
   return {
     getAllProducts: () => products,
-    getAllQueueProducts: () => queueProducts,
-    getSummaryForProduct: (pid) => summaries[pid] || null,
   };
 }
 
@@ -39,12 +35,6 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
       products: [
         { id: 10, product_id: 'mouse-acme-orbit-x1', brand: 'Acme', model: 'Orbit X1', base_model: 'Orbit X1', variant: '', identifier: 'abc123', status: 'active' },
       ],
-      queueProducts: [
-        { product_id: 'mouse-acme-orbit-x1', status: 'complete' },
-      ],
-      summaries: {
-        'mouse-acme-orbit-x1': createCatalogSummary(),
-      },
     }),
     cleanVariant,
     path,
@@ -62,14 +52,14 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     model: 'Orbit X1',
     base_model: 'Orbit X1',
     variant: '',
-    status: 'complete',
+    status: 'active',
     hasFinal: true,
-    validated: true,
-    confidence: 0.86,
-    coverage: 0.77,
-    fieldsFilled: 7,
-    fieldsTotal: 9,
-    lastRun: '2026-02-26T10:00:00.000Z',
+    validated: false,
+    confidence: 0,
+    coverage: 0,
+    fieldsFilled: 0,
+    fieldsTotal: 0,
+    lastRun: '',
     inActive: true,
   });
 });
@@ -131,7 +121,7 @@ test('SQL catalog builder: empty DB returns empty array', async () => {
   assert.deepEqual(rows, []);
 });
 
-test('SQL catalog builder: product with no queue entry defaults to pending', async () => {
+test('SQL catalog builder: product status comes from products table', async () => {
   const buildCatalog = createCatalogBuilder({
     config: {},
     storage: { async objectExists() { return false; }, resolveOutputKey: () => '' },
@@ -145,7 +135,7 @@ test('SQL catalog builder: product with no queue entry defaults to pending', asy
   });
 
   const rows = await buildCatalog('mouse');
-  assert.equal(rows[0].status, 'pending');
+  assert.equal(rows[0].status, 'active');
   assert.equal(rows[0].validated, false);
   assert.equal(rows[0].confidence, 0);
 });

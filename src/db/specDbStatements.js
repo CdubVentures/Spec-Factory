@@ -125,47 +125,6 @@ export function prepareStatements(db) {
       ON CONFLICT(category, product_id, field_key, list_value_id) DO NOTHING
     `),
 
-    _upsertProductRun: db.prepare(`
-      INSERT INTO product_runs (
-        category, product_id, run_id, is_latest, summary_json,
-        validated, confidence, cost_usd_run, sources_attempted, run_at
-      ) VALUES (
-        @category, @product_id, @run_id, @is_latest, @summary_json,
-        @validated, @confidence, @cost_usd_run, @sources_attempted, @run_at
-      )
-      ON CONFLICT(category, product_id, run_id) DO UPDATE SET
-        is_latest = excluded.is_latest,
-        summary_json = COALESCE(excluded.summary_json, summary_json),
-        validated = excluded.validated,
-        confidence = excluded.confidence,
-        cost_usd_run = excluded.cost_usd_run,
-        sources_attempted = excluded.sources_attempted,
-        run_at = excluded.run_at
-    `),
-
-    _updateRunStorageLocation: db.prepare(`
-      UPDATE product_runs SET
-        storage_state = @storage_state,
-        local_path = @local_path,
-        s3_key = @s3_key,
-        size_bytes = @size_bytes,
-        relocated_at = @relocated_at
-      WHERE category = @category AND product_id = @product_id AND run_id = @run_id
-    `),
-
-    _getRunStorageLocation: db.prepare(
-      `SELECT run_id, storage_state, local_path, s3_key, size_bytes, relocated_at
-       FROM product_runs WHERE category = ? AND product_id = ? AND run_id = ?`
-    ),
-
-    _listRunsByStorageState: db.prepare(
-      `SELECT * FROM product_runs WHERE category = ? AND storage_state = ? ORDER BY run_at DESC`
-    ),
-
-    _countRunsByStorageState: db.prepare(
-      `SELECT storage_state, COUNT(*) as count FROM product_runs WHERE category = ? GROUP BY storage_state`
-    ),
-
     _upsertProduct: db.prepare(`
       INSERT INTO products (
         category, product_id, brand, model, base_model, variant, status, identifier, brand_identifier
@@ -193,7 +152,6 @@ export function prepareStatements(db) {
         studio_tooltip_or_description_sent_when_present,
         studio_enum_options_sent_when_present,
         studio_component_variance_constraints_sent_in_component_review,
-        studio_parse_template_sent_direct_in_extract_review,
         studio_ai_mode_difficulty_effort_sent_direct_in_extract_review,
         studio_required_level_sent_in_extract_review,
         studio_component_entity_set_sent_when_component_field,
@@ -212,7 +170,6 @@ export function prepareStatements(db) {
         @studio_tooltip_or_description_sent_when_present,
         @studio_enum_options_sent_when_present,
         @studio_component_variance_constraints_sent_in_component_review,
-        @studio_parse_template_sent_direct_in_extract_review,
         @studio_ai_mode_difficulty_effort_sent_direct_in_extract_review,
         @studio_required_level_sent_in_extract_review,
         @studio_component_entity_set_sent_when_component_field,
@@ -242,7 +199,6 @@ export function prepareStatements(db) {
         studio_tooltip_or_description_sent_when_present = excluded.studio_tooltip_or_description_sent_when_present,
         studio_enum_options_sent_when_present = excluded.studio_enum_options_sent_when_present,
         studio_component_variance_constraints_sent_in_component_review = excluded.studio_component_variance_constraints_sent_in_component_review,
-        studio_parse_template_sent_direct_in_extract_review = excluded.studio_parse_template_sent_direct_in_extract_review,
         studio_ai_mode_difficulty_effort_sent_direct_in_extract_review = excluded.studio_ai_mode_difficulty_effort_sent_direct_in_extract_review,
         studio_required_level_sent_in_extract_review = excluded.studio_required_level_sent_in_extract_review,
         studio_component_entity_set_sent_when_component_field = excluded.studio_component_entity_set_sent_when_component_field,

@@ -15,11 +15,6 @@ export function createMigrateToSqliteCommand({
 
       const results = {};
 
-      if (!phase || phase === 1) {
-        const rows = specDb.getAllQueueProducts();
-        results.phase1_queue = { status: 'verified', rows: rows.length };
-      }
-
       if (!phase || phase === 2) {
         let imported = 0;
         const billingPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_billing');

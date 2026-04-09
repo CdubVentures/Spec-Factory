@@ -2237,17 +2237,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2381,17 +2380,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2524,17 +2522,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2666,17 +2663,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2809,17 +2805,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2956,7 +2951,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -2967,6 +2961,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -2974,7 +2969,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3112,17 +3106,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3261,7 +3254,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "nits",
         "unit_accepts": [
           "nits",
@@ -3273,6 +3265,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "nits",
         "unit_accepts": [
           "nits",
@@ -3281,7 +3274,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3422,7 +3414,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "nits",
         "unit_accepts": [
           "nits",
@@ -3434,6 +3425,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "nits",
         "unit_accepts": [
           "nits",
@@ -3442,7 +3434,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3528,12 +3519,12 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "number",
         "unit": "mm",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Cable Length",
       "effort": 3,
@@ -3578,7 +3569,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": "mm",
         "unit_accepts": [
           "mm"
@@ -3588,13 +3578,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3631,7 +3621,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "number",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -3724,17 +3714,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3868,20 +3857,29 @@
       "min_evidence_refs": 1,
       "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4009,17 +4007,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4149,20 +4146,29 @@
       "min_evidence_refs": 1,
       "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4253,11 +4259,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "hard",
       "display_name": "Color Accuracy (ΔE)",
       "effort": 6,
@@ -4302,17 +4308,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "integer_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4350,7 +4355,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "number",
+      "type": "integer",
       "ui": {
         "display_decimals": 2,
         "display_mode": "all",
@@ -4451,7 +4456,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%"
@@ -4461,13 +4465,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4605,7 +4609,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%"
@@ -4615,13 +4618,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4760,7 +4763,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%"
@@ -4770,13 +4772,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4887,7 +4889,6 @@
           "|",
           ";"
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {
           "blue-dark": "dark-blue",
           "blue-light": "light-blue",
@@ -5095,17 +5096,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5237,17 +5237,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5328,11 +5327,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Crosshair Overlay",
       "effort": 3,
@@ -5377,17 +5376,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5424,7 +5422,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -5517,17 +5515,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5609,11 +5606,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Curved",
       "effort": 3,
@@ -5658,17 +5655,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5705,7 +5701,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -5750,11 +5746,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Daisy Chain (DP Out)",
       "effort": 3,
@@ -5799,17 +5795,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5847,7 +5842,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -5947,7 +5942,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm"
@@ -5957,13 +5951,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6044,11 +6038,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
       "effort": 3,
@@ -6093,17 +6087,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6140,7 +6133,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -6233,17 +6226,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6376,17 +6368,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6520,17 +6511,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6639,7 +6629,6 @@
         "delimiters": [
           ","
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {}
       },
       "priority": {
@@ -6740,17 +6729,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6882,17 +6870,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -6975,11 +6962,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Factory Calibrated",
       "effort": 3,
@@ -7024,17 +7011,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7071,7 +7057,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -7115,11 +7101,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Flicker-Free",
       "effort": 3,
@@ -7164,17 +7150,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7213,7 +7198,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -7315,7 +7300,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -7326,6 +7310,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -7333,7 +7318,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7427,11 +7411,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "FRC (Dithering)",
       "effort": 3,
@@ -7476,17 +7460,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7523,7 +7506,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -7616,17 +7599,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7775,7 +7757,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -7786,6 +7767,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -7793,7 +7775,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7931,17 +7912,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8070,17 +8050,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8214,17 +8193,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8360,20 +8338,29 @@
       "min_evidence_refs": 1,
       "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8461,11 +8448,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Headphone Jack",
       "effort": 3,
@@ -8510,17 +8497,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8557,7 +8543,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -8659,7 +8645,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm"
@@ -8669,13 +8654,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8806,17 +8791,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8956,7 +8940,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm"
@@ -8966,13 +8949,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9111,7 +9094,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "deg",
         "unit_accepts": [
           "deg",
@@ -9122,6 +9104,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "deg",
         "unit_accepts": [
           "deg",
@@ -9129,7 +9112,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9278,7 +9260,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -9288,13 +9269,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9434,7 +9415,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -9444,13 +9424,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9600,7 +9580,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -9610,13 +9589,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9766,7 +9745,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -9776,13 +9754,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9875,11 +9853,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "KVM Switch",
       "effort": 3,
@@ -9924,17 +9902,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9972,7 +9949,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -10024,11 +10001,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "number",
+        "type": "integer",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "integer",
       "difficulty": "medium",
       "display_name": "Local Dimming Zones",
       "effort": 4,
@@ -10073,17 +10050,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "integer_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10121,7 +10097,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "number",
+      "type": "integer",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -10166,11 +10142,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Low Blue Light",
       "effort": 3,
@@ -10215,17 +10191,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10263,7 +10238,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -10356,17 +10331,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10506,17 +10480,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10656,7 +10629,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -10667,6 +10639,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -10674,7 +10647,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10827,7 +10799,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -10838,6 +10809,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -10845,7 +10817,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10990,17 +10961,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11129,17 +11099,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11222,11 +11191,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Blur Reduction",
       "effort": 3,
@@ -11271,17 +11240,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11322,7 +11290,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -11412,17 +11380,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11501,13 +11468,8 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
-        "rounding": {
-          "decimals": 2,
-          "mode": "nearest"
-        },
         "shape": "scalar",
-        "type": "number",
-        "unit": "M",
+        "type": "string",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -11555,24 +11517,18 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "template": "text_field",
-        "unit": "M",
-        "unit_accepts": [
-          "M"
-        ],
-        "unit_conversions": {}
+        "strict_unit_required": false
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "M",
         "unit_accepts": [
           "M"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11583,7 +11539,6 @@
       },
       "publish_gate": false,
       "required_level": "expected",
-      "round": "2dp",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -11609,14 +11564,14 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "number",
+      "type": "string",
       "ui": {
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "number",
+        "input_control": "text",
         "label": "Native Colors",
         "order": 21,
         "placeholder": "unk",
@@ -11627,7 +11582,6 @@
         "tooltip_md": "Number of displayable colors in millions (e.g. 16.7M, 1.07B)",
         "tooltip_source": null
       },
-      "unit": "M",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
@@ -11704,17 +11658,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11795,11 +11748,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Overdrive",
       "effort": 3,
@@ -11844,17 +11797,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -11893,7 +11845,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -11994,7 +11946,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12005,6 +11956,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12012,7 +11964,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12161,7 +12112,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12172,6 +12122,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12179,7 +12130,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12328,7 +12278,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12339,6 +12288,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -12346,7 +12296,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12489,17 +12438,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12632,17 +12580,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12775,17 +12722,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12918,17 +12864,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -13018,11 +12963,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "PiP / PbP",
       "effort": 3,
@@ -13067,17 +13012,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13116,7 +13060,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -13161,11 +13105,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Pivot / Portrait",
       "effort": 3,
@@ -13210,17 +13154,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13258,7 +13201,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -13360,7 +13303,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ppi",
         "unit_accepts": [
           "ppi"
@@ -13370,13 +13312,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ppi",
         "unit_accepts": [
           "ppi"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13516,7 +13458,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "W",
         "unit_accepts": [
           "W"
@@ -13526,13 +13467,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "W",
         "unit_accepts": [
           "W"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -13671,7 +13612,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "W",
         "unit_accepts": [
           "W"
@@ -13681,13 +13621,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "W",
         "unit_accepts": [
           "W"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13822,7 +13762,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": "usd",
         "unit_accepts": [
           "usd"
@@ -13832,13 +13771,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "usd",
         "unit_accepts": [
           "usd"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -13970,17 +13909,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -14129,7 +14067,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -14140,6 +14077,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "%",
         "unit_accepts": [
           "%",
@@ -14147,7 +14085,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -14297,7 +14234,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -14309,14 +14245,15 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
+          "hz",
           "hertz"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -14405,11 +14342,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "date",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "date",
       "difficulty": "medium",
       "display_name": "Release Date",
       "effort": 3,
@@ -14454,17 +14391,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "date_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "date_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -14502,7 +14438,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "date",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -14595,17 +14531,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -14749,7 +14684,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -14759,13 +14693,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -14916,7 +14850,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -14926,13 +14859,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -15084,7 +15017,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -15094,13 +15026,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -15242,7 +15174,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -15252,13 +15183,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -15399,7 +15330,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "in",
         "unit_accepts": [
           "in",
@@ -15412,6 +15342,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "in",
         "unit_accepts": [
           "in",
@@ -15421,7 +15352,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -15552,17 +15482,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -15691,17 +15620,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -15834,17 +15762,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -15974,17 +15901,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -16115,17 +16041,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -16267,17 +16192,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -16410,17 +16334,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -16552,17 +16475,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -16695,17 +16617,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -16837,17 +16758,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -16987,7 +16907,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "W",
         "unit_accepts": [
           "W"
@@ -16997,13 +16916,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "W",
         "unit_accepts": [
           "W"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -17088,11 +17007,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Variable Refresh Rate",
       "effort": 3,
@@ -17137,17 +17056,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -17185,7 +17103,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -17275,17 +17193,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -17424,7 +17341,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "deg",
         "unit_accepts": [
           "deg",
@@ -17435,6 +17351,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "deg",
         "unit_accepts": [
           "deg",
@@ -17442,7 +17359,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -17584,17 +17500,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -17729,17 +17644,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -17821,11 +17735,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wall Mountable",
       "effort": 3,
@@ -17870,17 +17784,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -17917,7 +17830,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -18011,17 +17924,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -18152,17 +18064,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -18303,7 +18214,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "g",
         "unit_accepts": [
           "g",
@@ -18315,6 +18225,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "g",
         "unit_accepts": [
           "g",
@@ -18323,7 +18234,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -18463,7 +18373,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "g",
         "unit_accepts": [
           "g",
@@ -18475,6 +18384,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "g",
         "unit_accepts": [
           "g",
@@ -18483,7 +18393,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -18567,11 +18476,11 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wide Color Gamut",
       "effort": 3,
@@ -18616,17 +18525,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "boolean_yes_no_unk",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -18664,7 +18572,7 @@
       "selection_policy": {},
       "shape": "scalar",
       "strict_unit_required": false,
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
@@ -18766,7 +18674,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm"
@@ -18776,13 +18683,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -18914,17 +18821,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "text_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,

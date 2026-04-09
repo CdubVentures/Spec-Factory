@@ -226,7 +226,7 @@ export function StudioPageShell({
                     "\u2022 field_rules.json \u2014 compiled field definitions\n" +
                     "\u2022 component_db/*.json \u2014 component databases\n" +
                     "\u2022 known_values.json \u2014 enum / known value lists\n" +
-                    "\u2022 parse_templates.json \u2014 extraction templates\n\n" +
+                    "\u2022 key_migrations.json \u2014 key migration mappings\n\n" +
                     "Workflow:\n" +
                     "\u2022 Edit in Studio \u2192 Save Edits (fast preview)\n" +
                     "\u2022 Ready to finalize \u2192 Compile (generates files)\n\n" +

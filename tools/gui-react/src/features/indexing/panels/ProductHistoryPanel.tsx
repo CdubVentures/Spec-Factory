@@ -435,7 +435,6 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
       `/indexlab/product-history?category=${encodeURIComponent(category)}&product_id=${encodeURIComponent(productId)}`
     ),
     enabled: Boolean(productId) && Boolean(category) && category !== 'all',
-    refetchInterval: 10_000,
   });
 
   const selRun = useMemo(() => {

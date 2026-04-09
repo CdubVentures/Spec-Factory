@@ -325,4 +325,46 @@ describe('deriveRunHistoryRows', () => {
     assert.equal(run1.systemPrompt, 'System prompt run 1');
     assert.equal(run1.userMessage, '{"brand":"Corsair"}');
   });
+
+  it('successful runs have validationStatus "valid" with empty rejectionSummary', () => {
+    const rows = deriveRunHistoryRows(SAMPLE_RESULT);
+    for (const row of rows) {
+      assert.equal(row.validationStatus, 'valid');
+      assert.equal(row.rejectionSummary, '');
+    }
+  });
+
+  it('rejected run has validationStatus "rejected" with reason summary', () => {
+    const rejectedRun = {
+      run_number: 4,
+      ran_at: '2026-04-09T00:00:00Z',
+      model: 'claude-sonnet-4-6',
+      fallback_used: false,
+      cooldown_until: '',
+      selected: { colors: [] as string[], editions: {} as Record<string, { colors: string[] }>, default_color: '' },
+      prompt: { system: '', user: '' },
+      response: {
+        colors: [] as string[],
+        editions: {} as Record<string, { colors: string[] }>,
+        default_color: '',
+        status: 'rejected' as const,
+        raw: { colors: ['black'], editions: { se: { display_name: 'SE', colors: ['black'] } }, default_color: 'black' },
+        rejections: [
+          { reason_code: 'wrong_shape', detail: { expected: 'list', reason: 'expected array, got object' } },
+        ],
+      },
+    };
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      runs: [...SAMPLE_RESULT.runs, rejectedRun],
+    };
+    const rows = deriveRunHistoryRows(result);
+    const rejected = rows.find(r => r.runNumber === 4);
+    assert.ok(rejected);
+    assert.equal(rejected.validationStatus, 'rejected');
+    assert.ok(rejected.rejectionSummary.includes('wrong_shape'));
+    assert.ok(rejected.rejectionSummary.includes('expected array, got object'));
+    assert.equal(rejected.colorCount, 0);
+    assert.equal(rejected.editionCount, 0);
+  });
 });

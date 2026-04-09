@@ -23,9 +23,6 @@ function createSpecDbStub() {
   return {
     billingEntries,
     wasClosed: () => closed,
-    getAllQueueProducts() {
-      return [{ product_id: 'a' }, { product_id: 'b' }];
-    },
     insertBillingEntry(entry) {
       billingEntries.push(entry);
     },
@@ -70,7 +67,7 @@ test('migrate-to-sqlite throws when SpecDb cannot be opened', async () => {
   );
 });
 
-test('migrate-to-sqlite phase 1 reports queue verification and closes SpecDb', async () => {
+test('migrate-to-sqlite phase 1 is a no-op and closes SpecDb', async () => {
   const specDb = createSpecDbStub();
   const command = createMigrateToSqliteCommand({
     withSpecDb: mockWithSpecDb(specDb),
@@ -83,7 +80,6 @@ test('migrate-to-sqlite phase 1 reports queue verification and closes SpecDb', a
   assert.equal(result.command, 'migrate-to-sqlite');
   assert.equal(result.category, 'mouse');
   assert.equal(result.phase, 1);
-  assert.deepEqual(result.results.phase1_queue, { status: 'verified', rows: 2 });
   assert.equal(specDb.wasClosed(), true);
 });
 

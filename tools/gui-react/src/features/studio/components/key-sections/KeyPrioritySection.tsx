@@ -627,10 +627,10 @@ function ExtractionGuidanceSubsection({
       STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
     ),
   );
-  const parseTemplate = strN(
+  const contractType2 = strN(
     currentRule,
-    "parse.template",
-    strN(currentRule, "parse_template"),
+    "contract.type",
+    strN(currentRule, "data_type", "string"),
   );
   const componentType = strN(
     currentRule,
@@ -648,7 +648,7 @@ function ExtractionGuidanceSubsection({
   }
 
   // Component reference
-  if (componentType || parseTemplate === "component_reference") {
+  if (componentType) {
     const cType =
       componentType || enumSource.replace("component_db.", "");
     guidanceParts.push(
@@ -657,11 +657,7 @@ function ExtractionGuidanceSubsection({
   }
 
   // Data type guidance
-  if (
-    type === "boolean" ||
-    parseTemplate === "boolean" ||
-    parseTemplate.startsWith("boolean_")
-  ) {
+  if (type === "boolean" || contractType2 === "boolean") {
     guidanceParts.push(
       "Boolean field \u2014 determine yes or no from explicit evidence. If the feature is not mentioned, it likely means no, but confirm before assuming.",
     );
@@ -685,8 +681,7 @@ function ExtractionGuidanceSubsection({
     );
   } else if (
     type === "string" &&
-    !componentType &&
-    !parseTemplate.startsWith("boolean_")
+    !componentType
   ) {
     guidanceParts.push(
       "Text field \u2014 extract the exact value as stated in the source. Do not paraphrase or abbreviate.",

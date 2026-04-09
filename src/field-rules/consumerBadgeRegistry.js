@@ -124,7 +124,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.normalize': { desc: 'Normalizes extracted values to the declared unit (e.g. "58 grams" to "58g").' },
       'rev.grid': { desc: 'Flags candidates with unexpected or missing units.' },
-      'val.unit': { desc: 'Step 3 — Unit Verification. Strips unit suffix, converts via unit_conversions factors, rejects unknown units.' },
+      'val.unit': { desc: 'Step 3 — Unit Verification. Matches value unit against contract.unit (case-insensitive), rejects unknown units.' },
     } },
 
   { path: 'contract.range.min', type: 'presence', flatAliases: [],
@@ -286,19 +286,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
 
   // ═══ Parse Rules ═════════════════════════════════════════════════════
 
-  { path: 'parse.template', type: 'string', flatAliases: ['parse_template'],
-    section: 'Parse Rules', key: 'Parse Template',
-    consumers: {
-      'eng.parse': { desc: 'Applies the named parse template (text_field, numeric_field, boolean_yes_no_unk, etc.) to extract values from raw text.' },
-      'val.dispatch': { desc: 'Step 1 — Template Dispatch. Routes specialized templates to dedicated normalizers.' },
-      'val.format': { desc: 'Step 6 — Format Check. Validates value against template regex and custom format_hint pattern.' },
-    } },
-
-  { path: 'parse.strict_unit_required', type: 'presence', flatAliases: [],
-    section: 'Parse Rules', key: 'Strict Unit Required',
-    consumers: {
-      'val.unit': { desc: 'Step 3 — When true, bare numbers without unit suffix are rejected.' },
-    } },
+  // WHY: parse.template retired — type+shape is the contract. Consumers migrated in Phase 1-2.
 
   // ═══ AI Assist ═══════════════════════════════════════════════════════
 

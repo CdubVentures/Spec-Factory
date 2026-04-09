@@ -910,13 +910,13 @@
           "decimals": 0,
           "mode": "nearest"
         },
-        "shape": "scalar",
-        "type": "integer",
+        "shape": "list",
+        "type": "mixed_number_range",
         "unit": "g",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "mixed_number_range",
       "difficulty": "easy",
       "display_name": "Max Acceleration",
       "effort": 3,
@@ -958,12 +958,16 @@
       "group": "Sensor & Performance",
       "key": "acceleration",
       "min_evidence_refs": 1,
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "g",
         "unit_accepts": [
           "g"
@@ -971,15 +975,20 @@
         "unit_conversions": {}
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "g",
         "unit_accepts": [
           "g"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1015,9 +1024,9 @@
         ]
       },
       "selection_policy": {},
-      "shape": "scalar",
+      "shape": "list",
       "strict_unit_required": false,
-      "type": "integer",
+      "type": "mixed_number_range",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -1059,12 +1068,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Scroll Wheel",
       "effort": 2,
@@ -1120,7 +1129,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -1145,13 +1153,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -1160,7 +1169,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1193,7 +1201,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -1233,12 +1241,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Weight",
       "effort": 2,
@@ -1295,7 +1303,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -1320,13 +1327,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -1335,7 +1343,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1371,7 +1378,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -1472,7 +1479,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "h",
         "unit_accepts": [
           "h",
@@ -1485,6 +1491,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "h",
         "unit_accepts": [
           "h",
@@ -1494,7 +1501,6 @@
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1574,12 +1580,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Bluetooth",
       "effort": 2,
@@ -1635,7 +1641,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -1660,13 +1665,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -1675,7 +1681,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -1712,7 +1717,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -1803,7 +1808,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -1811,11 +1815,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -1949,7 +1953,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "gf",
         "unit_accepts": [
           "gf",
@@ -1964,6 +1967,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "gf",
         "unit_accepts": [
           "gf",
@@ -1975,7 +1979,6 @@
           "g_to_gf": 1
         }
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2110,7 +2113,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -2120,13 +2122,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -2198,7 +2200,7 @@
       "value_form": "single",
       "value_form_sample": "scalar"
     },
-    "click_latency_list": {
+    "click_latency_bluetooth": {
       "ai_assist": {
         "max_calls": null,
         "max_tokens": null,
@@ -2206,58 +2208,31 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "aliases": [],
+      "aliases": [
+        "click latency (bluetooth)",
+        "click latency bluetooth"
+      ],
       "availability": "sometimes",
       "block_publish_when_unk": false,
-      "canonical_key": "click_latency_list",
+      "canonical_key": "click_latency_bluetooth",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {
-          "dedupe": true,
-          "max_items": 32,
-          "min_items": 0,
-          "sort": "none"
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
         },
-        "object_schema": {
-          "method": {
-            "optional": true,
-            "type": "string"
-          },
-          "mode": {
-            "allowed": [
-              "wired",
-              "wireless",
-              "bluetooth",
-              "dongle",
-              "unknown"
-            ],
-            "enum_policy": "closed_with_curation",
-            "type": "string"
-          },
-          "ms": {
-            "rounding": {
-              "decimals": 2,
-              "mode": "nearest"
-            },
-            "type": "number",
-            "unit": "ms"
-          },
-          "source_host": {
-            "optional": true,
-            "type": "string"
-          }
-        },
-        "shape": "list",
-        "type": "object",
+        "shape": "scalar",
+        "type": "number",
         "unit": "ms",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "object",
+      "data_type": "number",
       "difficulty": "hard",
-      "display_name": "Click Latency (By Mode)",
-      "effort": 9,
+      "display_name": "Click Latency (Bluetooth)",
+      "effort": 8,
       "enum": {
         "match": {
           "strategy": "alias"
@@ -2268,7 +2243,7 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "preserve_all_candidates",
+        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
         "required": true,
         "tier_preference": [
@@ -2278,87 +2253,29 @@
         ]
       },
       "evidence_required": true,
-      "field_key": "click_latency_list",
+      "field_key": "click_latency_bluetooth",
       "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B71",
-          "row": 71,
+          "key_cell": "B70",
+          "note": "(fail safe js) MUST BE FILLED IN",
+          "row": 70,
           "sample_values": [
-            "14 wireless, 16 wired",
+            "14",
             "unk",
-            "1.3 wireless, 1.0 wired",
-            "1.1 wired, 1.3 wireless 3.3 bluetooth"
+            "1",
+            "unk"
           ],
           "sheet": "dataEntry"
         }
       },
       "group": "Switches",
-      "key": "click_latency_list",
-      "list_rules": {
-        "dedupe": true,
-        "max_items": 32,
-        "min_items": 0,
-        "sort": "none"
-      },
+      "key": "click_latency_bluetooth",
       "min_evidence_refs": 1,
-      "object_schema": {
-        "method": {
-          "optional": true,
-          "type": "string"
-        },
-        "mode": {
-          "allowed": [
-            "wired",
-            "wireless",
-            "bluetooth",
-            "dongle",
-            "unknown"
-          ],
-          "enum_policy": "closed_with_curation",
-          "type": "string"
-        },
-        "ms": {
-          "rounding": {
-            "decimals": 2,
-            "mode": "nearest"
-          },
-          "type": "number",
-          "unit": "ms"
-        },
-        "source_host": {
-          "optional": true,
-          "type": "string"
-        }
-      },
-      "output_shape": "list",
+      "output_shape": "scalar",
       "parse": {
-        "accept_bare_numbers_as_mode": "unknown",
-        "delimiters": [
-          ",",
-          ";",
-          "|",
-          "/"
-        ],
-        "mode_aliases": {
-          "bluetooth": [
-            "bluetooth",
-            "bt"
-          ],
-          "wired": [
-            "wired",
-            "usb",
-            "cable"
-          ],
-          "wireless": [
-            "wireless",
-            "2.4g",
-            "2.4",
-            "dongle"
-          ]
-        },
+        "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "template": "latency_list_modes_ms",
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -2366,49 +2283,26 @@
         "unit_conversions": {}
       },
       "parse_rules": {
-        "accept_bare_numbers_as_mode": "unknown",
-        "delimiters": [
-          ",",
-          ";",
-          "|",
-          "/"
-        ],
-        "mode_aliases": {
-          "bluetooth": [
-            "bluetooth",
-            "bt"
-          ],
-          "wired": [
-            "wired",
-            "usb",
-            "cable"
-          ],
-          "wireless": [
-            "wireless",
-            "2.4g",
-            "2.4",
-            "dongle"
-          ]
-        },
+        "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "latency_list_modes_ms",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
         "difficulty": "hard",
-        "effort": 9,
+        "effort": 8,
         "publish_gate": false,
         "required_level": "optional"
       },
       "publish_gate": false,
       "required_level": "optional",
-      "round": "none",
+      "round": "2dp",
       "search_hints": {
         "content_types": [
           "review",
@@ -2418,43 +2312,352 @@
           "rtings.com",
           "mousespecs.org",
           "sensor.fyi",
-          "lttlabs.com"
+          "lttlabs.com",
+          "techpowerup.com"
         ],
         "query_templates": [
-          "{brand} {model} click latency wired wireless Bluetooth"
+          "{brand} {model} click latency ms measured",
+          "{brand} {model} click response time test"
         ],
         "query_terms": [
-          "click latency wired wireless",
-          "click latency all modes",
-          "latency comparison"
+          "click latency",
+          "click response time",
+          "button latency",
+          "end-to-end latency",
+          "click delay ms"
         ]
       },
-      "selection_policy": {},
-      "shape": "list",
-      "strict_unit_required": false,
-      "type": "object",
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
       "ui": {
         "array_handling": "none",
-        "display_decimals": 0,
+        "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "structured_list_editor",
-        "label": "Click Latency (By Mode)",
-        "order": 71,
+        "input_control": "number",
+        "label": "Click Latency (Bluetooth)",
+        "order": 70,
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
-        "tooltip_key": "click_latency_list",
-        "tooltip_md": "Click latency values by mode when available. Rare; do not guess. Structured list preferred: e.g., '1.1 wired, 1.3 wireless'.",
+        "tooltip_key": "click_latency",
+        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
       "unknown_reason_default": "not_found_after_search",
-      "value_form": "set",
-      "value_form_sample": "list"
+      "value_form": "single",
+      "value_form_sample": "scalar"
+    },
+    "click_latency_wired": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "click latency (wired)",
+        "click latency wired"
+      ],
+      "availability": "sometimes",
+      "block_publish_when_unk": false,
+      "canonical_key": "click_latency_wired",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
+        },
+        "shape": "scalar",
+        "type": "number",
+        "unit": "ms",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "hard",
+      "display_name": "Click Latency (Wired)",
+      "effort": 8,
+      "enum": {
+        "match": {
+          "strategy": "alias"
+        },
+        "new_value_policy": {},
+        "policy": "open",
+        "source": null
+      },
+      "enum_policy": "open",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier2",
+          "tier1",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "click_latency_wired",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": "B70",
+          "note": "(fail safe js) MUST BE FILLED IN",
+          "row": 70,
+          "sample_values": [
+            "14",
+            "unk",
+            "1",
+            "unk"
+          ],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "Switches",
+      "key": "click_latency_wired",
+      "min_evidence_refs": 1,
+      "output_shape": "scalar",
+      "parse": {
+        "delimiters": [],
+        "range_separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "parse_rules": {
+        "delimiters": [],
+        "separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "hard",
+        "effort": 8,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "publish_gate": false,
+      "required_level": "optional",
+      "round": "2dp",
+      "search_hints": {
+        "content_types": [
+          "review",
+          "benchmark"
+        ],
+        "domain_hints": [
+          "rtings.com",
+          "mousespecs.org",
+          "sensor.fyi",
+          "lttlabs.com",
+          "techpowerup.com"
+        ],
+        "query_templates": [
+          "{brand} {model} click latency ms measured",
+          "{brand} {model} click response time test"
+        ],
+        "query_terms": [
+          "click latency",
+          "click response time",
+          "button latency",
+          "end-to-end latency",
+          "click delay ms"
+        ]
+      },
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
+      "ui": {
+        "array_handling": "none",
+        "display_decimals": 2,
+        "display_mode": "all",
+        "examples": [],
+        "group": "Switches",
+        "guidance_md": null,
+        "input_control": "number",
+        "label": "Click Latency (Wired)",
+        "order": 70,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": "ms",
+        "tooltip_key": "click_latency",
+        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_source": "hbs_tooltipsMouse.js"
+      },
+      "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
+      "value_form": "single",
+      "value_form_sample": "scalar"
+    },
+    "click_latency_wireless": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "click latency (wireless)",
+        "click latency wireless"
+      ],
+      "availability": "sometimes",
+      "block_publish_when_unk": false,
+      "canonical_key": "click_latency_wireless",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
+        },
+        "shape": "scalar",
+        "type": "number",
+        "unit": "ms",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "hard",
+      "display_name": "Click Latency (Wireless)",
+      "effort": 8,
+      "enum": {
+        "match": {
+          "strategy": "alias"
+        },
+        "new_value_policy": {},
+        "policy": "open",
+        "source": null
+      },
+      "enum_policy": "open",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier2",
+          "tier1",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "click_latency_wireless",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": "B70",
+          "note": "(fail safe js) MUST BE FILLED IN",
+          "row": 70,
+          "sample_values": [
+            "14",
+            "unk",
+            "1",
+            "unk"
+          ],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "Switches",
+      "key": "click_latency_wireless",
+      "min_evidence_refs": 1,
+      "output_shape": "scalar",
+      "parse": {
+        "delimiters": [],
+        "range_separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "parse_rules": {
+        "delimiters": [],
+        "separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "hard",
+        "effort": 8,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "publish_gate": false,
+      "required_level": "optional",
+      "round": "2dp",
+      "search_hints": {
+        "content_types": [
+          "review",
+          "benchmark"
+        ],
+        "domain_hints": [
+          "rtings.com",
+          "mousespecs.org",
+          "sensor.fyi",
+          "lttlabs.com",
+          "techpowerup.com"
+        ],
+        "query_templates": [
+          "{brand} {model} click latency ms measured",
+          "{brand} {model} click response time test"
+        ],
+        "query_terms": [
+          "click latency",
+          "click response time",
+          "button latency",
+          "end-to-end latency",
+          "click delay ms"
+        ]
+      },
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
+      "ui": {
+        "array_handling": "none",
+        "display_decimals": 2,
+        "display_mode": "all",
+        "examples": [],
+        "group": "Switches",
+        "guidance_md": null,
+        "input_control": "number",
+        "label": "Click Latency (Wireless)",
+        "order": 70,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": "ms",
+        "tooltip_key": "click_latency",
+        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_source": "hbs_tooltipsMouse.js"
+      },
+      "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
+      "value_form": "single",
+      "value_form_sample": "scalar"
     },
     "coating": {
       "ai_assist": {
@@ -2540,7 +2743,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -2554,11 +2756,11 @@
           "+"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -2668,7 +2870,6 @@
           "|",
           ";"
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {
           "blue-dark": "dark-blue",
           "blue-light": "light-blue",
@@ -2872,7 +3073,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -2880,11 +3080,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3025,7 +3225,6 @@
         "notes": "Prefer normalized connection mode.",
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -3034,11 +3233,11 @@
         "delimiters": [],
         "notes": "Prefer normalized connection mode.",
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -3187,7 +3386,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -3201,11 +3399,11 @@
           "+"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -3338,7 +3536,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -3348,13 +3545,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3489,7 +3686,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -3503,11 +3699,11 @@
           "+"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -3580,12 +3776,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
       "effort": 2,
@@ -3635,7 +3831,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -3660,13 +3855,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -3675,7 +3871,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -3707,7 +3902,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -3808,7 +4003,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "dpi",
         "unit_accepts": [
           "dpi"
@@ -3818,13 +4012,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "dpi",
         "unit_accepts": [
           "dpi"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -3947,7 +4141,6 @@
         "delimiters": [
           ","
         ],
-        "template": "list_of_tokens_delimited",
         "token_map": {}
       },
       "priority": {
@@ -4039,7 +4232,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "component_reference",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4048,11 +4240,11 @@
         "component_type": "encoder",
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "component_reference",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4176,7 +4368,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4184,11 +4375,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4263,12 +4454,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "url",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "url",
       "difficulty": "medium",
       "display_name": "Encoder Link",
       "effort": 5,
@@ -4309,7 +4500,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "url_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4317,11 +4507,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "url_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4351,7 +4541,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "url",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -4457,7 +4647,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4465,11 +4654,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4547,12 +4736,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Flawless Sensor",
       "effort": 2,
@@ -4608,7 +4797,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -4633,13 +4821,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -4648,7 +4837,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -4685,7 +4873,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -4704,6 +4892,7 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unit": null,
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
@@ -4790,7 +4979,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4798,11 +4986,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -4948,7 +5136,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -4956,11 +5143,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5090,7 +5277,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -5103,11 +5289,11 @@
           ";"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5240,7 +5426,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -5253,11 +5438,11 @@
           ";"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -5331,12 +5516,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hardware Acceleration",
       "effort": 2,
@@ -5392,7 +5577,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -5417,13 +5601,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -5432,7 +5617,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5466,7 +5650,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -5566,7 +5750,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -5582,6 +5765,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -5594,7 +5778,6 @@
           "in_to_mm": 25.4
         }
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -5674,12 +5857,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Honeycomb Frame",
       "effort": 2,
@@ -5735,7 +5918,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -5760,13 +5942,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -5775,7 +5958,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5811,7 +5993,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -5851,12 +6033,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hot Swappable",
       "effort": 2,
@@ -5912,7 +6094,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -5937,13 +6118,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -5952,7 +6134,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -5988,7 +6169,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 1,
@@ -6094,7 +6275,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -6102,11 +6282,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6241,7 +6421,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "ips",
         "unit_accepts": [
           "ips"
@@ -6251,13 +6430,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "ips",
         "unit_accepts": [
           "ips"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6341,12 +6520,12 @@
       "contract": {
         "list_rules": {},
         "shape": "list",
-        "type": "number",
+        "type": "mixed_number_range",
         "unit": "mm",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "number",
+      "data_type": "mixed_number_range",
       "difficulty": "easy",
       "display_name": "Lift-off Distance (LOD)",
       "effort": 3,
@@ -6402,7 +6581,6 @@
           "�"
         ],
         "strict_unit_required": false,
-        "template": "list_numbers_or_ranges_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -6426,6 +6604,7 @@
           "-",
           "�"
         ],
+        "strict_unit_required": false,
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -6438,7 +6617,6 @@
           "in_to_mm": 25.4
         }
       },
-      "parse_template": "list_numbers_or_ranges_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6476,7 +6654,7 @@
       "selection_policy": {},
       "shape": "list",
       "strict_unit_required": false,
-      "type": "number",
+      "type": "mixed_number_range",
       "ui": {
         "array_handling": "none",
         "display_decimals": 1,
@@ -6580,7 +6758,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -6594,11 +6771,11 @@
           "+"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6669,7 +6846,9 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "dedupe": false
+        },
         "shape": "list",
         "type": "string",
         "unit": null,
@@ -6738,7 +6917,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_tokens_delimited",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -6752,11 +6930,11 @@
           "+"
         ],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -6892,7 +7070,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -6908,6 +7085,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -6920,7 +7098,6 @@
           "in_to_mm": 25.4
         }
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7053,7 +7230,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "component_reference",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -7062,11 +7238,11 @@
         "component_type": "material",
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "component_reference",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7205,7 +7381,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -7213,11 +7388,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7293,12 +7468,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "url",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "url",
       "difficulty": "medium",
       "display_name": "MCU Link",
       "effort": 5,
@@ -7342,7 +7517,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "url_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -7350,11 +7524,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "url_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7383,7 +7557,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "url",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -7428,7 +7602,6 @@
         },
         "shape": "scalar",
         "type": "integer",
-        "unit": "none",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -7478,19 +7651,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "none",
-        "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "none",
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -7545,7 +7715,6 @@
         "tooltip_md": "Count of middle buttons (wheel click + extra middle buttons).",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unit": "none",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -7567,12 +7736,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Sync",
       "effort": 2,
@@ -7628,7 +7797,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -7653,13 +7821,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -7668,7 +7837,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -7703,7 +7871,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -7794,7 +7962,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -7802,11 +7969,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -7880,12 +8047,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "NVIDIA Reflex",
       "effort": 7,
@@ -7941,7 +8108,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -7966,13 +8132,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -7981,7 +8148,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "rare",
         "block_publish_when_unk": false,
@@ -8016,7 +8182,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -8056,12 +8222,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Onboard Memory",
       "effort": 2,
@@ -8117,7 +8283,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -8142,13 +8307,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -8157,7 +8323,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8193,7 +8358,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -8238,7 +8403,6 @@
         },
         "shape": "scalar",
         "type": "integer",
-        "unit": "none",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -8288,19 +8452,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "none",
-        "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "none",
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -8354,7 +8515,6 @@
         "tooltip_md": "Define 'Onboard Memory (Value)' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unit": "none",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -8376,12 +8536,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Paracord",
       "effort": 2,
@@ -8437,7 +8597,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -8462,13 +8621,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -8477,7 +8637,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8512,7 +8671,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -8627,7 +8786,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "list_of_numbers_with_unit",
         "unit": "Hz",
         "unit_accepts": [
           "Hz",
@@ -8644,13 +8802,14 @@
           ";"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "Hz",
         "unit_accepts": [
-          "Hz"
+          "Hz",
+          "hz"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_numbers_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -8787,7 +8946,6 @@
         "notes": "Prefer MSRP bracket tokens like '0-50', '50-100', or '$99'. Keep as string; numeric parsing is category-specific.",
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -8796,11 +8954,11 @@
         "delimiters": [],
         "notes": "Prefer MSRP bracket tokens like '0-50', '50-100', or '$99'. Keep as string; numeric parsing is category-specific.",
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -8874,12 +9032,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Profile Switching",
       "effort": 2,
@@ -8935,7 +9093,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -8960,13 +9117,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -8975,7 +9133,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9009,7 +9166,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -9054,7 +9211,6 @@
         },
         "shape": "scalar",
         "type": "integer",
-        "unit": "none",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -9104,19 +9260,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "none",
-        "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "none",
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -9173,7 +9326,6 @@
         "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unit": "none",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -9195,12 +9347,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "date",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "date",
       "difficulty": "medium",
       "display_name": "Release Date",
       "effort": 4,
@@ -9253,7 +9405,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "date_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -9267,11 +9418,11 @@
         ],
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "date_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9306,7 +9457,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "date",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -9346,12 +9497,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "RGB",
       "effort": 2,
@@ -9407,7 +9558,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -9432,13 +9582,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -9447,7 +9598,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9483,7 +9633,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -9582,7 +9732,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "component_reference",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -9591,11 +9740,11 @@
         "component_type": "sensor",
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "component_reference",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -9675,12 +9824,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "integer",
+        "type": "string",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "integer",
+      "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor Brand",
       "effort": 6,
@@ -9729,7 +9878,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "integer_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -9737,11 +9885,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -9779,7 +9927,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "string",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -9825,12 +9973,11 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unit": "year",
+        "type": "date",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "date",
       "difficulty": "easy",
       "display_name": "Sensor Date",
       "effort": 3,
@@ -9882,11 +10029,7 @@
         "delimiters": [],
         "range_separators": [],
         "strict": false,
-        "strict_unit_required": false,
-        "template": "date_field",
-        "unit": "year",
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "strict_unit_required": false
       },
       "parse_rules": {
         "accepted_formats": [
@@ -9897,11 +10040,11 @@
         "delimiters": [],
         "separators": [],
         "strict": false,
+        "strict_unit_required": false,
         "unit": "year",
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "date_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -9933,7 +10076,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "date",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -9952,7 +10095,6 @@
         "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unit": "year",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
@@ -10031,7 +10173,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -10041,13 +10182,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10118,7 +10259,7 @@
       "value_form": "single",
       "value_form_sample": "scalar"
     },
-    "sensor_latency_list": {
+    "sensor_latency_bluetooth": {
       "ai_assist": {
         "max_calls": null,
         "max_tokens": null,
@@ -10126,69 +10267,42 @@
         "model_strategy": "auto",
         "reasoning_note": ""
       },
-      "aliases": [],
+      "aliases": [
+        "sensor latency (bluetooth)",
+        "sensor latency bluetooth"
+      ],
       "availability": "sometimes",
       "block_publish_when_unk": false,
-      "canonical_key": "sensor_latency_list",
+      "canonical_key": "sensor_latency_bluetooth",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {
-          "dedupe": true,
-          "max_items": 32,
-          "min_items": 0,
-          "sort": "none"
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
         },
-        "object_schema": {
-          "method": {
-            "optional": true,
-            "type": "string"
-          },
-          "mode": {
-            "allowed": [
-              "wired",
-              "wireless",
-              "bluetooth",
-              "dongle",
-              "unknown"
-            ],
-            "enum_policy": "closed_with_curation",
-            "type": "string"
-          },
-          "ms": {
-            "rounding": {
-              "decimals": 2,
-              "mode": "nearest"
-            },
-            "type": "number",
-            "unit": "ms"
-          },
-          "source_host": {
-            "optional": true,
-            "type": "string"
-          }
-        },
-        "shape": "list",
-        "type": "object",
+        "shape": "scalar",
+        "type": "number",
         "unit": "ms",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "object",
+      "data_type": "number",
       "difficulty": "hard",
-      "display_name": "Sensor Latency (By Mode)",
-      "effort": 9,
+      "display_name": "Sensor Latency (Bluetooth)",
+      "effort": 8,
       "enum": {
         "match": {
           "strategy": "alias"
         },
         "new_value_policy": {},
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": null
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
       "evidence": {
-        "conflict_policy": "preserve_all_candidates",
+        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
         "required": true,
         "tier_preference": [
@@ -10198,11 +10312,12 @@
         ]
       },
       "evidence_required": true,
-      "field_key": "sensor_latency_list",
+      "field_key": "sensor_latency_bluetooth",
       "field_studio_hints": {
         "dataEntry": {
-          "key_cell": "B52",
-          "row": 52,
+          "key_cell": "B51",
+          "note": "respoe time (fail safe js) MUST BE FILLED IN",
+          "row": 51,
           "sample_values": [
             "unk",
             "unk",
@@ -10213,72 +10328,13 @@
         }
       },
       "group": "Sensor & Performance",
-      "key": "sensor_latency_list",
-      "list_rules": {
-        "dedupe": true,
-        "max_items": 32,
-        "min_items": 0,
-        "sort": "none"
-      },
+      "key": "sensor_latency_bluetooth",
       "min_evidence_refs": 1,
-      "object_schema": {
-        "method": {
-          "optional": true,
-          "type": "string"
-        },
-        "mode": {
-          "allowed": [
-            "wired",
-            "wireless",
-            "bluetooth",
-            "dongle",
-            "unknown"
-          ],
-          "enum_policy": "closed_with_curation",
-          "type": "string"
-        },
-        "ms": {
-          "rounding": {
-            "decimals": 2,
-            "mode": "nearest"
-          },
-          "type": "number",
-          "unit": "ms"
-        },
-        "source_host": {
-          "optional": true,
-          "type": "string"
-        }
-      },
-      "output_shape": "list",
+      "output_shape": "scalar",
       "parse": {
-        "accept_bare_numbers_as_mode": "unknown",
-        "delimiters": [
-          ",",
-          ";",
-          "|",
-          "/"
-        ],
-        "mode_aliases": {
-          "bluetooth": [
-            "bluetooth",
-            "bt"
-          ],
-          "wired": [
-            "wired",
-            "usb",
-            "cable"
-          ],
-          "wireless": [
-            "wireless",
-            "2.4g",
-            "2.4",
-            "dongle"
-          ]
-        },
+        "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "template": "latency_list_modes_ms",
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -10286,49 +10342,26 @@
         "unit_conversions": {}
       },
       "parse_rules": {
-        "accept_bare_numbers_as_mode": "unknown",
-        "delimiters": [
-          ",",
-          ";",
-          "|",
-          "/"
-        ],
-        "mode_aliases": {
-          "bluetooth": [
-            "bluetooth",
-            "bt"
-          ],
-          "wired": [
-            "wired",
-            "usb",
-            "cable"
-          ],
-          "wireless": [
-            "wireless",
-            "2.4g",
-            "2.4",
-            "dongle"
-          ]
-        },
+        "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "latency_list_modes_ms",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
         "difficulty": "hard",
-        "effort": 9,
+        "effort": 8,
         "publish_gate": false,
         "required_level": "optional"
       },
       "publish_gate": false,
       "required_level": "optional",
-      "round": "none",
+      "round": "2dp",
       "search_hints": {
         "content_types": [
           "review",
@@ -10337,43 +10370,350 @@
         "domain_hints": [
           "rtings.com",
           "techpowerup.com",
-          "mousespecs.org"
+          "mousespecs.org",
+          "lttlabs.com"
         ],
         "query_templates": [
-          "{brand} {model} sensor latency all polling rates"
+          "{brand} {model} sensor latency measured",
+          "{brand} {model} motion latency test results"
         ],
         "query_terms": [
-          "sensor latency by polling rate",
-          "motion latency results",
-          "latency per Hz"
+          "sensor latency",
+          "motion latency",
+          "motion delay",
+          "sensor response time",
+          "motion-to-screen latency"
         ]
       },
-      "selection_policy": {},
-      "shape": "list",
-      "strict_unit_required": false,
-      "type": "object",
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
       "ui": {
         "array_handling": "none",
-        "display_decimals": 0,
+        "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "structured_list_editor",
-        "label": "Sensor Latency (By Mode)",
-        "order": 52,
+        "input_control": "number",
+        "label": "Sensor Latency (Bluetooth)",
+        "order": 51,
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
-        "tooltip_key": "sensor_latency_list",
-        "tooltip_md": "Latency values by mode (wired/wireless/bluetooth) when available. Rare; do not guess. Structured list preferred: e.g., '1.1 wired, 1.3 wireless'.",
+        "tooltip_key": "sensor_latency",
+        "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
       "unknown_reason_default": "not_found_after_search",
-      "value_form": "set",
-      "value_form_sample": "list"
+      "value_form": "single",
+      "value_form_sample": "scalar"
+    },
+    "sensor_latency_wired": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "sensor latency (wired)",
+        "sensor latency wired"
+      ],
+      "availability": "sometimes",
+      "block_publish_when_unk": false,
+      "canonical_key": "sensor_latency_wired",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
+        },
+        "shape": "scalar",
+        "type": "number",
+        "unit": "ms",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "hard",
+      "display_name": "Sensor Latency (Wired)",
+      "effort": 8,
+      "enum": {
+        "match": {
+          "strategy": "alias"
+        },
+        "new_value_policy": {},
+        "policy": "open_prefer_known",
+        "source": null
+      },
+      "enum_policy": "open_prefer_known",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier2",
+          "tier1",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "sensor_latency_wired",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": "B51",
+          "note": "respoe time (fail safe js) MUST BE FILLED IN",
+          "row": 51,
+          "sample_values": [
+            "unk",
+            "unk",
+            "unk",
+            "unk"
+          ],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "Sensor & Performance",
+      "key": "sensor_latency_wired",
+      "min_evidence_refs": 1,
+      "output_shape": "scalar",
+      "parse": {
+        "delimiters": [],
+        "range_separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "parse_rules": {
+        "delimiters": [],
+        "separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "hard",
+        "effort": 8,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "publish_gate": false,
+      "required_level": "optional",
+      "round": "2dp",
+      "search_hints": {
+        "content_types": [
+          "review",
+          "benchmark"
+        ],
+        "domain_hints": [
+          "rtings.com",
+          "techpowerup.com",
+          "mousespecs.org",
+          "lttlabs.com"
+        ],
+        "query_templates": [
+          "{brand} {model} sensor latency measured",
+          "{brand} {model} motion latency test results"
+        ],
+        "query_terms": [
+          "sensor latency",
+          "motion latency",
+          "motion delay",
+          "sensor response time",
+          "motion-to-screen latency"
+        ]
+      },
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
+      "ui": {
+        "array_handling": "none",
+        "display_decimals": 2,
+        "display_mode": "all",
+        "examples": [],
+        "group": "Sensor & Performance",
+        "guidance_md": null,
+        "input_control": "number",
+        "label": "Sensor Latency (Wired)",
+        "order": 51,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": "ms",
+        "tooltip_key": "sensor_latency",
+        "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_source": "hbs_tooltipsMouse.js"
+      },
+      "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
+      "value_form": "single",
+      "value_form_sample": "scalar"
+    },
+    "sensor_latency_wireless": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "sensor latency (wireless)",
+        "sensor latency wireless"
+      ],
+      "availability": "sometimes",
+      "block_publish_when_unk": false,
+      "canonical_key": "sensor_latency_wireless",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {},
+        "rounding": {
+          "decimals": 2,
+          "mode": "nearest"
+        },
+        "shape": "scalar",
+        "type": "number",
+        "unit": "ms",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "hard",
+      "display_name": "Sensor Latency (Wireless)",
+      "effort": 8,
+      "enum": {
+        "match": {
+          "strategy": "alias"
+        },
+        "new_value_policy": {},
+        "policy": "open_prefer_known",
+        "source": null
+      },
+      "enum_policy": "open_prefer_known",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier2",
+          "tier1",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "sensor_latency_wireless",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": "B51",
+          "note": "respoe time (fail safe js) MUST BE FILLED IN",
+          "row": 51,
+          "sample_values": [
+            "unk",
+            "unk",
+            "unk",
+            "unk"
+          ],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "Sensor & Performance",
+      "key": "sensor_latency_wireless",
+      "min_evidence_refs": 1,
+      "output_shape": "scalar",
+      "parse": {
+        "delimiters": [],
+        "range_separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "parse_rules": {
+        "delimiters": [],
+        "separators": [],
+        "strict_unit_required": true,
+        "unit": "ms",
+        "unit_accepts": [
+          "ms"
+        ],
+        "unit_conversions": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "hard",
+        "effort": 8,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "publish_gate": false,
+      "required_level": "optional",
+      "round": "2dp",
+      "search_hints": {
+        "content_types": [
+          "review",
+          "benchmark"
+        ],
+        "domain_hints": [
+          "rtings.com",
+          "techpowerup.com",
+          "mousespecs.org",
+          "lttlabs.com"
+        ],
+        "query_templates": [
+          "{brand} {model} sensor latency measured",
+          "{brand} {model} motion latency test results"
+        ],
+        "query_terms": [
+          "sensor latency",
+          "motion latency",
+          "motion delay",
+          "sensor response time",
+          "motion-to-screen latency"
+        ]
+      },
+      "shape": "scalar",
+      "strict_unit_required": true,
+      "type": "number",
+      "ui": {
+        "array_handling": "none",
+        "display_decimals": 2,
+        "display_mode": "all",
+        "examples": [],
+        "group": "Sensor & Performance",
+        "guidance_md": null,
+        "input_control": "number",
+        "label": "Sensor Latency (Wireless)",
+        "order": 51,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": "ms",
+        "tooltip_key": "sensor_latency",
+        "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_source": "hbs_tooltipsMouse.js"
+      },
+      "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
+      "value_form": "single",
+      "value_form_sample": "scalar"
     },
     "sensor_link": {
       "ai_assist": {
@@ -10392,12 +10732,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "url",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "url",
       "difficulty": "easy",
       "display_name": "Sensor Link",
       "effort": 3,
@@ -10444,7 +10784,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "url_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -10452,11 +10791,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "url_field",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10488,7 +10827,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "url",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -10594,7 +10933,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -10602,11 +10940,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10747,7 +11085,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -10755,11 +11092,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -10893,7 +11230,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "ms",
         "unit_accepts": [
           "ms"
@@ -10903,13 +11239,13 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "ms",
         "unit_accepts": [
           "ms"
         ],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -10989,7 +11325,6 @@
         },
         "shape": "scalar",
         "type": "integer",
-        "unit": "none",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -11039,19 +11374,16 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
-        "unit": "none",
-        "unit_accepts": [],
         "unit_conversions": {}
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "none",
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11108,7 +11440,6 @@
         "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unit": "none",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -11130,12 +11461,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Silent Clicks",
       "effort": 2,
@@ -11191,7 +11522,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -11216,13 +11546,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -11231,7 +11562,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11267,7 +11597,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -11304,6 +11634,14 @@
       "canonical_key": "sku",
       "component": null,
       "constraints": [],
+      "consumers": {
+        "enum.match.format_hint": {
+          "review": false
+        },
+        "enum.match.strategy": {
+          "review": false
+        }
+      },
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -11321,10 +11659,11 @@
           "strategy": "alias"
         },
         "new_value_policy": {},
-        "policy": "open_prefer_known",
-        "source": null
+        "policy": "open",
+        "source": "yes_no"
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "open",
+      "enum_source": "yes_no",
       "evidence": {
         "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
@@ -11358,7 +11697,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -11366,11 +11704,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11445,12 +11783,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Smoothing",
       "effort": 2,
@@ -11506,7 +11844,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -11531,13 +11868,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -11546,7 +11884,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -11581,7 +11918,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -11680,7 +12017,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "component_reference",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -11689,11 +12025,11 @@
         "component_type": "switch",
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "component_reference",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11826,7 +12162,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -11834,11 +12169,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -11984,7 +12319,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -11992,11 +12326,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12075,12 +12409,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "url",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "url",
       "difficulty": "medium",
       "display_name": "Switches LInk",
       "effort": 5,
@@ -12126,7 +12460,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "url_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -12134,11 +12467,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "url_field",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12168,7 +12501,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "url",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -12259,7 +12592,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "text_field",
         "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
@@ -12267,11 +12599,11 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "None",
+        "strict_unit_required": false,
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {}
       },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": false,
@@ -12346,12 +12678,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Tilt Scroll Wheel",
       "effort": 2,
@@ -12407,7 +12739,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -12432,13 +12763,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -12447,7 +12779,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12482,7 +12813,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -12583,7 +12914,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "number_with_unit",
         "unit": "g",
         "unit_accepts": [
           "g"
@@ -12595,6 +12925,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": false,
         "unit": "g",
         "unit_accepts": [
           "g"
@@ -12603,7 +12934,6 @@
           "oz_to_g": 28.3495
         }
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -12745,7 +13075,6 @@
         "delimiters": [],
         "range_separators": [],
         "strict_unit_required": true,
-        "template": "number_with_unit",
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -12761,6 +13090,7 @@
       "parse_rules": {
         "delimiters": [],
         "separators": [],
+        "strict_unit_required": true,
         "unit": "mm",
         "unit_accepts": [
           "mm",
@@ -12773,7 +13103,6 @@
           "in_to_mm": 25.4
         }
       },
-      "parse_template": "number_with_unit",
       "priority": {
         "availability": "expected",
         "block_publish_when_unk": true,
@@ -12852,12 +13181,12 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
+        "type": "boolean",
         "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "Wireless Charging",
       "effort": 5,
@@ -12913,7 +13242,6 @@
         ],
         "range_separators": [],
         "strict_unit_required": false,
-        "template": "boolean_yes_no_unk",
         "true_tokens": [
           "yes",
           "true",
@@ -12938,13 +13266,14 @@
           "off"
         ],
         "separators": [],
+        "strict_unit_required": false,
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": "None",
+        "unit": null,
         "unit_accepts": [],
         "unit_conversions": {},
         "unknown_tokens": [
@@ -12953,7 +13282,6 @@
           ""
         ]
       },
-      "parse_template": "boolean_yes_no_unknown",
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
@@ -12990,7 +13318,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -13291,7 +13619,6 @@
     "sensor_link",
     "sensor_date",
     "sensor_latency",
-    "sensor_latency_list",
     "flawless_sensor",
     "dpi",
     "ips",
@@ -13304,6 +13631,9 @@
     "motion_sync",
     "nvidia_reflex",
     "shift_latency",
+    "sensor_latency_wired",
+    "sensor_latency_wireless",
+    "sensor_latency_bluetooth",
     "switch",
     "switch_brand",
     "switch_type",
@@ -13311,9 +13641,11 @@
     "hot_swappable",
     "click_force",
     "click_latency",
-    "click_latency_list",
     "debounce",
     "silent_clicks",
+    "click_latency_wired",
+    "click_latency_wireless",
+    "click_latency_bluetooth",
     "programmable_buttons",
     "side_buttons",
     "middle_buttons",

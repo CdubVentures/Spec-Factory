@@ -30,7 +30,6 @@ interface Props {
 
 const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
   { id: 'contract', label: 'Contract' },
-  { id: 'parse', label: 'Parse' },
   { id: 'enum', label: 'Enum' },
   { id: 'evidence', label: 'Evidence' },
   { id: 'search', label: 'Search' },
@@ -40,7 +39,6 @@ const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
 
 const DRAWER_TAB_IDS = [
   'contract',
-  'parse',
   'enum',
   'evidence',
   'search',

@@ -135,7 +135,6 @@ export function buildEgColorFieldRule(ctx) {
       unknown_reason_required: true,
     },
     parse: {
-      template: 'list_of_tokens_delimited',
       delimiters: [',', '/', '|', ';'],
       token_map: {
         grey: 'gray',
@@ -218,7 +217,6 @@ export function buildEgEditionFieldRule(ctx) {
       unknown_reason_required: true,
     },
     parse: {
-      template: 'list_of_tokens_delimited',
       delimiters: [','],
       token_map: {},
     },

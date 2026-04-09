@@ -45,7 +45,6 @@ test('indexlab completion reconciles interrupted runs via SQL', async () => {
     ],
     insertBridgeEvent: (row) => insertBridgeEventCalls.push(row),
     upsertRun: (row) => upsertRunCalls.push(row),
-    updateRunStorageLocation: () => {},
   };
 
   const result = await handleIndexLabProcessCompletion({
@@ -68,7 +67,6 @@ test('indexlab completion returns null when no SQL record exists for interrupted
   const fakeSpecDb = {
     getRunByRunId: () => null,
     getBridgeEventsByRunId: () => [],
-    updateRunStorageLocation: () => {},
   };
 
   const result = await handleIndexLabProcessCompletion({

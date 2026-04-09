@@ -73,7 +73,6 @@ function makeBrandCtx(overrides = {}) {
     renameBrand: async () => ({ ok: true, oldSlug: '', newSlug: '', cascaded_products: 0, cascade_results: [] }),
     getBrandImpactAnalysis: async () => ({ ok: true }),
     resolveCategoryAlias: (value) => String(value || '').trim().toLowerCase(),
-    upsertQueueProduct: async () => ({ ok: true }),
     broadcastWs: noop,
     getSpecDb: () => null,
     brandRegistryPath: '',
@@ -82,8 +81,7 @@ function makeBrandCtx(overrides = {}) {
   return { ...ctx, ...overrides };
 }
 
-test('catalog routes: product add passes specDb into queue upsert and upserts products table', async () => {
-  const queueCalls = [];
+test('catalog routes: product add upserts products table', async () => {
   const upsertRows = [];
   const specDb = {
     category: 'mouse',
@@ -92,37 +90,22 @@ test('catalog routes: product add passes specDb into queue upsert and upserts pr
 
   const handler = registerCatalogRoutes(makeCatalogCtx({
     readJsonBody: async () => ({ brand: 'Razer', model: 'Viper', variant: '' }),
-    upsertQueueProduct: async (args) => {
-      queueCalls.push(args);
-      return { ok: true };
-    },
     getSpecDb: (category) => (category === 'mouse' ? specDb : null),
-    catalogAddProduct: async ({ upsertQueue }) => {
-      await upsertQueue({
-        storage: {},
-        category: 'mouse',
-        productId: 'mouse-razer-viper',
-        s3key: 'specs/inputs/mouse/products/mouse-razer-viper.json',
-        patch: { status: 'pending' },
-      });
-      return {
-        ok: true,
-        productId: 'mouse-razer-viper',
-        product: {
-          brand: 'Razer',
-          model: 'Viper',
-          variant: '',
-          status: 'active',
-          identifier: 'id_123',
-        },
-      };
-    },
+    catalogAddProduct: async () => ({
+      ok: true,
+      productId: 'mouse-razer-viper',
+      product: {
+        brand: 'Razer',
+        model: 'Viper',
+        variant: '',
+        status: 'active',
+        identifier: 'id_123',
+      },
+    }),
   }));
 
   const result = await handler(['catalog', 'mouse', 'products'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 201);
-  assert.equal(queueCalls.length, 1);
-  assert.equal(queueCalls[0].specDb, specDb);
   assert.equal(upsertRows.length, 1);
   assert.equal(upsertRows[0].product_id, 'mouse-razer-viper');
   assert.equal(upsertRows[0].brand, 'Razer');

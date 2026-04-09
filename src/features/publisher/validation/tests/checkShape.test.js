@@ -69,39 +69,15 @@ describe('checkShape — list', () => {
   }
 });
 
-describe('checkShape — record', () => {
-  const pass = [
-    [{ a: 1 },  'non-empty object'],
-    [{},         'empty object'],
-  ];
-
-  for (const [value, label] of pass) {
-    it(`pass: ${label}`, () => {
-      const r = checkShape(value, 'record');
-      assert.equal(r.pass, true);
-    });
-  }
-
-  const fail = [
-    [['a'],     'array where record expected'],
-    [null,      'null where record expected'],
-    [undefined, 'undefined where record expected'],
-    ['a',       'string where record expected'],
-    [42,        'number where record expected'],
-  ];
-
-  for (const [value, label] of fail) {
-    it(`reject: ${label}`, () => {
-      const r = checkShape(value, 'record');
-      assert.equal(r.pass, false);
-      assert.equal(typeof r.reason, 'string');
-    });
-  }
-});
-
 describe('checkShape — unknown shape', () => {
   it('rejects unknown shape string', () => {
     const r = checkShape('hello', 'matrix');
+    assert.equal(r.pass, false);
+    assert.ok(r.reason.includes('unknown'));
+  });
+
+  it('rejects retired "record" shape', () => {
+    const r = checkShape({ a: 1 }, 'record');
     assert.equal(r.pass, false);
     assert.ok(r.reason.includes('unknown'));
   });

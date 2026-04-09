@@ -46,7 +46,6 @@ export function applyContextPack(row: LlmRouteRow, pack: 'minimal' | 'standard' 
     for (const key of PROMPT_FLAG_FIELDS) next[key] = false as never;
     next.studio_key_navigation_sent_in_extract_review = true;
     next.studio_contract_rules_sent_in_extract_review = true;
-    next.studio_parse_template_sent_direct_in_extract_review = true;
     next.studio_required_level_sent_in_extract_review = true;
     next.studio_evidence_policy_sent_direct_in_extract_review = true;
     next.studio_send_booleans_prompted_to_model = false;

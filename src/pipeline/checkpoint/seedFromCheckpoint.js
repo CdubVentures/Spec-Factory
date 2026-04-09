@@ -33,18 +33,6 @@ function seedCrawlCheckpoint(specDb, cp) {
     counters,
   });
 
-  specDb.upsertProductRun({
-    product_id: run.product_id || '',
-    run_id: run.run_id || '',
-    is_latest: true,
-    summary: cp.run_summary || null,
-    validated: cp.run_summary?.validated || false,
-    confidence: cp.run_summary?.confidence || 0,
-    cost_usd_run: 0,
-    sources_attempted: counters.urls_crawled || 0,
-    run_at: createdAt,
-  });
-
   const runId = run.run_id || '';
   const category = run.category || '';
 
@@ -152,26 +140,6 @@ function seedProductCheckpoint(specDb, cp) {
     identifier: raw.identifier || null,
     brand_identifier: raw.brand_identifier || '',
   });
-
-  // WHY: upsertQueueProduct method removed from SpecDb after queue module retirement.
-  // The product_queue table still exists in the schema, so we write directly via raw SQL
-  // to preserve checkpoint recovery for the queue row.
-  specDb.db.prepare(`
-    INSERT INTO product_queue (category, product_id, status, priority, last_run_id, rounds_completed, last_completed_at)
-    VALUES (?, ?, 'complete', 3, ?, ?, ?)
-    ON CONFLICT(category, product_id) DO UPDATE SET
-      status = excluded.status,
-      priority = excluded.priority,
-      last_run_id = excluded.last_run_id,
-      rounds_completed = excluded.rounds_completed,
-      last_completed_at = excluded.last_completed_at
-  `).run(
-    cp.category || '',
-    cp.product_id || '',
-    cp.latest_run_id || null,
-    cp.runs_completed || 1,
-    cp.updated_at || null,
-  );
 
   // WHY: Rebuild query_cooldowns so tier progression survives DB rebuild.
   // Product.json carries the latest cooldown snapshot — one row per unique query.

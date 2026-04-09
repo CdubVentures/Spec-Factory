@@ -5,8 +5,8 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": false,
-      "hash": "0eb125623f892bd5ba09050f4246cdbdd75a34075b8d05b4488ec7a39c5acffe",
+      "changed": true,
+      "hash": "b45cdc0aa902bc5b4e13aff40e6cba3f0e4f3badb23b38b56ef012d8e35085fb",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": {
@@ -14,61 +14,92 @@
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "5530fd2255c9f70756f216f59dcb3ec25c8d5e4ee7882850bfa02764d5434eaa",
+      "hash": "5dbee0e1b086577cc76a80c722eac771b11287fe67852c93c907ac43d9838b18",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "0290b7ae58c391b7e18bd93c8bf33f2fe6255349f988748f7dd711c82b99d332",
+      "hash": "e319187b632b309006d7409e85bbc04eccc338d7ec16349ccd0fcf475ab2ed07",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-08T08:00:04.500Z",
+  "compiled_at": "2026-04-09T09:14:59.461Z",
   "counts": {
     "component_types": 4,
     "critical": 1,
-    "deep": 10,
+    "deep": 14,
     "enums": 15,
     "expected_easy": 48,
     "expected_sometimes": 8,
-    "fields": 81,
+    "fields": 85,
     "identity": 1,
     "required": 13
   },
   "diff": {
-    "changed": false,
-    "current_hash": "0eb125623f892bd5ba09050f4246cdbdd75a34075b8d05b4488ec7a39c5acffe",
+    "changed": true,
+    "current_hash": "b45cdc0aa902bc5b4e13aff40e6cba3f0e4f3badb23b38b56ef012d8e35085fb",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 1,
+      "changed_count": 28,
       "changed_keys": [
-        "editions"
+        "acceleration",
+        "battery_hours",
+        "click_force",
+        "click_latency",
+        "click_latency_bluetooth",
+        "click_latency_wired",
+        "click_latency_wireless",
+        "debounce",
+        "dpi",
+        "encoder_life_span",
+        "encoder_steps",
+        "height",
+        "ips",
+        "lift",
+        "lngth",
+        "middle_buttons",
+        "onboard_memory_value",
+        "polling_rate",
+        "programmable_buttons",
+        "releasing_force",
+        "sensor_latency",
+        "sensor_latency_bluetooth",
+        "sensor_latency_wired",
+        "sensor_latency_wireless",
+        "shift_latency",
+        "side_buttons",
+        "weight",
+        "width"
       ],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "0eb125623f892bd5ba09050f4246cdbdd75a34075b8d05b4488ec7a39c5acffe"
+    "previous_hash": "61a0a3725bda50e1257e81f1590526f5da07b93526afb2fa884047267c35001d"
   },
   "errors": [],
-  "field_studio_map_hash": "aaca579e400949ec75499a79f8d7acdcb845305bc74f0e8e2b041764e80c902d",
+  "field_studio_map_hash": "3478d23a27500e17c99bc31993b954c788023fbf3be6eb6da9d855e36f03f056",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-08T08:00:04.500Z",
+  "generated_at": "2026-04-09T09:14:59.461Z",
   "source_summary": {
     "component_sheets": 4,
     "component_sources": 4,
     "enum_lists": 0,
-    "key_rows": 81,
+    "key_rows": 85,
     "sampled_product_columns": 0,
     "sampled_values": 0
   },
   "version": 1,
   "warnings": [
     "key_migrations: reversed 'lngth -> length' to 'length -> lngth' because 'length' is not a generated field key",
+    "field encoder_life_span: numeric type 'number' without unit declared",
+    "field encoder_steps: numeric type 'number' without unit declared",
+    "field encoder_type: enum_policy=open but parse_rules is empty",
+    "field switch_life_span: enum_policy=open but parse_rules is empty",
     "component_db.encoder: property \"encoder_steps\" coverage 38/40 (95%), missing 2; examples: Magnetic Encoder, Optical Encoder",
     "component_db.sensor: property \"acceleration\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
     "component_db.sensor: property \"dpi\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",

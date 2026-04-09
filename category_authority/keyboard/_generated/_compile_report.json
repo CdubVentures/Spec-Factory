@@ -6,23 +6,23 @@
     },
     "field_rules": {
       "changed": true,
-      "hash": "15cace71ddd8154eafdff65f4cd4d4ff0380d0a2948ec211b9af03ab16cb8e60",
+      "hash": "1d7233f1a1d81e342fa7cc779a41f6ddbe1d05a75cdb984afc2c2d883b53cfce",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\field_rules.json"
     },
     "key_migrations": null,
     "known_values": {
-      "hash": "0d51db2eccf4f65d2c4a0c50014178f936c006f27a15012d1354e7cf99e50bbf",
+      "hash": "8dbb9f3da1ff3316a1cfbc619711ae25dad853283f1cfa5ba92d194b1d13544e",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "41c06dae78b424b578aafcdb87677f1c55b48e4e94e8b54e2f706dcf48a8fd0f",
+      "hash": "05776dcfb6653e63aec7a680236a0441de82eba397d96547af6799ebdbb5ae29",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "keyboard",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-08T00:49:53.413Z",
+  "compiled_at": "2026-04-09T07:40:00.114Z",
   "counts": {
     "component_types": 1,
     "critical": 0,
@@ -36,23 +36,52 @@
   },
   "diff": {
     "changed": true,
-    "current_hash": "15cace71ddd8154eafdff65f4cd4d4ff0380d0a2948ec211b9af03ab16cb8e60",
+    "current_hash": "1d7233f1a1d81e342fa7cc779a41f6ddbe1d05a75cdb984afc2c2d883b53cfce",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 0,
-      "changed_keys": [],
+      "changed_count": 28,
+      "changed_keys": [
+        "actuation_adjustment_step",
+        "actuation_distance",
+        "actuation_force",
+        "adjustable_actuation_max",
+        "adjustable_actuation_min",
+        "battery_capacity",
+        "battery_life_off",
+        "battery_life_rgb",
+        "bottom_out_force",
+        "cable_length",
+        "debounce_time",
+        "depth",
+        "height_front",
+        "height_rear",
+        "key_count",
+        "keycap_thickness",
+        "multi_device_pairing_count",
+        "multi_key_latency",
+        "onboard_profile_count",
+        "polling_rate_wired",
+        "polling_rate_wireless",
+        "scan_rate",
+        "single_key_latency",
+        "switch_lifespan",
+        "total_travel",
+        "typing_angle",
+        "weight",
+        "width"
+      ],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "afc441e3cf487241ce031755d6fc0930bda231fa7373897ca58fbdad44ce9136"
+    "previous_hash": "9e075fbff2c05f97b4861a7e32ece2cb86cd4861b0eb407a9e280c07b1c51dab"
   },
   "errors": [],
-  "field_studio_map_hash": "290d3e1729222f997868d30cc4fa46afbc40799acd6614612f58a27b0b9d6543",
+  "field_studio_map_hash": "f8f4b716028ff63f5da86400988a71a8ac2b7c4d2325344952926a7f29fbd6c2",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-08T00:49:53.413Z",
+  "generated_at": "2026-04-09T07:40:00.114Z",
   "source_summary": {
     "component_sheets": 1,
     "component_sources": 1,

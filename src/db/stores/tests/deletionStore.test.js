@@ -58,13 +58,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     dedupe_mode: '', s3key: '', out_root: '', counters: {},
   });
 
-  // product_runs
-  specDb.upsertProductRun({
-    product_id: productId, run_id: runId, is_latest: true,
-    summary: null, validated: false, confidence: 0,
-    cost_usd_run: 0.01, sources_attempted: 1, run_at: now,
-  });
-
   // run_artifacts
   specDb.upsertRunArtifact({
     run_id: runId, artifact_type: 'needset', category: cat,
@@ -161,15 +154,6 @@ function seedProductIdentity(specDb, { productId }) {
     brand: 'TestBrand', model: 'TestModel', base_model: 'TestModel', variant: '',
     status: 'active', identifier: '', brand_identifier: '',
   });
-  // WHY: upsertQueueProduct removed from SpecDb — seed directly via raw SQL.
-  specDb.db.prepare(`
-    INSERT INTO product_queue (category, product_id, status, priority, last_run_id, rounds_completed, last_completed_at)
-    VALUES (?, ?, 'complete', 3, NULL, 0, NULL)
-    ON CONFLICT(category, product_id) DO UPDATE SET
-      status = excluded.status, priority = excluded.priority,
-      last_run_id = excluded.last_run_id, rounds_completed = excluded.rounds_completed,
-      last_completed_at = excluded.last_completed_at
-  `).run(specDb.category, productId);
 }
 
 /** Create filesystem artifacts for a run. */
@@ -244,7 +228,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
 
     // All run-linked tables should be empty
     assert.equal(countRows(h.specDb.db, 'runs', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'product_runs', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'run_artifacts', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'run_id = ?', [RUN_1]), 0);
@@ -262,7 +245,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
 
     // Product identity must survive
     assert.equal(countRows(h.specDb.db, 'products', 'product_id = ?', [PID_A]), 1);
-    assert.equal(countRows(h.specDb.db, 'product_queue', 'product_id = ?', [PID_A]), 1);
   } finally {
     cleanup(h);
   }
@@ -338,7 +320,6 @@ test('deleteRun — preserves other run data when two runs exist', () => {
 
     // RUN_2 data fully intact
     assert.equal(countRows(h.specDb.db, 'runs', 'run_id = ?', [RUN_2]), 1);
-    assert.equal(countRows(h.specDb.db, 'product_runs', 'run_id = ?', [RUN_2]), 1);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_2]), 1);
     // RUN_2 filesystem intact
     assert.equal(fs.existsSync(path.join(h.fsRoots.runs, RUN_2)), true);
@@ -492,7 +473,6 @@ test('deleteUrl — does not delete the run record itself', () => {
 
     // Run metadata still exists
     assert.equal(countRows(h.specDb.db, 'runs', 'run_id = ?', [RUN_1]), 1);
-    assert.equal(countRows(h.specDb.db, 'product_runs', 'run_id = ?', [RUN_1]), 1);
   } finally {
     cleanup(h);
   }
@@ -538,7 +518,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
 
     // All run-linked tables empty for this product
     assert.equal(countRows(h.specDb.db, 'runs', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'product_runs', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'run_artifacts', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'product_id = ?', [PID_A]), 0);
@@ -554,11 +533,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
 
     // Product identity preserved
     assert.equal(countRows(h.specDb.db, 'products', 'product_id = ?', [PID_A]), 1);
-    // product_queue reset but not deleted
-    const queueRow = h.specDb.db.prepare('SELECT * FROM product_queue WHERE product_id = ?').get(PID_A);
-    assert.ok(queueRow);
-    assert.equal(queueRow.last_run_id, null);
-    assert.equal(queueRow.rounds_completed, 0);
   } finally {
     cleanup(h);
   }
@@ -623,7 +597,6 @@ test('deleteProductHistory — does not affect other products', () => {
 
     // PID_B fully intact
     assert.equal(countRows(h.specDb.db, 'runs', 'product_id = ?', [PID_B]), 1);
-    assert.equal(countRows(h.specDb.db, 'product_runs', 'product_id = ?', [PID_B]), 1);
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'product_id = ?', [PID_B]), 1);
     assert.equal(fs.existsSync(path.join(h.fsRoots.runs, RUN_2)), true);
   } finally {

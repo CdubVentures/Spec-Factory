@@ -38,6 +38,7 @@ export async function refreshIndexingPageData(input: RefreshIndexingPageDataInpu
     input.queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] }),
     input.queryClient.invalidateQueries({ queryKey: ['catalog', input.category, 'indexing'], exact: true }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'] }),
+    input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'product-history'] }),
     input.queryClient.invalidateQueries({ queryKey: ['runtime-ops'] }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] }),
   ];

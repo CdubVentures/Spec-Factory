@@ -31,7 +31,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
         },
         publish_gate: true,
         parse: {
-          template: 'number_with_unit',
           unit: 'g',
           unit_accepts: ['g', 'grams'],
         },
@@ -80,7 +79,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
       },
       publish_gate: true,
       parse: {
-        template: 'number_with_unit',
         unit: 'l/s',
         unit_accepts: ['l/s'],
       },

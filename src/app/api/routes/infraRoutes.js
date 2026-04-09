@@ -4,6 +4,7 @@ import { createInfraSearxngRoutes } from './infra/searxngRoutes.js';
 import { createInfraSerperRoutes } from './infra/serperRoutes.js';
 import { createInfraProcessRoutes } from './infra/processRoutes.js';
 import { createInfraGraphqlRoutes } from './infra/graphqlRoutes.js';
+import { createInfraOperationsRoutes } from './infra/operationsRoutes.js';
 import { scaffoldCategory } from '../../../field-rules/compilerCategoryInit.js';
 
 export function registerInfraRoutes(ctx) {
@@ -21,6 +22,7 @@ export function registerInfraRoutes(ctx) {
       pathApi: ctx.path,
     }),
     createInfraGraphqlRoutes(ctx),
+    createInfraOperationsRoutes(ctx),
   ];
 
   return async function handleInfraRoutes(parts, params, method, req, res) {

@@ -62,13 +62,6 @@ function mockSpecDbFromProducts(products) {
   }));
   return {
     getAllProducts: () => rows,
-    getAllQueueProducts: (statusFilter) => statusFilter
-      ? queueRows.filter(r => r.status === statusFilter)
-      : queueRows,
-    getQueueProduct: (pid) => queueRows.find(r => r.product_id === pid) || null,
-    upsertQueueProduct: () => {},
-    deleteQueueProduct: () => ({ changes: 1 }),
-    clearQueueByStatus: () => {},
     db: { transaction: (fn) => fn },
   };
 }

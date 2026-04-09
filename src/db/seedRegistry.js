@@ -157,7 +157,7 @@ export function buildReseedSurfaces(deps) {
       label: 'Checkpoints',
       scope: 'reseed',
       tables: [
-        'products', 'product_queue', 'runs', 'product_runs',
+        'products', 'runs',
         'run_artifacts', 'crawl_sources', 'url_crawl_ledger',
         'query_cooldowns', 'screenshots', 'videos',
       ],

@@ -10,7 +10,7 @@ interface EnumConfiguratorProps {
   rule: Record<string, unknown>;
   knownValues: Record<string, string[]>;
   enumLists: EnumEntry[];
-  parseTemplate: string;
+  contractType: string;
   onUpdate: (path: string, value: unknown) => void;
   renderLabelSuffix?: (fieldPath: string) => React.ReactNode;
   onRunConsistency?: (options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<unknown> | void;
@@ -67,7 +67,7 @@ export function EnumConfigurator({
   rule,
   knownValues,
   enumLists,
-  parseTemplate,
+  contractType,
   onUpdate,
   renderLabelSuffix,
   onRunConsistency,
@@ -81,7 +81,7 @@ export function EnumConfigurator({
   const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
   const matchStrategy = strN(rule, 'enum.match.strategy', 'alias');
 
-  const isBoolean = parseTemplate === 'boolean_yes_no_unk';
+  const isBoolean = contractType === 'boolean';
 
   // State
   const [activeTab, setActiveTab] = usePersistedTab<SourceTab>(
@@ -185,7 +185,7 @@ export function EnumConfigurator({
           <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <span className="text-xs text-blue-600 dark:text-blue-400">Boolean template auto-locks enum to closed/yes_no</span>
+          <span className="text-xs text-blue-600 dark:text-blue-400">Boolean type auto-locks enum to closed/yes_no</span>
         </div>
       ) : null}
 

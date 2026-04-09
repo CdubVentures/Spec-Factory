@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "artifact_count": 9,
+  "artifact_count": 8,
   "artifacts": [
     {
       "bytes": 32934,
@@ -13,19 +13,14 @@
       "sha256": "ab842a6b261cd39f0e7e5a50c2d5d70259304bdafaef9b7c72badd23cb7b34ff"
     },
     {
-      "bytes": 6796,
+      "bytes": 6869,
       "path": "field_groups.json",
-      "sha256": "3650531a0d69db1ff33acc786dc50b19cf01873e4dabb35cf71543c865542e1f"
+      "sha256": "faf438f0c431580e3588bf8b1e6b7bcf8705a5cc308c9fcacafa306fd0525006"
     },
     {
-      "bytes": 340210,
+      "bytes": 337514,
       "path": "field_rules.json",
-      "sha256": "cf0f2b89e447b620767ef7ec2e6feb832c04046464aef1a70ef229ffc4a1904d"
-    },
-    {
-      "bytes": 340210,
-      "path": "field_rules.runtime.json",
-      "sha256": "cf0f2b89e447b620767ef7ec2e6feb832c04046464aef1a70ef229ffc4a1904d"
+      "sha256": "e4ff084a91fbbc5b794f6aa06ab72772b6c8b409606a6469882c9e9e3c3e5584"
     },
     {
       "bytes": 201,
@@ -33,22 +28,23 @@
       "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
     },
     {
-      "bytes": 7467,
+      "bytes": 12852,
       "path": "known_values.json",
-      "sha256": "04a4c921b381a61b6f49a1b437ff496a451f0a50ba56faf93fdf7569d048dad7"
+      "sha256": "1a60b46b8fe62ad0a1d6fcd21019d1dbe280c5a89c569a20d7a9a6ff00862b14"
     },
     {
-      "bytes": 22609,
+      "bytes": 21300,
       "path": "parse_templates.json",
-      "sha256": "e106de3ea7509d9036cf6a6b606663ef6c39a298584822408823224c21696b94"
+      "sha256": "60eb27b95e8d559971ca6be967c99a3f2139af81d40d297d983330eae439e361"
     },
     {
-      "bytes": 86290,
+      "bytes": 88109,
       "path": "ui_field_catalog.json",
-      "sha256": "95d4c67ef3ffee012cb2c8e7d4ef7bbac4709a70f0dfde3093bb988ea2584d52"
+      "sha256": "be4a14669e98c0950e5a3fb1291e1ecd09086457d7d9734269dc24eab909fe12"
     }
   ],
   "category": "keyboard",
-  "generated_at": "2026-03-29T22:02:02.047Z",
+  "generated_at": "2026-04-09T23:34:19.501Z",
+  "source_map_hash": "dfb0b4773f8776ba899ec1bfa9420fdcec50cd3ed62a5695a009dbac6ca4e3bf",
   "version": 1
 }

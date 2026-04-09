@@ -3,30 +3,23 @@
 const UNIT_REGEX = /^(-?\d+(?:\.\d+)?)\s*([a-zA-Z%°]+\s*[a-zA-Z]*)?$/;
 
 /**
- * Unit verification (Step 3). Verifies and optionally converts.
- * @param {*} value - Field value (post-type-check)
+ * Unit verification (Step 3). Matches detected unit against contract.unit
+ * (case-insensitive). Strips valid unit suffixes to bare numbers.
+ *
+ * Phase 3 will add a system-wide unit registry for synonym resolution
+ * and deterministic conversion. Until then, only canonical match works.
+ *
+ * @param {*} value - Field value (post-shape-check)
  * @param {string} expectedUnit - from contract.unit
- * @param {string[]} [unitAccepts] - from parse.unit_accepts (falls back to [expectedUnit])
- * @param {Record<string, number>|null} [unitConversions] - from parse.unit_conversions (factor to multiply)
- * @param {boolean} [strictUnitRequired=false] - from parse.strict_unit_required
  * @returns {{ pass: boolean, value?: *, rule?: string, reason?: string, detail?: { expected: string, detected: string } }}
  */
-export function checkUnit(value, expectedUnit, unitAccepts, unitConversions, strictUnitRequired) {
+export function checkUnit(value, expectedUnit) {
   if (!expectedUnit) {
     return { pass: true, value };
   }
 
   if (value === 'unk') {
     return { pass: true, value: 'unk' };
-  }
-
-  // WHY: When strict_unit_required is true, a bare number with no unit suffix must be rejected.
-  if (strictUnitRequired && typeof value === 'number') {
-    return {
-      pass: false,
-      reason: `unit_required: bare number ${value} missing required unit ${expectedUnit}`,
-      detail: { expected: expectedUnit, detected: '' },
-    };
   }
 
   if (typeof value === 'number') {
@@ -46,36 +39,15 @@ export function checkUnit(value, expectedUnit, unitAccepts, unitConversions, str
   const detectedUnit = (match[2] || '').trim();
 
   if (!detectedUnit) {
-    // WHY: Bare numeric string "42" — reject if strict_unit_required, else strip and pass.
-    if (strictUnitRequired) {
-      return {
-        pass: false,
-        reason: `unit_required: "${value}" missing required unit ${expectedUnit}`,
-        detail: { expected: expectedUnit, detected: '' },
-      };
-    }
     return { pass: true, value: numericPart, rule: 'strip_same_unit' };
   }
 
-  const accepts = unitAccepts && unitAccepts.length > 0
-    ? unitAccepts
-    : [expectedUnit];
-
+  const accepts = [expectedUnit];
   const detectedLower = detectedUnit.toLowerCase();
   const isAccepted = accepts.some(u => u.toLowerCase() === detectedLower);
 
   if (isAccepted) {
-    // WHY: Distinguish canonical unit from accepted alternates so audit can trace the rule.
-    const isCanonical = detectedLower === expectedUnit.toLowerCase();
-    return { pass: true, value: numericPart, rule: isCanonical ? 'strip_same_unit' : 'unit_accepts' };
-  }
-
-  // WHY: Attempt deterministic conversion before rejecting.
-  if (unitConversions && typeof unitConversions === 'object') {
-    const factor = unitConversions[detectedUnit] || unitConversions[detectedLower];
-    if (typeof factor === 'number' && Number.isFinite(factor)) {
-      return { pass: true, value: numericPart * factor, rule: 'unit_convert' };
-    }
+    return { pass: true, value: numericPart, rule: 'strip_same_unit' };
   }
 
   return {

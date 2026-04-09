@@ -78,9 +78,10 @@ describe('buildEgColorFieldRule', () => {
     assert.equal(rule.parse.token_map['light green'], 'light-green');
   });
 
-  it('has list_of_tokens_delimited parse template', () => {
+  it('has delimiters in parse (template eliminated)', () => {
     const rule = buildEgColorFieldRule();
-    assert.equal(rule.parse.template, 'list_of_tokens_delimited');
+    assert.equal(rule.parse.template, undefined);
+    assert.deepEqual(rule.parse.delimiters, [',', '/', '|', ';']);
   });
 
   it('has closed enum policy (colors are a closed vocabulary from the registry)', () => {
@@ -209,9 +210,10 @@ describe('buildEgEditionFieldRule', () => {
     assert.equal(rule.ui.input_control, 'token_list');
   });
 
-  it('has list_of_tokens_delimited parse template', () => {
+  it('has delimiters in parse (template eliminated)', () => {
     const rule = buildEgEditionFieldRule();
-    assert.equal(rule.parse.template, 'list_of_tokens_delimited');
+    assert.equal(rule.parse.template, undefined);
+    assert.deepEqual(rule.parse.delimiters, [',']);
   });
 
   it('returns a new object each call', () => {

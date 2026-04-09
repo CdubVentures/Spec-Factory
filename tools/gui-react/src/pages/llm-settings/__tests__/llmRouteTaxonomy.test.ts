@@ -41,7 +41,6 @@ function makeRow(overrides: Partial<LlmRouteRow> = {}): LlmRouteRow {
     studio_tooltip_or_description_sent_when_present: false,
     studio_enum_options_sent_when_present: false,
     studio_component_variance_constraints_sent_in_component_review: false,
-    studio_parse_template_sent_direct_in_extract_review: true,
     studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: false,
     studio_required_level_sent_in_extract_review: true,
     studio_component_entity_set_sent_when_component_field: false,
@@ -128,8 +127,8 @@ describe('enum option arrays', () => {
 });
 
 describe('PROMPT_FLAG_FIELDS', () => {
-  it('has 14 entries', () => {
-    strictEqual(PROMPT_FLAG_FIELDS.length, 14);
+  it('has 13 entries', () => {
+    strictEqual(PROMPT_FLAG_FIELDS.length, 13);
   });
   it('all start with studio_', () => {
     for (const field of PROMPT_FLAG_FIELDS) {

@@ -3,10 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseList,
   normalizeBoolean,
-  normalizeColorList,
   parseDate,
-  parseLatencyList,
-  parsePollingList,
 } from '../normalizers.js';
 
 describe('parseList', () => {
@@ -98,26 +95,6 @@ describe('normalizeBoolean', () => {
   }
 });
 
-describe('normalizeColorList', () => {
-  const cases = [
-    ['Black, White, Red',  ['black', 'white', 'red'],  'split + lowercase'],
-    ['black',              ['black'],                    'single'],
-    ['Black, , White',     ['black', 'white'],           'filter blanks'],
-    ['',                   [],                            'empty'],
-    [null,                 [],                            'null'],
-  ];
-
-  for (const [input, expected, label] of cases) {
-    it(label, () => {
-      assert.deepStrictEqual(normalizeColorList(input), expected);
-    });
-  }
-
-  it('array + lowercase', () => {
-    assert.deepStrictEqual(normalizeColorList(['BLACK', 'white']), ['black', 'white']);
-  });
-});
-
 describe('parseDate', () => {
   it('ISO date string → YYYY-MM-DD only (no timestamp)', () => {
     const result = parseDate('2024-10-01');
@@ -149,60 +126,5 @@ describe('parseDate', () => {
 
   it('null -> null', () => {
     assert.strictEqual(parseDate(null), null);
-  });
-});
-
-describe('parseLatencyList', () => {
-  it('standard: "1.1 wired, 1.3 wireless"', () => {
-    const result = parseLatencyList('1.1 wired, 1.3 wireless');
-    assert.deepStrictEqual(result, [
-      { value: 1.1, mode: 'wired' },
-      { value: 1.3, mode: 'wireless' },
-    ]);
-  });
-
-  it('no mode -> default', () => {
-    const result = parseLatencyList('2.5');
-    assert.deepStrictEqual(result, [{ value: 2.5, mode: 'default' }]);
-  });
-
-  it('bluetooth mode', () => {
-    const result = parseLatencyList('3.0 bluetooth');
-    assert.deepStrictEqual(result, [{ value: 3.0, mode: 'bluetooth' }]);
-  });
-
-  it('2.4g mode', () => {
-    const result = parseLatencyList('1.5 2.4g');
-    assert.deepStrictEqual(result, [{ value: 1.5, mode: '2.4g' }]);
-  });
-
-  it('empty -> []', () => {
-    assert.deepStrictEqual(parseLatencyList(''), []);
-  });
-
-  it('non-numeric -> []', () => {
-    assert.deepStrictEqual(parseLatencyList('abc'), []);
-  });
-});
-
-describe('parsePollingList', () => {
-  it('standard: "125, 500, 1000" -> sorted desc', () => {
-    assert.deepStrictEqual(parsePollingList('125, 500, 1000'), [1000, 500, 125]);
-  });
-
-  it('deduplicates', () => {
-    assert.deepStrictEqual(parsePollingList('1000, 1000, 500'), [1000, 500]);
-  });
-
-  it('non-numeric filtered', () => {
-    assert.deepStrictEqual(parsePollingList('abc'), []);
-  });
-
-  it('empty -> []', () => {
-    assert.deepStrictEqual(parsePollingList(''), []);
-  });
-
-  it('mixed numeric and non-numeric', () => {
-    assert.deepStrictEqual(parsePollingList('125, abc, 500'), [500, 125]);
   });
 });

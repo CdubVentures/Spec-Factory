@@ -23,8 +23,6 @@ import {
   effortFromDifficulty,
   inferRequiredLevel,
   inferAvailability,
-  inferParseTemplate,
-  canonicalParseTemplate
 } from './compileFieldInference.js';
 import { normalizeConsumerOverrides } from '../field-rules/consumerGate.js';
 
@@ -179,7 +177,7 @@ export function buildSearchHints({
   requiredLevel = 'optional',
   availability = 'sometimes',
   difficulty = 'medium',
-  parseTemplate = '',
+  componentType = '',
   enumSource = null
 } = {}) {
   const fieldLabel = titleFromKey(key);
@@ -188,7 +186,7 @@ export function buildSearchHints({
     query_terms: [fieldLabel],
     domain_hints: ['manufacturer', 'support', 'manual', 'pdf']
   };
-  if (canonicalParseTemplate(parseTemplate) === 'component_reference') {
+  if (componentType) {
     hints.query_terms = [fieldLabel, 'component'];
   }
   return sortDeep(hints);
@@ -272,20 +270,9 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
     out.object_schema = { ...contract.object_schema };
   }
 
-  if (!normalizeText(out.parse_template) && normalizeText(parse.template)) {
-    out.parse_template = normalizeToken(parse.template);
-  }
+  // WHY: parse_template eliminated — type+shape is the contract. Legacy parse.template in overrides is ignored.
   if (!isObject(out.parse_rules)) {
     out.parse_rules = {};
-  }
-  if (normalizeText(parse.unit) && !normalizeText(out.parse_rules.unit)) {
-    out.parse_rules.unit = normalizeText(parse.unit);
-  }
-  if (Array.isArray(parse.unit_accepts) && parse.unit_accepts.length > 0) {
-    out.parse_rules.unit_accepts = orderedUniqueStrings(parse.unit_accepts);
-  }
-  if (isObject(parse.unit_conversions)) {
-    out.parse_rules.unit_conversions = { ...parse.unit_conversions };
   }
   if (Array.isArray(parse.delimiters) && parse.delimiters.length > 0) {
     out.parse_rules.delimiters = orderedUniqueStrings(parse.delimiters);
@@ -293,14 +280,11 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
   if (Array.isArray(parse.range_separators) && parse.range_separators.length > 0) {
     out.parse_rules.separators = orderedUniqueStrings(parse.range_separators);
   }
-  if (parse.strict_unit_required !== undefined && out.strict_unit_required === undefined) {
-    out.strict_unit_required = parse.strict_unit_required === true;
-  }
   if (normalizeText(parse.component_type)) {
     out.parse_rules.component_type = normalizeFieldKey(parse.component_type);
   }
   for (const [parseKey, parseValue] of Object.entries(parse)) {
-    if (['template', 'unit', 'strict_unit_required', 'unit_accepts', 'unit_conversions', 'delimiters', 'range_separators', 'component_type'].includes(parseKey)) {
+    if (['template', 'delimiters', 'range_separators', 'component_type'].includes(parseKey)) {
       continue;
     }
     if (parseValue !== undefined) {
@@ -334,9 +318,7 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
       out.enum_source = componentSource;
     }
   }
-  if (component && !normalizeText(out.parse_template) && normalizeText(component.type)) {
-    out.parse_template = 'component_reference';
-  }
+  // WHY: component_reference was a parse_template. Now component detection is handled by contract.type + parse.component_type.
   if (component && out.strict_unit_required === undefined && component.require_identity_evidence !== undefined) {
     out.require_component_identity_evidence = component.require_identity_evidence === true;
   }
@@ -392,91 +374,44 @@ export function mergeFieldOverride(baseRule, overrideRaw = {}) {
   } else {
     override.value_form = normalizeValueForm(override.value_form, normalizeToken(override.shape || baseRule.shape || 'scalar'));
   }
-  return {
+  const merged = {
     ...baseRule,
     ...override
   };
+  // WHY: parse_template eliminated. Strip any legacy value that leaked through from overrides.
+  delete merged.parse_template;
+  if (isObject(merged.parse)) {
+    delete merged.parse.template;
+  }
+  return merged;
 }
 
-export function parseRulesForTemplate(template, { unit = '', enumValues = [], componentType = '' } = {}) {
-  if (template === 'text_field' || template === 'string') {
-    return {
-      trim: true,
-      collapse_whitespace: true
-    };
+// WHY: Type-driven parse defaults. Replaces the old parseRulesForTemplate() switch.
+// Adding a type = add one branch here. O(1) scaling.
+export function defaultParseRules(type, shape, { unit = '', componentType = '' } = {}) {
+  const base = {};
+  // WHY: parse.unit* knobs retired — contract.unit is SSOT, Phase 3 registry handles synonyms.
+  if (shape === 'list') {
+    base.delimiters = [',', '/', '|', ';'];
   }
-  if (template === 'boolean_yes_no_unknown' || template === 'boolean_yes_no_unk') {
-    return {
-      truthy: ['yes', 'true', '1'],
-      falsy: ['no', 'false', '0'],
-      unknown: ['unk', 'n/a', 'na', 'unknown']
-    };
+  if (type === 'boolean') {
+    base.true_tokens = ['yes', 'true', '1', 'on'];
+    base.false_tokens = ['no', 'false', '0', 'off'];
+    base.unknown_tokens = ['unk', 'n/a', 'na', 'unknown'];
   }
-  if (template === 'number_with_unit' || template === 'integer_with_unit') {
-    return {
-      unit: unit || '',
-      allow_unitless: true
-    };
+  if (type === 'date') {
+    base.accepted_formats = ['YYYY-MM-DD', 'YYYY-MM', 'YYYY'];
   }
-  if (template === 'list_of_tokens_delimited') {
-    return {
-      delimiters: [',', '/', '|', ';']
-    };
+  if (type === 'url') {
+    base.require_scheme = true;
   }
-  if (template === 'list_of_numbers_with_unit') {
-    return {
-      delimiters: [',', '/', '|', ';'],
-      unit: unit || ''
-    };
+  if (type === 'range' || type === 'mixed_number_range') {
+    base.range_separators = ['-', '\u2013'];
   }
-  if (template === 'latency_list_modes_ms') {
-    return {
-      delimiters: [',', ';', '|', '/'],
-      mode_aliases: {
-        wired: ['wired', 'usb', 'cable'],
-        wireless: ['wireless', '2.4g', '2.4', 'dongle'],
-        bluetooth: ['bluetooth', 'bt']
-      },
-      accept_bare_numbers_as_mode: 'unknown',
-      strict_unit_required: false,
-      unit_accepts: ['ms']
-    };
+  if (componentType) {
+    base.component_type = componentType;
   }
-  if (template === 'list_numbers_or_ranges_with_unit') {
-    return {
-      delimiters: [',', '/', '|', ';'],
-      separators: ['-', 'to', 'â€"'],
-      unit: unit || ''
-    };
-  }
-  if (template === 'mode_tagged_list' || template === 'mode_tagged_values') {
-    return {
-      modes: stableSortStrings(enumValues.length ? enumValues : ['wired', 'wireless', 'hybrid', 'bluetooth'])
-    };
-  }
-  if (template === 'range_number') {
-    return {
-      separators: ['-', 'to', 'â€"'],
-      unit: unit || ''
-    };
-  }
-  if (template === 'url_field') {
-    return {
-      require_scheme: true
-    };
-  }
-  if (template === 'date_field') {
-    return {
-      accepted_formats: ['YYYY-MM-DD', 'YYYY-MM', 'YYYY']
-    };
-  }
-  if (template === 'component_reference') {
-    return {
-      component_type: componentType || 'component',
-      exact_or_alias_match: true
-    };
-  }
-  return {};
+  return base;
 }
 
 export function buildFieldRuleDraft({
@@ -504,14 +439,7 @@ export function buildFieldRuleDraft({
   });
   const effort = isInstrumentedField ? 9 : effortFromDifficulty(difficulty);
   const enumPolicy = enumValues.length > 0 ? 'open_prefer_known' : 'open';
-  const parseTemplate = inferParseTemplate({
-    key,
-    type: inferred.type,
-    shape: inferred.shape,
-    enumValues,
-    componentType
-  });
-  const parseRules = parseRulesForTemplate(parseTemplate, { unit, enumValues, componentType });
+  const parseRules = defaultParseRules(inferred.type, inferred.shape, { unit, componentType });
   const valueForm = normalizeValueForm('', inferred.shape);
 
   const validate = {};
@@ -561,7 +489,6 @@ export function buildFieldRuleDraft({
     effort,
     enum_policy: enumPolicy,
     strict_unit_required: Boolean(unit && unit !== 'none'),
-    parse_template: parseTemplate,
     parse_rules: parseRules,
     array_handling: 'none',
     new_value_policy: {
@@ -628,9 +555,11 @@ export function buildStudioFieldRule({
   const source = parseEnumSource(rule.enum_source || enumBlock.source, key);
   const sourceRef = sourceRefToString(source);
   const policy = normalizeToken(rule.enum_policy || enumBlock.policy || 'open_prefer_known');
-  const parseTemplate = canonicalParseTemplate(rule.parse_template || ((isObject(rule.parse) ? rule.parse.template : '') || ''));
-  const contractType = normalizeToken(rule.type || 'string');
-  const contractShape = normalizeToken(rule.shape || 'scalar');
+  // WHY: parse_template eliminated. contractType drives all behavior.
+  // WHY: Fallback chain handles both merge-path objects (rule.type/shape) and
+  // studio-output passthrough objects (rule.data_type/output_shape/contract.*).
+  const contractType = normalizeToken(rule.type || rule.data_type || rule.contract?.type || 'string');
+  const contractShape = normalizeToken(rule.shape || rule.output_shape || rule.contract?.shape || 'scalar');
   const valueForm = sampleValueFormFromInternal(rule.value_form, contractShape);
   const ui = isObject(rule.ui) ? rule.ui : {};
   const vocab = isObject(rule.vocab) ? rule.vocab : {};
@@ -704,22 +633,8 @@ export function buildStudioFieldRule({
   }
 
   const nestedParse = isObject(rule.parse) ? { ...rule.parse } : {};
-  nestedParse.template = canonicalParseTemplate(nestedParse.template || parseTemplate || '') || '';
-  if (!Object.prototype.hasOwnProperty.call(nestedParse, 'unit')) {
-    const candidateUnit = normalizeText(parseRules.unit || rule.unit || '');
-    if (candidateUnit) {
-      nestedParse.unit = candidateUnit;
-    }
-  }
-  if (!Object.prototype.hasOwnProperty.call(nestedParse, 'strict_unit_required')) {
-    nestedParse.strict_unit_required = rule.strict_unit_required === true;
-  }
-  if (Array.isArray(parseRules.unit_accepts) && parseRules.unit_accepts.length > 0) {
-    nestedParse.unit_accepts = toArray(parseRules.unit_accepts).map((value) => normalizeText(value)).filter(Boolean);
-  }
-  if (isObject(parseRules.unit_conversions) && Object.keys(parseRules.unit_conversions).length > 0) {
-    nestedParse.unit_conversions = sortDeep(parseRules.unit_conversions);
-  }
+  // WHY: parse.template eliminated. Type+shape is the contract. Remove any legacy template from parse object.
+  delete nestedParse.template;
   if (Array.isArray(parseRules.delimiters) && parseRules.delimiters.length > 0) {
     nestedParse.delimiters = toArray(parseRules.delimiters).map((value) => normalizeText(value)).filter(Boolean);
   }
@@ -727,7 +642,7 @@ export function buildStudioFieldRule({
     nestedParse.range_separators = toArray(parseRules.separators).map((value) => normalizeText(value)).filter(Boolean);
   }
   for (const [parseRuleKey, parseRuleValue] of Object.entries(parseRules)) {
-    if (['unit', 'unit_accepts', 'unit_conversions', 'delimiters', 'separators'].includes(parseRuleKey)) {
+    if (['delimiters', 'separators'].includes(parseRuleKey)) {
       continue;
     }
     if (parseRuleValue !== undefined) {
@@ -915,7 +830,7 @@ export function buildStudioFieldRule({
     requiredLevel,
     availability,
     difficulty,
-    parseTemplate: nestedParse.template,
+    componentType: nestedParse.component_type || '',
     enumSource: source
   });
   const existingSearchHints = isObject(rule.search_hints) ? rule.search_hints : {};
@@ -967,10 +882,8 @@ export function buildStudioFieldRule({
     outContract.item_union = sortDeep(nestedContract.item_union);
   }
 
-  // Build parse block
-  const outParse = {
-    template: canonicalParseTemplate(nestedParse.template || parseTemplate || '')
-  };
+  // Build parse block — type-driven, no template field emitted
+  const outParse = {};
   const maybeCopy = (parseKey) => {
     const parseValue = nestedParse[parseKey];
     if (Array.isArray(parseValue) && parseValue.length > 0) {
@@ -989,25 +902,26 @@ export function buildStudioFieldRule({
       outParse[parseKey] = parseValue;
     }
   };
-  const parseTemplateToken = outParse.template;
-  if (['number_with_unit', 'integer_with_unit', 'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit', 'range_number', 'latency_list_modes_ms'].includes(parseTemplateToken)) {
-    maybeCopy('unit');
-    maybeCopy('unit_accepts');
-    maybeCopy('unit_conversions');
-    maybeCopy('strict_unit_required');
-  }
-  if (['list_of_tokens_delimited', 'list_of_numbers_with_unit', 'list_numbers_or_ranges_with_unit', 'latency_list_modes_ms'].includes(parseTemplateToken)) {
+  // WHY: Type-driven parse config. Which keys to emit depends on contract.type and shape.
+  const isNumeric = contractType === 'number' || contractType === 'integer' || contractType === 'mixed_number_range' || contractType === 'range';
+  // WHY: parse.unit* knobs retired — contract.unit is SSOT. Phase 3 adds system-wide unit registry.
+  if (contractShape === 'list') {
     maybeCopy('delimiters');
+    // WHY: Delimiters may live in parseRules instead of parse. Ensure deterministic output.
+    if (!outParse.delimiters && Array.isArray(parseRules.delimiters) && parseRules.delimiters.length > 0) {
+      outParse.delimiters = sortDeep(parseRules.delimiters);
+    }
+    if (!outParse.delimiters) {
+      outParse.delimiters = [',', '/', '|', ';'];
+    }
   }
-  if (parseTemplateToken === 'list_numbers_or_ranges_with_unit') {
+  if (contractType === 'range' || contractType === 'mixed_number_range') {
     maybeCopy('range_separators');
   }
-  if (parseTemplateToken === 'component_reference') {
+  if (nestedParse.component_type) {
     maybeCopy('component_type');
   }
   maybeCopy('token_map');
-  maybeCopy('allow_ranges');
-  maybeCopy('allow_unitless');
   maybeCopy('accepted_formats');
   maybeCopy('mode_aliases');
   maybeCopy('accept_bare_numbers_as_mode');

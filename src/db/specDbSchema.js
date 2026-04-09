@@ -173,21 +173,6 @@ CREATE TABLE IF NOT EXISTS products (
   UNIQUE(category, product_id)
 );
 
-CREATE TABLE IF NOT EXISTS product_queue (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL, product_id TEXT NOT NULL,
-  s3key TEXT DEFAULT '', status TEXT DEFAULT 'pending',
-  priority INTEGER DEFAULT 3, attempts_total INTEGER DEFAULT 0,
-  retry_count INTEGER DEFAULT 0, max_attempts INTEGER DEFAULT 3,
-  next_retry_at TEXT, last_run_id TEXT,
-  cost_usd_total REAL DEFAULT 0, rounds_completed INTEGER DEFAULT 0,
-  next_action_hint TEXT, last_urls_attempted TEXT,
-  last_error TEXT, last_started_at TEXT, last_completed_at TEXT,
-  dirty_flags TEXT, last_summary TEXT,
-  created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id)
-);
-
 CREATE TABLE IF NOT EXISTS curation_suggestions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   suggestion_id TEXT NOT NULL,
@@ -217,16 +202,6 @@ CREATE TABLE IF NOT EXISTS component_review_queue (
   UNIQUE(review_id)
 );
 
-CREATE TABLE IF NOT EXISTS product_runs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL, product_id TEXT NOT NULL, run_id TEXT NOT NULL,
-  is_latest INTEGER DEFAULT 1,
-  summary_json TEXT, validated INTEGER DEFAULT 0, confidence REAL DEFAULT 0,
-  cost_usd_run REAL DEFAULT 0, sources_attempted INTEGER DEFAULT 0,
-  run_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id, run_id)
-);
-
 CREATE TABLE IF NOT EXISTS llm_route_matrix (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -249,7 +224,6 @@ CREATE TABLE IF NOT EXISTS llm_route_matrix (
   studio_tooltip_or_description_sent_when_present INTEGER NOT NULL DEFAULT 1,
   studio_enum_options_sent_when_present INTEGER NOT NULL DEFAULT 1,
   studio_component_variance_constraints_sent_in_component_review INTEGER NOT NULL DEFAULT 1,
-  studio_parse_template_sent_direct_in_extract_review INTEGER NOT NULL DEFAULT 1,
   studio_ai_mode_difficulty_effort_sent_direct_in_extract_review INTEGER NOT NULL DEFAULT 1,
   studio_required_level_sent_in_extract_review INTEGER NOT NULL DEFAULT 1,
   studio_component_entity_set_sent_when_component_field INTEGER NOT NULL DEFAULT 1,
@@ -267,14 +241,10 @@ CREATE TABLE IF NOT EXISTS llm_route_matrix (
   UNIQUE(category, route_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_pq_category ON product_queue(category, status);
-CREATE INDEX IF NOT EXISTS idx_pq_product ON product_queue(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_cs_category ON curation_suggestions(category, suggestion_type, status);
 CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, component_type, status);
 
 
-CREATE INDEX IF NOT EXISTS idx_pr_product ON product_runs(category, product_id);
-CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, is_latest) WHERE is_latest = 1;
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
@@ -764,7 +734,6 @@ export const LLM_ROUTE_COLUMN_REGISTRY = Object.freeze([
   { key: 'studio_tooltip_or_description_sent_when_present', type: 'bool', sqlDefault: 1, promptFlag: true },
   { key: 'studio_enum_options_sent_when_present', type: 'bool', sqlDefault: 1, promptFlag: true },
   { key: 'studio_component_variance_constraints_sent_in_component_review', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
-  { key: 'studio_parse_template_sent_direct_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
   { key: 'studio_ai_mode_difficulty_effort_sent_direct_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
   { key: 'studio_required_level_sent_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
   { key: 'studio_component_entity_set_sent_when_component_field', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
@@ -790,7 +759,6 @@ export const COMPONENT_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'over
 export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
 export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs_ai_review', 'ai_review_complete']);
 export const KEY_REVIEW_STATE_BOOLEAN_KEYS = Object.freeze(['ai_confirm_primary_interrupted', 'ai_confirm_shared_interrupted', 'user_override_ai_primary', 'user_override_ai_shared']);
-export const PRODUCT_RUN_BOOLEAN_KEYS = Object.freeze(['is_latest', 'validated']);
 export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
 
 // WHY: SSOT for component identity property keys (synthetic __-prefixed keys).

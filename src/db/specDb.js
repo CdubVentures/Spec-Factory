@@ -84,13 +84,7 @@ export class SpecDb {
     this._queueProductStore = createQueueProductStore({
       db: this.db, category: this.category,
       stmts: {
-        _upsertQueueProduct: this._upsertQueueProduct,
-        _upsertProductRun: this._upsertProductRun,
         _upsertProduct: this._upsertProduct,
-        _updateRunStorageLocation: this._updateRunStorageLocation,
-        _getRunStorageLocation: this._getRunStorageLocation,
-        _listRunsByStorageState: this._listRunsByStorageState,
-        _countRunsByStorageState: this._countRunsByStorageState,
       }
     });
     this._llmRouteSourceStore = createLlmRouteSourceStore({
@@ -348,14 +342,9 @@ export class SpecDb {
       fields: Object.fromEntries(rows.filter(r => r.value != null).map(r => [r.field_key, r.value])),
     };
   }
-  getSummaryForProduct(productId) {
-    const run = this.getLatestProductRun(productId);
-    return run?.summary || null;
-  }
-  getTrafficLightForProduct(productId) {
-    const run = this.getLatestProductRun(productId);
-    return run?.summary?.traffic_light || null;
-  }
+  // WHY: Stubs for review grid pre-wiring. Will be backed by real data source later.
+  getSummaryForProduct() { return null; }
+  getTrafficLightForProduct() { return null; }
 
   // --- Reverse-Lookup Queries (component/enum review) ---
 
@@ -640,15 +629,7 @@ export class SpecDb {
     return null;
   }
 
-  // --- Product / Run / Audit / Stale / Curation / Component Review ---
-
-  upsertProductRun(row) { this._queueProductStore.upsertProductRun(row); }
-  getLatestProductRun(pid) { return this._queueProductStore.getLatestProductRun(pid); }
-  getProductRuns(pid) { return this._queueProductStore.getProductRuns(pid); }
-  updateRunStorageLocation(opts) { this._queueProductStore.updateRunStorageLocation(opts); }
-  getRunStorageLocation(opts) { return this._queueProductStore.getRunStorageLocation(opts); }
-  listRunsByStorageState(state) { return this._queueProductStore.listRunsByStorageState(state); }
-  countRunsByStorageState() { return this._queueProductStore.countRunsByStorageState(); }
+  // --- Product / Curation / Component Review ---
 
   upsertProduct(row) { this._queueProductStore.upsertProduct(row); }
   getProduct(pid) { return this._queueProductStore.getProduct(pid); }
@@ -698,7 +679,7 @@ export class SpecDb {
     const tables = [
       'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
-      'item_list_links', 'product_queue', 'product_runs', 'products',
+      'item_list_links', 'products',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries',

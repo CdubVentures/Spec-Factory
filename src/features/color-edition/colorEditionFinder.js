@@ -104,6 +104,7 @@ export async function runColorEditionFinder({
   logger = null,
   productRoot,
   _callLlmOverride = null,
+  onStageAdvance = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
   const resolvedModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
@@ -124,6 +125,7 @@ export async function runColorEditionFinder({
   let response;
   try {
     response = await callLlm({ colorNames, colors: allColors, product, previousRuns });
+    onStageAdvance?.(1);
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -186,9 +188,12 @@ export async function runColorEditionFinder({
     gateEditions = reconcileEditionColors(editions, repairMap);
 
     // Step 4: Validate editions (pure — no writes yet)
+    // WHY: editions field rule expects shape=list (array of slug strings).
+    // CEF stores the full Record internally; extract slugs for field-level validation.
     if (fieldRules.editions) {
+      const editionSlugs = Object.keys(gateEditions);
       const editionsValidation = validateField({
-        fieldKey: 'editions', value: gateEditions,
+        fieldKey: 'editions', value: editionSlugs,
         fieldRule: fieldRules.editions,
         knownValues: knownValues?.editions || null,
       });
@@ -209,8 +214,9 @@ export async function runColorEditionFinder({
     });
     submitCandidate({
       category: product.category, productId: product.product_id,
-      fieldKey: 'editions', value: gateEditions, confidence: 100,
+      fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+      metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
     });
   }
   // If no compiled rules available, gate is skipped — CEF proceeds as before

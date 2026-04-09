@@ -44,9 +44,6 @@ function makeQueueCtx(overrides = {}) {
     path: { join: (...parts) => parts.join('/') },
     getSpecDb: () => null,
     buildReviewQueue: async () => [],
-    loadQueueState: async () => ({ state: { products: {} } }),
-    saveQueueState: async () => ({ ok: true }),
-    upsertQueueProduct: async () => ({ ok: true }),
     broadcastWs: () => {},
     safeReadJson: async () => null,
     safeStat: async () => null,
@@ -77,22 +74,3 @@ test('config routes: llm settings update emits typed data-change contract', asyn
   assert.deepEqual(emitted[0].payload.domains, ['settings', 'indexing']);
 });
 
-test('queue routes: retry emits typed data-change contract', async () => {
-  const emitted = [];
-  const handler = registerQueueBillingLearningRoutes(makeQueueCtx({
-    readJsonBody: async () => ({ productId: 'mouse-razer-viper-v3-pro' }),
-    upsertQueueProduct: async () => ({ ok: true }),
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
-  }));
-
-  const result = await handler(['queue', 'mouse', 'retry'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(emitted.length, 1);
-  assert.equal(emitted[0].channel, 'data-change');
-  assert.equal(emitted[0].payload.type, 'data-change');
-  assert.equal(emitted[0].payload.event, 'queue-retry');
-  assert.equal(emitted[0].payload.category, 'mouse');
-  assert.deepEqual(emitted[0].payload.categories, ['mouse']);
-  assert.deepEqual(emitted[0].payload.domains, ['queue']);
-  assert.deepEqual(emitted[0].payload.entities.productIds, ['mouse-razer-viper-v3-pro']);
-});

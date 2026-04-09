@@ -17,9 +17,7 @@ import {
   normalizeValueForm,
   parseEnumSource
 } from './compileFieldRuleBuilder.js';
-import {
-  canonicalParseTemplate
-} from './compileFieldInference.js';
+import { VALID_TYPES, VALID_SHAPES, validateTypeShapeCombo } from '../field-rules/typeCoercionRegistry.js';
 
 export function buildParseTemplateCatalog() {
   return {
@@ -99,28 +97,8 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     ...Object.keys(componentDb || {}).map((type) => normalizeFieldKey(type)).filter(Boolean),
     ...declaredComponentTypesFromMap(map),
   ]);
-  const validParseTemplates = new Set([
-    'text_field',
-    'string',
-    'enum_string',
-    'boolean_yes_no_unk',
-    'boolean_yes_no_unknown',
-    'number_with_unit',
-    'integer_with_unit',
-    'list_of_tokens_delimited',
-    'list_of_numbers_with_unit',
-    'list_numbers_or_ranges_with_unit',
-    'latency_list_modes_ms',
-    'mode_tagged_list',
-    'mode_tagged_values',
-    'range_number',
-    'url_field',
-    'date_field',
-    'component_reference',
-    'price_range_string',
-    'year_field',
-    'integer_field'
-  ]);
+  // WHY: Type/shape validation uses VALID_TYPES and VALID_SHAPES from typeCoercionRegistry.
+  // No more validParseTemplates — parse.template is eliminated.
 
   for (const [fieldKey, rule] of Object.entries(fields || {})) {
     const priority = isObject(rule.priority) ? rule.priority : {};
@@ -138,8 +116,8 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     const resolvedDifficulty = normalizeToken(rule.difficulty || priority.difficulty || '');
     const resolvedEffort = asInt(rule.effort, asInt(priority.effort, 0));
     const resolvedEnumPolicy = normalizeToken(rule.enum_policy || enumObj.policy || 'open_prefer_known');
-    const resolvedParseTemplate = canonicalParseTemplate(rule.parse_template || parse.template);
-    const resolvedUnit = normalizeText(rule.unit || contract.unit || parse.unit || '');
+    // WHY: parse_template eliminated. Type+shape is the contract.
+    const resolvedUnit = normalizeText(rule.unit || contract.unit || '');
     const resolvedRound = normalizeToken(
       rule.round
       || (() => {
@@ -149,11 +127,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
         if (decimals === 2) return '2dp';
         return '';
       })()
-    );
-    const resolvedStrictUnitRequired = (
-      typeof rule.strict_unit_required === 'boolean'
-        ? rule.strict_unit_required
-        : (typeof parse.strict_unit_required === 'boolean' ? parse.strict_unit_required : undefined)
     );
     const resolvedListRules = isObject(rule.list_rules)
       ? rule.list_rules
@@ -193,11 +166,15 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     if (!rule.key || normalizeFieldKey(rule.key) !== fieldKey) {
       errors.push(`field ${fieldKey}: missing/invalid key`);
     }
-    if (!['number', 'integer', 'string', 'boolean', 'date', 'url', 'object'].includes(resolvedType)) {
+    if (!VALID_TYPES.has(resolvedType)) {
       errors.push(`field ${fieldKey}: invalid type '${resolvedType || rule.type}'`);
     }
-    if (!['scalar', 'list', 'range', 'object'].includes(resolvedShape)) {
+    if (!VALID_SHAPES.has(resolvedShape)) {
       errors.push(`field ${fieldKey}: invalid shape '${resolvedShape || rule.shape}'`);
+    }
+    const typeShapeCheck = validateTypeShapeCombo(resolvedType, resolvedShape);
+    if (!typeShapeCheck.valid) {
+      errors.push(`field ${fieldKey}: ${typeShapeCheck.reason}`);
     }
     const valueForm = resolvedValueForm;
     if (!['scalar', 'list', 'range', 'mixed_values_and_ranges', 'list_of_objects'].includes(valueForm)) {
@@ -252,70 +229,18 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
         errors.push(`field ${fieldKey}: ui.tooltip_md key or ui.tooltip_key is required`);
       }
     }
-    const parseTemplate = resolvedParseTemplate;
-    if (!parseTemplate) {
-      errors.push(`field ${fieldKey}: parse_template is required`);
-    } else if (!validParseTemplates.has(parseTemplate)) {
-      errors.push(`field ${fieldKey}: unsupported parse_template '${parseTemplate}'`);
-    }
+    // WHY: Type-driven validation — no parse_template checks.
     if (normalizeToken(resolvedShape) === 'list') {
       if (!isObject(resolvedListRules) || Object.keys(resolvedListRules).length === 0) {
         errors.push(`field ${fieldKey}: list shape requires list_rules`);
       }
     }
-    if (normalizeToken(resolvedShape) === 'object') {
-      if (!isObject(resolvedObjectSchema) || Object.keys(resolvedObjectSchema).length === 0) {
-        errors.push(`field ${fieldKey}: object shape requires object_schema`);
+    // Unit required for numeric types (except integer without unit context)
+    if ((resolvedType === 'number' || resolvedType === 'integer' || resolvedType === 'mixed_number_range' || resolvedType === 'range') && !normalizeText(resolvedUnit)) {
+      // WHY: Allow unitless integers (e.g., key_count, button_count) — only warn, don't error
+      if (resolvedType !== 'integer') {
+        warnings.push(`field ${fieldKey}: numeric type '${resolvedType}' without unit declared`);
       }
-    }
-    if (parseTemplate === 'number_with_unit' || parseTemplate === 'integer_with_unit' || parseTemplate === 'list_of_numbers_with_unit' || parseTemplate === 'range_number' || parseTemplate === 'list_numbers_or_ranges_with_unit') {
-      if (!normalizeText(resolvedUnit)) {
-        errors.push(`field ${fieldKey}: unit required for ${parseTemplate}`);
-      }
-    } else if (parseTemplate === 'latency_list_modes_ms') {
-      if (normalizeToken(resolvedShape) !== 'list') {
-        errors.push(`field ${fieldKey}: latency_list_modes_ms requires shape=list`);
-      }
-      if (normalizeToken(resolvedType) !== 'object') {
-        errors.push(`field ${fieldKey}: latency_list_modes_ms requires type=object`);
-      }
-      if (!normalizeText(resolvedUnit)) {
-        errors.push(`field ${fieldKey}: latency_list_modes_ms requires unit (ms)`);
-      }
-      const objectSchema = isObject(resolvedObjectSchema) ? resolvedObjectSchema : {};
-      if (!isObject(objectSchema) || Object.keys(objectSchema).length === 0) {
-        errors.push(`field ${fieldKey}: latency_list_modes_ms requires object_schema`);
-      }
-    } else if (
-      (resolvedType === 'number' || resolvedType === 'integer')
-      && !normalizeText(resolvedUnit)
-      && !['integer_field', 'price_range_string', 'year_field'].includes(parseTemplate)
-    ) {
-      errors.push(`field ${fieldKey}: numeric fields must declare unit`);
-    }
-    const listTemplates = new Set([
-      'list_of_tokens_delimited',
-      'list_of_numbers_with_unit',
-      'mode_tagged_list',
-      'mode_tagged_values',
-      'latency_list_modes_ms',
-      'list_numbers_or_ranges_with_unit'
-    ]);
-    if (listTemplates.has(parseTemplate) && normalizeToken(resolvedShape) !== 'list') {
-      errors.push(`field ${fieldKey}: parse_template '${parseTemplate}' requires shape=list`);
-    }
-    if (parseTemplate === 'component_reference') {
-      const parsedEnumSourceForComponent = resolvedEnumSource;
-      const inferredComponentType = inferComponentTypeForField(fieldKey, componentTypes);
-      const hasComponentSource = normalizeToken(parsedEnumSourceForComponent?.type || '') === 'component_db'
-        || (isObject(rule.component) && normalizeToken(parseEnumSource(rule.component.source || `component_db.${rule.component.type || ''}`)?.type || '') === 'component_db')
-        || Boolean(inferredComponentType);
-      if (!hasComponentSource) {
-        errors.push(`field ${fieldKey}: component_reference requires component_db source`);
-      }
-    }
-    if ((resolvedType === 'number' || resolvedType === 'integer') && ['text_field', 'string', 'enum_string'].includes(parseTemplate)) {
-      errors.push(`field ${fieldKey}: numeric field parse_template '${parseTemplate}' is incompatible`);
     }
     const enumSource = resolvedEnumSource;
     const hasInlineKnownValues = toArray(rule.vocab?.known_values).length > 0;
@@ -373,13 +298,11 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
         errors.push(`field ${fieldKey}: selection_policy.mode_preference must be an array when provided`);
       }
     }
-    if ((resolvedShape === 'list') && parseTemplate !== 'list_of_tokens_delimited' && parseTemplate !== 'list_of_numbers_with_unit' && parseTemplate !== 'mode_tagged_list' && parseTemplate !== 'mode_tagged_values' && parseTemplate !== 'latency_list_modes_ms' && parseTemplate !== 'list_numbers_or_ranges_with_unit') {
-      warnings.push(`field ${fieldKey}: list shape with parse template '${parseTemplate}' may be inconsistent`);
-    }
-    if (resolvedShape === 'list' && ['list_of_tokens_delimited', 'list_of_numbers_with_unit', 'mode_tagged_list', 'mode_tagged_values', 'latency_list_modes_ms', 'list_numbers_or_ranges_with_unit'].includes(parseTemplate)) {
+    // WHY: Delimiter check for list fields — extraction may need delimiters for parsing
+    if (resolvedShape === 'list') {
       const delimiters = toArray(parseRules?.delimiters || parse?.delimiters);
-      if (delimiters.length === 0 && parseTemplate !== 'mode_tagged_list' && parseTemplate !== 'mode_tagged_values') {
-        errors.push(`field ${fieldKey}: list parse template requires parse_rules.delimiters`);
+      if (delimiters.length === 0 && resolvedType === 'string') {
+        warnings.push(`field ${fieldKey}: string list without delimiters configured`);
       }
     }
     if (isObject(rule.surfaces)) {

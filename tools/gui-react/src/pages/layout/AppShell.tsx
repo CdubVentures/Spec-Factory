@@ -17,6 +17,7 @@ import {
 import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
 import { useCategorySync } from './hooks/useCategorySync.ts';
 import { useWsEventBridge } from './hooks/useWsEventBridge.ts';
+import { useOperationsHydration } from '../../features/operations/index.ts';
 
 function ThemeSwatchCard({
   themeId,
@@ -58,6 +59,7 @@ export function AppShell() {
   const { category, processStatus } = useCategorySync();
   const queryClient = useQueryClient();
   useWsEventBridge({ category, queryClient });
+  useOperationsHydration();
 
   // ── Theme ─────────────────────────────────────────────────────────
   const themeColorProfile = useUiStore((s) => s.themeColorProfile);

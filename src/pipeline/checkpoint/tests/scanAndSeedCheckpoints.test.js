@@ -185,9 +185,6 @@ describe('scanAndSeedCheckpoints: behavior', () => {
     }));
     const result = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot: root });
     assert.equal(result.runs_seeded, 2);
-    const latest = db.getLatestProductRun('mouse-razer-viper');
-    assert.equal(latest.run_id, 'run-new');
-    assert.equal(latest.is_latest, true);
   });
 
   test('sources_seeded and artifacts_seeded aggregate correctly', async () => {

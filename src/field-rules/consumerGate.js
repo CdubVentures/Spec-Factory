@@ -44,12 +44,7 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'ai_assist.model_strategy': [['ai_assist', 'model_strategy']],
   'ai_assist.max_tokens': [['ai_assist', 'max_tokens']],
   'ai_assist.reasoning_note': [['ai_assist', 'reasoning_note']],
-  'parse.template': [['parse', 'template'], ['parse_template']],
-  'parse.unit': [['parse', 'unit']],
-  'parse.unit_accepts': [['parse', 'unit_accepts']],
-  'parse.allow_unitless': [['parse', 'allow_unitless']],
-  'parse.allow_ranges': [['parse', 'allow_ranges']],
-  'parse.strict_unit_required': [['parse', 'strict_unit_required']],
+  // WHY: parse.template retired — type+shape is the contract.
   'enum.policy': [['enum', 'policy'], ['enum_policy']],
   'enum.source': [['enum', 'source'], ['enum_source']],
   'enum.match.strategy': [['enum', 'match', 'strategy']],
@@ -285,10 +280,7 @@ function projectParseTemplatesForConsumer(parseTemplates, disabledPathsByField) 
   const nextTemplates = {};
   let changed = false;
   for (const [fieldKey, templateRow] of Object.entries(parseTemplates.templates)) {
-    if (isPathDisabled(disabledPathsByField, fieldKey, 'parse.template')) {
-      changed = true;
-      continue;
-    }
+    // WHY: parse.template path retired. Extraction patterns (parse_templates.json) always pass through.
     nextTemplates[fieldKey] = templateRow;
   }
 

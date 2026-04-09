@@ -114,28 +114,5 @@ export async function handleIndexLabProcessCompletion({
     getSpecDb,
   });
 
-  // Record storage location in SQL
-  const category = parseCliArg(cliArgs, '--category');
-  const productId = parseCliArg(cliArgs, '--product-id');
-  const runId = parseCliArg(cliArgs, '--run-id');
-  if (typeof getSpecDb === 'function' && category) {
-    try {
-      const db = getSpecDb(category);
-      if (db && runId) {
-        db.updateRunStorageLocation({
-          productId,
-          runId,
-          storageState: 'live',
-          localPath: effectiveIndexLabRoot,
-          s3Key: '',
-          sizeBytes: 0,
-          relocatedAt: '',
-        });
-      }
-    } catch (err) {
-      logError?.('[indexlab-completion] failed to record storage location', err);
-    }
-  }
-
   return null;
 }

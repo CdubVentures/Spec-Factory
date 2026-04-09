@@ -63,7 +63,7 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot
     }
   }
 
-  // Phase 2: Crawl checkpoints (runs second → seeds product_runs with is_latest logic)
+  // Phase 2: Crawl checkpoints (runs second → seeds runs + artifacts)
   const topDirs = await listDirs(indexLabRoot);
   const runEntries = [];
   for (const dir of topDirs) {

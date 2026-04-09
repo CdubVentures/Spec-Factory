@@ -2,8 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateField } from '../validateField.js';
 
-// --- Helper: build a minimal field rule ---
-function rule({ shape = 'scalar', type = 'string', unit, template = 'text_field', tokenMap, rounding, range, listRules, enumPolicy } = {}) {
+// --- Helper: build a minimal field rule (type-driven, no templates) ---
+function rule({ shape = 'scalar', type = 'string', unit, tokenMap, rounding, range, listRules, enumPolicy } = {}) {
   return {
     contract: {
       shape,
@@ -14,20 +14,17 @@ function rule({ shape = 'scalar', type = 'string', unit, template = 'text_field'
       ...(listRules ? { list_rules: listRules } : {}),
     },
     parse: {
-      template,
       ...(tokenMap ? { token_map: tokenMap } : {}),
-      ...(unit ? { unit_accepts: [unit] } : {}),
     },
     enum: enumPolicy ? { policy: enumPolicy } : {},
-    ui: rounding ? { display_decimals: rounding.decimals } : {},
   };
 }
 
 // ============================================================
-// text_field (scalar string, 140 fields)
+// string (scalar, the most common type)
 // ============================================================
 
-describe('validateField — text_field', () => {
+describe('validateField — string', () => {
   const textRule = rule();
 
   it('clean passthrough', () => {
@@ -73,11 +70,11 @@ describe('validateField — text_field', () => {
 });
 
 // ============================================================
-// number_with_unit (scalar number, 78 fields)
+// number (scalar, with unit)
 // ============================================================
 
-describe('validateField — number_with_unit', () => {
-  const numRule = rule({ type: 'number', unit: 'g', template: 'number_with_unit' });
+describe('validateField — number', () => {
+  const numRule = rule({ type: 'number', unit: 'g' });
 
   it('clean number passthrough', () => {
     const r = validateField({ fieldKey: 'weight', value: 42, fieldRule: numRule });
@@ -86,7 +83,7 @@ describe('validateField — number_with_unit', () => {
   });
 
   it('string number coerced + unit stripped', () => {
-    const r = validateField({ fieldKey: 'weight', value: '120 mm', fieldRule: rule({ type: 'number', unit: 'mm', template: 'number_with_unit' }) });
+    const r = validateField({ fieldKey: 'weight', value: '120 mm', fieldRule: rule({ type: 'number', unit: 'mm' }) });
     assert.equal(r.valid, true);
     assert.equal(r.value, 120);
   });
@@ -95,7 +92,7 @@ describe('validateField — number_with_unit', () => {
     const r = validateField({
       fieldKey: 'weight',
       value: '42.567',
-      fieldRule: rule({ type: 'number', unit: 'g', template: 'number_with_unit', rounding: { decimals: 0, mode: 'nearest' } }),
+      fieldRule: rule({ type: 'number', unit: 'g', rounding: { decimals: 0, mode: 'nearest' } }),
     });
     assert.equal(r.valid, true);
     assert.equal(r.value, 43);
@@ -111,7 +108,7 @@ describe('validateField — number_with_unit', () => {
     const r = validateField({
       fieldKey: 'weight',
       value: 101,
-      fieldRule: rule({ type: 'number', unit: 'g', template: 'number_with_unit', range: { min: 0, max: 100 } }),
+      fieldRule: rule({ type: 'number', unit: 'g', range: { min: 0, max: 100 } }),
     });
     assert.equal(r.valid, false);
     assert.ok(r.rejections.some(rej => rej.reason_code.includes('range')));
@@ -131,19 +128,19 @@ describe('validateField — number_with_unit', () => {
 });
 
 // ============================================================
-// boolean_yes_no_unk (scalar string, 35 fields)
+// boolean (scalar)
 // ============================================================
 
-describe('validateField — boolean_yes_no_unk', () => {
-  const boolRule = rule({ template: 'boolean_yes_no_unk' });
+describe('validateField — boolean', () => {
+  const boolRule = rule({ type: 'boolean' });
 
-  it('"true" dispatched to "yes"', () => {
+  it('"true" coerced to "yes"', () => {
     const r = validateField({ fieldKey: 'wireless', value: 'true', fieldRule: boolRule });
     assert.equal(r.valid, true);
     assert.equal(r.value, 'yes');
   });
 
-  it('"no" clean passthrough', () => {
+  it('"no" passthrough', () => {
     const r = validateField({ fieldKey: 'wireless', value: 'no', fieldRule: boolRule });
     assert.equal(r.valid, true);
     assert.equal(r.value, 'no');
@@ -163,27 +160,27 @@ describe('validateField — boolean_yes_no_unk', () => {
 });
 
 // ============================================================
-// list_of_tokens_delimited (list string[], 21 fields)
+// string list (shape=list, extraction submits arrays)
 // ============================================================
 
-describe('validateField — list_of_tokens_delimited', () => {
-  const listRule = rule({ shape: 'list', template: 'list_of_tokens_delimited', listRules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 } });
+describe('validateField — string list', () => {
+  const listRule = rule({ shape: 'list', listRules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 } });
   const knownColors = { policy: 'closed', values: ['black', 'white', 'red'] };
 
-  it('dispatched + enum pass', () => {
-    const r = validateField({ fieldKey: 'colors', value: 'Black, White, Red', fieldRule: listRule, knownValues: knownColors });
+  it('array of strings + enum pass', () => {
+    const r = validateField({ fieldKey: 'colors', value: ['black', 'white', 'red'], fieldRule: listRule, knownValues: knownColors });
     assert.equal(r.valid, true);
     assert.deepStrictEqual(r.value, ['black', 'white', 'red']);
   });
 
-  it('dispatched + deduped', () => {
-    const r = validateField({ fieldKey: 'colors', value: 'Black, Black, White', fieldRule: listRule, knownValues: { policy: 'closed', values: ['black', 'white'] } });
+  it('deduped', () => {
+    const r = validateField({ fieldKey: 'colors', value: ['black', 'black', 'white'], fieldRule: listRule, knownValues: { policy: 'closed', values: ['black', 'white'] } });
     assert.equal(r.valid, true);
     assert.deepStrictEqual(r.value, ['black', 'white']);
   });
 
   it('unknown enum value rejected (closed)', () => {
-    const r = validateField({ fieldKey: 'colors', value: 'Black, Pink', fieldRule: listRule, knownValues: knownColors });
+    const r = validateField({ fieldKey: 'colors', value: ['black', 'pink'], fieldRule: listRule, knownValues: knownColors });
     assert.equal(r.valid, false);
   });
 
@@ -191,6 +188,12 @@ describe('validateField — list_of_tokens_delimited', () => {
     const r = validateField({ fieldKey: 'colors', value: null, fieldRule: listRule });
     assert.equal(r.valid, true);
     assert.deepStrictEqual(r.value, []);
+  });
+
+  it('string where list expected → wrong shape rejection', () => {
+    const r = validateField({ fieldKey: 'colors', value: 'Black, White', fieldRule: listRule });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'wrong_shape'));
   });
 });
 
@@ -202,7 +205,7 @@ describe('validateField — enum match_strategy: alias', () => {
   function aliasRule(extra = {}) {
     return {
       contract: { shape: 'scalar', type: 'string' },
-      parse: { template: 'text_field' },
+      parse: {},
       enum: { policy: 'closed', match: { strategy: 'alias' } },
       ...extra,
     };
@@ -216,7 +219,6 @@ describe('validateField — enum match_strategy: alias', () => {
       knownValues: { policy: 'closed', values: ['3 Zone (RGB)', '4 Zone (RGB)', 'None'] },
     });
     assert.equal(r.valid, true);
-    // WHY: normalization lowercases first, then enum alias resolves to canonical
     assert.equal(r.value, '3 Zone (RGB)');
     assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
   });
@@ -246,7 +248,7 @@ describe('validateField — enum match_strategy: alias', () => {
   it('strategy: exact (explicit) — case mismatch rejects', () => {
     const exactRule = {
       contract: { shape: 'scalar', type: 'string' },
-      parse: { template: 'text_field' },
+      parse: {},
       enum: { policy: 'closed', match: { strategy: 'exact' } },
     };
     const r = validateField({
@@ -255,7 +257,6 @@ describe('validateField — enum match_strategy: alias', () => {
       fieldRule: exactRule,
       knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
     });
-    // WHY: normalization lowercases, but exact match against '3 Zone (RGB)' fails
     assert.equal(r.valid, false);
   });
 });
@@ -271,7 +272,7 @@ describe('validateField — block_publish_when_unk', () => {
       value: null,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
-        parse: { template: 'number_with_unit' },
+        parse: {},
         priority: { block_publish_when_unk: true },
       },
     });
@@ -285,7 +286,7 @@ describe('validateField — block_publish_when_unk', () => {
       value: null,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
-        parse: { template: 'number_with_unit' },
+        parse: {},
         priority: { block_publish_when_unk: false },
       },
     });
@@ -299,7 +300,7 @@ describe('validateField — block_publish_when_unk', () => {
       value: 42,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
-        parse: { template: 'number_with_unit' },
+        parse: {},
         priority: { block_publish_when_unk: true },
       },
     });
@@ -313,11 +314,10 @@ describe('validateField — block_publish_when_unk', () => {
       value: 'n/a',
       fieldRule: {
         contract: { shape: 'scalar', type: 'string' },
-        parse: { template: 'text_field' },
+        parse: {},
         priority: { block_publish_when_unk: true },
       },
     });
-    // WHY: 'n/a' is an unk token → absence normalizer converts to 'unk' → blocked
     assert.equal(r.valid, false);
     assert.ok(r.rejections.some(rej => rej.reason_code === 'unk_blocks_publish'));
   });
@@ -348,6 +348,34 @@ describe('validateField — edge cases', () => {
   it('repairPrompt is null when no unknowns', () => {
     const r = validateField({ fieldKey: 'x', value: 'hello', fieldRule: rule() });
     assert.equal(r.repairPrompt, null);
+  });
+});
+
+// ============================================================
+// Bug fix: [object Object] prevention
+// ============================================================
+
+describe('validateField — shape-before-coercion bug fix', () => {
+  it('object with scalar shape → clean wrong_shape rejection (NOT [object Object])', () => {
+    const r = validateField({
+      fieldKey: 'model',
+      value: { nested: true },
+      fieldRule: { contract: { type: 'string', shape: 'scalar' } },
+    });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'wrong_shape'));
+    assert.notEqual(r.value, '[object Object]');
+    assert.notEqual(r.value, '[object object]');
+  });
+
+  it('object with list shape → wrong_shape rejection (not an array)', () => {
+    const r = validateField({
+      fieldKey: 'colors',
+      value: { 'cod-edition': { colors: ['black'] } },
+      fieldRule: { contract: { type: 'string', shape: 'list' } },
+    });
+    assert.equal(r.valid, false);
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'wrong_shape'));
   });
 });
 
@@ -408,7 +436,7 @@ describe('validateField — consistencyMode', () => {
     const listKv = { policy: 'open', values: ['alpha', 'beta'] };
     const r = validateField({
       fieldKey: 'x', value: ['unknown-item'],
-      fieldRule: rule({ shape: 'list', enumPolicy: 'open', template: 'list_of_tokens_delimited' }),
+      fieldRule: rule({ shape: 'list', enumPolicy: 'open' }),
       knownValues: listKv, consistencyMode: true,
     });
     assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));

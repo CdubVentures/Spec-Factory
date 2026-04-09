@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/index.js';
 
 function cleanProductJsonCandidates(productId, fieldKeys) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
@@ -74,12 +75,21 @@ export function registerColorEditionFinderRoutes(ctx) {
 
     // POST /color-edition-finder/:category/:productId — trigger finder
     if (method === 'POST' && category && productId && !parts[3]) {
+      let op = null;
       try {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+        op = registerOperation({
+          type: 'cef',
+          category,
+          productId,
+          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          stages: ['LLM', 'Validate'],
+        });
 
         const result = await runColorEditionFinder({
           product: {
@@ -93,7 +103,14 @@ export function registerColorEditionFinderRoutes(ctx) {
           specDb,
           config,
           logger: logger || null,
+          onStageAdvance: (idx) => updateStage({ id: op.id, stageIndex: idx }),
         });
+
+        if (result.rejected) {
+          failOperation({ id: op.id, error: 'Validation rejected' });
+        } else {
+          completeOperation({ id: op.id });
+        }
 
         emitDataChange({
           broadcastWs,
@@ -111,6 +128,7 @@ export function registerColorEditionFinderRoutes(ctx) {
           fallbackUsed: result.fallbackUsed,
         });
       } catch (err) {
+        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
         const message = err instanceof Error ? err.message : String(err);
         console.error('[color-edition-finder] POST failed:', message);
         return jsonRes(res, 500, { error: 'finder failed', message });

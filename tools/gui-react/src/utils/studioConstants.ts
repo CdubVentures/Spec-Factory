@@ -28,9 +28,6 @@ export const DOMAIN_HINT_SUGGESTIONS = [
 export const CONTENT_TYPE_SUGGESTIONS = [
   'spec_sheet', 'datasheet', 'review', 'manual', 'pdf', 'product_page', 'support', 'forum',
 ];
-export const UNIT_ACCEPTS_SUGGESTIONS = [
-  'g', 'grams', 'gram', 'gr', 'mm', 'millimeters', 'Hz', 'hertz', 'dpi', 'ips', 'ms', 'milliseconds', 'h', 'hours',
-];
 // ── Tier definitions for TierPicker ─────────────────────────────────
 export const TIER_DEFS = [
   { id: 'tier1', label: 'Tier 1 \u2013 Manufacturer (OEM specs)' },
@@ -93,15 +90,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   effort: 'Relative extraction effort. 1 = trivial lookup, 10 = multi-source synthesis. Affects pipeline scheduling.',
   publish_gate: 'If checked, this field MUST have a non-unknown value before the product spec can be published.',
   block_publish_when_unk: 'If checked, products with this field set to the unknown token cannot be published.',
-
-  // Tab 2: Key Navigator - Parse
-  key_section_parse: 'Parse rules control how source text is interpreted and converted into this field\'s stored value.',
-  parse_template: 'Parse Template defines the output type/shape (boolean/number/list/url/component). Boolean templates auto-lock enums to Yes/No. Component_reference templates auto-set alias matching. All other templates leave enum fully configurable.',
-  parse_unit: 'Default unit assumed when source text has no explicit unit. E.g. \'g\' so \'80\' becomes \'80 g\'. Only shown for number-based templates.',
-  unit_accepts: 'Unit variations the parser recognizes. E.g. for grams: g, grams, gram, gr. Only shown for number-based templates.',
-  allow_unitless: 'Accept numbers without a unit. The Parse Unit is assumed.',
-  allow_ranges: 'Accept range values like \'60-80 g\' or \'100~200 mm\'.',
-  strict_unit_required: 'Values MUST include a unit suffix. Rejects bare numbers. Overrides Allow unitless.',
 
   // Tab 2: Key Navigator - Enum
   key_section_enum: 'Enum policy and enum source define accepted vocabulary, matching behavior, and suggestions for this field.',
