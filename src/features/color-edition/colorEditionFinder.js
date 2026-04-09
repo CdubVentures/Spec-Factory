@@ -30,14 +30,36 @@ function reconcileEditionColors(editions, repairMap) {
   return result;
 }
 
-function storeFailureAndReturn({ specDb, product, existing, model, rejections, raw }) {
+function storeFailureAndReturn({ specDb, product, existing, model, rejections, raw, productRoot }) {
   const now = new Date();
-  const runNumber = (existing?.run_count || 0) + 1;
+  const ranAt = now.toISOString();
+
+  // WHY: Rejected runs MUST persist to JSON (durable SSOT) to prevent
+  // run_number collisions and SQL/JSON desync.
+  const merged = mergeColorEditionDiscovery({
+    productId: product.product_id,
+    productRoot,
+    newDiscovery: {
+      category: product.category,
+      cooldown_until: '',
+      last_ran_at: ranAt,
+    },
+    run: {
+      model,
+      fallback_used: false,
+      status: 'rejected',
+      selected: {},
+      prompt: {},
+      response: { status: 'rejected', raw, rejections },
+    },
+  });
+
+  const latestRun = merged.runs[merged.runs.length - 1];
   specDb.insertColorEditionFinderRun({
     category: product.category,
     product_id: product.product_id,
-    run_number: runNumber,
-    ran_at: now.toISOString(),
+    run_number: latestRun.run_number,
+    ran_at: ranAt,
     model,
     fallback_used: false,
     cooldown_until: '',
@@ -45,6 +67,19 @@ function storeFailureAndReturn({ specDb, product, existing, model, rejections, r
     prompt: {},
     response: { status: 'rejected', raw, rejections },
   });
+
+  // Update SQL summary with correct run_count (includes rejected)
+  specDb.upsertColorEditionFinder({
+    category: product.category,
+    product_id: product.product_id,
+    colors: merged.selected?.colors || [],
+    editions: Object.keys(merged.selected?.editions || {}),
+    default_color: merged.selected?.default_color || '',
+    cooldown_until: merged.cooldown_until || '',
+    latest_ran_at: ranAt,
+    run_count: merged.run_count,
+  });
+
   return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections };
 }
 
@@ -71,7 +106,7 @@ export async function runColorEditionFinder({
   _callLlmOverride = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
-  const resolvedModel = resolvePhaseModel(config, 'colorFinder') || resolvedModel;
+  const resolvedModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
   const allColors = appDb.listColors();
   const colorNames = allColors.map(c => c.name);
 
@@ -129,7 +164,7 @@ export async function runColorEditionFinder({
     const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
     if (colorsHardRejects.length > 0) {
-      return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor } });
+      return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
     }
 
     // Step 2: Build repair map from colors validation
@@ -160,15 +195,17 @@ export async function runColorEditionFinder({
       const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
       if (editionsHardRejects.length > 0) {
-        return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor } });
+        return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
       }
     }
 
     // Step 5: ALL passed → write both candidates
+    const colorsMeta = Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : undefined;
     submitCandidate({
       category: product.category, productId: product.product_id,
       fieldKey: 'colors', value: gateColors, confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+      metadata: colorsMeta,
     });
     submitCandidate({
       category: product.category, productId: product.product_id,
@@ -241,7 +278,7 @@ export async function runColorEditionFinder({
     default_color: selected.default_color,
     cooldown_until: cooldownUntil,
     latest_ran_at: ranAt,
-    run_count: (existing?.run_count || 0) + 1,
+    run_count: merged.run_count,
   });
 
   return { colors: gateColors, editions: gateEditions, default_color: selected.default_color, fallbackUsed: false, rejected: false };

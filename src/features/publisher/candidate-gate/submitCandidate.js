@@ -34,6 +34,7 @@ export function submitCandidate({
   value, confidence, sourceMeta,
   fieldRules, knownValues, componentDb, specDb, productRoot,
   repairHistory,
+  metadata,
 }) {
   // --- Guard: identity ---
   if (!productId || !fieldKey) {
@@ -97,6 +98,12 @@ export function submitCandidate({
   const sourceCount = mergedSources.length;
   const maxConfidence = Math.max(confidence, existing?.confidence ?? 0);
 
+  // --- Metadata: merge on conflict, set on new ---
+  const hasMetadata = metadata && typeof metadata === 'object' && Object.keys(metadata).length > 0;
+  const mergedMetadata = existing
+    ? { ...(existing.metadata_json || {}), ...(hasMetadata ? metadata : {}) }
+    : (hasMetadata ? metadata : undefined);
+
   // --- DB write ---
   specDb.upsertFieldCandidate({
     productId, fieldKey, value: serialized,
@@ -104,6 +111,7 @@ export function submitCandidate({
     sourceCount,
     sourcesJson: mergedSources,
     validationJson: validationRecord,
+    metadataJson: mergedMetadata || {},
   });
 
   const candidateRow = specDb.getFieldCandidate(productId, fieldKey, serialized);
@@ -124,8 +132,11 @@ export function submitCandidate({
     if (matchIdx >= 0) {
       entries[matchIdx].sources.push(sourceEntry);
       entries[matchIdx].validation = validationRecord;
+      if (hasMetadata) entries[matchIdx].metadata = { ...(entries[matchIdx].metadata || {}), ...metadata };
     } else {
-      entries.push({ value: repairedValue, validation: validationRecord, sources: [sourceEntry] });
+      const entry = { value: repairedValue, validation: validationRecord, sources: [sourceEntry] };
+      if (hasMetadata) entry.metadata = metadata;
+      entries.push(entry);
     }
 
     productJson.updated_at = new Date().toISOString();

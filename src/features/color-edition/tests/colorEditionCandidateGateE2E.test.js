@@ -213,9 +213,11 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     const dbCandidates = specDb.getAllFieldCandidatesByProduct(pid);
     assert.equal(dbCandidates.length, 0, 'no candidates written');
 
-    // No CEF summary
+    // CEF summary exists but with empty colors (rejected run counted)
     const cefRow = specDb.getColorEditionFinder(pid);
-    assert.equal(cefRow, null, 'no CEF summary written');
+    assert.ok(cefRow, 'summary row exists after rejected run');
+    assert.deepEqual(cefRow.colors, [], 'no valid colors from rejected run');
+    assert.equal(cefRow.run_count, 1, 'rejected run counted');
 
     // product.json unchanged (no candidates key added)
     const pj = readProductJson(pid);

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Normalizer &amp; Parse Template Refactor — Issue Brief</title>
+<style>
+  :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #c9d1d9; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149; --orange: #d29922; --purple: #bc8cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 0.75rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h3 { font-size: 1rem; margin-top: 1.25rem; margin-bottom: 0.5rem; color: var(--purple); }
+  p, li { margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.5rem; }
+  code { background: var(--surface); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--orange); }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--surface); color: var(--accent); font-weight: 600; }
+  td { vertical-align: top; }
+  .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .callout { border-left: 3px solid var(--red); background: rgba(248,81,73,0.06); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; }
+  .callout-info { border-left-color: var(--accent); background: rgba(88,166,255,0.06); }
+  .file { color: var(--muted); font-size: 0.8rem; font-family: monospace; }
+  .arrow { color: var(--green); font-weight: bold; }
+  .strike { text-decoration: line-through; color: var(--muted); }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<h1><span style="text-decoration:line-through;">Normalizer &amp; Parse Template Refactor</span></h1>
+<p style="color:var(--red); font-weight:600;">SUPERSEDED &mdash; See <a href="type-driven-normalization-guide.html" style="color:var(--accent);">Type-Driven Normalization &mdash; Implementation Guide</a></p>
+<p style="color:var(--muted);">Original issue brief for the Spec Factory dev team &mdash; April 2026. Kept for historical reference only.</p>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>1. The Bug</h2>
+
+<div class="callout">
+  <strong>Symptom:</strong> Editions candidates in <code>product.json</code> are stored as <code>["[object object]"]</code> instead of the actual edition Record.
+</div>
+
+<p>The Color &amp; Edition Finder (CEF) submits editions as a Record object:</p>
+<pre><code>{
+  "call-of-duty-black-ops-6-edition": { "display_name": "Call of Duty: Black Ops 6 Edition", "colors": ["black+orange"] },
+  "witcher-3-edition":                { "display_name": "The Witcher 3 Edition", "colors": ["black+beige"] }
+}</code></pre>
+
+<p>The validation pipeline runs <code>list_of_tokens_delimited</code> template dispatch on this value <strong>before</strong> checking its shape. The normalizer calls <code>String(object)</code> &rarr; <code>"[object Object]"</code> &rarr; splits on delimiters &rarr; <code>["[object object]"]</code>.</p>
+
+<h3>Data flow (broken path)</h3>
+<pre><code>CEF submits Record  →  validateField()
+                          ↓
+                    Step 1: dispatchTemplate("list_of_tokens_delimited", value)
+                          ↓
+                    normalizeColorList(value)  →  parseList(value)
+                          ↓
+                    String({...})  →  "[object Object]"  →  split  →  ["[object object]"]
+                          ↓
+                    Step 2: checkShape(["[object object]"], "list")  →  PASS (it's an array now)
+                          ↓
+                    Corrupted value written to DB + product.json</code></pre>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>2. Root Cause: Templates Are Shape-Coupled</h2>
+
+<p>The current parse templates encode <strong>both</strong> the cardinality (scalar vs list) and the value-cleaning logic in a single name. This creates redundancy and shape-coupling:</p>
+
+<table>
+  <tr><th>Current Template</th><th>What It Actually Does</th><th>Problem</th></tr>
+  <tr>
+    <td><code>number_with_unit</code></td>
+    <td>Strip unit, coerce to number (scalar)</td>
+    <td rowspan="2">Same logic, duplicated for scalar vs list</td>
+  </tr>
+  <tr>
+    <td><code>list_of_numbers_with_unit</code></td>
+    <td>Split list, then strip unit + coerce each (list)</td>
+  </tr>
+  <tr>
+    <td><code>list_of_tokens_delimited</code></td>
+    <td>Split string on delimiters, lowercase each</td>
+    <td>Name implies list-only; crashes on objects</td>
+  </tr>
+  <tr>
+    <td><code>token_list</code></td>
+    <td><strong>Nothing</strong> &mdash; has no normalizer, falls through</td>
+    <td>Dead template. Only used as <code>ui.input_control</code>, never as <code>parse.template</code> on any field</td>
+  </tr>
+  <tr>
+    <td><code>text_field</code> / <code>text_block</code></td>
+    <td>Both do nothing (fall through to type-branch)</td>
+    <td>Two names for the same no-op</td>
+  </tr>
+</table>
+
+<p>The <strong>shape</strong> dropdown (<code>scalar</code>, <code>list</code>, <code>structured</code>, <code>key_value</code>) already tells the system the cardinality. The parse template should only describe <em>how to clean each individual value</em>, not re-encode cardinality.</p>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>3. Proposed Template Taxonomy</h2>
+
+<div class="section">
+<p><strong>Principle:</strong> Shape determines cardinality. Template determines per-value cleaning. They are independent axes.</p>
+</div>
+
+<table>
+  <tr>
+    <th>New Template</th>
+    <th>Per-Value Behavior</th>
+    <th>Replaces</th>
+  </tr>
+  <tr>
+    <td><code>text</code></td>
+    <td>Trim whitespace</td>
+    <td><span class="strike">text_field</span>, <span class="strike">text_block</span></td>
+  </tr>
+  <tr>
+    <td><code>number</code></td>
+    <td>Strip unit suffix, coerce to number</td>
+    <td><span class="strike">number_with_unit</span>, <span class="strike">list_of_numbers_with_unit</span></td>
+  </tr>
+  <tr>
+    <td><code>range</code></td>
+    <td>Parse range expression (e.g. "1-5" &rarr; {min:1, max:5})</td>
+    <td><em>(new, extracted from mixed)</em></td>
+  </tr>
+  <tr>
+    <td><code>mixed_number_range</code></td>
+    <td>Accept numbers and/or ranges in same list</td>
+    <td><span class="strike">list_numbers_or_ranges_with_unit</span></td>
+  </tr>
+  <tr>
+    <td><code>boolean</code></td>
+    <td>Normalize yes/no/true/false/1/0 &rarr; <code>"yes"</code>/<code>"no"</code>/<code>"unk"</code></td>
+    <td><span class="strike">boolean_yes_no_unk</span></td>
+  </tr>
+  <tr>
+    <td><code>date</code></td>
+    <td>Parse to <code>YYYY-MM-DD</code></td>
+    <td><span class="strike">date_field</span></td>
+  </tr>
+  <tr>
+    <td><code>url</code></td>
+    <td>Validate/passthrough URL</td>
+    <td><span class="strike">url_field</span></td>
+  </tr>
+  <tr>
+    <td><code>component_ref</code></td>
+    <td>Component identity lookup</td>
+    <td><span class="strike">component_reference</span></td>
+  </tr>
+  <tr>
+    <td><code>tokens_delimited</code></td>
+    <td>Split string on <code>, ; | /</code>, lowercase, trim each token</td>
+    <td><span class="strike">list_of_tokens_delimited</span>, <span class="strike">token_list</span> (dead)</td>
+  </tr>
+</table>
+
+<h3>How templates work with each shape</h3>
+
+<table>
+  <tr><th>Shape</th><th>Template behavior</th><th>Example</th></tr>
+  <tr>
+    <td><code>scalar</code></td>
+    <td>Apply template to the single value</td>
+    <td><code>"Black"</code> + <code>tokens_delimited</code> &rarr; <code>"black"</code></td>
+  </tr>
+  <tr>
+    <td><code>list</code></td>
+    <td>If string: split first, then apply template to each element.<br>If array: apply template to each element.</td>
+    <td><code>"Black, White"</code> &rarr; <code>["black", "white"]</code><br><code>["Black", "White"]</code> &rarr; <code>["black", "white"]</code></td>
+  </tr>
+  <tr>
+    <td><code>key_value</code></td>
+    <td>Pass through. Keys are domain identifiers, values are structured.<br>Template does not coerce objects.</td>
+    <td><code>{ "cod-edition": { colors: [...] } }</code> &rarr; unchanged</td>
+  </tr>
+  <tr>
+    <td><code>structured</code></td>
+    <td>Pass through. Nested structures are domain-specific.</td>
+    <td>unchanged</td>
+  </tr>
+</table>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>4. Interim Fix (Applied)</h2>
+
+<div class="callout callout-info">
+  <strong>Status:</strong> A minimal fix has been applied to prevent data corruption while the full refactor is planned.
+</div>
+
+<p>In <code>normalizers.js</code>, <code>parseList()</code> now checks type before coercing:</p>
+<pre><code>export function parseList(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  if (typeof value === 'object') return value;   // ← NEW: objects pass through
+  const token = String(value ?? '').trim();
+  if (!token) return [];
+  return token.split(/[,;|/]+/).map(part =&gt; String(part || '').trim()).filter(Boolean);
+}</code></pre>
+
+<p><code>normalizeColorList()</code> guards against non-array returns:</p>
+<pre><code>export function normalizeColorList(value) {
+  const parsed = parseList(value);
+  if (!Array.isArray(parsed)) return parsed;    // ← NEW: objects pass through
+  return parsed.map(entry =&gt; toStringSafe(entry).toLowerCase()).filter(Boolean);
+}</code></pre>
+
+<p><strong>Effect:</strong> Objects pass through the normalizer untouched. Shape check (<code>checkShape</code>) handles the mismatch with a clean rejection &mdash; no data corruption.</p>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>5. Files Involved in the Full Refactor</h2>
+
+<table>
+  <tr><th>Layer</th><th>File</th><th>What Changes</th></tr>
+  <tr>
+    <td>Template Registry (Frontend)</td>
+    <td class="file">tools/gui-react/src/features/studio/state/parseTemplateRegistry.ts</td>
+    <td>Replace 12 templates with 9. Update <code>PARSE_TEMPLATES</code> array, <code>TEMPLATE_OUTPUT_TYPE</code> map, <code>UNIT_BEARING_TEMPLATES</code> set.</td>
+  </tr>
+  <tr>
+    <td>Template Dispatch</td>
+    <td class="file">src/features/publisher/validation/templateDispatch.js</td>
+    <td>Rename <code>TEMPLATE_NORMALIZERS</code> keys. Make dispatch shape-aware: receive shape param, apply per-element for lists, passthrough for records.</td>
+  </tr>
+  <tr>
+    <td>Normalizers</td>
+    <td class="file">src/features/publisher/validation/normalizers.js</td>
+    <td>Each normalizer works on a single value (not a list). List iteration moves to dispatch.</td>
+  </tr>
+  <tr>
+    <td>Validation Pipeline</td>
+    <td class="file">src/features/publisher/validation/validateField.js</td>
+    <td>Pass <code>shape</code> to <code>dispatchTemplate()</code>.</td>
+  </tr>
+  <tr>
+    <td>EG Presets (SSOT)</td>
+    <td class="file">src/features/studio/contracts/egPresets.js</td>
+    <td>Update all <code>parse.template</code> values to new names.</td>
+  </tr>
+  <tr>
+    <td>Phase Registry</td>
+    <td class="file">src/features/publisher/validation/phaseRegistry.js</td>
+    <td>Update template applicability checks.</td>
+  </tr>
+  <tr>
+    <td>Field Rules Engine</td>
+    <td class="file">src/engine/fieldRulesEngine.js</td>
+    <td>Update any template-name references.</td>
+  </tr>
+  <tr>
+    <td>Studio UI (Dropdowns)</td>
+    <td class="file">tools/gui-react/src/features/studio/workbench/WorkbenchDrawerContractTab.tsx<br>
+    tools/gui-react/src/features/studio/workbench/WorkbenchDrawerSimpleTabs.tsx<br>
+    tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx<br>
+    tools/gui-react/src/features/studio/components/key-sections/KeyParseRulesSection.tsx</td>
+    <td>All read from <code>parseTemplateRegistry.ts</code> &mdash; auto-update.</td>
+  </tr>
+  <tr>
+    <td>Compiled Rules (DB)</td>
+    <td class="file">.workspace/db/*/spec.sqlite &rarr; field_studio_map.compiled_rules</td>
+    <td>Must recompile after template rename. Migration: old names &rarr; new names in compiled JSON.</td>
+  </tr>
+  <tr>
+    <td>Tests</td>
+    <td class="file">Multiple test files across publisher/validation/tests/, studio/contracts/tests/, studio/state/__tests__/</td>
+    <td>Update template name references. Add shape-aware dispatch tests.</td>
+  </tr>
+</table>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>6. Migration Strategy</h2>
+
+<ol>
+  <li><strong>Alias map:</strong> Add a <code>TEMPLATE_ALIASES</code> map in <code>templateDispatch.js</code> that maps old names &rarr; new names. This makes the dispatch backward-compatible during rollout.</li>
+  <li><strong>Update SSOT:</strong> Change <code>egPresets.js</code> to use new template names.</li>
+  <li><strong>Update registry:</strong> Change <code>parseTemplateRegistry.ts</code> to new names + remove dead entries.</li>
+  <li><strong>Recompile:</strong> Trigger Field Studio recompile for all categories (reseed from egPresets).</li>
+  <li><strong>Remove aliases:</strong> After all compiled rules are updated, remove the alias map.</li>
+</ol>
+
+<!-- ─────────────────────────────────────────── -->
+<h2>7. CEF-Specific Context</h2>
+
+<p>The CEF is currently the only source that submits <code>key_value</code>-shaped editions data. The crawl pipeline submits editions as flat slug lists (matching <code>shape: list</code>). Once the normalizer refactor lands:</p>
+
+<ul>
+  <li>The editions field rule can use <code>shape: key_value</code> + <code>template: tokens_delimited</code></li>
+  <li>The dispatch will see <code>key_value</code> shape &rarr; pass through without coercion</li>
+  <li>The crawl pipeline can continue submitting flat lists for the same field &mdash; the <code>list</code> shape path handles those</li>
+  <li>Or: editions can stay <code>shape: list</code> and the CEF extracts slug keys before submitting, storing the full Record in the new <code>metadata</code> slot on the candidate</li>
+</ul>
+
+<p>Both approaches work. The key decision is whether editions in <code>product.json</code> should be a flat slug list or a keyed Record. The <a href="../publisher/product-json-v2-schema.json">v2 schema</a> shows a Record, suggesting <code>shape: key_value</code> is the intended target.</p>
+
+</body>
+</html>

@@ -12,6 +12,7 @@ function makeJsonCapture() {
 }
 
 function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runRows = []) {
+  const candidateDeleteCalls = [];
   return {
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
@@ -23,6 +24,8 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     deleteColorEditionFinderRunByNumber: () => {},
     deleteAllColorEditionFinderRuns: () => {},
     insertColorEditionFinderRun: () => {},
+    deleteFieldCandidatesByProductAndField: (...args) => { candidateDeleteCalls.push(args); },
+    _candidateDeleteCalls: candidateDeleteCalls,
     category: 'mouse',
   };
 }
@@ -37,13 +40,14 @@ function makeAppDbStub() {
 
 function makeCtx(overrides = {}) {
   const { jsonRes, calls } = makeJsonCapture();
+  const specDb = makeSpecDbStub(overrides.finderRow, overrides.listRows, null, overrides.runRows);
   return {
     ctx: {
       jsonRes,
       readJsonBody: async () => ({}),
       config: {},
       appDb: makeAppDbStub(),
-      getSpecDb: () => makeSpecDbStub(overrides.finderRow, overrides.listRows, null, overrides.runRows),
+      getSpecDb: () => specDb,
       broadcastWs: () => {},
       logger: { info: () => {}, warn: () => {}, error: () => {} },
       runColorEditionFinder: overrides.runFn || (async () => ({
@@ -53,6 +57,7 @@ function makeCtx(overrides = {}) {
       deleteColorEditionFinderAll: overrides.deleteAllFn || (() => ({ deleted: true })),
     },
     calls,
+    specDb,
   };
 }
 
@@ -149,6 +154,14 @@ describe('colorEditionFinderRoutes', () => {
       assert.equal(deletedRun, 2);
     });
 
+    it('does NOT delete candidates on single-run deletion', async () => {
+      const deleteRunFn = () => ({ run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '', last_ran_at: '' });
+      const { ctx, specDb } = makeCtx({ deleteRunFn });
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', '2'], new Map(), 'DELETE', {}, {});
+      assert.equal(specDb._candidateDeleteCalls.length, 0, 'candidates must NOT be deleted on single-run delete');
+    });
+
     it('rejects invalid run number', async () => {
       const { ctx, calls } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
@@ -169,6 +182,14 @@ describe('colorEditionFinderRoutes', () => {
       assert.equal(calls[0].status, 200);
       assert.equal(calls[0].body.ok, true);
       assert.ok(allDeleted);
+    });
+
+    it('deletes candidates on delete-all', async () => {
+      const deleteAllFn = () => ({ deleted: true });
+      const { ctx, specDb } = makeCtx({ deleteAllFn });
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
+      assert.ok(specDb._candidateDeleteCalls.length > 0, 'candidates MUST be deleted on delete-all');
     });
   });
 });

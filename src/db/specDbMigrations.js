@@ -51,6 +51,7 @@ export const MIGRATIONS = [
   // WHY: candidate-gate needs status tracking on field_candidates to distinguish
   // unresolved candidates from resolved ones.
   `ALTER TABLE field_candidates ADD COLUMN status TEXT DEFAULT 'candidate'`,
+  `ALTER TABLE field_candidates ADD COLUMN metadata_json TEXT DEFAULT '{}'`,
 ];
 
 export const SECONDARY_INDEXES = `

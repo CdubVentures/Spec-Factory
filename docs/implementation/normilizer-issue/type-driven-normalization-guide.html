@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Type-Driven Normalization — Implementation Guide</title>
+<style>
+  :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #c9d1d9; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149; --orange: #d29922; --purple: #bc8cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.3rem; margin-top: 2.5rem; margin-bottom: 0.75rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--purple); }
+  h4 { font-size: 0.95rem; margin-top: 1rem; margin-bottom: 0.4rem; color: var(--green); }
+  p, li { margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.5rem; }
+  code { background: var(--surface); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--orange); }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--surface); color: var(--accent); font-weight: 600; }
+  td { vertical-align: top; }
+  .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .callout { border-left: 3px solid var(--red); background: rgba(248,81,73,0.06); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; }
+  .callout-info { border-left-color: var(--accent); background: rgba(88,166,255,0.06); }
+  .callout-warn { border-left-color: var(--orange); background: rgba(210,153,34,0.06); }
+  .callout-ok { border-left-color: var(--green); background: rgba(63,185,80,0.06); }
+  .file { color: var(--muted); font-size: 0.8rem; font-family: monospace; }
+  .strike { text-decoration: line-through; color: var(--muted); }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+  .phase-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .phase-num { background: var(--accent); color: var(--bg); font-weight: 700; padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.9rem; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; margin: 1.5rem 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc li { margin-bottom: 0.25rem; }
+  .tag { display: inline-block; padding: 0.1em 0.4em; border-radius: 3px; font-size: 0.7rem; font-weight: 600; margin-left: 0.25em; }
+  .tag-create { background: rgba(63,185,80,0.2); color: var(--green); }
+  .tag-modify { background: rgba(210,153,34,0.2); color: var(--orange); }
+  .tag-delete { background: rgba(248,81,73,0.2); color: var(--red); }
+  .tag-test { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .tag-run { background: rgba(88,166,255,0.2); color: var(--accent); }
+  .compact td, .compact th { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<h1>Type-Driven Normalization &mdash; Implementation Guide</h1>
+<p style="color:var(--muted);">Supersedes: <span class="strike">normalizer-refactor.html</span> (Issue Brief) &mdash; April 2026</p>
+
+<!-- ═══════════════ TOC ═══════════════ -->
+<div class="toc">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#problem">Problem Statement</a></li>
+  <li><a href="#root-cause">Root Cause: The Triple Redundancy</a></li>
+  <li><a href="#solution">The Solution: Type + Shape (That's It)</a></li>
+  <li><a href="#alias-map">Template &rarr; Type Alias Map</a></li>
+  <li><a href="#audit">Complete Field Audit (297 Fields)</a></li>
+  <li><a href="#phase1">Phase 1 &mdash; Foundation: Type Registry &amp; Pipeline Reorder</a></li>
+  <li><a href="#phase2">Phase 2 &mdash; Compiler &amp; Engine: Upstream Alignment</a></li>
+  <li><a href="#phase3">Phase 3 &mdash; Data Migration: Fix Types &amp; Recompile</a></li>
+  <li><a href="#phase4">Phase 4 &mdash; Frontend: Studio UI Cleanup</a></li>
+  <li><a href="#dead-code">Dead Code Removal</a></li>
+  <li><a href="#verification">Final Verification Checklist</a></li>
+</ol>
+</div>
+
+<!-- ═══════════════ 1. PROBLEM ═══════════════ -->
+<h2 id="problem">1. Problem Statement</h2>
+
+<div class="callout">
+  <strong>Symptom:</strong> Edition candidates in <code>product.json</code> are stored as <code>["[object object]"]</code> instead of the actual edition Record. The <code>list_of_tokens_delimited</code> template calls <code>String(object)</code> before the shape check can catch the mismatch.
+</div>
+
+<p>But this bug is a symptom of a deeper design problem: <strong>three overlapping knobs</strong> (<code>contract.type</code>, <code>contract.shape</code>, <code>parse.template</code>) all competing to describe how a value should be cleaned. The template system is almost entirely redundant with the type system.</p>
+
+<!-- ═══════════════ 2. ROOT CAUSE ═══════════════ -->
+<h2 id="root-cause">2. Root Cause: The Triple Redundancy</h2>
+
+<p>An audit of all <strong>297 fields</strong> across keyboard (103), mouse (81), and monitor (113) reveals:</p>
+
+<table>
+  <tr><th>type + shape + template combo</th><th>Count</th><th>%</th><th>Is template redundant?</th></tr>
+  <tr><td><code>string + scalar + text_field</code></td><td>137</td><td>46%</td><td><span class="badge badge-green">YES</span> &mdash; type=string already means "trim text"</td></tr>
+  <tr><td><code>number + scalar + number_with_unit</code></td><td>74</td><td>25%</td><td><span class="badge badge-green">YES</span> &mdash; type=number already means "coerce to number"</td></tr>
+  <tr><td><code>string + scalar + boolean_yes_no_unk</code></td><td>35</td><td>12%</td><td><span class="badge badge-red">WRONG TYPE</span> &mdash; should be type=boolean</td></tr>
+  <tr><td><code>string + list + list_of_tokens_delimited</code></td><td>21</td><td>7%</td><td><span class="badge badge-green">YES</span> &mdash; type=string + shape=list is sufficient. Extraction submits arrays.</td></tr>
+  <tr><td><code>number + scalar + integer_field</code></td><td>7</td><td>2%</td><td><span class="badge badge-green">YES</span> &mdash; and type should be integer</td></tr>
+  <tr><td><code>string + scalar + component_reference</code></td><td>6</td><td>2%</td><td><span class="badge badge-green">YES</span> &mdash; stays type=string. Component lookup is a review-stage constraint, not a data type.</td></tr>
+  <tr><td><code>integer + scalar + number_with_unit</code></td><td>4</td><td>1%</td><td><span class="badge badge-green">YES</span> &mdash; type=integer already covers it</td></tr>
+  <tr><td><code>string + scalar + url_field</code></td><td>4</td><td>1%</td><td><span class="badge badge-red">WRONG TYPE</span> &mdash; should be type=url</td></tr>
+  <tr><td><code>string + scalar + date_field</code></td><td>3</td><td>1%</td><td><span class="badge badge-red">WRONG TYPE</span> &mdash; should be type=date</td></tr>
+  <tr><td><code>object + list + latency_list_modes_ms</code></td><td>2</td><td>0.7%</td><td><span class="badge badge-red">RETIRE</span> &mdash; split into 3 scalar number keys per mode (wired/wireless/bluetooth). Delete the object fields.</td></tr>
+  <tr><td><code>number + list + list_of_numbers_with_unit</code></td><td>1</td><td>0.3%</td><td><span class="badge badge-green">YES</span> &mdash; type=number + shape=list</td></tr>
+  <tr><td><code>number + list + list_numbers_or_ranges_with_unit</code></td><td>1</td><td>0.3%</td><td><span class="badge badge-red">WRONG TYPE</span> &mdash; should be type=mixed_number_range</td></tr>
+  <tr><td><code>number + scalar + integer_with_unit</code></td><td>1</td><td>0.3%</td><td><span class="badge badge-green">YES</span> &mdash; type=integer</td></tr>
+  <tr><td><code>integer + scalar + integer_field</code></td><td>1</td><td>0.3%</td><td><span class="badge badge-green">YES</span> &mdash; type=integer</td></tr>
+</table>
+
+<div class="section">
+  <strong>Bottom line:</strong> <code>parse.template</code> is redundant for every single field. In all 297 cases, <code>contract.type</code> + <code>contract.shape</code> is sufficient. The template layer exists because the types were never set correctly.
+</div>
+
+<h3>Pipeline ordering bug</h3>
+<pre><code>Current pipeline order:
+  1. Absence normalization
+  2. Template dispatch    &larr; coerces value based on template name
+  3. Shape check          &larr; too late, value already destroyed
+  4. Type check
+  ...
+
+Objects hit template dispatch BEFORE shape check can reject them.
+Template calls String(object) &rarr; "[object Object]" &rarr; data corruption.</code></pre>
+
+<!-- ═══════════════ 3. THE SOLUTION ═══════════════ -->
+<h2 id="solution">3. The Solution: Type + Shape (That's It)</h2>
+
+<div class="section">
+  <strong>Principle:</strong> <code>contract.type</code> determines per-value cleaning. <code>contract.shape</code> determines cardinality. <code>parse.template</code> is eliminated entirely. No replacement flags. The pipeline validates, extraction supplies clean data.
+</div>
+
+<h3>3.1 Type Taxonomy (8 types)</h3>
+
+<table>
+  <tr><th>Type</th><th>Per-Value Behavior</th><th>Shape Constraint</th><th>Status</th></tr>
+  <tr><td><code>string</code></td><td>Trim whitespace, normalize</td><td>any</td><td>Existing</td></tr>
+  <tr><td><code>number</code></td><td>Strip unit suffix, coerce to float</td><td>any</td><td>Existing</td></tr>
+  <tr><td><code>integer</code></td><td>Strip unit suffix, coerce to int</td><td>any</td><td>Existing</td></tr>
+  <tr><td><code>boolean</code></td><td>yes/no/true/false/1/0 &rarr; "yes"/"no"/"unk"</td><td><strong>scalar only</strong></td><td>Existing (35 fields mislabeled as string)</td></tr>
+  <tr><td><code>date</code></td><td>Parse to YYYY-MM-DD</td><td>any</td><td>Existing (3+ fields mislabeled as string)</td></tr>
+  <tr><td><code>url</code></td><td>Validate/passthrough URL</td><td>any</td><td>Existing (4 fields mislabeled as string)</td></tr>
+  <tr><td><code>range</code></td><td>Parse "1-5" &rarr; {min, max}</td><td><strong>scalar only</strong></td><td><span class="badge badge-orange">NEW</span></td></tr>
+  <tr><td><code>mixed_number_range</code></td><td>Numbers and/or ranges in same list</td><td><strong>list only</strong></td><td><span class="badge badge-orange">NEW</span></td></tr>
+</table>
+
+<h3>3.2 Shape Taxonomy (2 shapes)</h3>
+
+<table>
+  <tr><th>Shape</th><th>Behavior</th><th>Absence Default</th></tr>
+  <tr><td><code>scalar</code></td><td>Single value. Apply type coercion directly.</td><td><code>"unk"</code></td></tr>
+  <tr><td><code>list</code></td><td>Array of values. Apply type coercion to each element.</td><td><code>[]</code></td></tr>
+</table>
+
+<h3>3.3 What Was Removed</h3>
+
+<table>
+  <tr><th>Concept</th><th>Why Removed</th></tr>
+  <tr><td><code>parse.template</code></td><td>Redundant with <code>contract.type</code> in every case.</td></tr>
+  <tr><td><code>tokens_delimited</code> flag</td><td>Extraction submits arrays directly. No string-splitting in the pipeline.</td></tr>
+  <tr><td><code>normalization_fn</code></td><td>Extraction outputs clean data. Pipeline validates, doesn't transform freeform text.</td></tr>
+  <tr><td><code>component_ref</code> type</td><td>Component lookup is a review-stage constraint, not a data type. These fields stay <code>type=string</code>.</td></tr>
+  <tr><td><code>key_value</code> / <code>structured</code> shapes</td><td>Nothing needs them. Editions is a slug list. Latency is a number list with metadata stored separately.</td></tr>
+  <tr><td><code>object</code> type</td><td>Latency fields are retired and split into 3 scalar number keys per mode (e.g., <code>click_latency_wired</code>, <code>click_latency_wireless</code>, <code>click_latency_bluetooth</code>). No object type needed anywhere.</td></tr>
+</table>
+
+<h3>3.4 Type &times; Shape Matrix</h3>
+
+<table>
+  <tr><th></th><th><code>scalar</code></th><th><code>list</code></th></tr>
+  <tr><td><code>string</code></td><td>Trim whitespace</td><td>Coerce each element to string, trim</td></tr>
+  <tr><td><code>number</code></td><td>Strip unit, coerce to float</td><td>Coerce each element to float</td></tr>
+  <tr><td><code>integer</code></td><td>Strip unit, coerce to int</td><td>Coerce each element to int</td></tr>
+  <tr><td><code>boolean</code></td><td>Normalize &rarr; "yes"/"no"/"unk"</td><td style="color:var(--red);">Invalid</td></tr>
+  <tr><td><code>date</code></td><td>Parse &rarr; YYYY-MM-DD</td><td>Parse each</td></tr>
+  <tr><td><code>url</code></td><td>Validate URL</td><td>Validate each</td></tr>
+  <tr><td><code>range</code></td><td>Parse "1-5" &rarr; {min, max}</td><td style="color:var(--red);">Invalid &mdash; use <code>mixed_number_range</code></td></tr>
+  <tr><td><code>mixed_number_range</code></td><td style="color:var(--red);">Invalid &mdash; use <code>range</code></td><td>Parse each element (number or range)</td></tr>
+</table>
+
+<h3>3.5 New Pipeline Order</h3>
+<pre><code>New pipeline order:
+  1. Absence normalization        (unchanged)
+  2. Shape check                  &larr; MOVED UP: rejects mismatched shapes immediately
+  3. Type coercion                &larr; REPLACES template dispatch: driven by contract.type
+  4. Unit verification            (unchanged)
+  5. String normalization         (unchanged)
+  6. Format check                 (unchanged)
+  7. List rules                   (unchanged)
+  8. Rounding                     (unchanged)
+  9. Enum check                   (unchanged)
+  10. Range check                 (unchanged)
+  11. Publish gate                (unchanged)
+
+Shape check before type coercion = no more data corruption.</code></pre>
+
+<h3>3.6 Before / After Examples</h3>
+
+<h4>Number field (weight)</h4>
+<pre><code>// BEFORE
+{ contract: { type: "number", shape: "scalar", unit: "g" },
+  parse: { template: "number_with_unit", unit: "g", unit_accepts: ["g"] } }
+
+// AFTER &mdash; remove parse.template. Type says "coerce to number."
+{ contract: { type: "number", shape: "scalar", unit: "g" },
+  parse: { unit: "g", unit_accepts: ["g"] } }</code></pre>
+
+<h4>Boolean field (bluetooth)</h4>
+<pre><code>// BEFORE &mdash; type is WRONG
+{ contract: { type: "string", shape: "scalar" },
+  parse: { template: "boolean_yes_no_unk", true_tokens: [...], false_tokens: [...] } }
+
+// AFTER &mdash; fix type to boolean, remove template
+{ contract: { type: "boolean", shape: "scalar" },
+  parse: { true_tokens: [...], false_tokens: [...] } }</code></pre>
+
+<h4>List field (colors)</h4>
+<pre><code>// BEFORE
+{ contract: { type: "string", shape: "list" },
+  parse: { template: "list_of_tokens_delimited", delimiters: [",",";","|","/"] } }
+
+// AFTER &mdash; remove template. Extraction submits arrays. Pipeline just validates.
+{ contract: { type: "string", shape: "list" },
+  parse: {} }</code></pre>
+
+<h4>Component field (encoder) &mdash; stays string</h4>
+<pre><code>// BEFORE
+{ contract: { type: "string", shape: "scalar" },
+  parse: { template: "component_reference", component_type: "encoder" } }
+
+// AFTER &mdash; stays string. Component lookup is a review constraint, not validation.
+{ contract: { type: "string", shape: "scalar" },
+  parse: {} }</code></pre>
+
+<h4>Latency fields &mdash; retire object list, split into scalar keys</h4>
+<pre><code>// BEFORE &mdash; 1 object-list field with custom parser
+click_latency_list:
+{ contract: { type: "object", shape: "list", unit: "ms" },
+  parse: { template: "latency_list_modes_ms", mode_aliases: {...} } }
+
+// AFTER &mdash; 3 plain number fields. No parser needed. LLM extracts each directly.
+click_latency_wired:    { contract: { type: "number", shape: "scalar", unit: "ms" }, parse: {} }
+click_latency_wireless: { contract: { type: "number", shape: "scalar", unit: "ms" }, parse: {} }
+click_latency_bluetooth:{ contract: { type: "number", shape: "scalar", unit: "ms" }, parse: {} }</code></pre>
+
+<h4>Mixed number/range field (lift)</h4>
+<pre><code>// BEFORE
+{ contract: { type: "number", shape: "list" },
+  parse: { template: "list_numbers_or_ranges_with_unit" } }
+
+// AFTER &mdash; new type handles the mix
+{ contract: { type: "mixed_number_range", shape: "list", unit: "mm" },
+  parse: {} }</code></pre>
+
+<!-- ═══════════════ 4. ALIAS MAP ═══════════════ -->
+<h2 id="alias-map">4. Template &rarr; Type Alias Map</h2>
+
+<p>During migration, the alias map provides backward compatibility. Old template names resolve to the correct type-driven behavior.</p>
+
+<table>
+  <tr><th>Old <code>parse.template</code></th><th>Count</th><th>New <code>contract.type</code></th><th>Migration Action</th></tr>
+  <tr><td><code>text_field</code></td><td>137</td><td><code>string</code></td><td>Remove template. Type already correct.</td></tr>
+  <tr><td><code>number_with_unit</code></td><td>78</td><td><code>number</code></td><td>Remove template. Type already correct.</td></tr>
+  <tr><td><code>boolean_yes_no_unk</code></td><td>35</td><td><code>boolean</code></td><td>Fix type to <code>boolean</code>. Remove template.</td></tr>
+  <tr><td><code>list_of_tokens_delimited</code></td><td>21</td><td><code>string</code></td><td>Remove template. Type already correct. Extraction submits arrays.</td></tr>
+  <tr><td><code>integer_field</code></td><td>8</td><td><code>integer</code></td><td>Fix type to <code>integer</code> where needed. Remove template.</td></tr>
+  <tr><td><code>component_reference</code></td><td>6</td><td><code>string</code></td><td>Remove template. Stays <code>string</code>. Component lookup via review constraints.</td></tr>
+  <tr><td><code>url_field</code></td><td>4</td><td><code>url</code></td><td>Fix type to <code>url</code>. Remove template.</td></tr>
+  <tr><td><code>date_field</code></td><td>3</td><td><code>date</code></td><td>Fix type to <code>date</code>. Remove template.</td></tr>
+  <tr><td><code>latency_list_modes_ms</code></td><td>2</td><td><span class="strike">retired</span></td><td>Delete these fields. Replace with 3 scalar <code>number</code> keys per mode (wired/wireless/bluetooth).</td></tr>
+  <tr><td><code>list_of_numbers_with_unit</code></td><td>1</td><td><code>number</code></td><td>Remove template. Type+shape already correct.</td></tr>
+  <tr><td><code>list_numbers_or_ranges_with_unit</code></td><td>1</td><td><code>mixed_number_range</code></td><td>Fix type. Remove template.</td></tr>
+  <tr><td><code>integer_with_unit</code></td><td>1</td><td><code>integer</code></td><td>Fix type to <code>integer</code>. Remove template.</td></tr>
+  <tr><td colspan="4" style="background:var(--surface); color:var(--red); font-weight:600;">Dead templates (0 usage) &mdash; delete entirely:</td></tr>
+  <tr><td><code>text_block</code>, <code>string</code>, <code>enum_string</code>, <code>token_list</code>, <code>mode_tagged_list</code>, <code>year_field</code>, <code>price_range_string</code>, <code>range_number</code></td><td>0</td><td>&mdash;</td><td>Delete from valid set</td></tr>
+</table>
+
+<!-- ═══════════════ 5. FIELD AUDIT ═══════════════ -->
+<h2 id="audit">5. Complete Field Audit (297 Fields)</h2>
+
+<h3>5.1 Summary</h3>
+<table>
+  <tr><th>Fix Category</th><th>Count</th><th>Action</th></tr>
+  <tr><td>No type change needed (template just redundant)</td><td><strong>217</strong></td><td>Remove <code>parse.template</code> only</td></tr>
+  <tr><td>Type fix: string &rarr; boolean</td><td><strong>35</strong></td><td>Fix <code>contract.type</code></td></tr>
+  <tr><td>Type fix: number &rarr; integer</td><td><strong>7</strong></td><td>Fix <code>contract.type</code></td></tr>
+  <tr><td>Type fix: integer + phantom unit &rarr; integer</td><td><strong>5</strong></td><td>Fix type, remove <code>unit: "none"</code></td></tr>
+  <tr><td>Type fix: string &rarr; url</td><td><strong>4</strong></td><td>Fix <code>contract.type</code></td></tr>
+  <tr><td>Type fix: string &rarr; date</td><td><strong>3+</strong></td><td>Fix <code>contract.type</code> (includes keyboard release_date)</td></tr>
+  <tr><td>Retire &amp; split: object list &rarr; 3 scalar number keys</td><td><strong>2 &rarr; 6</strong></td><td>Delete <code>click_latency_list</code> + <code>sensor_latency_list</code>. Add 6 scalar <code>number</code> keys (per mode).</td></tr>
+  <tr><td>Type fix: number &rarr; mixed_number_range</td><td><strong>1</strong></td><td>Fix <code>contract.type</code></td></tr>
+  <tr><td>Data quality issues</td><td><strong>4</strong></td><td>See 5.8</td></tr>
+</table>
+
+<h3>5.2 Type Fixes: string &rarr; boolean (35 fields)</h3>
+<p>All currently <code>type=string, template=boolean_yes_no_unk</code>. Change to <code>type=boolean</code>.</p>
+<table class="compact">
+  <tr><th>Category</th><th>Fields</th></tr>
+  <tr>
+    <td>Mouse (18)</td>
+    <td><code>adjustable_scroll_wheel</code>, <code>adjustable_weight</code>, <code>bluetooth</code>, <code>discontinued</code>, <code>flawless_sensor</code>, <code>hardware_acceleration</code>, <code>honeycomb_frame</code>, <code>hot_swappable</code>, <code>motion_sync</code>, <code>nvidia_reflex</code>, <code>onboard_memory</code>, <code>paracord</code>, <code>profile_switching</code>, <code>rgb</code>, <code>silent_clicks</code>, <code>smoothing</code>, <code>tilt_scroll_wheel</code>, <code>wireless_charging</code></td>
+  </tr>
+  <tr>
+    <td>Monitor (17)</td>
+    <td><code>crosshair_overlay</code>, <code>curved</code>, <code>daisy_chain</code>, <code>discontinued</code>, <code>factory_calibrated</code>, <code>flicker_free</code>, <code>frc</code>, <code>headphone_jack</code>, <code>kvm_switch</code>, <code>low_blue_light</code>, <code>motion_blur_reduction</code>, <code>overdrive</code>, <code>pip_pbp</code>, <code>pivot_rotation</code>, <code>variable_refresh_rate</code>, <code>wall_mountable</code>, <code>wide_color_gamut</code></td>
+  </tr>
+</table>
+
+<div class="callout callout-warn">
+  <strong>Keyboard note:</strong> Keyboard has ~20 fields that are semantically boolean (<code>hot_swappable</code>, <code>detachable_cable</code>, <code>rapid_trigger</code>, etc.) but currently <code>type=string, template=text_field</code>. Their values may be richer than yes/no (e.g., "Cherry MX style" for hot_swappable). Review during Phase 3 and convert only where values are strictly boolean.
+</div>
+
+<h3>5.3 Type Fixes: string &rarr; url (4 fields)</h3>
+<table class="compact">
+  <tr><th>Category</th><th>Fields</th></tr>
+  <tr><td>Mouse (4)</td><td><code>encoder_link</code>, <code>mcu_link</code>, <code>sensor_link</code>, <code>switches_link</code></td></tr>
+</table>
+
+<h3>5.4 Type Fixes: string &rarr; date (3+ fields)</h3>
+<table class="compact">
+  <tr><th>Category</th><th>Fields</th></tr>
+  <tr><td>Mouse (2)</td><td><code>release_date</code>, <code>sensor_date</code></td></tr>
+  <tr><td>Monitor (1)</td><td><code>release_date</code></td></tr>
+  <tr><td>Keyboard (1)</td><td><code>release_date</code> (currently string+text_field, should be date)</td></tr>
+</table>
+
+<h3>5.5 Type Fixes: number &rarr; integer (7 fields)</h3>
+<table class="compact">
+  <tr><th>Category</th><th>Fields</th></tr>
+  <tr><td>Keyboard (3)</td><td><code>key_count</code>, <code>multi_device_pairing_count</code>, <code>onboard_profile_count</code></td></tr>
+  <tr><td>Mouse (2)</td><td><code>encoder_life_span</code>, <code>encoder_steps</code></td></tr>
+  <tr><td>Monitor (2)</td><td><code>color_accuracy_delta_e</code>, <code>local_dimming_zones</code></td></tr>
+</table>
+
+<h3>5.6 Integer fields with phantom <code>unit: "none"</code> (5 fields)</h3>
+<table class="compact">
+  <tr><th>Category</th><th>Fields</th></tr>
+  <tr><td>Mouse (4)</td><td><code>middle_buttons</code>, <code>onboard_memory_value</code>, <code>programmable_buttons</code>, <code>side_buttons</code></td></tr>
+  <tr><td>Mouse (1)</td><td><code>releasing_force</code> (type=number &rarr; fix to integer)</td></tr>
+</table>
+
+<h3>5.7 Special type changes</h3>
+<table>
+  <tr><th>Field</th><th>Category</th><th>Current</th><th>New</th><th>Notes</th></tr>
+  <tr>
+    <td><code>click_latency_list</code></td>
+    <td>Mouse</td>
+    <td><code>type=object, shape=list</code></td>
+    <td><span class="badge badge-red">DELETE</span></td>
+    <td>Replace with 3 scalar keys: <code>click_latency_wired</code>, <code>click_latency_wireless</code>, <code>click_latency_bluetooth</code>. All <code>type=number, shape=scalar, unit=ms</code>.</td>
+  </tr>
+  <tr>
+    <td><code>sensor_latency_list</code></td>
+    <td>Mouse</td>
+    <td><code>type=object, shape=list</code></td>
+    <td><span class="badge badge-red">DELETE</span></td>
+    <td>Replace with 3 scalar keys: <code>sensor_latency_wired</code>, <code>sensor_latency_wireless</code>, <code>sensor_latency_bluetooth</code>. All <code>type=number, shape=scalar, unit=ms</code>.</td>
+  </tr>
+  <tr>
+    <td><code>lift</code></td>
+    <td>Mouse</td>
+    <td><code>type=number, shape=list</code></td>
+    <td><code>type=mixed_number_range, shape=list</code></td>
+    <td>Handles "1.2mm, 2.4-3.2mm" &mdash; mix of numbers and ranges.</td>
+  </tr>
+  <tr>
+    <td><code>acceleration</code></td>
+    <td>Mouse</td>
+    <td><code>type=number, shape=scalar</code></td>
+    <td><code>type=mixed_number_range, shape=list</code></td>
+    <td>Acceleration specs can be ranges and/or multiple values.</td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>Future <code>range</code> type:</strong> Any field that represents a single range (e.g., "48-240 Hz" for VRR range) can use <code>type=range, shape=scalar</code>. Several keyboard/monitor fields are candidates &mdash; tag these during Phase 3 data review. <code>range</code> is scalar only. If a field needs multiple ranges, use <code>type=mixed_number_range, shape=list</code>.
+</div>
+
+<h3>5.8 Additional Data Quality Issues</h3>
+<table>
+  <tr><th>Field</th><th>Category</th><th>Current</th><th>Issue</th><th>Fix</th></tr>
+  <tr><td><code>sensor_brand</code></td><td>Mouse</td><td><code>type=integer</code></td><td>Brand name is not an integer</td><td>Change to <code>type=string</code></td></tr>
+  <tr><td><code>cable_length</code></td><td>Monitor</td><td><code>type=string, unit=mm</code></td><td>Has unit but typed as string</td><td>Change to <code>type=number</code></td></tr>
+  <tr><td><code>sensor_date</code></td><td>Mouse</td><td><code>data_type=string, contract.type=integer</code></td><td>Mismatch; should be date</td><td>Change both to <code>type=date</code></td></tr>
+  <tr><td><code>native_colors</code></td><td>Monitor</td><td><code>data_type=string, contract.type=number</code></td><td>Mismatch; values like "16.7M"</td><td>Reconcile to <code>type=string</code></td></tr>
+</table>
+
+<h3>5.9 No Changes Needed (217 fields)</h3>
+<p>These fields have correct <code>contract.type</code> and <code>contract.shape</code>. The only change is <strong>removing <code>parse.template</code></strong>.</p>
+<ul>
+  <li><strong>137 fields:</strong> <code>type=string, shape=scalar</code> (was template=text_field)</li>
+  <li><strong>74 fields:</strong> <code>type=number, shape=scalar</code> (was template=number_with_unit)</li>
+  <li><strong>6 fields:</strong> <code>type=string, shape=scalar</code> (was template=component_reference &mdash; stays string)</li>
+</ul>
+
+<!-- ═══════════════ PHASES ═══════════════ -->
+
+<!-- ─────── PHASE 1 ─────── -->
+<h2 id="phase1">6. Phase 1 &mdash; Foundation: Type Registry &amp; Pipeline Reorder</h2>
+
+<div class="section">
+  <div class="phase-header">
+    <span class="phase-num">PHASE 1</span>
+    <span>Create the SSOT type registry. Reorder the pipeline (shape before coercion). Replace template dispatch with type-driven coercion. <strong>This phase fixes the bug.</strong></span>
+  </div>
+</div>
+
+<h3>Goal</h3>
+<p>The validation pipeline reads <code>contract.type</code> to determine coercion. Shape check moves before coercion. Alias map provides backward compatibility with old template names during transition. All existing tests remain green.</p>
+
+<h3>File Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What Changes</th></tr>
+  <tr>
+    <td><span class="tag tag-create">CREATE</span></td>
+    <td class="file">src/field-rules/typeCoercionRegistry.js</td>
+    <td>SSOT for: valid types (8), valid shapes (2), type &rarr; coercion function name, template &rarr; type alias map. All downstream consumers import from here.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/validation/validateField.js</td>
+    <td><strong>Reorder pipeline:</strong> shape check moves before type coercion. Replace <code>dispatchTemplate()</code> call with type-driven coercion lookup.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/validation/templateDispatch.js</td>
+    <td>Refactor into type coercion dispatcher. Primary path: look up coercion by <code>contract.type</code>. Fallback: resolve old <code>parse.template</code> via alias map. Rename to <code>typeCoercion.js</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/validation/normalizers.js</td>
+    <td>Each normalizer works on a <strong>single value</strong> only. List iteration handled by the pipeline.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/validation/formatRegistry.js</td>
+    <td>Update keys from old template names to type names. Keep alias fallback.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/validation/phaseRegistry.js</td>
+    <td>Update <code>isApplicable()</code> predicates: reference <code>contract.type</code> instead of <code>parse.template</code>.</td>
+  </tr>
+</table>
+
+<h3>Test Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What</th></tr>
+  <tr>
+    <td><span class="tag tag-create">CREATE</span></td>
+    <td class="file">src/field-rules/tests/typeCoercionRegistry.test.js</td>
+    <td>Contract tests: valid types/shapes sets, alias map resolves all old template names.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/validation/tests/templateDispatch.test.js</td>
+    <td>Rename to <code>typeCoercion.test.js</code>. Test type routing + alias fallback.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/validation/tests/validateField.test.js</td>
+    <td>Critical: test that Record objects get clean rejection (not corruption). Test pipeline with type-driven coercion.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/validation/tests/validateRecord.test.js</td>
+    <td>Update template references in test fixtures.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/validation/tests/checkFormat.test.js</td>
+    <td>Update format registry key references.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/validation/tests/phaseRegistry.test.js</td>
+    <td>Update template references to type references.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/repair-adapter/tests/promptBuilder.test.js</td>
+    <td>Update fixtures.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/candidate-gate/tests/submitCandidate.test.js</td>
+    <td>Update fixtures.</td>
+  </tr>
+</table>
+
+<h3>Verification</h3>
+<ul>
+  <li>Record object + <code>shape=list</code> &rarr; clean rejection, NOT <code>["[object object]"]</code></li>
+  <li>All existing field rules (with old template names) still validate correctly via alias map</li>
+  <li>All publisher validation tests green</li>
+</ul>
+
+<!-- ─────── PHASE 2 ─────── -->
+<h2 id="phase2">7. Phase 2 &mdash; Compiler &amp; Engine: Upstream Alignment</h2>
+
+<div class="section">
+  <div class="phase-header">
+    <span class="phase-num">PHASE 2</span>
+    <span>Update compilation to emit correct types (no templates). Update runtime engine to use type-driven normalization.</span>
+  </div>
+</div>
+
+<h3>Goal</h3>
+<p>The compiler no longer infers or emits <code>parse.template</code>. It sets correct <code>contract.type</code> and <code>contract.shape</code>. The runtime engine reads types, not templates.</p>
+
+<h3>File Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What Changes</th></tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/ingest/compileFieldInference.js</td>
+    <td><strong>Remove <code>inferParseTemplate()</code></strong> and <code>canonicalParseTemplate()</code>. Type and shape inference already exist and are sufficient.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/ingest/compileFieldRuleBuilder.js</td>
+    <td><strong>Remove <code>parseRulesForTemplate()</code></strong> switch. Replace with <code>defaultParseRules(type, shape)</code> &mdash; number/integer get unit defaults, everything else gets minimal defaults.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/ingest/compileValidation.js</td>
+    <td>Remove valid templates set (17 entries). Update type validation set to include <code>range</code>, <code>mixed_number_range</code>. Remove template-shape compatibility checks. Add type-shape constraint validation (boolean=scalar only, range=scalar only, mixed_number_range=list only).</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/ingest/categoryCompile.js</td>
+    <td>Remove template inference calls. Remove template-shape reconciliation block. No template field emitted.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/engine/fieldRulesEngine.js</td>
+    <td>Update <code>normalizeCandidate()</code> to route by <code>contract.type</code>. Remove template-based normalization function lookup.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/engine/engineFieldValidators.js</td>
+    <td>Update <code>validateShapeAndUnits()</code> for simplified shape set (scalar + list only).</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/field-rules/consumerBadgeRegistry.js</td>
+    <td>Retire <code>parse.template</code> path entry.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/field-rules/capabilities.json</td>
+    <td>Change <code>parse.template</code> knob status to <code>retired</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/publisher/repair-adapter/promptBuilder.js</td>
+    <td>Read <code>contract.type</code> instead of <code>parse.template</code>.</td>
+  </tr>
+</table>
+
+<h3>Test Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What</th></tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/ingest/tests/categoryCompile.persistence.test.js</td>
+    <td>Compiled output should NOT contain <code>parse.template</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/ingest/tests/mouse.compile.field-overrides.test.js</td>
+    <td>Update assertions for new compiled rule format.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/engine/tests/engineFieldValidators.test.js</td>
+    <td>Update shape validation tests.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/engine/tests/fieldRulesEngine.normalize.test.js</td>
+    <td>Update normalization tests to use type-driven routing.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/field-rules/tests/consumerGateProjection.test.js</td>
+    <td>Update badge path assertions.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/tests/fieldContractTestRunner.js</td>
+    <td>Update contract test tooling to not require <code>parse.template</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/tests/deriveFailureValues.js</td>
+    <td>Update failure value derivation to use type, not template.</td>
+  </tr>
+</table>
+
+<h3>Verification</h3>
+<ul>
+  <li>Compilation produces rules WITHOUT <code>parse.template</code></li>
+  <li>Engine normalizes correctly via type routing</li>
+  <li>All compiler and engine tests green</li>
+</ul>
+
+<!-- ─────── PHASE 3 ─────── -->
+<h2 id="phase3">8. Phase 3 &mdash; Data Migration: Fix Types &amp; Recompile</h2>
+
+<div class="section">
+  <div class="phase-header">
+    <span class="phase-num">PHASE 3</span>
+    <span>Fix all field types in control plane files. Update presets. Recompile all categories. Widest blast radius but lowest risk (data edits, not code).</span>
+  </div>
+</div>
+
+<h3>Goal</h3>
+<p>Every field across all categories has the correct <code>contract.type</code> and <code>contract.shape</code>. <code>parse.template</code> is removed from all field override data. Presets are updated. All categories recompiled.</p>
+
+<h3>File Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What Changes</th></tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">src/features/studio/contracts/egPresets.js</td>
+    <td>Remove <code>parse.template</code> from builders. Fix enum_policy for editions.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">category_authority/keyboard/_control_plane/field_studio_map.json</td>
+    <td>103 fields: remove <code>parse.template</code>. Fix types per audit. Fix <code>release_date</code> to date. Fix 3 integer types.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">category_authority/mouse/_control_plane/field_studio_map.json</td>
+    <td>76 fields: remove <code>parse.template</code>. Fix 18 boolean, 4 url, 2 date, 7 integer, 2 mixed_number_range, 4 data quality issues. <strong>Delete</strong> <code>click_latency_list</code> + <code>sensor_latency_list</code>. <strong>Add</strong> 6 new scalar number keys (click/sensor latency per mode: wired, wireless, bluetooth).</td></tr>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">category_authority/monitor/_control_plane/field_studio_map.json</td>
+    <td>113 fields: remove <code>parse.template</code>. Fix 17 boolean, 1 date, 2 integer, 2 data quality issues.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-run">RUN</span></td>
+    <td class="file">Recompile all categories</td>
+    <td>Regenerates <code>_generated/field_rules.json</code>, <code>_generated/ui_field_catalog.json</code>, and <code>.workspace/db/*/spec.sqlite</code>.</td>
+  </tr>
+</table>
+
+<h3>Test Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What</th></tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/studio/contracts/tests/egPresets.test.js</td>
+    <td>No <code>parse.template</code>, correct types.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/publisher/tests/discoveryEnumIntegration.test.js</td>
+    <td>Update field rule fixtures.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/color-edition/tests/colorEditionCandidateGate.test.js</td>
+    <td>Update fixtures for new field rule format.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">src/features/color-edition/tests/colorEditionCandidateGateE2E.test.js</td>
+    <td>E2E with recompiled rules.</td>
+  </tr>
+</table>
+
+<h3>Verification</h3>
+<ul>
+  <li>All three categories recompile without errors</li>
+  <li>Generated <code>field_rules.json</code> contains zero <code>parse.template</code> keys</li>
+  <li>All types match the audit plan (Section 5)</li>
+  <li>DB projection reflects new compiled rules</li>
+</ul>
+
+<!-- ─────── PHASE 4 ─────── -->
+<h2 id="phase4">9. Phase 4 &mdash; Frontend: Studio UI Cleanup</h2>
+
+<div class="section">
+  <div class="phase-header">
+    <span class="phase-num">PHASE 4</span>
+    <span>Remove template UI. Simplify studio to type + shape. Fix preset duplication. Align frontend with backend.</span>
+  </div>
+</div>
+
+<h3>Goal</h3>
+<p>The template dropdown is removed from the studio UI. Type and shape dropdowns are the primary controls. Type dropdown includes <code>range</code> and <code>mixed_number_range</code>. Frontend presets align with backend.</p>
+
+<h3>File Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What Changes</th></tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/parseTemplateRegistry.ts</td>
+    <td>Gut and replace with type/shape registry. Remove <code>PARSE_TEMPLATES</code>, <code>TEMPLATE_OUTPUT_TYPE</code>, <code>UNIT_BEARING_TEMPLATES</code>. Export <code>VALID_TYPES</code> (8 types) and <code>VALID_SHAPES</code> (2 shapes). Rename file to <code>typeShapeRegistry.ts</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/egPresetsClient.ts</td>
+    <td>Align with backend. Remove <code>parse.template</code>. <strong>Fix enum_policy mismatch</strong> (colors: 'closed' to match backend).</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/rules/ruleCommands.ts</td>
+    <td>Remove <code>TEMPLATE_OUTPUT_TYPE</code>. Replace <code>applyParseTemplateCoupling()</code> with type-driven logic.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/studioConstraintGroups.ts</td>
+    <td>Update any template-based constraint logic.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/utils/studioConstants.ts</td>
+    <td>Update type dropdown: add <code>range</code>, <code>mixed_number_range</code>. Remove template dropdown options. Update <code>STUDIO_TIPS</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/components/key-sections/KeyParseRulesSection.tsx</td>
+    <td>Remove template dropdown entirely. Section simplifies &mdash; parse config (unit_accepts, etc.) is all that remains.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/components/key-sections/KeyComponentsSection.tsx</td>
+    <td>No longer checks template name for component fields.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/components/KeyNavigatorTab.tsx</td>
+    <td>Show type+shape in columns instead of template.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/components/EnumConfigurator.tsx</td>
+    <td>Update any template-based conditional rendering.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/workbench/WorkbenchDrawerContractTab.tsx</td>
+    <td>Show type instead of template in contract display.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-modify">MODIFY</span></td>
+    <td class="file">tools/gui-react/src/features/studio/workbench/WorkbenchDrawerDepsTab.tsx</td>
+    <td>Update template references.</td>
+  </tr>
+</table>
+
+<h3>Test Surface</h3>
+<table>
+  <tr><th>Action</th><th>File</th><th>What</th></tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/tests/parseTemplateRegistry.test.ts</td>
+    <td>Rewrite for type/shape registry.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">tools/gui-react/src/features/studio/rules/tests/studioRuleCommands.test.js</td>
+    <td>Type-based coupling tests.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/tests/egLockGuards.test.js</td>
+    <td>Update preset assertions.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/tests/studioRemovedKnobStoreSanitization.test.js</td>
+    <td>Template knob retired.</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-test">UPDATE</span></td>
+    <td class="file">tools/gui-react/src/features/studio/state/tests/studioPageSharedContracts.test.js</td>
+    <td>Update shared contract assertions.</td>
+  </tr>
+</table>
+
+<h3>Verification</h3>
+<ul>
+  <li>No template dropdown in studio UI</li>
+  <li>Type dropdown shows all 8 types</li>
+  <li>Shape dropdown shows scalar + list</li>
+  <li>Frontend preset enum_policy matches backend</li>
+  <li>All frontend tests green</li>
+</ul>
+
+<!-- ═══════════════ DEAD CODE ═══════════════ -->
+<h2 id="dead-code">10. Dead Code Removal</h2>
+
+<table>
+  <tr><th>What</th><th>Where</th><th>Phase</th></tr>
+  <tr><td><code>inferParseTemplate()</code>, <code>canonicalParseTemplate()</code></td><td class="file">src/ingest/compileFieldInference.js</td><td>Phase 2</td></tr>
+  <tr><td><code>parseRulesForTemplate()</code></td><td class="file">src/ingest/compileFieldRuleBuilder.js</td><td>Phase 2</td></tr>
+  <tr><td>Valid templates set (17 entries)</td><td class="file">src/ingest/compileValidation.js</td><td>Phase 2</td></tr>
+  <tr><td>Template-shape compatibility checks</td><td class="file">src/ingest/categoryCompile.js</td><td>Phase 2</td></tr>
+  <tr><td><code>TEMPLATE_NORMALIZERS</code>, <code>DISPATCHED_TEMPLATE_KEYS</code></td><td class="file">src/features/publisher/validation/templateDispatch.js</td><td>Phase 1</td></tr>
+  <tr><td><code>parseLatencyList()</code> in publisher normalizers</td><td class="file">src/features/publisher/validation/normalizers.js</td><td>Phase 1</td></tr>
+  <tr><td><code>normalizeColorList()</code> list-splitting logic</td><td class="file">src/features/publisher/validation/normalizers.js</td><td>Phase 1</td></tr>
+  <tr><td><code>object_schema</code> field rule property</td><td class="file">All field rules, compileFieldRuleBuilder.js, compileValidation.js</td><td>Phase 2</td></tr>
+  <tr><td><code>click_latency_list</code>, <code>sensor_latency_list</code> field definitions</td><td class="file">category_authority/mouse/_control_plane/field_studio_map.json</td><td>Phase 3</td></tr>
+  <tr><td><code>PARSE_TEMPLATES</code>, <code>TEMPLATE_OUTPUT_TYPE</code>, <code>UNIT_BEARING_TEMPLATES</code></td><td class="file">tools/gui-react/src/.../parseTemplateRegistry.ts</td><td>Phase 4</td></tr>
+  <tr><td>8 dead templates from valid set</td><td class="file">src/ingest/compileValidation.js</td><td>Phase 2</td></tr>
+  <tr><td><code>parse_latency_list</code>, <code>normalize_color_list</code> in engine NORMALIZATION_FUNCTIONS</td><td class="file">src/engine/normalizationFunctions.js</td><td>Phase 2</td></tr>
+  <tr><td>Template alias map (after transition complete)</td><td class="file">src/field-rules/typeCoercionRegistry.js</td><td>Post-Phase 4</td></tr>
+</table>
+
+<!-- ═══════════════ VERIFICATION ═══════════════ -->
+<h2 id="verification">11. Final Verification Checklist</h2>
+
+<div class="section">
+<h4>After all 4 phases:</h4>
+<ol>
+  <li><strong>Zero <code>parse.template</code> references</strong> &mdash; grep entire codebase: no source file, test file, or generated artifact contains <code>parse.template</code> except the alias map (marked for removal).</li>
+  <li><strong>All 297 fields have correct types</strong> &mdash; run type audit script against compiled <code>field_rules.json</code>.</li>
+  <li><strong>Pipeline reorder confirmed</strong> &mdash; shape check before type coercion. Record objects get clean rejection.</li>
+  <li><strong>Full test suite green</strong> &mdash; <code>node --test</code> from repo root.</li>
+  <li><strong>Recompile all categories</strong> &mdash; generated artifacts match expected format.</li>
+  <li><strong>Studio UI functional</strong> &mdash; open GUI, edit a field, save, recompile, verify.</li>
+  <li><strong>CEF editions bug verified fixed</strong> &mdash; submit a Record object: clean rejection, not <code>["[object object]"]</code>.</li>
+  <li><strong>Remove alias map</strong> &mdash; once everything uses new format, delete backward-compat aliases.</li>
+</ol>
+</div>
+
+<h3>Phase Dependency Chain</h3>
+<pre><code>Phase 1 (Foundation + Pipeline) &mdash; fixes the bug
+   |
+   +--&gt; Phase 2 (Compiler &amp; Engine)
+         |
+         +--&gt; Phase 3 (Data Migration &amp; Recompile)
+               |
+               +--&gt; Phase 4 (Frontend Cleanup)</code></pre>
+
+<div class="callout callout-ok">
+  <strong>What ships:</strong> 8 types (all primitive &mdash; no object/structured anything), 2 shapes, zero parse templates, zero special flags. Type tells the pipeline how to coerce. Shape tells it the container. That's it.
+</div>
+
+</body>
+</html>

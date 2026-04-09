@@ -715,16 +715,17 @@ export function prepareStatements(db) {
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, value,
-        confidence, source_count, sources_json, validation_json, status
+        confidence, source_count, sources_json, validation_json, metadata_json, status
       ) VALUES (
         @category, @product_id, @field_key, @value,
-        @confidence, @source_count, @sources_json, @validation_json, @status
+        @confidence, @source_count, @sources_json, @validation_json, @metadata_json, @status
       )
       ON CONFLICT(category, product_id, field_key, value) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
         source_count = excluded.source_count,
         sources_json = excluded.sources_json,
         validation_json = excluded.validation_json,
+        metadata_json = excluded.metadata_json,
         status = excluded.status,
         updated_at = datetime('now')
     `),

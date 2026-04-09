@@ -47,8 +47,13 @@ export function registerColorEditionFinderRoutes(ctx) {
 
       // Runs from SQL projection (frontend never reads JSON)
       const runs = specDb.listColorEditionFinderRuns(productId);
+      // WHY: Latest-wins, but rejected runs have selected: {} (no colors).
+      // Fall back to summary row if latest run's selected is empty.
       const latestRun = runs.length > 0 ? runs[runs.length - 1] : null;
-      const selected = latestRun?.selected || { colors: row.colors, editions: {}, default_color: row.default_color };
+      const latestSelected = latestRun?.selected;
+      const selected = (latestSelected && Array.isArray(latestSelected.colors) && latestSelected.colors.length > 0)
+        ? latestSelected
+        : { colors: row.colors, editions: {}, default_color: row.default_color };
 
       return jsonRes(res, 200, {
         product_id: row.product_id,
@@ -125,10 +130,8 @@ export function registerColorEditionFinderRoutes(ctx) {
       specDb.deleteColorEditionFinderRunByNumber(productId, runNumber);
       const updated = deleteColorEditionFinderRun({ productId, runNumber });
 
-      // Clean up candidates for CEF fields
-      specDb.deleteFieldCandidatesByProductAndField(productId, 'colors');
-      specDb.deleteFieldCandidatesByProductAndField(productId, 'editions');
-      cleanProductJsonCandidates(productId, ['colors', 'editions']);
+      // WHY: Candidates represent accumulated validated knowledge across runs.
+      // Single-run deletion does NOT nuke candidates. Only delete-all does.
 
       if (updated) {
         // Sync SQL summary from recalculated state

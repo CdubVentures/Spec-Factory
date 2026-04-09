@@ -311,4 +311,21 @@ describe('runColorEditionFinder', () => {
     assert.ok(json.runs[1].prompt.system.includes('Currently selected'), 'prompt includes selected state');
     assert.deepEqual(json.selected.colors, ['black', 'red']);
   });
+
+  it('next_run_number persisted in JSON after runs', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-nrn' },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black'], editions: {}, default_color: 'black' }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-nrn', productRoot: PRODUCT_ROOT });
+    assert.equal(json.next_run_number, 2);
+    assert.equal(json.run_count, 1);
+  });
 });

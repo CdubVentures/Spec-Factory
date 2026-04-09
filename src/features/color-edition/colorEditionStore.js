@@ -32,6 +32,7 @@ function emptyTemplate(productId, category) {
     cooldown_until: '',
     last_ran_at: '',
     run_count: 0,
+    next_run_number: 1,
     runs: [],
   };
 }
@@ -77,15 +78,22 @@ export function recalculateCumulativeFromRuns(runs, productId, category) {
 
   // Latest run = highest run_number
   const sorted = [...runs].sort((a, b) => a.run_number - b.run_number);
-  const latest = sorted[sorted.length - 1];
+  const overallLatest = sorted[sorted.length - 1];
+  const maxRunNumber = overallLatest.run_number;
+
+  // WHY: Rejected runs shouldn't determine selected or cooldown.
+  // selected + cooldown from latest non-rejected; last_ran_at from overall latest.
+  const validRuns = sorted.filter(r => r.status !== 'rejected');
+  const latestValid = validRuns.length > 0 ? validRuns[validRuns.length - 1] : null;
 
   return {
     product_id: productId || '',
     category: category || '',
-    selected: latest.selected || { colors: [], editions: {}, default_color: '' },
-    cooldown_until: latest.cooldown_until || '',
-    last_ran_at: latest.ran_at || '',
+    selected: latestValid?.selected || { colors: [], editions: {}, default_color: '' },
+    cooldown_until: latestValid?.cooldown_until || '',
+    last_ran_at: overallLatest.ran_at || '',
     run_count: runs.length,
+    next_run_number: maxRunNumber + 1,
     runs: sorted,
   };
 }
@@ -107,7 +115,10 @@ export function mergeColorEditionDiscovery({ productId, productRoot, newDiscover
     || emptyTemplate(productId, newDiscovery.category);
 
   const existingRuns = Array.isArray(existing.runs) ? existing.runs : [];
-  const runNumber = (existing.run_count || existingRuns.length || 0) + 1;
+  // WHY: next_run_number is the monotonic high-water mark.
+  // Fallback chain for backward compat with old JSON files lacking next_run_number.
+  const runNumber = existing.next_run_number
+    || (existing.run_count || existingRuns.length || 0) + 1;
 
   const runEntry = {
     run_number: runNumber,
@@ -115,6 +126,7 @@ export function mergeColorEditionDiscovery({ productId, productRoot, newDiscover
     model: run.model || 'unknown',
     fallback_used: Boolean(run.fallback_used),
     cooldown_until: newDiscovery.cooldown_until || '',
+    ...(run.status ? { status: run.status } : {}),
     selected: run.selected || { colors: [], editions: {}, default_color: '' },
     prompt: run.prompt || { system: '', user: '' },
     response: run.response || { colors: [], editions: {}, default_color: '' },
@@ -123,10 +135,12 @@ export function mergeColorEditionDiscovery({ productId, productRoot, newDiscover
   const merged = {
     product_id: existing.product_id || productId || '',
     category: existing.category || newDiscovery.category || '',
-    selected: runEntry.selected,
-    cooldown_until: newDiscovery.cooldown_until || existing.cooldown_until || '',
+    // WHY: Rejected runs must not overwrite selected or cooldown.
+    selected: run.status === 'rejected' ? (existing.selected || { colors: [], editions: {}, default_color: '' }) : runEntry.selected,
+    cooldown_until: run.status === 'rejected' ? (existing.cooldown_until || '') : (newDiscovery.cooldown_until || existing.cooldown_until || ''),
     last_ran_at: newDiscovery.last_ran_at || existing.last_ran_at || '',
-    run_count: runNumber,
+    run_count: existingRuns.length + 1,
+    next_run_number: runNumber + 1,
     runs: [...existingRuns, runEntry],
   };
 

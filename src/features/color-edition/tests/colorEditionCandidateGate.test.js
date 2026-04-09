@@ -131,8 +131,8 @@ describe('CEF candidate gate integration', () => {
     assert.ok(pj.candidates?.colors?.length >= 1);
   });
 
-  // --- 2. Colors fail validation → entire run rejected ---
-  it('invalid colors → entire run rejected, no writes', async () => {
+  // --- 2. Colors fail validation → rejected, no candidate writes ---
+  it('invalid colors → entire run rejected, no candidate writes', async () => {
     const pid = 'mouse-bad';
     ensureProductJson(pid);
 
@@ -151,17 +151,18 @@ describe('CEF candidate gate integration', () => {
 
     assert.equal(result.rejected, true);
 
-    // No CEF summary write
-    const cefRow = specDb.getColorEditionFinder(pid);
-    assert.equal(cefRow, null);
-
-    // No candidates
+    // No candidates written
     const candidates = specDb.getAllFieldCandidatesByProduct(pid);
     assert.equal(candidates.length, 0);
 
-    // No CEF JSON
+    // BUT: rejected run IS persisted (for audit + run numbering)
+    const cefRow = specDb.getColorEditionFinder(pid);
+    assert.ok(cefRow, 'summary row exists with empty colors');
+    assert.deepEqual(cefRow.colors, []);
+
     const cefJson = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
-    assert.equal(cefJson, null);
+    assert.ok(cefJson, 'JSON file exists with rejected run');
+    assert.equal(cefJson.runs[0].status, 'rejected');
   });
 
   // --- 3. Repaired values flow through ---
@@ -194,7 +195,7 @@ describe('CEF candidate gate integration', () => {
   });
 
   // --- 4. Failure record stored in runs table ---
-  it('failure record exists in color_edition_finder_runs', async () => {
+  it('failure record exists in SQL and JSON', async () => {
     const pid = 'mouse-failrec';
     ensureProductJson(pid);
 
@@ -211,11 +212,19 @@ describe('CEF candidate gate integration', () => {
       }),
     });
 
+    // SQL run row
     const runs = specDb.listColorEditionFinderRuns(pid);
     assert.ok(runs.length >= 1);
     const failedRun = runs[runs.length - 1];
     assert.equal(failedRun.response?.status, 'rejected');
     assert.ok(Array.isArray(failedRun.response?.rejections));
+
+    // JSON persistence — rejected run must be in durable SSOT
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(json, 'JSON file must exist after rejected run');
+    assert.equal(json.runs.length, 1, 'rejected run persisted to JSON');
+    assert.equal(json.runs[0].status, 'rejected');
+    assert.equal(json.next_run_number, 2, 'next_run_number incremented past rejection');
   });
 
   // --- 5. Summary row unchanged on failure ---
@@ -246,10 +255,11 @@ describe('CEF candidate gate integration', () => {
       _callLlmOverride: makeLlmStub({ colors: ['fake-color-999'], editions: {}, default_color: 'fake' }),
     });
 
-    // Summary unchanged
+    // Summary colors unchanged (selected from last valid run)
     const summaryAfter = specDb.getColorEditionFinder(pid);
     assert.deepEqual(summaryAfter.colors, ['black']);
-    assert.equal(summaryAfter.run_count, summaryBefore.run_count);
+    // run_count increases because rejected runs are counted
+    assert.equal(summaryAfter.run_count, summaryBefore.run_count + 1);
   });
 
   // --- 6. Cooldown NOT set on failure ---
@@ -266,9 +276,11 @@ describe('CEF candidate gate integration', () => {
       _callLlmOverride: makeLlmStub({ colors: ['nonexistent-color'], editions: {}, default_color: '' }),
     });
 
-    // No summary row at all (first run was failure)
+    // Summary row exists (rejected run is counted) but cooldown is empty
     const summary = specDb.getColorEditionFinder(pid);
-    assert.equal(summary, null);
+    assert.ok(summary, 'summary row exists after rejected run');
+    assert.equal(summary.cooldown_until, '', 'no cooldown on rejection');
+    assert.deepEqual(summary.colors, [], 'no valid colors from rejected run');
   });
 
   // --- 7. Second run after failure succeeds normally ---

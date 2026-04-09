@@ -17,6 +17,7 @@ function hydrateRow(row) {
     ...row,
     sources_json: safeParse(row.sources_json, []),
     validation_json: safeParse(row.validation_json, {}),
+    metadata_json: safeParse(row.metadata_json, {}),
   };
 }
 
@@ -25,7 +26,7 @@ function hydrateRow(row) {
  */
 export function createFieldCandidateStore({ db, category, stmts }) {
 
-  function upsert({ productId, fieldKey, value, confidence, sourceCount, sourcesJson, validationJson, status }) {
+  function upsert({ productId, fieldKey, value, confidence, sourceCount, sourcesJson, validationJson, metadataJson, status }) {
     stmts._upsertFieldCandidate.run({
       category,
       product_id: String(productId || ''),
@@ -35,6 +36,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       source_count: sourceCount ?? 1,
       sources_json: JSON.stringify(Array.isArray(sourcesJson) ? sourcesJson : []),
       validation_json: JSON.stringify(validationJson ?? {}),
+      metadata_json: JSON.stringify(metadataJson ?? {}),
       status: status || 'candidate',
     });
   }

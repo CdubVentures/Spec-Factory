@@ -20,11 +20,7 @@ function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const day = d.getDate();
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${month} ${day} ${hh}:${mm}`;
+  return d.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function truncateValue(val: string | null | undefined, max = 60): string {
@@ -101,7 +97,7 @@ function FilterChip({ label, active, onClick }: FilterChipProps) {
   );
 }
 
-// ── Expanded row ─────────────────────────────────────────────────────
+// ── Expanded row sub-components ──────────────────────────────────────
 
 function RepairDetail({ repair }: { repair: PublisherRepairEntry }) {
   const before = typeof repair.before === 'object' ? JSON.stringify(repair.before) : String(repair.before ?? '');
@@ -157,12 +153,19 @@ function SourceRow({ source }: { source: PublisherSourceEntry }) {
   );
 }
 
+// ── Shared detail table header ───────────────────────────────────────
+
+const detailThCls = "px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase";
+const detailThStyle = { fontSize: 9, letterSpacing: '0.05em' } as const;
+const detailHeadRowStyle = { background: 'rgb(var(--sf-color-surface-rgb) / 0.5)' } as const;
+
+// ── Expanded row content ─────────────────────────────────────────────
+
 function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
   const repairs = row.validation_json?.repairs ?? [];
   const rejections = row.validation_json?.rejections ?? [];
   const llmRepair = row.validation_json?.llmRepair ?? null;
   const sources = row.sources_json ?? [];
-  const softRejections = rejections.filter((r) => r.reason_code === 'unknown_enum_prefer_known');
 
   let formattedValue = row.value ?? '';
   try {
@@ -178,7 +181,9 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
           <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-2" style={{ fontSize: 10 }}>
             Validation Detail
           </div>
-          {repairs.length > 0 ? (
+
+          {/* Repairs */}
+          {repairs.length > 0 && (
             <div className="mb-2">
               <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-1.5" style={{ fontSize: 10 }}>
                 Repairs Applied
@@ -188,12 +193,12 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
               </div>
               <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
-                  <tr style={{ background: 'rgb(var(--sf-color-surface-rgb) / 0.5)' }}>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Step</th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Before</th>
+                  <tr style={detailHeadRowStyle}>
+                    <th className={detailThCls} style={detailThStyle}>Step</th>
+                    <th className={detailThCls} style={detailThStyle}>Before</th>
                     <th className="px-2 py-1" style={{ width: 20 }}></th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>After</th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Rule</th>
+                    <th className={detailThCls} style={detailThStyle}>After</th>
+                    <th className={detailThCls} style={detailThStyle}>Rule</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,19 +206,54 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="sf-text-subtle" style={{ fontSize: 11 }}>No repairs or rejections.</div>
           )}
-          {softRejections.length > 0 && (
-            <div className="mt-2 rounded p-2 border" style={{ background: 'var(--sf-token-state-warning-bg)', borderColor: 'var(--sf-token-state-warning-border)' }}>
-              <div className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '0.04em', color: 'var(--sf-token-state-warning-fg)' }}>
-                Soft Rejection (accepted)
+
+          {/* Rejections */}
+          {rejections.length > 0 && (
+            <div className={repairs.length > 0 ? 'mt-2' : ''}>
+              <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-1.5" style={{ fontSize: 10 }}>
+                Rejections
+                <span className="ml-1.5 px-1 py-0.5 rounded-sm text-[9px]" style={{ background: 'var(--sf-token-state-warning-bg)', color: 'var(--sf-token-state-warning-fg)' }}>
+                  {rejections.length}
+                </span>
               </div>
-              <div className="sf-text-muted mt-0.5" style={{ fontSize: 11 }}>
-                Value not in known list but accepted under open_prefer_known policy.
-              </div>
+              <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+                <thead>
+                  <tr style={detailHeadRowStyle}>
+                    <th className={detailThCls} style={detailThStyle}>Reason Code</th>
+                    <th className={detailThCls} style={detailThStyle}>Severity</th>
+                    <th className={detailThCls} style={detailThStyle}>Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rejections.map((r, i) => {
+                    const isSoft = r.reason_code === 'unknown_enum_prefer_known';
+                    const detailStr = r.detail ? JSON.stringify(r.detail) : '—';
+                    return (
+                      <tr key={i}>
+                        <td className="px-2 py-1" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
+                          {r.reason_code}
+                        </td>
+                        <td className="px-2 py-1">
+                          <Chip label={isSoft ? 'soft' : 'hard'} className={isSoft ? 'sf-chip-warning' : 'sf-chip-danger'} />
+                        </td>
+                        <td className="px-2 py-1 sf-text-muted" style={{ fontSize: 11, whiteSpace: 'normal', maxWidth: 300 }}>
+                          {detailStr}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
+
+          {/* Clean pass */}
+          {repairs.length === 0 && rejections.length === 0 && (
+            <div className="sf-text-subtle" style={{ fontSize: 11 }}>No repairs or rejections — value passed all checks.</div>
+          )}
+
+          {/* LLM Repair */}
           {llmRepair && llmRepair.decisions && llmRepair.decisions.length > 0 && (
             <div className="mt-2 rounded p-2 border" style={{ background: 'rgb(var(--sf-color-accent-rgb) / 0.08)', borderColor: 'rgb(var(--sf-color-accent-rgb) / 0.3)' }}>
               <div className="font-bold uppercase mb-1.5 flex items-center gap-2" style={{ fontSize: 10, letterSpacing: '0.04em', color: 'var(--sf-token-accent-strong)' }}>
@@ -227,11 +267,11 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
               </div>
               <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
-                  <tr style={{ background: 'rgb(var(--sf-color-surface-rgb) / 0.5)' }}>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Value</th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Decision</th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Resolved To</th>
-                    <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Reasoning</th>
+                  <tr style={detailHeadRowStyle}>
+                    <th className={detailThCls} style={detailThStyle}>Value</th>
+                    <th className={detailThCls} style={detailThStyle}>Decision</th>
+                    <th className={detailThCls} style={detailThStyle}>Resolved To</th>
+                    <th className={detailThCls} style={detailThStyle}>Reasoning</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,6 +282,7 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
           )}
         </div>
 
+        {/* Full Value */}
         <div className="sf-surface-elevated rounded border sf-border-default p-3">
           <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-2" style={{ fontSize: 10 }}>
             Full Value
@@ -266,11 +307,11 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
           {sources.length > 0 ? (
             <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
-                <tr style={{ background: 'rgb(var(--sf-color-surface-rgb) / 0.5)' }}>
-                  <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Source</th>
-                  <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Conf</th>
-                  <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Run ID</th>
-                  <th className="px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase" style={{ fontSize: 9, letterSpacing: '0.05em' }}>Submitted</th>
+                <tr style={detailHeadRowStyle}>
+                  <th className={detailThCls} style={detailThStyle}>Source</th>
+                  <th className={detailThCls} style={detailThStyle}>Conf</th>
+                  <th className={detailThCls} style={detailThStyle}>Run ID</th>
+                  <th className={detailThCls} style={detailThStyle}>Submitted</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,28 +391,24 @@ export function PublisherPage() {
 
   const stats: PublisherStats = data?.stats ?? { total: 0, resolved: 0, pending: 0, repaired: 0, products: 0 };
 
-  // Client-side filtering (server returns full page; we refine here)
+  // Client-side filtering
   const filteredRows = useMemo(() => {
     let rows = data?.rows ?? [];
 
-    // Date filter
     if (dateRange !== 'all') {
       const now = Date.now();
       const ms = dateRange === '24h' ? 86_400_000 : dateRange === '7d' ? 604_800_000 : 2_592_000_000;
       rows = rows.filter((r) => new Date(r.submitted_at).getTime() > now - ms);
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       rows = rows.filter((r) => r.status === statusFilter);
     }
 
-    // Field filter
     if (fieldFilter) {
       rows = rows.filter((r) => r.field_key === fieldFilter);
     }
 
-    // Search text
     if (searchText) {
       const q = searchText.toLowerCase();
       rows = rows.filter((r) =>
@@ -384,7 +421,6 @@ export function PublisherPage() {
     return rows;
   }, [data?.rows, dateRange, statusFilter, fieldFilter, searchText]);
 
-  // Derive unique field keys for dropdown
   const fieldKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const r of data?.rows ?? []) keys.add(r.field_key);
@@ -395,30 +431,65 @@ export function PublisherPage() {
 
   const columns: ColumnDef<PublisherCandidateRow, unknown>[] = useMemo(() => [
     {
+      id: 'expand',
+      header: '',
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
+          className="inline-flex items-center justify-center w-5 h-5 rounded-sm"
+          style={{
+            background: row.getIsExpanded() ? 'rgb(var(--sf-color-accent-rgb) / 0.12)' : 'transparent',
+            color: row.getIsExpanded() ? 'var(--sf-token-accent-strong)' : 'rgb(var(--sf-color-text-subtle-rgb))',
+            cursor: 'pointer',
+            border: 'none',
+            transform: row.getIsExpanded() ? 'rotate(90deg)' : 'none',
+            transition: 'transform 0.15s ease, color 0.15s ease',
+          }}
+          title={row.getIsExpanded() ? 'Collapse' : 'Expand'}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ),
+      size: 32,
+    },
+    {
       accessorKey: 'submitted_at',
-      header: 'Submitted',
+      header: 'Submitted (PST)',
       cell: ({ getValue }) => (
         <span className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
           {formatDate(getValue() as string)}
         </span>
       ),
-      size: 110,
-    },
-    {
-      accessorKey: 'product_id',
-      header: 'Product',
-      cell: ({ getValue }) => (
-        <span className="sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-          {getValue() as string}
-        </span>
-      ),
-      size: 140,
+      size: 120,
     },
     {
       accessorKey: 'brand',
       header: 'Brand',
       cell: ({ getValue }) => <span className="sf-text-primary" style={{ fontSize: 12 }}>{(getValue() as string) || '—'}</span>,
       size: 90,
+    },
+    {
+      accessorKey: 'model',
+      header: 'Model',
+      cell: ({ getValue }) => (
+        <span className="sf-text-primary" style={{ fontSize: 12 }}>
+          {(getValue() as string) || '—'}
+        </span>
+      ),
+      size: 150,
+    },
+    {
+      accessorKey: 'product_id',
+      header: 'ID',
+      cell: ({ getValue }) => (
+        <span className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 10 }}>
+          {getValue() as string}
+        </span>
+      ),
+      size: 120,
     },
     {
       accessorKey: 'field_key',
@@ -546,7 +617,6 @@ export function PublisherPage() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3 sf-surface-panel rounded border sf-border-default px-4 py-2.5">
-        {/* Date range */}
         <div className="flex items-center gap-1.5">
           <span className="sf-text-subtle uppercase font-semibold" style={{ fontSize: 10, letterSpacing: '0.06em' }}>Date</span>
           <div className="flex gap-1">
@@ -558,7 +628,6 @@ export function PublisherPage() {
 
         <div className="w-px h-6 sf-border-default" style={{ background: 'var(--sf-token-border-default)' }} />
 
-        {/* Product search */}
         <div className="flex items-center gap-1.5">
           <span className="sf-text-subtle uppercase font-semibold" style={{ fontSize: 10, letterSpacing: '0.06em' }}>Product</span>
           <input
@@ -573,7 +642,6 @@ export function PublisherPage() {
 
         <div className="w-px h-6 sf-border-default" style={{ background: 'var(--sf-token-border-default)' }} />
 
-        {/* Field filter */}
         <div className="flex items-center gap-1.5">
           <span className="sf-text-subtle uppercase font-semibold" style={{ fontSize: 10, letterSpacing: '0.06em' }}>Field</span>
           <select
@@ -588,7 +656,6 @@ export function PublisherPage() {
 
         <div className="w-px h-6 sf-border-default" style={{ background: 'var(--sf-token-border-default)' }} />
 
-        {/* Status filter */}
         <div className="flex items-center gap-1.5">
           <span className="sf-text-subtle uppercase font-semibold" style={{ fontSize: 10, letterSpacing: '0.06em' }}>Status</span>
           <div className="flex gap-1">
