@@ -48,7 +48,6 @@ const STRING_FIELDS = [
 
 const ARRAY_FIELDS = [
   ['aliases', { aliases: ['alt_name'] }],
-  ['search_hints.query_templates', { search_hints: { query_templates: ['{brand} {model} weight'] } }],
 ];
 
 const ARRAY_FILTERED_FIELDS = [

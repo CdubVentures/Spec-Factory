@@ -78,7 +78,7 @@ export function FieldStatusTable({ fields, provenance, trafficMap, getLabel = hu
       (hasKnownValue(value) ? (prov.confidence >= 0.85 ? 'green' : prov.confidence >= 0.6 ? 'yellow' : 'red') : 'gray');
     return {
       field,
-      value: String(value ?? 'unk'),
+      value: String(value ?? ''),
       confidence: prov.confidence || 0,
       color,
       meetsTarget: !!prov.meets_pass_target,

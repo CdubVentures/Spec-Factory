@@ -14,8 +14,6 @@ export interface WorkbenchRow {
   contractType: string;
   contractShape: string;
   contractUnit: string;
-  unknownToken: string;
-
   // Enum
   enumPolicy: string;
   enumSource: string;

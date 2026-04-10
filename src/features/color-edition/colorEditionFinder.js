@@ -7,6 +7,7 @@
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { resolvePhaseModel } from '../../core/llm/client/routing.js';
+import { stripCompositeKey } from '../../core/llm/routeResolver.js';
 import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
@@ -30,7 +31,7 @@ function reconcileEditionColors(editions, repairMap) {
   return result;
 }
 
-function storeFailureAndReturn({ specDb, product, existing, model, rejections, raw, productRoot }) {
+function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, rejections, raw, productRoot }) {
   const now = new Date();
   const ranAt = now.toISOString();
 
@@ -46,7 +47,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, rejections, r
     },
     run: {
       model,
-      fallback_used: false,
+      fallback_used: fallbackUsed,
       status: 'rejected',
       selected: {},
       prompt: {},
@@ -61,7 +62,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, rejections, r
     run_number: latestRun.run_number,
     ran_at: ranAt,
     model,
-    fallback_used: false,
+    fallback_used: fallbackUsed,
     cooldown_until: '',
     selected: {},
     prompt: {},
@@ -106,9 +107,22 @@ export async function runColorEditionFinder({
   _callLlmOverride = null,
   onStageAdvance = null,
   onModelResolved = null,
+  onStreamChunk = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
-  const resolvedModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
+  const configModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
+  // WHY: Config stores composite keys ("provider:model"). Strip for display/storage.
+  let actualModel = stripCompositeKey(configModel);
+  let actualFallbackUsed = false;
+
+  // WHY: Wrap onModelResolved so we capture the ACTUAL model used (including fallback).
+  // routing.js fires this callback for primary AND fallback; last call wins.
+  const wrappedOnModelResolved = (info) => {
+    if (info.model) actualModel = info.model;
+    if (info.isFallback) actualFallbackUsed = true;
+    onModelResolved?.(info);
+  };
+
   const allColors = appDb.listColors();
   const colorNames = allColors.map(c => c.name);
 
@@ -121,13 +135,15 @@ export async function runColorEditionFinder({
   // from research to writer phase (jsonStrict off). Maps to onStageAdvance
   // so the operations tracker shows the Writer stage.
   const callLlm = _callLlmOverride
-    || createColorEditionFinderCallLlm(buildLlmCallDeps({
+    ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
+    : createColorEditionFinderCallLlm(buildLlmCallDeps({
       config,
       logger,
       onPhaseChange: onStageAdvance ? (phase) => {
         if (phase === 'writer') onStageAdvance('Writer');
       } : undefined,
-      onModelResolved,
+      onModelResolved: wrappedOnModelResolved,
+      onStreamChunk,
     }));
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
@@ -149,9 +165,20 @@ export async function runColorEditionFinder({
   const colorNamesMap = (response?.color_names && typeof response.color_names === 'object' && !Array.isArray(response.color_names))
     ? response.color_names
     : {};
-  const editions = (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions))
-    ? response.editions
-    : {};
+  // WHY: LLM may return editions as either a Record<slug, {display_name, colors}>
+  // (schema-constrained) or an Array<{slug, display_name, colors}> (free-form).
+  // Normalize both shapes into the expected Record format.
+  let editions = {};
+  if (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions)) {
+    editions = response.editions;
+  } else if (Array.isArray(response?.editions)) {
+    for (const entry of response.editions) {
+      if (entry && typeof entry === 'object' && typeof entry.slug === 'string' && entry.slug) {
+        const { slug, ...rest } = entry;
+        editions[slug] = rest;
+      }
+    }
+  }
   const defaultColor = response?.default_color || colors[0] || '';
 
   // --- Candidate gate: validate ALL fields before any writes ---
@@ -166,7 +193,7 @@ export async function runColorEditionFinder({
 
   if (fieldRules && fieldRules.colors) {
     const cefRunId = `cef-${Date.now()}`;
-    const cefSourceMeta = { source: 'cef', model: resolvedModel, run_id: cefRunId };
+    const cefSourceMeta = { source: 'cef', model: actualModel, run_id: cefRunId };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({
@@ -177,7 +204,7 @@ export async function runColorEditionFinder({
     const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
     if (colorsHardRejects.length > 0) {
-      return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+      return storeFailureAndReturn({ specDb, product, existing, model: actualModel, fallbackUsed: actualFallbackUsed, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
     }
 
     // Step 2: Build repair map from colors validation
@@ -211,7 +238,7 @@ export async function runColorEditionFinder({
       const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
       if (editionsHardRejects.length > 0) {
-        return storeFailureAndReturn({ specDb, product, existing, model: resolvedModel, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+        return storeFailureAndReturn({ specDb, product, existing, model: actualModel, fallbackUsed: actualFallbackUsed, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
       }
     }
 
@@ -276,8 +303,8 @@ export async function runColorEditionFinder({
       last_ran_at: ranAt,
     },
     run: {
-      model: resolvedModel,
-      fallback_used: false,
+      model: actualModel,
+      fallback_used: actualFallbackUsed,
       selected,
       prompt: { system: systemPrompt, user: userMessage },
       response: storedResponse,
@@ -291,8 +318,8 @@ export async function runColorEditionFinder({
     product_id: product.product_id,
     run_number: latestRun.run_number,
     ran_at: ranAt,
-    model: resolvedModel,
-    fallback_used: false,
+    model: actualModel,
+    fallback_used: actualFallbackUsed,
     cooldown_until: cooldownUntil,
     selected,
     prompt: { system: systemPrompt, user: userMessage },

@@ -1,6 +1,7 @@
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { loadConfig, loadDotEnvFile } from '../../../config.js';
+import { syncLabRegistryIntoConfig } from '../../../core/llm/labModelDiscovery.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../../../core/config/manifest.js';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { createStorage } from '../../../core/storage/storage.js';
@@ -84,6 +85,10 @@ export function createBootstrapEnvironment({ projectRoot }) {
 
   // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
   const configGate = createConfigMutationGate(config);
+
+  // WHY: Non-blocking fetch of Lab model registries. Updates config in-place
+  // when done. Frontend re-fetches /llm-policy on mount, picks up synced models.
+  syncLabRegistryIntoConfig(config).catch(() => {});
 
   const OUTPUT_ROOT = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
   const INDEXLAB_ROOT = resolveProjectPath(argVal('indexlab-root', ''), defaultIndexLabRoot());

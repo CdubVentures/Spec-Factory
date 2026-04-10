@@ -1,3 +1,50 @@
+// WHY: Read SSE response body incrementally, firing onDelta for each content/reasoning
+// token as it arrives. Returns the full accumulated text for backward-compatible assembly.
+// Handles partial SSE lines split across TCP chunk boundaries via a line buffer.
+export async function readStreamingResponse(response, onDelta) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const parts = [];
+  let lineBuffer = '';
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    parts.push(chunk);
+    lineBuffer += chunk;
+
+    const lines = lineBuffer.split('\n');
+    // Last element is either empty (line ended with \n) or a partial line
+    lineBuffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (!data || data === '[DONE]') continue;
+
+      let evt;
+      try { evt = JSON.parse(data); } catch { continue; }
+
+      const delta = evt?.choices?.[0]?.delta;
+      if (delta?.content || delta?.reasoning_content) {
+        onDelta({
+          content: delta.content || '',
+          reasoning: delta.reasoning_content || '',
+        });
+      }
+      // LLM Lab Responses API format
+      if (evt?.type === 'response.output_text.delta' && evt?.delta) {
+        onDelta({ content: evt.delta, reasoning: '' });
+      }
+    }
+  }
+
+  // Flush any remaining partial line (unlikely for well-formed SSE, but safe)
+  if (lineBuffer) parts.push('');
+  return parts.join('');
+}
+
 function normalizeBaseUrl(value) {
   // WHY: Registry base URLs may already include /v1 (e.g. "http://localhost:5001/v1").
   // Strip trailing /v1 so the endpoint doesn't become /v1/v1/chat/completions.
@@ -84,7 +131,8 @@ export async function requestOpenAICompatibleChatCompletion({
   apiKey,
   body,
   signal,
-  headers = {}
+  headers = {},
+  onDelta,
 }) {
   const endpoint = `${normalizeBaseUrl(baseUrl)}/v1/chat/completions`;
 
@@ -104,7 +152,9 @@ export async function requestOpenAICompatibleChatCompletion({
     signal
   });
 
-  const text = await response.text();
+  const text = onDelta
+    ? await readStreamingResponse(response, onDelta)
+    : await response.text();
 
   if (!response.ok) {
     throw new Error(`OpenAI API error ${response.status}: ${text.slice(0, 1000)}`);

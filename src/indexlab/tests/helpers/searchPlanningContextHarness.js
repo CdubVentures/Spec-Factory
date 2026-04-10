@@ -36,7 +36,7 @@ export function makeField(overrides = {}) {
       aliases: [],
     },
     state: 'unknown',
-    value: 'unk',
+    value: null,
     confidence: 0,
     effective_confidence: 0,
     refs_found: 0,

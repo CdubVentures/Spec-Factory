@@ -1,34 +1,28 @@
 # Roadmap: Retire `contract.unknown_token` & `contract.unknown_reason_required`
 
-**Status:** Planned
+**Status:** Complete (code and knobs retired; historical sample data may still contain 'unk' strings)
 **Date:** 2026-04-10
-**Knobs being removed:** `contract.unknown_token`, `contract.unknown_reason_required`
-**Verdict:** Both knobs are deferred with `consumer: null`. The runtime hardcodes `'unk'` everywhere. Zero divergence across 301 field rules in 3 categories. These are dead config — remove them.
+**Knobs removed:** `contract.unknown_token`, `contract.unknown_reason_required`
+**Scope:** Scope B — the `'unk'` sentinel was removed entirely. Absent data is `null`. No magic strings. `unkTokens.js` renamed to `absenceTokens.js` (input recognition only). All compiled JSON, Studio UI, presets, and runtime code updated.
 
 ---
 
-## What Survives
+## What Changed (Scope B)
 
-The internal `'unk'` sentinel and its normalization infrastructure are **not** being removed. Only the per-field configurability knobs are being retired.
+The `'unk'` sentinel was removed entirely. Absent data is `null`. No magic strings.
 
-**Stays (no changes):**
+**Removed:**
+- `contract.unknown_token` and `contract.unknown_reason_required` from field rule schema, compiler, and Studio UI
+- The `'unk'` string sentinel from the entire validation pipeline, engine, indexing, review, and DB layers
+- `unkTokens.js` deleted, replaced by `absenceTokens.js` (input recognition only — normalizes to `null`)
+- `UNKNOWN_TOKENS` constant, `STUDIO_TIPS.unknown_token`, Studio UI controls
+- `'unk'` from all SQL skip sets, LLM prompt instructions, format registry, frontend display fallbacks
 
-```
-src/features/publisher/validation/unkTokens.js        → UNK_TOKENS set (input normalizer)
-src/shared/valueNormalizers.js                         → UNKNOWN_VALUE_TOKENS set + hasKnownValue()
-src/features/publisher/validation/absenceNormalizer.js → Step 0 canonicalization (always returns 'unk')
-src/features/publisher/validation/shouldBlockUnkPublish.js → Derivation from required_level
-```
-
-**Dies:**
-
-```
-contract.unknown_token          → per-field sentinel selector (always 'unk', never diverges)
-contract.unknown_reason_required → per-field reason flag (always true, never wired)
-UNKNOWN_TOKENS constant         → dropdown options for a knob that doesn't do anything
-STUDIO_TIPS.unknown_token       → tooltip for dead knob
-STUDIO_TIPS.require_unknown_reason → tooltip for dead knob
-```
+**Stays:**
+- `ABSENCE_TOKENS` set (`absenceTokens.js`) — recognizes input strings like `'n/a'`, `'tbd'`, `'unknown'` and normalizes to `null`
+- `UNKNOWN_VALUE_TOKENS` set (`valueNormalizers.js`) — input recognition for `hasKnownValue()` (without `'unk'`)
+- `shouldBlockUnkPublish()` — derives publish-gate blocking from `required_level` (function name is legacy but behavior is correct)
+- `boolean_yes_no_unk` template name in parse catalog — stable identifier referenced in compiled JSON
 
 ---
 

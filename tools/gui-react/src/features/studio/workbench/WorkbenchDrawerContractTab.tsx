@@ -20,7 +20,6 @@ import {
   labelCls,
   selectCls,
   STUDIO_TIPS,
-  UNKNOWN_TOKENS,
 } from '../components/studioConstants.ts';
 import { useUnitRegistryQuery } from '../../../pages/unit-registry/unitRegistryQueries.ts';
 import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs.tsx';
@@ -99,10 +98,6 @@ export function ContractTab({
             <option value="">— none —</option>
             {registryUnits.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
-          <ComboSelect value={strN(rule, 'contract.unknown_token', 'unk')} onChange={(v) => onUpdate('contract.unknown_token', v)} options={UNKNOWN_TOKENS} placeholder="unk" disabled={isStudioContractFieldDeferredLocked('contract.unknown_token')} />
         </div>
       </div>
       <div className="space-y-2">

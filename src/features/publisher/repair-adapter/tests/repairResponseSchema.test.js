@@ -149,16 +149,16 @@ describe('applyRepairDecisions — scalar', () => {
     assert.equal(result.applied.length, 1);
   });
 
-  it('sets unk for reject decision', () => {
+  it('sets null for reject decision', () => {
     const decisions = [makeDecision({ decision: 'reject', resolved_to: null })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
-    assert.equal(result.value, 'unk');
+    assert.equal(result.value, null);
   });
 
-  it('sets unk for set_unk decision', () => {
+  it('sets null for set_unk decision', () => {
     const decisions = [makeDecision({ decision: 'set_unk', resolved_to: null })];
     const result = applyRepairDecisions({ decisions, currentValue: 'pink', shape: 'scalar' });
-    assert.equal(result.value, 'unk');
+    assert.equal(result.value, null);
   });
 
   it('keeps confirmed value for keep_new decision', () => {

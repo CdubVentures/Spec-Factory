@@ -25,8 +25,8 @@ export const PHASE_REGISTRY = [
     id: 'absence',
     title: 'Absence Normalization',
     order: 0,
-    description: 'Canonicalizes null, undefined, and empty values to the canonical unknown form.',
-    behaviorNote: 'Always runs. Maps null/undefined/empty to unk (scalar) or [] (list).',
+    description: 'Canonicalizes null, undefined, and empty values to null (scalar) or [] (list).',
+    behaviorNote: 'Always runs. Maps null/undefined/empty/absence-tokens to null (scalar) or [] (list).',
     isApplicable: () => true,
     triggerDetail: (rule) => {
       const shape = rule?.contract?.shape || 'scalar';
@@ -175,7 +175,7 @@ export const PHASE_REGISTRY = [
     title: 'Publish Gate',
     order: 10,
     description: 'Rejects unknown values for fields that block publishing.',
-    behaviorNote: 'Final gate. Rejects unk values when required_level is identity or required.',
+    behaviorNote: 'Final gate. Rejects null (absent) values when required_level is identity or required.',
     isApplicable: shouldBlockUnkPublish,
     triggerDetail: () => 'Blocks publish when value is null (absent)',
   },

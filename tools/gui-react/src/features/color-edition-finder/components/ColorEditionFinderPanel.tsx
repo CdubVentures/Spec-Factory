@@ -13,6 +13,8 @@ import { resolvePhaseModel } from '../../llm-config/state/llmPhaseOverridesBridg
 import type { GlobalDraftSlice } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
 import type { LlmPhaseOverrides } from '../../llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { assembleLlmPolicyFromFlat } from '../../llm-config/state/llmPolicyAdapter.generated.ts';
+import { resolveProviderForModel } from '../../llm-config/state/llmProviderRegistryBridge.ts';
+import type { LlmAccessMode, LlmProviderEntry } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import {
   useColorEditionFinderQuery,
   useColorEditionFinderRunMutation,
@@ -337,8 +339,16 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
 
 /* ── Run history column defs ──────────────────────────────────────── */
 
+function resolveAccessModeForModel(registry: LlmProviderEntry[], model: string): LlmAccessMode {
+  const provider = resolveProviderForModel(registry, model);
+  if (!provider) return 'api';
+  const entry = provider.models.find((m) => m.modelId === model);
+  return ((entry?.accessMode ?? provider.accessMode ?? 'api') as LlmAccessMode);
+}
+
 function buildRunHistoryColumns(
   deleteRunMut: { mutate: (n: number) => void; isPending: boolean },
+  registry: LlmProviderEntry[],
 ): ColumnDef<RunHistoryRow, unknown>[] {
   return [
     {
@@ -374,11 +384,14 @@ function buildRunHistoryColumns(
       header: 'Model',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
-          <Chip label={row.original.model || '?'} className="sf-chip-purple" />
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold sf-chip-purple border border-current">
+            <ModelBadgeGroup accessMode={resolveAccessModeForModel(registry, row.original.model)} />
+            {row.original.model || '?'}
+          </span>
           {row.original.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
         </div>
       ),
-      size: 150,
+      size: 180,
     },
     {
       id: 'counts',
@@ -438,10 +451,17 @@ interface ColorEditionFinderPanelProps {
   readonly category: string;
 }
 
-function useResolvedFinderModel() {
+interface ResolvedFinderModelResult {
+  model: ReturnType<typeof resolvePhaseModel>;
+  accessMode: LlmAccessMode;
+  registry: LlmProviderEntry[];
+}
+
+function useResolvedFinderModel(): ResolvedFinderModelResult {
   const storeValues = useRuntimeSettingsValueStore((s) => s.values);
   return useMemo(() => {
-    if (!storeValues) return null;
+    const empty: ResolvedFinderModelResult = { model: null, accessMode: 'api' as LlmAccessMode, registry: [] };
+    if (!storeValues) return empty;
     const policy = assembleLlmPolicyFromFlat(storeValues as Record<string, unknown>);
     const globalDraft: GlobalDraftSlice = {
       llmModelPlan: policy.models?.plan ?? '',
@@ -455,20 +475,28 @@ function useResolvedFinderModel() {
       llmMaxTokens: policy.tokens?.maxTokens ?? 0,
     };
     const overrides: LlmPhaseOverrides = (policy.phaseOverrides ?? {}) as LlmPhaseOverrides;
-    return resolvePhaseModel(overrides, 'colorFinder', globalDraft);
+    const resolved = resolvePhaseModel(overrides, 'colorFinder', globalDraft);
+    // WHY: Resolve accessMode + registry so badges show LAB vs API correctly
+    // across header, footer, AND per-row in the run history table.
+    const registry: LlmProviderEntry[] = Array.isArray(policy.providerRegistry) ? policy.providerRegistry as LlmProviderEntry[] : [];
+    const rawModelKey = resolved?.useReasoning
+      ? (overrides.colorFinder?.reasoningModel || globalDraft.llmModelReasoning)
+      : (overrides.colorFinder?.baseModel || globalDraft.llmModelPlan);
+    const accessMode = resolveAccessModeForModel(registry, rawModelKey);
+    return { model: resolved, accessMode, registry };
   }, [storeValues]);
 }
 
 /* ── Main Component ───────────────────────────────────────────────── */
 
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:finder:collapsed:${productId}`, false);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:finder:collapsed:${productId}`, true);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
   const runMut = useColorEditionFinderRunMutation(category, productId);
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
-  const resolvedModel = useResolvedFinderModel();
+  const { model: resolvedModel, accessMode: resolvedAccessMode, registry: providerRegistry } = useResolvedFinderModel();
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
     queryKey: ['colors'],
@@ -476,8 +504,8 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   });
 
   const runHistoryColumns = useMemo(
-    () => buildRunHistoryColumns(deleteRunMut),
-    [deleteRunMut],
+    () => buildRunHistoryColumns(deleteRunMut, providerRegistry),
+    [deleteRunMut, providerRegistry],
   );
 
   if (!productId || !category) return null;
@@ -492,7 +520,15 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const runHistoryRows = deriveRunHistoryRows(effectiveResult);
 
   const modelDisplay = resolvedModel?.effectiveModel || 'not configured';
-  const webSearchEnabled = resolvedModel?.webSearch ?? false;
+
+  // WHY: Derive badge props once — every ModelBadgeGroup site spreads this.
+  // Avoids O(n) manual wiring per badge instance (CLAUDE.md O(1) Feature Scaling).
+  const badgeProps = {
+    accessMode: resolvedAccessMode,
+    role: (resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
+    thinking: resolvedModel?.thinking ?? false,
+    webSearch: resolvedModel?.webSearch ?? false,
+  };
 
   // WHY: Derive running state from the operations store (per-product), not from
   // the mutation hook (per-component-instance). This way "Running" reflects
@@ -511,7 +547,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   return (
     <div className="sf-surface-panel p-0 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-6 pt-4 pb-0">
+      <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
         <button
           onClick={toggleCollapsed}
           className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
@@ -530,11 +566,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         )}
 
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-          <ModelBadgeGroup
-            role={resolvedModel?.useReasoning ? 'reasoning' : 'primary'}
-            thinking={resolvedModel?.thinking ?? false}
-            webSearch={webSearchEnabled}
-          />
+          <ModelBadgeGroup {...badgeProps} />
           {modelDisplay}
         </span>
 
@@ -633,11 +665,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
             <span>&middot;</span>
             <span className="inline-flex items-center gap-1.5">Model:
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-                <ModelBadgeGroup
-                  role={resolvedModel?.useReasoning ? 'reasoning' : 'primary'}
-                  thinking={resolvedModel?.thinking ?? false}
-                  webSearch={webSearchEnabled}
-                />
+                <ModelBadgeGroup {...badgeProps} />
                 {modelDisplay}
               </span>
             </span>

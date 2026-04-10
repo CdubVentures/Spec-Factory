@@ -72,6 +72,12 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       if (msg.action === 'upsert' && msg.operation) useOperationsStore.getState().upsert(msg.operation);
       if (msg.action === 'remove' && msg.id) useOperationsStore.getState().remove(msg.id);
     }
+    if (channel === 'llm-stream' && data && typeof data === 'object') {
+      const msg = data as { operationId?: string; text?: string };
+      if (msg.operationId && msg.text) {
+        useOperationsStore.getState().appendStreamText(msg.operationId, msg.text);
+      }
+    }
     if (channel === 'data-change' && data && typeof data === 'object') {
       const msg = data as { type?: string; event?: string; category?: string; categories?: string[] };
       const eventName = String(
@@ -94,7 +100,7 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
   }, [appendEvents, appendIndexLabEvents, appendProcessOutput, category, queryClient, setProcessStatus]);
 
   useWsSubscription({
-    channels: ['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event', 'operations'],
+    channels: ['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event', 'operations', 'llm-stream'],
     category,
     onMessage: handleWsMessage,
   });

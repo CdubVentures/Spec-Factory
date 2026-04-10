@@ -118,15 +118,15 @@ describe('updateModelInfo', () => {
     const op = registerOperation(VALID_OP);
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
     const ops = listOperations();
-    assert.deepEqual(ops[0].modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false });
+    assert.deepEqual(ops[0].modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false });
   });
 
   it('replaces modelInfo on second call (fallback scenario)', () => {
     const op = registerOperation(VALID_OP);
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
-    updateModelInfo({ id: op.id, model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true });
+    updateModelInfo({ id: op.id, model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true, accessMode: 'lab', thinking: true, webSearch: true });
     const ops = listOperations();
-    assert.deepEqual(ops[0].modelInfo, { model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true });
+    assert.deepEqual(ops[0].modelInfo, { model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true, accessMode: 'lab', thinking: true, webSearch: true });
   });
 
   it('no-ops on nonexistent id (no crash)', () => {
@@ -233,7 +233,7 @@ describe('broadcastWs integration', () => {
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
     assert.equal(spy.calls.length, 1);
     assert.equal(spy.calls[0].data.action, 'upsert');
-    assert.deepEqual(spy.calls[0].data.operation.modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false });
+    assert.deepEqual(spy.calls[0].data.operation.modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false });
   });
 
   it('mutations succeed silently when broadcastWs not initialized', () => {

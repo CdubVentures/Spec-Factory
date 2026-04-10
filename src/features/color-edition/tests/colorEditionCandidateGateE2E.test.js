@@ -61,7 +61,7 @@ function makeLlmStub(response) {
 }
 
 const REAL_EDITIONS_FIELD_RULE = {
-  contract: { shape: 'record', type: 'string' },
+  contract: { shape: 'list', type: 'string' },
   parse: { template: null },
   enum: { policy: 'open', match: { strategy: 'exact' } },
   priority: {},

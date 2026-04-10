@@ -6,7 +6,8 @@ export function normalizeEnumToken(value) {
 
 export function hasMeaningfulEnumValue(value) {
   const token = normalizeEnumToken(value);
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
+  if (value == null) return false;
+  return token !== '' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
 }
 
 export function dedupeEnumValues(values = []) {

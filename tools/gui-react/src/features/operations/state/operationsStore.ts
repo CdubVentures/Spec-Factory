@@ -16,7 +16,11 @@ export interface Operation {
     readonly model: string;
     readonly provider: string;
     readonly isFallback: boolean;
+    readonly accessMode: string;
+    readonly thinking: boolean;
+    readonly webSearch: boolean;
   } | null;
+  readonly streamText: string;
 }
 
 interface OperationsState {
@@ -24,6 +28,7 @@ interface OperationsState {
   upsert: (op: Operation) => void;
   remove: (id: string) => void;
   clear: () => void;
+  appendStreamText: (id: string, text: string) => void;
 }
 
 export const useOperationsStore = create<OperationsState>((set) => ({
@@ -32,7 +37,11 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   upsert: (op: Operation) =>
     set((state) => {
       const next = new Map(state.operations);
-      next.set(op.id, op);
+      // WHY: Clear streamText when operation reaches terminal state to free memory.
+      const streamText = (op.status === 'done' || op.status === 'error')
+        ? ''
+        : (state.operations.get(op.id)?.streamText ?? '');
+      next.set(op.id, { ...op, streamText });
       return { operations: next };
     }),
 
@@ -44,4 +53,13 @@ export const useOperationsStore = create<OperationsState>((set) => ({
     }),
 
   clear: () => set({ operations: new Map() }),
+
+  appendStreamText: (id: string, text: string) =>
+    set((state) => {
+      const existing = state.operations.get(id);
+      if (!existing || existing.status !== 'running') return state;
+      const next = new Map(state.operations);
+      next.set(id, { ...existing, streamText: existing.streamText + text });
+      return { operations: next };
+    }),
 }));

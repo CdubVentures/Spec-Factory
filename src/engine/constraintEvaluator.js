@@ -147,9 +147,10 @@ function evaluateConstraint(expr, componentProps = {}, productValues = {}) {
   const leftResolved = resolveValue(parsed.left, componentProps, productValues);
   const rightResolved = resolveValue(parsed.right, componentProps, productValues);
 
-  const unkTokens = new Set(['unk', 'unknown', 'n/a', '']);
-  const leftIsUnk = leftResolved.source === 'unresolved' || unkTokens.has(String(leftResolved.value).toLowerCase().trim());
-  const rightIsUnk = rightResolved.source === 'unresolved' || unkTokens.has(String(rightResolved.value).toLowerCase().trim());
+  const absenceTokens = new Set(['unknown', 'n/a', '']);
+  const isAbsent = (resolved) => resolved.source === 'unresolved' || resolved.value == null || absenceTokens.has(String(resolved.value).toLowerCase().trim());
+  const leftIsUnk = isAbsent(leftResolved);
+  const rightIsUnk = isAbsent(rightResolved);
 
   if (parsed.op === 'requires') {
     if (leftIsUnk) {

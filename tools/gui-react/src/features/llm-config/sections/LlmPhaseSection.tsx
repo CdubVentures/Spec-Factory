@@ -12,6 +12,8 @@ import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { resolveProviderForModel, parseModelKey } from '../state/llmProviderRegistryBridge.ts';
 import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
+import { CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
+import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
 
 interface LlmPhaseSectionProps {
   phaseId: LlmPhaseId;
@@ -65,16 +67,18 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
   // WHY: Capability flags gate Lab-only toggles per-model, not per-provider.
+  // lockedEffort detects baked-in effort from model name suffix (e.g. gpt-5.4-xhigh → "xhigh").
   function resolveCapabilities(modelKey: string | undefined) {
-    if (!modelKey) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[] };
+    if (!modelKey) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[], lockedEffort: null as string | null };
     const provider = resolveProviderForModel(registry, modelKey);
-    if (!provider) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[] };
+    if (!provider) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[], lockedEffort: null as string | null };
     const { modelId } = parseModelKey(modelKey);
     const model = provider.models.find((m) => m.modelId === modelId);
     return {
       thinking: model?.thinking === true,
       webSearch: model?.webSearch === true,
       thinkingEffortOptions: model?.thinkingEffortOptions ?? [],
+      lockedEffort: extractEffortFromModelName(modelId),
     };
   }
 
@@ -145,7 +149,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             type="number"
             min={0}
             step={1}
-            value={phaseOverrides[overrideKey]?.maxOutputTokens ?? ''}
+            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.maxOutputTokens ?? '')}
             placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxOutputTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
@@ -163,7 +167,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             type="number"
             min={128}
             step={1}
-            value={phaseOverrides[overrideKey]?.maxContextTokens ?? ''}
+            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.maxContextTokens ?? '')}
             placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxContextTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
@@ -181,8 +185,8 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             type="number"
             min={1000}
             step={1000}
-            value={phaseOverrides[overrideKey]?.timeoutMs ?? ''}
-            placeholder={resolved.disableLimits ? '600000 (10 min)' : `↩ ${resolved.timeoutMs ?? 'auto'}`}
+            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.timeoutMs ?? '')}
+            placeholder={resolved.disableLimits ? '1200000 (20 min)' : `↩ ${resolved.timeoutMs ?? 'auto'}`}
             disabled={resolved.disableLimits}
             onChange={(e) => {
               const raw = e.target.value;
@@ -252,7 +256,17 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </SettingRow>
       )}
-      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && effectiveModelCapabilities.thinkingEffortOptions.length > 1 && (
+      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && effectiveModelCapabilities.lockedEffort && (
+        <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
+          <span
+            className="sf-custom-select-badge"
+            style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
+          >
+            {effectiveModelCapabilities.lockedEffort}
+          </span>
+        </SettingRow>
+      )}
+      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && !effectiveModelCapabilities.lockedEffort && effectiveModelCapabilities.thinkingEffortOptions.length > 1 && (
         <SettingRow label="Thinking Effort" tip="Reasoning effort level sent to the Lab model.">
           <select
             className={inputCls}
@@ -322,7 +336,17 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </SettingRow>
       )}
-      {fallbackModelCapabilities.thinking && (phaseOverrides[overrideKey]?.fallbackThinking ?? false) && fallbackModelCapabilities.thinkingEffortOptions.length > 1 && (
+      {fallbackModelCapabilities.thinking && (phaseOverrides[overrideKey]?.fallbackThinking ?? false) && fallbackModelCapabilities.lockedEffort && (
+        <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
+          <span
+            className="sf-custom-select-badge"
+            style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
+          >
+            {fallbackModelCapabilities.lockedEffort}
+          </span>
+        </SettingRow>
+      )}
+      {fallbackModelCapabilities.thinking && (phaseOverrides[overrideKey]?.fallbackThinking ?? false) && !fallbackModelCapabilities.lockedEffort && fallbackModelCapabilities.thinkingEffortOptions.length > 1 && (
         <SettingRow label="Thinking Effort" tip="Reasoning effort for the fallback model.">
           <select
             className={inputCls}
@@ -393,7 +417,17 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             />
           </SettingRow>
         )}
-        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && writerModelCapabilities.thinkingEffortOptions.length > 1 && (
+        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && writerModelCapabilities.lockedEffort && (
+          <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
+            <span
+              className="sf-custom-select-badge"
+              style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
+            >
+              {writerModelCapabilities.lockedEffort}
+            </span>
+          </SettingRow>
+        )}
+        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && !writerModelCapabilities.lockedEffort && writerModelCapabilities.thinkingEffortOptions.length > 1 && (
           <SettingRow label="Thinking Effort" tip="Reasoning effort for the writer model.">
             <select
               className={inputCls}

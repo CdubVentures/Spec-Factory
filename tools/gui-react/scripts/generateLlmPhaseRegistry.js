@@ -244,6 +244,13 @@ export function uiPhaseIdToOverrideKey(uiPhaseId: LlmPhaseId): LlmOverridePhaseI
   return UI_TO_OVERRIDE.get(uiPhaseId);
 }
 
+// WHY: Composite keys ("providerId:modelId") are a routing concern.
+// Display should always use the bare model ID.
+function stripComposite(key: string): string {
+  const i = key.indexOf(':');
+  return i > 0 ? key.slice(i + 1) : key;
+}
+
 export function resolvePhaseModel(
   overrides: LlmPhaseOverrides,
   phaseId: LlmOverridePhaseId,
@@ -301,8 +308,8 @@ export function resolvePhaseModel(
     writerUseReasoning,
     writerThinking,
     writerThinkingEffort,
-    effectiveWriterModel: writerUseReasoning ? writerReasoningModel : writerModel,
-    effectiveModel: useReasoning ? reasoningModel : baseModel,
+    effectiveWriterModel: stripComposite(writerUseReasoning ? writerReasoningModel : writerModel),
+    effectiveModel: stripComposite(useReasoning ? reasoningModel : baseModel),
   };
 }
 `);

@@ -425,7 +425,7 @@ const EMPTY_AGG: ProductHistoryResponse['aggregate'] = {
 interface ProductHistoryPanelProps { productId: string; category: string }
 
 export function ProductHistoryPanel({ productId, category }: ProductHistoryPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:history:collapsed:${productId}`, false);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:history:collapsed:${productId}`, true);
   const [tab, setTab] = usePersistedTab<HistTab>(`indexing:history:tab:${productId}`, 'queries', { validValues: HIST_TAB_KEYS });
   const [selRunId, setSelRunId] = usePersistedTab<string>(`indexing:history:run:${productId}`, '');
 
@@ -510,7 +510,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
   return (
     <div className="sf-surface-panel p-0 order-[-10] flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-6 pt-4 pb-0">
+      <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
         <button onClick={toggleCollapsed} className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button" title={collapsed ? 'Expand' : 'Collapse'}>
           {collapsed ? '+' : '-'}
         </button>

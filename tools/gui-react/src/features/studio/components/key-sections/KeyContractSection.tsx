@@ -14,7 +14,6 @@ import {
   selectCls,
   inputCls,
   labelCls,
-  UNKNOWN_TOKENS,
   STUDIO_TIPS,
 } from "../studioConstants.ts";
 
@@ -152,31 +151,6 @@ export function KeyContractSection({
               <option key={u} value={u}>{u}</option>
             ))}
           </select>
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}>
-            <span>
-              Unknown Token
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.unknown_token}
-              />
-            </span>
-            <B p="contract.unknown_token" />
-          </div>
-          <ComboSelect
-            value={strN(currentRule, "contract.unknown_token", "unk")}
-            onChange={(v) =>
-              updateField(selectedKey, "contract.unknown_token", v)
-            }
-            options={UNKNOWN_TOKENS}
-            placeholder="unk"
-            disabled={isStudioContractFieldDeferredLocked("contract.unknown_token")}
-          />
         </div>
       </div>
       <div className="space-y-2">
@@ -421,38 +395,6 @@ export function KeyContractSection({
             <option value="floor">floor</option>
             <option value="ceil">ceil</option>
           </select>
-        </div>
-        <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={boolN(
-                currentRule,
-                "contract.unknown_reason_required",
-                true,
-              )}
-              onChange={(e) =>
-                updateField(
-                  selectedKey,
-                  "contract.unknown_reason_required",
-                  e.target.checked,
-                )
-              }
-              className="rounded sf-border-soft"
-              disabled={isStudioContractFieldDeferredLocked("contract.unknown_reason_required")}
-            />
-            <span className="text-xs sf-text-muted">
-              Require unknown reason
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.require_unknown_reason}
-              />
-            </span>
-          </label>
         </div>
       </div>
     </Section>

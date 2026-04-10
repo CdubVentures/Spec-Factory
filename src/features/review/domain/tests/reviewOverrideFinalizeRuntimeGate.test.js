@@ -68,7 +68,7 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
 
   assert.equal(finalizeResult.applied, true);
   assert.equal(finalizeResult.runtime_gate.failure_count > 0, true);
-  assert.equal(normalized.fields.weight, 'unk');
+  assert.equal(normalized.fields.weight, null);
   assert.equal(summary.field_reasoning.weight.unknown_reason, 'out_of_range');
   assert.equal(overridePayload.review_status, 'draft');
 });

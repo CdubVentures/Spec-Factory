@@ -498,9 +498,7 @@
         },
         "shape": "list",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -517,7 +515,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -593,7 +590,7 @@
         "guidance_md": null,
         "label": "Max Acceleration",
         "order": 57,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -614,9 +611,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -633,7 +628,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -697,7 +691,7 @@
         "guidance_md": null,
         "label": "Adjustable Scroll Wheel",
         "order": 80,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -717,9 +711,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -736,7 +728,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -804,7 +795,7 @@
         "guidance_md": null,
         "label": "Adjustable Weight",
         "order": 26,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -834,9 +825,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "h",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "h"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -853,7 +842,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -923,7 +911,7 @@
         "guidance_md": null,
         "label": "Battery Life (Hours)",
         "order": 25,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "h",
@@ -943,9 +931,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -962,7 +948,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1030,7 +1015,7 @@
         "guidance_md": null,
         "label": "Bluetooth",
         "order": 21,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -1050,9 +1035,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -1069,7 +1052,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1138,7 +1120,7 @@
         "guidance_md": null,
         "label": "Cable Type",
         "order": 22,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -1163,9 +1145,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "gf",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "gf"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -1182,7 +1162,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1250,7 +1229,7 @@
         "guidance_md": null,
         "label": "Click Force",
         "order": 72,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "gf",
@@ -1276,9 +1255,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -1295,7 +1272,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1375,7 +1351,7 @@
         "guidance_md": null,
         "label": "Click Latency",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -1403,9 +1379,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -1422,7 +1396,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1492,7 +1465,7 @@
         "guidance_md": null,
         "label": "Click Latency (Bluetooth)",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -1520,9 +1493,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -1539,7 +1510,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1609,7 +1579,7 @@
         "guidance_md": null,
         "label": "Click Latency (Wired)",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -1637,9 +1607,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -1656,7 +1624,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1726,7 +1693,7 @@
         "guidance_md": null,
         "label": "Click Latency (Wireless)",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -1750,9 +1717,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -1769,7 +1734,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1855,7 +1819,7 @@
         "guidance_md": null,
         "label": "Coating",
         "order": 28,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -1880,9 +1844,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -1895,7 +1857,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1985,7 +1946,7 @@
         "guidance_md": null,
         "label": "Colors",
         "order": 13,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2005,9 +1966,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2024,7 +1983,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2091,7 +2049,7 @@
         "guidance_md": null,
         "label": "Computer-side Connector",
         "order": 19,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2111,9 +2069,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2130,7 +2086,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2214,7 +2169,7 @@
         "guidance_md": null,
         "label": "Connection",
         "order": 17,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2238,9 +2193,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2257,7 +2210,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2343,7 +2295,7 @@
         "guidance_md": null,
         "label": "Connectivity",
         "order": 18,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2368,9 +2320,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -2387,7 +2337,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2454,7 +2403,7 @@
         "guidance_md": null,
         "label": "Debounce",
         "order": 69,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -2478,9 +2427,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2497,7 +2444,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2569,7 +2515,7 @@
         "guidance_md": null,
         "label": "Design",
         "order": 14,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2589,9 +2535,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -2608,7 +2552,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2666,7 +2609,7 @@
         "guidance_md": null,
         "label": "Discontinued",
         "order": 10,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2696,9 +2639,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "dpi",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "dpi"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -2715,7 +2656,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2788,7 +2728,7 @@
         "guidance_md": null,
         "label": "Max DPI",
         "order": 55,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "dpi",
@@ -2821,9 +2761,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2840,7 +2778,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2894,7 +2831,7 @@
         "guidance_md": null,
         "label": "Editions",
         "order": 76,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2941,9 +2878,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -2960,7 +2895,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3026,7 +2960,7 @@
         "guidance_md": null,
         "label": "Encoder",
         "order": 73,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3046,9 +2980,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -3065,7 +2997,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3129,7 +3060,7 @@
         "guidance_md": null,
         "label": "Encoder Brand",
         "order": 74,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3152,9 +3083,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "number",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "number"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -3171,7 +3100,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3235,7 +3163,7 @@
         "guidance_md": null,
         "label": "Encoder Life Span",
         "order": 76,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3256,9 +3184,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "url",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "url"
       },
       "data_type": "url",
       "difficulty": "medium",
@@ -3275,7 +3201,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3332,7 +3257,7 @@
         "guidance_md": null,
         "label": "Encoder Link",
         "order": 75,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3355,9 +3280,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "number",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "number"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -3370,7 +3293,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3438,7 +3360,7 @@
         "guidance_md": null,
         "label": "Encoder Steps",
         "order": 77,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3462,9 +3384,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3481,7 +3401,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3548,7 +3467,7 @@
         "guidance_md": null,
         "label": "Encoder Type",
         "order": 78,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3569,9 +3488,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3588,7 +3505,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3668,7 +3584,7 @@
         "guidance_md": null,
         "label": "Feet Material",
         "order": 27,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3688,9 +3604,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3707,7 +3621,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3775,7 +3688,7 @@
         "guidance_md": null,
         "label": "Flawless Sensor",
         "order": 50,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3796,9 +3709,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3815,7 +3726,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3898,7 +3808,7 @@
         "guidance_md": null,
         "label": "Form Factor",
         "order": 36,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3918,9 +3828,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3937,7 +3845,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4013,7 +3920,7 @@
         "guidance_md": null,
         "label": "Front Flare",
         "order": 39,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4037,9 +3944,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4056,7 +3961,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4131,7 +4035,7 @@
         "guidance_md": null,
         "label": "Grip",
         "order": 41,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4155,9 +4059,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4174,7 +4076,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4246,7 +4147,7 @@
         "guidance_md": null,
         "label": "Hand Size",
         "order": 42,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4266,9 +4167,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4285,7 +4184,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4350,7 +4248,7 @@
         "guidance_md": null,
         "label": "Hardware Acceleration",
         "order": 61,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4379,9 +4277,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -4398,7 +4294,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4467,7 +4362,7 @@
         "guidance_md": null,
         "label": "Height",
         "order": 35,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -4487,9 +4382,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4506,7 +4399,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4573,7 +4465,7 @@
         "guidance_md": null,
         "label": "Honeycomb Frame",
         "order": 29,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4593,9 +4485,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4612,7 +4502,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4679,7 +4568,7 @@
         "guidance_md": null,
         "label": "Hot Swappable",
         "order": 68,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4699,9 +4588,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4718,7 +4605,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4796,7 +4682,7 @@
         "guidance_md": null,
         "label": "Hump",
         "order": 38,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4825,9 +4711,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ips",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ips"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -4844,7 +4728,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4911,7 +4794,7 @@
         "guidance_md": null,
         "label": "Max IPS",
         "order": 56,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ips",
@@ -4942,9 +4825,7 @@
         },
         "shape": "list",
         "type": "mixed_number_range",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "mixed_number_range",
       "difficulty": "easy",
@@ -4961,7 +4842,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5041,7 +4921,7 @@
         "guidance_md": null,
         "label": "Lift-off Distance (LOD)",
         "order": 58,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -5065,9 +4945,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5084,7 +4962,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5162,7 +5039,7 @@
         "guidance_md": null,
         "label": "Lift Settings",
         "order": 59,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5185,9 +5062,7 @@
           "dedupe": false
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5204,7 +5079,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5288,7 +5162,7 @@
         "guidance_md": null,
         "label": "Lighting",
         "order": 15,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5318,9 +5192,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -5337,7 +5209,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5405,7 +5276,7 @@
         "guidance_md": null,
         "label": "Length",
         "order": 33,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -5448,9 +5319,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5467,7 +5336,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5539,7 +5407,7 @@
         "guidance_md": null,
         "label": "Material",
         "order": 32,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5559,9 +5427,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -5578,7 +5444,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5656,7 +5521,7 @@
         "guidance_md": null,
         "label": "MCU",
         "order": 43,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5676,9 +5541,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "url",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "url"
       },
       "data_type": "url",
       "difficulty": "medium",
@@ -5695,7 +5558,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5753,7 +5615,7 @@
         "guidance_md": null,
         "label": "MCU Link",
         "order": 44,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5777,9 +5639,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -5796,7 +5656,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5861,7 +5720,7 @@
         "guidance_md": null,
         "label": "Middle Buttons",
         "order": 77,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5881,9 +5740,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -5900,7 +5757,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5966,7 +5822,7 @@
         "guidance_md": null,
         "label": "Motion Sync",
         "order": 60,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5986,9 +5842,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6005,7 +5859,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6070,7 +5923,7 @@
         "guidance_md": null,
         "label": "Mouse-side Connector",
         "order": 20,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6090,9 +5943,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "medium",
@@ -6109,7 +5960,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6175,7 +6025,7 @@
         "guidance_md": null,
         "label": "NVIDIA Reflex",
         "order": 63,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6195,9 +6045,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -6214,7 +6062,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6281,7 +6128,7 @@
         "guidance_md": null,
         "label": "Onboard Memory",
         "order": 81,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6305,9 +6152,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -6324,7 +6169,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6389,7 +6233,7 @@
         "guidance_md": null,
         "label": "Onboard Memory (Value)",
         "order": 82,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6409,9 +6253,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -6428,7 +6270,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6494,7 +6335,7 @@
         "guidance_md": null,
         "label": "Paracord",
         "order": 23,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6525,9 +6366,7 @@
         },
         "shape": "list",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -6544,7 +6383,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6635,7 +6473,7 @@
         "guidance_md": null,
         "label": "Polling Rate",
         "order": 54,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -6655,9 +6493,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6674,7 +6510,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6740,7 +6575,7 @@
         "guidance_md": null,
         "label": "Price (MSRP)",
         "order": 12,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6760,9 +6595,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -6779,7 +6612,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6844,7 +6676,7 @@
         "guidance_md": null,
         "label": "Profile Switching",
         "order": 83,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6868,9 +6700,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -6887,7 +6717,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6955,7 +6784,7 @@
         "guidance_md": null,
         "label": "Programmable Buttons",
         "order": 78,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6975,9 +6804,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "date",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "date"
       },
       "data_type": "date",
       "difficulty": "medium",
@@ -6994,7 +6821,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7068,7 +6894,7 @@
         "guidance_md": null,
         "label": "Release Date",
         "order": 9,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7092,9 +6918,7 @@
       "contract": {
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7111,7 +6935,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7177,7 +7000,7 @@
         "guidance_md": null,
         "label": "Releasing Force",
         "order": 79,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7198,9 +7021,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -7217,7 +7038,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7284,7 +7104,7 @@
         "guidance_md": null,
         "label": "RGB",
         "order": 16,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7334,9 +7154,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -7353,7 +7171,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7432,7 +7249,7 @@
         "guidance_md": null,
         "label": "Sensor",
         "order": 45,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7452,9 +7269,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -7471,7 +7286,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7542,7 +7356,7 @@
         "guidance_md": null,
         "label": "Sensor Brand",
         "order": 46,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7568,9 +7382,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7587,7 +7399,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7657,7 +7468,7 @@
         "guidance_md": null,
         "label": "Sensor Date",
         "order": 47,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "year",
@@ -7683,9 +7494,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -7702,7 +7511,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -7781,7 +7589,7 @@
         "guidance_md": null,
         "label": "Sensor Latency",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -7809,9 +7617,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -7828,7 +7634,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -7897,7 +7702,7 @@
         "guidance_md": null,
         "label": "Sensor Latency (Bluetooth)",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -7925,9 +7730,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -7944,7 +7747,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8013,7 +7815,7 @@
         "guidance_md": null,
         "label": "Sensor Latency (Wired)",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8041,9 +7843,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -8060,7 +7860,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8129,7 +7928,7 @@
         "guidance_md": null,
         "label": "Sensor Latency (Wireless)",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8149,9 +7948,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "url",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "url"
       },
       "data_type": "url",
       "difficulty": "easy",
@@ -8168,7 +7965,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8232,7 +8028,7 @@
         "guidance_md": null,
         "label": "Sensor Link",
         "order": 48,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8252,9 +8048,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8271,7 +8065,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8347,7 +8140,7 @@
         "guidance_md": null,
         "label": "Sensor Type",
         "order": 49,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8368,9 +8161,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8387,7 +8178,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8467,7 +8257,7 @@
         "guidance_md": null,
         "label": "Shape",
         "order": 37,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8492,9 +8282,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -8511,7 +8299,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8576,7 +8363,7 @@
         "guidance_md": null,
         "label": "DPI Shift Latency",
         "order": 53,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8600,9 +8387,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -8619,7 +8404,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8686,7 +8470,7 @@
         "guidance_md": null,
         "label": "Side Buttons",
         "order": 76,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8706,9 +8490,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -8725,7 +8507,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8792,7 +8573,7 @@
         "guidance_md": null,
         "label": "Silent Clicks",
         "order": 30,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8817,9 +8598,7 @@
       },
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8836,7 +8615,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8902,7 +8680,7 @@
         "guidance_md": null,
         "label": "SKU / Part #",
         "order": 11,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8922,9 +8700,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -8941,7 +8717,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9007,7 +8782,7 @@
         "guidance_md": null,
         "label": "Smoothing",
         "order": 62,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9055,9 +8830,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -9074,7 +8847,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9152,7 +8924,7 @@
         "guidance_md": null,
         "label": "Switch",
         "order": 64,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9172,9 +8944,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -9191,7 +8961,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9263,7 +9032,7 @@
         "guidance_md": null,
         "label": "Switch Brand",
         "order": 65,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9286,9 +9055,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9305,7 +9072,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9374,7 +9140,7 @@
         "guidance_md": null,
         "label": "Switch Life Span",
         "order": 80,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9395,9 +9161,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9414,7 +9178,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9491,7 +9254,7 @@
         "guidance_md": null,
         "label": "Switch Type",
         "order": 66,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9516,9 +9279,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "url",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "url"
       },
       "data_type": "url",
       "difficulty": "medium",
@@ -9535,7 +9296,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9597,7 +9357,7 @@
         "guidance_md": null,
         "label": "Switches LInk",
         "order": 999,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9617,9 +9377,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9636,7 +9394,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9702,7 +9459,7 @@
         "guidance_md": null,
         "label": "Thumb Rest",
         "order": 40,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9722,9 +9479,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -9741,7 +9496,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9807,7 +9561,7 @@
         "guidance_md": null,
         "label": "Tilt Scroll Wheel",
         "order": 79,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9837,9 +9591,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -9856,7 +9608,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9927,7 +9678,7 @@
         "guidance_md": null,
         "label": "Weight",
         "order": 31,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -9956,9 +9707,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -9975,7 +9724,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10043,7 +9791,7 @@
         "guidance_md": null,
         "label": "Width",
         "order": 34,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -10063,9 +9811,7 @@
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "medium",
@@ -10082,7 +9828,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10150,7 +9895,7 @@
         "guidance_md": null,
         "label": "Wireless Charging",
         "order": 24,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10161,7 +9906,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-10T17:35:19.379Z",
+  "generated_at": "2026-04-10T21:44:35.026Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

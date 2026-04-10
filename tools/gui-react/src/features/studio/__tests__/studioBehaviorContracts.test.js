@@ -85,20 +85,8 @@ test('studio deferred-lock and tooltip contracts stay scoped to real deferred fi
     loadSystemMapping(),
   ]);
 
-  assert.equal(isStudioContractFieldDeferredLocked('contract.unknown_token'), true);
   assert.equal(isStudioContractFieldDeferredLocked('contract.rounding.mode'), true);
-  assert.equal(isStudioContractFieldDeferredLocked('contract.unknown_reason_required'), true);
   assert.equal(isStudioContractFieldDeferredLocked('contract.rounding.decimals'), false);
   assert.equal(isStudioContractFieldDeferredLocked('contract.range'), false);
   assert.equal(isStudioContractFieldDeferredLocked('contract.list_rules'), false);
-
-  assert.equal(
-    STUDIO_TIPS.unknown_token,
-    "Field-specific placeholder used in extraction guidance when data can't be determined.",
-  );
-  // WHY: contract.unknown_token was removed from FIELD_SYSTEM_MAP (was IDX-only,
-  // no pipeline consumer). formatStaticConsumerTooltip returns the generic fallback.
-  const unknownTokenTip = formatStaticConsumerTooltip('contract.unknown_token', 'indexlab');
-  assert.equal(typeof unknownTokenTip, 'string');
-  assert.ok(unknownTokenTip.length > 0, 'tooltip should return non-empty fallback');
 });

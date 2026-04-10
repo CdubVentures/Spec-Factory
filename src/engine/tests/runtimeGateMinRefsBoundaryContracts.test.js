@@ -51,7 +51,7 @@ test('min_evidence_refs honors min=1 and min=0 boundaries while still enforcing 
     enforceEvidence: false,
     evidencePack: minRefsEvidencePack
   });
-  assert.equal(noProvResult.fields.dpi, 'unk');
+  assert.equal(noProvResult.fields.dpi, null);
 
   const oneRefResult = applyRuntimeFieldRules({
     engine,
@@ -63,7 +63,7 @@ test('min_evidence_refs honors min=1 and min=0 boundaries while still enforcing 
     enforceEvidence: false,
     evidencePack: minRefsEvidencePack
   });
-  assert.equal(oneRefResult.fields.dpi, 'unk');
+  assert.equal(oneRefResult.fields.dpi, null);
   assert.equal(
     oneRefResult.failures.some((row) => row.reason_code === 'evidence_insufficient_refs'),
     true
@@ -92,7 +92,7 @@ test('min_evidence_refs honors min=1 and min=0 boundaries while still enforcing 
     enforceEvidence: true,
     evidencePack: minRefsEvidencePack
   });
-  assert.equal(globalEnforceResult.fields.weight, 'unk');
+  assert.equal(globalEnforceResult.fields.weight, null);
 });
 
 test('quality failures short-circuit count failures for min_evidence_refs enforcement', () => {
@@ -108,7 +108,7 @@ test('quality failures short-circuit count failures for min_evidence_refs enforc
     evidencePack: minRefsEvidencePack
   });
 
-  assert.equal(result.fields.weight, 'unk');
+  assert.equal(result.fields.weight, null);
   const evidenceFailures = result.failures.filter((row) => row.field === 'weight' && row.stage === 'evidence');
   assert.equal(evidenceFailures.length, 1);
   assert.notEqual(evidenceFailures[0].reason_code, 'evidence_insufficient_refs');

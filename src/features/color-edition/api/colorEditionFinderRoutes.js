@@ -3,6 +3,7 @@ import path from 'node:path';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../../../core/operations/index.js';
+import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 
 function cleanProductJsonCandidates(productId, fieldKeys) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
@@ -54,7 +55,7 @@ export function registerColorEditionFinderRoutes(ctx) {
       const latestSelected = latestRun?.selected;
       const selected = (latestSelected && Array.isArray(latestSelected.colors) && latestSelected.colors.length > 0)
         ? latestSelected
-        : { colors: row.colors, editions: {}, default_color: row.default_color };
+        : { colors: row.colors, editions: row.editions || [], default_color: row.default_color };
 
       return jsonRes(res, 200, {
         product_id: row.product_id,
@@ -68,14 +69,15 @@ export function registerColorEditionFinderRoutes(ctx) {
         last_ran_at: row.latest_ran_at,
         selected,
         runs,
-        color_details: {},
-        edition_details: {},
+        color_details: selected.color_names || {},
+        edition_details: selected.editions || {},
       });
     }
 
     // POST /color-edition-finder/:category/:productId — trigger finder
     if (method === 'POST' && category && productId && !parts[3]) {
       let op = null;
+      let batcher = null;
       try {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
@@ -98,6 +100,8 @@ export function registerColorEditionFinderRoutes(ctx) {
           stages,
         });
 
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+
         const result = await runColorEditionFinder({
           product: {
             product_id: productId,
@@ -111,9 +115,12 @@ export function registerColorEditionFinderRoutes(ctx) {
           config,
           logger: logger || null,
           onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-          onModelResolved: ({ model, provider, isFallback }) =>
-            updateModelInfo({ id: op.id, model, provider, isFallback }),
+          onModelResolved: (info) =>
+            updateModelInfo({ id: op.id, ...info }),
+          onStreamChunk: ({ content }) => { if (content) batcher.push(content); },
         });
+
+        batcher.dispose();
 
         if (result.rejected) {
           const reason = result.rejections?.[0]?.reason_code === 'llm_error' ? 'LLM call failed' : 'Validation rejected';
@@ -138,6 +145,7 @@ export function registerColorEditionFinderRoutes(ctx) {
           fallbackUsed: result.fallbackUsed,
         });
       } catch (err) {
+        if (batcher) batcher.dispose();
         if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
         const message = err instanceof Error ? err.message : String(err);
         console.error('[color-edition-finder] POST failed:', message);

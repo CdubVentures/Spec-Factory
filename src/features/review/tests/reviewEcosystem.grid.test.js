@@ -76,7 +76,7 @@ test('review ecosystem grid contracts share one fixture without weakening field-
 
     await t.test('GRID-04: Missing value shows gray color and strips visual treatment codes', async () => {
       const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-zowie-ec2-c' });
-      assert.equal(payload.fields.encoder.selected.value, 'unk');
+      assert.equal(payload.fields.encoder.selected.value, null);
       assert.equal(payload.fields.encoder.selected.color, 'gray');
       assert.equal(payload.fields.encoder.reason_codes.includes('missing_value'), false);
     });

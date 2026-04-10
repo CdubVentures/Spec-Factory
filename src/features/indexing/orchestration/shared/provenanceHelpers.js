@@ -30,5 +30,5 @@ export function ensureProvenanceField(provenance, field, fallbackValue = null) {
 }
 
 export function tsvRowFromFields(fieldOrder, fields) {
-  return fieldOrder.map((field) => fields[field] ?? 'unk').join('\t');
+  return fieldOrder.map((field) => fields[field] ?? '').join('\t');
 }

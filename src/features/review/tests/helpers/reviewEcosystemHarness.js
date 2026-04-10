@@ -76,13 +76,13 @@ let reviewFixtureTemplateCleanupRegistered = false;
 export const PRODUCTS = {
   'mouse-razer-viper-v3-pro': {
     identity: { brand: 'Razer', model: 'Viper V3 Pro' },
-    fields: { weight: '49', sensor: 'PAW3950', switch_type: 'Razer Optical Gen-3', encoder: 'TTC Gold Encoder', dpi: '35000', connection: '2.4GHz', cable_type: 'USB-C', coating: 'Matte', shell_material: 'unk' },
+    fields: { weight: '49', sensor: 'PAW3950', switch_type: 'Razer Optical Gen-3', encoder: 'TTC Gold Encoder', dpi: '35000', connection: '2.4GHz', cable_type: 'USB-C', coating: 'Matte', shell_material: null },
     provenance: {
       weight: { value: '49', confidence: 0.95 }, sensor: { value: 'PAW3950', confidence: 0.98 },
       switch_type: { value: 'Razer Optical Gen-3', confidence: 0.90 }, encoder: { value: 'TTC Gold Encoder', confidence: 0.75 },
       dpi: { value: '35000', confidence: 0.98 }, connection: { value: '2.4GHz', confidence: 0.98 },
       cable_type: { value: 'USB-C', confidence: 0.95 }, coating: { value: 'Matte', confidence: 0.80 },
-      shell_material: { value: 'unk', confidence: 0 },
+      shell_material: { value: null, confidence: 0 },
     },
     candidates: {
       weight: [
@@ -121,13 +121,13 @@ export const PRODUCTS = {
   },
   'mouse-logitech-g502-x': {
     identity: { brand: 'Logitech', model: 'G502 X' },
-    fields: { weight: '89', sensor: 'HERO26K', switch_type: 'Omron D2FC-F-K', encoder: 'ALPS Encoder', dpi: '25600', connection: 'Wired', cable_type: 'USB-C', coating: 'Textured', shell_material: 'unk' },
+    fields: { weight: '89', sensor: 'HERO26K', switch_type: 'Omron D2FC-F-K', encoder: 'ALPS Encoder', dpi: '25600', connection: 'Wired', cable_type: 'USB-C', coating: 'Textured', shell_material: null },
     provenance: {
       weight: { value: '89', confidence: 0.92 }, sensor: { value: 'HERO26K', confidence: 0.95 },
       switch_type: { value: 'Omron D2FC-F-K', confidence: 0.85 }, encoder: { value: 'ALPS Encoder', confidence: 0.70 },
       dpi: { value: '25600', confidence: 0.98 }, connection: { value: 'Wired', confidence: 0.99 },
       cable_type: { value: 'USB-C', confidence: 0.95 }, coating: { value: 'Textured', confidence: 0.75 },
-      shell_material: { value: 'unk', confidence: 0 },
+      shell_material: { value: null, confidence: 0 },
     },
     candidates: {
       weight: [
@@ -163,13 +163,13 @@ export const PRODUCTS = {
   },
   'mouse-zowie-ec2-c': {
     identity: { brand: 'Zowie', model: 'EC2-C' },
-    fields: { weight: '73', sensor: 'PMW3360', switch_type: 'Huano Blue Shell', encoder: 'unk', dpi: '3200', connection: 'Wired', cable_type: 'Paracord', coating: 'Matte', shell_material: 'unk' },
+    fields: { weight: '73', sensor: 'PMW3360', switch_type: 'Huano Blue Shell', encoder: null, dpi: '3200', connection: 'Wired', cable_type: 'Paracord', coating: 'Matte', shell_material: null },
     provenance: {
       weight: { value: '73', confidence: 0.90 }, sensor: { value: 'PMW3360', confidence: 0.88 },
-      switch_type: { value: 'Huano Blue Shell', confidence: 0.82 }, encoder: { value: 'unk', confidence: 0 },
+      switch_type: { value: 'Huano Blue Shell', confidence: 0.82 }, encoder: { value: null, confidence: 0 },
       dpi: { value: '3200', confidence: 0.95 }, connection: { value: 'Wired', confidence: 0.99 },
       cable_type: { value: 'Paracord', confidence: 0.85 }, coating: { value: 'Matte', confidence: 0.80 },
-      shell_material: { value: 'unk', confidence: 0 },
+      shell_material: { value: null, confidence: 0 },
     },
     candidates: {
       weight: [
@@ -246,10 +246,10 @@ export const PRODUCTS = {
   },
   'mouse-endgame-gear-op1we': {
     identity: { brand: 'Endgame Gear', model: 'OP1we' },
-    fields: { weight: '59', sensor: 'PMW3395', switch_type: 'Kailh GM 8.0', encoder: 'unk', dpi: '26000', connection: '2.4GHz', cable_type: 'USB-C', coating: 'Matte', shell_material: 'Carbon Fiber' },
+    fields: { weight: '59', sensor: 'PMW3395', switch_type: 'Kailh GM 8.0', encoder: null, dpi: '26000', connection: '2.4GHz', cable_type: 'USB-C', coating: 'Matte', shell_material: 'Carbon Fiber' },
     provenance: {
       weight: { value: '59', confidence: 0.91 }, sensor: { value: 'PMW3395', confidence: 0.94 },
-      switch_type: { value: 'Kailh GM 8.0', confidence: 0.86 }, encoder: { value: 'unk', confidence: 0 },
+      switch_type: { value: 'Kailh GM 8.0', confidence: 0.86 }, encoder: { value: null, confidence: 0 },
       dpi: { value: '26000', confidence: 0.96 }, connection: { value: '2.4GHz', confidence: 0.97 },
       cable_type: { value: 'USB-C', confidence: 0.93 }, coating: { value: 'Matte', confidence: 0.82 },
       shell_material: { value: 'Carbon Fiber', confidence: 0.68 },

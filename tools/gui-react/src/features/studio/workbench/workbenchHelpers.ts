@@ -114,8 +114,6 @@ export function buildWorkbenchRows(
       contractType: strN(r, 'contract.type', 'string'),
       contractShape: strN(r, 'contract.shape', 'scalar'),
       contractUnit: strN(r, 'contract.unit'),
-      unknownToken: strN(r, 'contract.unknown_token', 'unk'),
-
       enumPolicy: strN(r, 'enum.policy', strN(r, 'enum_policy', 'open')),
       enumSource: strN(r, 'enum.source', strN(r, 'enum_source')),
       knownValuesCount: (kv[key] || []).length,

@@ -31,7 +31,7 @@ test('buildTrafficLight maps tiers and unknowns to expected colors', () => {
         ]
       },
       battery_hours: {
-        value: 'unk',
+        value: null,
         confidence: 0.1,
         evidence: []
       }

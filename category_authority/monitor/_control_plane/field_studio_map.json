@@ -1932,9 +1932,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2026,7 +2024,7 @@
         "guidance_md": null,
         "label": "Adaptive Sync",
         "order": 36,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2051,9 +2049,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2143,7 +2139,7 @@
         "guidance_md": null,
         "label": "Aspect Ratio",
         "order": 12,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2169,9 +2165,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2259,7 +2253,7 @@
         "guidance_md": null,
         "label": "Audio Output",
         "order": 72,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2286,9 +2280,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2381,7 +2373,7 @@
         "guidance_md": null,
         "label": "Backlight Type",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2404,9 +2396,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2493,7 +2483,7 @@
         "guidance_md": null,
         "label": "Base Model",
         "order": 3,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2526,9 +2516,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -2628,7 +2616,7 @@
         "guidance_md": null,
         "label": "Black Uniformity",
         "order": 58,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -2651,9 +2639,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2740,7 +2726,7 @@
         "guidance_md": null,
         "label": "Brand",
         "order": 1,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2775,9 +2761,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "nits",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "nits"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -2867,7 +2851,7 @@
         "guidance_md": null,
         "label": "Peak HDR Brightness",
         "order": 42,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "nits",
@@ -2903,9 +2887,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "nits",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "nits"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -2999,7 +2981,7 @@
         "guidance_md": null,
         "label": "Brightness (SDR)",
         "order": 41,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "nits",
@@ -3026,9 +3008,7 @@
         "rounding": null,
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -3117,7 +3097,7 @@
         "guidance_md": null,
         "label": "Cable Length",
         "order": 109,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -3143,9 +3123,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3233,7 +3211,7 @@
         "guidance_md": null,
         "label": "Cable Type",
         "order": 110,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3263,9 +3241,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3363,7 +3339,7 @@
         "guidance_md": null,
         "label": "Cables Included",
         "order": 96,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3386,9 +3362,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3474,7 +3448,7 @@
         "guidance_md": null,
         "label": "Category",
         "order": 8,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3502,9 +3476,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -3603,7 +3575,7 @@
         "guidance_md": null,
         "label": "Color",
         "order": 107,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3637,9 +3609,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "hard",
@@ -3727,7 +3697,7 @@
         "guidance_md": null,
         "label": "Color Accuracy (ΔE)",
         "order": 48,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3761,9 +3731,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -3851,7 +3819,7 @@
         "guidance_md": null,
         "label": "Adobe RGB Coverage",
         "order": 47,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -3886,9 +3854,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -3977,7 +3943,7 @@
         "guidance_md": null,
         "label": "DCI-P3 Coverage",
         "order": 46,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -4012,9 +3978,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -4103,7 +4067,7 @@
         "guidance_md": null,
         "label": "sRGB Coverage",
         "order": 45,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -4128,9 +4092,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "enum": {
         "match": {},
@@ -4305,9 +4267,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4396,7 +4356,7 @@
         "guidance_md": null,
         "label": "Contrast Ratio",
         "order": 43,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4422,9 +4382,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4510,7 +4468,7 @@
         "guidance_md": null,
         "label": "Dynamic Contrast Ratio",
         "order": 44,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4537,9 +4495,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4626,7 +4582,7 @@
         "guidance_md": null,
         "label": "Crosshair Overlay",
         "order": 94,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4652,9 +4608,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4743,7 +4697,7 @@
         "guidance_md": null,
         "label": "Curve Radius",
         "order": 18,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4768,9 +4722,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4857,7 +4809,7 @@
         "guidance_md": null,
         "label": "Curved",
         "order": 17,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4884,9 +4836,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -4974,7 +4924,7 @@
         "guidance_md": null,
         "label": "Daisy Chain (DP Out)",
         "order": 74,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5007,9 +4957,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -5098,7 +5046,7 @@
         "guidance_md": null,
         "label": "Depth",
         "order": 79,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -5124,9 +5072,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -5213,7 +5159,7 @@
         "guidance_md": null,
         "label": "Discontinued",
         "order": 106,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5239,9 +5185,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5331,7 +5275,7 @@
         "guidance_md": null,
         "label": "Display Stream Compression",
         "order": 65,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5357,9 +5301,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5449,7 +5391,7 @@
         "guidance_md": null,
         "label": "DisplayPort",
         "order": 63,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5476,9 +5418,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5568,7 +5508,7 @@
         "guidance_md": null,
         "label": "DisplayPort Version",
         "order": 64,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5591,9 +5531,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "enum": {
         "match": {},
@@ -5658,9 +5596,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5748,7 +5684,7 @@
         "guidance_md": null,
         "label": "Energy Rating",
         "order": 103,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5775,9 +5711,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5867,7 +5801,7 @@
         "guidance_md": null,
         "label": "Ethernet / RJ45",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5892,9 +5826,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -5981,7 +5913,7 @@
         "guidance_md": null,
         "label": "Factory Calibrated",
         "order": 50,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6007,9 +5939,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -6098,7 +6028,7 @@
         "guidance_md": null,
         "label": "Flicker-Free",
         "order": 91,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6133,9 +6063,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -6236,7 +6164,7 @@
         "guidance_md": null,
         "label": "Flicker Frequency",
         "order": 92,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -6263,9 +6191,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -6352,7 +6278,7 @@
         "guidance_md": null,
         "label": "FRC (Dithering)",
         "order": 16,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6378,9 +6304,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6479,7 +6403,7 @@
         "guidance_md": null,
         "label": "Gradient Handling",
         "order": 60,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6512,9 +6436,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -6614,7 +6536,7 @@
         "guidance_md": null,
         "label": "Gray Uniformity (50%)",
         "order": 57,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -6637,9 +6559,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6725,7 +6645,7 @@
         "guidance_md": null,
         "label": "GTIN / UPC",
         "order": 7,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6751,9 +6671,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6843,7 +6761,7 @@
         "guidance_md": null,
         "label": "HDMI Ports",
         "order": 61,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6870,9 +6788,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6963,7 +6879,7 @@
         "guidance_md": null,
         "label": "HDMI Version",
         "order": 62,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6992,9 +6908,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7097,7 +7011,7 @@
         "guidance_md": null,
         "label": "HDR Support",
         "order": 49,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7124,9 +7038,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -7213,7 +7125,7 @@
         "guidance_md": null,
         "label": "Headphone Jack",
         "order": 71,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7248,9 +7160,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7339,7 +7249,7 @@
         "guidance_md": null,
         "label": "Height",
         "order": 78,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -7366,9 +7276,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7458,7 +7366,7 @@
         "guidance_md": null,
         "label": "Height Adjustment",
         "order": 82,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7491,9 +7399,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7582,7 +7488,7 @@
         "guidance_md": null,
         "label": "Height (With Stand)",
         "order": 80,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -7617,9 +7523,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "deg",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "deg"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7719,7 +7623,7 @@
         "guidance_md": null,
         "label": "Horizontal Viewing Angle",
         "order": 55,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "°",
@@ -7753,9 +7657,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -7845,7 +7747,7 @@
         "guidance_md": null,
         "label": "Input Lag",
         "order": 32,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -7880,9 +7782,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -7983,7 +7883,7 @@
         "guidance_md": null,
         "label": "Input Lag (120 Hz)",
         "order": 34,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8017,9 +7917,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -8120,7 +8018,7 @@
         "guidance_md": null,
         "label": "Input Lag (60 Hz)",
         "order": 35,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8154,9 +8052,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -8257,7 +8153,7 @@
         "guidance_md": null,
         "label": "Input Lag (Max Refresh)",
         "order": 33,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -8283,9 +8179,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -8373,7 +8267,7 @@
         "guidance_md": null,
         "label": "KVM Switch",
         "order": 73,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8407,9 +8301,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "medium",
@@ -8497,7 +8389,7 @@
         "guidance_md": null,
         "label": "Local Dimming Zones",
         "order": 52,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8524,9 +8416,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -8614,7 +8504,7 @@
         "guidance_md": null,
         "label": "Low Blue Light",
         "order": 93,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8640,9 +8530,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8741,7 +8629,7 @@
         "guidance_md": null,
         "label": "macOS Compatibility",
         "order": 100,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8765,9 +8653,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8855,7 +8741,7 @@
         "guidance_md": null,
         "label": "Material",
         "order": 111,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8890,9 +8776,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -8995,7 +8879,7 @@
         "guidance_md": null,
         "label": "Max Refresh Rate (DisplayPort)",
         "order": 23,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -9030,9 +8914,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -9135,7 +9017,7 @@
         "guidance_md": null,
         "label": "Max Refresh Rate (HDMI)",
         "order": 24,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -9162,9 +9044,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9254,7 +9134,7 @@
         "guidance_md": null,
         "label": "Microphone",
         "order": 89,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9276,9 +9156,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9365,7 +9243,7 @@
         "guidance_md": null,
         "label": "Model",
         "order": 2,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9393,9 +9271,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -9486,7 +9362,7 @@
         "guidance_md": null,
         "label": "Motion Blur Reduction",
         "order": 40,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9509,9 +9385,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9597,7 +9471,7 @@
         "guidance_md": null,
         "label": "MPN",
         "order": 6,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9623,9 +9497,7 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9712,7 +9584,7 @@
         "guidance_md": null,
         "label": "Native Colors",
         "order": 21,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "M",
@@ -9739,9 +9611,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9829,7 +9699,7 @@
         "guidance_md": null,
         "label": "OSD Control",
         "order": 97,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9854,9 +9724,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -9945,7 +9813,7 @@
         "guidance_md": null,
         "label": "Overdrive",
         "order": 39,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9979,9 +9847,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -10081,7 +9947,7 @@
         "guidance_md": null,
         "label": "Overshoot (120 Hz)",
         "order": 30,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -10115,9 +9981,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -10217,7 +10081,7 @@
         "guidance_md": null,
         "label": "Overshoot (60 Hz)",
         "order": 31,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -10251,9 +10115,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -10354,7 +10216,7 @@
         "guidance_md": null,
         "label": "Overshoot (Max Refresh)",
         "order": 29,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -10381,9 +10243,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10472,7 +10332,7 @@
         "guidance_md": null,
         "label": "Panel Bit Depth",
         "order": 15,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10499,9 +10359,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10591,7 +10449,7 @@
         "guidance_md": null,
         "label": "Panel Coating",
         "order": 19,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10617,9 +10475,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -10708,7 +10564,7 @@
         "guidance_md": null,
         "label": "Panel Manufacturer",
         "order": 20,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10735,9 +10591,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10831,7 +10685,7 @@
         "guidance_md": null,
         "label": "Panel Type",
         "order": 10,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10859,9 +10713,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -10950,7 +10802,7 @@
         "guidance_md": null,
         "label": "PiP / PbP",
         "order": 90,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10977,9 +10829,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -11067,7 +10917,7 @@
         "guidance_md": null,
         "label": "Pivot / Portrait",
         "order": 85,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11102,9 +10952,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ppi",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ppi"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -11194,7 +11042,7 @@
         "guidance_md": null,
         "label": "Pixel Density",
         "order": 13,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ppi",
@@ -11229,9 +11077,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "W",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "W"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -11320,7 +11166,7 @@
         "guidance_md": null,
         "label": "Power Consumption (Max)",
         "order": 102,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "W",
@@ -11355,9 +11201,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "W",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "W"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -11448,7 +11292,7 @@
         "guidance_md": null,
         "label": "Power Consumption (Typical)",
         "order": 101,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "W",
@@ -11477,9 +11321,7 @@
         "rounding": null,
         "shape": "scalar",
         "type": "string",
-        "unit": null,
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": null
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -11569,7 +11411,7 @@
         "guidance_md": null,
         "label": "Price (MSRP)",
         "order": 105,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11596,9 +11438,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -11697,7 +11537,7 @@
         "guidance_md": null,
         "label": "PS5 Compatibility",
         "order": 98,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11730,9 +11570,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "%",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "%"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -11833,7 +11671,7 @@
         "guidance_md": null,
         "label": "Reflections",
         "order": 54,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "%",
@@ -11867,9 +11705,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -11965,7 +11801,7 @@
         "guidance_md": null,
         "label": "Refresh Rate",
         "order": 22,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -11992,9 +11828,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "date",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "date"
       },
       "data_type": "date",
       "difficulty": "medium",
@@ -12082,7 +11916,7 @@
         "guidance_md": null,
         "label": "Release Date",
         "order": 104,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12108,9 +11942,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12203,7 +12035,7 @@
         "guidance_md": null,
         "label": "Resolution",
         "order": 11,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12237,9 +12069,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -12341,7 +12171,7 @@
         "guidance_md": null,
         "label": "Response Time (120 Hz)",
         "order": 27,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -12375,9 +12205,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -12479,7 +12307,7 @@
         "guidance_md": null,
         "label": "Response Time (60 Hz)",
         "order": 28,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -12514,9 +12342,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -12608,7 +12434,7 @@
         "guidance_md": null,
         "label": "Response Time (GtG)",
         "order": 25,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -12643,9 +12469,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -12735,7 +12559,7 @@
         "guidance_md": null,
         "label": "Response Time (MPRT)",
         "order": 26,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -12771,9 +12595,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "in",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "in"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -12865,7 +12687,7 @@
         "guidance_md": null,
         "label": "Screen Size",
         "order": 9,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "\"",
@@ -12889,9 +12711,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12978,7 +12798,7 @@
         "guidance_md": null,
         "label": "SKU / Part #",
         "order": 5,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13003,9 +12823,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13095,7 +12913,7 @@
         "guidance_md": null,
         "label": "Speakers",
         "order": 87,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13121,9 +12939,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -13210,7 +13026,7 @@
         "guidance_md": null,
         "label": "Subpixel Layout",
         "order": 14,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13236,9 +13052,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13326,7 +13140,7 @@
         "guidance_md": null,
         "label": "Swivel Range",
         "order": 84,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13352,9 +13166,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13453,7 +13265,7 @@
         "guidance_md": null,
         "label": "Text Clarity",
         "order": 59,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13479,9 +13291,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13570,7 +13380,7 @@
         "guidance_md": null,
         "label": "Thunderbolt Ports",
         "order": 66,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13597,9 +13407,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13688,7 +13496,7 @@
         "guidance_md": null,
         "label": "Thunderbolt Version",
         "order": 67,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13714,9 +13522,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13805,7 +13611,7 @@
         "guidance_md": null,
         "label": "Tilt Range",
         "order": 83,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13832,9 +13638,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13923,7 +13727,7 @@
         "guidance_md": null,
         "label": "USB-C Ports",
         "order": 68,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13949,9 +13753,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -14039,7 +13841,7 @@
         "guidance_md": null,
         "label": "USB Hub",
         "order": 69,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14074,9 +13876,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "W",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "W"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -14168,7 +13968,7 @@
         "guidance_md": null,
         "label": "USB-C Power Delivery",
         "order": 95,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "W",
@@ -14195,9 +13995,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -14285,7 +14083,7 @@
         "guidance_md": null,
         "label": "Variable Refresh Rate",
         "order": 38,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14308,9 +14106,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -14398,7 +14194,7 @@
         "guidance_md": null,
         "label": "Variant",
         "order": 4,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14432,9 +14228,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "deg",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "deg"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -14534,7 +14328,7 @@
         "guidance_md": null,
         "label": "Vertical Viewing Angle",
         "order": 56,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "°",
@@ -14561,9 +14355,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -14654,7 +14446,7 @@
         "guidance_md": null,
         "label": "VESA Mount",
         "order": 81,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14681,9 +14473,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -14771,7 +14561,7 @@
         "guidance_md": null,
         "label": "VRR Range",
         "order": 37,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14797,9 +14587,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -14886,7 +14674,7 @@
         "guidance_md": null,
         "label": "Wall Mountable",
         "order": 86,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14913,9 +14701,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -15002,7 +14788,7 @@
         "guidance_md": null,
         "label": "Warranty",
         "order": 108,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -15029,9 +14815,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -15122,7 +14906,7 @@
         "guidance_md": null,
         "label": "Webcam",
         "order": 88,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -15155,9 +14939,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -15247,7 +15029,7 @@
         "guidance_md": null,
         "label": "Weight (With Stand)",
         "order": 76,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -15282,9 +15064,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -15375,7 +15155,7 @@
         "guidance_md": null,
         "label": "Weight (Without Stand)",
         "order": 75,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -15402,9 +15182,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "boolean",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -15492,7 +15270,7 @@
         "guidance_md": null,
         "label": "Wide Color Gamut",
         "order": 53,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -15527,9 +15305,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -15618,7 +15394,7 @@
         "guidance_md": null,
         "label": "Width",
         "order": 77,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -15646,9 +15422,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -15747,7 +15521,7 @@
         "guidance_md": null,
         "label": "Xbox Series X|S Compatibility",
         "order": 99,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,

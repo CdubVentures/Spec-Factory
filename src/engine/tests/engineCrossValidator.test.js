@@ -208,7 +208,7 @@ test('crossValidate component_db_lookup: value exceeds component max', () => {
 // ── crossValidate: unknown value short-circuits ───────────────────────────────
 
 test('crossValidate returns ok for unknown token values', () => {
-  const result = crossValidate('dpi', 'unk', {}, {
+  const result = crossValidate('dpi', null, {}, {
     crossValidationRules: [{ rule_id: 'test', trigger_field: 'dpi', check: { type: 'range', min: 0, max: 100 } }],
     rules: {},
     lookupComponent: () => null

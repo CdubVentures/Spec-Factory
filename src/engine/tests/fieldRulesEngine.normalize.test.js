@@ -88,7 +88,7 @@ test('applyKeyMigrations rewrites legacy keys and normalizeFullRecord produces u
     );
     assert.equal(normalized.normalized.weight, 54);
     assert.equal(normalized.normalized.connection, 'wireless');
-    assert.equal(normalized.normalized.battery_hours?.value, 'unk');
+    assert.equal(normalized.normalized.battery_hours?.value, null);
     assert.equal(normalized.unknowns.some((row) => row.field_key === 'battery_hours'), true);
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });

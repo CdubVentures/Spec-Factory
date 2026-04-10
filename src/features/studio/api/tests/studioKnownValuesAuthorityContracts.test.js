@@ -14,7 +14,7 @@ test('studio known-values reads authoritative enum values from SpecDb when avail
             { value: '2.4GHz', needs_review: 0 },
             { value: 'Wireless', needs_review: 1 },
             { value: '2.4GHz', needs_review: 0 },
-            { value: 'unk', needs_review: 1 },
+            { value: null, needs_review: 1 },
           ];
         }
         if (fieldKey === 'lighting') {

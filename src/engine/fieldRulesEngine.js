@@ -319,7 +319,7 @@ export class FieldRulesEngine {
     const key = normalizeFieldKey(fieldKey);
     const rule = this.rules[key] || {};
     return {
-      value: 'unk',
+      value: null,
       unknown_reason: normalizeToken(unknownReason) || 'not_found_after_search',
       field_key: key,
       required_level: requiredLevel(rule),

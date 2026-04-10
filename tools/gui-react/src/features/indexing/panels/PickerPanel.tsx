@@ -102,22 +102,20 @@ export function PickerPanel({
 }: PickerPanelProps) {
   const hasKeyGateBlock = llmKeyGateErrors.length > 0;
   return (
-    <div className="sf-surface-panel p-3 space-y-3" style={{ order: -20 }}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center text-sm font-semibold sf-text-primary">
-          <button
-            onClick={onToggle}
-            className="inline-flex items-center justify-center w-5 h-5 mr-1 sf-text-caption sf-icon-button"
-            title={collapsed ? 'Open panel' : 'Close panel'}
-          >
-            {collapsed ? '+' : '-'}
-          </button>
-          <span>Product Picker</span>
-          <Tip text="Pick one exact product, then run IndexLab." />
-        </div>
+    <div className="sf-surface-panel p-0" style={{ order: -20 }}>
+      <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
+        <button
+          onClick={onToggle}
+          className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          {collapsed ? '+' : '-'}
+        </button>
+        <span className="text-[15px] font-bold sf-text-primary">Product Picker</span>
+        <Tip text="Pick one exact product, then run IndexLab." />
       </div>
       {!collapsed ? (
-        <>
+        <div className="px-6 pb-4 pt-3 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         <select
           value={singleBrand}
@@ -272,7 +270,7 @@ Variant-empty review hint:
               Pipeline settings are loading. Run start is locked until persisted settings hydrate.
             </div>
           ) : null}
-        </>
+        </div>
       ) : null}
     </div>
   );

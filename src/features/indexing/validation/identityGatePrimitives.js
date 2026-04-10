@@ -117,7 +117,7 @@ export function detectConnectionClass(value) {
   if (token.includes('wired')) {
     return 'wired';
   }
-  return 'unk';
+  return null;
 }
 
 export function firstKnownClass(...classes) {

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { useProductStore } from '../../../stores/productStore.ts';
+import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
+import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 
 /* ── Module chip color map ─────────────────────────────────────────── */
 
@@ -81,6 +83,25 @@ function StagePipeline({ stages, currentIndex, status }: {
   );
 }
 
+/* ── Streaming text panel ─────────────────────────────────────────── */
+
+function StreamPanel({ text }: { readonly text: string }) {
+  const ref = useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [text]);
+
+  return (
+    <pre
+      ref={ref}
+      className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded-sm p-1.5 text-[10px] font-mono sf-text-subtle bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]"
+      style={{ scrollbarWidth: 'thin' }}
+    >
+      {text}
+    </pre>
+  );
+}
+
 /* ── Single operation card ─────────────────────────────────────────── */
 
 function OpCard({ op, onClick }: { readonly op: Operation; readonly onClick: () => void }) {
@@ -113,9 +134,14 @@ function OpCard({ op, onClick }: { readonly op: Operation; readonly onClick: () 
         </span>
       </span>
 
-      {/* Row 1.5: model info (only when resolved) */}
+      {/* Row 1.5: model info with capability badges */}
       {op.modelInfo && (
         <span className="flex items-center gap-1 min-w-0">
+          <ModelBadgeGroup
+            accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
+            thinking={op.modelInfo.thinking}
+            webSearch={op.modelInfo.webSearch}
+          />
           <span className={`text-[9px] font-mono truncate min-w-0 flex-1 text-left ${
             op.modelInfo.isFallback
               ? 'text-[var(--sf-state-warning-fg)]'
@@ -124,6 +150,11 @@ function OpCard({ op, onClick }: { readonly op: Operation; readonly onClick: () 
             {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
           </span>
         </span>
+      )}
+
+      {/* Row 1.75: streaming LLM output */}
+      {op.streamText && op.status === 'running' && (
+        <StreamPanel text={op.streamText} />
       )}
 
       {/* Row 2: stage pipeline + elapsed */}

@@ -14,7 +14,7 @@ import {
 
 function cleanVariant(variant) {
   const token = String(variant ?? '').trim().toLowerCase();
-  if (token === '' || token === 'unk' || token === 'unknown' || token === 'n/a') return '';
+  if (token === '' || token === 'unknown' || token === 'n/a') return '';
   return String(variant).trim();
 }
 

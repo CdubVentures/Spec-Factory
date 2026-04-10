@@ -1,5 +1,5 @@
 import { callLlmProvider } from './llmClient.js';
-import { resolveModelFromRegistry } from '../routeResolver.js';
+import { resolveModelFromRegistry, stripCompositeKey } from '../routeResolver.js';
 import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 import { providerFromModelToken, defaultBaseUrlForProvider, bootstrapApiKeyForProvider, KNOWN_PROVIDERS, normalizeProvider } from '../providerMeta.js';
 
@@ -30,6 +30,10 @@ export function resolvePhaseReasoning(config = {}, phase = '') {
     config[`_resolved${cap}UseReasoning`] ?? configValue(config, 'llmPlanUseReasoning')
   );
 }
+
+// WHY: Shared with frontend (LlmPhaseSection.tsx) per O(1) scaling rule.
+import { extractEffortFromModelName } from '../../../shared/effortFromModelName.js';
+export { extractEffortFromModelName };
 
 export function resolvePhaseModel(config = {}, phase = '') {
   const cap = capitalize(String(phase || '').trim());
@@ -363,10 +367,8 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
     // Composite keys ("providerId:modelId") must be split so
     // providerFromModelToken receives a bare model ID, not "lab-openai:gpt-5-low".
     delete route._registryEntry;
-    const colonIdx = overrideModel.indexOf(':');
-    const bareModel = colonIdx > 0 ? overrideModel.slice(colonIdx + 1) : overrideModel;
-    route.model = bareModel;
-    const inferred = providerFromModelToken(bareModel);
+    route.model = stripCompositeKey(overrideModel);
+    const inferred = providerFromModelToken(route.model);
     route.provider = inferred;
     route.baseUrl = defaultBaseUrlForProvider(inferred);
     route.apiKey = bootstrapApiKeyForProvider(config, inferred);
@@ -485,6 +487,7 @@ export async function callLlmWithRouting({
   logger,
   onPhaseChange,
   onModelResolved,
+  onStreamChunk,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const primary = resolveLlmRoute(config, {
@@ -511,10 +514,13 @@ export async function callLlmWithRouting({
   const phaseWebSearch = resolvePhaseFlag(config, phase, 'WebSearch');
   const phaseThinking = resolvePhaseFlag(config, phase, 'Thinking');
   const phaseThinkingEffort = resolvePhaseString(config, phase, 'ThinkingEffort');
+  // WHY: Suffixed models (e.g. gpt-5.4-xhigh) carry effort in the name.
+  // LLM Lab extracts it server-side. Sending reasoning_effort too would double-specify.
+  const primaryBakedEffort = extractEffortFromModelName(primary.model);
   const mergedOptions = {
     ...(baseRequestOptions || {}),
     ...(phaseWebSearch ? { web_search: true } : {}),
-    ...(phaseThinking ? { reasoning_effort: phaseThinkingEffort || 'medium' } : {}),
+    ...(phaseThinking && !primaryBakedEffort ? { reasoning_effort: phaseThinkingEffort || 'medium' } : {}),
   };
   const effectiveRequestOptions = Object.keys(mergedOptions).length > 0 ? mergedOptions : baseRequestOptions;
 
@@ -544,7 +550,7 @@ export async function callLlmWithRouting({
   // WHY: Phase-level timeout from panel. Falls back to caller's timeoutMs param.
   const phaseTimeoutMs = resolvePhaseTimeoutMs(config, phase);
   const resolvedTimeoutMs = phaseDisableLimits
-    ? 600000
+    ? 1200000
     : (phaseTimeoutMs > 0 ? phaseTimeoutMs : timeoutMs);
 
   const jsonStrictEnabled = resolvePhaseJsonStrict(config, phase);
@@ -564,6 +570,9 @@ export async function callLlmWithRouting({
     json_strict: jsonStrictEnabled,
     two_phase_writer: !jsonStrictEnabled && Boolean(jsonSchema),
     phase: phase || null,
+    reasoning_effort_config: phaseThinkingEffort || null,
+    reasoning_effort_baked: primaryBakedEffort || null,
+    reasoning_effort_sent: (phaseThinking && !primaryBakedEffort) ? (phaseThinkingEffort || 'medium') : null,
   });
 
   const sharedParams = {
@@ -585,7 +594,8 @@ export async function callLlmWithRouting({
     reasoningBudget: Number(resolvedReasoningBudget || 0),
     maxTokens: Number(resolvedMaxTokens || 0),
     timeoutMs: resolvedTimeoutMs,
-    logger
+    logger,
+    onStreamChunk
   };
 
   // Cost flow-through: prefer registry costs over flat config keys
@@ -613,7 +623,6 @@ export async function callLlmWithRouting({
       fallback_base_url: fallback.baseUrl || null,
       message: error.message
     });
-    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true });
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
     const fallbackMaxTokens = phaseDisableLimits
       ? 0
@@ -622,13 +631,15 @@ export async function callLlmWithRouting({
         : fallbackTokenCap);
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
+    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch) });
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
     const capFb = capitalize(String(phase || '').trim());
     const fbReasoning = capFb ? Boolean(config[`_resolved${capFb}FallbackUseReasoning`]) : false;
+    const fallbackBakedEffort = extractEffortFromModelName(fallback.model);
     const fbRequestOptions = {
       ...(baseRequestOptions || {}),
       ...(fbWebSearch ? { web_search: true } : {}),
-      ...(fbThinking ? { reasoning_effort: fbThinkingEffort || 'medium' } : {}),
+      ...(fbThinking && !fallbackBakedEffort ? { reasoning_effort: fbThinkingEffort || 'medium' } : {}),
     };
     const effectiveFbRequestOptions = Object.keys(fbRequestOptions).length > 0 ? fbRequestOptions : baseRequestOptions;
 
@@ -659,7 +670,7 @@ export async function callLlmWithRouting({
   const useWriterPhase = !jsonStrictEnabled && jsonSchema;
 
   if (useWriterPhase) {
-    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false });
+    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
     let researchText;
     try {
       researchText = await callLlmProvider({
@@ -705,8 +716,9 @@ export async function callLlmWithRouting({
     const writerReasoning = capW ? Boolean(config[`_resolved${capW}WriterUseReasoning`]) : false;
     const writerThinking = resolvePhaseFlag(config, phase, 'WriterThinking');
     const writerThinkingEffort = resolvePhaseString(config, phase, 'WriterThinkingEffort');
+    const writerBakedEffort = extractEffortFromModelName(writerRoute.model);
     const writerRequestOptions = {
-      ...(writerThinking ? { reasoning_effort: writerThinkingEffort || 'medium' } : {}),
+      ...(writerThinking && !writerBakedEffort ? { reasoning_effort: writerThinkingEffort || 'medium' } : {}),
     };
     const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
 
@@ -734,7 +746,7 @@ export async function callLlmWithRouting({
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
-  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false });
+  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
   try {
     return await callLlmProvider({
       ...effectiveSharedParams,

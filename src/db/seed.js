@@ -160,6 +160,16 @@ function deleteComponentValuesById(db, componentValueId) {
 
 function reconcileComponentDbRows(db, fieldRules) {
   const expected = collectAuthoritativeComponentIdentities(fieldRules);
+  // WHY: If no authoritative identities resolved, skip pruning to avoid
+  // destructive deletion during async re-seed when field rules are unavailable.
+  if (expected.size === 0) {
+    return {
+      removed_identity_rows: 0,
+      removed_value_rows: 0,
+      removed_alias_rows: 0,
+      removed_key_review_rows: 0,
+    };
+  }
   const existing = db.db
     .prepare('SELECT id, component_type, canonical_name, maker FROM component_identity WHERE category = ?')
     .all(db.category);
@@ -440,6 +450,9 @@ async function collectListSeedRows(fieldRules, config, category) {
 async function reconcileListSeedRows(db, fieldRules, config, category) {
   const pruneSources = new Set(['known_values', 'manual', 'pipeline']);
   const candidateRows = await collectListSeedRows(fieldRules, config, category);
+  // WHY: If no seed rows were resolved (e.g. field rules unavailable), skip pruning
+  // to avoid destructive deletion of valid list values during async re-seed.
+  if (candidateRows.length === 0) return { removed_list_value_rows: 0 };
   const expected = new Set(candidateRows.map((row) => `${row.fieldKey}::${row.normalizedValue}::${row.source}`));
   const stale = db.db
     .prepare('SELECT field_key, value, source FROM list_values WHERE category = ?')

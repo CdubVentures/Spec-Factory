@@ -291,8 +291,9 @@ export function resolveStrictKeyReviewSlotIds(db, category, row = {}) {
         enumListId = slot.enumListId;
       }
       if (!listValueId) {
-        const enumNorm = String(resolved.enumValueNorm ?? resolved.enum_value_norm ?? '').trim().toLowerCase();
-        if (enumNorm) {
+        const rawEnumNorm = resolved.enumValueNorm ?? resolved.enum_value_norm ?? undefined;
+        const enumNorm = rawEnumNorm !== undefined ? String(rawEnumNorm).trim().toLowerCase() : undefined;
+        if (enumNorm !== undefined) {
           const rowByNorm = db.db.prepare(
             `SELECT id, list_id
              FROM list_values

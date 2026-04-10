@@ -301,13 +301,22 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     let keyReview = null;
     if (specDb) {
       try {
-        const krs = specDb.getKeyReviewState({
-          targetKind: 'grid_key',
-          itemIdentifier: productId,
-          fieldKey: resolvedField,
-          itemFieldStateId,
-          category,
-        });
+        // WHY: Prefer slot-id lookup; fall back to resolving item_field_state_id
+        // from product/field when the payload slot_id is missing (e.g. after null migration).
+        let resolvedItemFieldStateId = itemFieldStateId;
+        if (!resolvedItemFieldStateId) {
+          const ifsRow = specDb.getItemFieldStateByProductAndField?.(productId, resolvedField);
+          if (ifsRow?.id) resolvedItemFieldStateId = ifsRow.id;
+        }
+        const krs = resolvedItemFieldStateId
+          ? specDb.getKeyReviewState({
+            targetKind: 'grid_key',
+            itemIdentifier: productId,
+            fieldKey: resolvedField,
+            itemFieldStateId: resolvedItemFieldStateId,
+            category,
+          })
+          : null;
         if (krs) {
           keyReview = {
             id: krs.id,
@@ -320,11 +329,16 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
             userAcceptShared: krs.user_accept_shared_status || null,
             overridePrimary: Boolean(krs.user_override_ai_primary),
             overrideShared: Boolean(krs.user_override_ai_shared),
+            _selectedValue: krs.selected_value ?? null,
           };
         }
       } catch { /* best-effort */ }
     }
-    const selectedValue = fieldState?.selected?.value;
+    // WHY: Fall back to key_review_state.selected_value when the field payload
+    // doesn't carry a selected value (e.g. after specDb cache flush during null migration).
+    const selectedValue = fieldState?.selected?.value
+      ?? (keyReview ? keyReview._selectedValue : undefined)
+      ?? null;
     const selectedValueNorm = String(selectedValue ?? '').trim().toLowerCase();
     const hasSelectedValue = hasKnownValue(selectedValue);
     const selectedCandidateId = String(

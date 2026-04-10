@@ -1958,9 +1958,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -2061,7 +2059,7 @@
         "guidance_md": null,
         "label": "Actuation Adjustment Step",
         "order": 18,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -2095,9 +2093,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -2198,7 +2194,7 @@
         "guidance_md": null,
         "label": "Actuation Distance",
         "order": 15,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -2233,9 +2229,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -2336,7 +2330,7 @@
         "guidance_md": null,
         "label": "Actuation Force",
         "order": 14,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -2372,9 +2366,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -2475,7 +2467,7 @@
         "guidance_md": null,
         "label": "Adjustable Actuation Max",
         "order": 17,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -2510,9 +2502,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -2613,7 +2603,7 @@
         "guidance_md": null,
         "label": "Adjustable Actuation Min",
         "order": 16,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -2639,9 +2629,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -2739,7 +2727,7 @@
         "guidance_md": null,
         "label": "Adjustable Feet",
         "order": 73,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2764,9 +2752,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -2864,7 +2850,7 @@
         "guidance_md": null,
         "label": "Adjustable Input Granularity",
         "order": 50,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -2890,9 +2876,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -2991,7 +2975,7 @@
         "guidance_md": null,
         "label": "Analog Input",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3017,9 +3001,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3118,7 +3100,7 @@
         "guidance_md": null,
         "label": "Anti-Ghosting",
         "order": 46,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3143,9 +3125,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3244,7 +3224,7 @@
         "guidance_md": null,
         "label": "Arrow Keys",
         "order": 26,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3269,9 +3249,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3370,7 +3348,7 @@
         "guidance_md": null,
         "label": "Backlighting",
         "order": 51,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3395,9 +3373,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -3495,7 +3471,7 @@
         "guidance_md": null,
         "label": "Base Model",
         "order": 3,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -3527,9 +3503,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mAh",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mAh"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -3629,7 +3603,7 @@
         "guidance_md": null,
         "label": "Battery Capacity",
         "order": 77,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mAh",
@@ -3664,9 +3638,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "h",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "h"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -3768,7 +3740,7 @@
         "guidance_md": null,
         "label": "Battery Life (Lighting Off)",
         "order": 78,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "hrs",
@@ -3803,9 +3775,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "h",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "h"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -3907,7 +3877,7 @@
         "guidance_md": null,
         "label": "Battery Life (Lighting On)",
         "order": 79,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "hrs",
@@ -3933,9 +3903,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4033,7 +4001,7 @@
         "guidance_md": null,
         "label": "Bluetooth Version",
         "order": 36,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4066,9 +4034,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "g",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "g"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -4169,7 +4135,7 @@
         "guidance_md": null,
         "label": "Bottom-Out Force",
         "order": 16,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "g",
@@ -4196,9 +4162,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4296,7 +4260,7 @@
         "guidance_md": null,
         "label": "Brand",
         "order": 1,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4329,9 +4293,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "m",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "m"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -4431,7 +4393,7 @@
         "guidance_md": null,
         "label": "Cable Length",
         "order": 39,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "m",
@@ -4457,9 +4419,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4557,7 +4517,7 @@
         "guidance_md": null,
         "label": "Cable Type",
         "order": 38,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4582,9 +4542,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4682,7 +4640,7 @@
         "guidance_md": null,
         "label": "Case Material",
         "order": 59,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4707,9 +4665,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4807,7 +4763,7 @@
         "guidance_md": null,
         "label": "Category",
         "order": 8,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4832,9 +4788,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4933,7 +4887,7 @@
         "guidance_md": null,
         "label": "Charging Method",
         "order": 80,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -4961,9 +4915,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5077,7 +5029,7 @@
         "guidance_md": null,
         "label": "Color",
         "order": 84,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5100,9 +5052,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "enum": {
         "match": {},
@@ -5279,9 +5229,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5395,7 +5343,7 @@
         "guidance_md": null,
         "label": "Compatible OS",
         "order": 88,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5423,9 +5371,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5538,7 +5484,7 @@
         "guidance_md": null,
         "label": "Connection",
         "order": 33,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5571,9 +5517,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -5673,7 +5617,7 @@
         "guidance_md": null,
         "label": "Debounce Time",
         "order": 47,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -5707,9 +5651,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -5809,7 +5751,7 @@
         "guidance_md": null,
         "label": "Depth",
         "order": 68,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -5835,9 +5777,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -5934,7 +5874,7 @@
         "guidance_md": null,
         "label": "Detachable Cable",
         "order": 41,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -5959,9 +5899,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6060,7 +5998,7 @@
         "guidance_md": null,
         "label": "Discontinued",
         "order": 83,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6085,9 +6023,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6186,7 +6122,7 @@
         "guidance_md": null,
         "label": "Doubleshot",
         "order": 32,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6209,9 +6145,7 @@
           "sort": "none"
         },
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "enum": {
         "match": {},
@@ -6275,9 +6209,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6375,7 +6307,7 @@
         "guidance_md": null,
         "label": "Foam Dampening",
         "order": 63,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6400,9 +6332,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6501,7 +6431,7 @@
         "guidance_md": null,
         "label": "Form Factor",
         "order": 20,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6526,9 +6456,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6627,7 +6555,7 @@
         "guidance_md": null,
         "label": "Function Row",
         "order": 25,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6652,9 +6580,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6752,7 +6678,7 @@
         "guidance_md": null,
         "label": "Gasket Mount",
         "order": 62,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6778,9 +6704,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -6879,7 +6803,7 @@
         "guidance_md": null,
         "label": "GTIN",
         "order": 7,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -6913,9 +6837,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7016,7 +6938,7 @@
         "guidance_md": null,
         "label": "Front Height",
         "order": 69,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -7051,9 +6973,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -7154,7 +7074,7 @@
         "guidance_md": null,
         "label": "Rear Height",
         "order": 70,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -7181,9 +7101,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7283,7 +7201,7 @@
         "guidance_md": null,
         "label": "Hot-Swappable",
         "order": 19,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7312,9 +7230,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7428,7 +7344,7 @@
         "guidance_md": null,
         "label": "Included Accessories",
         "order": 86,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7457,9 +7373,7 @@
         },
         "rounding": null,
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -7558,7 +7472,7 @@
         "guidance_md": null,
         "label": "Key Count",
         "order": 23,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7584,9 +7498,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7685,7 +7597,7 @@
         "guidance_md": null,
         "label": "Key Rollover",
         "order": 45,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7710,9 +7622,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7811,7 +7721,7 @@
         "guidance_md": null,
         "label": "Keycap Material",
         "order": 27,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7836,9 +7746,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -7937,7 +7845,7 @@
         "guidance_md": null,
         "label": "Keycap Profile",
         "order": 28,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -7970,9 +7878,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -8073,7 +7979,7 @@
         "guidance_md": null,
         "label": "Keycap Thickness",
         "order": 29,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -8102,9 +8008,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8206,7 +8110,7 @@
         "guidance_md": null,
         "label": "Knob / Dial",
         "order": 57,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8231,9 +8135,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8332,7 +8234,7 @@
         "guidance_md": null,
         "label": "Layout",
         "order": 21,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8359,9 +8261,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8462,7 +8362,7 @@
         "guidance_md": null,
         "label": "Layout Standard",
         "order": 22,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8488,9 +8388,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8590,7 +8488,7 @@
         "guidance_md": null,
         "label": "Legends",
         "order": 30,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8615,9 +8513,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8716,7 +8612,7 @@
         "guidance_md": null,
         "label": "Macro Keys",
         "order": 55,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8742,9 +8638,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8842,7 +8736,7 @@
         "guidance_md": null,
         "label": "Media Controls",
         "order": 56,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8867,9 +8761,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -8967,7 +8859,7 @@
         "guidance_md": null,
         "label": "Model",
         "order": 2,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -8992,9 +8884,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9092,7 +8982,7 @@
         "guidance_md": null,
         "label": "Mounting Style",
         "order": 61,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9117,9 +9007,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9217,7 +9105,7 @@
         "guidance_md": null,
         "label": "MPN",
         "order": 6,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9243,9 +9131,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9344,7 +9230,7 @@
         "guidance_md": null,
         "label": "Multi-Device Pairing",
         "order": 37,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9377,9 +9263,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -9476,7 +9360,7 @@
         "guidance_md": null,
         "label": "Multi-Device Pairing Count",
         "order": 38,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9510,9 +9394,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -9613,7 +9495,7 @@
         "guidance_md": null,
         "label": "Multi-Key Latency",
         "order": 44,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -9639,9 +9521,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9740,7 +9620,7 @@
         "guidance_md": null,
         "label": "Numpad",
         "order": 24,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9765,9 +9645,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -9866,7 +9744,7 @@
         "guidance_md": null,
         "label": "Onboard Memory",
         "order": 56,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -9899,9 +9777,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "integer"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -9999,7 +9875,7 @@
         "guidance_md": null,
         "label": "Onboard Profile Count",
         "order": 58,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10025,9 +9901,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10125,7 +9999,7 @@
         "guidance_md": null,
         "label": "OS Mode Switch",
         "order": 61,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10151,9 +10025,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10253,7 +10125,7 @@
         "guidance_md": null,
         "label": "Per-Key RGB",
         "order": 53,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10278,9 +10150,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10378,7 +10248,7 @@
         "guidance_md": null,
         "label": "Plate Material",
         "order": 60,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10412,9 +10282,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -10515,7 +10383,7 @@
         "guidance_md": null,
         "label": "Polling Rate Wired",
         "order": 41,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -10550,9 +10418,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -10653,7 +10519,7 @@
         "guidance_md": null,
         "label": "Polling Rate Wireless",
         "order": 42,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -10679,9 +10545,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10780,7 +10644,7 @@
         "guidance_md": null,
         "label": "Price Range",
         "order": 82,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10807,9 +10671,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -10910,7 +10772,7 @@
         "guidance_md": null,
         "label": "QMK / VIA Support",
         "order": 58,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -10935,9 +10797,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -11035,7 +10895,7 @@
         "guidance_md": null,
         "label": "Rapid Trigger",
         "order": 48,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11060,9 +10920,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "date",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "date"
       },
       "data_type": "date",
       "difficulty": "easy",
@@ -11161,7 +11019,7 @@
         "guidance_md": null,
         "label": "Release Date",
         "order": 81,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11186,9 +11044,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -11287,7 +11143,7 @@
         "guidance_md": null,
         "label": "RGB Zones",
         "order": 52,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11321,9 +11177,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "Hz",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "Hz"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -11424,7 +11278,7 @@
         "guidance_md": null,
         "label": "Scan Rate",
         "order": 43,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "Hz",
@@ -11451,9 +11305,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -11553,7 +11405,7 @@
         "guidance_md": null,
         "label": "Shine-Through",
         "order": 31,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11587,9 +11439,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "ms",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "ms"
       },
       "data_type": "number",
       "difficulty": "hard",
@@ -11690,7 +11540,7 @@
         "guidance_md": null,
         "label": "Single-Key Latency",
         "order": 43,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
@@ -11716,9 +11566,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -11816,7 +11664,7 @@
         "guidance_md": null,
         "label": "SKU",
         "order": 5,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11842,9 +11690,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -11943,7 +11789,7 @@
         "guidance_md": null,
         "label": "SOCD Cleaning",
         "order": 49,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -11968,9 +11814,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12069,7 +11913,7 @@
         "guidance_md": null,
         "label": "Software",
         "order": 54,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12094,9 +11938,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12195,7 +12037,7 @@
         "guidance_md": null,
         "label": "Software Required",
         "order": 87,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12220,9 +12062,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -12320,7 +12160,7 @@
         "guidance_md": null,
         "label": "Sound Dampening",
         "order": 76,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12346,9 +12186,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -12447,7 +12285,7 @@
         "guidance_md": null,
         "label": "Sound Profile",
         "order": 75,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12473,9 +12311,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12574,7 +12410,7 @@
         "guidance_md": null,
         "label": "South-Facing LEDs",
         "order": 66,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12599,9 +12435,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12699,7 +12533,7 @@
         "guidance_md": null,
         "label": "Stabilizer Lubed",
         "order": 65,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12725,9 +12559,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12826,7 +12658,7 @@
         "guidance_md": null,
         "label": "Stabilizer Mount",
         "order": 65,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12851,9 +12683,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -12951,7 +12781,7 @@
         "guidance_md": null,
         "label": "Stabilizer Type",
         "order": 64,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -12976,9 +12806,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13077,7 +12905,7 @@
         "guidance_md": null,
         "label": "Switch Brand",
         "order": 11,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13103,9 +12931,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -13204,7 +13030,7 @@
         "guidance_md": null,
         "label": "Switch Compatibility",
         "order": 21,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13229,9 +13055,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13330,7 +13154,7 @@
         "guidance_md": null,
         "label": "Switch Feel",
         "order": 12,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13365,9 +13189,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "million keystrokes",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "million keystrokes"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -13469,7 +13291,7 @@
         "guidance_md": null,
         "label": "Switch Lifespan",
         "order": 18,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "M keystrokes",
@@ -13503,9 +13325,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13607,7 +13427,7 @@
         "guidance_md": null,
         "label": "Switch Name",
         "order": 9,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13633,9 +13453,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -13735,7 +13553,7 @@
         "guidance_md": null,
         "label": "Switch Output Type",
         "order": 13,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13762,9 +13580,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13863,7 +13679,7 @@
         "guidance_md": null,
         "label": "Switch Pin Support",
         "order": 20,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -13893,9 +13709,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -13995,7 +13809,7 @@
         "guidance_md": null,
         "label": "Switch Type",
         "order": 10,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14028,9 +13842,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "medium",
@@ -14131,7 +13943,7 @@
         "guidance_md": null,
         "label": "Total Travel",
         "order": 17,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -14166,9 +13978,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "deg",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "deg"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -14268,7 +14078,7 @@
         "guidance_md": null,
         "label": "Typing Angle",
         "order": 72,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "°",
@@ -14294,9 +14104,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "hard",
@@ -14394,7 +14202,7 @@
         "guidance_md": null,
         "label": "Typing Noise",
         "order": 74,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14419,9 +14227,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -14519,7 +14325,7 @@
         "guidance_md": null,
         "label": "USB Passthrough",
         "order": 40,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14545,9 +14351,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "medium",
@@ -14646,7 +14450,7 @@
         "guidance_md": null,
         "label": "Variant",
         "order": 4,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14670,9 +14474,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -14770,7 +14572,7 @@
         "guidance_md": null,
         "label": "Warranty",
         "order": 85,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -14802,9 +14604,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "kg",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "kg"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -14903,7 +14703,7 @@
         "guidance_md": null,
         "label": "Weight",
         "order": 71,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "kg",
@@ -14936,9 +14736,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "mm",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "unit": "mm"
       },
       "data_type": "number",
       "difficulty": "easy",
@@ -15037,7 +14835,7 @@
         "guidance_md": null,
         "label": "Width",
         "order": 67,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "mm",
@@ -15063,9 +14861,7 @@
         "list_rules": {},
         "rounding": null,
         "shape": "scalar",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -15163,7 +14959,7 @@
         "guidance_md": null,
         "label": "Wired Interface",
         "order": 34,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
@@ -15191,9 +14987,7 @@
         },
         "rounding": null,
         "shape": "list",
-        "type": "string",
-        "unknown_reason_required": true,
-        "unknown_token": "unk"
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -15306,7 +15100,7 @@
         "guidance_md": null,
         "label": "Wireless Technology",
         "order": 35,
-        "placeholder": "unk",
+        "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,

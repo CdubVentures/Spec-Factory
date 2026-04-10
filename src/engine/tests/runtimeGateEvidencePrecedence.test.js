@@ -41,7 +41,7 @@ test('runtimeGate runs normalize before evidence and skips evidence failures for
     }
   });
 
-  assert.equal(result.fields.weight, 'unk');
+  assert.equal(result.fields.weight, null);
   assert.equal(
     result.failures.some(
       (row) => row.field === 'weight'

@@ -34,7 +34,7 @@ test('applyRuntimeFieldRules rejects closed enum values outside known set', asyn
       fieldOrder: ['connection']
     });
 
-    assert.equal(result.fields.connection, 'unk');
+    assert.equal(result.fields.connection, null);
     assert.equal(
       result.failures.some((row) => row.field === 'connection' && row.reason_code === 'enum_value_not_allowed'),
       true
@@ -53,7 +53,7 @@ test('applyRuntimeFieldRules enforces cross-validation errors', async () => {
       fieldOrder: ['dpi']
     });
 
-    assert.equal(result.fields.dpi, 'unk');
+    assert.equal(result.fields.dpi, null);
     assert.equal(
       result.failures.some((row) => row.field === 'dpi' && row.reason_code === 'cross_validation_failed'),
       true
@@ -82,7 +82,7 @@ test('applyRuntimeFieldRules can enforce strict evidence audit', async () => {
       }
     });
 
-    assert.equal(result.fields.connection, 'unk');
+    assert.equal(result.fields.connection, null);
     assert.equal(
       result.failures.some((row) => row.field === 'connection' && row.reason_code === 'evidence_missing'),
       true

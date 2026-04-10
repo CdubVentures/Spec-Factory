@@ -44,11 +44,11 @@ describe('evaluateConstraint — requires semantics', () => {
     assert.equal(result.skipped, undefined);
   });
 
-  it('fails when left has value BUT right is unk', () => {
+  it('fails when left has value BUT right is null', () => {
     const result = evaluateConstraint(
       'sensor_brand requires sensor',
       {},
-      { sensor_brand: 'PixArt', sensor: 'unk' }
+      { sensor_brand: 'PixArt', sensor: null }
     );
     assert.equal(result.pass, false);
     assert.equal(result.dependencyMissing, true);
@@ -74,11 +74,11 @@ describe('evaluateConstraint — requires semantics', () => {
     assert.equal(result.dependencyMissing, true);
   });
 
-  it('skips when left is unk (dependency not applicable)', () => {
+  it('skips when left is null (dependency not applicable)', () => {
     const result = evaluateConstraint(
       'sensor_brand requires sensor',
       {},
-      { sensor_brand: 'unk', sensor: 'PAW3950' }
+      { sensor_brand: null, sensor: 'PAW3950' }
     );
     assert.equal(result.pass, true);
     assert.equal(result.skipped, true);

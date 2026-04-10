@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildEffectiveCostRates,
   callLlmWithRouting,
+  extractEffortFromModelName,
   hasAnyLlmApiKey,
   hasLlmRouteApiKey,
   llmRoutingSnapshot,
@@ -948,4 +949,11 @@ test('callLlmWithRouting: jsonStrict false writer model is independent of fallba
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+// WHY: extractEffortFromModelName unit tests live in src/shared/tests/effortFromModelName.test.js.
+// The function is imported here via re-export from routing.js to verify the re-export works.
+test('extractEffortFromModelName re-export from routing.js works', () => {
+  assert.equal(extractEffortFromModelName('gpt-5.4-xhigh'), 'xhigh');
+  assert.equal(extractEffortFromModelName('gpt-5.4'), null);
 });

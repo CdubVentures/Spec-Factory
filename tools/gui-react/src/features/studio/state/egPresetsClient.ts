@@ -68,8 +68,6 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
       type: 'string',
       shape: 'list',
       list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
-      unknown_token: 'unk',
-      unknown_reason_required: true,
     },
     parse: {
 
@@ -134,8 +132,6 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
       type: 'string',
       shape: 'list',
       list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
-      unknown_token: 'unk',
-      unknown_reason_required: true,
     },
     parse: {
 

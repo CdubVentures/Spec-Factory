@@ -29,8 +29,8 @@ test('global enforceEvidence audits all fields and overrides per-field opt-out',
     evidencePack: goodEvidencePack
   });
 
-  assert.equal(failResult.fields.weight, 'unk');
-  assert.equal(failResult.fields.connection, 'unk');
+  assert.equal(failResult.fields.weight, null);
+  assert.equal(failResult.fields.connection, null);
   assert.deepEqual(
     failResult.failures.filter((row) => row.stage === 'evidence').map((row) => row.field).sort(),
     ['connection', 'weight']

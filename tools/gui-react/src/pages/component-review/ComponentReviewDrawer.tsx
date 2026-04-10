@@ -127,7 +127,7 @@ function PropertyCard({
           className={`font-mono text-sm font-semibold flex-1 truncate ${trafficTextColor(state.selected.color)}`}
           title={String(state.selected.value ?? '')}
         >
-          {state.selected.value !== null && state.selected.value !== undefined ? String(state.selected.value) : 'unk'}
+          {state.selected.value !== null && state.selected.value !== undefined ? String(state.selected.value) : ''}
         </span>
         <span className="text-xs sf-text-muted ml-auto flex-shrink-0">
           {pct(state.selected.confidence)} conf

@@ -84,6 +84,14 @@ export function buildRegistryLookup(registryJson) {
   return { providers, modelIndex, compositeIndex };
 }
 
+// WHY: Composite keys ("providerId:modelId") are a routing concern.
+// Display and storage should always use the bare model ID.
+export function stripCompositeKey(modelKey = '') {
+  const key = String(modelKey || '').trim();
+  const colonIdx = key.indexOf(':');
+  return colonIdx > 0 ? key.slice(colonIdx + 1) : key;
+}
+
 export function resolveModelFromRegistry(lookup, modelKey) {
   if (!lookup || !lookup.compositeIndex) return null;
   const key = String(modelKey || '').trim();

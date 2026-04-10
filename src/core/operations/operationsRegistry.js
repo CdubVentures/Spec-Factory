@@ -103,13 +103,16 @@ export function updateStage({ id, stageIndex, stageName }) {
  * Attach resolved model info to a running operation.
  * Replaces on repeat calls (primary → fallback).
  */
-export function updateModelInfo({ id, model, provider, isFallback }) {
+export function updateModelInfo({ id, model, provider, isFallback, accessMode, thinking, webSearch }) {
   const op = ops.get(id);
   if (!op || op.status !== 'running') return;
   op.modelInfo = {
     model: typeof model === 'string' ? model : '',
     provider: typeof provider === 'string' ? provider : '',
     isFallback: Boolean(isFallback),
+    accessMode: typeof accessMode === 'string' ? accessMode : 'api',
+    thinking: Boolean(thinking),
+    webSearch: Boolean(webSearch),
   };
   broadcast(op);
 }

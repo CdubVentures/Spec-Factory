@@ -246,7 +246,7 @@ could not be deterministically converted:
 Your task:
 1. If the value contains the answer in a different format, extract it.
    e.g. "twenty grams" → 20, "around 3.5 inches" → 88.9 (mm)
-2. If the value is genuinely unknown, return "unk".
+2. If the value is genuinely unknown, return null.
 3. If the value is nonsensical or hallucinated, return null with
    reason: "hallucination_detected".
 
@@ -254,9 +254,9 @@ Return JSON matching this exact schema:
 {
   "status": "repaired",
   "reason": null,
-  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <extracted value or "unk">, "reasoning": "..." }]
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <extracted value or null>, "reasoning": "..." }]
 }
-Use decision "reject" with resolved_to null if hallucinated. Use resolved_to "unk" if genuinely unknown.`;
+Use decision "reject" with resolved_to null if hallucinated. Use decision "set_unk" with resolved_to null if genuinely unknown.`;
 
   return {
     promptId: 'P3',
@@ -282,13 +282,13 @@ The value does not match the required format after normalization.
 Decide:
 1. If you can extract a valid value, return it.${formatHint ? '\n   Your repaired value MUST match the pattern: ' + formatHint : ''}
 2. If this looks like a hallucination, return null + reason.
-3. If the value is unknown/missing, return 'unk'.
+3. If the value is unknown/missing, return null.
 
 Return JSON matching this exact schema:
 {
   "status": "repaired",
   "reason": null,
-  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <fixed value or "unk">, "reasoning": "..." }]
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <fixed value or null>, "reasoning": "..." }]
 }
 Use decision "reject" with resolved_to null if hallucinated.`;
 
@@ -319,14 +319,14 @@ This may indicate a hallucinated magnitude, a unit mismatch, or a data entry err
 
 Decide:
 1. If you can determine the correct value, return it.
-2. If the value is genuinely unknown, return "unk".
+2. If the value is genuinely unknown, return null.
 3. If this looks hallucinated, reject it.
 
 Return JSON matching this exact schema:
 {
   "status": "repaired",
   "reason": null,
-  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <corrected numeric value or "unk">, "reasoning": "..." }]
+  "decisions": [{ "value": "<the failing value>", "decision": "map_to_existing", "resolved_to": <corrected numeric value or null>, "reasoning": "..." }]
 }
 Use decision "reject" with resolved_to null if hallucinated.`;
 
@@ -350,12 +350,12 @@ was given in '${detected}':
   Detected unit: ${detected}
 
 Convert the value to ${expected} and return the numeric result.
-If the value cannot be meaningfully converted, return 'unk'.
+If the value cannot be meaningfully converted, return null.
 Return JSON matching this exact schema:
 {
   "status": "repaired",
   "reason": null,
-  "decisions": [{ "value": "<the original value>", "decision": "map_to_existing", "resolved_to": <converted number or "unk">, "reasoning": "..." }]
+  "decisions": [{ "value": "<the original value>", "decision": "map_to_existing", "resolved_to": <converted number or null>, "reasoning": "..." }]
 }`;
 
   return {

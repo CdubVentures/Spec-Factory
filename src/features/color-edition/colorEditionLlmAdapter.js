@@ -133,6 +133,7 @@ Color output rules:
 - Multi-color shells: atoms joined by "+" in dominant order ("black+red")
 - colors[0] must be the default color shown on the official product page
 - Map marketing names in color_names (e.g. "light-blue": "Glacier Blue")
+- UNIQUE ATOMS REQUIRED: Every colorway must map to a different atom. Never duplicate atoms in the colors array. If two colorways would share an atom (e.g. "White" and "Frost White" both mapping to "white"), use the next-closest atom for the variant (e.g. "ivory" for Frost White). Each product SKU/colorway = one unique atom.
 
 Edition output rules:
 - An edition is a named special/limited/collaboration version sold by the manufacturer
@@ -140,7 +141,13 @@ Edition output rules:
 - Each edition needs display_name (official name) and colors array
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
-Return JSON with: colors, default_color, color_names, editions, siblings_excluded, discovery_log (with confirmed_from_known, added_new, rejected_from_known, urls_checked, queries_run arrays).`;
+Return JSON with these exact keys and shapes:
+- "colors": ["atom", ...] (first = default)
+- "default_color": "atom" (must equal colors[0])
+- "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
+- "editions": { "slug": { "display_name": "Official Name", "colors": ["atom", ...] }, ... } or {} if none found
+- "siblings_excluded": ["Model Name", ...]
+- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 }
 
 export const COLOR_EDITION_FINDER_SPEC = {

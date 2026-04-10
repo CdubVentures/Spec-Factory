@@ -473,7 +473,7 @@ export async function finalizeOverrides({
       continue;
     }
 
-    const previous = String(nextNormalized.fields[normalizedField] ?? 'unk');
+    const previous = String(nextNormalized.fields[normalizedField] ?? '');
     nextNormalized.fields[normalizedField] = value;
     const overrideProvenance = extractOverrideProvenance(override, category, productId, normalizedField);
 
@@ -566,7 +566,7 @@ export async function finalizeOverrides({
     const existingReasons = toArray(existingReasoning.reasons).filter(Boolean);
     nextFieldReasoning[normalizedField] = {
       ...existingReasoning,
-      value: 'unk',
+      value: null,
       unknown_reason: String(failure.reason_code || 'override_rejected_by_runtime_engine'),
       reasons: [...new Set([...existingReasons, 'override_rejected_by_runtime_engine'])]
     };

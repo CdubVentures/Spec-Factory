@@ -31,7 +31,7 @@ test('min_evidence_refs threshold requires at least two distinct refs and record
     evidencePack: minRefsEvidencePack
   });
 
-  assert.equal(failResult.fields.weight, 'unk');
+  assert.equal(failResult.fields.weight, null);
   const failure = failResult.failures.find(
     (row) => row.field === 'weight'
       && row.stage === 'evidence'
@@ -43,7 +43,7 @@ test('min_evidence_refs threshold requires at least two distinct refs and record
   );
   assert.ok(change);
   assert.equal(change.before, 54);
-  assert.equal(change.after, 'unk');
+  assert.equal(change.after, null);
 
   const passResult = applyRuntimeFieldRules({
     engine,

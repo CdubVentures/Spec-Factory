@@ -39,7 +39,7 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
   const enumValues = knownValues?.values;
   const formatHint = e?.match?.format_hint || null;
   const blockPublishWhenUnk = shouldBlockUnkPublish(fieldRule);
-  const unknownToken = null;
+  const absentValue = null;
   const allowNewComponents = comp?.allow_new_components || false;
   const tokenMap = p.token_map;
 
@@ -125,7 +125,7 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
 
   // priority.block_publish_when_unk
   if (blockPublishWhenUnk && shape === 'scalar') {
-    rejects.push({ value: unknownToken, expectedCode: 'unk_blocks_publish', description: `${unknownToken} blocks publish` });
+    rejects.push({ value: absentValue, expectedCode: 'unk_blocks_publish', description: `${absentValue} blocks publish` });
   }
 
   // ── REPAIRS — one per repair knob ─────────────────────────────────────

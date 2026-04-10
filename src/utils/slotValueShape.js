@@ -53,7 +53,7 @@ function normalizeScalarValue(value) {
   if (typeof raw === 'string') {
     const trimmed = normalizeText(raw);
     if (normalizeUnknownToken(trimmed)) {
-      return { value: null, reason: 'unknown_token' };
+      return { value: null, reason: 'absent_token' };
     }
     const parsed = tryParseJson(trimmed);
     if (parsed !== null) {
@@ -82,7 +82,7 @@ function normalizeScalarValue(value) {
 
   const text = normalizeText(raw);
   if (!text || normalizeUnknownToken(text)) {
-    return { value: null, reason: 'unknown_token' };
+    return { value: null, reason: 'absent_token' };
   }
   return { value: text, reason: null };
 }

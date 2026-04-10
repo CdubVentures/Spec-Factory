@@ -43,9 +43,7 @@ export function shouldFlushStudioMapOnUnmount({
 }
 
 const STUDIO_DEFERRED_CONTRACT_LOCKED_FIELDS = new Set([
-  'contract.unknown_token',
   'contract.rounding.mode',
-  'contract.unknown_reason_required',
 ]);
 
 export function isStudioContractFieldDeferredLocked(fieldPath: string) {

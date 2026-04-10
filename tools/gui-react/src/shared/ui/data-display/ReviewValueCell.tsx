@@ -44,7 +44,7 @@ export function ReviewValueCell({
   selected = false,
   className,
   valueClassName,
-  unknownLabel = 'unk',
+  unknownLabel = '',
   showConfidence = false,
   showOverrideBadge = false,
   flagCount = 0,

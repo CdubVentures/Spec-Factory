@@ -78,7 +78,7 @@ export function applyRepairDecisions({ decisions, currentValue, shape }) {
 function buildScalarValue(applied, currentValue) {
   if (applied.length === 0) return currentValue;
   const dec = applied[0];
-  if (dec.decision === 'reject' || dec.decision === 'set_unk') return 'unk';
+  if (dec.decision === 'reject' || dec.decision === 'set_unk') return null;
   return dec.resolvedValue;
 }
 

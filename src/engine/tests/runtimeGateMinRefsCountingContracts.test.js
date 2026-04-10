@@ -48,7 +48,7 @@ test('min_evidence_refs counts only distinct (url, snippet_id) pairs with snippe
       evidencePack: minRefsEvidencePack
     });
 
-    assert.equal(result.fields.weight, 'unk', label);
+    assert.equal(result.fields.weight, null, label);
     assert.equal(
       result.failures.some(
         (row) => row.field === 'weight'

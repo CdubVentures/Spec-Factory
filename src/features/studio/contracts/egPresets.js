@@ -131,8 +131,6 @@ export function buildEgColorFieldRule(ctx) {
       type: 'string',
       shape: 'list',
       list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
-      unknown_token: 'unk',
-      unknown_reason_required: true,
     },
     parse: {
       delimiters: [',', '/', '|', ';'],
@@ -204,8 +202,6 @@ export function buildEgEditionFieldRule(ctx) {
       type: 'string',
       shape: 'list',
       list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
-      unknown_token: 'unk',
-      unknown_reason_required: true,
     },
     parse: {
       delimiters: [','],

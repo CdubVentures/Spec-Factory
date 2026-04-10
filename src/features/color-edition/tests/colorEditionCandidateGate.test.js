@@ -407,4 +407,31 @@ describe('CEF candidate gate integration', () => {
     assert.equal(result.rejected, false);
     assert.deepEqual(result.editions, {});
   });
+
+  // --- 11. LLM error → rejected, no persistence ---
+  it('LLM error returns rejected with llm_error reason, no DB writes', async () => {
+    const pid = 'mouse-llm-err';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => { throw new Error('Connection timed out'); },
+    });
+
+    assert.equal(result.rejected, true);
+    assert.equal(result.rejections[0].reason_code, 'llm_error');
+    assert.ok(result.rejections[0].message.includes('Connection timed out'));
+
+    // No CEF summary row (LLM error returns early, no persistence)
+    const cefRow = specDb.getColorEditionFinder(pid);
+    assert.equal(cefRow, null, 'no summary row on LLM error');
+
+    // No candidates
+    const candidates = specDb.getAllFieldCandidatesByProduct(pid);
+    assert.equal(candidates.length, 0);
+  });
 });

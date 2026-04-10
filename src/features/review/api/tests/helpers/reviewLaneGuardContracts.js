@@ -170,7 +170,7 @@ export async function runReviewLaneGuardContracts(t, harness) {
     db.db.prepare(
       `UPDATE key_review_state
        SET selected_candidate_id = NULL,
-           selected_value = 'unk',
+           selected_value = NULL,
            ai_confirm_primary_status = 'pending',
            ai_confirm_primary_confidence = NULL,
            ai_confirm_primary_at = NULL,
@@ -206,7 +206,7 @@ export async function runReviewLaneGuardContracts(t, harness) {
     const componentUnknownAccept = await apiRawJson(baseUrl, 'POST', `/review-components/${CATEGORY}/component-override`, {
       componentIdentityId,
       componentValueId: dpiMaxSlotId,
-      value: 'unk',
+      value: null,
       candidateId: 'cmp_dpi_unknown',
       candidateSource: 'pipeline',
     });
@@ -218,7 +218,7 @@ export async function runReviewLaneGuardContracts(t, harness) {
       componentName: 'PAW3950',
       componentMaker: 'PixArt',
       propertyKey: 'unk_only_prop',
-      value: 'unk',
+      value: null,
       confidence: 0.4,
       variancePolicy: null,
       source: 'pipeline',
@@ -233,7 +233,7 @@ export async function runReviewLaneGuardContracts(t, harness) {
       fieldKey: 'unk_only_prop',
       componentIdentifier,
       propertyKey: 'unk_only_prop',
-      selectedValue: 'unk',
+      selectedValue: null,
       selectedCandidateId: null,
       confidenceScore: 0.4,
       aiConfirmSharedStatus: 'pending',
@@ -251,8 +251,8 @@ export async function runReviewLaneGuardContracts(t, harness) {
 
     db.upsertListValue({
       fieldKey: 'connection',
-      value: 'unk',
-      normalizedValue: 'unk',
+      value: 'unknown',
+      normalizedValue: 'unknown',
       source: 'pipeline',
       enumPolicy: 'closed',
       acceptedCandidateId: null,
@@ -264,15 +264,15 @@ export async function runReviewLaneGuardContracts(t, harness) {
       category: CATEGORY,
       targetKind: 'enum_key',
       fieldKey: 'connection',
-      enumValueNorm: 'unk',
-      selectedValue: 'unk',
+      enumValueNorm: 'unknown',
+      selectedValue: null,
       selectedCandidateId: null,
       confidenceScore: 0.2,
       aiConfirmSharedStatus: 'pending',
       userAcceptSharedStatus: null,
     });
 
-    const unkEnumSlot = getEnumSlotIds(db, CATEGORY, 'connection', 'unk');
+    const unkEnumSlot = getEnumSlotIds(db, CATEGORY, 'connection', 'unknown');
     assert.ok(unkEnumSlot.listValueId);
     assert.ok(unkEnumSlot.enumListId);
     const enumConfirmUnknown = await apiRawJson(baseUrl, 'POST', `/review-components/${CATEGORY}/enum-override`, {

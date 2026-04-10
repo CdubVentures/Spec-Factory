@@ -263,7 +263,7 @@ export function buildFieldState({
           variant: 'candidate',
         })),
         value: normalizedShape === 'list'
-          ? (slotValueToText(normalizedCandidateValue, normalizedShape) ?? 'unk')
+          ? (slotValueToText(normalizedCandidateValue, normalizedShape) ?? null)
           : normalizedCandidateValue,
         unit: contractUnit || null,
         score: candidateScore(candidate, provenanceRow),
@@ -341,7 +341,7 @@ export function buildFieldState({
       }
       resolvedSelectedConfidence = Math.max(selectedConfidenceHint, toNumber(topCandidate.score, selectedConfidenceHint));
     } else if (!hasKnownValue(resolvedSelectedValue)) {
-      resolvedSelectedValue = 'unk';
+      resolvedSelectedValue = null;
       resolvedSelectedConfidence = 0;
     }
   }
@@ -443,7 +443,7 @@ export async function buildProductReviewPayload({
             specDb.upsertItemFieldState({
               productId,
               fieldKey,
-              value: 'unk',
+              value: null,
               confidence: 0,
               source: 'pipeline',
               acceptedCandidateId: null,
@@ -478,10 +478,10 @@ export async function buildProductReviewPayload({
       const dbCandidateRows = [];
       const isOverridden = Boolean(dbFieldRow.overridden);
       const selectedShapeValue = normalizeSlotValueForShape(
-        dbFieldRow.value != null && String(dbFieldRow.value).trim() !== '' ? dbFieldRow.value : 'unk',
+        dbFieldRow.value != null && String(dbFieldRow.value).trim() !== '' ? dbFieldRow.value : null,
         fieldShape
       ).value;
-      const selectedValue = slotValueToText(selectedShapeValue, fieldShape) ?? 'unk';
+      const selectedValue = slotValueToText(selectedShapeValue, fieldShape) ?? null;
       const state = buildFieldState({
         field,
         candidates: { [field]: dbCandidateRows },
@@ -578,7 +578,7 @@ export async function buildProductReviewPayload({
     const ovr = overrides[field];
     if (isObject(ovr) && ovr.override_value != null) {
       const overrideShapeValue = normalizeSlotValueForShape(ovr.override_value, fieldShape).value;
-      const overrideValue = slotValueToText(overrideShapeValue, fieldShape) ?? 'unk';
+      const overrideValue = slotValueToText(overrideShapeValue, fieldShape) ?? null;
       rows[field].selected = {
         value: overrideValue,
         confidence: 1.0,
@@ -719,7 +719,7 @@ export async function writeProductReviewArtifacts({
   for (const row of layout.rows || []) {
     const field = normalizeField(row.key);
     const state = payload.fields[field] || {
-      selected: { value: 'unk', confidence: 0, status: 'needs_review', color: 'gray' },
+      selected: { value: null, confidence: 0, status: 'needs_review', color: 'gray' },
       needs_review: true,
       reason_codes: ['missing_value'],
       candidates: []

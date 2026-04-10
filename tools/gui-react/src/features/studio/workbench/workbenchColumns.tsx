@@ -237,14 +237,6 @@ export function buildColumns(
       },
     },
 
-    // Unknown token
-    {
-      accessorKey: 'unknownToken',
-      header: 'Unk Token',
-      size: 75,
-      cell: ({ getValue }) => <span className="font-mono text-xs text-gray-500">{getValue() as string}</span>,
-    },
-
     // Enum policy (inline editable — locked when consistency mode ON)
     {
       accessorKey: 'enumPolicy',
@@ -393,7 +385,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   contract: [
     ...ALWAYS_VISIBLE,
-    'requiredLevel', 'contractType', 'contractShape', 'contractUnit', 'unknownToken',
+    'requiredLevel', 'contractType', 'contractShape', 'contractUnit',
     'constraintsCount', 'constraintVariables',
     'availability', 'difficulty', 'effort',
   ],
@@ -442,7 +434,6 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'contractType', label: 'Type' },
   { id: 'contractShape', label: 'Shape' },
   { id: 'contractUnit', label: 'Unit' },
-  { id: 'unknownToken', label: 'Unk Token' },
   { id: 'enumPolicy', label: 'Enum Policy' },
   { id: 'enumSource', label: 'Enum Source' },
   { id: 'knownValuesCount', label: 'KV Count' },

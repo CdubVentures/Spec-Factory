@@ -18,9 +18,9 @@
       "sha256": "5dde9a3a9124f599f56d9ecf447abacf13273280c8792398a960e222ba2d8aa2"
     },
     {
-      "bytes": 322417,
+      "bytes": 313667,
       "path": "field_rules.json",
-      "sha256": "226220bda8f1d8954cc9b66ff33523b483b7a951c188869b5365573730a477e7"
+      "sha256": "97c8da486be98c52fba6e2cd2e42e1ed43d0c1a389f68d07ccb87804b90b3e5d"
     },
     {
       "bytes": 201,
@@ -38,13 +38,13 @@
       "sha256": "e2a50c986aa6ee6128b7dae55f17c291dcf806806fad2f3186a0fe17ae411f33"
     },
     {
-      "bytes": 94892,
+      "bytes": 94553,
       "path": "ui_field_catalog.json",
-      "sha256": "7bc8830bad166b85082b81324fb39d18c31eb65348d839223f7dbf2e8fb07313"
+      "sha256": "e705815de1be712cd145bb24102928885ad1085a6788805bc9d513ed36b029be"
     }
   ],
   "category": "monitor",
-  "generated_at": "2026-04-10T07:08:03.843Z",
-  "source_map_hash": "0d70691521a8b2e07c63a9efb421b6991be818071436878d085d3b12ac1d9439",
+  "generated_at": "2026-04-10T22:16:39.444Z",
+  "source_map_hash": "2ed69118e3a19aaa3a579260d729b96e29a699fea8df389dda8c72246f24de34",
   "version": 1
 }

@@ -23,7 +23,7 @@ describe('Phase 01 â€” Field State Derivation', () => {
   });
 
   it('unk/unknown tokens â†’ state=missing', () => {
-    for (const unknownToken of ['unk', 'unknown', 'n/a', 'none', '', 'null', 'undefined', 'na']) {
+    for (const unknownToken of ['unknown', 'n/a', 'none', '', 'null', 'undefined', 'na']) {
       const result = computeNeedSet(makeBaseInput({
         fieldOrder: ['weight'],
         fieldRules: { weight: makeBaseRules().weight },

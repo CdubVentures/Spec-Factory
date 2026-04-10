@@ -506,13 +506,15 @@ async function requestChatCompletion({
   baseUrl,
   apiKey,
   body,
-  controller
+  controller,
+  onStreamChunk,
 }) {
   const parsedBody = await providerClient.request({
     baseUrl,
     apiKey,
     body,
-    signal: controller.signal
+    signal: controller.signal,
+    onDelta: onStreamChunk,
   });
 
   const message = parsedBody?.choices?.[0]?.message;
@@ -556,6 +558,7 @@ export async function callLlmProvider({
   onUsage,
   providerHealth,
   logger,
+  onStreamChunk,
 }) {
   const model = route.model || flatModel || '';
   const apiKey = route.apiKey || flatApiKey || '';
@@ -807,7 +810,8 @@ export async function callLlmProvider({
       baseUrl: baseUrlNormalized,
       apiKey,
       body: firstBody,
-      controller
+      controller,
+      onStreamChunk,
     });
     const firstUsage = await emitUsage({
       usage: first.usage,
@@ -815,13 +819,6 @@ export async function callLlmProvider({
       responseModel: first.responseModel
     });
     if (rawTextMode) return first.content;
-    // TEMP DEBUG: dump raw LLM content to disk for edition-loss diagnosis
-    try {
-      const _debugPath = `.tmp/llm-raw-${Date.now()}.txt`;
-      await fs.mkdir('.tmp', { recursive: true }).catch(() => {});
-      await fs.writeFile(_debugPath, first.content, 'utf-8');
-      logger?.info?.('llm_debug_raw_content_dumped', { path: _debugPath, length: first.content.length });
-    } catch { /* best-effort debug */ }
     const parsed = parseStructuredResult(first.content);
     health.recordSuccess(providerLabel);
     logger?.info?.('llm_call_completed', {
@@ -854,7 +851,8 @@ export async function callLlmProvider({
         baseUrl: baseUrlNormalized,
         apiKey,
         body: retryBody,
-        controller
+        controller,
+        onStreamChunk,
       });
       const retryUsage = await emitUsage({
         usage: retry.usage,

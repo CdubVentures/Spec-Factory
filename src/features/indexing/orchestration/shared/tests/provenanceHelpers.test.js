@@ -30,5 +30,5 @@ test('ensureProvenanceField returns existing field entry', () => {
 
 test('tsvRowFromFields joins field values with tab', () => {
   const result = tsvRowFromFields(['sensor', 'dpi', 'weight'], { sensor: 'Focus Pro', dpi: '35000' });
-  assert.equal(result, 'Focus Pro\t35000\tunk');
+  assert.equal(result, 'Focus Pro\t35000\t');
 });

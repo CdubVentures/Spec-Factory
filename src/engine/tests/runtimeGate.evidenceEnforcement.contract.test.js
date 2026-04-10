@@ -91,7 +91,7 @@ test('min_evidence_refs >= 1 enforces evidence audit — missing provenance sets
     enforceEvidence: false,
     evidencePack: goodEvidencePack,
   });
-  assert.equal(result.fields.field_a, 'unk', 'field_a should be unk without evidence');
+  assert.equal(result.fields.field_a, null, 'field_a should be null without evidence');
   assert.ok(
     result.failures.some(f => f.field === 'field_a' && f.stage === 'evidence'),
     'should record evidence failure for field_a',

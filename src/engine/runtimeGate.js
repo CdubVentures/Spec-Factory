@@ -91,7 +91,7 @@ export function applyRuntimeFieldRules({
       extractedValues: extractedValues || fields,
     });
     if (!normalized.ok) {
-      nextFields[field] = 'unk';
+      nextFields[field] = null;
       failures.push({
         field,
         stage: 'normalize',
@@ -101,7 +101,7 @@ export function applyRuntimeFieldRules({
         field,
         stage: 'normalize',
         before,
-        after: 'unk'
+        after: null
       });
       continue;
     }
@@ -167,7 +167,7 @@ export function applyRuntimeFieldRules({
       const hasError = (cross.violations || []).some((row) => row.severity === 'error');
       if (hasError) {
         const before = nextFields[field];
-        nextFields[field] = 'unk';
+        nextFields[field] = null;
         failures.push({
           field,
           stage: 'cross_validate',
@@ -178,7 +178,7 @@ export function applyRuntimeFieldRules({
           field,
           stage: 'cross_validate',
           before,
-          after: 'unk'
+          after: null
         });
       } else {
         warnings.push({
@@ -233,7 +233,7 @@ export function applyRuntimeFieldRules({
       );
       if (!audit.ok) {
         const before = nextFields[field];
-        nextFields[field] = 'unk';
+        nextFields[field] = null;
         failures.push({
           field,
           stage: 'evidence',
@@ -244,7 +244,7 @@ export function applyRuntimeFieldRules({
           field,
           stage: 'evidence',
           before,
-          after: 'unk'
+          after: null
         });
         continue;
       }
@@ -255,7 +255,7 @@ export function applyRuntimeFieldRules({
       const distinctCount = countDistinctEvidenceRefs(fieldProvenance);
       if (distinctCount < minRefs) {
         const before = nextFields[field];
-        nextFields[field] = 'unk';
+        nextFields[field] = null;
         failures.push({
           field,
           stage: 'evidence',
@@ -267,7 +267,7 @@ export function applyRuntimeFieldRules({
           field,
           stage: 'evidence',
           before,
-          after: 'unk'
+          after: null
         });
       }
     }

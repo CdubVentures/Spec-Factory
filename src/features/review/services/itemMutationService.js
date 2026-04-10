@@ -72,7 +72,12 @@ export function updateKeyReviewSelectedCandidate({
   selectedValue,
   selectedScore,
 }) {
-  specDb.updateKeyReviewSelectedCandidate(stateId, candidateId, selectedValue, selectedScore);
+  specDb.updateKeyReviewSelectedCandidate({
+    id: stateId,
+    selectedCandidateId: candidateId,
+    selectedValue,
+    confidenceScore: selectedScore,
+  });
 }
 
 export async function resolveItemLaneCandidateMutationRequest({

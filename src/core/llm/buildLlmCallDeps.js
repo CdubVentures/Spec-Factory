@@ -11,6 +11,6 @@
  */
 import { callLlmWithRouting } from './client/routing.js';
 
-export function buildLlmCallDeps({ config, logger, onPhaseChange, onModelResolved }) {
-  return { callRoutedLlmFn: callLlmWithRouting, config, logger, onPhaseChange, onModelResolved };
+export function buildLlmCallDeps({ config, logger, onPhaseChange, onModelResolved, onStreamChunk }) {
+  return { callRoutedLlmFn: callLlmWithRouting, config, logger, onPhaseChange, onModelResolved, onStreamChunk };
 }

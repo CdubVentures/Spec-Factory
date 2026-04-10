@@ -154,6 +154,14 @@ describe('createPhaseCallLlm', () => {
     assert.equal(getCaptured().onModelResolved, cb);
   });
 
+  it('forwards onStreamChunk from deps to callRoutedLlmFn', async () => {
+    const cb = () => {};
+    const { deps, getCaptured } = makeDeps({ onStreamChunk: cb });
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    await fn({});
+    assert.equal(getCaptured().onStreamChunk, cb);
+  });
+
   it('propagates callRoutedLlmFn rejection', async () => {
     const deps = {
       callRoutedLlmFn: async () => { throw new Error('LLM_FAIL'); },

@@ -419,4 +419,60 @@ describe('runColorEditionFinder', () => {
     assert.equal(json.next_run_number, 2);
     assert.equal(json.run_count, 1);
   });
+
+  it('composite key stripped from stored model in JSON and SQL', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-composite' },
+      appDb,
+      specDb,
+      config: { llmModelPlan: 'lab-openai:gpt-5.4-xhigh' },
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-composite', productRoot: PRODUCT_ROOT });
+    assert.equal(json.runs[0].model, 'gpt-5.4-xhigh', 'JSON run stores bare model, not composite key');
+
+    const runs = specDb.listColorEditionFinderRuns('mouse-composite');
+    assert.equal(runs[0].model, 'gpt-5.4-xhigh', 'SQL run stores bare model, not composite key');
+  });
+
+  it('onModelResolved updates stored model and fallback_used when fallback fires', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    // WHY: _callLlmOverride bypasses routing, so we simulate the fallback by
+    // calling the onModelResolved wrapper that the orchestrator passes as 2nd arg.
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-fallback' },
+      appDb,
+      specDb,
+      config: { llmModelPlan: 'gpt-5.4' },
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async (_domainArgs, { onModelResolved: notify } = {}) => {
+        // Simulate routing calling onModelResolved with fallback model
+        notify?.({ model: 'claude-sonnet', provider: 'anthropic', isFallback: true });
+        return { colors: ['black'], editions: {}, default_color: 'black' };
+      },
+    });
+
+    const json = readColorEdition({ productId: 'mouse-fallback', productRoot: PRODUCT_ROOT });
+    assert.equal(json.runs[0].model, 'claude-sonnet', 'stored model should be the fallback model');
+    assert.equal(json.runs[0].fallback_used, true, 'fallback_used should be true');
+
+    const runs = specDb.listColorEditionFinderRuns('mouse-fallback');
+    assert.equal(runs[0].model, 'claude-sonnet', 'SQL model should be fallback');
+    assert.equal(runs[0].fallback_used, true, 'SQL fallback_used should be true');
+  });
 });

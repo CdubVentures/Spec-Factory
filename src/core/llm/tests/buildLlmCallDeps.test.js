@@ -35,4 +35,15 @@ describe('buildLlmCallDeps', () => {
     const deps = buildLlmCallDeps({ config: {}, logger: null });
     assert.equal(deps.onModelResolved, undefined);
   });
+
+  it('threads onStreamChunk through to returned deps', () => {
+    const cb = () => {};
+    const deps = buildLlmCallDeps({ config: {}, logger: null, onStreamChunk: cb });
+    assert.equal(deps.onStreamChunk, cb);
+  });
+
+  it('onStreamChunk defaults to undefined when not provided', () => {
+    const deps = buildLlmCallDeps({ config: {}, logger: null });
+    assert.equal(deps.onStreamChunk, undefined);
+  });
 });

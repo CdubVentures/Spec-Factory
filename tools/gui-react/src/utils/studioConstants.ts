@@ -8,7 +8,6 @@ export const labelCls = 'sf-text-caption font-medium mb-1';
 // ── Dropdown option arrays ──────────────────────────────────────────
 // WHY: UNITS constant removed — contract.unit dropdown now pulls from the
 // managed unit registry API (GET /unit-registry/canonicals).
-export const UNKNOWN_TOKENS = ['unk', 'null', 'N/A', 'none'];
 export const GROUPS = [
   'general', 'connectivity', 'construction', 'controls', 'dimensions',
   'electronics', 'encoder', 'ergonomics', 'sensor_performance', 'switches',
@@ -74,10 +73,8 @@ export const STUDIO_TIPS: Record<string, string> = {
   list_rules_dedupe: 'Remove duplicate list items during runtime normalization. Case-insensitive for strings; exact-match for numbers.',
   list_rules_sort: 'Sort list items after parsing. none keeps source order; asc/desc apply normalized list ordering.',
   list_rules_item_union: 'How approved list candidates merge across sources. Leave blank to keep the winning list only.',
-  unknown_token: 'Field-specific placeholder used in extraction guidance when data can\'t be determined.',
   rounding_decimals: 'Decimal places for rounding numeric values. 0 = integer. Only affects number/integer types.',
   rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
-  require_unknown_reason: 'If checked, setting a value to the unknown token requires an explanation of why the data is unavailable.',
 
   // Tab 2: Key Navigator - Priority
   key_section_priority: 'Priority, availability, difficulty, and effort settings drive extraction urgency and scheduling of this field.',
