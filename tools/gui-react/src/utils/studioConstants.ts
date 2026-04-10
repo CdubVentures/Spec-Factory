@@ -94,9 +94,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   key_section_enum: 'Enum policy and enum source define accepted vocabulary, matching behavior, and suggestions for this field.',
   enum_policy: 'Enum Policy controls vocabulary matching after parsing. closed: requires a known list, rejects unknowns. open_prefer_known: prefers known values but accepts new evidence-backed values and queues them as suggestions. open: accepts any value (valid for all field types including number, url, date). For boolean fields, this is auto-locked to closed/yes_no.',
   enum_source: 'Enum value list source. Use data_lists.{name} for enum lists (e.g. data_lists.shape), component_db.{type} for component names (e.g. component_db.sensor), or yes_no for boolean enums.',
-  match_strategy: 'alias: match known aliases and name variants. exact: exact string match only. fuzzy: similarity scoring with configurable threshold.',
-  fuzzy_threshold: 'Similarity score (0.0-1.0) for fuzzy matching. 0.92 = 92% similar required. Higher = stricter.',
-
   // Tab 2: Key Navigator - Enum (expanded)
   enum_value_source: 'Where enum values come from. Values are authored in the Mapping Studio data lists. Use data_lists.{name} to link a field to an enum list.',
   enum_detected_values: 'Values currently in the known_values list for this field. Blue = from canonical source. Amber = discovered during pipeline runs (not yet in canonical list).',
@@ -111,7 +108,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   key_section_ui: 'UI controls determine how the field is displayed and edited in generated product views.',
   ui_label: 'Human-readable display name shown in UI and reports (e.g. \'Weight\' instead of \'weight_grams\').',
   ui_group: 'Category for organizing fields in the sidebar and reports. Fields with the same group appear together.',
-  input_control: 'UI widget for manual editing. text: free text, number: spinner, select: dropdown, checkbox: toggle, token_list: tag input, text_list: multiline, date: date picker.',
   display_mode: 'When to show this field. all: always, summary: compact views only, detailed: expanded views only.',
   ui_suffix: 'Text after the value in display (e.g. \'g\' for \'80 g\'). Usually matches the unit.',
   ui_prefix: 'Text before the value (e.g. \'$\' for \'$59.99\').',

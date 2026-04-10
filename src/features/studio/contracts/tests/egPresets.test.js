@@ -88,7 +88,6 @@ describe('buildEgColorFieldRule', () => {
     const rule = buildEgColorFieldRule();
     assert.equal(rule.enum_policy, 'closed');
     assert.equal(rule.enum.policy, 'closed');
-    assert.equal(rule.enum.match.strategy, 'exact');
     assert.equal(rule.enum.new_value_policy.accept_if_evidence, true);
     assert.equal(rule.enum.new_value_policy.mark_needs_curation, false);
   });
@@ -101,7 +100,6 @@ describe('buildEgColorFieldRule', () => {
   it('has UI metadata', () => {
     const rule = buildEgColorFieldRule();
     assert.equal(rule.ui.label, 'Colors');
-    assert.equal(rule.ui.input_control, 'token_list');
   });
 
   it('has ai_assist with EG extraction guidance', () => {
@@ -188,7 +186,6 @@ describe('buildEgEditionFieldRule', () => {
     const rule = buildEgEditionFieldRule();
     assert.equal(rule.enum_policy, 'open');
     assert.equal(rule.enum.policy, 'open');
-    assert.equal(rule.enum.match.strategy, 'exact');
     assert.equal(rule.enum.new_value_policy.mark_needs_curation, true);
   });
 
@@ -207,7 +204,6 @@ describe('buildEgEditionFieldRule', () => {
   it('has UI metadata', () => {
     const rule = buildEgEditionFieldRule();
     assert.equal(rule.ui.label, 'Editions');
-    assert.equal(rule.ui.input_control, 'token_list');
   });
 
   it('has delimiters in parse (template eliminated)', () => {
@@ -258,7 +254,6 @@ describe('isEgEditablePath', () => {
     assert.equal(isEgEditablePath('parse.template'), false);
     assert.equal(isEgEditablePath('enum_policy'), false);
     assert.equal(isEgEditablePath('priority.required_level'), false);
-    assert.equal(isEgEditablePath('ui.input_control'), false);
   });
 });
 

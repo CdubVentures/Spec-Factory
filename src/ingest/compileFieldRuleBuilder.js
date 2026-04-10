@@ -464,7 +464,6 @@ export function buildFieldRuleDraft({
     suffix: unit && unit !== 'none' ? unit : null,
     examples: [],
     placeholder: 'unk',
-    input_control: inferred.shape === 'list' ? 'list_editor' : 'text',
     tooltip_key: normalizeText(tooltipEntry?.key || '') || null,
     tooltip_source: normalizeText(tooltipEntry?.source || '') || null,
     display_mode: key === 'polling_rate' ? 'high' : 'all',
@@ -651,14 +650,8 @@ export function buildStudioFieldRule({
   const nestedEnum = {
     policy: policy || 'open_prefer_known',
     source: sourceRef,
-    match: {
-      strategy: normalizeToken(rule.enum_match_strategy || enumMatch.strategy || 'exact') || 'exact'
-    }
+    match: {}
   };
-  const fuzzy = asNumber(rule.enum_fuzzy_threshold ?? enumMatch.fuzzy_threshold);
-  if (fuzzy !== null) {
-    nestedEnum.match.fuzzy_threshold = fuzzy;
-  }
   if (nestedEnum.policy === 'open' || nestedEnum.policy === 'open_prefer_known') {
     nestedEnum.new_value_policy = isObject(rule.new_value_policy)
       ? sortDeep(rule.new_value_policy)
@@ -763,7 +756,6 @@ export function buildStudioFieldRule({
     examples: toArray(ui.examples || []).map((value) => normalizeText(value)).filter(Boolean),
     short_label: normalizeText(ui.short_label || '') || null,
     placeholder: normalizeText(ui.placeholder || 'unk') || 'unk',
-    input_control: normalizeText(ui.input_control || 'text') || 'text',
     guidance_md: normalizeText(ui.guidance_md || '') || null,
     tooltip_key: normalizeText(ui.tooltip_key || '') || null,
     tooltip_source: normalizeText(ui.tooltip_source || '') || null,

@@ -61,8 +61,6 @@ export function EnumConfigurator({
 }: EnumConfiguratorProps) {
   const currentSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
   const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
-  const matchStrategy = strN(rule, 'enum.match.strategy', 'alias');
-
   const isBoolean = contractType === 'boolean';
 
   // Known values for this field
@@ -70,7 +68,7 @@ export function EnumConfigurator({
   const consumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
   const consistencyFormatReviewEnabled = consumers?.['enum.match.format_hint']?.review !== false;
   const consistencyFormatHint = strN(rule, 'enum.match.format_hint');
-  const reviewToggleFields = ['enum.match.strategy', 'enum.match.format_hint'] as const;
+  const reviewToggleFields = ['enum.match.format_hint'] as const;
   const reviewToggleOn = reviewToggleFields.every((fieldPath) => consumers?.[fieldPath]?.review !== false);
 
   // Derive selected enum list name from source
@@ -128,7 +126,7 @@ export function EnumConfigurator({
       <div className="space-y-4">
         <div className="flex items-center gap-2 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <span>EG-managed enum. Policy: <strong>{currentPolicy}</strong> &middot; Match: <strong>{matchStrategy}</strong> &middot; {fieldKnownValues.length} registered values</span>
+          <span>EG-managed enum. Policy: <strong>{currentPolicy}</strong> &middot; {fieldKnownValues.length} registered values</span>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}>
@@ -178,34 +176,6 @@ export function EnumConfigurator({
             </select>
           )}
         </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}><span>Match Strategy<Tip text={STUDIO_TIPS.match_strategy} /></span>{renderLabelSuffix?.('enum.match.strategy')}</div>
-          <select
-            className={`${selectCls} w-full`}
-            value={matchStrategy}
-            onChange={(e) => onUpdate('enum.match.strategy', e.target.value)}
-          >
-            <option value="alias">alias</option>
-            <option value="exact">exact</option>
-            <option value="fuzzy">fuzzy</option>
-          </select>
-        </div>
-        {matchStrategy === 'fuzzy' ? (
-          <div>
-            <div className={`${labelCls} flex items-center`}><span>Fuzzy Threshold<Tip text={STUDIO_TIPS.fuzzy_threshold} /></span>{renderLabelSuffix?.('enum.match.fuzzy_threshold')}</div>
-            <input
-              className={`${inputCls} w-full`}
-              type="number"
-              step={0.01}
-              min={0}
-              max={1}
-              value={numN(rule, 'enum.match.fuzzy_threshold', 0.92)}
-              onChange={(e) => onUpdate('enum.match.fuzzy_threshold', parseFloat(e.target.value) || 0.92)}
-            />
-          </div>
-        ) : (
-          <div />
-        )}
       </div>
 
       {/* ── Enum Source ───────────────────────────────────────────── */}
@@ -260,7 +230,6 @@ export function EnumConfigurator({
               <span className="flex items-center gap-1.5">
                 <span>Consistency Mode</span>
                 <Tip text="Backend-linked review mode. ON enables review consumers and runs enum-consistency with current format guidance when allowed. OFF disables review consumers and sends gated backend request." />
-                {renderLabelSuffix?.('enum.match.strategy')}
               </span>
             </div>
             {/* WHY: Closed enum already rejects unknowns via P1 — consistency (P2) doesn't apply. Lock OFF. */}

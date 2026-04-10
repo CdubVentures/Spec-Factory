@@ -1,10 +1,12 @@
 import fsSync from 'node:fs';
 import path from 'node:path';
+import { invalidateUnitRegistryCache } from '../../../field-rules/unitRegistry.js';
 
 // WHY: CRUD API for the managed unit registry.
 // JSON at _global/unit_registry.json is durable SSOT.
 // app.sqlite unit_registry table is the runtime projection.
 // Mutations write to both SQL (immediate) and JSON (durable sync).
+// Cache invalidation ensures the resolver picks up changes immediately.
 
 export function registerUnitRegistryRoutes(ctx) {
   const { jsonRes, readJsonBody, appDb, unitRegistryPath } = ctx;
@@ -64,6 +66,7 @@ export function registerUnitRegistryRoutes(ctx) {
         synonyms: Array.isArray(body.synonyms) ? body.synonyms : [],
         conversions: Array.isArray(body.conversions) ? body.conversions : [],
       });
+      invalidateUnitRegistryCache();
       syncToJson();
       const unit = appDb.getUnit(canonical);
       return jsonRes(res, 200, { unit });
@@ -74,6 +77,7 @@ export function registerUnitRegistryRoutes(ctx) {
       const canonical = decodeURIComponent(parts[1]);
       const changes = appDb.deleteUnit(canonical);
       if (changes === 0) return jsonRes(res, 404, { error: 'Unit not found' });
+      invalidateUnitRegistryCache();
       syncToJson();
       return jsonRes(res, 200, { deleted: true, canonical });
     }

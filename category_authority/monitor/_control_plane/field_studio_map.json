@@ -2197,9 +2197,7 @@
       "display_name": "Adaptive Sync",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2285,7 +2283,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Adaptive Sync",
         "order": 36,
         "placeholder": "unk",
@@ -2330,9 +2327,7 @@
       "display_name": "Aspect Ratio",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2416,7 +2411,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Aspect Ratio",
         "order": 12,
         "placeholder": "unk",
@@ -2462,9 +2456,7 @@
       "display_name": "Audio Output",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2546,7 +2538,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Audio Output",
         "order": 72,
         "placeholder": "unk",
@@ -2593,9 +2584,7 @@
       "display_name": "Backlight Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2682,7 +2671,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Backlight Type",
         "order": 51,
         "placeholder": "unk",
@@ -2725,9 +2713,7 @@
       "display_name": "Base Model",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2808,7 +2794,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Base Model",
         "order": 3,
         "placeholder": "unk",
@@ -2861,9 +2846,7 @@
       "display_name": "Black Uniformity",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2957,7 +2940,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Black Uniformity",
         "order": 58,
         "placeholder": "unk",
@@ -3000,9 +2982,7 @@
       "display_name": "Brand",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3083,7 +3063,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Brand",
         "order": 1,
         "placeholder": "unk",
@@ -3138,9 +3117,7 @@
       "display_name": "Peak HDR Brightness",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3224,7 +3201,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Peak HDR Brightness",
         "order": 42,
         "placeholder": "unk",
@@ -3280,9 +3256,7 @@
       "display_name": "Brightness (SDR)",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3370,7 +3344,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Brightness (SDR)",
         "order": 41,
         "placeholder": "unk",
@@ -3417,9 +3390,7 @@
       "display_name": "Cable Length",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3502,7 +3473,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Cable Length",
         "order": 109,
         "placeholder": "unk",
@@ -3548,9 +3518,7 @@
       "display_name": "Cable Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3632,7 +3600,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Cable Type",
         "order": 110,
         "placeholder": "unk",
@@ -3684,9 +3651,7 @@
       "display_name": "Cables Included",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3778,7 +3743,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Cables Included",
         "order": 96,
         "placeholder": "unk",
@@ -3821,9 +3785,7 @@
       "display_name": "Category",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3903,7 +3865,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Category",
         "order": 8,
         "placeholder": "unk",
@@ -3953,9 +3914,7 @@
       "display_name": "Color",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4048,7 +4007,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Color",
         "order": 107,
         "placeholder": "unk",
@@ -4102,9 +4060,7 @@
       "display_name": "Color Accuracy (ΔE)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4186,7 +4142,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Color Accuracy (ΔE)",
         "order": 48,
         "placeholder": "unk",
@@ -4240,9 +4195,7 @@
       "display_name": "Adobe RGB Coverage",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4324,7 +4277,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Adobe RGB Coverage",
         "order": 47,
         "placeholder": "unk",
@@ -4379,9 +4331,7 @@
       "display_name": "DCI-P3 Coverage",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4464,7 +4414,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "DCI-P3 Coverage",
         "order": 46,
         "placeholder": "unk",
@@ -4519,9 +4468,7 @@
       "display_name": "sRGB Coverage",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4604,7 +4551,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "sRGB Coverage",
         "order": 45,
         "placeholder": "unk",
@@ -4643,9 +4589,7 @@
         "unknown_token": "unk"
       },
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": false
@@ -4717,7 +4661,6 @@
       },
       "ui": {
         "group": "general",
-        "input_control": "token_list",
         "label": "Colors",
         "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray."
       },
@@ -4836,9 +4779,7 @@
       "display_name": "Contrast Ratio",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4921,7 +4862,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Contrast Ratio",
         "order": 43,
         "placeholder": "unk",
@@ -4967,9 +4907,7 @@
       "display_name": "Dynamic Contrast Ratio",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5049,7 +4987,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Dynamic Contrast Ratio",
         "order": 44,
         "placeholder": "unk",
@@ -5096,9 +5033,7 @@
       "display_name": "Crosshair Overlay",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5179,7 +5114,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Crosshair Overlay",
         "order": 94,
         "placeholder": "unk",
@@ -5225,9 +5159,7 @@
       "display_name": "Curve Radius",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5310,7 +5242,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Curve Radius",
         "order": 18,
         "placeholder": "unk",
@@ -5355,9 +5286,7 @@
       "display_name": "Curved",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5438,7 +5367,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Curved",
         "order": 17,
         "placeholder": "unk",
@@ -5485,9 +5413,7 @@
       "display_name": "Daisy Chain (DP Out)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5569,7 +5495,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Daisy Chain (DP Out)",
         "order": 74,
         "placeholder": "unk",
@@ -5622,9 +5547,7 @@
       "display_name": "Depth",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5707,7 +5630,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Depth",
         "order": 79,
         "placeholder": "unk",
@@ -5753,9 +5675,7 @@
       "display_name": "Discontinued",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5836,7 +5756,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Discontinued",
         "order": 106,
         "placeholder": "unk",
@@ -5882,9 +5801,7 @@
       "display_name": "Display Stream Compression",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5968,7 +5885,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Display Stream Compression",
         "order": 65,
         "placeholder": "unk",
@@ -6014,9 +5930,7 @@
       "display_name": "DisplayPort",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6100,7 +6014,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "DisplayPort",
         "order": 63,
         "placeholder": "unk",
@@ -6147,9 +6060,7 @@
       "display_name": "DisplayPort Version",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6233,7 +6144,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "DisplayPort Version",
         "order": 64,
         "placeholder": "unk",
@@ -6270,9 +6180,7 @@
         "unknown_token": "unk"
       },
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6317,7 +6225,6 @@
       },
       "ui": {
         "group": "general",
-        "input_control": "token_list",
         "label": "Editions",
         "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness."
       }
@@ -6353,9 +6260,7 @@
       "display_name": "Energy Rating",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6437,7 +6342,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Energy Rating",
         "order": 103,
         "placeholder": "unk",
@@ -6484,9 +6388,7 @@
       "display_name": "Ethernet / RJ45",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6570,7 +6472,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Ethernet / RJ45",
         "order": 70,
         "placeholder": "unk",
@@ -6615,9 +6516,7 @@
       "display_name": "Factory Calibrated",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6698,7 +6597,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Factory Calibrated",
         "order": 50,
         "placeholder": "unk",
@@ -6744,9 +6642,7 @@
       "display_name": "Flicker-Free",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6829,7 +6725,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Flicker-Free",
         "order": 91,
         "placeholder": "unk",
@@ -6884,9 +6779,7 @@
       "display_name": "Flicker Frequency",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6981,7 +6874,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Flicker Frequency",
         "order": 92,
         "placeholder": "unk",
@@ -7028,9 +6920,7 @@
       "display_name": "FRC (Dithering)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7111,7 +7001,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "FRC (Dithering)",
         "order": 16,
         "placeholder": "unk",
@@ -7157,9 +7046,7 @@
       "display_name": "Gradient Handling",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7252,7 +7139,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Gradient Handling",
         "order": 60,
         "placeholder": "unk",
@@ -7305,9 +7191,7 @@
       "display_name": "Gray Uniformity (50%)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7401,7 +7285,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Gray Uniformity (50%)",
         "order": 57,
         "placeholder": "unk",
@@ -7444,9 +7327,7 @@
       "display_name": "GTIN / UPC",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7526,7 +7407,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "GTIN / UPC",
         "order": 7,
         "placeholder": "unk",
@@ -7572,9 +7452,7 @@
       "display_name": "HDMI Ports",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7658,7 +7536,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "HDMI Ports",
         "order": 61,
         "placeholder": "unk",
@@ -7705,9 +7582,7 @@
       "display_name": "HDMI Version",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7792,7 +7667,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "HDMI Version",
         "order": 62,
         "placeholder": "unk",
@@ -7843,9 +7717,7 @@
       "display_name": "HDR Support",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7942,7 +7814,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "HDR Support",
         "order": 49,
         "placeholder": "unk",
@@ -7989,9 +7860,7 @@
       "display_name": "Headphone Jack",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8072,7 +7941,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Headphone Jack",
         "order": 71,
         "placeholder": "unk",
@@ -8127,9 +7995,7 @@
       "display_name": "Height",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8212,7 +8078,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Height",
         "order": 78,
         "placeholder": "unk",
@@ -8259,9 +8124,7 @@
       "display_name": "Height Adjustment",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8345,7 +8208,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Height Adjustment",
         "order": 82,
         "placeholder": "unk",
@@ -8398,9 +8260,7 @@
       "display_name": "Height (With Stand)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8483,7 +8343,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Height (With Stand)",
         "order": 80,
         "placeholder": "unk",
@@ -8538,9 +8397,7 @@
       "display_name": "Horizontal Viewing Angle",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8634,7 +8491,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Horizontal Viewing Angle",
         "order": 55,
         "placeholder": "unk",
@@ -8688,9 +8544,7 @@
       "display_name": "Input Lag",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8774,7 +8628,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Input Lag",
         "order": 32,
         "placeholder": "unk",
@@ -8829,9 +8682,7 @@
       "display_name": "Input Lag (120 Hz)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8926,7 +8777,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Input Lag (120 Hz)",
         "order": 34,
         "placeholder": "unk",
@@ -8980,9 +8830,7 @@
       "display_name": "Input Lag (60 Hz)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9077,7 +8925,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Input Lag (60 Hz)",
         "order": 35,
         "placeholder": "unk",
@@ -9131,9 +8978,7 @@
       "display_name": "Input Lag (Max Refresh)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9228,7 +9073,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Input Lag (Max Refresh)",
         "order": 33,
         "placeholder": "unk",
@@ -9274,9 +9118,7 @@
       "display_name": "KVM Switch",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9358,7 +9200,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "KVM Switch",
         "order": 73,
         "placeholder": "unk",
@@ -9412,9 +9253,7 @@
       "display_name": "Local Dimming Zones",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9496,7 +9335,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Local Dimming Zones",
         "order": 52,
         "placeholder": "unk",
@@ -9543,9 +9381,7 @@
       "display_name": "Low Blue Light",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9627,7 +9463,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Low Blue Light",
         "order": 93,
         "placeholder": "unk",
@@ -9673,9 +9508,7 @@
       "display_name": "macOS Compatibility",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9768,7 +9601,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "macOS Compatibility",
         "order": 100,
         "placeholder": "unk",
@@ -9812,9 +9644,7 @@
       "display_name": "Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9896,7 +9726,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Material",
         "order": 111,
         "placeholder": "unk",
@@ -9951,9 +9780,7 @@
       "display_name": "Max Refresh Rate (DisplayPort)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10050,7 +9877,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Max Refresh Rate (DisplayPort)",
         "order": 23,
         "placeholder": "unk",
@@ -10105,9 +9931,7 @@
       "display_name": "Max Refresh Rate (HDMI)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10204,7 +10028,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Max Refresh Rate (HDMI)",
         "order": 24,
         "placeholder": "unk",
@@ -10251,9 +10074,7 @@
       "display_name": "Microphone",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10337,7 +10158,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Microphone",
         "order": 89,
         "placeholder": "unk",
@@ -10379,9 +10199,7 @@
       "display_name": "Model",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10462,7 +10280,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Model",
         "order": 2,
         "placeholder": "unk",
@@ -10510,9 +10327,7 @@
       "display_name": "Motion Blur Reduction",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10597,7 +10412,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Motion Blur Reduction",
         "order": 40,
         "placeholder": "unk",
@@ -10640,9 +10454,7 @@
       "display_name": "MPN",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10722,7 +10534,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "MPN",
         "order": 6,
         "placeholder": "unk",
@@ -10768,9 +10579,7 @@
       "display_name": "Native Colors",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10851,7 +10660,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Native Colors",
         "order": 21,
         "placeholder": "unk",
@@ -10898,9 +10706,7 @@
       "display_name": "OSD Control",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10982,7 +10788,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "OSD Control",
         "order": 97,
         "placeholder": "unk",
@@ -11027,9 +10832,7 @@
       "display_name": "Overdrive",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11112,7 +10915,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Overdrive",
         "order": 39,
         "placeholder": "unk",
@@ -11166,9 +10968,7 @@
       "display_name": "Overshoot (120 Hz)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11262,7 +11062,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Overshoot (120 Hz)",
         "order": 30,
         "placeholder": "unk",
@@ -11316,9 +11115,7 @@
       "display_name": "Overshoot (60 Hz)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11412,7 +11209,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Overshoot (60 Hz)",
         "order": 31,
         "placeholder": "unk",
@@ -11466,9 +11262,7 @@
       "display_name": "Overshoot (Max Refresh)",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11563,7 +11357,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Overshoot (Max Refresh)",
         "order": 29,
         "placeholder": "unk",
@@ -11610,9 +11403,7 @@
       "display_name": "Panel Bit Depth",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11695,7 +11486,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Panel Bit Depth",
         "order": 15,
         "placeholder": "unk",
@@ -11742,9 +11532,7 @@
       "display_name": "Panel Coating",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11828,7 +11616,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Panel Coating",
         "order": 19,
         "placeholder": "unk",
@@ -11874,9 +11661,7 @@
       "display_name": "Panel Manufacturer",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11959,7 +11744,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Panel Manufacturer",
         "order": 20,
         "placeholder": "unk",
@@ -12006,9 +11790,7 @@
       "display_name": "Panel Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12096,7 +11878,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Panel Type",
         "order": 10,
         "placeholder": "unk",
@@ -12144,9 +11925,7 @@
       "display_name": "PiP / PbP",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12229,7 +12008,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "PiP / PbP",
         "order": 90,
         "placeholder": "unk",
@@ -12276,9 +12054,7 @@
       "display_name": "Pivot / Portrait",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12360,7 +12136,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Pivot / Portrait",
         "order": 85,
         "placeholder": "unk",
@@ -12415,9 +12190,7 @@
       "display_name": "Pixel Density",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12501,7 +12274,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Pixel Density",
         "order": 13,
         "placeholder": "unk",
@@ -12556,9 +12328,7 @@
       "display_name": "Power Consumption (Max)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12641,7 +12411,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Power Consumption (Max)",
         "order": 102,
         "placeholder": "unk",
@@ -12696,9 +12465,7 @@
       "display_name": "Power Consumption (Typical)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12783,7 +12550,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Power Consumption (Typical)",
         "order": 101,
         "placeholder": "unk",
@@ -12823,7 +12589,7 @@
         "rounding": null,
         "shape": "scalar",
         "type": "string",
-        "unit": "usd",
+        "unit": null,
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -12832,9 +12598,7 @@
       "display_name": "Price (MSRP)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12868,12 +12632,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "unit": "usd"
+        "unit": null
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "unit": "usd"
+        "unit": null
       },
       "priority": {
         "availability": "expected",
@@ -12918,18 +12682,17 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Price (MSRP)",
         "order": 105,
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "USD",
+        "suffix": null,
         "tooltip_key": "price_range",
         "tooltip_md": "MSRP / launch retail price in USD",
         "tooltip_source": null
       },
-      "unit": "usd",
+      "unit": null,
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
@@ -12965,9 +12728,7 @@
       "display_name": "PS5 Compatibility",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13060,7 +12821,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "PS5 Compatibility",
         "order": 98,
         "placeholder": "unk",
@@ -13113,9 +12873,7 @@
       "display_name": "Reflections",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13210,7 +12968,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Reflections",
         "order": 54,
         "placeholder": "unk",
@@ -13264,9 +13021,7 @@
       "display_name": "Refresh Rate",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13356,7 +13111,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Refresh Rate",
         "order": 22,
         "placeholder": "unk",
@@ -13403,9 +13157,7 @@
       "display_name": "Release Date",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13487,7 +13239,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Release Date",
         "order": 104,
         "placeholder": "unk",
@@ -13533,9 +13284,7 @@
       "display_name": "Resolution",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13622,7 +13371,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Resolution",
         "order": 11,
         "placeholder": "unk",
@@ -13676,9 +13424,7 @@
       "display_name": "Response Time (120 Hz)",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13774,7 +13520,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Response Time (120 Hz)",
         "order": 27,
         "placeholder": "unk",
@@ -13828,9 +13573,7 @@
       "display_name": "Response Time (60 Hz)",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13926,7 +13669,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Response Time (60 Hz)",
         "order": 28,
         "placeholder": "unk",
@@ -13981,9 +13723,7 @@
       "display_name": "Response Time (GtG)",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14069,7 +13809,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Response Time (GtG)",
         "order": 25,
         "placeholder": "unk",
@@ -14124,9 +13863,7 @@
       "display_name": "Response Time (MPRT)",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14210,7 +13947,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Response Time (MPRT)",
         "order": 26,
         "placeholder": "unk",
@@ -14266,9 +14002,7 @@
       "display_name": "Screen Size",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14354,7 +14088,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Screen Size",
         "order": 9,
         "placeholder": "unk",
@@ -14398,9 +14131,7 @@
       "display_name": "SKU / Part #",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14481,7 +14212,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "SKU / Part #",
         "order": 5,
         "placeholder": "unk",
@@ -14526,9 +14256,7 @@
       "display_name": "Speakers",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14612,7 +14340,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Speakers",
         "order": 87,
         "placeholder": "unk",
@@ -14658,9 +14385,7 @@
       "display_name": "Subpixel Layout",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14741,7 +14466,6 @@
         "examples": [],
         "group": "Display Panel",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Subpixel Layout",
         "order": 14,
         "placeholder": "unk",
@@ -14787,9 +14511,7 @@
       "display_name": "Swivel Range",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14871,7 +14593,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Swivel Range",
         "order": 84,
         "placeholder": "unk",
@@ -14917,9 +14638,7 @@
       "display_name": "Text Clarity",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15012,7 +14731,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Text Clarity",
         "order": 59,
         "placeholder": "unk",
@@ -15058,9 +14776,7 @@
       "display_name": "Thunderbolt Ports",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15143,7 +14859,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Thunderbolt Ports",
         "order": 66,
         "placeholder": "unk",
@@ -15190,9 +14905,7 @@
       "display_name": "Thunderbolt Version",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15275,7 +14988,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Thunderbolt Version",
         "order": 67,
         "placeholder": "unk",
@@ -15321,9 +15033,7 @@
       "display_name": "Tilt Range",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15406,7 +15116,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Tilt Range",
         "order": 83,
         "placeholder": "unk",
@@ -15453,9 +15162,7 @@
       "display_name": "USB-C Ports",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15538,7 +15245,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "USB-C Ports",
         "order": 68,
         "placeholder": "unk",
@@ -15584,9 +15290,7 @@
       "display_name": "USB Hub",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15668,7 +15372,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "USB Hub",
         "order": 69,
         "placeholder": "unk",
@@ -15723,9 +15426,7 @@
       "display_name": "USB-C Power Delivery",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15811,7 +15512,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "USB-C Power Delivery",
         "order": 95,
         "placeholder": "unk",
@@ -15858,9 +15558,7 @@
       "display_name": "Variable Refresh Rate",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15942,7 +15640,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Variable Refresh Rate",
         "order": 38,
         "placeholder": "unk",
@@ -15985,9 +15682,7 @@
       "display_name": "Variant",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16069,7 +15764,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Variant",
         "order": 4,
         "placeholder": "unk",
@@ -16123,9 +15817,7 @@
       "display_name": "Vertical Viewing Angle",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16219,7 +15911,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Vertical Viewing Angle",
         "order": 56,
         "placeholder": "unk",
@@ -16266,9 +15957,7 @@
       "display_name": "VESA Mount",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16353,7 +16042,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "text",
         "label": "VESA Mount",
         "order": 81,
         "placeholder": "unk",
@@ -16400,9 +16088,7 @@
       "display_name": "VRR Range",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16484,7 +16170,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "VRR Range",
         "order": 37,
         "placeholder": "unk",
@@ -16530,9 +16215,7 @@
       "display_name": "Wall Mountable",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16613,7 +16296,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Wall Mountable",
         "order": 86,
         "placeholder": "unk",
@@ -16660,9 +16342,7 @@
       "display_name": "Warranty",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16743,7 +16423,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Warranty",
         "order": 108,
         "placeholder": "unk",
@@ -16790,9 +16469,7 @@
       "display_name": "Webcam",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16877,7 +16554,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Webcam",
         "order": 88,
         "placeholder": "unk",
@@ -16930,9 +16606,7 @@
       "display_name": "Weight (With Stand)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17016,7 +16690,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Weight (With Stand)",
         "order": 76,
         "placeholder": "unk",
@@ -17071,9 +16744,7 @@
       "display_name": "Weight (Without Stand)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17158,7 +16829,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Weight (Without Stand)",
         "order": 75,
         "placeholder": "unk",
@@ -17205,9 +16875,7 @@
       "display_name": "Wide Color Gamut",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17289,7 +16957,6 @@
         "examples": [],
         "group": "Color & Image Quality",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Wide Color Gamut",
         "order": 53,
         "placeholder": "unk",
@@ -17344,9 +17011,7 @@
       "display_name": "Width",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17429,7 +17094,6 @@
         "examples": [],
         "group": "Dimensions & Weight",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Width",
         "order": 77,
         "placeholder": "unk",
@@ -17477,9 +17141,7 @@
       "display_name": "Xbox Series X|S Compatibility",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17572,7 +17234,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Xbox Series X|S Compatibility",
         "order": 99,
         "placeholder": "unk",

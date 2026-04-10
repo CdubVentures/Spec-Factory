@@ -118,117 +118,116 @@ describe('checkEnum — multi-color atoms (+ split)', () => {
   });
 });
 
-// ── match_strategy: alias ────────────────────────────────────────────────────
+// ── open_prefer_known — alias resolution ────────────────────────────────────
 
-describe('checkEnum — match_strategy: alias (case-insensitive)', () => {
+describe('checkEnum — open_prefer_known policy (alias resolution, case-insensitive)', () => {
   const known = ['Cherry MX Red', 'Cherry MX Brown', 'Cherry MX Blue'];
 
-  it('exact match still works with alias strategy', () => {
-    const r = checkEnum('Cherry MX Red', 'closed', known, 'alias');
+  it('exact match → pass', () => {
+    const r = checkEnum('Cherry MX Red', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
   });
 
   it('case-insensitive match → pass + repair', () => {
-    const r = checkEnum('cherry mx red', 'closed', known, 'alias');
+    const r = checkEnum('cherry mx red', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
     assert.equal(r.repaired, 'Cherry MX Red');
   });
 
   it('mixed case → resolves to canonical', () => {
-    const r = checkEnum('CHERRY MX BROWN', 'closed', known, 'alias');
+    const r = checkEnum('CHERRY MX BROWN', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.repaired, 'Cherry MX Brown');
   });
 
-  it('no match even with alias → reject (closed)', () => {
-    const r = checkEnum('Gateron Red', 'closed', known, 'alias');
-    assert.equal(r.pass, false);
-    assert.deepStrictEqual(r.unknown, ['Gateron Red']);
-  });
-
-  it('no match with alias → flag (open_prefer_known)', () => {
-    const r = checkEnum('Gateron Red', 'open_prefer_known', known, 'alias');
+  it('no match → accept + flag for LLM', () => {
+    const r = checkEnum('Gateron Red', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.needsLlm, true);
     assert.deepStrictEqual(r.unknown, ['Gateron Red']);
   });
 });
 
-describe('checkEnum — match_strategy: alias (normalized: hyphens/underscores/spaces)', () => {
+describe('checkEnum — open_prefer_known (normalized matching: hyphens/underscores/spaces)', () => {
   const known = ['3 Zone (RGB)', '4 Zone (RGB)', 'None'];
 
   it('hyphenated input matches spaced canonical', () => {
-    const r = checkEnum('3-zone-(rgb)', 'closed', known, 'alias');
+    const r = checkEnum('3-zone-(rgb)', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.repaired, '3 Zone (RGB)');
   });
 
   it('underscored input matches spaced canonical', () => {
-    const r = checkEnum('4_zone_(rgb)', 'closed', known, 'alias');
+    const r = checkEnum('4_zone_(rgb)', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.repaired, '4 Zone (RGB)');
   });
 
   it('collapsed no-separator input matches', () => {
-    const r = checkEnum('none', 'closed', known, 'alias');
+    const r = checkEnum('none', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.repaired, 'None');
   });
 
-  it('completely wrong value still rejects', () => {
-    const r = checkEnum('5 Zone (RGB)', 'closed', known, 'alias');
-    assert.equal(r.pass, false);
+  it('completely wrong value → accept + flag', () => {
+    const r = checkEnum('5 Zone (RGB)', 'open_prefer_known', known);
+    assert.equal(r.pass, true);
+    assert.equal(r.needsLlm, true);
     assert.deepStrictEqual(r.unknown, ['5 Zone (RGB)']);
   });
 });
 
-describe('checkEnum — match_strategy: alias with + atoms', () => {
+describe('checkEnum — open_prefer_known with + atoms', () => {
   const known = ['black', 'white', 'red'];
 
   it('case-insensitive atoms → pass + repaired', () => {
-    const r = checkEnum('Black+White', 'closed', known, 'alias');
+    const r = checkEnum('Black+White', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.equal(r.repaired, 'black+white');
   });
 
-  it('one atom unknown → reject', () => {
-    const r = checkEnum('Black+Pink', 'closed', known, 'alias');
-    assert.equal(r.pass, false);
+  it('one atom unknown → accept + flag', () => {
+    const r = checkEnum('Black+Pink', 'open_prefer_known', known);
+    assert.equal(r.pass, true);
+    assert.equal(r.needsLlm, true);
     assert.deepStrictEqual(r.unknown, ['Pink']);
   });
 });
 
-describe('checkEnum — match_strategy: alias with list arrays', () => {
+describe('checkEnum — open_prefer_known with list arrays', () => {
   const known = ['Cherry MX Red', 'Cherry MX Brown'];
 
   it('array with case-insensitive matches → pass + repaired array', () => {
-    const r = checkEnum(['cherry mx red', 'cherry mx brown'], 'closed', known, 'alias');
+    const r = checkEnum(['cherry mx red', 'cherry mx brown'], 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.repaired, ['Cherry MX Red', 'Cherry MX Brown']);
   });
 
-  it('array with one miss → reject', () => {
-    const r = checkEnum(['cherry mx red', 'gateron red'], 'closed', known, 'alias');
-    assert.equal(r.pass, false);
+  it('array with one miss → accept + flag', () => {
+    const r = checkEnum(['cherry mx red', 'gateron red'], 'open_prefer_known', known);
+    assert.equal(r.pass, true);
+    assert.equal(r.needsLlm, true);
     assert.deepStrictEqual(r.unknown, ['gateron red']);
   });
 });
 
-describe('checkEnum — match_strategy: exact (default, no 4th arg)', () => {
+// ── closed — exact match, no alias ──────────────────────────────────────────
+
+describe('checkEnum — closed policy (exact match, no alias)', () => {
   const known = ['black', 'white'];
 
-  it('case mismatch with exact strategy → reject', () => {
-    const r = checkEnum('Black', 'closed', known, 'exact');
+  it('case mismatch → reject', () => {
+    const r = checkEnum('Black', 'closed', known);
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['Black']);
   });
 
-  it('no strategy arg → defaults to exact behavior', () => {
-    const r = checkEnum('Black', 'closed', known);
-    assert.equal(r.pass, false);
-    assert.deepStrictEqual(r.unknown, ['Black']);
+  it('exact match → pass', () => {
+    const r = checkEnum('black', 'closed', known);
+    assert.equal(r.pass, true);
+    assert.deepStrictEqual(r.unknown, []);
   });
 });
 

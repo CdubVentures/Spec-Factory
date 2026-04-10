@@ -29,7 +29,7 @@ test('studio enum consistency skips when review consumer is disabled', async () 
           lighting: {
             enum: { policy: 'open_prefer_known' },
             consumers: {
-              'enum.match.strategy': { review: false },
+              'enum.match.format_hint': { review: false },
             },
           },
         },

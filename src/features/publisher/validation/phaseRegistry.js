@@ -143,8 +143,8 @@ export const PHASE_REGISTRY = [
     id: 'enum',
     title: 'Enum Check',
     order: 8,
-    description: 'Validates the value against a known-values list with policy and match strategy.',
-    behaviorNote: 'Exact or alias matching. Alias tries case-insensitive + normalized before rejecting.',
+    description: 'Validates the value against a known-values list. Policy determines matching behavior.',
+    behaviorNote: 'closed: exact match, reject unknowns. open_prefer_known: alias resolution (case-insensitive + normalized). open: all values pass.',
     isApplicable: (rule, ctx) => {
       const policy = rule?.enum?.policy;
       const count = ctx?.knownValuesCount ?? 0;
@@ -152,9 +152,8 @@ export const PHASE_REGISTRY = [
     },
     triggerDetail: (rule, ctx) => {
       const policy = rule?.enum?.policy || '';
-      const strategy = rule?.enum?.match?.strategy || 'exact';
       const count = ctx?.knownValuesCount ?? 0;
-      return `Policy: ${policy || '(none)'}, Match: ${strategy}, ${count} known values`;
+      return `Policy: ${policy || '(none)'}, ${count} known values`;
     },
   },
   {

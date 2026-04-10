@@ -197,16 +197,14 @@ describe('validateField — string list', () => {
   });
 });
 
-// ============================================================
-// match_strategy: alias integration
-// ============================================================
+// ── open_prefer_known — alias resolution through pipeline ────────────────────
 
-describe('validateField — enum match_strategy: alias', () => {
-  function aliasRule(extra = {}) {
+describe('validateField — open_prefer_known (alias resolution)', () => {
+  function opkRule(extra = {}) {
     return {
       contract: { shape: 'scalar', type: 'string' },
       parse: {},
-      enum: { policy: 'closed', match: { strategy: 'alias' } },
+      enum: { policy: 'open_prefer_known' },
       ...extra,
     };
   }
@@ -215,8 +213,8 @@ describe('validateField — enum match_strategy: alias', () => {
     const r = validateField({
       fieldKey: 'lighting',
       value: '3 zone (rgb)',
-      fieldRule: aliasRule(),
-      knownValues: { policy: 'closed', values: ['3 Zone (RGB)', '4 Zone (RGB)', 'None'] },
+      fieldRule: opkRule(),
+      knownValues: { policy: 'open_prefer_known', values: ['3 Zone (RGB)', '4 Zone (RGB)', 'None'] },
     });
     assert.equal(r.valid, true);
     assert.equal(r.value, '3 Zone (RGB)');
@@ -227,34 +225,33 @@ describe('validateField — enum match_strategy: alias', () => {
     const r = validateField({
       fieldKey: 'lighting',
       value: '3 Zone (RGB)',
-      fieldRule: aliasRule(),
-      knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
+      fieldRule: opkRule(),
+      knownValues: { policy: 'open_prefer_known', values: ['3 Zone (RGB)'] },
     });
     assert.equal(r.valid, true);
     assert.equal(r.value, '3 Zone (RGB)');
   });
 
-  it('no match even with alias → reject', () => {
+  it('no match → accept + flag for LLM', () => {
     const r = validateField({
       fieldKey: 'lighting',
       value: '5 Zone (RGB)',
-      fieldRule: aliasRule(),
-      knownValues: { policy: 'closed', values: ['3 Zone (RGB)', '4 Zone (RGB)'] },
+      fieldRule: opkRule(),
+      knownValues: { policy: 'open_prefer_known', values: ['3 Zone (RGB)', '4 Zone (RGB)'] },
     });
-    assert.equal(r.valid, false);
-    assert.ok(r.rejections.some(rej => rej.reason_code === 'enum_value_not_allowed'));
+    assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));
   });
 
-  it('strategy: exact (explicit) — case mismatch rejects', () => {
-    const exactRule = {
+  it('closed policy — case mismatch rejects', () => {
+    const closedRule = {
       contract: { shape: 'scalar', type: 'string' },
       parse: {},
-      enum: { policy: 'closed', match: { strategy: 'exact' } },
+      enum: { policy: 'closed' },
     };
     const r = validateField({
       fieldKey: 'lighting',
       value: '3 zone (rgb)',
-      fieldRule: exactRule,
+      fieldRule: closedRule,
       knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
     });
     assert.equal(r.valid, false);

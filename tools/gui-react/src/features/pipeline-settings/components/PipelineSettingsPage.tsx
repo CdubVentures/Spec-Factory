@@ -17,14 +17,11 @@ import {
 import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFormEntryByPath } from '../state/sourceEntryDerived.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority.ts';
-import { RuntimeFlowHeaderControls } from './RuntimeFlowHeaderControls.tsx';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
-  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
 } from '../../../stores/settingsManifest.ts';
-import { deriveRuntimeFlowStatus } from '../state/RuntimeFlowStatus.ts';
 import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload.ts';
 import {
   buildRuntimeLlmTokenProfileLookup,
@@ -62,26 +59,17 @@ export function PipelineSettingsPage() {
   const runtimeReadyFlag = useSettingsAuthorityStore((s) => s.snapshot.runtimeReady);
 
   /* ── Runtime settings store ── */
-  const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
-  const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
   const storeValues = useRuntimeSettingsValueStore((s) => s.values);
-  const storeDirty = useRuntimeSettingsValueStore((s) => s.dirty);
-  const storeHydrated = useRuntimeSettingsValueStore((s) => s.hydrated);
 
   const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
   const runtimeDraft = (storeValues ?? runtimeManifestDefaults) as Record<string, unknown>;
 
   const [runtimeSaveStatus, setRuntimeSaveStatus] = useState<RuntimeEditorSaveStatus>({ kind: 'idle', message: '' });
-  const storePayload = (storeValues ?? {}) as RuntimeSettings;
   const {
     isLoading: runtimeSettingsLoading,
     isSaving: runtimeSettingsSaving,
     saveNow,
   } = useRuntimeSettingsAuthority({
-    payload: storePayload,
-    dirty: storeDirty,
-    autoSaveEnabled: runtimeAutoSaveEnabled,
-    initialHydrationApplied: storeHydrated,
     onPersisted: (result) => {
       if (result.ok) {
         setRuntimeSaveStatus({ kind: 'ok', message: 'Runtime settings saved.' });
@@ -98,17 +86,6 @@ export function PipelineSettingsPage() {
   });
 
   const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
-  const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
-
-  const { runtimeStatusClass, runtimeStatusText } = deriveRuntimeFlowStatus({
-    runtimeSettingsSaving,
-    runtimeSettingsReady,
-    runtimeSaveState: runtimeSaveStatus.kind,
-    runtimeSaveMessage: runtimeSaveStatus.message,
-    runtimeDirty: storeDirty,
-    runtimeAutoSaveEnabled,
-    runtimeAutoSaveDelaySeconds,
-  });
 
   // WHY: LLM config query + token resolver needed for reset-to-defaults.
   const { data: indexingLlmConfig } = useQuery({
@@ -135,7 +112,7 @@ export function PipelineSettingsPage() {
   function resetToDefaults() {
     if (typeof window !== 'undefined') {
       const confirmed = window.confirm(
-        'Reset all runtime settings to defaults? This overwrites current unsaved runtime edits.',
+        'Reset all runtime settings to defaults? This overwrites current edits.',
       );
       if (!confirmed) return;
     }
@@ -145,23 +122,27 @@ export function PipelineSettingsPage() {
       resolveModelTokenDefaults,
     });
     useRuntimeSettingsValueStore.getState().updateKeys(resetPayload as Partial<RuntimeSettings>);
+    saveNow();
   }
 
-  /* ── CategoryPanel change handlers ── */
+  /* ── CategoryPanel change handlers — persist immediately on every change ── */
   const onBoolChange = useCallback((key: string, next: boolean) => {
     useRuntimeSettingsValueStore.getState().updateKey(key, next);
-  }, []);
+    saveNow();
+  }, [saveNow]);
 
   const onNumberChange = useCallback((key: string, eventValue: string, bounds: NumberBound) => {
     const current = (storeValues as Record<string, unknown> | null)?.[key];
     const fallback = typeof current === 'number' ? current : 0;
     const next = parseBoundedNumber(eventValue, fallback, bounds);
     useRuntimeSettingsValueStore.getState().updateKey(key, next);
-  }, [storeValues]);
+    saveNow();
+  }, [storeValues, saveNow]);
 
   const onStringChange = useCallback((key: string, value: string) => {
     useRuntimeSettingsValueStore.getState().updateKey(key, value);
-  }, []);
+    saveNow();
+  }, [saveNow]);
 
   /* ── Source strategy state ── */
   const [sourceStrategySaveState, setSourceStrategySaveState] = useState<{
@@ -259,29 +240,27 @@ export function PipelineSettingsPage() {
 
   const sourceInputCls = 'w-full rounded sf-input px-2.5 py-2 sf-text-label';
 
-  /* ── Runtime header controls (shared across all 5 runtime category sections) ── */
-  const runtimeHeaderControls = (
-    <RuntimeFlowHeaderControls
-      runtimeSettingsReady={runtimeSettingsReady}
-      runtimeSettingsSaving={runtimeSettingsSaving}
-      runtimeAutoSaveEnabled={runtimeAutoSaveEnabled}
-      runtimeAutoSaveDelaySeconds={runtimeAutoSaveDelaySeconds}
-      onSaveNow={saveNow}
-      onToggleRuntimeAutoSaveEnabled={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
-      onResetToDefaults={resetToDefaults}
-    />
-  );
-
   const headerActions = (
     <>
             {isRuntimeCategorySection(activeSection) ? (
               <div className="flex flex-wrap items-center gap-2">
-                {runtimeStatusText ? (
-                  <p className={`sf-text-label font-semibold ${runtimeStatusClass}`}>
-                    {runtimeStatusText}
+                {runtimeSettingsSaving ? (
+                  <p className="sf-text-label font-semibold sf-status-text-info">
+                    Saving...
+                  </p>
+                ) : runtimeSaveStatus.kind === 'error' ? (
+                  <p className="sf-text-label font-semibold sf-status-text-danger">
+                    {runtimeSaveStatus.message}
                   </p>
                 ) : null}
-                {runtimeHeaderControls}
+                <button
+                  onClick={resetToDefaults}
+                  disabled={!runtimeSettingsReady || runtimeSettingsSaving}
+                  className="rounded sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
+                  title="Reset all runtime settings to default values."
+                >
+                  Reset
+                </button>
               </div>
             ) : null}
             {activeSection === 'source-strategy' ? (

@@ -189,7 +189,6 @@
 <thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
 <tbody>
   <tr><td><code>enum.policy</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 9</td><td>closed / open_prefer_known / open.</td></tr>
-  <tr><td><code>enum.match.strategy</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 9</td><td>exact (Set.has) or alias (case-insensitive + normalized).</td></tr>
   <tr><td><code>enum.match.format_hint</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 6</td><td>Custom regex pattern after template registry check.</td></tr>
   <tr><td><code>enum.source</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Compile-time metadata. Runtime enum values are assembled by <code>mergeDiscoveredEnums</code> from compiled known_values + DB-discovered values. The <code>source</code> field is never read at runtime.</td></tr>
   <tr><td><code>enum.new_value_policy</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Evidence-gated acceptance. Requires evidence context not available to per-value validator.</td></tr>
@@ -383,12 +382,12 @@
     <div class="phase-line"><div class="phase-dot">9</div><div class="phase-connector"></div></div>
     <div class="phase-content">
       <div class="phase-title">Enum Check <span class="tag tag-both">repair + reject</span></div>
-      <div class="phase-desc">Policy + match strategy against known-values list.</div>
+      <div class="phase-desc">Policy determines matching behavior against known-values list.</div>
       <dl class="detail-grid">
-        <dt>Reads</dt><dd><code>enum.policy</code>, <code>enum.match.strategy</code>, <code>knownValues.values</code></dd>
-        <dt>Policies</dt><dd><strong>closed</strong>: reject &rarr; P1 | <strong>open_prefer_known</strong>: flag &rarr; P2 | <strong>open</strong>: pass</dd>
-        <dt>Match: exact</dt><dd>Strict <code>Set.has(v)</code></dd>
-        <dt>Match: alias</dt><dd>exact &rarr; case-insensitive &rarr; normalized &rarr; auto-repair to canonical</dd>
+        <dt>Reads</dt><dd><code>enum.policy</code>, <code>knownValues.values</code></dd>
+        <dt>closed</dt><dd>Exact match (<code>Set.has(v)</code>). Unknown &rarr; reject &rarr; P1 LLM repair</dd>
+        <dt>open_prefer_known</dt><dd>Alias resolution (case-insensitive + normalized). Unknown &rarr; accept + flag &rarr; P2</dd>
+        <dt>open</dt><dd>All values pass</dd>
       </dl>
     </div>
   </div>
@@ -499,7 +498,7 @@
 
 <div class="prompt-card">
   <div class="prompt-header"><span class="prompt-id">P1</span> Enum (Closed) <span class="prompt-trigger">enum_value_not_allowed (closed)</span></div>
-  <div class="prompt-body"><p>Shows: unknown values, full registered list, policy, match strategy, format_hint. Decisions: <code>map_to_existing</code> or <code>reject</code>. Cannot invent new values.</p></div>
+  <div class="prompt-body"><p>Shows: unknown values, full registered list, policy, format_hint. Decisions: <code>map_to_existing</code> or <code>reject</code>. Cannot invent new values.</p></div>
 </div>
 <div class="prompt-card">
   <div class="prompt-header"><span class="prompt-id">P2</span> Enum (Open Prefer Known) <span class="prompt-trigger">unknown_enum_prefer_known</span></div>
@@ -652,7 +651,7 @@ Return JSON matching this exact schema:
   "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
 }</pre>
     <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
-      <dt>Parameters used</dt><dd>type, shape, enum.policy, match.strategy, knownValues.values (full list), parse.template</dd>
+      <dt>Parameters used</dt><dd>type, shape, enum.policy, knownValues.values (full list), parse.template</dd>
       <dt>Expected LLM action</dt><dd><code>map_to_existing</code> &rarr; <code>"navy"</code> (midnight-blue is a navy variant) or <code>reject</code></dd>
       <dt>Re-validation</dt><dd>Repaired value re-runs all 12 steps. Must be in the known values set.</dd>
     </dl>
@@ -784,7 +783,7 @@ Return JSON matching this exact schema:
   "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|keep_new|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
 }</pre>
     <dl class="detail-grid" style="margin-top:8px; grid-template-columns:160px 1fr;">
-      <dt>Parameters used</dt><dd>type, shape, enum.policy, match.strategy, knownValues.values (full list), parse.template</dd>
+      <dt>Parameters used</dt><dd>type, shape, enum.policy, knownValues.values (full list), parse.template</dd>
       <dt>KEEP_NEW path</dt><dd>If LLM says <code>keep_new</code>, the value is temporarily added to the known set for re-validation so enum check passes.</dd>
       <dt>MAP_TO_EXISTING</dt><dd>LLM might map <code>"ergonomic-asymmetric"</code> &rarr; <code>"right-handed"</code> since ergonomic mice are typically right-handed.</dd>
     </dl>

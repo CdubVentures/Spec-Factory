@@ -241,14 +241,6 @@ describe('buildRepairPrompt — format_hint enrichment', () => {
     assert.ok(result.user.includes('format_hint') || result.user.includes('Format pattern') || result.user.includes('\\d+ Zone'));
   });
 
-  it('P1 includes match strategy', () => {
-    const rejections = [makeRejection('enum_value_not_allowed', { unknown: ['pink'], policy: 'closed' })];
-    const rule = makeFieldRule({ enum: { policy: 'closed', match: { strategy: 'alias' } } });
-    const kv = { policy: 'closed', values: ['black'] };
-    const result = buildRepairPrompt({ rejections, value: 'pink', fieldKey: 'color', fieldRule: rule, knownValues: kv });
-    assert.ok(result.user.includes('alias'));
-  });
-
   it('P4 includes format_hint when present', () => {
     const rejections = [makeRejection('format_mismatch', { reason: 'bad format' })];
     const rule = makeFieldRule({ enum: { match: { format_hint: '^\\d+ Zone' } } });

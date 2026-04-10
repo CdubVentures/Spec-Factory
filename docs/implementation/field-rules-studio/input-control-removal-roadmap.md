@@ -1,6 +1,6 @@
 # Roadmap: Remove `input_control` as Stored/Editable Property (Full Derivation)
 
-**Status:** Proposed
+**Status:** Complete
 **Date:** 2026-04-09
 **Verdict:** `ui.input_control` is a frontend-only metadata field with zero runtime consumers. Its value is always deterministic from `contract.type` + `contract.shape` + `enum.source` + `enum.policy`. For tech spec categories (keyboard, monitor, mouse), there is no case where a user would need to manually override the derived widget type. The property should be replaced by a pure derivation function at render time.
 
@@ -100,7 +100,6 @@ The existing coupling logic in `ruleCommands.ts` and `typeShapeRegistry.ts` alre
 | 3x `ui_field_catalog.json` | Auto-removed after compile chain change |
 | 3x `manifest.json` | Regenerated on recompile (verify clean) |
 | 3x `_compile_report.json` | Regenerated on recompile (verify clean) |
-| `category_authority/mouse/_generated/field_rules.runtime.json` | Runtime mirror — must stay aligned with `field_rules.json` |
 
 ### HTML docs — conditional cleanup
 
@@ -233,7 +232,6 @@ The existing coupling logic in `ruleCommands.ts` and `typeShapeRegistry.ts` alre
 - Verify generated `field_rules.json` has no `input_control`
 - Verify generated `ui_field_catalog.json` has no `input_control`
 - Verify `manifest.json` and `_compile_report.json` are regenerated clean (all 3 categories)
-- Verify `category_authority/mouse/_generated/field_rules.runtime.json` has no `input_control` (runtime mirror must stay aligned with `field_rules.json`)
 
 #### 5.3 — Final characterization re-run
 - Re-run Phase 1.2 golden-master test (now expects derivation-only, no stored value to compare)

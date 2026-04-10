@@ -513,9 +513,7 @@
       "display_name": "Max Acceleration",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -600,7 +598,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Max Acceleration",
         "order": 57,
         "placeholder": "unk",
@@ -637,9 +634,7 @@
       "display_name": "Adjustable Scroll Wheel",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -712,7 +707,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Adjustable Scroll Wheel",
         "order": 80,
         "placeholder": "unk",
@@ -748,9 +742,7 @@
       "display_name": "Adjustable Weight",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -827,7 +819,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Adjustable Weight",
         "order": 26,
         "placeholder": "unk",
@@ -873,9 +864,7 @@
       "display_name": "Battery Life (Hours)",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -954,7 +943,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Battery Life (Hours)",
         "order": 25,
         "placeholder": "unk",
@@ -990,9 +978,7 @@
       "display_name": "Bluetooth",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1069,7 +1055,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Bluetooth",
         "order": 21,
         "placeholder": "unk",
@@ -1105,9 +1090,7 @@
       "display_name": "Cable Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1185,7 +1168,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Cable Type",
         "order": 22,
         "placeholder": "unk",
@@ -1226,9 +1208,7 @@
       "display_name": "Click Force",
       "effort": 7,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1305,7 +1285,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Click Force",
         "order": 72,
         "placeholder": "unk",
@@ -1347,9 +1326,7 @@
       "display_name": "Click Latency",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1438,7 +1415,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Click Latency",
         "order": 70,
         "placeholder": "unk",
@@ -1482,9 +1458,7 @@
       "display_name": "Click Latency (Bluetooth)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1563,7 +1537,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Click Latency (Bluetooth)",
         "order": 70,
         "placeholder": "unk",
@@ -1607,9 +1580,7 @@
       "display_name": "Click Latency (Wired)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1688,7 +1659,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Click Latency (Wired)",
         "order": 70,
         "placeholder": "unk",
@@ -1732,9 +1702,7 @@
       "display_name": "Click Latency (Wireless)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1813,7 +1781,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Click Latency (Wireless)",
         "order": 70,
         "placeholder": "unk",
@@ -1855,9 +1822,7 @@
       "display_name": "Coating",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1952,7 +1917,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Coating",
         "order": 28,
         "placeholder": "unk",
@@ -1995,9 +1959,7 @@
       "display_name": "Colors",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "policy": "closed",
         "source": "data_lists.colors"
       },
@@ -2092,7 +2054,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Colors",
         "order": 13,
         "placeholder": "unk",
@@ -2128,9 +2089,7 @@
       "display_name": "Computer-side Connector",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2206,7 +2165,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Computer-side Connector",
         "order": 19,
         "placeholder": "unk",
@@ -2242,9 +2200,7 @@
       "display_name": "Connection",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2337,7 +2293,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "select",
         "label": "Connection",
         "order": 17,
         "placeholder": "unk",
@@ -2379,9 +2334,7 @@
       "display_name": "Connectivity",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2476,7 +2429,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Connectivity",
         "order": 18,
         "placeholder": "unk",
@@ -2517,9 +2469,7 @@
       "display_name": "Debounce",
       "effort": 7,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2595,7 +2545,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Debounce",
         "order": 69,
         "placeholder": "unk",
@@ -2637,9 +2586,7 @@
       "display_name": "Design",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2720,7 +2667,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Design",
         "order": 14,
         "placeholder": "unk",
@@ -2756,9 +2702,7 @@
       "display_name": "Discontinued",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2825,7 +2769,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Discontinued",
         "order": 10,
         "placeholder": "unk",
@@ -2871,9 +2814,7 @@
       "display_name": "Max DPI",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2955,7 +2896,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Max DPI",
         "order": 55,
         "placeholder": "unk",
@@ -2986,9 +2926,6 @@
       "consumers": {
         "enum.match.format_hint": {
           "review": false
-        },
-        "enum.match.strategy": {
-          "review": false
         }
       },
       "contract": {
@@ -3009,9 +2946,7 @@
       "display_name": "Editions",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3074,7 +3009,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Editions",
         "order": 76,
         "placeholder": "unk",
@@ -3137,9 +3071,7 @@
       "display_name": "Encoder",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3214,7 +3146,6 @@
         "examples": [],
         "group": "Encoder",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Encoder",
         "order": 73,
         "placeholder": "unk",
@@ -3250,9 +3181,7 @@
       "display_name": "Encoder Brand",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3325,7 +3254,6 @@
         "examples": [],
         "group": "Encoder",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Encoder Brand",
         "order": 74,
         "placeholder": "unk",
@@ -3364,9 +3292,7 @@
       "display_name": "Encoder Life Span",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3439,7 +3365,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Encoder Life Span",
         "order": 76,
         "placeholder": "unk",
@@ -3476,9 +3401,7 @@
       "display_name": "Encoder Link",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3544,7 +3467,6 @@
         "examples": [],
         "group": "Encoder",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Encoder Link",
         "order": 75,
         "placeholder": "unk",
@@ -3583,9 +3505,7 @@
       "display_name": "Encoder Steps",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "policy": "closed",
         "source": "data_lists.encoder_steps"
       },
@@ -3658,7 +3578,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Encoder Steps",
         "order": 77,
         "placeholder": "unk",
@@ -3698,9 +3617,7 @@
       "display_name": "Encoder Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3776,7 +3693,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Encoder Type",
         "order": 78,
         "placeholder": "unk",
@@ -3813,9 +3729,7 @@
       "display_name": "Feet Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3904,7 +3818,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Feet Material",
         "order": 27,
         "placeholder": "unk",
@@ -3940,9 +3853,7 @@
       "display_name": "Flawless Sensor",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4019,7 +3930,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Flawless Sensor",
         "order": 50,
         "placeholder": "unk",
@@ -4056,9 +3966,7 @@
       "display_name": "Form Factor",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4150,7 +4058,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "select",
         "label": "Form Factor",
         "order": 36,
         "placeholder": "unk",
@@ -4186,9 +4093,7 @@
       "display_name": "Front Flare",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4273,7 +4178,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Front Flare",
         "order": 39,
         "placeholder": "unk",
@@ -4315,9 +4219,7 @@
       "display_name": "Grip",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4401,7 +4303,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "multi_select",
         "label": "Grip",
         "order": 41,
         "placeholder": "unk",
@@ -4443,9 +4344,7 @@
       "display_name": "Hand Size",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4526,7 +4425,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "multi_select",
         "label": "Hand Size",
         "order": 42,
         "placeholder": "unk",
@@ -4562,9 +4460,7 @@
       "display_name": "Hardware Acceleration",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4638,7 +4534,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Hardware Acceleration",
         "order": 61,
         "placeholder": "unk",
@@ -4683,9 +4578,7 @@
       "display_name": "Height",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4763,7 +4656,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Height",
         "order": 35,
         "placeholder": "unk",
@@ -4799,9 +4691,7 @@
       "display_name": "Honeycomb Frame",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4877,7 +4767,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Honeycomb Frame",
         "order": 29,
         "placeholder": "unk",
@@ -4913,9 +4802,7 @@
       "display_name": "Hot Swappable",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4991,7 +4878,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Hot Swappable",
         "order": 68,
         "placeholder": "unk",
@@ -5027,9 +4913,7 @@
       "display_name": "Hump",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5116,7 +5000,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Hump",
         "order": 38,
         "placeholder": "unk",
@@ -5161,9 +5044,7 @@
       "display_name": "Max IPS",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5239,7 +5120,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Max IPS",
         "order": 56,
         "placeholder": "unk",
@@ -5288,9 +5168,7 @@
       "display_name": "Lift-off Distance (LOD)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5379,7 +5257,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "list_editor",
         "label": "Lift-off Distance (LOD)",
         "order": 58,
         "placeholder": "unk",
@@ -5421,9 +5298,7 @@
       "display_name": "Lift Settings",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5510,7 +5385,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Lift Settings",
         "order": 59,
         "placeholder": "unk",
@@ -5549,9 +5423,7 @@
       "display_name": "Lighting",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5644,7 +5516,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "token_list",
         "label": "Lighting",
         "order": 15,
         "placeholder": "unk",
@@ -5690,9 +5561,7 @@
       "display_name": "Length",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5769,7 +5638,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Length",
         "order": 33,
         "placeholder": "unk",
@@ -5828,9 +5696,7 @@
       "display_name": "Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5911,7 +5777,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Material",
         "order": 32,
         "placeholder": "unk",
@@ -5947,9 +5812,7 @@
       "display_name": "MCU",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6036,7 +5899,6 @@
         "examples": [],
         "group": "Electronics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "MCU",
         "order": 43,
         "placeholder": "unk",
@@ -6072,9 +5934,7 @@
       "display_name": "MCU Link",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6141,7 +6001,6 @@
         "examples": [],
         "group": "Electronics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "MCU Link",
         "order": 44,
         "placeholder": "unk",
@@ -6181,9 +6040,7 @@
       "display_name": "Middle Buttons",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6257,7 +6114,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Middle Buttons",
         "order": 77,
         "placeholder": "unk",
@@ -6293,9 +6149,7 @@
       "display_name": "Motion Sync",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6370,7 +6224,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Motion Sync",
         "order": 60,
         "placeholder": "unk",
@@ -6406,9 +6259,7 @@
       "display_name": "Mouse-side Connector",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6482,7 +6333,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Mouse-side Connector",
         "order": 20,
         "placeholder": "unk",
@@ -6518,9 +6368,7 @@
       "display_name": "NVIDIA Reflex",
       "effort": 7,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6595,7 +6443,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "NVIDIA Reflex",
         "order": 63,
         "placeholder": "unk",
@@ -6631,9 +6478,7 @@
       "display_name": "Onboard Memory",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6709,7 +6554,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Onboard Memory",
         "order": 81,
         "placeholder": "unk",
@@ -6749,9 +6593,7 @@
       "display_name": "Onboard Memory (Value)",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6825,7 +6667,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Onboard Memory (Value)",
         "order": 82,
         "placeholder": "unk",
@@ -6861,9 +6702,7 @@
       "display_name": "Paracord",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6938,7 +6777,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Paracord",
         "order": 23,
         "placeholder": "unk",
@@ -6987,9 +6825,7 @@
       "display_name": "Polling Rate",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7089,7 +6925,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "list_editor",
         "label": "Polling Rate",
         "order": 54,
         "placeholder": "unk",
@@ -7125,9 +6960,7 @@
       "display_name": "Price (MSRP)",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7202,7 +7035,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Price (MSRP)",
         "order": 12,
         "placeholder": "unk",
@@ -7238,9 +7070,7 @@
       "display_name": "Profile Switching",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7314,7 +7144,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Profile Switching",
         "order": 83,
         "placeholder": "unk",
@@ -7354,9 +7183,7 @@
       "display_name": "Programmable Buttons",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7433,7 +7260,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Programmable Buttons",
         "order": 78,
         "placeholder": "unk",
@@ -7469,9 +7295,7 @@
       "display_name": "Release Date",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7554,7 +7378,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Release Date",
         "order": 9,
         "placeholder": "unk",
@@ -7594,9 +7417,7 @@
       "display_name": "Releasing Force",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7671,7 +7492,6 @@
         "examples": [],
         "group": "general",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Releasing Force",
         "order": 79,
         "placeholder": "unk",
@@ -7708,9 +7528,7 @@
       "display_name": "RGB",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7786,7 +7604,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "RGB",
         "order": 16,
         "placeholder": "unk",
@@ -7852,9 +7669,7 @@
       "display_name": "Sensor",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7942,7 +7757,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Sensor",
         "order": 45,
         "placeholder": "unk",
@@ -7978,9 +7792,7 @@
       "display_name": "Sensor Brand",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8060,7 +7872,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Sensor Brand",
         "order": 46,
         "placeholder": "unk",
@@ -8102,9 +7913,7 @@
       "display_name": "Sensor Date",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8183,7 +7992,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Sensor Date",
         "order": 47,
         "placeholder": "unk",
@@ -8225,9 +8033,7 @@
       "display_name": "Sensor Latency",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8315,7 +8121,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Sensor Latency",
         "order": 51,
         "placeholder": "unk",
@@ -8359,9 +8164,7 @@
       "display_name": "Sensor Latency (Bluetooth)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8439,7 +8242,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Sensor Latency (Bluetooth)",
         "order": 51,
         "placeholder": "unk",
@@ -8483,9 +8285,7 @@
       "display_name": "Sensor Latency (Wired)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8563,7 +8363,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Sensor Latency (Wired)",
         "order": 51,
         "placeholder": "unk",
@@ -8607,9 +8406,7 @@
       "display_name": "Sensor Latency (Wireless)",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8687,7 +8484,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Sensor Latency (Wireless)",
         "order": 51,
         "placeholder": "unk",
@@ -8723,9 +8519,7 @@
       "display_name": "Sensor Link",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8798,7 +8592,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Sensor Link",
         "order": 48,
         "placeholder": "unk",
@@ -8834,9 +8627,7 @@
       "display_name": "Sensor Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8921,7 +8712,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Sensor Type",
         "order": 49,
         "placeholder": "unk",
@@ -8958,9 +8748,7 @@
       "display_name": "Shape",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9049,7 +8837,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Shape",
         "order": 37,
         "placeholder": "unk",
@@ -9090,9 +8877,7 @@
       "display_name": "DPI Shift Latency",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9166,7 +8951,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "DPI Shift Latency",
         "order": 53,
         "placeholder": "unk",
@@ -9206,9 +8990,7 @@
       "display_name": "Side Buttons",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9284,7 +9066,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Side Buttons",
         "order": 76,
         "placeholder": "unk",
@@ -9320,9 +9101,7 @@
       "display_name": "Silent Clicks",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9398,7 +9177,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Silent Clicks",
         "order": 30,
         "placeholder": "unk",
@@ -9426,9 +9204,6 @@
       "consumers": {
         "enum.match.format_hint": {
           "review": false
-        },
-        "enum.match.strategy": {
-          "review": false
         }
       },
       "contract": {
@@ -9442,9 +9217,7 @@
       "display_name": "SKU / Part #",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9519,7 +9292,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "SKU / Part #",
         "order": 11,
         "placeholder": "unk",
@@ -9555,9 +9327,7 @@
       "display_name": "Smoothing",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9632,7 +9402,6 @@
         "examples": [],
         "group": "Sensor & Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Smoothing",
         "order": 62,
         "placeholder": "unk",
@@ -9696,9 +9465,7 @@
       "display_name": "Switch",
       "effort": 8,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9785,7 +9552,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Switch",
         "order": 64,
         "placeholder": "unk",
@@ -9821,9 +9587,7 @@
       "display_name": "Switch Brand",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -9904,7 +9668,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Brand",
         "order": 65,
         "placeholder": "unk",
@@ -9943,9 +9706,7 @@
       "display_name": "Switch Life Span",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10023,7 +9784,6 @@
         "examples": [],
         "group": "controls",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Life Span",
         "order": 80,
         "placeholder": "unk",
@@ -10060,9 +9820,7 @@
       "display_name": "Switch Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10148,7 +9906,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Type",
         "order": 66,
         "placeholder": "unk",
@@ -10189,9 +9946,7 @@
       "display_name": "Switches LInk",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10262,7 +10017,6 @@
         "examples": [],
         "group": "Switches",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switches LInk",
         "order": 999,
         "placeholder": "unk",
@@ -10298,9 +10052,7 @@
       "display_name": "Thumb Rest",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10375,7 +10127,6 @@
         "examples": [],
         "group": "Ergonomics",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Thumb Rest",
         "order": 40,
         "placeholder": "unk",
@@ -10411,9 +10162,7 @@
       "display_name": "Tilt Scroll Wheel",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10488,7 +10237,6 @@
         "examples": [],
         "group": "Buttons & Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Tilt Scroll Wheel",
         "order": 79,
         "placeholder": "unk",
@@ -10534,9 +10282,7 @@
       "display_name": "Weight",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10616,7 +10362,6 @@
         "examples": [],
         "group": "Construction",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Weight",
         "order": 31,
         "placeholder": "unk",
@@ -10661,9 +10406,7 @@
       "display_name": "Width",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10740,7 +10483,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Width",
         "order": 34,
         "placeholder": "unk",
@@ -10776,9 +10518,7 @@
       "display_name": "Wireless Charging",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10855,7 +10595,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Wireless Charging",
         "order": 24,
         "placeholder": "unk",
@@ -10869,7 +10608,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-10T03:02:02.650Z",
+  "generated_at": "2026-04-10T04:44:26.378Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

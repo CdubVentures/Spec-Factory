@@ -122,7 +122,6 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
     ui: {
       label: 'Colors',
       group: 'general',
-      input_control: 'token_list',
       tooltip_md: 'EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use "+" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray.',
     },
     search_hints: {
@@ -175,7 +174,6 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
     ui: {
       label: 'Editions',
       group: 'general',
-      input_control: 'token_list',
       tooltip_md: 'EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.',
     },
     search_hints: {

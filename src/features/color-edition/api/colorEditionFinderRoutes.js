@@ -83,12 +83,19 @@ export function registerColorEditionFinderRoutes(ctx) {
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
+        // WHY: When jsonStrict is off for colorFinder, the LLM routing splits into
+        // Research (free-form) + Writer (schema formatting). Show 3 stages in that case.
+        const useWriterPhase = config._resolvedColorFinderJsonStrict === false;
+        const stages = useWriterPhase
+          ? ['Research', 'Writer', 'Validate']
+          : ['LLM', 'Validate'];
+
         op = registerOperation({
           type: 'cef',
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
-          stages: ['LLM', 'Validate'],
+          stages,
         });
 
         const result = await runColorEditionFinder({
@@ -103,11 +110,12 @@ export function registerColorEditionFinderRoutes(ctx) {
           specDb,
           config,
           logger: logger || null,
-          onStageAdvance: (idx) => updateStage({ id: op.id, stageIndex: idx }),
+          onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
         });
 
         if (result.rejected) {
-          failOperation({ id: op.id, error: 'Validation rejected' });
+          const reason = result.rejections?.[0]?.reason_code === 'llm_error' ? 'LLM call failed' : 'Validation rejected';
+          failOperation({ id: op.id, error: reason });
         } else {
           completeOperation({ id: op.id });
         }

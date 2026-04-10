@@ -35,7 +35,6 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
   const roundingConfig = c.rounding;
   const enumPolicy = knownValues?.policy || e?.policy;
   const enumValues = knownValues?.values;
-  const matchStrategy = e?.match?.strategy || 'exact';
   const formatHint = e?.match?.format_hint || null;
   const blockPublishWhenUnk = pri?.block_publish_when_unk || false;
   const unknownToken = c.unknown_token || 'unk';
@@ -207,10 +206,10 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
   }
 
 
-  // enum.match.strategy (alias)
+  // open_prefer_known alias resolution
   const aliasTypeOk = type === 'string' && type !== 'boolean';
   const aliasPolicyOk = enumPolicy && enumPolicy !== 'open';
-  if (matchStrategy === 'alias' && enumValues?.length > 0 && aliasTypeOk && aliasPolicyOk) {
+  if (enumPolicy === 'open_prefer_known' && enumValues?.length > 0 && aliasTypeOk && aliasPolicyOk) {
     const aliasCandidate = findAliasTestValue(enumValues);
     if (aliasCandidate) {
       const val = shape === 'list' ? [aliasCandidate.input] : aliasCandidate.input;

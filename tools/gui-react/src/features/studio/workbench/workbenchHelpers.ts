@@ -9,6 +9,7 @@ import {
   strN,
 } from '../state/nestedValueHelpers.ts';
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
+import { deriveInputControl } from '../state/deriveInputControl.ts';
 
 // ── Nested accessor helpers (shared with KeyNavigatorTab) ────────────
 const CONSTRAINT_KEYWORDS = new Set(['requires', 'and', 'or', 'not', 'if', 'then', 'else', 'true', 'false', 'null']);
@@ -117,7 +118,6 @@ export function buildWorkbenchRows(
 
       enumPolicy: strN(r, 'enum.policy', strN(r, 'enum_policy', 'open')),
       enumSource: strN(r, 'enum.source', strN(r, 'enum_source')),
-      matchStrategy: strN(r, 'enum.match.strategy', 'alias'),
       knownValuesCount: (kv[key] || []).length,
 
       minEvidenceRefs: numN(
@@ -143,7 +143,13 @@ export function buildWorkbenchRows(
 
       componentType: strN(r, 'component.type'),
 
-      uiInputControl: strN(r, 'ui.input_control', 'text'),
+      uiInputControl: deriveInputControl({
+        type: strN(r, 'contract.type') || null,
+        shape: strN(r, 'contract.shape') || null,
+        enumSource: strN(r, 'enum.source') || null,
+        enumPolicy: strN(r, 'enum.policy') || null,
+        componentSource: strN(r, 'component.source') || null,
+      }),
       uiOrder: numN(r, 'ui.order', 0),
 
       draftDirty: boolN(r, '_edited'),

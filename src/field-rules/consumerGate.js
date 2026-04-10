@@ -47,9 +47,7 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   // WHY: parse.template retired — type+shape is the contract.
   'enum.policy': [['enum', 'policy'], ['enum_policy']],
   'enum.source': [['enum', 'source'], ['enum_source']],
-  'enum.match.strategy': [['enum', 'match', 'strategy']],
   'enum.match.format_hint': [['enum', 'match', 'format_hint'], ['enum_match_format_hint']],
-  'enum.match.fuzzy_threshold': [['enum', 'match', 'fuzzy_threshold'], ['enum_fuzzy_threshold']],
   'evidence.min_evidence_refs': [['evidence', 'min_evidence_refs'], ['min_evidence_refs']],
   'evidence.tier_preference': [['evidence', 'tier_preference']],
   'search_hints.domain_hints': [['search_hints', 'domain_hints']],

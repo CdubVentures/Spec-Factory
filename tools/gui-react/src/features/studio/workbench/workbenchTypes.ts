@@ -19,7 +19,6 @@ export interface WorkbenchRow {
   // Enum
   enumPolicy: string;
   enumSource: string;
-  matchStrategy: string;
   knownValuesCount: number;
 
   // Evidence

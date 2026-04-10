@@ -87,7 +87,7 @@ export function resolveComponentRef(value, {
   const autoAcceptScore = Number.isFinite(Number(matchConfig.auto_accept_score)) ? Number(matchConfig.auto_accept_score) : 0.95;
   const flagReviewScore = Number.isFinite(Number(matchConfig.flag_review_score)) ? Number(matchConfig.flag_review_score) : 0.65;
 
-  const rawThreshold = Number(matchConfig.fuzzy_threshold ?? rule?.enum?.match?.fuzzy_threshold);
+  const rawThreshold = Number(matchConfig.fuzzy_threshold);
   const componentThreshold = Number.isFinite(rawThreshold)
     ? Math.max(0, Math.min(1, rawThreshold))
     : 0.75;

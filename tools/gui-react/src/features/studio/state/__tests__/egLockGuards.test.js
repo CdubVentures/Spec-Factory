@@ -91,7 +91,7 @@ describe('EG lock guards', async () => {
         key: 'colors',
         contract: { type: 'string', shape: 'list' },
         parse: { delimiters: [',', '/', '|', ';'] },
-        ui: { label: 'Colors', input_control: 'token_list' },
+        ui: { label: 'Colors' },
         search_hints: { domain_hints: [], content_types: [], query_terms: [] },
       };
       useFieldRulesStore.getState().setEgToggle('colors', true, preset);

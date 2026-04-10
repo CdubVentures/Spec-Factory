@@ -118,7 +118,7 @@ tr:last-child td { border-bottom: none; }
     <li><span class="num">4</span><a href="#dim-unit">Unit Handling &amp; Conversion</a></li>
     <li><span class="num">5</span><a href="#dim-normalization">String Normalization (case, trim, hyphens, token_map)</a></li>
     <li><span class="num">6</span><a href="#dim-format">Format Pattern Validation (regex)</a></li>
-    <li><span class="num">7</span><a href="#dim-enum">Enum Policy &amp; Match Strategy</a></li>
+    <li><span class="num">7</span><a href="#dim-enum">Enum Policy</a></li>
     <li><span class="num">8</span><a href="#dim-list">List Rules (dedupe, sort, min_items, max_items)</a></li>
     <li><span class="num">9</span><a href="#dim-rounding">Rounding, Decimals &amp; Numeric Precision</a></li>
     <li><span class="num">10</span><a href="#dim-crossfield">Cross-Field Constraints</a></li>
@@ -923,7 +923,7 @@ Return: { resolved: &lt;value&gt;, confidence: 0.0-1.0, reasoning: '...' }"</div
 <div class="panel" id="dim-enum">
   <div class="check-header">
     <span class="check-number">7</span>
-    <span class="check-title">Enum Policy &amp; Match Strategy</span>
+    <span class="check-title">Enum Policy</span>
     <span class="chip chip-teal">DETERMINISTIC</span>
     <span class="chip chip-warning">FAILS → LLM REPAIR</span>
   </div>
@@ -2076,7 +2076,7 @@ function normalizeAbsence(value, shape) {
         <td class="mono bold">1</td>
         <td>UI Field Catalog</td>
         <td class="mono tiny">_generated/ui_field_catalog.json</td>
-        <td class="tiny">Defines every field: key, type, shape, display_decimals, group, input_control</td>
+        <td class="tiny">Defines every field: key, type, shape, display_decimals, group</td>
         <td><span class="chip chip-danger">YES</span></td>
       </tr>
       <tr>

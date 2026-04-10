@@ -307,14 +307,6 @@ export function buildColumns(
       },
     },
 
-    // Match strategy
-    {
-      accessorKey: 'matchStrategy',
-      header: 'Match',
-      size: 70,
-      cell: ({ getValue }) => <span className="text-xs">{getValue() as string}</span>,
-    },
-
     // Known values count
     {
       accessorKey: 'knownValuesCount',
@@ -502,7 +494,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   enums: [
     ...ALWAYS_VISIBLE,
-    'enumPolicy', 'enumSource', 'matchStrategy', 'knownValuesCount',
+    'enumPolicy', 'enumSource', 'knownValuesCount',
   ],
   evidence: [
     ...ALWAYS_VISIBLE,
@@ -547,7 +539,6 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'unknownToken', label: 'Unk Token' },
   { id: 'enumPolicy', label: 'Enum Policy' },
   { id: 'enumSource', label: 'Enum Source' },
-  { id: 'matchStrategy', label: 'Match Strategy' },
   { id: 'knownValuesCount', label: 'KV Count' },
   { id: 'minEvidenceRefs', label: 'Min Refs' },
   { id: 'tierPreference', label: 'Tiers' },

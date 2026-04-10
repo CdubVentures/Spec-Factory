@@ -30,8 +30,7 @@ export function readEnumConsistencyFormatHint(rule = {}) {
 }
 
 export function isEnumConsistencyReviewEnabled(rule = {}) {
-  return isConsumerEnabled(rule, 'enum.match.strategy', 'review')
-    && isConsumerEnabled(rule, 'enum.match.format_hint', 'review');
+  return isConsumerEnabled(rule, 'enum.match.format_hint', 'review');
 }
 
 export function buildPendingEnumValuesFromSuggestions(suggestionsDoc = {}, fieldKey = '') {

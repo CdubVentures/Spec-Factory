@@ -5,24 +5,24 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": true,
-      "hash": "35e47a8f10288bb397938b2931a6eb5b3b177334de2cb75ef850b8af94d4979f",
+      "changed": false,
+      "hash": "d78889d7d174492038f53911d91ac1f479b6ebcf9075140478b0f2dbe2029e97",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\field_rules.json"
     },
     "key_migrations": null,
     "known_values": {
-      "hash": "94e657bf13d802f047363a926e40ceb1fd6460770287238e1203b49b7019b128",
+      "hash": "e5b8452dec29bb8c85fdc6137d1f1d06e43a6b0e788500afbab59ad987b7ae2d",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "851ee7196e1531c95d2b59aafb72d74fafc76a98b39ff525e1a1d8a876e4a08d",
+      "hash": "cc9eb122baf8aaa32f0c2db028e8a042da4704d5fd3f3cb752dce895265c9154",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "keyboard",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-10T03:02:02.473Z",
+  "compiled_at": "2026-04-10T04:44:33.236Z",
   "counts": {
     "component_types": 1,
     "critical": 0,
@@ -35,8 +35,8 @@
     "required": 12
   },
   "diff": {
-    "changed": true,
-    "current_hash": "35e47a8f10288bb397938b2931a6eb5b3b177334de2cb75ef850b8af94d4979f",
+    "changed": false,
+    "current_hash": "d78889d7d174492038f53911d91ac1f479b6ebcf9075140478b0f2dbe2029e97",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -149,14 +149,14 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "973762166e301039c0e76aee3c0d88247ced71e5aa9408ff2743ce85fb4c066e"
+    "previous_hash": "d78889d7d174492038f53911d91ac1f479b6ebcf9075140478b0f2dbe2029e97"
   },
   "errors": [],
-  "field_studio_map_hash": "20d264e17d7fe42323ea0e6ac1e1e82ada1334433de2438efc16096da971d809",
+  "field_studio_map_hash": "174e0ac97c6055f7327d72e12ca2cd0ebd183c057c4710aa7296c7afbd04d989",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-10T03:02:02.473Z",
+  "generated_at": "2026-04-10T04:44:33.236Z",
   "source_summary": {
     "component_sheets": 1,
     "component_sources": 1,

@@ -142,6 +142,14 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}FallbackThinkingEffort`] = phaseOverride.fallbackThinkingEffort || '';
     merged[`${prefix}FallbackWebSearch`]      = phaseOverride.fallbackWebSearch ?? false;
     merged[`${prefix}DisableLimits`]          = phaseOverride.disableLimits ?? false;
+    merged[`${prefix}JsonStrict`]             = phaseOverride.jsonStrict ?? true;
+    // WHY: Writer model is an independent model selector for Phase 2 formatting
+    // when jsonStrict is off. Same shape as fallback but serves a different purpose.
+    merged[`${prefix}WriterModel`]            = phaseOverride.writerModel || '';
+    merged[`${prefix}WriterReasoningModel`]   = phaseOverride.writerReasoningModel || '';
+    merged[`${prefix}WriterUseReasoning`]     = phaseOverride.writerUseReasoning ?? false;
+    merged[`${prefix}WriterThinking`]         = phaseOverride.writerThinking ?? false;
+    merged[`${prefix}WriterThinkingEffort`]   = phaseOverride.writerThinkingEffort || '';
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

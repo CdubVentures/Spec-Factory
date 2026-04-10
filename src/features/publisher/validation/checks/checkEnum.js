@@ -26,15 +26,14 @@ function aliasResolve(v, knownValues, lowerMap, normMap) {
 /**
  * Enum policy enforcement (Step 9).
  * Three policies: closed (reject unknown), open_prefer_known (flag unknown), open (all pass).
- * Four match strategies: exact (default), alias (case-insensitive + normalized).
+ * Policy determines matching: closed = exact, open_prefer_known = alias resolution.
  *
  * @param {*} value - Normalized field value (string, string[], or non-string)
  * @param {'closed'|'open_prefer_known'|'open'|null} policy
  * @param {string[]|null} knownValues - from known_values.enums[fieldKey].values
- * @param {'exact'|'alias'} [matchStrategy='exact'] - from enum.match.strategy
  * @returns {{ pass: boolean, known: string[], unknown: string[], needsLlm: boolean, repaired?: *,  reason?: string }}
  */
-export function checkEnum(value, policy, knownValues, matchStrategy) {
+export function checkEnum(value, policy, knownValues) {
   if (!policy || !knownValues) {
     return { pass: true, known: [], unknown: [], needsLlm: false };
   }
@@ -47,7 +46,7 @@ export function checkEnum(value, policy, knownValues, matchStrategy) {
     return { pass: true, known: [], unknown: [], needsLlm: false };
   }
 
-  const useAlias = matchStrategy === 'alias';
+  const useAlias = policy === 'open_prefer_known';
   const knownSet = new Set(knownValues);
 
   // WHY: Pre-build lookup maps once for alias strategy (O(n) build, O(1) per lookup).

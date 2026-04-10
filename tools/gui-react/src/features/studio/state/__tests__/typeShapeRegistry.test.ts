@@ -122,18 +122,6 @@ describe('typeShapeRegistry', () => {
       assert.equal(TYPE_COUPLING_MAP.boolean?.['enum.policy'], 'closed');
     });
 
-    it('url sets input_control to url', () => {
-      assert.equal(TYPE_COUPLING_MAP.url?.['ui.input_control'], 'url');
-    });
-
-    it('date sets input_control to date', () => {
-      assert.equal(TYPE_COUPLING_MAP.date?.['ui.input_control'], 'date');
-    });
-
-    it('number sets input_control to number', () => {
-      assert.equal(TYPE_COUPLING_MAP.number?.['ui.input_control'], 'number');
-    });
-
     it('string has no coupling (default)', () => {
       assert.equal(TYPE_COUPLING_MAP.string, undefined);
     });

@@ -140,6 +140,51 @@ export function resolvePhaseDisableLimits(config = {}, phase = '') {
   return Boolean(config[`_resolved${cap}DisableLimits`]);
 }
 
+// WHY: Phase-level jsonStrict toggle. When false, callLlmWithRouting splits into
+// two calls: Phase 1 (research, no schema) + Phase 2 (writer, with schema).
+function resolvePhaseJsonStrict(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return true;
+  return config[`_resolved${cap}JsonStrict`] ?? true;
+}
+
+// WHY: Writer model is an independent model for Phase 2 (formatting) when
+// jsonStrict is off. Same shape as fallback (model + useReasoning + reasoningModel)
+// but serves a different purpose. Returns null when no writer model configured.
+function resolvePhaseWriterModel(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return '';
+  const useReasoning = Boolean(config[`_resolved${cap}WriterUseReasoning`]);
+  const suffix = useReasoning ? 'WriterReasoningModel' : 'WriterModel';
+  return normalized(config[`_resolved${cap}${suffix}`]);
+}
+
+function resolveWriterRoute(config = {}, { role = 'plan', phase = '' } = {}) {
+  const writerModel = resolvePhaseWriterModel(config, phase);
+  if (!writerModel) return null;
+
+  const resolved = resolveModelFromRegistry(config._registryLookup, writerModel);
+  if (resolved) {
+    return {
+      role,
+      provider: resolved.providerType,
+      model: resolved.modelId,
+      baseUrl: resolved.baseUrl,
+      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, providerFromModelToken(resolved.modelId)),
+      _registryEntry: resolved,
+    };
+  }
+
+  const inferred = providerFromModelToken(writerModel);
+  return {
+    role,
+    provider: inferred,
+    model: writerModel,
+    baseUrl: defaultBaseUrlForProvider(inferred),
+    apiKey: bootstrapApiKeyForProvider(config, inferred),
+  };
+}
+
 function fallbackRouteForRole(config = {}, role = 'extract') {
   const keys = roleKeySet(role);
   const model = normalized(String(configValue(config, keys.fallbackModel)));
@@ -437,7 +482,8 @@ export async function callLlmWithRouting({
   onUsage,
   timeoutMs = 40_000,
   providerHealth,
-  logger
+  logger,
+  onPhaseChange,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const primary = resolveLlmRoute(config, {
@@ -496,6 +542,8 @@ export async function callLlmWithRouting({
     ? 600000
     : (phaseTimeoutMs > 0 ? phaseTimeoutMs : timeoutMs);
 
+  const jsonStrictEnabled = resolvePhaseJsonStrict(config, phase);
+
   logger?.info?.('llm_route_selected', {
     reason,
     role: resolvedRole,
@@ -508,6 +556,9 @@ export async function callLlmWithRouting({
     output_token_cap_fallback: fallbackTokenCap,
     reasoning_mode: reasoningMode,
     phase_token_cap: phaseTokenCap,
+    json_strict: jsonStrictEnabled,
+    two_phase_writer: !jsonStrictEnabled && Boolean(jsonSchema),
+    phase: phase || null,
   });
 
   const sharedParams = {
@@ -542,19 +593,10 @@ export async function callLlmWithRouting({
     throw new Error('cortex provider dispatch not yet re-implemented — route via openai-compatible provider or remove cortex entry');
   }
 
-  try {
-    return await callLlmProvider({
-      ...effectiveSharedParams,
-      route: {
-        model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
-        provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
-      },
-      providerHealth
-    });
-  } catch (error) {
-    if (!fallback) {
-      throw error;
-    }
+  // WHY: Shared fallback dispatch — extracted to avoid duplicating fallback logic
+  // in both the single-call and two-phase paths.
+  const dispatchFallback = (error) => {
+    if (!fallback) throw error;
     logger?.warn?.('llm_route_fallback', {
       reason,
       role: resolvedRole,
@@ -567,22 +609,16 @@ export async function callLlmWithRouting({
       message: error.message
     });
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
-    // WHY: fallback must also respect disableLimits — both primary and fallback
-    // get uncapped tokens when the user toggles "disable limits" for the phase.
     const fallbackMaxTokens = phaseDisableLimits
       ? 0
       : (phaseTokenCap > 0
         ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
         : fallbackTokenCap);
-
-    // WHY: Fallback panel has its own thinking/web/reasoning flags, independent
-    // of the primary panel. Resolve them separately so the fallback call uses
-    // the fallback's configuration, not the primary's.
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
-    const cap = capitalize(String(phase || '').trim());
-    const fbReasoning = cap ? Boolean(config[`_resolved${cap}FallbackUseReasoning`]) : false;
+    const capFb = capitalize(String(phase || '').trim());
+    const fbReasoning = capFb ? Boolean(config[`_resolved${capFb}FallbackUseReasoning`]) : false;
     const fbRequestOptions = {
       ...(baseRequestOptions || {}),
       ...(fbWebSearch ? { web_search: true } : {}),
@@ -609,5 +645,98 @@ export async function callLlmWithRouting({
         fallback_from_model: primary.model || null
       }
     });
+  };
+
+  // WHY: When jsonStrict is false AND a jsonSchema is provided, split into two phases:
+  // Phase 1 uses the primary model for free-form research (no schema constraint).
+  // Phase 2 uses a dedicated writer model to format into the schema.
+  const useWriterPhase = !jsonStrictEnabled && jsonSchema;
+
+  if (useWriterPhase) {
+    let researchText;
+    try {
+      researchText = await callLlmProvider({
+        ...effectiveSharedParams,
+        jsonSchema: null,
+        rawTextMode: true,
+        route: {
+          model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
+          provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
+        },
+        providerHealth,
+      });
+    } catch (error) {
+      // Research failed → fall back to single-call WITH schema (existing fallback behavior)
+      logger?.warn?.('llm_writer_research_failed_falling_back', {
+        reason,
+        role: resolvedRole,
+        phase: phase || null,
+        message: error.message,
+      });
+      return dispatchFallback(error);
+    }
+
+    onPhaseChange?.('writer');
+
+    // Phase 2: Format — dedicated writer model (or primary if no writer configured), WITH schema
+    const writerRoute = resolveWriterRoute(config, { role: resolvedRole, phase }) || primary;
+    const writerSystem = [
+      'You are a JSON formatter. Convert the research findings below into the required JSON schema.',
+      'Do not perform additional research. Only extract, normalize, and format the findings.',
+      '',
+      'Task context (formatting rules):',
+      system,
+      '',
+      'Research findings:',
+      researchText,
+    ].join('\n');
+
+    const effectiveWriterCostRates = buildEffectiveCostRates(writerRoute._registryEntry, costRates);
+
+    // WHY: Writer panel has its own reasoning/thinking flags (same shape as fallback).
+    const capW = capitalize(String(phase || '').trim());
+    const writerReasoning = capW ? Boolean(config[`_resolved${capW}WriterUseReasoning`]) : false;
+    const writerThinking = resolvePhaseFlag(config, phase, 'WriterThinking');
+    const writerThinkingEffort = resolvePhaseString(config, phase, 'WriterThinkingEffort');
+    const writerRequestOptions = {
+      ...(writerThinking ? { reasoning_effort: writerThinkingEffort || 'medium' } : {}),
+    };
+    const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
+
+    return callLlmProvider({
+      ...sharedParams,
+      system: writerSystem,
+      user,
+      jsonSchema,
+      costRates: effectiveWriterCostRates,
+      requestOptions: effectiveWriterRequestOptions,
+      reasoningMode: Boolean(writerReasoning),
+      reasoningBudget: 0,
+      maxTokens: Number(primaryTokenCap || 0),
+      route: {
+        model: writerRoute.model, apiKey: writerRoute.apiKey, baseUrl: writerRoute.baseUrl,
+        provider: writerRoute.provider, accessMode: writerRoute._registryEntry?.accessMode || '',
+      },
+      providerHealth,
+      usageContext: {
+        ...sharedParams.usageContext,
+        writer_phase: true,
+        research_model: primary.model,
+      },
+    });
+  }
+
+  // Existing single-call behavior (jsonStrict: true or no jsonSchema)
+  try {
+    return await callLlmProvider({
+      ...effectiveSharedParams,
+      route: {
+        model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
+        provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
+      },
+      providerHealth
+    });
+  } catch (error) {
+    return dispatchFallback(error);
   }
 }

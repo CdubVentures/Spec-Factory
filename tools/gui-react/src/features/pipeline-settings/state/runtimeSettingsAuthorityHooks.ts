@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '../../../api/client.ts';
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest.ts';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
@@ -14,7 +12,6 @@ import {
   type RuntimeSettings,
 } from './runtimeSettingsAuthorityHelpers.ts';
 import { normalizeRuntimeDraft } from './RuntimeFlowDraftNormalization.ts';
-import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect.ts';
 
 type RuntimeSettingsPersistResult = {
   ok: boolean;
@@ -22,14 +19,12 @@ type RuntimeSettingsPersistResult = {
   rejected: Record<string, string>;
 };
 
+// WHY: Simplified options — no debounce, no dirty tracking, no auto-save toggle.
+// Every change persists immediately via saveNow().
 interface RuntimeSettingsAuthorityOptions {
-  payload: RuntimeSettings;
-  dirty: boolean;
-  autoSaveEnabled: boolean;
-  initialHydrationApplied?: boolean;
-  enabled?: boolean;
   onPersisted?: (result: RuntimeSettingsPersistResult) => void;
   onError?: (error: Error | unknown) => void;
+  enabled?: boolean;
 }
 
 interface RuntimeSettingsAuthorityResult {
@@ -38,7 +33,6 @@ interface RuntimeSettingsAuthorityResult {
   isSaving: boolean;
   reload: () => Promise<RuntimeSettings | undefined>;
   saveNow: () => void;
-  flushIfDirty: () => Promise<void>;
 }
 
 interface RuntimeSettingsReaderOptions {
@@ -138,17 +132,15 @@ function normalizeRuntimeSaveResult(
   } as RuntimeSettingsPersistResult;
 }
 
+// WHY: Simplified authority — persists immediately on every saveNow() call.
+// No debounce, no dirty tracking, no fingerprint dedup, no auto-save toggle.
+// The caller is responsible for calling saveNow() after each store update.
 export function useRuntimeSettingsAuthority({
-  payload,
-  dirty,
-  autoSaveEnabled,
-  initialHydrationApplied = true,
   enabled = true,
   onPersisted,
   onError,
 }: RuntimeSettingsAuthorityOptions): RuntimeSettingsAuthorityResult {
   const queryClient = useQueryClient();
-  const payloadFingerprint = autoSaveFingerprint(payload);
 
   const { data: settings, isLoading, refetch } = useQuery({
     queryKey: RUNTIME_SETTINGS_QUERY_KEY,
@@ -156,47 +148,12 @@ export function useRuntimeSettingsAuthority({
     enabled,
   });
 
-  const payloadRef = useRef(payload);
-  payloadRef.current = payload;
-
-  const applyRuntimeSaveResult = (result: RuntimeSettingsPersistResult, emitState = true) => {
-    queryClient.setQueryData(RUNTIME_SETTINGS_QUERY_KEY, result.applied);
-    if (emitState) {
-      onPersisted?.(result);
-    }
-  };
-
   const storeMarkClean = useRuntimeSettingsValueStore((s) => s.markClean);
 
-  const saveFnRef = useRef<() => void>(() => {});
-  const getUnloadBody = useCallback(() => payloadRef.current, []);
-
-  const { markSaved, clearAttemptFingerprint, seedFingerprint, prepareFlush } =
-    useSettingsAutoSaveEffect({
-      domain: 'runtime',
-      debounceMs: SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime,
-      payloadFingerprint,
-      dirty,
-      autoSaveEnabled,
-      initialHydrationApplied,
-      saveFn: () => saveFnRef.current(),
-      getUnloadBody,
-      unloadUrl: '/api/v1/runtime-settings',
-      onFlushPending: () => {
-        useRuntimeSettingsValueStore.getState().markFlushPending();
-      },
-    });
-
-  const recordPersistSuccess = (nextPayload: RuntimeSettings) => {
-    markSaved(autoSaveFingerprint(nextPayload));
-    storeMarkClean();
-    publishSettingsPropagation({ domain: 'runtime' });
-  };
-
-  const handleAutoSaveError = (error: Error | unknown) => {
-    clearAttemptFingerprint();
-    onError?.(error);
-  };
+  const onPersistedRef = useRef(onPersisted);
+  const onErrorRef = useRef(onError);
+  onPersistedRef.current = onPersisted;
+  onErrorRef.current = onError;
 
   const saveMutation = useMutation(
     createSettingsOptimisticMutationContract<
@@ -217,32 +174,32 @@ export function useRuntimeSettingsAuthority({
         normalizeRuntimeSaveResult(response, nextPayload, previousData || nextPayload).applied,
       toPersistedResult: (response, nextPayload, previousData) =>
         normalizeRuntimeSaveResult(response, nextPayload, previousData || nextPayload),
-      onPersisted: (result, nextPayload) => {
-        applyRuntimeSaveResult(result);
-        recordPersistSuccess(nextPayload);
+      onPersisted: (result) => {
+        onPersistedRef.current?.(result);
+        storeMarkClean();
+        publishSettingsPropagation({ domain: 'runtime' });
       },
-      onError: handleAutoSaveError,
+      onError: (error) => {
+        onErrorRef.current?.(error);
+      },
     }),
   );
-  saveFnRef.current = () => saveMutation.mutate(payloadRef.current);
 
-  async function reload() {
+  // WHY: Read directly from the store (not from stale React state) to ensure
+  // the payload includes the most recent synchronous updateKey() writes.
+  const saveNow = useCallback(() => {
+    const currentPayload = useRuntimeSettingsValueStore.getState().values;
+    if (!currentPayload) return;
+    saveMutation.mutate(currentPayload as RuntimeSettings);
+  }, [saveMutation]);
+
+  const reload = useCallback(async () => {
     const result = await refetch();
     if (result.data) {
       queryClient.setQueryData(RUNTIME_SETTINGS_QUERY_KEY, result.data);
-      seedFingerprint(autoSaveFingerprint(result.data));
     }
     return result.data;
-  }
-
-  function saveNow() {
-    saveMutation.mutate(payloadRef.current);
-  }
-
-  async function flushIfDirty(): Promise<void> {
-    if (!prepareFlush()) return;
-    await saveMutation.mutateAsync(payloadRef.current);
-  }
+  }, [refetch, queryClient]);
 
   return {
     settings,
@@ -250,6 +207,5 @@ export function useRuntimeSettingsAuthority({
     isSaving: saveMutation.isPending,
     reload,
     saveNow,
-    flushIfDirty,
   };
 }

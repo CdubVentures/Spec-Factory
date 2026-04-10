@@ -69,7 +69,7 @@ export async function repairField({ validationResult, fieldKey, fieldRule, known
   if (keepNew.length > 0 && knownValues && Array.isArray(knownValues.values)) {
     revalKnownValues = { ...knownValues, values: [...knownValues.values, ...keepNew.map(d => d.resolved_to)] };
   }
-  const revalidation = validateField({ fieldKey, value: applied.value, fieldRule, knownValues: revalKnownValues, consistencyMode });
+  const revalidation = validateField({ fieldKey, value: applied.value, fieldRule, knownValues: revalKnownValues, consistencyMode, appDb });
 
   // Step 8: Binary outcome — re-validation is the only gate
   const status = revalidation.valid ? 'repaired' : 'still_failed';

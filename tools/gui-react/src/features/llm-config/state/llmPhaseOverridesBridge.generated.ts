@@ -36,7 +36,13 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.webSearch !== undefined ||
       phase.thinking !== undefined ||
       phase.thinkingEffort !== undefined ||
-      phase.disableLimits !== undefined
+      phase.disableLimits !== undefined ||
+      phase.jsonStrict !== undefined ||
+      (phase.writerModel !== undefined && phase.writerModel !== '') ||
+      (phase.writerReasoningModel !== undefined && phase.writerReasoningModel !== '') ||
+      phase.writerUseReasoning !== undefined ||
+      phase.writerThinking !== undefined ||
+      phase.writerThinkingEffort !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -61,6 +67,13 @@ export interface ResolvedPhaseModel {
   thinking: boolean;
   thinkingEffort: string;
   disableLimits: boolean;
+  jsonStrict: boolean;
+  writerModel: string;
+  writerReasoningModel: string;
+  writerUseReasoning: boolean;
+  writerThinking: boolean;
+  writerThinkingEffort: string;
+  effectiveWriterModel: string;
   effectiveModel: string;
 }
 
@@ -133,6 +146,12 @@ export function resolvePhaseModel(
   const thinking = phaseOverride.thinking ?? false;
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
   const disableLimits = phaseOverride.disableLimits ?? false;
+  const jsonStrict = phaseOverride.jsonStrict ?? true;
+  const writerModel = phaseOverride.writerModel || '';
+  const writerReasoningModel = phaseOverride.writerReasoningModel || '';
+  const writerUseReasoning = phaseOverride.writerUseReasoning ?? false;
+  const writerThinking = phaseOverride.writerThinking ?? false;
+  const writerThinkingEffort = phaseOverride.writerThinkingEffort ?? '';
 
   return {
     baseModel,
@@ -152,6 +171,13 @@ export function resolvePhaseModel(
     thinking,
     thinkingEffort,
     disableLimits,
+    jsonStrict,
+    writerModel,
+    writerReasoningModel,
+    writerUseReasoning,
+    writerThinking,
+    writerThinkingEffort,
+    effectiveWriterModel: writerUseReasoning ? writerReasoningModel : writerModel,
     effectiveModel: useReasoning ? reasoningModel : baseModel,
   };
 }

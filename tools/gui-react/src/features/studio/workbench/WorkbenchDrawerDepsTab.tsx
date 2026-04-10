@@ -80,8 +80,6 @@ export function DepsTab({
               });
               onUpdate('enum.source', `component_db.${v}`);
               onUpdate('enum.policy', 'open_prefer_known');
-              onUpdate('enum.match.strategy', 'alias');
-              onUpdate('ui.input_control', 'component_picker');
             }
           }}
         >

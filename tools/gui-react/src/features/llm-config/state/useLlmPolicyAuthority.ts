@@ -1,15 +1,13 @@
 // WHY: Dedicated authority hook for the LlmPolicy composite.
 // The flat Zustand runtimeSettingsValueStore is the SSOT for all settings.
 // This hook derives the composite LlmPolicy view from the store on every render,
-// writes edits as flat keys directly to the store, and auto-saves to PUT /llm-policy.
+// writes edits as flat keys directly to the store, and persists to PUT /llm-policy
+// immediately on every change — no debounce, no dirty tracking, no save button.
 
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest.ts';
 import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
-import { useSettingsAutoSaveEffect } from '../../pipeline-settings/state/useSettingsAutoSaveEffect.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import type { RuntimeSettings } from '../../pipeline-settings/index.ts';
 import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/llmPolicyApi.ts';
@@ -20,7 +18,6 @@ import { validateModelExistence } from './llmModelValidation.ts';
 import { LLM_MODEL_ROLES } from './llmModelRoleRegistry.ts';
 
 interface UseLlmPolicyAuthorityOptions {
-  autoSaveEnabled?: boolean;
   defaultPolicy: LlmPolicy;
 }
 
@@ -28,16 +25,13 @@ interface UseLlmPolicyAuthorityResult {
   policy: LlmPolicy;
   isLoading: boolean;
   isSaving: boolean;
-  isDirty: boolean;
   updateGroup: <G extends LlmPolicyGroup>(group: G, patch: Partial<LlmPolicy[G]>) => void;
   updatePolicy: (patch: Partial<LlmPolicy>) => void;
   saveNow: () => void;
-  flushIfDirty: () => Promise<void>;
   reload: () => Promise<void>;
 }
 
 export function useLlmPolicyAuthority({
-  autoSaveEnabled = true,
   defaultPolicy,
 }: UseLlmPolicyAuthorityOptions): UseLlmPolicyAuthorityResult {
   const queryClient = useQueryClient();
@@ -52,12 +46,7 @@ export function useLlmPolicyAuthority({
     [storeValues, defaultPolicy],
   );
 
-  // WHY: Local dirty flag tracks "LLM policy has unsaved changes to /llm-policy".
-  // This is distinct from the store's dirty which tracks runtime settings unsaved changes.
-  const [dirty, setDirty] = useState(false);
   const initialHydrationAppliedRef = useRef(false);
-
-  const payloadFingerprint = useMemo(() => autoSaveFingerprint(policy), [policy]);
 
   const { data: serverData, isLoading, refetch } = useQuery({
     queryKey: LLM_POLICY_QUERY_KEY,
@@ -74,25 +63,6 @@ export function useLlmPolicyAuthority({
       : defaultPolicy;
   }, [defaultPolicy]);
 
-  const saveFnRef = useRef<() => void>(() => {});
-  const getUnloadBody = useCallback(() => readCurrentPolicy(), [readCurrentPolicy]);
-
-  const { markSaved, clearAttemptFingerprint, seedFingerprint, prepareFlush } =
-    useSettingsAutoSaveEffect({
-      domain: 'llm-policy',
-      debounceMs: SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime,
-      payloadFingerprint,
-      dirty,
-      autoSaveEnabled,
-      initialHydrationApplied: initialHydrationAppliedRef.current,
-      saveFn: () => saveFnRef.current(),
-      getUnloadBody,
-      unloadUrl: '/api/v1/llm-policy',
-      onFlushPending: () => {
-        useRuntimeSettingsValueStore.getState().markFlushPending();
-      },
-    });
-
   // WHY: Hydrate once from server — push flat keys into the store.
   // The composite policy is then derived from the store via useMemo above.
   // Uses hydrateKeys (not updateKeys) to avoid marking the store dirty,
@@ -102,14 +72,11 @@ export function useLlmPolicyAuthority({
     initialHydrationAppliedRef.current = true;
     const flat = flattenLlmPolicy(serverData);
     useRuntimeSettingsValueStore.getState().hydrateKeys(flat as Partial<RuntimeSettings>);
-    seedFingerprint(autoSaveFingerprint(serverData));
-  }, [serverData, seedFingerprint]);
+  }, [serverData]);
 
   const saveMutation = useMutation({
     mutationFn: (nextPolicy: LlmPolicy) => {
       // WHY: Reject invalid model IDs before they reach the server.
-      // Builds a {flatKey: modelId} map from the policy's models group,
-      // then checks each against the provider registry.
       const modelFields: Record<string, string> = {};
       for (const entry of LLM_MODEL_ROLES) {
         const modelId = nextPolicy.models[entry.role.toLowerCase() as keyof typeof nextPolicy.models];
@@ -132,24 +99,19 @@ export function useLlmPolicyAuthority({
       if (result.policy) {
         queryClient.setQueryData(LLM_POLICY_QUERY_KEY, result.policy);
       }
-      markSaved(autoSaveFingerprint(readCurrentPolicy()));
-      setDirty(false);
-      // WHY: Clear the store's dirty flag after successful LLM policy save.
-      // Without this, updateKeys() from user edits sets store.dirty=true,
-      // and it stays true forever because only the runtime authority called
-      // markClean(). This permanently blocks hydrate() from /runtime-settings.
+      // WHY: Clear the store's dirty flag after successful save.
+      // updateKeys() from the preceding edit sets store.dirty=true;
+      // markClean() unblocks hydrate() from /runtime-settings.
       useRuntimeSettingsValueStore.getState().markClean();
       publishSettingsPropagation({ domain: 'runtime' });
     },
     onError: (error) => {
-      clearAttemptFingerprint();
-      console.error('LLM policy auto-save failed:', error);
+      console.error('LLM policy save failed:', error);
     },
   });
-  saveFnRef.current = () => saveMutation.mutate(readCurrentPolicy());
 
-  // WHY: Edits write flat keys directly to the store. The composite is re-derived
-  // from the store on the next render via useMemo. No local policy state to sync.
+  // WHY: Edits write flat keys directly to the store, then persist immediately.
+  // No debounce, no dirty tracking — every change triggers PUT /llm-policy.
   const updateGroup = useCallback(<G extends LlmPolicyGroup>(
     group: G,
     patch: Partial<LlmPolicy[G]>,
@@ -158,47 +120,35 @@ export function useLlmPolicyAuthority({
     const merged = { ...current, ...patch };
     const flatPatch = flattenPolicyGroup(group, merged);
     useRuntimeSettingsValueStore.getState().updateKeys(flatPatch as Partial<RuntimeSettings>);
-    setDirty(true);
-  }, [policy]);
+    saveMutation.mutate(readCurrentPolicy());
+  }, [policy, saveMutation, readCurrentPolicy]);
 
   const updatePolicy = useCallback((patch: Partial<LlmPolicy>) => {
-    // WHY: For top-level or multi-group patches, flatten the entire merged policy.
     const merged = { ...policy, ...patch };
     const flat = flattenLlmPolicy(merged);
     useRuntimeSettingsValueStore.getState().updateKeys(flat as Partial<RuntimeSettings>);
-    setDirty(true);
-  }, [policy]);
+    saveMutation.mutate(readCurrentPolicy());
+  }, [policy, saveMutation, readCurrentPolicy]);
 
   const saveNow = useCallback(() => {
-    saveMutation.mutate(policy);
-  }, [saveMutation, policy]);
-
-  const flushIfDirty = useCallback(async () => {
-    if (!prepareFlush()) return;
-    await saveMutation.mutateAsync(readCurrentPolicy());
-  }, [saveMutation, readCurrentPolicy, prepareFlush]);
+    saveMutation.mutate(readCurrentPolicy());
+  }, [saveMutation, readCurrentPolicy]);
 
   const reload = useCallback(async () => {
     const result = await refetch();
     if (result.data) {
       const flat = flattenLlmPolicy(result.data);
-      // WHY: Use hydrateKeys for server reload, not updateKeys. updateKeys
-      // would mark dirty and block future hydrate() calls from /runtime-settings.
       useRuntimeSettingsValueStore.getState().hydrateKeys(flat as Partial<RuntimeSettings>);
-      seedFingerprint(autoSaveFingerprint(result.data));
-      setDirty(false);
     }
-  }, [refetch, seedFingerprint]);
+  }, [refetch]);
 
   return {
     policy,
     isLoading,
     isSaving: saveMutation.isPending,
-    isDirty: dirty,
     updateGroup,
     updatePolicy,
     saveNow,
-    flushIfDirty,
     reload,
   };
 }

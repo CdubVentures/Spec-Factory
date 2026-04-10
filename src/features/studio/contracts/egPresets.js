@@ -162,7 +162,6 @@ export function buildEgColorFieldRule(ctx) {
     enum_policy: 'closed',
     enum: {
       policy: 'closed',
-      match: { strategy: 'exact' },
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
     },
     // WHY: vocab.known_values populated from ctx.colorNames (color registry).
@@ -193,7 +192,6 @@ export function buildEgColorFieldRule(ctx) {
     ui: {
       label: 'Colors',
       group: 'general',
-      input_control: 'token_list',
       tooltip_md: 'EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use "+" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray.',
     },
     search_hints: {
@@ -221,11 +219,9 @@ export function buildEgEditionFieldRule(ctx) {
     enum_policy: 'open',
     enum: {
       policy: 'open',
-      match: { strategy: 'exact' },
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: true },
     },
     consumers: {
-      'enum.match.strategy': { review: false },
       'enum.match.format_hint': { review: false },
     },
     priority: {
@@ -259,7 +255,6 @@ export function buildEgEditionFieldRule(ctx) {
     ui: {
       label: 'Editions',
       group: 'general',
-      input_control: 'token_list',
       tooltip_md: 'EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.',
     },
     search_hints: {

@@ -23,18 +23,16 @@ describe('buildColorEditionFinderPrompt', () => {
     { name: 'dark-green', hex: '#15803d', css_var: '--color-dark-green' },
   ];
 
-  // ── Core content ──
-
   it('includes brand + model in target line', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.ok(prompt.includes('Corsair'), 'brand');
     assert.ok(prompt.includes('M75 Air Wireless'), 'model');
   });
 
-  it('includes identity rule referencing the model', () => {
+  it('includes identity constraint with quoted product name', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('IDENTITY'), 'identity section present');
-    assert.ok(prompt.includes('"Corsair M75 Air Wireless"'), 'model quoted in identity rule');
+    assert.ok(prompt.includes('"Corsair M75 Air Wireless"'), 'quoted product name');
+    assert.ok(prompt.includes('siblings_excluded'), 'mentions siblings_excluded');
   });
 
   it('includes registered color palette with hex values', () => {
@@ -46,7 +44,7 @@ describe('buildColorEditionFinderPrompt', () => {
 
   it('includes color formatting rules (modifier-first, grey→gray)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('Modifier-first') || prompt.includes('modifier-first'), 'modifier naming');
+    assert.ok(prompt.includes('modifier-first') || prompt.includes('Modifier-first'), 'modifier naming');
     assert.ok(prompt.includes('grey') && prompt.includes('gray'), 'grey normalization');
   });
 
@@ -55,88 +53,53 @@ describe('buildColorEditionFinderPrompt', () => {
     assert.ok(prompt.includes('kebab-case'), 'edition format');
   });
 
-  it('includes response contract with all fields', () => {
+  it('includes response contract fields', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('colors'), 'colors in contract');
-    assert.ok(prompt.includes('color_names'), 'color_names in contract');
-    assert.ok(prompt.includes('editions'), 'editions in contract');
-    assert.ok(prompt.includes('display_name'), 'display_name in contract');
-    assert.ok(prompt.includes('default_color'), 'default_color in contract');
-    assert.ok(prompt.includes('siblings_excluded'), 'siblings_excluded in contract');
-    assert.ok(prompt.includes('discovery_log'), 'discovery_log in contract');
+    assert.ok(prompt.includes('colors'), 'colors');
+    assert.ok(prompt.includes('color_names'), 'color_names');
+    assert.ok(prompt.includes('editions'), 'editions');
+    assert.ok(prompt.includes('display_name'), 'display_name');
+    assert.ok(prompt.includes('default_color'), 'default_color');
+    assert.ok(prompt.includes('siblings_excluded'), 'siblings_excluded');
+    assert.ok(prompt.includes('discovery_log'), 'discovery_log');
   });
 
-  it('does NOT include SKU fields (SKU-free)', () => {
+  it('does NOT include SKU fields', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.equal(prompt.includes('color_skus'), false, 'no color_skus');
     assert.equal(prompt.includes('known_sku'), false, 'no known_sku');
   });
 
-  it('includes search instructions with multiple approaches', () => {
+  it('mentions collaboration/limited editions and retailers', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.includes('HOW TO SEARCH'), 'has search instructions');
-    assert.ok(prompt.includes('Amazon') || prompt.includes('retailer'), 'mentions retailers');
-    assert.ok(prompt.includes('limited edition') || prompt.includes('special edition'), 'mentions editions search');
+    assert.ok(prompt.includes('collaboration') || prompt.includes('limited'), 'mentions edition types');
+    assert.ok(prompt.includes('retailer'), 'mentions retailers');
   });
 
-  // ── First run: empty known inputs ──
-
-  it('first run: known_colors is empty', () => {
+  it('first run: no known findings section', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns: [] });
-    assert.ok(prompt.includes('known_colors: []'), 'known_colors empty');
+    assert.equal(prompt.includes('Previous findings'), false, 'no known section on first run');
   });
 
-  // ── Subsequent run: known inputs from previous run ──
-
-  it('subsequent run: injects known_colors from previous selected', () => {
+  it('subsequent run: injects known colors and editions from previous selected', () => {
     const prompt = buildColorEditionFinderPrompt({
       colorNames, colors, product,
       previousRuns: [{
         run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
         selected: {
           colors: ['black', 'white'],
-          editions: { 'launch-edition': { colors: ['black'] } },
+          color_names: { 'white': 'Frost White' },
+          editions: { 'launch-edition': { colors: ['black'] }, 'cod-bo6-edition': { colors: ['black'] } },
           default_color: 'black',
         },
       }],
     });
-    assert.ok(prompt.includes('known_colors'), 'known_colors input');
-    assert.ok(prompt.includes('black'), 'known color value');
-    assert.ok(prompt.includes('white'), 'known color value');
-  });
-
-  it('subsequent run: injects known_editions from previous selected', () => {
-    const prompt = buildColorEditionFinderPrompt({
-      colorNames, colors, product,
-      previousRuns: [{
-        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-        selected: {
-          colors: ['black'],
-          editions: { 'launch-edition': { colors: ['black'] }, 'cyberpunk-2077-edition': { colors: ['black'] } },
-          default_color: 'black',
-        },
-      }],
-    });
-    assert.ok(prompt.includes('known_editions'), 'known_editions input');
-    assert.ok(prompt.includes('launch-edition'), 'known edition slug');
-    assert.ok(prompt.includes('cyberpunk-2077-edition'), 'known edition slug');
-  });
-
-  it('subsequent run: injects known_color_names from previous selected', () => {
-    const prompt = buildColorEditionFinderPrompt({
-      colorNames, colors, product,
-      previousRuns: [{
-        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-        selected: {
-          colors: ['black', 'white+silver'],
-          color_names: { 'white+silver': 'Frost White' },
-          editions: {},
-          default_color: 'black',
-        },
-      }],
-    });
-    assert.ok(prompt.includes('known_color_names'), 'known_color_names input');
-    assert.ok(prompt.includes('Frost White'), 'known color marketing name');
+    assert.ok(prompt.includes('Previous findings'), 'has known section');
+    assert.ok(prompt.includes('black'), 'known color');
+    assert.ok(prompt.includes('white'), 'known color');
+    assert.ok(prompt.includes('Frost White'), 'known color name');
+    assert.ok(prompt.includes('launch-edition'), 'known edition');
+    assert.ok(prompt.includes('cod-bo6-edition'), 'known edition');
   });
 
   it('subsequent run: injects urls_already_checked from previous discovery_log', () => {
@@ -149,17 +112,14 @@ describe('buildColorEditionFinderPrompt', () => {
           colors: ['black'], editions: {}, default_color: 'black',
           discovery_log: {
             confirmed_from_known: [], added_new: ['black'], rejected_from_known: [],
-            urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'],
+            urls_checked: ['https://corsair.com/m75'],
             queries_run: [],
           },
         },
       }],
     });
-    assert.ok(prompt.includes('urls_already_checked'), 'urls_already_checked input');
     assert.ok(prompt.includes('https://corsair.com/m75'), 'url from previous run');
   });
-
-  // ── Edge cases ──
 
   it('handles empty colorNames gracefully', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames: [], colors: [], product, previousRuns: [] });
@@ -169,7 +129,7 @@ describe('buildColorEditionFinderPrompt', () => {
 
   it('prompt is compact (under 8000 chars with small palette)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.length < 8000, `prompt is ${prompt.length} chars, should be under 8000`);
+    assert.ok(prompt.length < 8000, `prompt is ${prompt.length} chars`);
   });
 });
 
@@ -190,35 +150,20 @@ describe('accumulateUrlsChecked', () => {
       },
     }]);
     assert.deepEqual(result.urlsAlreadyChecked, ['https://corsair.com/m75', 'https://amazon.com/dp/B123']);
-    assert.ok(result.domainsAlreadyChecked.includes('corsair.com'), 'corsair domain');
-    assert.ok(result.domainsAlreadyChecked.includes('amazon.com'), 'amazon domain');
+    assert.ok(result.domainsAlreadyChecked.includes('corsair.com'));
+    assert.ok(result.domainsAlreadyChecked.includes('amazon.com'));
   });
 
   it('unions urls across multiple runs, no duplicates', () => {
     const result = accumulateUrlsChecked([
-      {
-        run_number: 1,
-        response: {
-          discovery_log: {
-            urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'],
-          },
-        },
-      },
-      {
-        run_number: 2,
-        response: {
-          discovery_log: {
-            urls_checked: ['https://corsair.com/m75', 'https://bestbuy.com/sku/123'],
-          },
-        },
-      },
+      { run_number: 1, response: { discovery_log: { urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'] } } },
+      { run_number: 2, response: { discovery_log: { urls_checked: ['https://corsair.com/m75', 'https://bestbuy.com/sku/123'] } } },
     ]);
-    assert.equal(result.urlsAlreadyChecked.length, 3, '3 unique urls');
-    assert.ok(result.urlsAlreadyChecked.includes('https://bestbuy.com/sku/123'));
+    assert.equal(result.urlsAlreadyChecked.length, 3);
     assert.ok(result.domainsAlreadyChecked.includes('bestbuy.com'));
   });
 
-  it('handles runs without discovery_log gracefully (v1 backward compat)', () => {
+  it('handles runs without discovery_log gracefully', () => {
     const result = accumulateUrlsChecked([
       { run_number: 1, response: { colors: ['black'] } },
       { run_number: 2, response: {} },
@@ -236,16 +181,11 @@ describe('COLOR_EDITION_FINDER_SPEC', () => {
     assert.equal(COLOR_EDITION_FINDER_SPEC.role, 'triage');
   });
 
-  it('system is a function and jsonSchema has expected properties', () => {
+  it('jsonSchema has expected properties including v2 fields', () => {
     assert.equal(typeof COLOR_EDITION_FINDER_SPEC.system, 'function');
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.colors);
-    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.color_names);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.editions);
-    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.default_color);
-  });
-
-  it('jsonSchema includes siblings_excluded and discovery_log', () => {
-    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.siblings_excluded, 'siblings_excluded in schema');
-    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.discovery_log, 'discovery_log in schema');
+    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.siblings_excluded);
+    assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.discovery_log);
   });
 });

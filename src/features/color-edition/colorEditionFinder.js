@@ -116,8 +116,17 @@ export async function runColorEditionFinder({
   const previousRuns = Array.isArray(existing?.runs) ? existing.runs : [];
 
   // Build or use overridden LLM caller
+  // WHY: onPhaseChange fires inside callLlmWithRouting when transitioning
+  // from research to writer phase (jsonStrict off). Maps to onStageAdvance
+  // so the operations tracker shows the Writer stage.
   const callLlm = _callLlmOverride
-    || createColorEditionFinderCallLlm(buildLlmCallDeps({ config, logger }));
+    || createColorEditionFinderCallLlm(buildLlmCallDeps({
+      config,
+      logger,
+      onPhaseChange: onStageAdvance ? (phase) => {
+        if (phase === 'writer') onStageAdvance('Writer');
+      } : undefined,
+    }));
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
   // primary→fallback internally. A single try/catch is sufficient —
@@ -125,13 +134,13 @@ export async function runColorEditionFinder({
   let response;
   try {
     response = await callLlm({ colorNames, colors: allColors, product, previousRuns });
-    onStageAdvance?.(1);
+    onStageAdvance?.('Validate');
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
       error: err.message,
     });
-    return { colors: [], editions: {}, default_color: '', fallbackUsed: false };
+    return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections: [{ reason_code: 'llm_error', message: err.message }] };
   }
 
   const colors = Array.isArray(response?.colors) ? response.colors : [];

@@ -66,13 +66,13 @@
 
     { "canonical": "nits", "label": "Nits",             "synonyms": ["nit", "cd/m\u00b2", "cd/m2", "candelas per square meter"], "conversions": [] },
     { "canonical": "ppi",  "label": "Pixels per Inch",  "synonyms": ["pixels per inch", "PPI"],                                  "conversions": [] },
-    { "canonical": "dpi",  "label": "Dots per Inch",    "synonyms": ["dots per inch", "DPI"],                                    "conversions": [] },
+    { "canonical": "dpi",  "label": "Dots per Inch",    "synonyms": ["dots per inch", "DPI"],                                    "conversions": [{ "from": "cpi", "factor": 1 }] },
     { "canonical": "px",   "label": "Pixels",           "synonyms": ["pixel", "pixels"],                                         "conversions": [{ "from": "MP", "factor": 1000000 }] },
     { "canonical": "MP",   "label": "Megapixels",       "synonyms": ["megapixel", "megapixels", "mpx"],                          "conversions": [{ "from": "px", "factor": 0.000001 }] },
 
     { "canonical": "ips", "label": "Inches per Second", "synonyms": ["inches per second", "IPS"],                        "conversions": [] },
     { "canonical": "G",   "label": "G-force",           "synonyms": ["g-force", "gees", "gravitational acceleration"],    "conversions": [] },
-    { "canonical": "cpi", "label": "Counts per Inch",   "synonyms": ["counts per inch", "CPI"],                           "conversions": [] },
+    { "canonical": "cpi", "label": "Counts per Inch",   "synonyms": ["counts per inch", "CPI"],                           "conversions": [{ "from": "dpi", "factor": 1 }] },
 
     { "canonical": "dB",     "label": "Decibels",                       "synonyms": ["decibel", "decibels"],                                 "conversions": [] },
     { "canonical": "dBA",    "label": "A-weighted Decibels",            "synonyms": ["dB(A)", "dB-A", "a-weighted decibels"],                 "conversions": [] },

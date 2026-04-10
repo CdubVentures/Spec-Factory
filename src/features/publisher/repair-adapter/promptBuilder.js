@@ -88,7 +88,6 @@ export function buildFieldContractBlock(fieldKey, fieldRule, knownValues) {
   const policy = knownValues?.policy || e.policy;
   if (policy) enumParts.push(`Enum: ${policy}`);
   if (knownValues?.values) enumParts.push(`${knownValues.values.length} known values`);
-  if (e.match?.strategy) enumParts.push(`Match: ${e.match.strategy}`);
   if (e.match?.format_hint) enumParts.push(`Format: ${e.match.format_hint}`);
   if (enumParts.length > 0) lines.push(`  ${enumParts.join(' | ')}`);
 
@@ -196,13 +195,12 @@ function buildEnumPrompt(rejection, ctx) {
 
   const valueLabel = isClosed ? 'Registered' : 'Known';
   const policyLabel = isClosed ? 'closed' : 'open_prefer_known';
-  const matchStrategy = ctx.fieldRule?.enum?.match?.strategy || 'exact';
   const formatHint = ctx.fieldRule?.enum?.match?.format_hint || null;
   const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
 
   const userMessage = `${contractBlock}
 
-The field '${ctx.fieldKey}' has enum policy '${policyLabel}' (match: ${matchStrategy}).
+The field '${ctx.fieldKey}' has enum policy '${policyLabel}'.
 The following values are not in the ${valueLabel.toLowerCase()} vocabulary:
   Unknown: ${JSON.stringify(unknownValues)}
 

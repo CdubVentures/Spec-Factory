@@ -34,7 +34,6 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   // WHY: consistencyMode overrides 'open' → 'open_prefer_known' so unknown values
   // trigger P2 LLM prompt for vocabulary normalization. No new LLM calls — existing P2 flow.
   if (consistencyMode && enumPolicy === 'open' && enumValues?.length > 0) enumPolicy = 'open_prefer_known';
-  const matchStrategy = fieldRule?.enum?.match?.strategy || 'exact';
   const formatHint = fieldRule?.enum?.match?.format_hint || null;
   const blockPublishWhenUnk = fieldRule?.priority?.block_publish_when_unk || false;
   const unknownToken = fieldRule?.contract?.unknown_token || 'unk';
@@ -59,15 +58,33 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   }
 
   // Step 2: Unit verification (BEFORE type coercion — needs unit suffix still in string)
+  // WHY: For list-shaped fields, unit check runs per-element so each element gets
+  // synonym resolution and conversion (e.g., "1 kHz" → 1000 for Hz fields).
   if (unit) {
-    const unitResult = checkUnit(current, unit, appDb);
-    if (!unitResult.pass) {
-      rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
-      return result(current, unit || null, repairs, rejections, null, null);
-    }
-    if (unitResult.value !== current) {
-      repairs.push({ step: 'unit', before: current, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
-      current = unitResult.value;
+    if (shape === 'list' && Array.isArray(current)) {
+      const checked = [];
+      for (const el of current) {
+        const unitResult = checkUnit(el, unit, appDb);
+        if (!unitResult.pass) {
+          rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
+          return result(current, unit || null, repairs, rejections, null, null);
+        }
+        if (unitResult.value !== el) {
+          repairs.push({ step: 'unit', before: el, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
+        }
+        checked.push(unitResult.value !== undefined ? unitResult.value : el);
+      }
+      current = checked;
+    } else {
+      const unitResult = checkUnit(current, unit, appDb);
+      if (!unitResult.pass) {
+        rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
+        return result(current, unit || null, repairs, rejections, null, null);
+      }
+      if (unitResult.value !== current) {
+        repairs.push({ step: 'unit', before: current, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
+        current = unitResult.value;
+      }
     }
   }
 
@@ -146,7 +163,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
 
   // Step 8: Enum check
   if (enumPolicy && enumValues) {
-    const enumResult = checkEnum(current, enumPolicy, enumValues, matchStrategy);
+    const enumResult = checkEnum(current, enumPolicy, enumValues);
     if (enumResult.repaired !== undefined) {
       repairs.push({ step: 'enum_alias', before: current, after: enumResult.repaired, rule: 'alias_resolve' });
       current = enumResult.repaired;

@@ -88,6 +88,11 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     [resolved?.effectiveFallbackModel, registry],
   );
 
+  const writerModelCapabilities = useMemo(
+    () => resolveCapabilities(resolved?.effectiveWriterModel),
+    [resolved?.effectiveWriterModel, registry],
+  );
+
   const phaseTokenWarnings = useMemo(() => {
     if (!overrideKey || !resolved) return [];
     const tokenCap = phaseOverrides[overrideKey]?.maxOutputTokens;
@@ -121,6 +126,17 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           onChange={(v) => updateOverrideField('disableLimits', v)}
         />
       </SettingRow>
+      <SettingRow label="JSON Strict Mode" tip="When ON (default), one LLM call with strict JSON schema. When OFF, two-phase: free-form research then a writer model formats the JSON.">
+        <SettingToggle
+          checked={resolved.jsonStrict}
+          onChange={(v) => updateOverrideField('jsonStrict', v)}
+        />
+      </SettingRow>
+      {!resolved.jsonStrict && (
+        <div className="sf-text-caption sf-text-muted px-1 -mt-1">
+          Research uses the primary model freely. The fallback model formats the JSON output.
+        </div>
+      )}
       <SettingRow label="Max Output Tokens" tip="Maximum output tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.maxOutputTokens == null && !resolved.disableLimits && <GlobalDefaultIcon />}
@@ -259,7 +275,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       )}
     </SettingGroupBlock>
 
-    {/* ── Fallback (mirrors Base Model panel) ── */}
+    {/* ── Fallback (error recovery — independent of writer) ── */}
     <SettingGroupBlock title="Fallback" collapsible storageKey={`sf:llm-phase:${phaseId}:fallback`}>
       <SettingRow label="Model" tip="Fallback model when the primary fails. Leave on default to inherit global fallback.">
         <div className="flex items-center gap-1.5">
@@ -328,6 +344,71 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         </SettingRow>
       )}
     </SettingGroupBlock>
+
+    {/* ── Writer Model (Phase 2 formatter — only visible when JSON Strict is OFF) ── */}
+    {!resolved.jsonStrict && (
+      <SettingGroupBlock title="Writer Model" collapsible storageKey={`sf:llm-phase:${phaseId}:writer`}>
+        <SettingRow label="Model" tip="Model used to format research output into the JSON schema. Leave empty to use the primary model.">
+          <div className="flex items-center gap-1.5">
+            {!phaseOverrides[overrideKey]?.writerModel && <GlobalDefaultIcon />}
+            <ModelSelectDropdown
+              options={allOptions}
+              className={inputCls}
+              value={phaseOverrides[overrideKey]?.writerModel ?? ''}
+              onChange={(v) => updateOverrideField('writerModel', v)}
+              disabled={resolved.writerUseReasoning}
+              allowNone
+              noneLabel={`↩ ${parseModelKey(resolved.baseModel).modelId} (primary)`}
+              noneModelId={resolved.baseModel}
+            />
+          </div>
+        </SettingRow>
+        <SettingRow label="Use Reasoning" tip="Enable reasoning model for the writer.">
+          <SettingToggle
+            checked={resolved.writerUseReasoning}
+            onChange={(v) => updateOverrideField('writerUseReasoning', v)}
+          />
+        </SettingRow>
+        {resolved.writerUseReasoning && (
+          <SettingRow label="Reasoning Model" tip="Reasoning model for the writer.">
+            <div className="flex items-center gap-1.5">
+              {!phaseOverrides[overrideKey]?.writerReasoningModel && <GlobalDefaultIcon />}
+              <ModelSelectDropdown
+                options={reasoningOptions}
+                className={inputCls}
+                value={phaseOverrides[overrideKey]?.writerReasoningModel ?? ''}
+                onChange={(v) => updateOverrideField('writerReasoningModel', v)}
+                allowNone
+                noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId || '(none)'}`}
+                noneModelId={globalDraft.llmModelReasoning}
+              />
+            </div>
+          </SettingRow>
+        )}
+        {writerModelCapabilities.thinking && (
+          <SettingRow label="Thinking" tip="Send thinking flag to the writer model.">
+            <SettingToggle
+              checked={phaseOverrides[overrideKey]?.writerThinking ?? false}
+              onChange={(v) => updateOverrideField('writerThinking', v)}
+            />
+          </SettingRow>
+        )}
+        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && writerModelCapabilities.thinkingEffortOptions.length > 1 && (
+          <SettingRow label="Thinking Effort" tip="Reasoning effort for the writer model.">
+            <select
+              className={inputCls}
+              value={phaseOverrides[overrideKey]?.writerThinkingEffort ?? 'medium'}
+              onChange={(e) => updateOverrideField('writerThinkingEffort', e.target.value)}
+            >
+              {writerModelCapabilities.thinkingEffortOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </SettingRow>
+        )}
+      </SettingGroupBlock>
+    )}
+
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
         <div className="space-y-3">

@@ -302,7 +302,7 @@
 
   <div class="field-card sev-ok" data-severity="ok" data-key="release_date"><div class="field-header"><span class="field-key">release_date</span><span class="badge badge-type">date</span><span class="badge badge-shape">scalar</span><span class="badge badge-group">General</span><span class="badge badge-exp">expected</span><span class="badge badge-ok">OK</span></div><table class="props-table"><tr><th>Label</th><td>Release Date</td><th>Difficulty</th><td>medium (effort: 4)</td></tr><tr><th>Enum</th><td>open</td><th>Evidence</th><td>required, min 1 ref</td></tr></table></div>
 
-  <div class="field-card sev-medium" data-severity="medium" data-key="discontinued"><div class="field-header"><span class="field-key">discontinued</span><span class="badge badge-type">boolean</span><span class="badge badge-shape">scalar</span><span class="badge badge-group">General</span><span class="badge badge-exp">expected</span><span class="badge badge-medium">MEDIUM</span></div><table class="props-table"><tr><th>Label</th><td>Discontinued</td><th>Enum</th><td>closed (yes_no)</td></tr></table><div class="issue-box issue-medium">Boolean field uses <code>input_control: "text"</code> instead of <code>"select"</code>.</div></div>
+  <div class="field-card sev-medium" data-severity="medium" data-key="discontinued"><div class="field-header"><span class="field-key">discontinued</span><span class="badge badge-type">boolean</span><span class="badge badge-shape">scalar</span><span class="badge badge-group">General</span><span class="badge badge-exp">expected</span><span class="badge badge-medium">MEDIUM</span></div><table class="props-table"><tr><th>Label</th><td>Discontinued</td><th>Enum</th><td>closed (yes_no)</td></tr></table><div class="issue-box" style="opacity:0.5">RESOLVED: <code>input_control</code> is now derived at render time by <code>deriveInputControl()</code>.</div></div>
 
   <div class="field-card sev-ok" data-severity="ok" data-key="sku"><div class="field-header"><span class="field-key">sku</span><span class="badge badge-type">string</span><span class="badge badge-shape">scalar</span><span class="badge badge-req">identity</span><span class="badge badge-ok">OK</span></div><table class="props-table"><tr><th>Label</th><td>SKU / Part #</td><th>Required</th><td>identity (block_publish_when_unk)</td></tr></table></div>
 
@@ -314,7 +314,7 @@
 
   <div class="field-card sev-ok" data-severity="ok" data-key="lighting"><div class="field-header"><span class="field-key">lighting</span><span class="badge badge-type">string</span><span class="badge badge-shape">list</span><span class="badge badge-ok">OK</span></div><table class="props-table"><tr><th>Enum</th><td>open_prefer_known, 17 values</td></tr></table></div>
 
-  <div class="field-card sev-medium" data-severity="medium" data-key="rgb"><div class="field-header"><span class="field-key">rgb</span><span class="badge badge-type">boolean</span><span class="badge badge-shape">scalar</span><span class="badge badge-medium">MEDIUM</span></div><div class="issue-box issue-medium">Boolean with wrong input_control. Also potentially derivable from <code>lighting</code> field (any "rgb" zone implies rgb=yes).</div></div>
+  <div class="field-card sev-medium" data-severity="medium" data-key="rgb"><div class="field-header"><span class="field-key">rgb</span><span class="badge badge-type">boolean</span><span class="badge badge-shape">scalar</span><span class="badge badge-medium">MEDIUM</span></div><div class="issue-box issue-medium"><s>Boolean with wrong input_control</s> (RESOLVED: derived at render time). Also potentially derivable from <code>lighting</code> field (any "rgb" zone implies rgb=yes).</div></div>
 
   <div class="field-card sev-ok" data-severity="ok" data-key="editions"><div class="field-header"><span class="field-key">editions</span><span class="badge badge-type">string</span><span class="badge badge-shape">list</span><span class="badge badge-ok">OK</span></div></div>
 
@@ -501,8 +501,8 @@
   <h2 id="systemic">Systemic Issues</h2>
 
   <div class="field-card sev-medium">
-    <h3 style="margin-top:0">19 Boolean Fields Using Wrong Input Control</h3>
-    <p style="font-size:13px">All boolean fields use <code>input_control: "text"</code> instead of <code>"select"</code>:</p>
+    <h3 style="margin-top:0"><s>19 Boolean Fields Using Wrong Input Control</s> — RESOLVED</h3>
+    <p style="font-size:13px"><code>input_control</code> is now derived at render time by <code>deriveInputControl()</code>. This issue no longer applies. Previously:</p>
     <div style="columns:3;font-size:12px;font-family:monospace;margin-top:8px">
       <div>adjustable_scroll_wheel</div><div>adjustable_weight</div><div>bluetooth</div>
       <div>discontinued</div><div>flawless_sensor</div><div>hardware_acceleration</div>
@@ -548,7 +548,7 @@
     <tr><td>7</td><td><span class="badge badge-high">HIGH</span></td><td>Fix switch_life_span: string to number with unit</td><td>1 field + DB</td></tr>
     <tr><td>8</td><td><span class="badge badge-high">HIGH</span></td><td>Change encoder_type enum: open to open_prefer_known</td><td>1 field</td></tr>
     <tr><td>9</td><td><span class="badge badge-high">HIGH</span></td><td>Add aliases to dpi (cpi), ips (tracking speed), polling_rate (report rate)</td><td>3+ fields</td></tr>
-    <tr><td>10</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Change input_control to "select" for 19 boolean fields</td><td>19 fields</td></tr>
+    <tr><td>10</td><td><span class="badge badge-medium">MEDIUM</span></td><td><s>Change input_control to "select" for 19 boolean fields</s> — RESOLVED (derived at render time)</td><td>19 fields</td></tr>
     <tr><td>11</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Remove redundant unk/unspecified from mcu, sensor_type, switch_type enums</td><td>3 enums</td></tr>
     <tr><td>12</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Fix colors group casing: "general" to "General"</td><td>1 field</td></tr>
     <tr><td>13</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Add sensor_date &le; release_date to cross-validation rules</td><td>1 rule</td></tr>

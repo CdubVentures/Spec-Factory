@@ -117,53 +117,30 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const urlsCheckedStr = known.urlsAlreadyChecked.length > 0 ? JSON.stringify(known.urlsAlreadyChecked) : '[]';
   const domainsCheckedStr = known.domainsAlreadyChecked.length > 0 ? JSON.stringify(known.domainsAlreadyChecked) : '[]';
 
-  return `You are a product researcher. Find every official color and every official edition for this exact product. Be exhaustive — check many sources and do not stop early.
+  const knownSection = (known.knownColors.length > 0 || known.knownEditions.length > 0)
+    ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\n- urls already checked: ${urlsCheckedStr}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
+    : '';
 
-Target product: ${brand} ${model}${variant ? ` (variant: ${variant})` : ''}
+  return `Find every official color and every official edition for: ${brand} ${model}
+${knownSection}
+Research thoroughly. Check the manufacturer site, major retailers, press releases, and review sites. Look for standard colorways, limited editions, collaboration editions (game tie-ins, franchise partnerships), and regional exclusives. Do not stop after finding the first few — keep searching until you are confident you have found them all.
 
-Known from prior runs (re-verify each, then find MORE):
-- known_colors: ${knownColorsStr}
-- known_color_names: ${knownColorNamesStr}
-- known_editions: ${knownEditionsStr}
-- urls_already_checked: ${urlsCheckedStr}
+Only include results for the exact "${brand} ${model}" product. If you encounter sibling models with different names, exclude them and list them in siblings_excluded. Only list siblings you actually found — do not invent them.
 
-IDENTITY: Only return results for "${brand} ${model}". Exclude sibling models that have a different name (different suffixes like "Air", "Pro", etc. are different products). Only list a sibling in siblings_excluded if you actually encountered it during research — do not guess or invent siblings.
+Color output rules:
+- Normalize to registered color atoms: ${palette}
+- Lowercase, modifier-first ("light-blue" not "blue-light"), normalize "grey" to "gray"
+- Multi-color shells: atoms joined by "+" in dominant order ("black+red")
+- colors[0] must be the default color shown on the official product page
+- Map marketing names in color_names (e.g. "light-blue": "Glacier Blue")
 
-HOW TO SEARCH — do all of these:
-1. Open the official ${brand} product page for "${model}". Look at the color picker / variant selector on the page. List every color swatch shown.
-2. Open the ${brand} product FAMILY or CATEGORY page that lists all "${model}" variants — manufacturers often list special editions here that don't appear on the base product page.
-3. Search Google: "${brand} ${model}" — check the top results for color and edition info.
-4. Search Google: "${brand} ${model} all colors available" — retailers and review sites often list colors.
-5. Search Google: "${brand} ${model} special edition" OR "limited edition" OR "collaboration"
-6. Search Google: "${brand} ${model} Call of Duty" OR "Witcher" OR "Halo" OR "edition" — many peripherals have game tie-in editions with unique colors.
-7. Check Amazon, Best Buy, Newegg for "${brand} ${model}" — retailers list ALL colorways and special editions as separate listings. Count them.
-8. Search "${brand} ${model} announcement" OR "press release" OR "launch" for new colorways and editions.
-9. Search "${brand} ${model} new color 2025" and "${brand} ${model} new color 2024" for recent additions.
-10. If you found any editions, search each edition name individually to confirm its colors.
+Edition output rules:
+- An edition is a named special/limited/collaboration version sold by the manufacturer
+- Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
+- Each edition needs display_name (official name) and colors array
+- Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
-COMPLETENESS CHECK: Before returning, ask yourself: "Did I find every color shown on the official page? Did I check retailers for editions? Did I search for game/brand collaborations?" If not, search more.
-
-COLOR FORMAT:
-- Lowercase atoms only. Multi-color shells joined by "+" in dominant order (e.g. "black+red").
-- Modifier-first: "light-blue" not "blue-light". Normalize "grey" to "gray".
-- Translate marketing names to the nearest registered color atom by visual/hex similarity.
-- colors[0] = the default/hero color on the official product page.
-- Record the manufacturer's marketing name in color_names (e.g. "light-blue": "Glacier Blue").
-- Registered color atoms: ${palette}
-
-EDITION FORMAT:
-- An edition is an officially named special/limited/collaboration/franchise version of this exact product sold by the manufacturer or authorized retailers.
-- Slugs: kebab-case lowercase (e.g. "witcher-3-10th-anniversary-edition", "cod-bo6-edition").
-- Each edition has a display_name (official name) and its own colors array.
-- NOT an edition: plain color variants without a special name, bundles, refurbs, aftermarket skins.
-
-RETURN JSON:
-- "colors": array of ALL normalized colors (first = default)
-- "default_color": must equal colors[0]
-- "color_names": { color → marketing name } (omit when the atom IS the name)
-- "editions": { slug → { "display_name": "...", "colors": [...] } } or {} if none
-- "siblings_excluded": sibling model names you actually found and excluded (do NOT invent these)
-- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
+Return JSON with: colors, default_color, color_names, editions, siblings_excluded, discovery_log (with confirmed_from_known, added_new, rejected_from_known, urls_checked, queries_run arrays).`;
 }
 
 export const COLOR_EDITION_FINDER_SPEC = {

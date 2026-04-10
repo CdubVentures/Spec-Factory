@@ -5,17 +5,13 @@ import {
   deriveRuntimeLlmModelOptions,
   parseBoundedNumber,
   RUNTIME_NUMBER_BOUNDS,
-  toRuntimeDraft,
   type NumberBound,
   type RuntimeDraft,
 } from '../../pipeline-settings/index.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
-  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
 } from '../../../stores/settingsManifest.ts';
-import { RuntimeFlowHeaderControls } from '../../pipeline-settings/components/RuntimeFlowHeaderControls.tsx';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.generated.ts';
@@ -49,11 +45,7 @@ const LlmPhaseSection = lazy(async () => {
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
 export function LlmConfigPage() {
-  const runtimeAutoSaveEnabled = useUiStore((state) => state.runtimeAutoSaveEnabled);
-  const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
-
-  const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
 
   const [activePhase, setActivePhase] = usePersistedTab<LlmPhaseId>(
     'llm-config:active-phase',
@@ -66,15 +58,13 @@ export function LlmConfigPage() {
     queryFn: () => api.get<RuntimeSettingsLlmConfigResponse>('/indexing/llm-config'),
   });
 
-  // WHY: LLM config now uses the dedicated LlmPolicy authority instead of
-  // useRuntimeSettingsEditorAdapter. The authority auto-saves to PUT /llm-policy.
+  // WHY: LLM config uses the dedicated LlmPolicy authority which persists
+  // immediately on every change — no debounce, no save button needed.
   const llmAuthority = useLlmPolicyAuthority({
-    autoSaveEnabled: runtimeAutoSaveEnabled,
     defaultPolicy: DEFAULT_LLM_POLICY,
   });
 
   const { policy } = llmAuthority;
-  const saveNow = llmAuthority.saveNow;
 
   // WHY: Adapter layer — child sections still receive flat-key RuntimeDraft interface.
   // flattenLlmPolicy converts the composite to flat keys for backward compat.
@@ -84,7 +74,6 @@ export function LlmConfigPage() {
   );
 
   const runtimeSettingsLoading = llmAuthority.isLoading;
-  const runtimeSettingsSaving = llmAuthority.isSaving;
   const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
 
   const llmModelOptions = useMemo(() => deriveRuntimeLlmModelOptions({
@@ -251,8 +240,6 @@ export function LlmConfigPage() {
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';
 
-  const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
-
   function resetToDefaults() {
     if (typeof window !== 'undefined') {
       const confirmed = window.confirm(
@@ -278,6 +265,7 @@ export function LlmConfigPage() {
       apiKey: resolvedKeys[provider.id] || provider.apiKey,
     }));
 
+    // WHY: updatePolicy persists immediately — no separate saveNow needed.
     llmAuthority.updatePolicy({
       ...DEFAULT_LLM_POLICY,
       providerRegistry: preservedRegistry,
@@ -288,19 +276,17 @@ export function LlmConfigPage() {
         openai: policy.apiKeys.openai || resolvedKeys['default-openai'] || '',
       },
     });
-    setTimeout(() => saveNow(), 0);
   }
 
   const headerActions = (
-    <RuntimeFlowHeaderControls
-      runtimeSettingsReady={runtimeSettingsReady}
-      runtimeSettingsSaving={runtimeSettingsSaving}
-      runtimeAutoSaveEnabled={runtimeAutoSaveEnabled}
-      runtimeAutoSaveDelaySeconds={runtimeAutoSaveDelaySeconds}
-      onSaveNow={saveNow}
-      onToggleRuntimeAutoSaveEnabled={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
-      onResetToDefaults={resetToDefaults}
-    />
+    <button
+      onClick={resetToDefaults}
+      disabled={!runtimeSettingsReady}
+      className="rounded sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
+      title="Reset all LLM settings to default values."
+    >
+      Reset
+    </button>
   );
 
   let activePanel = null;

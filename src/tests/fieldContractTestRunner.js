@@ -220,9 +220,6 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
       knobs.push({ knob: 'enum.policy', value: enumPolicy, step: 8, action: 'info', code: null });
     }
   }
-  if (e.match?.strategy) {
-    knobs.push({ knob: 'enum.match.strategy', value: e.match.strategy, step: 8, action: e.match.strategy === 'alias' ? 'deterministic' : 'info', code: null });
-  }
   if (e.match?.format_hint) knobs.push({ knob: 'enum.match.format_hint', value: e.match.format_hint, step: 5, action: 'reject+llm', code: 'format_mismatch', prompt: 'P4' });
   if (knownValues?.values?.length > 0) {
     knobs.push({ knob: 'enum.known_values', value: `${knownValues.values.length} values`, step: 8, action: 'info', code: null });

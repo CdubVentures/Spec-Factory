@@ -31,43 +31,6 @@ export function KeyHintsSection({
         persistKey={`studio:keyNavigator:section:uiDisplay:${category}`}
         titleTooltip={STUDIO_TIPS.key_section_ui}
       >
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className={labelCls}>
-              Input Control
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.input_control}
-              />
-            </div>
-            <select
-              className={`${selectCls} w-full`}
-              value={strN(currentRule, "ui.input_control", "text")}
-              onChange={(e) =>
-                updateField(
-                  selectedKey,
-                  "ui.input_control",
-                  e.target.value,
-                )
-              }
-            >
-              <option value="text">text</option>
-              <option value="number">number</option>
-              <option value="select">select</option>
-              <option value="multi_select">multi_select</option>
-              <option value="component_picker">component_picker</option>
-              <option value="checkbox">checkbox</option>
-              <option value="token_list">token_list</option>
-              <option value="text_list">text_list</option>
-              <option value="date">date</option>
-              <option value="url">url</option>
-            </select>
-          </div>
-        </div>
         <div>
           <div className={`${labelCls} flex items-center`}>
             <span>

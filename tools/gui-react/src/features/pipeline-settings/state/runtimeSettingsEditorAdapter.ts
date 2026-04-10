@@ -1,3 +1,7 @@
+// WHY: Legacy adapter — no runtime consumers. Retained for backward-compatible
+// export contract (settingsSurfaceContracts.test.js asserts the export exists).
+// The authority now persists immediately; this adapter is not used by any page.
+
 import {
   useCallback,
   useEffect,
@@ -29,7 +33,6 @@ interface RuntimeSettingsEditorAdapterOptions<TValues extends object> {
     bootstrapValues: TValues,
   ) => TValues;
   valuesEqual?: (a: TValues, b: TValues) => boolean;
-  autoSaveEnabled: boolean;
 }
 
 interface RuntimeSettingsEditorAdapterResult<TValues extends object> {
@@ -56,7 +59,6 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
   payloadFromValues,
   normalizeSnapshot,
   valuesEqual,
-  autoSaveEnabled,
 }: RuntimeSettingsEditorAdapterOptions<TValues>): RuntimeSettingsEditorAdapterResult<TValues> {
   const [values, setValues] = useState<TValues>(bootstrapValues);
   const [dirty, setDirtyState] = useState(false);
@@ -64,18 +66,10 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
     kind: 'idle',
     message: '',
   });
-  // WHY: Tracks whether the first server response has been applied to the
-  // editor. Auto-save is blocked until this is true, preventing the race where
-  // a user edits a field before hydration completes and the auto-save sends
-  // defaults instead of the user's previously saved settings.
-  const initialHydrationAppliedRef = useRef(false);
 
   const isValuesEqual = valuesEqual || defaultValuesEqual;
-  const payload = useMemo(() => payloadFromValues(values), [payloadFromValues, values]);
+  const _payload = useMemo(() => payloadFromValues(values), [payloadFromValues, values]);
 
-  // WHY: Ref to payloadFromValues so updateKey can push to the Zustand store
-  // synchronously (not via a deferred effect). This makes the store SSOT — every
-  // consumer sees the new value immediately, not on the next render cycle.
   const payloadFromValuesRef = useRef(payloadFromValues);
   payloadFromValuesRef.current = payloadFromValues;
 
@@ -86,10 +80,6 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
     reload,
     saveNow,
   } = useRuntimeSettingsAuthority({
-    payload,
-    dirty,
-    autoSaveEnabled,
-    initialHydrationApplied: initialHydrationAppliedRef.current,
     onPersisted: (result) => {
       if (result.ok) {
         setDirtyState(false);
@@ -122,17 +112,12 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
   }, [bootstrapValues, dirty, isValuesEqual]);
 
   useEffect(() => {
-    // WHY: shouldForceHydration ensures the first server response ALWAYS
-    // applies (even if user set dirty=true prematurely). After initial
-    // hydration, the normal dirty-gate applies: server data only refreshes
-    // when the user has no pending edits.
     const force = shouldForceHydration({
       serverSettings: settings,
       dirty,
-      initialHydrationApplied: initialHydrationAppliedRef.current,
+      initialHydrationApplied: Boolean(settings),
     });
     if (!force) return;
-    initialHydrationAppliedRef.current = true;
     hydrateFromSnapshot(settings);
   }, [dirty, hydrateFromSnapshot, settings]);
 
@@ -143,15 +128,13 @@ export function useRuntimeSettingsEditorAdapter<TValues extends object>({
   const updateKey = useCallback(<K extends keyof TValues>(key: K, value: TValues[K]) => {
     setValues((previous) => {
       const next = { ...previous, [key]: value };
-      // WHY: Push to the Zustand store synchronously so all consumers (IndexingPage,
-      // mutations, etc.) see the new value immediately — not after a deferred effect.
-      // The store is the SSOT; local state is the view-specific draft shape.
       const nextPayload = payloadFromValuesRef.current(next);
       useRuntimeSettingsValueStore.getState().replaceValues(nextPayload);
       return next;
     });
     setDirtyState(true);
-  }, []);
+    saveNow();
+  }, [saveNow]);
 
   return {
     values,

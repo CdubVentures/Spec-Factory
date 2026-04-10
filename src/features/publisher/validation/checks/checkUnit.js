@@ -2,9 +2,10 @@ import { resolveUnit } from '../../../../field-rules/unitRegistry.js';
 
 // WHY: regex captures number + optional unit suffix.
 // Handles simple ("42g"), spaced ("42 g"), multi-word ("110 pixels per inch"),
-// hyphenated ("60 gram-force"), slash ("500 cd/m2"), and symbol suffixes ("100 °").
-// First suffix char must be a letter/symbol (not digit) to avoid ambiguity.
-const UNIT_REGEX = /^(-?\d+(?:\.\d+)?)\s*([a-zA-Z%°\u00b5\u03a9](?:[a-zA-Z0-9 %°\u00b2\u00b3\u00b5\u03a9/()\-]*[a-zA-Z0-9%°\u00b2\u00b3\u00b5\u03a9)])?)?$/;
+// hyphenated ("60 gram-force"), slash ("500 cd/m2"), symbol ("100 °"), and
+// quote-mark inch notation ('49"'). First suffix char must be a letter/symbol
+// (not digit) to avoid ambiguity.
+const UNIT_REGEX = /^(-?\d+(?:\.\d+)?)\s*([a-zA-Z%°"\u00b5\u03a9](?:[a-zA-Z0-9 %°"\u00b2\u00b3\u00b5\u03a9/()\-]*[a-zA-Z0-9%°"\u00b2\u00b3\u00b5\u03a9)])?)?$/;
 
 /**
  * Unit verification (Step 3). Resolves synonyms, converts units via the
@@ -34,7 +35,10 @@ export function checkUnit(value, expectedUnit, appDb) {
 
   const match = value.trim().match(UNIT_REGEX);
   if (!match) {
-    return { pass: true, value };
+    // WHY: fallback for range-formatted values ("1-2 in", "100-200 Hz").
+    // The main regex requires a leading number, so ranges with embedded
+    // separators miss. Try stripping a trailing unit suffix instead.
+    return checkTrailingUnit(value.trim(), expectedUnit, appDb);
   }
 
   const numericPart = Number(match[1]);
@@ -61,4 +65,52 @@ export function checkUnit(value, expectedUnit, appDb) {
     reason: `wrong_unit: expected ${expectedUnit}, detected ${detectedUnit}`,
     detail: { expected: expectedUnit, detected: detectedUnit },
   };
+}
+
+// WHY: handles range-formatted strings ("1-2 in", "100-200 Hz") that the main
+// UNIT_REGEX can't parse. Detects a trailing unit suffix, resolves it, and either
+// strips (same unit) or converts (cross-unit) the numeric prefix.
+// WHY: prefix must start with a digit so pure-text strings like "hello world"
+// don't false-match. Covers "1-2 in", "100-200 Hz", "0.5-1.0 mm".
+const TRAILING_UNIT_REGEX = /^(\d[\d.\-\u2013 ]*?)\s+([a-zA-Z%°"\u00b5\u03a9][a-zA-Z0-9 %°"\u00b2\u00b3\u00b5\u03a9/()\-]*)$/;
+const RANGE_SEP = /[-\u2013]/;
+
+function checkTrailingUnit(value, expectedUnit, appDb) {
+  const trailingMatch = value.match(TRAILING_UNIT_REGEX);
+  if (!trailingMatch) {
+    return { pass: true, value };
+  }
+
+  const prefix = trailingMatch[1].trim();
+  const detectedUnit = trailingMatch[2].trim();
+
+  if (!detectedUnit) {
+    return { pass: true, value };
+  }
+
+  const resolved = resolveUnit(detectedUnit, expectedUnit, appDb);
+  if (!resolved) {
+    return {
+      pass: false,
+      reason: `wrong_unit: expected ${expectedUnit}, detected ${detectedUnit}`,
+      detail: { expected: expectedUnit, detected: detectedUnit },
+    };
+  }
+
+  if (resolved.factor === 1) {
+    return { pass: true, value: prefix, rule: 'strip_same_unit' };
+  }
+
+  // Cross-unit conversion: apply factor to each numeric part in the range
+  const parts = prefix.split(RANGE_SEP);
+  const converted = parts.map(p => {
+    const n = parseFloat(p.trim());
+    return Number.isFinite(n) ? n * resolved.factor : p.trim();
+  });
+  const allNumeric = converted.every(v => typeof v === 'number');
+  if (allNumeric) {
+    return { pass: true, value: converted.join('-'), rule: 'unit_converted' };
+  }
+
+  return { pass: true, value: prefix, rule: 'strip_same_unit' };
 }

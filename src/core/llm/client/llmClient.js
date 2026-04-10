@@ -547,6 +547,9 @@ export async function callLlmProvider({
   reasoningBudget = 0,
   maxTokens = 0,
   timeoutMs = 40_000,
+  // WHY: When true, return raw content string instead of parsed JSON.
+  // Used by two-phase routing (jsonStrict=false) for the research phase.
+  rawTextMode = false,
   // Infrastructure
   costRates,
   usageContext = {},
@@ -805,6 +808,7 @@ export async function callLlmProvider({
       content: first.content,
       responseModel: first.responseModel
     });
+    if (rawTextMode) return first.content;
     const parsed = parseStructuredResult(first.content);
     health.recordSuccess(providerLabel);
     logger?.info?.('llm_call_completed', {
@@ -845,6 +849,7 @@ export async function callLlmProvider({
         responseModel: retry.responseModel,
         retryWithoutSchema: true
       });
+      if (rawTextMode) return retry.content;
       const parsed = parseStructuredResult(retry.content, { fallbackExtraction: true });
       health.recordSuccess(providerLabel);
       logger?.info?.('llm_call_completed', {

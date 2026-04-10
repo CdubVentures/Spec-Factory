@@ -33,7 +33,6 @@ Array of 12 phase entries: `{ id, title, order, description, behaviorNote, isApp
 | rounding | `contract.rounding` | Step 8 — Rounding | Auto-repairs to precision (decimals + mode) |
 | list_rules | `contract.list_rules` | Step 7 — List Rules | Dedupe, sort, min/max items |
 | enum_policy | `enum.policy` | Step 9 — Enum Check | closed/open_prefer_known/open |
-| match_strategy | `enum.match.strategy` | Step 9 — Enum Check | exact (default) or alias (case-insensitive + normalized) |
 | format_hint | `enum.match.format_hint` | Step 6 — Format Check | Custom regex pattern after template registry |
 | parse_template | `parse.template` | Step 1 — Template Dispatch + Step 6 | Routes specialized normalizers, selects format regex |
 | token_map | `parse.token_map` | Step 5 — Normalization | Post-normalization token substitution |

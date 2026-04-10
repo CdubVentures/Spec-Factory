@@ -100,48 +100,6 @@ function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void 
   }
 }
 
-function applyEnumSourceCoupling(
-  rule: Record<string, unknown>,
-  value: unknown,
-): void {
-  const source = String(value || '');
-  if (source.startsWith('component_db.')) {
-    setNestedRuleValue(rule, 'ui.input_control', 'component_picker');
-    return;
-  }
-  if (source === 'yes_no') {
-    setNestedRuleValue(rule, 'ui.input_control', 'text');
-    return;
-  }
-  if (source.startsWith('data_lists.')) {
-    const policy = String(
-      (rule.enum as Record<string, unknown>)?.policy || rule.enum_policy || 'open',
-    );
-    setNestedRuleValue(
-      rule,
-      'ui.input_control',
-      policy === 'closed' ? 'select' : 'text',
-    );
-  }
-}
-
-function applyEnumPolicyCoupling(
-  rule: Record<string, unknown>,
-  value: unknown,
-): void {
-  const policy = String(value || 'open');
-  const source = String(
-    (rule.enum as Record<string, unknown>)?.source || rule.enum_source || '',
-  );
-  if (source.startsWith('data_lists.') && policy === 'closed') {
-    setNestedRuleValue(rule, 'ui.input_control', 'select');
-    return;
-  }
-  if (source.startsWith('component_db.')) {
-    setNestedRuleValue(rule, 'ui.input_control', 'component_picker');
-  }
-}
-
 function applyPrioritySignalCoupling(rule: Record<string, unknown>): void {
   const aiAssist = (rule.ai_assist || {}) as Record<string, unknown>;
   const existingNote = String(aiAssist.reasoning_note || '');
@@ -213,14 +171,6 @@ export function applyStudioRuleCommand({
 
   if (normalizedPath === 'contract.type') {
     applyTypeCoupling(rule, command.value);
-  }
-
-  if (normalizedPath === 'enum.source') {
-    applyEnumSourceCoupling(rule, command.value);
-  }
-
-  if (normalizedPath === 'enum.policy') {
-    applyEnumPolicyCoupling(rule, command.value);
   }
 
   if (PRIORITY_SIGNAL_PATHS.has(normalizedPath)) {

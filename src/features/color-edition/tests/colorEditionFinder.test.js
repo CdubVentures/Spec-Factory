@@ -307,8 +307,8 @@ describe('runColorEditionFinder', () => {
 
     const json = readColorEdition({ productId: 'mouse-history', productRoot: PRODUCT_ROOT });
     assert.equal(json.runs.length, 2);
-    // v2: second run's prompt should reference known_colors from first run
-    assert.ok(json.runs[1].prompt.system.includes('known_colors'), 'prompt includes known_colors input');
+    // v2: second run's prompt should reference previous findings
+    assert.ok(json.runs[1].prompt.system.includes('Previous findings') || json.runs[1].prompt.system.includes('colors found so far'), 'prompt includes previous run context');
     assert.deepEqual(json.selected.colors, ['black', 'red']);
   });
 

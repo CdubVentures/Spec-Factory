@@ -3,6 +3,7 @@ import type { ComponentSource } from "../../../../types/studio.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
 import { strN, numN } from "../../state/nestedValueHelpers.ts";
+import { deriveInputControl } from "../../state/deriveInputControl.ts";
 import { parseBoundedFloatInput } from "../../state/numericInputHelpers.ts";
 import {
   STUDIO_COMPONENT_MATCH_DEFAULTS,
@@ -80,16 +81,6 @@ export function KeyComponentsSection({
                   "enum.policy",
                   "open_prefer_known",
                 );
-                updateField(
-                  selectedKey,
-                  "enum.match.strategy",
-                  "alias",
-                );
-                updateField(
-                  selectedKey,
-                  "ui.input_control",
-                  "component_picker",
-                );
               }
             }}
           >
@@ -112,7 +103,13 @@ export function KeyComponentsSection({
                   </span>
                   {" | "}Input:{" "}
                   <span className="font-mono">
-                    {strN(currentRule, "ui.input_control")}
+                    {deriveInputControl({
+                      type: strN(currentRule, 'contract.type') || null,
+                      shape: strN(currentRule, 'contract.shape') || null,
+                      enumSource: strN(currentRule, 'enum.source') || null,
+                      enumPolicy: strN(currentRule, 'enum.policy') || null,
+                      componentSource: strN(currentRule, 'component.source') || null,
+                    })}
                   </span>
                 </span>
               </div>

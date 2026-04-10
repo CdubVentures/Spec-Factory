@@ -2235,9 +2235,7 @@
       "display_name": "Actuation Adjustment Step",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2332,7 +2330,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Actuation Adjustment Step",
         "order": 18,
         "placeholder": "unk",
@@ -2386,9 +2383,7 @@
       "display_name": "Actuation Distance",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2483,7 +2478,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Actuation Distance",
         "order": 15,
         "placeholder": "unk",
@@ -2538,9 +2532,7 @@
       "display_name": "Actuation Force",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2635,7 +2627,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Actuation Force",
         "order": 14,
         "placeholder": "unk",
@@ -2691,9 +2682,7 @@
       "display_name": "Adjustable Actuation Max",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2788,7 +2777,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Adjustable Actuation Max",
         "order": 17,
         "placeholder": "unk",
@@ -2843,9 +2831,7 @@
       "display_name": "Adjustable Actuation Min",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -2940,7 +2926,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Adjustable Actuation Min",
         "order": 16,
         "placeholder": "unk",
@@ -2986,9 +2971,7 @@
       "display_name": "Adjustable Feet",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3080,7 +3063,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Adjustable Feet",
         "order": 73,
         "placeholder": "unk",
@@ -3125,9 +3107,7 @@
       "display_name": "Adjustable Input Granularity",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3219,7 +3199,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Adjustable Input Granularity",
         "order": 50,
         "placeholder": "unk",
@@ -3265,9 +3244,7 @@
       "display_name": "Analog Input",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3360,7 +3337,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Analog Input",
         "order": 51,
         "placeholder": "unk",
@@ -3406,9 +3382,7 @@
       "display_name": "Anti-Ghosting",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3501,7 +3475,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Anti-Ghosting",
         "order": 46,
         "placeholder": "unk",
@@ -3546,9 +3519,7 @@
       "display_name": "Arrow Keys",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3641,7 +3612,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Arrow Keys",
         "order": 26,
         "placeholder": "unk",
@@ -3686,9 +3656,7 @@
       "display_name": "Backlighting",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3781,7 +3749,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Backlighting",
         "order": 51,
         "placeholder": "unk",
@@ -3826,9 +3793,7 @@
       "display_name": "Base Model",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -3920,7 +3885,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Base Model",
         "order": 3,
         "placeholder": "unk",
@@ -3972,9 +3936,7 @@
       "display_name": "Battery Capacity",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4068,7 +4030,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Battery Capacity",
         "order": 77,
         "placeholder": "unk",
@@ -4123,9 +4084,7 @@
       "display_name": "Battery Life (Lighting Off)",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4221,7 +4180,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Battery Life (Lighting Off)",
         "order": 78,
         "placeholder": "unk",
@@ -4276,9 +4234,7 @@
       "display_name": "Battery Life (Lighting On)",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4374,7 +4330,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Battery Life (Lighting On)",
         "order": 79,
         "placeholder": "unk",
@@ -4420,9 +4375,7 @@
       "display_name": "Bluetooth Version",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4514,7 +4467,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Bluetooth Version",
         "order": 36,
         "placeholder": "unk",
@@ -4567,9 +4519,7 @@
       "display_name": "Bottom-Out Force",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4664,7 +4614,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Bottom-Out Force",
         "order": 16,
         "placeholder": "unk",
@@ -4711,9 +4660,7 @@
       "display_name": "Brand",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4805,7 +4752,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Brand",
         "order": 1,
         "placeholder": "unk",
@@ -4858,9 +4804,7 @@
       "display_name": "Cable Length",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -4954,7 +4898,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Cable Length",
         "order": 39,
         "placeholder": "unk",
@@ -5000,9 +4943,7 @@
       "display_name": "Cable Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5094,7 +5035,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Cable Type",
         "order": 38,
         "placeholder": "unk",
@@ -5139,9 +5079,7 @@
       "display_name": "Case Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5233,7 +5171,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Case Material",
         "order": 59,
         "placeholder": "unk",
@@ -5278,9 +5215,7 @@
       "display_name": "Category",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5372,7 +5307,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Category",
         "order": 8,
         "placeholder": "unk",
@@ -5417,9 +5351,7 @@
       "display_name": "Charging Method",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5512,7 +5444,6 @@
         "examples": [],
         "group": "Power",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Charging Method",
         "order": 80,
         "placeholder": "unk",
@@ -5562,9 +5493,7 @@
       "display_name": "Color",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -5672,7 +5601,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Color",
         "order": 84,
         "placeholder": "unk",
@@ -5709,9 +5637,7 @@
         "unknown_token": "unk"
       },
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": false
@@ -5783,7 +5709,6 @@
       },
       "ui": {
         "group": "general",
-        "input_control": "token_list",
         "label": "Colors",
         "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray."
       },
@@ -5906,9 +5831,7 @@
       "display_name": "Compatible OS",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6016,7 +5939,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Compatible OS",
         "order": 88,
         "placeholder": "unk",
@@ -6066,9 +5988,7 @@
       "display_name": "Connection",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6175,7 +6095,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Connection",
         "order": 33,
         "placeholder": "unk",
@@ -6228,9 +6147,7 @@
       "display_name": "Debounce Time",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6324,7 +6241,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Debounce Time",
         "order": 47,
         "placeholder": "unk",
@@ -6378,9 +6294,7 @@
       "display_name": "Depth",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6474,7 +6388,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Depth",
         "order": 68,
         "placeholder": "unk",
@@ -6520,9 +6433,7 @@
       "display_name": "Detachable Cable",
       "effort": 2,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6613,7 +6524,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Detachable Cable",
         "order": 41,
         "placeholder": "unk",
@@ -6658,9 +6568,7 @@
       "display_name": "Discontinued",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6753,7 +6661,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Discontinued",
         "order": 83,
         "placeholder": "unk",
@@ -6798,9 +6705,7 @@
       "display_name": "Doubleshot",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -6893,7 +6798,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Doubleshot",
         "order": 32,
         "placeholder": "unk",
@@ -6930,9 +6834,7 @@
         "unknown_token": "unk"
       },
       "enum": {
-        "match": {
-          "strategy": "exact"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6977,7 +6879,6 @@
       },
       "ui": {
         "group": "general",
-        "input_control": "token_list",
         "label": "Editions",
         "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness."
       }
@@ -7012,9 +6913,7 @@
       "display_name": "Foam Dampening",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7106,7 +7005,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Foam Dampening",
         "order": 63,
         "placeholder": "unk",
@@ -7151,9 +7049,7 @@
       "display_name": "Form Factor",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7246,7 +7142,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Form Factor",
         "order": 20,
         "placeholder": "unk",
@@ -7291,9 +7186,7 @@
       "display_name": "Function Row",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7386,7 +7279,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Function Row",
         "order": 25,
         "placeholder": "unk",
@@ -7431,9 +7323,7 @@
       "display_name": "Gasket Mount",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7525,7 +7415,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Gasket Mount",
         "order": 62,
         "placeholder": "unk",
@@ -7571,9 +7460,7 @@
       "display_name": "GTIN",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7666,7 +7553,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "GTIN",
         "order": 7,
         "placeholder": "unk",
@@ -7720,9 +7606,7 @@
       "display_name": "Front Height",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7817,7 +7701,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Front Height",
         "order": 69,
         "placeholder": "unk",
@@ -7872,9 +7755,7 @@
       "display_name": "Rear Height",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -7969,7 +7850,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Rear Height",
         "order": 70,
         "placeholder": "unk",
@@ -8016,9 +7896,7 @@
       "display_name": "Hot-Swappable",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8112,7 +7990,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Hot-Swappable",
         "order": 19,
         "placeholder": "unk",
@@ -8163,9 +8040,7 @@
       "display_name": "Included Accessories",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8273,7 +8148,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Included Accessories",
         "order": 86,
         "placeholder": "unk",
@@ -8322,9 +8196,7 @@
       "display_name": "Key Count",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8417,7 +8289,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Key Count",
         "order": 23,
         "placeholder": "unk",
@@ -8463,9 +8334,7 @@
       "display_name": "Key Rollover",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8558,7 +8427,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Key Rollover",
         "order": 45,
         "placeholder": "unk",
@@ -8603,9 +8471,7 @@
       "display_name": "Keycap Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8698,7 +8564,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Keycap Material",
         "order": 27,
         "placeholder": "unk",
@@ -8743,9 +8608,7 @@
       "display_name": "Keycap Profile",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8838,7 +8701,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Keycap Profile",
         "order": 28,
         "placeholder": "unk",
@@ -8891,9 +8753,7 @@
       "display_name": "Keycap Thickness",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -8988,7 +8848,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Keycap Thickness",
         "order": 29,
         "placeholder": "unk",
@@ -9037,9 +8896,7 @@
       "display_name": "Knob / Dial",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9135,7 +8992,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Knob / Dial",
         "order": 57,
         "placeholder": "unk",
@@ -9180,9 +9036,7 @@
       "display_name": "Layout",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9275,7 +9129,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Layout",
         "order": 21,
         "placeholder": "unk",
@@ -9322,9 +9175,7 @@
       "display_name": "Layout Standard",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9419,7 +9270,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Layout Standard",
         "order": 22,
         "placeholder": "unk",
@@ -9465,9 +9315,7 @@
       "display_name": "Legends",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9561,7 +9409,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Legends",
         "order": 30,
         "placeholder": "unk",
@@ -9606,9 +9453,7 @@
       "display_name": "Macro Keys",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9701,7 +9546,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Macro Keys",
         "order": 55,
         "placeholder": "unk",
@@ -9747,9 +9591,7 @@
       "display_name": "Media Controls",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9841,7 +9683,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Media Controls",
         "order": 56,
         "placeholder": "unk",
@@ -9886,9 +9727,7 @@
       "display_name": "Model",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -9980,7 +9819,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Model",
         "order": 2,
         "placeholder": "unk",
@@ -10025,9 +9863,7 @@
       "display_name": "Mounting Style",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10119,7 +9955,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Mounting Style",
         "order": 61,
         "placeholder": "unk",
@@ -10164,9 +9999,7 @@
       "display_name": "MPN",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10258,7 +10091,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "MPN",
         "order": 6,
         "placeholder": "unk",
@@ -10304,9 +10136,7 @@
       "display_name": "Multi-Device Pairing",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10399,7 +10229,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Multi-Device Pairing",
         "order": 37,
         "placeholder": "unk",
@@ -10452,9 +10281,7 @@
       "display_name": "Multi-Device Pairing Count",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10545,7 +10372,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Multi-Device Pairing Count",
         "order": 38,
         "placeholder": "unk",
@@ -10599,9 +10425,7 @@
       "display_name": "Multi-Key Latency",
       "effort": 7,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10696,7 +10520,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Multi-Key Latency",
         "order": 44,
         "placeholder": "unk",
@@ -10742,9 +10565,7 @@
       "display_name": "Numpad",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10837,7 +10658,6 @@
         "examples": [],
         "group": "Layout",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Numpad",
         "order": 24,
         "placeholder": "unk",
@@ -10882,9 +10702,7 @@
       "display_name": "Onboard Memory",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -10977,7 +10795,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Onboard Memory",
         "order": 56,
         "placeholder": "unk",
@@ -11030,9 +10847,7 @@
       "display_name": "Onboard Profile Count",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11124,7 +10939,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Onboard Profile Count",
         "order": 58,
         "placeholder": "unk",
@@ -11170,9 +10984,7 @@
       "display_name": "OS Mode Switch",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11264,7 +11076,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "OS Mode Switch",
         "order": 61,
         "placeholder": "unk",
@@ -11310,9 +11121,7 @@
       "display_name": "Per-Key RGB",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11406,7 +11215,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Per-Key RGB",
         "order": 53,
         "placeholder": "unk",
@@ -11451,9 +11259,7 @@
       "display_name": "Plate Material",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11545,7 +11351,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Plate Material",
         "order": 60,
         "placeholder": "unk",
@@ -11599,9 +11404,7 @@
       "display_name": "Polling Rate Wired",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11696,7 +11499,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Polling Rate Wired",
         "order": 41,
         "placeholder": "unk",
@@ -11751,9 +11553,7 @@
       "display_name": "Polling Rate Wireless",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11848,7 +11648,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Polling Rate Wireless",
         "order": 42,
         "placeholder": "unk",
@@ -11894,9 +11693,7 @@
       "display_name": "Price Range",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -11989,7 +11786,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Price Range",
         "order": 82,
         "placeholder": "unk",
@@ -12036,9 +11832,7 @@
       "display_name": "QMK / VIA Support",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12133,7 +11927,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "QMK / VIA Support",
         "order": 58,
         "placeholder": "unk",
@@ -12178,9 +11971,7 @@
       "display_name": "Rapid Trigger",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12272,7 +12063,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Rapid Trigger",
         "order": 48,
         "placeholder": "unk",
@@ -12317,9 +12107,7 @@
       "display_name": "Release Date",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12412,7 +12200,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Release Date",
         "order": 81,
         "placeholder": "unk",
@@ -12457,9 +12244,7 @@
       "display_name": "RGB Zones",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12552,7 +12337,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "RGB Zones",
         "order": 52,
         "placeholder": "unk",
@@ -12606,9 +12390,7 @@
       "display_name": "Scan Rate",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12703,7 +12485,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Scan Rate",
         "order": 43,
         "placeholder": "unk",
@@ -12750,9 +12531,7 @@
       "display_name": "Shine-Through",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12846,7 +12625,6 @@
         "examples": [],
         "group": "Keycaps",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Shine-Through",
         "order": 31,
         "placeholder": "unk",
@@ -12900,9 +12678,7 @@
       "display_name": "Single-Key Latency",
       "effort": 7,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -12997,7 +12773,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Single-Key Latency",
         "order": 43,
         "placeholder": "unk",
@@ -13043,9 +12818,7 @@
       "display_name": "SKU",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13137,7 +12910,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "SKU",
         "order": 5,
         "placeholder": "unk",
@@ -13183,9 +12955,7 @@
       "display_name": "SOCD Cleaning",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13278,7 +13048,6 @@
         "examples": [],
         "group": "Performance",
         "guidance_md": null,
-        "input_control": "text",
         "label": "SOCD Cleaning",
         "order": 49,
         "placeholder": "unk",
@@ -13323,9 +13092,7 @@
       "display_name": "Software",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13418,7 +13185,6 @@
         "examples": [],
         "group": "Features",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Software",
         "order": 54,
         "placeholder": "unk",
@@ -13463,9 +13229,7 @@
       "display_name": "Software Required",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13558,7 +13322,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Software Required",
         "order": 87,
         "placeholder": "unk",
@@ -13603,9 +13366,7 @@
       "display_name": "Sound Dampening",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13697,7 +13458,6 @@
         "examples": [],
         "group": "Sound",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Sound Dampening",
         "order": 76,
         "placeholder": "unk",
@@ -13743,9 +13503,7 @@
       "display_name": "Sound Profile",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13838,7 +13596,6 @@
         "examples": [],
         "group": "Sound",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Sound Profile",
         "order": 75,
         "placeholder": "unk",
@@ -13884,9 +13641,7 @@
       "display_name": "South-Facing LEDs",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -13979,7 +13734,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "South-Facing LEDs",
         "order": 66,
         "placeholder": "unk",
@@ -14024,9 +13778,7 @@
       "display_name": "Stabilizer Lubed",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14118,7 +13870,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Stabilizer Lubed",
         "order": 65,
         "placeholder": "unk",
@@ -14164,9 +13915,7 @@
       "display_name": "Stabilizer Mount",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14259,7 +14008,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Stabilizer Mount",
         "order": 65,
         "placeholder": "unk",
@@ -14304,9 +14052,7 @@
       "display_name": "Stabilizer Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14398,7 +14144,6 @@
         "examples": [],
         "group": "Build",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Stabilizer Type",
         "order": 64,
         "placeholder": "unk",
@@ -14443,9 +14188,7 @@
       "display_name": "Switch Brand",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14538,7 +14281,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Brand",
         "order": 11,
         "placeholder": "unk",
@@ -14584,9 +14326,7 @@
       "display_name": "Switch Compatibility",
       "effort": 5,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14679,7 +14419,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Compatibility",
         "order": 21,
         "placeholder": "unk",
@@ -14724,9 +14463,7 @@
       "display_name": "Switch Feel",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14819,7 +14556,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Feel",
         "order": 12,
         "placeholder": "unk",
@@ -14874,9 +14610,7 @@
       "display_name": "Switch Lifespan",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -14972,7 +14706,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Switch Lifespan",
         "order": 18,
         "placeholder": "unk",
@@ -15026,9 +14759,7 @@
       "display_name": "Switch Name",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15124,7 +14855,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Switch Name",
         "order": 9,
         "placeholder": "unk",
@@ -15170,9 +14900,7 @@
       "display_name": "Switch Output Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15266,7 +14994,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Output Type",
         "order": 13,
         "placeholder": "unk",
@@ -15313,9 +15040,7 @@
       "display_name": "Switch Pin Support",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15408,7 +15133,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Switch Pin Support",
         "order": 20,
         "placeholder": "unk",
@@ -15458,9 +15182,7 @@
       "display_name": "Switch Type",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15554,7 +15276,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "component_picker",
         "label": "Switch Type",
         "order": 10,
         "placeholder": "unk",
@@ -15607,9 +15328,7 @@
       "display_name": "Total Travel",
       "effort": 4,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15704,7 +15423,6 @@
         "examples": [],
         "group": "Switch",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Total Travel",
         "order": 17,
         "placeholder": "unk",
@@ -15759,9 +15477,7 @@
       "display_name": "Typing Angle",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15855,7 +15571,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Typing Angle",
         "order": 72,
         "placeholder": "unk",
@@ -15901,9 +15616,7 @@
       "display_name": "Typing Noise",
       "effort": 6,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -15995,7 +15708,6 @@
         "examples": [],
         "group": "Sound",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Typing Noise",
         "order": 74,
         "placeholder": "unk",
@@ -16040,9 +15752,7 @@
       "display_name": "USB Passthrough",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16134,7 +15844,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "USB Passthrough",
         "order": 40,
         "placeholder": "unk",
@@ -16180,9 +15889,7 @@
       "display_name": "Variant",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16275,7 +15982,6 @@
         "examples": [],
         "group": "Identity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Variant",
         "order": 4,
         "placeholder": "unk",
@@ -16319,9 +16025,7 @@
       "display_name": "Warranty",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16413,7 +16117,6 @@
         "examples": [],
         "group": "General",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Warranty",
         "order": 85,
         "placeholder": "unk",
@@ -16465,9 +16168,7 @@
       "display_name": "Weight",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16560,7 +16261,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Weight",
         "order": 71,
         "placeholder": "unk",
@@ -16613,9 +16313,7 @@
       "display_name": "Width",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16708,7 +16406,6 @@
         "examples": [],
         "group": "Dimensions",
         "guidance_md": null,
-        "input_control": "number",
         "label": "Width",
         "order": 67,
         "placeholder": "unk",
@@ -16754,9 +16451,7 @@
       "display_name": "Wired Interface",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -16848,7 +16543,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Wired Interface",
         "order": 34,
         "placeholder": "unk",
@@ -16898,9 +16592,7 @@
       "display_name": "Wireless Technology",
       "effort": 3,
       "enum": {
-        "match": {
-          "strategy": "alias"
-        },
+        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true,
@@ -17007,7 +16699,6 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
         "label": "Wireless Technology",
         "order": 35,
         "placeholder": "unk",

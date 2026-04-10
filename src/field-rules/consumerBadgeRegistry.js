@@ -214,7 +214,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.enum': { desc: 'Enforces enum policy (open, closed, open_prefer_known) during value extraction and matching.' },
       'rev.enum': { desc: 'Enforces enum constraints during candidate scoring. Unknown values in closed enums are flagged.' },
       'seed.schema': { desc: 'Seeds enum policy into SpecDb field meta for downstream query use.' },
-      'val.enum': { desc: 'Step 9 — Enum Check. Validates values against known-values list using policy + match strategy (exact or alias).' },
+      'val.enum': { desc: 'Step 9 — Enum Check. Validates values against known-values list using policy. closed: exact match. open_prefer_known: alias resolution.' },
     } },
 
   { path: 'enum.source', type: 'string', flatAliases: ['enum_source'],
@@ -223,19 +223,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'rev.grid': { desc: 'Matches candidates against the declared enum value list during scoring.' },
       'rev.component': { desc: 'Resolves component property enum values from declared source.' },
       'seed.schema': { desc: 'Loads the enum value list (data_lists, component_db, yes_no) into SpecDb as allowed values.' },
-    } },
-
-  { path: 'enum.match.fuzzy_threshold', type: 'presence', flatAliases: [],
-    section: 'Enum Policy', key: 'Fuzzy Threshold',
-    consumers: {
-      'eng.enum': { desc: 'Sets the similarity threshold for fuzzy enum matching during extraction.' },
-    } },
-
-  { path: 'enum.match.strategy', type: 'string', flatAliases: [],
-    section: 'Enum Policy', key: 'Match Strategy',
-    consumers: {
-      'rev.enum': { desc: 'Uses this matching strategy (alias, exact, fuzzy) when comparing candidates to enum values.' },
-      'val.enum': { desc: 'Step 9 — Enum Check. Alias strategy tries case-insensitive + normalized matching before rejecting.' },
     } },
 
   { path: 'enum.match.format_hint', type: 'string', flatAliases: ['enum_match_format_hint'],

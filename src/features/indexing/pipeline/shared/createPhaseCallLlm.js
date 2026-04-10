@@ -3,7 +3,7 @@
 // searchPlanBuilder, serpSelector, queryPlanner) so new LLM phases cost
 // ~15 lines instead of ~40.
 
-export function createPhaseCallLlm({ callRoutedLlmFn, config, logger }, { phase, reason, role, system, jsonSchema }, mapArgs) {
+export function createPhaseCallLlm({ callRoutedLlmFn, config, logger, onPhaseChange }, { phase, reason, role, system, jsonSchema }, mapArgs) {
   return async (domainArgs) => {
     const resolvedSystem = typeof system === 'function' ? system(domainArgs) : system;
     const resolvedSchema = typeof jsonSchema === 'function' ? jsonSchema() : jsonSchema;
@@ -13,6 +13,7 @@ export function createPhaseCallLlm({ callRoutedLlmFn, config, logger }, { phase,
       system: resolvedSystem,
       jsonSchema: resolvedSchema,
       logger,
+      onPhaseChange,
       ...mapped,
     });
   };

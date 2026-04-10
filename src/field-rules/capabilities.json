@@ -80,16 +80,6 @@
       "consumer": "src/engine/fieldRulesEngine.js:buildRuleEnumSpec",
       "description": "Enum value source reference (known_values or component_db)"
     },
-    "enum.match.strategy": {
-      "status": "live",
-      "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
-      "description": "Enum matching strategy (exact, alias)"
-    },
-    "enum.match.fuzzy_threshold": {
-      "status": "live",
-      "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate + src/extract/componentResolver.js:resolveFromCandidates",
-      "description": "Per-field fuzzy match threshold for component DB matching"
-    },
     "enum.new_value_policy": {
       "status": "live",
       "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
@@ -207,9 +197,9 @@
       "description": "Display order within group"
     },
     "ui.input_control": {
-      "status": "ui_only",
-      "consumer": "React GUI (tools/gui-react/src/components/common/EnumConfigurator.tsx)",
-      "description": "UI widget type for manual editing"
+      "status": "retired",
+      "consumer": "Derived at render time by deriveInputControl()",
+      "description": "UI widget type — now computed from contract.type + contract.shape + enum.source + enum.policy"
     },
     "ui.display_decimals": {
       "status": "ui_only",

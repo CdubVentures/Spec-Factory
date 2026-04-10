@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildEffectiveCostRates,
+  callLlmWithRouting,
   hasAnyLlmApiKey,
   hasLlmRouteApiKey,
   llmRoutingSnapshot,
@@ -652,4 +653,299 @@ test('resolvePhaseDisableLimits returns true when phase has it set', () => {
 test('resolvePhaseDisableLimits returns false for empty phase', () => {
   const config = phaseConfig({ _resolvedNeedsetDisableLimits: true });
   assert.equal(resolvePhaseDisableLimits(config, ''), false);
+});
+
+// ---------------------------------------------------------------------------
+// jsonStrict two-phase routing (callLlmWithRouting)
+// ---------------------------------------------------------------------------
+
+function twoPhaseConfig(overrides = {}) {
+  return registryConfig([proxyProvider(), anthropicRegistryProvider()], {
+    llmPlanFallbackModel: 'claude-sonnet-4-6',
+    _resolvedColorfinderFallbackModel: 'claude-sonnet-4-6',
+    _resolvedColorfinderFallbackUseReasoning: false,
+    _resolvedColorfinderWriterModel: '',
+    _resolvedColorfinderWriterReasoningModel: '',
+    _resolvedColorfinderWriterUseReasoning: false,
+    ...overrides,
+  });
+}
+
+const TEST_SCHEMA = {
+  type: 'object',
+  properties: { editions: { type: 'number' }, colors: { type: 'number' } },
+  required: ['editions', 'colors'],
+};
+
+function mockFetchTwoPhase() {
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    calls.push({ url, body });
+    const hasResponseFormat = Boolean(body.response_format);
+    const content = hasResponseFormat
+      ? '{"editions": 5, "colors": 7}'
+      : 'Research: Found 5 editions and 7 colors';
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content } }],
+          model: body.model,
+          usage: { prompt_tokens: 100, completion_tokens: 200, total_tokens: 300 },
+        });
+      },
+    };
+  };
+  return calls;
+}
+
+test('callLlmWithRouting: jsonStrict false + jsonSchema triggers two-phase call', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = mockFetchTwoPhase();
+
+  try {
+    const config = twoPhaseConfig({ _resolvedColorfinderJsonStrict: false });
+
+    const result = await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    // Two fetch calls: Phase 1 (research) + Phase 2 (writer)
+    assert.equal(fetchCalls.length, 2, 'should make exactly two LLM calls');
+
+    // Phase 1: no response_format (free-form research)
+    assert.equal(fetchCalls[0].body.response_format, undefined,
+      'Phase 1 must NOT have response_format');
+
+    // Phase 2: has response_format with schema (writer formatting)
+    assert.ok(fetchCalls[1].body.response_format,
+      'Phase 2 must have response_format');
+    assert.equal(fetchCalls[1].body.response_format.type, 'json_schema');
+
+    // Phase 2 system prompt contains writer instructions + research findings
+    const writerSystem = fetchCalls[1].body.messages
+      .find((m) => m.role === 'system')?.content || '';
+    assert.ok(writerSystem.includes('JSON formatter'),
+      'Phase 2 system should contain writer instructions');
+    assert.ok(writerSystem.includes('Research: Found 5 editions'),
+      'Phase 2 system should contain Phase 1 findings');
+
+    // Result is parsed JSON from Phase 2
+    assert.deepEqual(result, { editions: 5, colors: 7 });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict false + no jsonSchema does single call', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = [];
+  global.fetch = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    fetchCalls.push({ url, body });
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content: '{"result": "ok"}' } }],
+          model: body.model,
+          usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+        });
+      },
+    };
+  };
+
+  try {
+    const config = twoPhaseConfig({ _resolvedColorfinderJsonStrict: false });
+    await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Describe the product.',
+      user: 'Product X',
+      jsonSchema: null,
+    });
+    assert.equal(fetchCalls.length, 1,
+      'without jsonSchema, should make exactly one call');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict true (default) does single call with schema', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = mockFetchTwoPhase();
+
+  try {
+    // No _resolvedColorfinderJsonStrict set → defaults to true
+    const config = twoPhaseConfig();
+
+    await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    assert.equal(fetchCalls.length, 1,
+      'jsonStrict true should make exactly one call');
+    assert.ok(fetchCalls[0].body.response_format,
+      'single call must have response_format');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict false Phase 1 failure falls back to schema call', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = [];
+  let callCount = 0;
+
+  global.fetch = async (url, opts) => {
+    callCount++;
+    const body = JSON.parse(opts.body);
+    fetchCalls.push({ url, body });
+
+    if (callCount === 1) {
+      // Phase 1 research call fails
+      return {
+        ok: false,
+        status: 500,
+        async text() { return 'Internal Server Error'; },
+      };
+    }
+    // Fallback single call with schema succeeds
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content: '{"editions": 3, "colors": 2}' } }],
+          model: body.model,
+          usage: { prompt_tokens: 50, completion_tokens: 100, total_tokens: 150 },
+        });
+      },
+    };
+  };
+
+  try {
+    const config = twoPhaseConfig({ _resolvedColorfinderJsonStrict: false });
+
+    const result = await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    assert.equal(callCount, 2, 'should try research then fallback');
+    // Phase 1 must be the research call (no response_format)
+    assert.equal(fetchCalls[0].body.response_format, undefined,
+      'Phase 1 research call must not have response_format');
+    // Fallback call must have response_format
+    assert.ok(fetchCalls[1].body.response_format,
+      'fallback call must have response_format');
+    assert.deepEqual(result, { editions: 3, colors: 2 });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict false Phase 2 uses dedicated writer model route', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = mockFetchTwoPhase();
+
+  try {
+    // Writer model explicitly set to anthropic (claude-sonnet-4-6)
+    const config = twoPhaseConfig({
+      _resolvedColorfinderJsonStrict: false,
+      _resolvedColorfinderWriterModel: 'claude-sonnet-4-6',
+    });
+
+    await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    assert.equal(fetchCalls.length, 2);
+    // Phase 1: primary model (gemini via proxy)
+    assert.ok(fetchCalls[0].url.includes('my-proxy.corp.com'),
+      'Phase 1 should use primary (proxy) base URL');
+    // Phase 2: writer model (anthropic) — NOT fallback
+    assert.ok(fetchCalls[1].url.includes('api.anthropic.com'),
+      'Phase 2 should use dedicated writer (anthropic) base URL');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict false no writer configured falls back to primary for Phase 2', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = mockFetchTwoPhase();
+
+  try {
+    // No writer model set — Phase 2 should use primary
+    const config = twoPhaseConfig({
+      _resolvedColorfinderJsonStrict: false,
+      _resolvedColorfinderWriterModel: '',
+    });
+
+    await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    assert.equal(fetchCalls.length, 2);
+    // Both phases use the primary (proxy) route
+    assert.ok(fetchCalls[0].url.includes('my-proxy.corp.com'),
+      'Phase 1 should use primary (proxy) base URL');
+    assert.ok(fetchCalls[1].url.includes('my-proxy.corp.com'),
+      'Phase 2 should fall back to primary when no writer configured');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('callLlmWithRouting: jsonStrict false writer model is independent of fallback model', async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls = mockFetchTwoPhase();
+
+  try {
+    // Writer = anthropic, Fallback = proxy (same as primary here, so fallback deduped to null)
+    // This proves writer is NOT the fallback — it's a separate route
+    const config = twoPhaseConfig({
+      _resolvedColorfinderJsonStrict: false,
+      _resolvedColorfinderWriterModel: 'claude-sonnet-4-6',
+      _resolvedColorfinderFallbackModel: 'gemini-2.5-flash', // same as primary → deduped
+    });
+
+    await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    assert.equal(fetchCalls.length, 2);
+    // Phase 2 still uses writer (anthropic), not fallback (which was deduped)
+    assert.ok(fetchCalls[1].url.includes('api.anthropic.com'),
+      'Phase 2 must use writer model, independent of fallback');
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
