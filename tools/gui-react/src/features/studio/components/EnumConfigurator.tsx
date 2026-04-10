@@ -1,11 +1,9 @@
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { selectCls, inputCls, labelCls, STUDIO_TIPS } from './studioConstants.ts';
-import { usePersistedTab } from '../../../hooks/useSessionPersistence.ts';
 import type { EnumEntry } from '../../../types/studio.ts';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface EnumConfiguratorProps {
-  persistTabKey: string;
   fieldKey: string;
   rule: Record<string, unknown>;
   knownValues: Record<string, string[]>;
@@ -21,9 +19,6 @@ interface EnumConfiguratorProps {
   enumConsistencyMode?: boolean;
 }
 
-type SourceTab = 'manual' | 'enum';
-const SOURCE_TAB_IDS = ['manual', 'enum'] as const;
-
 // ── Helpers ──────────────────────────────────────────────────────────
 function getN(obj: Record<string, unknown>, path: string): unknown {
   return path.split('.').reduce((o: unknown, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
@@ -36,10 +31,6 @@ function numN(obj: Record<string, unknown>, path: string, fallback = 0): number 
   const v = getN(obj, path);
   return typeof v === 'number' ? v : (parseInt(String(v), 10) || fallback);
 }
-function detectSourceTab(source: string): SourceTab {
-  if (source.startsWith('data_lists.')) return 'enum';
-  return 'manual';
-}
 
 function consistencyFormatPlaceholder(fieldKey: string): string {
   const token = String(fieldKey || '').trim().toLowerCase();
@@ -51,18 +42,9 @@ function consistencyFormatPlaceholder(fieldKey: string): string {
 // ── Chip styles ──────────────────────────────────────────────────────
 const chipBase = 'inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium';
 const chipBlue = `${chipBase} bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300`;
-// ── Tab styles ───────────────────────────────────────────────────────
-const tabBase = 'px-3 py-1.5 text-xs font-medium rounded-t relative';
-const tabActive = `${tabBase} font-semibold border border-b-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 -mb-px z-10`;
-const tabInactive = `${tabBase} text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer`;
-
-const dotActive = 'absolute -top-1 -right-1 w-2 h-2 rounded-full';
-const dotManual = `${dotActive} bg-amber-500`;
-const dotEnum = `${dotActive} bg-purple-500`;
 
 // ── Component ────────────────────────────────────────────────────────
 export function EnumConfigurator({
-  persistTabKey,
   fieldKey,
   rule,
   knownValues,
@@ -83,33 +65,19 @@ export function EnumConfigurator({
 
   const isBoolean = contractType === 'boolean';
 
-  // State
-  const [activeTab, setActiveTab] = usePersistedTab<SourceTab>(
-    persistTabKey,
-    detectSourceTab(currentSource),
-    { validValues: SOURCE_TAB_IDS },
-  );
-
   // Known values for this field
   const fieldKnownValues = knownValues[fieldKey] || [];
   const consumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
   const consistencyFormatReviewEnabled = consumers?.['enum.match.format_hint']?.review !== false;
   const consistencyFormatHint = strN(rule, 'enum.match.format_hint');
-  const hasFormatPattern = consistencyFormatHint.trim().length > 0;
   const reviewToggleFields = ['enum.match.strategy', 'enum.match.format_hint'] as const;
   const reviewToggleOn = reviewToggleFields.every((fieldPath) => consumers?.[fieldPath]?.review !== false);
-
-  const hasManual = currentSource === 'yes_no';
-  const hasEnum = currentSource.startsWith('data_lists.');
 
   // Derive selected enum list name from source
   const selectedEnumList = currentSource.startsWith('data_lists.')
     ? currentSource.replace('data_lists.', '')
     : '';
   const selectedListEntry = enumLists.find((e) => e.field === selectedEnumList);
-
-  // ── Boolean info banner ────────────────────────────────────────────
-  // Boolean template auto-couples to closed/yes_no but the section remains visible
 
   function handleEnumListSelect(listName: string) {
     if (listName) {
@@ -240,83 +208,50 @@ export function EnumConfigurator({
         )}
       </div>
 
-      {/* ── Row 2: Value Source Tabs ─────────────────────────────── */}
-      <div>
-        <div className={`${labelCls} flex items-center`}><span>Value Source<Tip text={STUDIO_TIPS.enum_value_source} /></span>{renderLabelSuffix?.('enum.source')}</div>
-        <div className="flex items-end gap-0.5 border-b border-gray-200 dark:border-gray-700">
-          <button
-            className={activeTab === 'manual' ? tabActive : tabInactive}
-            onClick={() => setActiveTab('manual')}
-          >
-            Manual Values
-            {hasManual ? <span className={dotManual} /> : null}
-          </button>
-          <button
-            className={activeTab === 'enum' ? tabActive : tabInactive}
-            onClick={() => setActiveTab('enum')}
-          >
-            Enum
-            {hasEnum ? <span className={dotEnum} /> : null}
-          </button>
-        </div>
-
-        <div className="border border-t-0 border-gray-200 dark:border-gray-700 rounded-b p-3 bg-white dark:bg-gray-800">
-          {/* ── Manual Values ────────────────────────── */}
-          {activeTab === 'manual' ? (
-            <div className="space-y-3">
-              {currentSource === 'yes_no' ? (
-                <div className="text-xs text-gray-500 mb-1">
-                  Source: <span className="font-mono text-accent">yes_no</span> (boolean enum)
-                </div>
-              ) : (
-                <div className="text-xs text-gray-400 italic">No manual source configured.</div>
-              )}
+      {/* ── Enum Source ───────────────────────────────────────────── */}
+      {!isBoolean ? (
+        <div>
+          <div className={`${labelCls} flex items-center`}><span>Enum Source<Tip text={STUDIO_TIPS.enum_source} /></span>{renderLabelSuffix?.('enum.source')}</div>
+          <div className="border border-gray-200 dark:border-gray-700 rounded p-3 bg-white dark:bg-gray-800 space-y-3">
+            <div>
+              <div className={`${labelCls} flex items-center`}><span>Enum List</span>{renderLabelSuffix?.('enum.source')}</div>
+              <select
+                className={`${selectCls} w-full`}
+                value={selectedEnumList}
+                onChange={(e) => handleEnumListSelect(e.target.value)}
+              >
+                <option value="">(none)</option>
+                {enumLists.map((el) => (
+                  <option key={el.field} value={el.field}>
+                    {el.field} ({(el.values || []).length} values)
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : null}
-
-          {/* ── Enum List Picker ─────────────────────────── */}
-          {activeTab === 'enum' ? (
-            <div className="space-y-3">
-              <div>
-                <div className={`${labelCls} flex items-center`}><span>Enum List</span>{renderLabelSuffix?.('enum.source')}</div>
-                <select
-                  className={`${selectCls} w-full`}
-                  value={selectedEnumList}
-                  onChange={(e) => handleEnumListSelect(e.target.value)}
-                >
-                  <option value="">(none)</option>
-                  {enumLists.map((el) => (
-                    <option key={el.field} value={el.field}>
-                      {el.field} ({(el.values || []).length} values)
-                    </option>
-                  ))}
-                </select>
+            {selectedEnumList ? (
+              <div className="text-xs text-gray-500">
+                Source: <span className="font-mono text-accent">data_lists.{selectedEnumList}</span>
               </div>
-              {selectedEnumList ? (
-                <div className="text-xs text-gray-500">
-                  Source: <span className="font-mono text-accent">data_lists.{selectedEnumList}</span>
-                </div>
-              ) : null}
+            ) : null}
 
-              {/* Show values from the selected enum list */}
-              {selectedListEntry && (selectedListEntry.values || []).length > 0 ? (
-                <div>
-                  <div className={labelCls}>
-                    Enum Values ({(selectedListEntry.values || []).length})
-                  </div>
-                  <div className="max-h-48 overflow-y-auto flex flex-wrap gap-1">
-                    {(selectedListEntry.values || []).map((v) => (
-                      <span key={v} className={chipBlue}>{v}</span>
-                    ))}
-                  </div>
+            {/* Show values from the selected enum list */}
+            {selectedListEntry && (selectedListEntry.values || []).length > 0 ? (
+              <div>
+                <div className={labelCls}>
+                  Enum Values ({(selectedListEntry.values || []).length})
                 </div>
-              ) : selectedEnumList ? (
-                <div className="text-xs text-gray-400 italic">No values in this enum list.</div>
-              ) : null}
-            </div>
-          ) : null}
+                <div className="max-h-48 overflow-y-auto flex flex-wrap gap-1">
+                  {(selectedListEntry.values || []).map((v) => (
+                    <span key={v} className={chipBlue}>{v}</span>
+                  ))}
+                </div>
+              </div>
+            ) : selectedEnumList ? (
+              <div className="text-xs text-gray-400 italic">No values in this enum list.</div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="space-y-3">
         {typeof onRunConsistency === 'function' ? (

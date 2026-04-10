@@ -6,7 +6,8 @@ export const inputCls = 'sf-input w-full rounded border px-2 py-1.5 sf-text-labe
 export const labelCls = 'sf-text-caption font-medium mb-1';
 
 // ── Dropdown option arrays ──────────────────────────────────────────
-export const UNITS = ['g', 'gf', 'mm', 'Hz', 'dpi', 'ips', 'ms', 'h', 'usd', 'year', 'none'];
+// WHY: UNITS constant removed — contract.unit dropdown now pulls from the
+// managed unit registry API (GET /unit-registry/canonicals).
 export const UNKNOWN_TOKENS = ['unk', 'null', 'N/A', 'none'];
 export const GROUPS = [
   'general', 'connectivity', 'construction', 'controls', 'dimensions',
@@ -18,8 +19,6 @@ export const NORMALIZE_MODES = [
   { value: 'raw', label: 'Raw (as-is)' },
   { value: 'lower', label: 'Lowercase only' },
 ];
-export const PREFIXES = ['$', 'EUR', 'GBP', '#'];
-export const SUFFIXES = [...UNITS, '%', 'x'];
 
 // ── Tag-picker suggestion arrays ────────────────────────────────────
 export const DOMAIN_HINT_SUGGESTIONS = [
@@ -99,15 +98,13 @@ export const STUDIO_TIPS: Record<string, string> = {
   fuzzy_threshold: 'Similarity score (0.0-1.0) for fuzzy matching. 0.92 = 92% similar required. Higher = stricter.',
 
   // Tab 2: Key Navigator - Enum (expanded)
-  enum_value_source: 'Where enum values come from. Manual: type values directly. Enum: link to an existing enum list from the Mapping Studio (data_lists.*).',
+  enum_value_source: 'Where enum values come from. Values are authored in the Mapping Studio data lists. Use data_lists.{name} to link a field to an enum list.',
   enum_detected_values: 'Values currently in the known_values list for this field. Blue = from canonical source. Amber = discovered during pipeline runs (not yet in canonical list).',
   enum_component_values: 'Entity names from the component database. Shows all components of this type with their maker and aliases.',
 
   // Tab 2: Key Navigator - Evidence
   key_section_evidence: 'Evidence settings determine proof requirements and confidence thresholds for accepting values for this field.',
-  evidence_required: 'If checked, every value must cite at least one source reference (URL + snippet).',
   min_evidence_refs: 'Minimum distinct source references needed to accept a value. Higher = more confident but more unknowns.',
-  conflict_policy: 'resolve_by_tier_else_unknown: use tier ranking, fall back to unknown. prefer_highest_tier: always trust best tier. prefer_most_recent: newest source. flag_for_review: mark for manual review.',
   tier_preference: 'Source trust ordering. Tier 1 (Manufacturer): OEM specs. Tier 2 (Lab): independent tests. Tier 3 (Retailer): store listings. Tier 4 (Community): forums/reviews. Tier 5 (Aggregator): comparison sites.',
 
   // Tab 2: Key Navigator - UI & Display

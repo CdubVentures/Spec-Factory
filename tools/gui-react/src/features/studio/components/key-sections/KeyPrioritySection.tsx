@@ -613,11 +613,6 @@ function ExtractionGuidanceSubsection({
     "enum.source",
     strN(currentRule, "enum_source"),
   );
-  const evidenceReq = boolN(
-    currentRule,
-    "evidence.evidence_required",
-    boolN(currentRule, "evidence_required"),
-  );
   const minRefs = numN(
     currentRule,
     "evidence.min_evidence_refs",
@@ -718,7 +713,7 @@ function ExtractionGuidanceSubsection({
   }
 
   // Evidence
-  if (evidenceReq && minRefs >= 2) {
+  if (minRefs >= 2) {
     guidanceParts.push(
       `Requires ${minRefs}+ independent source references.`,
     );

@@ -48,8 +48,8 @@ export const PHASE_REGISTRY = [
     id: 'unit',
     title: 'Unit Verification',
     order: 2,
-    description: 'Verifies unit suffixes against contract.unit (case-insensitive). Strips valid units to bare numbers.',
-    behaviorNote: 'Strips matching units. Rejects unknown units. Phase 3 adds system-wide synonym + conversion registry.',
+    description: 'Resolves unit synonyms, converts units via managed unit registry, strips valid suffixes to bare numbers.',
+    behaviorNote: 'Accepts canonical + synonyms. Converts known cross-units (e.g. lb→g). Rejects unknown suffixes. No LLM needed.',
     isApplicable: (rule) => Boolean(rule?.contract?.unit),
     triggerDetail: (rule) => {
       const unit = rule?.contract?.unit || '';

@@ -40,11 +40,10 @@ const SAMPLE_FIELD_RULES = {
       availability: 'expected',
       difficulty: 'easy',
       effort: 2,
-      evidence_required: true,
       unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'required', availability: 'expected', difficulty: 'easy', effort: 2 },
       contract: { type: 'string', shape: 'scalar' },
-      evidence: { required: true }
+      evidence: {}
     },
     weight: {
       field_key: 'weight',
@@ -56,11 +55,10 @@ const SAMPLE_FIELD_RULES = {
       availability: 'expected',
       difficulty: 'medium',
       effort: 3,
-      evidence_required: true,
       unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'expected', availability: 'expected', difficulty: 'medium', effort: 3 },
       contract: { type: 'number', shape: 'scalar', unit: 'g' },
-      evidence: { required: true }
+      evidence: {}
     },
     dpi: {
       field_key: 'dpi',
@@ -72,11 +70,10 @@ const SAMPLE_FIELD_RULES = {
       availability: 'expected',
       difficulty: 'easy',
       effort: 2,
-      evidence_required: true,
       unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'critical', availability: 'expected', difficulty: 'easy', effort: 2 },
       contract: { type: 'number', shape: 'scalar' },
-      evidence: { required: true }
+      evidence: {}
     }
   }
 };

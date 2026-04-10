@@ -8,7 +8,7 @@ import { validateField } from './validateField.js';
  * @param {{ fields: Record<string, *>, fieldRules: Record<string, object>, knownValues?: object, consistencyMode?: string }} opts
  * @returns {{ valid: boolean, fields: Record<string, *>, perField: Record<string, object> }}
  */
-export function validateRecord({ fields, fieldRules, knownValues, consistencyMode }) {
+export function validateRecord({ fields, fieldRules, knownValues, consistencyMode, appDb }) {
   const safeFields = fields || {};
   const safeRules = fieldRules || {};
   const perField = {};
@@ -17,7 +17,7 @@ export function validateRecord({ fields, fieldRules, knownValues, consistencyMod
   for (const fieldKey of Object.keys(safeFields)) {
     const fieldRule = safeRules[fieldKey] || null;
     const enumData = knownValues?.enums?.[fieldKey] || null;
-    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData, consistencyMode });
+    const fieldResult = validateField({ fieldKey, value: safeFields[fieldKey], fieldRule, knownValues: enumData, consistencyMode, appDb });
 
     perField[fieldKey] = fieldResult;
     validatedFields[fieldKey] = fieldResult.value;

@@ -32,7 +32,7 @@ export function createComponentStore({ db, category, stmts }) {
 
   function upsertComponentValue({
     componentType, componentName, componentMaker, componentIdentityId,
-    propertyKey, value, confidence, variancePolicy, source,
+    propertyKey, value, unit, confidence, variancePolicy, source,
     acceptedCandidateId, needsReview, overridden, constraints,
   }) {
     const normalizedMaker = componentMaker || '';
@@ -53,6 +53,7 @@ export function createComponentStore({ db, category, stmts }) {
       component_identity_id: resolvedIdentityId,
       property_key: propertyKey,
       value: value != null ? String(value) : null,
+      unit: unit ?? null,
       confidence: confidence ?? 1.0,
       variance_policy: variancePolicy ?? null,
       source: source || 'component_db',

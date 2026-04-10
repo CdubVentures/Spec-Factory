@@ -74,10 +74,8 @@ test('dead knobs stay out of the published field map', async () => {
     'contract.rounding.mode',
     'priority.publish_gate',
     'parse.unit',
-    'parse.unit_accepts',
     'parse.allow_unitless',
     'parse.allow_ranges',
-    'parse.strict_unit_required',
     'ai_assist.max_calls',
   ];
 

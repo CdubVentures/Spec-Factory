@@ -25,13 +25,11 @@ test('buildReviewLayout strips review-disabled rule paths before deriving field_
           contract: { type: 'enum', shape: 'scalar', unit: 'ghz' },
           evidence: {
             min_evidence_refs: 3,
-            conflict_policy: 'preserve_all_candidates',
           },
           component: { type: 'sensor' },
           consumers: {
             'contract.type': { review: false },
             'evidence.min_evidence_refs': { review: false },
-            'evidence.conflict_policy': { review: false },
             'component.type': { review: false },
           },
           field_studio_hints: {
@@ -47,7 +45,6 @@ test('buildReviewLayout strips review-disabled rule paths before deriving field_
     assert.ok(row, 'expected connection field row');
     assert.equal(row.field_rule.type, 'string');
     assert.equal(row.field_rule.min_evidence_refs, 1);
-    assert.equal(row.field_rule.conflict_policy, 'resolve_by_tier');
     assert.equal(row.field_rule.component_type, null);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

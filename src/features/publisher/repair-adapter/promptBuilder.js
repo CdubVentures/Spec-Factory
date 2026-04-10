@@ -341,12 +341,7 @@ Use decision "reject" with resolved_to null if hallucinated.`;
 
 function buildUnitPrompt(rejection, ctx) {
   const { expected, detected } = rejection.detail;
-  const conversions = ctx.fieldRule?.parse?.unit_conversions;
   const contractBlock = buildFieldContractBlock(ctx.fieldKey, ctx.fieldRule, ctx.knownValues);
-
-  const conversionNote = conversions && typeof conversions === 'object' && Object.keys(conversions).length > 0
-    ? `\nKnown conversion factors: ${JSON.stringify(conversions)}`
-    : '';
 
   const userMessage = `${contractBlock}
 
@@ -354,7 +349,7 @@ The field '${ctx.fieldKey}' requires unit '${expected}' but the value
 was given in '${detected}':
   Value: ${JSON.stringify(ctx.value)}
   Expected unit: ${expected}
-  Detected unit: ${detected}${conversionNote}
+  Detected unit: ${detected}
 
 Convert the value to ${expected} and return the numeric result.
 If the value cannot be meaningfully converted, return 'unk'.

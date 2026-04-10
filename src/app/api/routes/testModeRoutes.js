@@ -7,6 +7,7 @@ export function registerTestModeRoutes(ctx) {
     runFieldContractTests,
     mergeDiscoveredEnums,
     buildDiscoveredEnumMap,
+    appDb,
   } = ctx;
 
   return async function handleTestModeRoutes(parts, params, method, req, res) {
@@ -57,6 +58,7 @@ export function registerTestModeRoutes(ctx) {
         fieldRules: auditFieldRules,
         knownValues: auditKnownValues,
         componentDbs: auditComponentDBs,
+        appDb,
       });
 
       // WHY: Persist full result to DB — survives page refreshes.

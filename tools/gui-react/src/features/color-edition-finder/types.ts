@@ -24,6 +24,15 @@ export interface ColorEditionFinderRejection {
   readonly detail: Readonly<Record<string, unknown>>;
 }
 
+/** v2 discovery audit log — per-run feed-forward data. */
+export interface DiscoveryLog {
+  readonly confirmed_from_known: readonly string[];
+  readonly added_new: readonly string[];
+  readonly rejected_from_known: readonly string[];
+  readonly urls_checked: readonly string[];
+  readonly queries_run: readonly string[];
+}
+
 /** A single historical run entry with full prompt/response audit trail. */
 export interface ColorEditionFinderRunEntry {
   readonly run_number: number;
@@ -35,10 +44,13 @@ export interface ColorEditionFinderRunEntry {
   readonly prompt: { readonly system: string; readonly user: string };
   // WHY: Successful runs store ColorEditionFinderSelected; rejected runs store
   // { status: 'rejected', raw, rejections }. Union via optional fields.
+  // v2 adds siblings_excluded + discovery_log audit trail.
   readonly response: ColorEditionFinderSelected & {
     readonly status?: 'rejected';
     readonly raw?: Readonly<Record<string, unknown>>;
     readonly rejections?: readonly ColorEditionFinderRejection[];
+    readonly siblings_excluded?: readonly string[];
+    readonly discovery_log?: DiscoveryLog;
   };
 }
 

@@ -25,16 +25,17 @@ export function prepareStatements(db) {
     _upsertComponentValue: db.prepare(`
       INSERT INTO component_values (
         category, component_type, component_name, component_maker, component_identity_id, property_key,
-        value, confidence, variance_policy, source, accepted_candidate_id,
+        value, unit, confidence, variance_policy, source, accepted_candidate_id,
         needs_review, overridden, constraints
       ) VALUES (
         @category, @component_type, @component_name, @component_maker, @component_identity_id, @property_key,
-        @value, @confidence, @variance_policy, @source, @accepted_candidate_id,
+        @value, @unit, @confidence, @variance_policy, @source, @accepted_candidate_id,
         @needs_review, @overridden, @constraints
       )
       ON CONFLICT(category, component_type, component_name, component_maker, property_key) DO UPDATE SET
         component_identity_id = COALESCE(excluded.component_identity_id, component_identity_id),
         value = excluded.value,
+        unit = COALESCE(excluded.unit, unit),
         confidence = excluded.confidence,
         variance_policy = COALESCE(excluded.variance_policy, variance_policy),
         source = excluded.source,
@@ -75,18 +76,19 @@ export function prepareStatements(db) {
 
     _upsertItemFieldState: db.prepare(`
       INSERT INTO item_field_state (
-        category, product_id, field_key, value, confidence, source,
+        category, product_id, field_key, value, unit, confidence, source,
         accepted_candidate_id, overridden, needs_ai_review, ai_review_complete,
         override_source, override_value, override_reason, override_provenance,
         overridden_by, overridden_at
       ) VALUES (
-        @category, @product_id, @field_key, @value, @confidence, @source,
+        @category, @product_id, @field_key, @value, @unit, @confidence, @source,
         @accepted_candidate_id, @overridden, @needs_ai_review, @ai_review_complete,
         @override_source, @override_value, @override_reason, @override_provenance,
         @overridden_by, @overridden_at
       )
       ON CONFLICT(category, product_id, field_key) DO UPDATE SET
         value = excluded.value,
+        unit = COALESCE(excluded.unit, unit),
         confidence = excluded.confidence,
         source = excluded.source,
         accepted_candidate_id = COALESCE(excluded.accepted_candidate_id, accepted_candidate_id),
@@ -670,14 +672,15 @@ export function prepareStatements(db) {
 
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
-        category, product_id, field_key, value,
+        category, product_id, field_key, value, unit,
         confidence, source_count, sources_json, validation_json, metadata_json, status
       ) VALUES (
-        @category, @product_id, @field_key, @value,
+        @category, @product_id, @field_key, @value, @unit,
         @confidence, @source_count, @sources_json, @validation_json, @metadata_json, @status
       )
       ON CONFLICT(category, product_id, field_key, value) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
+        unit = COALESCE(excluded.unit, unit),
         source_count = excluded.source_count,
         sources_json = excluded.sources_json,
         validation_json = excluded.validation_json,

@@ -42,9 +42,6 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
           enum_name: 'LegacyEnum',
         },
       },
-      manual_enum_values: {
-        legacy_key: ['Legacy'],
-      },
       enum_lists: [
         {
           field: 'legacy_key',
@@ -96,9 +93,6 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
     fresh_key: {
       required_level: 'optional',
     },
-  });
-  assert.deepEqual(payload.manual_enum_values, {
-    modern_key: ['Legacy'],
   });
   assert.deepEqual(payload.data_lists, [
     {
@@ -264,7 +258,7 @@ test('studio page persistence keeps autosave attempt gating stable for force and
   );
 });
 
-test('studio page persistence preserves data_lists and manual_enum_values through the base map', async () => {
+test('studio page persistence preserves data_lists and enum_lists through the base map', async () => {
   const { buildStudioPersistMap } = await loadStudioPagePersistence();
 
   const payload = buildStudioPersistMap({
@@ -275,9 +269,6 @@ test('studio page persistence preserves data_lists and manual_enum_values throug
       data_lists: [
         { field: 'field_a', normalize: 'csv' },
       ],
-      manual_enum_values: {
-        field_a: ['ValueA'],
-      },
       enum_lists: [
         { field: 'field_a', values: ['ValueA'] },
       ],
@@ -292,10 +283,9 @@ test('studio page persistence preserves data_lists and manual_enum_values throug
   });
 
   // WHY: buildStudioPersistMap saves selected_keys + field_overrides on
-  // top of the full base map. data_lists and manual_enum_values are live
-  // data — only assembleMap (MappingStudioTab) migrates them to enum_lists.
+  // top of the full base map. data_lists are live data — only assembleMap
+  // (MappingStudioTab) migrates them to enum_lists.
   assert.ok(Array.isArray(payload.data_lists), 'data_lists must be preserved');
   assert.deepEqual(payload.data_lists, [{ field: 'field_a', normalize: 'csv' }]);
-  assert.deepEqual(payload.manual_enum_values, { field_a: ['ValueA'] });
   assert.ok(Array.isArray(payload.enum_lists), 'enum_lists must be preserved');
 });

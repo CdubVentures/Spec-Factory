@@ -107,7 +107,6 @@ export const StudioConfigSchema = z.object({
   data_lists: z.array(DataListEntrySchema).optional(),
   selected_keys: z.array(z.string()).optional(),
   field_overrides: z.record(z.string(), z.unknown()).optional(),
-  manual_enum_values: z.record(z.string(), z.array(z.string())).optional(),
   expectations: z.record(z.string(), z.unknown()).optional(),
   field_groups: z.array(z.string()).optional(),
   identity: z.record(z.string(), z.unknown()).optional(),

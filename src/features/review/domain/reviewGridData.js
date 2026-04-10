@@ -231,6 +231,7 @@ export function buildFieldState({
   fieldShape = 'scalar',
   acceptedCandidateId = null,
   overridden = false,
+  contractUnit = null,
 }) {
   const fieldKey = normalizeField(field);
   const normalizedShape = String(fieldShape || 'scalar').trim().toLowerCase() || 'scalar';
@@ -264,6 +265,7 @@ export function buildFieldState({
         value: normalizedShape === 'list'
           ? (slotValueToText(normalizedCandidateValue, normalizedShape) ?? 'unk')
           : normalizedCandidateValue,
+        unit: contractUnit || null,
         score: candidateScore(candidate, provenanceRow),
         source_id: String(candidate.source_id || evidence.source_id || candidate.host || '').trim(),
         source,
@@ -296,6 +298,7 @@ export function buildFieldState({
         variant: 'selected',
       }),
       value: selectedValue,
+      unit: contractUnit || null,
       score: Math.max(0, Math.min(1, selectedConfidenceHint || 0.5)),
       source_id: fallbackSourceToken || '',
       source: fallbackSource,
@@ -380,6 +383,7 @@ export function buildFieldState({
   return {
     selected: {
       value: resolvedSelectedValue,
+      unit: contractUnit || null,
       confidence: resolvedSelectedConfidence,
       status: reasonCodes.length > 0 ? 'needs_review' : 'ok',
       color
@@ -498,6 +502,7 @@ export async function buildProductReviewPayload({
         fieldShape,
         acceptedCandidateId: dbFieldRow.accepted_candidate_id || null,
         overridden: isOverridden,
+        contractUnit: dbFieldRow.unit || row.field_rule?.units || null,
       });
 
       const needsReview = Boolean(dbFieldRow.needs_ai_review);

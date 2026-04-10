@@ -21,6 +21,7 @@ export interface ComponentPropertyState {
   slot_id?: number | null;
   selected: {
     value: unknown;
+    unit?: string | null;
     confidence: number;
     status: string;
     color: 'green' | 'yellow' | 'red' | 'gray' | 'purple';

@@ -97,25 +97,8 @@ test('review ecosystem enum contracts share one fixture without weakening enum b
       assert.equal(braided.needs_review, true);
     });
 
-    await t.test('ENUM-10: Enum manual value includes source_timestamp', async () => {
-      const timestamp = '2026-02-15T15:00:00.000Z';
-      const workbookSeed = buildWorkbookMapSeed({
-        manualEnumValues: { cable_type: ['Braided'], coating: ['Soft-touch'] },
-        manualEnumTimestamps: { 'cable_type::braided': timestamp },
-      });
-      await seedWorkbookMap(
-        config.categoryAuthorityRoot,
-        CATEGORY,
-        workbookSeed.manualEnumValues,
-        workbookSeed.manualEnumTimestamps,
-      );
-      const payload = await buildEnumPayloadFromSpecDb(config);
-      const field = findEnumField(payload, 'cable_type');
-      const braided = findEnumValue(payload, 'cable_type', 'Braided');
-      assert.equal(braided.source_timestamp, timestamp);
-      const usbC = field.values.find((entry) => entry.value === 'USB-C');
-      assert.equal(usbC.source_timestamp, null);
-    });
+    // ENUM-10 retired: manual_enum_timestamps was dead code (zero entries in all categories).
+    // source_timestamp is no longer seeded from the control-plane map.
 
     await t.test('ENUM-03: User-added fresh value gets source=manual', async () => {
       const initialPayload = await buildEnumPayloadFromSpecDb(config);

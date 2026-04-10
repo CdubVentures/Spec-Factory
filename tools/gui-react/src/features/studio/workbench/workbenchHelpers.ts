@@ -120,14 +120,12 @@ export function buildWorkbenchRows(
       matchStrategy: strN(r, 'enum.match.strategy', 'alias'),
       knownValuesCount: (kv[key] || []).length,
 
-      evidenceRequired: boolN(r, 'evidence.required', boolN(r, 'evidence_required', true)),
       minEvidenceRefs: numN(
         r,
         'evidence.min_evidence_refs',
         numN(r, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
       ),
       tierPreference: arrN(r, 'evidence.tier_preference').join(', '),
-      conflictPolicy: strN(r, 'evidence.conflict_policy', 'resolve_by_tier_else_unknown'),
 
       publishGate: boolN(r, 'priority.publish_gate', boolN(r, 'publish_gate')),
       blockPublishWhenUnk: boolN(r, 'priority.block_publish_when_unk', boolN(r, 'block_publish_when_unk')),

@@ -277,7 +277,6 @@ export function auditFieldMetadata(fieldRules = {}) {
     const effortValue = Number.parseInt(String(rule.effort ?? rule.priority?.effort ?? ''), 10);
     const dataType = String(rule.data_type || rule.contract?.type || rule.type || '').trim();
     const outputShape = String(rule.output_shape || rule.contract?.shape || rule.shape || '').trim();
-    const evidenceRequired = rule.evidence_required;
     const unknownReasonDefault = String(rule.unknown_reason_default || '').trim();
 
     if (!requiredLevel) missing.push('required_level');
@@ -286,7 +285,6 @@ export function auditFieldMetadata(fieldRules = {}) {
     if (!Number.isFinite(effortValue)) missing.push('effort');
     if (!dataType) missing.push('data_type');
     if (!outputShape) missing.push('output_shape');
-    if (typeof evidenceRequired !== 'boolean') missing.push('evidence_required');
     if (!unknownReasonDefault) missing.push('unknown_reason_default');
 
     if (missing.length > 0) {

@@ -2210,16 +2210,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adaptive_sync",
       "field_studio_hints": {
         "dataEntry": {
@@ -2235,17 +2232,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -2287,7 +2278,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -2353,16 +2343,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "aspect_ratio",
       "field_studio_hints": {
         "dataEntry": {
@@ -2378,17 +2365,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -2428,7 +2409,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -2495,16 +2475,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "audio_output",
       "field_studio_hints": {
         "dataEntry": {
@@ -2520,17 +2497,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -2568,7 +2539,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -2636,16 +2606,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "backlight_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -2661,17 +2628,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -2714,7 +2675,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -2778,16 +2738,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "base_model",
       "field_studio_hints": {
         "dataEntry": {
@@ -2803,17 +2760,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -2850,7 +2801,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -2924,16 +2874,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "black_uniformity",
       "field_studio_hints": {
         "dataEntry": {
@@ -2950,24 +2897,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -3015,7 +2950,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -3079,16 +3013,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "brand",
       "field_studio_hints": {
         "dataEntry": {
@@ -3104,17 +3035,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -3151,7 +3076,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3227,16 +3151,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "brightness_hdr_peak",
       "field_studio_hints": {
         "dataEntry": {
@@ -3253,26 +3174,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ],
-        "unit_conversions": {}
+        "unit": "nits"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ],
-        "unit_conversions": {}
+        "unit": "nits"
       },
       "priority": {
         "availability": "sometimes",
@@ -3310,7 +3217,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -3387,16 +3293,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "brightness_sdr",
       "field_studio_hints": {
         "dataEntry": {
@@ -3413,26 +3316,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ],
-        "unit_conversions": {}
+        "unit": "nits"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "nits",
-        "unit_accepts": [
-          "nits",
-          "cd/m²",
-          "cd/m2"
-        ],
-        "unit_conversions": {}
+        "unit": "nits"
       },
       "priority": {
         "availability": "expected",
@@ -3474,7 +3363,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -3542,16 +3430,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_length",
       "field_studio_hints": {
         "dataEntry": {
@@ -3568,22 +3453,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -3620,7 +3495,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -3687,16 +3561,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -3712,17 +3583,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -3760,7 +3625,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3833,16 +3697,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cables_included",
       "field_studio_hints": {
         "dataEntry": {
@@ -3863,10 +3724,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -3875,10 +3733,7 @@
           "|",
           ";"
         ],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -3916,7 +3771,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3980,16 +3834,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "category",
       "field_studio_hints": {
         "dataEntry": {
@@ -4005,17 +3856,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -4051,7 +3896,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -4122,16 +3966,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color",
       "field_studio_hints": {
         "dataEntry": {
@@ -4152,10 +3993,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -4164,10 +4002,7 @@
           "|",
           ";"
         ],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -4206,7 +4041,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -4281,16 +4115,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color_accuracy_delta_e",
       "field_studio_hints": {
         "dataEntry": {
@@ -4306,17 +4137,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -4354,7 +4179,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "integer",
       "ui": {
         "display_decimals": 2,
@@ -4429,16 +4253,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color_gamut_adobe_rgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -4455,22 +4276,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -4506,7 +4317,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -4582,16 +4392,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color_gamut_dci_p3",
       "field_studio_hints": {
         "dataEntry": {
@@ -4608,22 +4415,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "expected",
@@ -4660,7 +4457,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -4736,16 +4532,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color_gamut_srgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -4762,22 +4555,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "expected",
@@ -4814,7 +4597,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -4872,9 +4654,7 @@
       },
       "enum_policy": "closed",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5069,16 +4849,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "contrast_ratio",
       "field_studio_hints": {
         "dataEntry": {
@@ -5094,17 +4871,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5143,7 +4914,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5210,16 +4980,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "contrast_ratio_dynamic",
       "field_studio_hints": {
         "dataEntry": {
@@ -5235,17 +5002,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -5281,7 +5042,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5349,16 +5109,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "crosshair_overlay",
       "field_studio_hints": {
         "dataEntry": {
@@ -5374,17 +5131,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -5421,7 +5172,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -5488,16 +5238,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "curve_radius",
       "field_studio_hints": {
         "dataEntry": {
@@ -5513,17 +5260,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -5562,7 +5303,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5628,16 +5368,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "curved",
       "field_studio_hints": {
         "dataEntry": {
@@ -5653,17 +5390,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5700,7 +5431,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -5768,16 +5498,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "daisy_chain",
       "field_studio_hints": {
         "dataEntry": {
@@ -5793,17 +5520,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -5841,7 +5562,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -5915,16 +5635,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "depth",
       "field_studio_hints": {
         "dataEntry": {
@@ -5941,22 +5658,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -5993,7 +5700,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -6060,16 +5766,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
@@ -6085,17 +5788,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -6132,7 +5829,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -6199,16 +5895,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "display_stream_compression",
       "field_studio_hints": {
         "dataEntry": {
@@ -6224,17 +5917,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -6274,7 +5961,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6341,16 +6027,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "displayport_ports",
       "field_studio_hints": {
         "dataEntry": {
@@ -6366,17 +6049,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -6416,7 +6093,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6484,16 +6160,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "displayport_version",
       "field_studio_hints": {
         "dataEntry": {
@@ -6509,17 +6182,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -6559,7 +6226,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6615,9 +6281,7 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6702,16 +6366,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "energy_rating",
       "field_studio_hints": {
         "dataEntry": {
@@ -6727,17 +6388,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -6775,7 +6430,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6843,16 +6497,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "ethernet_rj45",
       "field_studio_hints": {
         "dataEntry": {
@@ -6868,17 +6519,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -6918,7 +6563,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6984,16 +6628,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "factory_calibrated",
       "field_studio_hints": {
         "dataEntry": {
@@ -7009,17 +6650,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7056,7 +6691,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -7123,16 +6757,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "flicker_free",
       "field_studio_hints": {
         "dataEntry": {
@@ -7148,17 +6779,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7197,7 +6822,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -7273,16 +6897,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "flicker_frequency",
       "field_studio_hints": {
         "dataEntry": {
@@ -7299,24 +6920,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "sometimes",
@@ -7365,7 +6974,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -7433,16 +7041,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "frc",
       "field_studio_hints": {
         "dataEntry": {
@@ -7458,17 +7063,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7505,7 +7104,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -7572,16 +7170,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gradient_handling",
       "field_studio_hints": {
         "dataEntry": {
@@ -7597,17 +7192,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -7656,7 +7245,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7730,16 +7318,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gray_uniformity_50",
       "field_studio_hints": {
         "dataEntry": {
@@ -7756,24 +7341,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -7821,7 +7394,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -7885,16 +7457,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gtin",
       "field_studio_hints": {
         "dataEntry": {
@@ -7910,17 +7479,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7956,7 +7519,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8023,16 +7585,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "hdmi_ports",
       "field_studio_hints": {
         "dataEntry": {
@@ -8048,17 +7607,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8098,7 +7651,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8166,16 +7718,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "hdmi_version",
       "field_studio_hints": {
         "dataEntry": {
@@ -8191,17 +7740,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8242,7 +7785,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8314,16 +7856,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "hdr_support",
       "field_studio_hints": {
         "dataEntry": {
@@ -8344,10 +7883,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -8356,10 +7892,7 @@
           "|",
           ";"
         ],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8402,7 +7935,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8470,16 +8002,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "headphone_jack",
       "field_studio_hints": {
         "dataEntry": {
@@ -8495,17 +8024,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8542,7 +8065,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -8618,16 +8140,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height",
       "field_studio_hints": {
         "dataEntry": {
@@ -8644,22 +8163,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -8696,7 +8205,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -8764,16 +8272,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_adjustment",
       "field_studio_hints": {
         "dataEntry": {
@@ -8789,17 +8294,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8839,7 +8338,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8913,16 +8411,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_with_stand",
       "field_studio_hints": {
         "dataEntry": {
@@ -8939,22 +8434,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -8991,7 +8476,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9067,16 +8551,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "horizontal_viewing_angle",
       "field_studio_hints": {
         "dataEntry": {
@@ -9093,24 +8574,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "priority": {
         "availability": "sometimes",
@@ -9158,7 +8627,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -9172,7 +8640,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "deg",
+        "suffix": "°",
         "tooltip_key": "horizontal_viewing_angle",
         "tooltip_md": "Measured horizontal viewing angle before notable color or luminance shift.",
         "tooltip_source": null
@@ -9233,16 +8701,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "input_lag",
       "field_studio_hints": {
         "dataEntry": {
@@ -9259,22 +8724,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -9312,7 +8767,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9388,16 +8842,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "input_lag_120hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -9414,22 +8865,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -9478,7 +8919,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9553,16 +8993,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "input_lag_60hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -9579,22 +9016,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -9643,7 +9070,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9718,16 +9144,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "input_lag_max_refresh",
       "field_studio_hints": {
         "dataEntry": {
@@ -9744,22 +9167,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -9808,7 +9221,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9875,16 +9287,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "kvm_switch",
       "field_studio_hints": {
         "dataEntry": {
@@ -9900,17 +9309,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -9948,7 +9351,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -10023,16 +9425,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "local_dimming_zones",
       "field_studio_hints": {
         "dataEntry": {
@@ -10048,17 +9447,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10096,7 +9489,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "integer",
       "ui": {
         "display_decimals": 0,
@@ -10164,16 +9556,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "low_blue_light",
       "field_studio_hints": {
         "dataEntry": {
@@ -10189,17 +9578,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -10237,7 +9620,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -10304,16 +9686,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "macos_compatibility",
       "field_studio_hints": {
         "dataEntry": {
@@ -10329,17 +9708,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10388,7 +9761,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10453,16 +9825,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "material",
       "field_studio_hints": {
         "dataEntry": {
@@ -10478,17 +9847,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10526,7 +9889,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10602,16 +9964,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "max_refresh_rate_displayport",
       "field_studio_hints": {
         "dataEntry": {
@@ -10628,24 +9987,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "expected",
@@ -10696,7 +10043,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -10772,16 +10118,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "max_refresh_rate_hdmi",
       "field_studio_hints": {
         "dataEntry": {
@@ -10798,24 +10141,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "expected",
@@ -10866,7 +10197,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -10934,16 +10264,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "microphone",
       "field_studio_hints": {
         "dataEntry": {
@@ -10959,17 +10286,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11009,7 +10330,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11072,16 +10392,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "model",
       "field_studio_hints": {
         "dataEntry": {
@@ -11097,17 +10414,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -11144,7 +10455,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11213,16 +10523,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "motion_blur_reduction",
       "field_studio_hints": {
         "dataEntry": {
@@ -11238,17 +10545,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11289,7 +10590,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -11353,16 +10653,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "mpn",
       "field_studio_hints": {
         "dataEntry": {
@@ -11378,17 +10675,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -11424,7 +10715,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11491,16 +10781,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "native_colors",
       "field_studio_hints": {
         "dataEntry": {
@@ -11516,18 +10803,12 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "M",
-        "unit_accepts": [
-          "M"
-        ],
-        "unit_conversions": {}
+        "unit": "M"
       },
       "priority": {
         "availability": "sometimes",
@@ -11563,7 +10844,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 2,
@@ -11631,16 +10911,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "osd_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -11656,17 +10933,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11704,7 +10975,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11770,16 +11040,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "overdrive",
       "field_studio_hints": {
         "dataEntry": {
@@ -11795,17 +11062,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -11844,7 +11105,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -11919,16 +11179,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "overshoot_120hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -11945,24 +11202,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -12010,7 +11255,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -12085,16 +11329,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "overshoot_60hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -12111,24 +11352,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -12176,7 +11405,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -12251,16 +11479,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "overshoot_max_refresh",
       "field_studio_hints": {
         "dataEntry": {
@@ -12277,24 +11502,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -12343,7 +11556,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -12411,16 +11623,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "panel_bit_depth",
       "field_studio_hints": {
         "dataEntry": {
@@ -12436,17 +11645,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -12485,7 +11688,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12553,16 +11755,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "panel_coating",
       "field_studio_hints": {
         "dataEntry": {
@@ -12578,17 +11777,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -12628,7 +11821,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12695,16 +11887,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "panel_manufacturer",
       "field_studio_hints": {
         "dataEntry": {
@@ -12720,17 +11909,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -12769,7 +11952,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12837,16 +12019,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "panel_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -12862,17 +12041,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -12916,7 +12089,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12985,16 +12157,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "pip_pbp",
       "field_studio_hints": {
         "dataEntry": {
@@ -13010,17 +12179,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -13059,7 +12222,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -13127,16 +12289,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "pivot_rotation",
       "field_studio_hints": {
         "dataEntry": {
@@ -13152,17 +12311,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -13200,7 +12353,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -13276,16 +12428,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "pixel_density",
       "field_studio_hints": {
         "dataEntry": {
@@ -13302,22 +12451,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ppi",
-        "unit_accepts": [
-          "ppi"
-        ],
-        "unit_conversions": {}
+        "unit": "ppi"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ppi",
-        "unit_accepts": [
-          "ppi"
-        ],
-        "unit_conversions": {}
+        "unit": "ppi"
       },
       "priority": {
         "availability": "expected",
@@ -13355,7 +12494,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -13431,16 +12569,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "power_consumption_max",
       "field_studio_hints": {
         "dataEntry": {
@@ -13457,22 +12592,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "priority": {
         "availability": "sometimes",
@@ -13509,7 +12634,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -13585,16 +12709,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "power_consumption_typical",
       "field_studio_hints": {
         "dataEntry": {
@@ -13611,22 +12732,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "priority": {
         "availability": "expected",
@@ -13665,7 +12776,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -13735,16 +12845,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -13761,22 +12868,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "usd",
-        "unit_accepts": [
-          "usd"
-        ],
-        "unit_conversions": {}
+        "unit": "usd"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "usd",
-        "unit_accepts": [
-          "usd"
-        ],
-        "unit_conversions": {}
+        "unit": "usd"
       },
       "priority": {
         "availability": "expected",
@@ -13814,7 +12911,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -13828,7 +12924,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "usd",
+        "suffix": "USD",
         "tooltip_key": "price_range",
         "tooltip_md": "MSRP / launch retail price in USD",
         "tooltip_source": null
@@ -13882,16 +12978,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "ps5_compatibility",
       "field_studio_hints": {
         "dataEntry": {
@@ -13907,17 +13000,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -13966,7 +13053,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14040,16 +13126,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "reflections",
       "field_studio_hints": {
         "dataEntry": {
@@ -14066,24 +13149,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "%",
-        "unit_accepts": [
-          "%",
-          "percent"
-        ],
-        "unit_conversions": {}
+        "unit": "%"
       },
       "priority": {
         "availability": "sometimes",
@@ -14132,7 +13203,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -14207,16 +13277,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "refresh_rate",
       "field_studio_hints": {
         "dataEntry": {
@@ -14233,26 +13300,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "expected",
@@ -14296,7 +13349,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -14364,16 +13416,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
@@ -14389,17 +13438,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14437,7 +13480,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "date",
       "ui": {
         "display_decimals": 0,
@@ -14504,16 +13546,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "resolution",
       "field_studio_hints": {
         "dataEntry": {
@@ -14529,17 +13568,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -14582,7 +13615,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14657,16 +13689,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "response_time_120hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -14683,22 +13712,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -14748,7 +13767,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -14823,16 +13841,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "response_time_60hz",
       "field_studio_hints": {
         "dataEntry": {
@@ -14849,22 +13864,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -14914,7 +13919,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -14990,16 +13994,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "response_time_gtg",
       "field_studio_hints": {
         "dataEntry": {
@@ -15016,22 +14017,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "expected",
@@ -15071,7 +14062,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -15147,16 +14137,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "response_time_mprt",
       "field_studio_hints": {
         "dataEntry": {
@@ -15173,22 +14160,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -15226,7 +14203,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -15303,16 +14279,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "screen_size",
       "field_studio_hints": {
         "dataEntry": {
@@ -15329,28 +14302,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "in",
-        "unit_accepts": [
-          "in",
-          "inch",
-          "inches",
-          "\""
-        ],
-        "unit_conversions": {}
+        "unit": "in"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "in",
-        "unit_accepts": [
-          "in",
-          "inch",
-          "inches",
-          "\""
-        ],
-        "unit_conversions": {}
+        "unit": "in"
       },
       "priority": {
         "availability": "expected",
@@ -15390,7 +14347,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -15455,16 +14411,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
@@ -15480,17 +14433,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -15527,7 +14474,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15593,16 +14539,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "speakers",
       "field_studio_hints": {
         "dataEntry": {
@@ -15618,17 +14561,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -15668,7 +14605,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15735,16 +14671,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "subpixel_layout",
       "field_studio_hints": {
         "dataEntry": {
@@ -15760,17 +14693,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -15807,7 +14734,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15874,16 +14800,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "swivel_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -15899,17 +14822,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -15947,7 +14864,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16014,16 +14930,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "text_clarity",
       "field_studio_hints": {
         "dataEntry": {
@@ -16039,17 +14952,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16098,7 +15005,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16165,16 +15071,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "thunderbolt_ports",
       "field_studio_hints": {
         "dataEntry": {
@@ -16190,17 +15093,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16239,7 +15136,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16307,16 +15203,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "thunderbolt_version",
       "field_studio_hints": {
         "dataEntry": {
@@ -16332,17 +15225,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16381,7 +15268,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16448,16 +15334,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "tilt_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -16473,17 +15356,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -16522,7 +15399,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16590,16 +15466,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "usb_c_ports",
       "field_studio_hints": {
         "dataEntry": {
@@ -16615,17 +15488,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16664,7 +15531,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16731,16 +15597,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "usb_hub",
       "field_studio_hints": {
         "dataEntry": {
@@ -16756,17 +15619,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16804,7 +15661,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16880,16 +15736,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "usb_power_delivery_watts",
       "field_studio_hints": {
         "dataEntry": {
@@ -16906,22 +15759,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "W",
-        "unit_accepts": [
-          "W"
-        ],
-        "unit_conversions": {}
+        "unit": "W"
       },
       "priority": {
         "availability": "sometimes",
@@ -16961,7 +15804,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -17029,16 +15871,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "variable_refresh_rate",
       "field_studio_hints": {
         "dataEntry": {
@@ -17054,17 +15893,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -17102,7 +15935,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -17166,16 +15998,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "variant",
       "field_studio_hints": {
         "dataEntry": {
@@ -17191,17 +16020,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -17239,7 +16062,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17314,16 +16136,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "vertical_viewing_angle",
       "field_studio_hints": {
         "dataEntry": {
@@ -17340,24 +16159,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "?"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "priority": {
         "availability": "sometimes",
@@ -17405,7 +16212,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -17419,7 +16225,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "deg",
+        "suffix": "°",
         "tooltip_key": "vertical_viewing_angle",
         "tooltip_md": "Measured vertical viewing angle before notable color or luminance shift.",
         "tooltip_source": null
@@ -17473,16 +16279,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "vesa_mount",
       "field_studio_hints": {
         "dataEntry": {
@@ -17498,17 +16301,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -17549,7 +16346,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17617,16 +16413,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "vrr_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -17642,17 +16435,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17690,7 +16477,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17757,16 +16543,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wall_mountable",
       "field_studio_hints": {
         "dataEntry": {
@@ -17782,17 +16565,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -17829,7 +16606,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -17897,16 +16673,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "warranty",
       "field_studio_hints": {
         "dataEntry": {
@@ -17922,17 +16695,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17969,7 +16736,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -18037,16 +16803,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "webcam",
       "field_studio_hints": {
         "dataEntry": {
@@ -18062,17 +16825,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -18113,7 +16870,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -18187,16 +16943,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "weight_with_stand",
       "field_studio_hints": {
         "dataEntry": {
@@ -18213,26 +16966,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "priority": {
         "availability": "expected",
@@ -18270,7 +17009,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -18346,16 +17084,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "weight_without_stand",
       "field_studio_hints": {
         "dataEntry": {
@@ -18372,26 +17107,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "kg",
-          "lbs"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "priority": {
         "availability": "expected",
@@ -18430,7 +17151,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -18498,16 +17218,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wide_color_gamut",
       "field_studio_hints": {
         "dataEntry": {
@@ -18523,17 +17240,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -18571,7 +17282,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "boolean",
       "ui": {
         "display_decimals": 0,
@@ -18647,16 +17357,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
@@ -18673,22 +17380,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -18725,7 +17422,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -18794,16 +17490,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "xbox_series_xs_compatibility",
       "field_studio_hints": {
         "dataEntry": {
@@ -18819,17 +17512,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -18878,7 +17565,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -18924,576 +17610,6 @@
     "row_start": 2,
     "sheet": "field_catalog",
     "source": "column_range"
-  },
-  "manual_enum_values": {
-    "adaptive_sync": [
-      "None",
-      "FreeSync",
-      "FreeSync Premium",
-      "FreeSync Premium Pro",
-      "G-Sync Compatible",
-      "G-Sync",
-      "G-Sync Ultimate",
-      "AdaptiveSync"
-    ],
-    "aspect_ratio": [
-      "16:9",
-      "16:10",
-      "21:9",
-      "32:9",
-      "32:10",
-      "4:3",
-      "5:4",
-      "3:2"
-    ],
-    "audio_output": [
-      "3.5mm headphone jack",
-      "Line out",
-      "SPDIF",
-      "None"
-    ],
-    "backlight_type": [
-      "Direct-lit LED",
-      "Dual-layer",
-      "Edge-lit LED",
-      "FALD",
-      "MicroLED",
-      "Mini-LED",
-      "OLED",
-      "QD-OLED",
-      "Tandem OLED",
-      "W-LED",
-      "W-OLED",
-      "WLED"
-    ],
-    "cable_type": [
-      "HDMI",
-      "DisplayPort",
-      "USB-C",
-      "Thunderbolt 3",
-      "Thunderbolt 4",
-      "Power cable",
-      "USB-A to USB-B"
-    ],
-    "cables_included": [
-      "HDMI",
-      "DisplayPort",
-      "USB-C",
-      "USB-C to USB-C",
-      "USB-A to USB-B",
-      "Power cable",
-      "Thunderbolt 4",
-      "DP to Mini-DP"
-    ],
-    "category": [
-      "monitor"
-    ],
-    "color": [
-      "Black",
-      "White",
-      "Silver",
-      "Gray",
-      "Dark Gray",
-      "Matte Black",
-      "Space Gray",
-      "Platinum Silver",
-      "Matte White",
-      "Gunmetal"
-    ],
-    "colors": [
-      "amber",
-      "beige",
-      "black",
-      "blue",
-      "brown",
-      "coral",
-      "cyan",
-      "dark-blue",
-      "dark-brown",
-      "dark-cyan",
-      "dark-fuchsia",
-      "dark-gray",
-      "dark-green",
-      "dark-indigo",
-      "dark-lime",
-      "dark-orange",
-      "dark-pink",
-      "dark-purple",
-      "dark-red",
-      "dark-rose",
-      "dark-sky",
-      "dark-slate",
-      "dark-stone",
-      "dark-teal",
-      "dark-violet",
-      "dark-yellow",
-      "emerald",
-      "fuchsia",
-      "gold",
-      "gray",
-      "green",
-      "indigo",
-      "ivory",
-      "lavender",
-      "light-amber",
-      "light-blue",
-      "light-brown",
-      "light-coral",
-      "light-cyan",
-      "light-emerald",
-      "light-fuchsia",
-      "light-gray",
-      "light-green",
-      "light-indigo",
-      "light-lime",
-      "light-olive",
-      "light-orange",
-      "light-pink",
-      "light-purple",
-      "light-red",
-      "light-rose",
-      "light-sky",
-      "light-slate",
-      "light-stone",
-      "light-teal",
-      "light-violet",
-      "light-yellow",
-      "lime",
-      "magenta",
-      "maroon",
-      "navy",
-      "olive",
-      "orange",
-      "pink",
-      "purple",
-      "red",
-      "rose",
-      "salmon",
-      "silver",
-      "sky",
-      "slate",
-      "stone",
-      "teal",
-      "turquoise",
-      "violet",
-      "white",
-      "yellow"
-    ],
-    "crosshair_overlay": [
-      "Yes",
-      "No"
-    ],
-    "curve_radius": [
-      "1000R",
-      "1500R",
-      "1800R",
-      "2500R",
-      "3000R",
-      "3800R",
-      "4000R",
-      "Flat"
-    ],
-    "curved": [
-      "Yes",
-      "No"
-    ],
-    "daisy_chain": [
-      "DisplayPort MST",
-      "USB-C (DP Alt Mode)",
-      "Thunderbolt",
-      "None"
-    ],
-    "discontinued": [
-      "Yes",
-      "No"
-    ],
-    "display_stream_compression": [
-      "No",
-      "Yes",
-      "DSC 1.2",
-      "DSC 1.2a"
-    ],
-    "displayport_ports": [
-      "0",
-      "1",
-      "2",
-      "3"
-    ],
-    "displayport_version": [
-      "None",
-      "DisplayPort 1.2",
-      "DisplayPort 1.2a",
-      "DisplayPort 1.4",
-      "DisplayPort 1.4a",
-      "DisplayPort 2.1",
-      "DisplayPort 2.1a",
-      "DisplayPort 2.1b"
-    ],
-    "energy_rating": [
-      "A",
-      "B",
-      "C",
-      "D",
-      "E",
-      "F",
-      "G"
-    ],
-    "ethernet_rj45": [
-      "None",
-      "1GbE",
-      "2.5GbE",
-      "5GbE",
-      "10GbE"
-    ],
-    "factory_calibrated": [
-      "Yes",
-      "No"
-    ],
-    "flicker_free": [
-      "Yes",
-      "No"
-    ],
-    "frc": [
-      "Yes",
-      "No"
-    ],
-    "gradient_handling": [
-      "Excellent",
-      "Good",
-      "Fair",
-      "Poor"
-    ],
-    "hdmi_ports": [
-      "0",
-      "1",
-      "2",
-      "3",
-      "4"
-    ],
-    "hdmi_version": [
-      "None",
-      "HDMI 1.4",
-      "HDMI 2.0",
-      "HDMI 2.0b",
-      "HDMI 2.1",
-      "HDMI 2.1a"
-    ],
-    "hdr_support": [
-      "None",
-      "HDR10",
-      "HDR10+",
-      "Dolby Vision",
-      "HLG",
-      "VESA DisplayHDR 400",
-      "VESA DisplayHDR 500",
-      "VESA DisplayHDR 600",
-      "VESA DisplayHDR 1000",
-      "VESA DisplayHDR 1400",
-      "VESA DisplayHDR True Black 400",
-      "VESA DisplayHDR True Black 500",
-      "VESA DisplayHDR True Black 600"
-    ],
-    "headphone_jack": [
-      "Yes",
-      "No"
-    ],
-    "kvm_switch": [
-      "Yes",
-      "No"
-    ],
-    "low_blue_light": [
-      "Yes",
-      "No"
-    ],
-    "macos_compatibility": [
-      "Yes",
-      "Limited",
-      "No"
-    ],
-    "material": [
-      "Plastic",
-      "Metal",
-      "Aluminum",
-      "Metal + Plastic",
-      "ABS Plastic"
-    ],
-    "microphone": [
-      "None",
-      "Single microphone",
-      "Dual microphone array",
-      "Beamforming microphone array"
-    ],
-    "motion_blur_reduction": [
-      "None",
-      "DyAc",
-      "DyAc+",
-      "DyAc 2",
-      "ULMB",
-      "ULMB 2",
-      "ELMB",
-      "ELMB Sync",
-      "MBR",
-      "BFI",
-      "PureXP",
-      "1ms MPRT",
-      "Extreme Low Motion Blur",
-      "VRR + MBR"
-    ],
-    "native_colors": [
-      "16.2 million",
-      "16.7 million",
-      "1.07 billion"
-    ],
-    "osd_type": [
-      "Buttons",
-      "Joystick",
-      "Touch-sensitive buttons",
-      "Remote control",
-      "Joystick + Buttons",
-      "Shuttle wheel"
-    ],
-    "overdrive": [
-      "Off",
-      "Normal",
-      "Fast",
-      "Faster",
-      "Extreme",
-      "Premium",
-      "Low",
-      "Medium",
-      "High",
-      "Ultra"
-    ],
-    "panel_bit_depth": [
-      "6-bit",
-      "6-bit + FRC",
-      "8-bit",
-      "8-bit + FRC",
-      "10-bit",
-      "10-bit + FRC",
-      "12-bit"
-    ],
-    "panel_coating": [
-      "Anti-glare",
-      "Anti-glare (3H)",
-      "Anti-reflective",
-      "Glossy",
-      "Light matte",
-      "Matte",
-      "Nano-texture",
-      "Semi-glossy"
-    ],
-    "panel_manufacturer": [
-      "AU Optronics (AUO)",
-      "BOE",
-      "Innolux",
-      "LG Display",
-      "Samsung Display",
-      "Sharp",
-      "CSOT (TCL)",
-      "Tianma",
-      "Japan Display (JDI)",
-      "Panda (HKC)",
-      "Chi Mei"
-    ],
-    "panel_type": [
-      "ADS",
-      "AH-IPS",
-      "AHVA",
-      "Fast IPS",
-      "HVA",
-      "IPS",
-      "IPS Black",
-      "Mini-LED IPS",
-      "Nano IPS",
-      "OLED",
-      "PLS",
-      "QD-OLED",
-      "RGB Stripe OLED",
-      "Rapid IPS",
-      "S-IPS",
-      "SVA",
-      "TN",
-      "Tandem OLED",
-      "VA",
-      "W-OLED"
-    ],
-    "pip_pbp": [
-      "None",
-      "PiP",
-      "PbP",
-      "PiP + PbP",
-      "Quad PbP"
-    ],
-    "pivot_rotation": [
-      "Yes (90°)",
-      "Yes (±90°)",
-      "No"
-    ],
-    "price_range": [
-      "Budget (Under $200)",
-      "Mid-range ($200–$500)",
-      "Premium ($500–$1000)",
-      "High-end ($1000–$2000)",
-      "Ultra-premium ($2000+)"
-    ],
-    "ps5_compatibility": [
-      "Yes",
-      "Limited",
-      "No"
-    ],
-    "refresh_rate": [
-      "60 Hz",
-      "75 Hz",
-      "100 Hz",
-      "120 Hz",
-      "144 Hz",
-      "165 Hz",
-      "170 Hz",
-      "180 Hz",
-      "200 Hz",
-      "240 Hz",
-      "280 Hz",
-      "300 Hz",
-      "360 Hz",
-      "480 Hz",
-      "500 Hz",
-      "540 Hz",
-      "600 Hz",
-      "720 Hz",
-      "1040 Hz"
-    ],
-    "resolution": [
-      "1920x1080 (Full HD)",
-      "2560x1080 (UW-FHD)",
-      "2560x1440 (QHD)",
-      "3440x1440 (UW-QHD)",
-      "3840x1080 (DFHD)",
-      "3840x1600 (UW-QHD+)",
-      "3840x2160 (4K UHD)",
-      "5120x1440 (DQHD)",
-      "5120x2160 (5K2K)",
-      "5120x2880 (5K)",
-      "6016x3384 (6K)",
-      "7680x4320 (8K)"
-    ],
-    "screen_size": [
-      "22\"",
-      "23.8\"",
-      "24\"",
-      "24.5\"",
-      "25\"",
-      "27\"",
-      "28\"",
-      "31.5\"",
-      "32\"",
-      "34\"",
-      "37.5\"",
-      "38\"",
-      "40\"",
-      "42\"",
-      "43\"",
-      "45\"",
-      "48\"",
-      "49\"",
-      "55\"",
-      "57\""
-    ],
-    "speakers": [
-      "None",
-      "2x 2W",
-      "2x 3W",
-      "2x 5W",
-      "2x 7W",
-      "2x 10W",
-      "2x 1W",
-      "Built-in (wattage unspecified)"
-    ],
-    "subpixel_layout": [
-      "RGB",
-      "BGR",
-      "RWBG",
-      "WRGB",
-      "Pentile (RGBG)",
-      "RGB Stripe",
-      "QD RGB"
-    ],
-    "text_clarity": [
-      "Excellent",
-      "Good",
-      "Fair",
-      "Poor"
-    ],
-    "thunderbolt_ports": [
-      "0",
-      "1",
-      "2",
-      "3"
-    ],
-    "thunderbolt_version": [
-      "None",
-      "Thunderbolt 3",
-      "Thunderbolt 4",
-      "Thunderbolt 5"
-    ],
-    "usb_c_ports": [
-      "0",
-      "1",
-      "2",
-      "3"
-    ],
-    "usb_hub": [
-      "None",
-      "USB 2.0 (2-port)",
-      "USB 2.0 (4-port)",
-      "USB 3.0 (2-port)",
-      "USB 3.0 (4-port)",
-      "USB 3.2 Gen 1 (2-port)",
-      "USB 3.2 Gen 1 (4-port)",
-      "USB 3.2 Gen 2 (2-port)",
-      "USB 3.2 Gen 2 (4-port)"
-    ],
-    "variable_refresh_rate": [
-      "Yes",
-      "No"
-    ],
-    "vesa_mount": [
-      "None",
-      "75x75",
-      "100x100",
-      "200x100",
-      "200x200",
-      "300x300",
-      "400x400"
-    ],
-    "wall_mountable": [
-      "Yes",
-      "No"
-    ],
-    "warranty": [
-      "1 year",
-      "2 years",
-      "3 years",
-      "4 years",
-      "5 years"
-    ],
-    "webcam": [
-      "None",
-      "HD",
-      "Full HD",
-      "QHD",
-      "4K",
-      "5MP"
-    ],
-    "wide_color_gamut": [
-      "Yes",
-      "No"
-    ],
-    "xbox_series_xs_compatibility": [
-      "Yes",
-      "Limited",
-      "No"
-    ]
   },
   "product_table": {
     "brand_row": 3,

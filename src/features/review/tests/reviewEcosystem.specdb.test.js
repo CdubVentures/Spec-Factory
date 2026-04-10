@@ -56,7 +56,7 @@ test('DB SEED - SpecDb table verification', async (t) => {
       assert.ok(switchValues.length >= 2);
     });
 
-    await t.test('DB-05: list_values populated from known_values and manual_enum_values', () => {
+    await t.test('DB-05: list_values populated from known_values and data_lists manual_values', () => {
       const connectionValues = db.getListValues('connection');
       assert.ok(connectionValues.length >= 4, `connection should have >= 4 values, got ${connectionValues.length}`);
       const cableValues = db.getListValues('cable_type');

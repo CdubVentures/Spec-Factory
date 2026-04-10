@@ -29,8 +29,8 @@ Policy:
 | Original test | Bucket | Reason | Replacement | Disposition |
 | --- | --- | --- | --- | --- |
 | `min-refs: min=1 only runs quality check, no count check` | COLLAPSE | Same min-ref boundary family as the min=0 and non-required/min>0 boundary cases. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
-| `min-refs: min=0 + evidence_required=false -> no evidence checks` | COLLAPSE | Same min-ref boundary family as the min=1 and non-required/min>0 boundary cases. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
-| `min-refs: min=2 + evidence_required=false still enforces quality and count` | COLLAPSE | Same min-ref boundary family as the min=1/min=0 wrappers. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
+| `min-refs: min=0 -> no evidence checks` | COLLAPSE | Same min-ref boundary family as the min=1 and min>0 boundary cases. evidence_required retired. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
+| `min-refs: min=2 still enforces quality and count` | COLLAPSE | Same min-ref boundary family as the min=1/min=0 wrappers. evidence_required retired. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
 | `min-refs: enforceEvidence=true with min=2 and 1 ref -> fail count` | COLLAPSE | Same min-ref boundary family as the non-required/min>0 wrapper. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Merged into boundary contract |
 | `min-refs: quality failure prevents redundant count check` | KEEP | Distinct precedence contract that proves quality failures short-circuit count failures. | `src/engine/tests/runtimeGateMinRefsBoundaryContracts.test.js` | Preserved |
 | `min-refs: respectPerFieldEvidence=false skips count check` | RETIRE | Duplicate of the generic per-field evidence opt-out contract already covered by `src/engine/tests/runtimeGateEvidencePerFieldContracts.test.js`. | None | Deleted |

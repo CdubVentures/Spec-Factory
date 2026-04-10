@@ -22,9 +22,9 @@ import {
   labelCls,
   selectCls,
   STUDIO_TIPS,
-  UNITS,
   UNKNOWN_TOKENS,
 } from '../components/studioConstants.ts';
+import { useUnitRegistryQuery } from '../../../pages/unit-registry/unitRegistryQueries.ts';
 import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs.tsx';
 
 const TEXT_GRAY_400 = 'sf-text-subtle';
@@ -50,6 +50,8 @@ export function ContractTab({
   onUpdate: (path: string, val: unknown) => void;
   B: BadgeSlot;
 }) {
+  const { data: unitRegistryData } = useUnitRegistryQuery();
+  const registryUnits = (unitRegistryData?.units ?? []).map(u => u.canonical);
   const tooltipMd = strN(rule, 'ui.tooltip_md');
   const contractType = strN(rule, 'contract.type', 'string');
   const contractShape = strN(rule, 'contract.shape', 'scalar');
@@ -102,7 +104,10 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Unit<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.contract_unit} /></span><B p="contract.unit" /></div>
-          <ComboSelect value={strN(rule, 'contract.unit')} onChange={(v) => onUpdate('contract.unit', v || null)} options={UNITS} placeholder="e.g. g, mm" />
+          <select className={selectCls} value={strN(rule, 'contract.unit')} onChange={(e) => onUpdate('contract.unit', e.target.value || null)}>
+            <option value="">— none —</option>
+            {registryUnits.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Unknown Token<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.unknown_token} /></span><B p="contract.unknown_token" /></div>
@@ -417,7 +422,6 @@ export function ContractTab({
               const unit = strN(rule, 'contract.unit', strN(rule, 'unit'));
               const enumPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
               const enumSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
-              const evidenceReq = boolN(rule, 'evidence.evidence_required', boolN(rule, 'evidence_required'));
               const minRefs = numN(
                 rule,
                 'evidence.min_evidence_refs',
@@ -446,7 +450,7 @@ export function ContractTab({
               if (enumPolicy === 'closed' && enumSource) guidanceParts.push(`Closed enum - must match ${enumSource}.`);
               if (diff === 'hard') guidanceParts.push('Often inconsistent - prefer manufacturer spec sheets.');
               else if (diff === 'instrumented') guidanceParts.push('Lab-measured - only from independent tests.');
-              if (evidenceReq && minRefs >= 2) guidanceParts.push(`Requires ${minRefs}+ independent refs.`);
+              if (minRefs >= 2) guidanceParts.push(`Requires ${minRefs}+ independent refs.`);
               if (rl === 'required' || rl === 'critical') guidanceParts.push('High-priority - blocked if unknown.');
               if (guidanceParts.length === 0) guidanceParts.push('Extract from most authoritative source.');
               const autoNote = guidanceParts.join(' ');

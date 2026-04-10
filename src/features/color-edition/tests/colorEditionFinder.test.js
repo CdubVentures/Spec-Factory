@@ -269,7 +269,7 @@ describe('runColorEditionFinder', () => {
     assert.ok(cooldownDate <= expectedMax, 'cooldown not more than ~30 days out');
   });
 
-  it('second run receives previousRuns in prompt context', async () => {
+  it('second run receives previousRuns as known inputs in prompt', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
       { name: 'red', hex: '#ef4444', css_var: '--color-red' },
@@ -290,7 +290,7 @@ describe('runColorEditionFinder', () => {
       }),
     });
 
-    // Second run — prompt should include history
+    // Second run — prompt should include known_colors from first run
     await runColorEditionFinder({
       product: { ...PRODUCT, product_id: 'mouse-history' },
       appDb,
@@ -307,9 +307,100 @@ describe('runColorEditionFinder', () => {
 
     const json = readColorEdition({ productId: 'mouse-history', productRoot: PRODUCT_ROOT });
     assert.equal(json.runs.length, 2);
-    // Second run's prompt should reference current selected state
-    assert.ok(json.runs[1].prompt.system.includes('Currently selected'), 'prompt includes selected state');
+    // v2: second run's prompt should reference known_colors from first run
+    assert.ok(json.runs[1].prompt.system.includes('known_colors'), 'prompt includes known_colors input');
     assert.deepEqual(json.selected.colors, ['black', 'red']);
+  });
+
+  // ── v2 audit fields: siblings_excluded + discovery_log ──
+
+  it('stores siblings_excluded and discovery_log in run.response', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-audit' },
+      appDb,
+      specDb,
+      config: {},
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+        siblings_excluded: ['M75 Air Wireless Pro', 'M75 Wired'],
+        discovery_log: {
+          confirmed_from_known: [],
+          added_new: ['black'],
+          rejected_from_known: [],
+          urls_checked: ['https://corsair.com/m75'],
+          queries_run: ['Corsair M75 Air Wireless colors'],
+        },
+      }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-audit', productRoot: PRODUCT_ROOT });
+    const runResp = json.runs[0].response;
+    assert.deepEqual(runResp.siblings_excluded, ['M75 Air Wireless Pro', 'M75 Wired']);
+    assert.deepEqual(runResp.discovery_log.urls_checked, ['https://corsair.com/m75']);
+    assert.deepEqual(runResp.discovery_log.added_new, ['black']);
+  });
+
+  it('selected does NOT contain siblings_excluded or discovery_log', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-sel-audit' },
+      appDb,
+      specDb,
+      config: {},
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+        siblings_excluded: ['M75 Pro'],
+        discovery_log: { confirmed_from_known: [], added_new: [], rejected_from_known: [], urls_checked: [], queries_run: [] },
+      }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-sel-audit', productRoot: PRODUCT_ROOT });
+    assert.equal(json.selected.siblings_excluded, undefined, 'no siblings_excluded in selected');
+    assert.equal(json.selected.discovery_log, undefined, 'no discovery_log in selected');
+  });
+
+  it('v1 LLM response without audit fields still stores cleanly', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-v1compat' },
+      appDb,
+      specDb,
+      config: {},
+      logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+        // no siblings_excluded, no discovery_log
+      }),
+    });
+
+    const json = readColorEdition({ productId: 'mouse-v1compat', productRoot: PRODUCT_ROOT });
+    const runResp = json.runs[0].response;
+    assert.deepEqual(runResp.siblings_excluded, []);
+    assert.deepEqual(runResp.discovery_log, {
+      confirmed_from_known: [], added_new: [], rejected_from_known: [],
+      urls_checked: [], queries_run: [],
+    });
   });
 
   it('next_run_number persisted in JSON after runs', async () => {

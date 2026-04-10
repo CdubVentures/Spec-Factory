@@ -58,17 +58,6 @@ export function applyStudioMapRenames(
     nextMap.field_overrides = renamedOverrides;
   }
 
-  if (
-    nextMap.manual_enum_values &&
-    typeof nextMap.manual_enum_values === 'object'
-  ) {
-    const renamedManualValues: Record<string, string[]> = {};
-    for (const [key, values] of Object.entries(nextMap.manual_enum_values)) {
-      renamedManualValues[renameKey(key)] = Array.isArray(values) ? values : [];
-    }
-    nextMap.manual_enum_values = renamedManualValues;
-  }
-
   if (Array.isArray(nextMap.enum_lists)) {
     nextMap.enum_lists = nextMap.enum_lists.map((entry) => {
       if (!entry || typeof entry !== 'object') return entry;

@@ -373,12 +373,10 @@ export function buildEnumSuggestionsSeed({ fields = {}, suggestions = [] } = {})
 }
 
 export function buildWorkbookMapSeed({
-  manualEnumValues = {},
-  manualEnumTimestamps = {},
+  enumValues = {},
 } = {}) {
   return {
-    manualEnumValues: cloneRecordOfArrays(manualEnumValues),
-    manualEnumTimestamps: { ...manualEnumTimestamps },
+    enumValues: cloneRecordOfArrays(enumValues),
   };
 }
 
@@ -446,9 +444,21 @@ export async function seedEnumSuggestions(helperRoot, category, suggestions) {
   await writeJson(suggestionsPath, suggestions);
 }
 
-export async function seedWorkbookMap(helperRoot, category, manualEnumValues, manualEnumTimestamps = {}) {
+export async function seedWorkbookMap(helperRoot, category, enumValues = {}) {
   const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
-  await writeJson(mapPath, { manual_enum_values: manualEnumValues, manual_enum_timestamps: manualEnumTimestamps });
+  const dataLists = Object.entries(enumValues).map(([field, values]) => ({
+    field,
+    mode: 'scratch',
+    sheet: '',
+    value_column: '',
+    header_row: 0,
+    row_start: 2,
+    row_end: 0,
+    normalize: 'lower_trim',
+    delimiter: '',
+    manual_values: Array.isArray(values) ? values : [],
+  }));
+  await writeJson(mapPath, { data_lists: dataLists });
 }
 
 export async function seedComponentOverride(helperRoot, category, componentType, name, override) {

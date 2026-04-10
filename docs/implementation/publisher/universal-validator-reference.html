@@ -2498,7 +2498,7 @@ function evaluateAllConstraints(propertyMappings, componentProps, productValues)
 
     <h3>What the contract claims</h3>
     <div class="small muted" style="margin-bottom:8px;">
-      Fields with <code>evidence_required: true</code> or <code>min_evidence_refs</code> are enforced.
+      Fields with <code>min_evidence_refs &gt; 0</code> are enforced.
     </div>
 
     <h3>What actually happens</h3>
@@ -2510,7 +2510,7 @@ runtimeGateResult = applyRuntimeFieldRules({ ..., respectPerFieldEvidence: false
 
 <span style="color:var(--sf-teal-fg);">// runtimeGate.js:241 — this is where the flag is checked</span>
 const shouldAuditQuality = enforceEvidence
-  || (respectPerFieldEvidence &amp;&amp; (rule?.evidence_required || minRefs > 0));
+  || (respectPerFieldEvidence &amp;&amp; minRefs > 0);
 // When respectPerFieldEvidence=false, per-field checks are COMPLETELY skipped</div>
 
     <h3>Impact</h3>

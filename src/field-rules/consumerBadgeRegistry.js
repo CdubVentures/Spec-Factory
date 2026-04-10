@@ -260,18 +260,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'rev.flag': { desc: 'Flags field for manual review when evidence ref count is insufficient.' },
     } },
 
-  { path: 'evidence.conflict_policy', type: 'string', flatAliases: [],
-    section: 'Evidence Requirements', key: 'Conflict Policy',
-    consumers: {
-      'rev.flag': { desc: 'Applies the configured conflict resolution policy when multiple candidates disagree.' },
-    } },
-
-  { path: 'evidence.required', type: 'presence', flatAliases: ['evidence_required'],
-    section: 'Evidence Requirements', key: 'Evidence Required',
-    consumers: {
-      'eng.gate': { desc: 'Enforces that the field must have evidence backing before acceptance.' },
-    } },
-
   { path: 'evidence.tier_preference', type: 'array', flatAliases: [],
     section: 'Evidence Requirements', key: 'Tier Preference',
     consumers: {

@@ -69,7 +69,6 @@ export function EnumTab({
   const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   return (
     <EnumConfigurator
-      persistTabKey={`studio:workbench:enumSourceTab:${category}:${fieldKey}`}
       fieldKey={fieldKey}
       rule={rule}
       knownValues={knownValues}
@@ -98,7 +97,6 @@ export function EvidenceTab({
 }) {
   const pubGate = boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'));
   const blockUnk = boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'));
-  const evReq = boolN(rule, 'evidence.required', boolN(rule, 'evidence_required', true));
   const minRefs = numN(
     rule,
     'evidence.min_evidence_refs',
@@ -107,13 +105,6 @@ export function EvidenceTab({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={evReq} onChange={(e) => onUpdate('evidence.required', e.target.checked)} className="rounded sf-border-soft" />
-          Evidence Required<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.evidence_required} />
-          <B p="evidence.required" />
-        </label>
-      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Min Evidence Refs<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.min_evidence_refs} /></span><B p="evidence.min_evidence_refs" /></div>
@@ -133,15 +124,6 @@ export function EvidenceTab({
               ),
             )}
           />
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}><span>Conflict Policy<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.conflict_policy} /></span><B p="evidence.conflict_policy" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'evidence.conflict_policy', 'resolve_by_tier_else_unknown')} onChange={(e) => onUpdate('evidence.conflict_policy', e.target.value)}>
-            <option value="resolve_by_tier_else_unknown">resolve_by_tier_else_unknown</option>
-            <option value="prefer_highest_tier">prefer_highest_tier</option>
-            <option value="prefer_most_recent">prefer_most_recent</option>
-            <option value="flag_for_review">flag_for_review</option>
-          </select>
         </div>
       </div>
       <div>
@@ -166,13 +148,13 @@ export function EvidenceTab({
             <span>Block when UNK - unknown token blocks publish</span>
           </div>
         )}
-        {evReq && minRefs > 0 && (
+        {minRefs > 0 && (
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full sf-dot-warning flex-shrink-0" />
             <span>Evidence required - at least {minRefs} source ref{minRefs > 1 ? 's' : ''} needed</span>
           </div>
         )}
-        {!pubGate && !blockUnk && !(evReq && minRefs > 0) && (
+        {!pubGate && !blockUnk && minRefs <= 0 && (
           <div className={`${TEXT_GRAY_400} italic`}>No publish-blocking rules configured</div>
         )}
       </div>

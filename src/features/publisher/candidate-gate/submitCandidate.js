@@ -35,6 +35,7 @@ export function submitCandidate({
   fieldRules, knownValues, componentDb, specDb, productRoot,
   repairHistory,
   metadata,
+  appDb,
 }) {
   // --- Guard: identity ---
   if (!productId || !fieldKey) {
@@ -59,7 +60,7 @@ export function submitCandidate({
 
   // --- Validate ---
   const perFieldKnown = knownValues?.[fieldKey] || null;
-  const validationResult = validateField({ fieldKey, value, fieldRule, knownValues: perFieldKnown, componentDb });
+  const validationResult = validateField({ fieldKey, value, fieldRule, knownValues: perFieldKnown, componentDb, appDb });
 
   // WHY: open_prefer_known unknowns are soft rejections — the value is valid but not
   // in the known list. The candidate gate accepts these (that's the point of the policy).
@@ -71,6 +72,7 @@ export function submitCandidate({
 
   // --- Build entries ---
   const repairedValue = validationResult.value;
+  const repairedUnit = validationResult.unit || null;
   const serialized = serializeValue(repairedValue);
   const sourceEntry = { ...sourceMeta, confidence, submitted_at: new Date().toISOString() };
   // WHY: Filter out no-op repairs where before === after (template dispatch may log these)
@@ -106,7 +108,7 @@ export function submitCandidate({
 
   // --- DB write ---
   specDb.upsertFieldCandidate({
-    productId, fieldKey, value: serialized,
+    productId, fieldKey, value: serialized, unit: repairedUnit,
     confidence: maxConfidence,
     sourceCount,
     sourcesJson: mergedSources,
@@ -132,9 +134,10 @@ export function submitCandidate({
     if (matchIdx >= 0) {
       entries[matchIdx].sources.push(sourceEntry);
       entries[matchIdx].validation = validationRecord;
+      if (repairedUnit) entries[matchIdx].unit = repairedUnit;
       if (hasMetadata) entries[matchIdx].metadata = { ...(entries[matchIdx].metadata || {}), ...metadata };
     } else {
-      const entry = { value: repairedValue, validation: validationRecord, sources: [sourceEntry] };
+      const entry = { value: repairedValue, unit: repairedUnit, validation: validationRecord, sources: [sourceEntry] };
       if (hasMetadata) entry.metadata = metadata;
       entries.push(entry);
     }

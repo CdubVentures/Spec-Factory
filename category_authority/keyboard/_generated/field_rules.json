@@ -104,16 +104,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_adjustment_step",
       "field_studio_hints": {
         "dataEntry": {
@@ -235,16 +232,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_distance",
       "field_studio_hints": {
         "dataEntry": {
@@ -367,16 +361,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_force",
       "field_studio_hints": {
         "dataEntry": {
@@ -500,16 +491,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_actuation_max",
       "field_studio_hints": {
         "dataEntry": {
@@ -632,16 +620,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_actuation_min",
       "field_studio_hints": {
         "dataEntry": {
@@ -754,16 +739,13 @@
         "source": "data_lists.adjustable_feet"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_feet",
       "field_studio_hints": {
         "dataEntry": {
@@ -875,16 +857,13 @@
         "source": "data_lists.adjustable_input_granularity"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_input_granularity",
       "field_studio_hints": {
         "dataEntry": {
@@ -997,16 +976,13 @@
         "source": "data_lists.analog_input"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "analog_input",
       "field_studio_hints": {
         "dataEntry": {
@@ -1120,16 +1096,13 @@
         "source": "data_lists.anti_ghosting"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "anti_ghosting",
       "field_studio_hints": {
         "dataEntry": {
@@ -1242,16 +1215,13 @@
         "source": "data_lists.arrow_keys"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "arrow_keys",
       "field_studio_hints": {
         "dataEntry": {
@@ -1364,16 +1334,13 @@
         "source": "data_lists.backlighting"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "backlighting",
       "field_studio_hints": {
         "dataEntry": {
@@ -1486,16 +1453,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "base_model",
       "field_studio_hints": {
         "dataEntry": {
@@ -1615,16 +1579,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_capacity",
       "field_studio_hints": {
         "dataEntry": {
@@ -1726,7 +1687,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "hours",
+        "unit": "h",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -1746,16 +1707,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_life_off",
       "field_studio_hints": {
         "dataEntry": {
@@ -1825,7 +1783,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "hours",
+        "suffix": "hrs",
         "tooltip_key": "battery_life_off",
         "tooltip_md": "Battery life estimate with lighting disabled.",
         "tooltip_source": null
@@ -1859,7 +1817,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "hours",
+        "unit": "h",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -1879,16 +1837,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_life_rgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -1958,7 +1913,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "hours",
+        "suffix": "hrs",
         "tooltip_key": "battery_life_rgb",
         "tooltip_md": "Battery life estimate with lighting enabled.",
         "tooltip_source": null
@@ -2002,16 +1957,13 @@
         "source": "data_lists.bluetooth_version"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "bluetooth_version",
       "field_studio_hints": {
         "dataEntry": {
@@ -2132,16 +2084,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "bottom_out_force",
       "field_studio_hints": {
         "dataEntry": {
@@ -2255,16 +2204,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "brand",
       "field_studio_hints": {
         "dataEntry": {
@@ -2385,16 +2331,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_length",
       "field_studio_hints": {
         "dataEntry": {
@@ -2506,16 +2449,13 @@
         "source": "data_lists.cable_type"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -2627,16 +2567,13 @@
         "source": "data_lists.case_material"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "case_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -2748,16 +2685,13 @@
         "source": "data_lists.category"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "category",
       "field_studio_hints": {
         "dataEntry": {
@@ -2869,16 +2803,13 @@
         "source": "data_lists.charging_method"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "charging_method",
       "field_studio_hints": {
         "dataEntry": {
@@ -2997,16 +2928,13 @@
         "source": "data_lists.color"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color",
       "field_studio_hints": {
         "dataEntry": {
@@ -3128,16 +3056,13 @@
         "source": "data_lists.colors"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "colors",
       "field_studio_hints": {
         "dataEntry": {
@@ -3272,16 +3197,13 @@
         "source": "data_lists.compatible_os"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "compatible_os",
       "field_studio_hints": {
         "dataEntry": {
@@ -3407,16 +3329,13 @@
         "source": "data_lists.connection"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "connection",
       "field_studio_hints": {
         "dataEntry": {
@@ -3544,16 +3463,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "debounce_time",
       "field_studio_hints": {
         "dataEntry": {
@@ -3674,16 +3590,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "depth",
       "field_studio_hints": {
         "dataEntry": {
@@ -3795,16 +3708,13 @@
         "source": "data_lists.detachable_cable"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "detachable_cable",
       "field_studio_hints": {
         "dataEntry": {
@@ -3915,16 +3825,13 @@
         "source": "data_lists.discontinued"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
@@ -4037,16 +3944,13 @@
         "source": "data_lists.doubleshot"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "doubleshot",
       "field_studio_hints": {
         "dataEntry": {
@@ -4173,16 +4077,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "editions",
       "field_studio_hints": {
         "dataEntry": {
@@ -4283,16 +4184,13 @@
         "source": "data_lists.foam_dampening"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "foam_dampening",
       "field_studio_hints": {
         "dataEntry": {
@@ -4404,16 +4302,13 @@
         "source": "data_lists.form_factor"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "form_factor",
       "field_studio_hints": {
         "dataEntry": {
@@ -4526,16 +4421,13 @@
         "source": "data_lists.function_row"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "function_row",
       "field_studio_hints": {
         "dataEntry": {
@@ -4648,16 +4540,13 @@
         "source": "data_lists.gasket_mount"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gasket_mount",
       "field_studio_hints": {
         "dataEntry": {
@@ -4770,16 +4659,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gtin",
       "field_studio_hints": {
         "dataEntry": {
@@ -4902,16 +4788,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_front",
       "field_studio_hints": {
         "dataEntry": {
@@ -5034,16 +4917,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_rear",
       "field_studio_hints": {
         "dataEntry": {
@@ -5157,16 +5037,13 @@
         "source": "data_lists.hot_swappable"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "hot_swappable",
       "field_studio_hints": {
         "dataEntry": {
@@ -5287,16 +5164,13 @@
         "source": "data_lists.included_accessories"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "included_accessories",
       "field_studio_hints": {
         "dataEntry": {
@@ -5424,16 +5298,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "key_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -5547,16 +5418,13 @@
         "source": "data_lists.key_rollover"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "key_rollover",
       "field_studio_hints": {
         "dataEntry": {
@@ -5669,16 +5537,13 @@
         "source": "data_lists.keycap_material"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -5791,16 +5656,13 @@
         "source": "data_lists.keycap_profile"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_profile",
       "field_studio_hints": {
         "dataEntry": {
@@ -5922,16 +5784,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_thickness",
       "field_studio_hints": {
         "dataEntry": {
@@ -6047,16 +5906,13 @@
         "source": "data_lists.knob_dial"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "knob_dial",
       "field_studio_hints": {
         "dataEntry": {
@@ -6172,16 +6028,13 @@
         "source": "data_lists.layout"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "layout",
       "field_studio_hints": {
         "dataEntry": {
@@ -6296,16 +6149,13 @@
         "source": "data_lists.layout_standard"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "layout_standard",
       "field_studio_hints": {
         "dataEntry": {
@@ -6421,16 +6271,13 @@
         "source": "data_lists.legends"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "legends",
       "field_studio_hints": {
         "dataEntry": {
@@ -6544,16 +6391,13 @@
         "source": "data_lists.macro_keys"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "macro_keys",
       "field_studio_hints": {
         "dataEntry": {
@@ -6667,16 +6511,13 @@
         "source": "data_lists.media_controls"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "media_controls",
       "field_studio_hints": {
         "dataEntry": {
@@ -6788,16 +6629,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "model",
       "field_studio_hints": {
         "dataEntry": {
@@ -6909,16 +6747,13 @@
         "source": "data_lists.mounting_style"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "mounting_style",
       "field_studio_hints": {
         "dataEntry": {
@@ -7030,16 +6865,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "mpn",
       "field_studio_hints": {
         "dataEntry": {
@@ -7152,16 +6984,13 @@
         "source": "data_lists.multi_device_pairing"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_device_pairing",
       "field_studio_hints": {
         "dataEntry": {
@@ -7283,16 +7112,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_device_pairing_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -7413,16 +7239,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_key_latency",
       "field_studio_hints": {
         "dataEntry": {
@@ -7535,16 +7358,13 @@
         "source": "data_lists.numpad"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "numpad",
       "field_studio_hints": {
         "dataEntry": {
@@ -7657,16 +7477,13 @@
         "source": "data_lists.onboard_memory"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "onboard_memory",
       "field_studio_hints": {
         "dataEntry": {
@@ -7788,16 +7605,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "onboard_profile_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -7910,16 +7724,13 @@
         "source": "data_lists.os_mode_switch"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "os_mode_switch",
       "field_studio_hints": {
         "dataEntry": {
@@ -8032,16 +7843,13 @@
         "source": "data_lists.per_key_rgb"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "per_key_rgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -8155,16 +7963,13 @@
         "source": "data_lists.plate_material"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "plate_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -8286,16 +8091,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "polling_rate_wired",
       "field_studio_hints": {
         "dataEntry": {
@@ -8418,16 +8220,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "polling_rate_wireless",
       "field_studio_hints": {
         "dataEntry": {
@@ -8540,16 +8339,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -8664,16 +8460,13 @@
         "source": "data_lists.qmk_via_support"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "qmk_via_support",
       "field_studio_hints": {
         "dataEntry": {
@@ -8788,16 +8581,13 @@
         "source": "data_lists.rapid_trigger"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "rapid_trigger",
       "field_studio_hints": {
         "dataEntry": {
@@ -8909,16 +8699,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
@@ -9031,16 +8818,13 @@
         "source": "data_lists.rgb_zones"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "rgb_zones",
       "field_studio_hints": {
         "dataEntry": {
@@ -9163,16 +8947,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "scan_rate",
       "field_studio_hints": {
         "dataEntry": {
@@ -9286,16 +9067,13 @@
         "source": "data_lists.shine_through"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "shine_through",
       "field_studio_hints": {
         "dataEntry": {
@@ -9419,16 +9197,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "single_key_latency",
       "field_studio_hints": {
         "dataEntry": {
@@ -9541,16 +9316,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
@@ -9663,16 +9435,13 @@
         "source": "data_lists.socd_cleaning"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "socd_cleaning",
       "field_studio_hints": {
         "dataEntry": {
@@ -9785,16 +9554,13 @@
         "source": "data_lists.software"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "software",
       "field_studio_hints": {
         "dataEntry": {
@@ -9907,16 +9673,13 @@
         "source": "data_lists.software_required"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "software_required",
       "field_studio_hints": {
         "dataEntry": {
@@ -10029,16 +9792,13 @@
         "source": "data_lists.sound_dampening"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sound_dampening",
       "field_studio_hints": {
         "dataEntry": {
@@ -10151,16 +9911,13 @@
         "source": "data_lists.sound_profile"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sound_profile",
       "field_studio_hints": {
         "dataEntry": {
@@ -10273,16 +10030,13 @@
         "source": "data_lists.south_facing_leds"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "south_facing_leds",
       "field_studio_hints": {
         "dataEntry": {
@@ -10395,16 +10149,13 @@
         "source": "data_lists.stabilizer_lubed"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_lubed",
       "field_studio_hints": {
         "dataEntry": {
@@ -10517,16 +10268,13 @@
         "source": "data_lists.stabilizer_mount"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_mount",
       "field_studio_hints": {
         "dataEntry": {
@@ -10639,16 +10387,13 @@
         "source": "data_lists.stabilizer_type"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -10760,16 +10505,13 @@
         "source": "data_lists.switch_brand"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_brand",
       "field_studio_hints": {
         "dataEntry": {
@@ -10883,16 +10625,13 @@
         "source": "data_lists.switch_compatibility"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_compatibility",
       "field_studio_hints": {
         "dataEntry": {
@@ -11005,16 +10744,13 @@
         "source": "data_lists.switch_feel"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_feel",
       "field_studio_hints": {
         "dataEntry": {
@@ -11138,16 +10874,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_lifespan",
       "field_studio_hints": {
         "dataEntry": {
@@ -11217,7 +10950,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "M",
+        "suffix": "M keystrokes",
         "tooltip_key": "switch_lifespan",
         "tooltip_md": "Rated lifetime in millions of keystrokes.",
         "tooltip_source": null
@@ -11287,16 +11020,13 @@
         "source": "data_lists.switch_name"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_name",
       "field_studio_hints": {
         "dataEntry": {
@@ -11412,16 +11142,13 @@
         "source": "data_lists.switch_output_type"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_output_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -11537,16 +11264,13 @@
         "source": "data_lists.switch_pin_support"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_pin_support",
       "field_studio_hints": {
         "dataEntry": {
@@ -11691,16 +11415,13 @@
         "source": "data_lists.switch_type"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -11822,16 +11543,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "total_travel",
       "field_studio_hints": {
         "dataEntry": {
@@ -11954,16 +11672,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "typing_angle",
       "field_studio_hints": {
         "dataEntry": {
@@ -12031,7 +11746,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "deg",
+        "suffix": "°",
         "tooltip_key": "typing_angle",
         "tooltip_md": "Default typing angle in degrees.",
         "tooltip_source": null
@@ -12075,16 +11790,13 @@
         "source": "data_lists.typing_noise"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "typing_noise",
       "field_studio_hints": {
         "dataEntry": {
@@ -12196,16 +11908,13 @@
         "source": "data_lists.usb_passthrough"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "usb_passthrough",
       "field_studio_hints": {
         "dataEntry": {
@@ -12318,16 +12027,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "variant",
       "field_studio_hints": {
         "dataEntry": {
@@ -12439,16 +12145,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "warranty",
       "field_studio_hints": {
         "dataEntry": {
@@ -12568,16 +12271,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "weight",
       "field_studio_hints": {
         "dataEntry": {
@@ -12696,16 +12396,13 @@
         "source": null
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
@@ -12816,16 +12513,13 @@
         "source": "data_lists.wired_interface"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wired_interface",
       "field_studio_hints": {
         "dataEntry": {
@@ -12943,16 +12637,13 @@
         "source": "data_lists.wireless_technology"
       },
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wireless_technology",
       "field_studio_hints": {
         "dataEntry": {
@@ -13035,7 +12726,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-09T07:40:00.114Z",
+  "generated_at": "2026-04-10T03:02:02.473Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

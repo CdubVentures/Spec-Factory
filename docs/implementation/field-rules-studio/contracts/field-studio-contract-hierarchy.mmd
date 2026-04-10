@@ -21,7 +21,7 @@ flowchart LR
     R2["[x] Component payload columns<br/>observed columns UNION declared contract columns"]
     R3["[x] Blank declared columns preserved<br/>drawer shows slot with null-selected state"]
     R4["[x] Slot aggregation invariant<br/>C(K,F) on linked products for name/maker/properties"]
-    R5["[x] Actionable flags<br/>[flag] variance_violation, constraint_conflict,<br/>compound_range_conflict, dependency_missing,<br/>new_component, new_enum_value,<br/>below_min_evidence, conflict_policy_hold"]
+    R5["[x] Actionable flags<br/>[flag] variance_violation, constraint_conflict,<br/>compound_range_conflict, dependency_missing,<br/>new_component, new_enum_value,<br/>below_min_evidence"]
     R6["[!] metrics.flags semantics differ by domain<br/>item grid uses real flag taxonomy,<br/>component/enum grids count needs_review rows"]
     R1 --> R2 --> R3 --> R4 --> R5 --> R6
   end

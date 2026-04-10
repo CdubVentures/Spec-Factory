@@ -328,14 +328,6 @@ export function buildColumns(
       },
     },
 
-    // Evidence required
-    {
-      accessorKey: 'evidenceRequired',
-      header: 'Evidence',
-      size: 70,
-      cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
-    },
-
     // Min evidence refs
     { accessorKey: 'minEvidenceRefs', header: 'Min Refs', size: 65 },
 
@@ -348,14 +340,6 @@ export function buildColumns(
         const v = getValue() as string;
         return v ? <span className="text-xs text-gray-500 truncate">{v}</span> : <span className="text-gray-300">\u2014</span>;
       },
-    },
-
-    // Conflict policy
-    {
-      accessorKey: 'conflictPolicy',
-      header: 'Conflict',
-      size: 130,
-      cell: ({ getValue }) => <span className="text-xs font-mono truncate">{getValue() as string}</span>,
     },
 
     // Publish gate (inline toggle)
@@ -522,7 +506,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   evidence: [
     ...ALWAYS_VISIBLE,
-    'evidenceRequired', 'minEvidenceRefs', 'tierPreference', 'conflictPolicy',
+    'minEvidenceRefs', 'tierPreference',
     'publishGate', 'blockPublishWhenUnk',
   ],
   search: [
@@ -532,7 +516,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   debug: [
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'enumPolicy', 'enumSource',
-    'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'conflictPolicy', 'draftDirty',
+    'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'draftDirty',
     'aiMode', 'aiModelStrategy', 'aiMaxCalls',
   ],
   all: [], // empty = show all
@@ -565,10 +549,8 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'enumSource', label: 'Enum Source' },
   { id: 'matchStrategy', label: 'Match Strategy' },
   { id: 'knownValuesCount', label: 'KV Count' },
-  { id: 'evidenceRequired', label: 'Evidence Req' },
   { id: 'minEvidenceRefs', label: 'Min Refs' },
   { id: 'tierPreference', label: 'Tiers' },
-  { id: 'conflictPolicy', label: 'Conflict Policy' },
   { id: 'publishGate', label: 'Pub Gate' },
   { id: 'blockPublishWhenUnk', label: 'Block Unk' },
   { id: 'aiMode', label: 'AI Mode' },

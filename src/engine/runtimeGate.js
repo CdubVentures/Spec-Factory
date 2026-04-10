@@ -238,7 +238,7 @@ export function applyRuntimeFieldRules({
 
     // Quality audit: validate the first evidence ref.
     const shouldAuditQuality = enforceEvidence
-      || (respectPerFieldEvidence && (rule?.evidence_required || minRefs > 0));
+      || (respectPerFieldEvidence && minRefs > 0);
     // Count audit: verify N distinct (url, snippet_id) pairs.
     const shouldCheckCount = minRefs > 1
       && (enforceEvidence || respectPerFieldEvidence);

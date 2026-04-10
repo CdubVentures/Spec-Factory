@@ -223,13 +223,13 @@ const lifecycleMap = {
     'Fresh rebuild honors current component files, but runtime alias edits are SQL-first and are lost unless mirrored back to JSON.'
   ),
   enum_lists: life(
-    'category_authority/{cat}/_generated/known_values.json + category_authority/{cat}/_control_plane/field_studio_map.json.manual_enum_values',
+    'category_authority/{cat}/_generated/known_values.json + category_authority/{cat}/_control_plane/field_studio_map.json.data_lists[*].manual_values',
     'partial',
     'yes',
     'Current source files drive a fresh rebuild, but runtime enum/list review edits are SQL-first and not auto-exported.'
   ),
   list_values: life(
-    'category_authority/{cat}/_generated/known_values.json + category_authority/{cat}/_control_plane/field_studio_map.json.manual_enum_values',
+    'category_authority/{cat}/_generated/known_values.json + category_authority/{cat}/_control_plane/field_studio_map.json.data_lists[*].manual_values',
     'partial',
     'yes',
     'Current source files drive a fresh rebuild, but runtime enum/list review edits are SQL-first and not auto-exported.'

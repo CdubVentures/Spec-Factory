@@ -180,9 +180,7 @@ export function buildEgColorFieldRule(ctx) {
       publish_gate: false,
     },
     evidence: {
-      required: true,
       min_evidence_refs: 1,
-      conflict_policy: 'resolve_by_tier_else_unknown',
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
@@ -238,9 +236,7 @@ export function buildEgEditionFieldRule(ctx) {
       publish_gate: false,
     },
     evidence: {
-      required: true,
       min_evidence_refs: 1,
-      conflict_policy: 'resolve_by_tier_else_unknown',
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {

@@ -1747,7 +1747,7 @@
       "required_level": "expected",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "deg",
+      "suffix": "°",
       "surfaces": {},
       "tooltip_key": "horizontal_viewing_angle",
       "tooltip_md": "Measured horizontal viewing angle before notable color or luminance shift.",
@@ -1779,7 +1779,7 @@
       "required_level": "expected",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "deg",
+      "suffix": "°",
       "surfaces": {},
       "tooltip_key": "vertical_viewing_angle",
       "tooltip_md": "Measured vertical viewing angle before notable color or luminance shift.",
@@ -3371,7 +3371,7 @@
       "required_level": "expected",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "usd",
+      "suffix": "USD",
       "surfaces": {},
       "tooltip_key": "price_range",
       "tooltip_md": "MSRP / launch retail price in USD",
@@ -3630,6 +3630,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-09T07:49:24.931Z",
+  "generated_at": "2026-04-10T03:02:02.570Z",
   "version": 1
 }

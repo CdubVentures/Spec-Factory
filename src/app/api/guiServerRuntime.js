@@ -22,6 +22,7 @@ import { registerSpecSeedsRoutes } from '../../features/indexing/api/specSeedsRo
 import { registerColorRoutes } from '../../features/color-registry/api/colorRoutes.js';
 import { createColorRouteContext } from '../../features/color-registry/api/colorRouteContext.js';
 import { registerColorEditionFinderRoutes } from '../../features/color-edition/api/colorEditionFinderRoutes.js';
+import { registerUnitRegistryRoutes } from '../../features/unit-registry/api/unitRegistryRoutes.js';
 import { createColorEditionFinderRouteContext } from '../../features/color-edition/api/colorEditionFinderRouteContext.js';
 import { registerPublisherRoutes } from '../../features/publisher/api/publisherRoutes.js';
 import { createPublisherRouteContext } from '../../features/publisher/api/publisherRouteContext.js';
@@ -178,6 +179,10 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, appDb, broadcastWs, specDbCache,
         colorRegistryPath: path.resolve(HELPER_ROOT, '_global', 'color_registry.json'),
       }),
+      unitRegistryRouteContext: {
+        jsonRes, readJsonBody, appDb,
+        unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
+      },
       colorEditionFinderRouteContext: createColorEditionFinderRouteContext({
         jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
         logger: createRouteLlmLogger('color-edition-finder'),
@@ -198,7 +203,7 @@ export function createGuiServerRuntime({
       testModeRouteContext: createTestModeRouteContext({
         jsonRes, readJsonBody, HELPER_ROOT,
         getSpecDbReady, path, safeReadJson,
-        listFiles, resolveCategoryAlias,
+        listFiles, resolveCategoryAlias, appDb,
       }),
       catalogRouteContext: createCatalogRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
@@ -235,6 +240,7 @@ export function createGuiServerRuntime({
       { key: 'catalog', registrar: registerCatalogRoutes },
       { key: 'brand', registrar: registerBrandRoutes },
       { key: 'color', registrar: registerColorRoutes },
+      { key: 'unitRegistry', registrar: registerUnitRegistryRoutes },
       { key: 'colorEditionFinder', registrar: registerColorEditionFinderRoutes },
       { key: 'studio', registrar: registerStudioRoutes },
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },

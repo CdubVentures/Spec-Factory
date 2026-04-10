@@ -361,28 +361,29 @@ async function collectListSeedRows(fieldRules, config, category) {
     }
   }
 
-  // From control plane manual enum values
+  // From control plane data_lists manual values
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
   const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
   const fieldStudioMap = await readJsonIfExists(fieldStudioMapPath);
-  const manualEnumTimestamps = isObject(fieldStudioMap?.manual_enum_timestamps) ? fieldStudioMap.manual_enum_timestamps : {};
-  if (isObject(fieldStudioMap?.manual_enum_values)) {
-    for (const [fieldKey, values] of Object.entries(fieldStudioMap.manual_enum_values)) {
-      if (!Array.isArray(values)) continue;
-      for (const value of values) {
-        const trimmed = String(value || '').trim();
-        if (!trimmed) continue;
-        const tsKey = `${fieldKey}::${normalizeToken(trimmed)}`;
-        rows.push({
-          fieldKey,
-          value: trimmed,
-          normalizedValue: normalizeToken(trimmed),
-          source: 'manual',
-          enumPolicy: null,
-          sourceTimestamp: manualEnumTimestamps[tsKey] || null
-        });
-      }
+  const seedDataLists = Array.isArray(fieldStudioMap?.data_lists) ? fieldStudioMap.data_lists
+    : Array.isArray(fieldStudioMap?.enum_lists) ? fieldStudioMap.enum_lists : [];
+  for (const dl of seedDataLists) {
+    const fieldKey = String(dl.field || '').trim();
+    if (!fieldKey) continue;
+    const values = Array.isArray(dl.manual_values) ? dl.manual_values
+      : Array.isArray(dl.values) ? dl.values : [];
+    for (const value of values) {
+      const trimmed = String(value || '').trim();
+      if (!trimmed) continue;
+      rows.push({
+        fieldKey,
+        value: trimmed,
+        normalizedValue: normalizeToken(trimmed),
+        source: 'manual',
+        enumPolicy: null,
+        sourceTimestamp: null,
+      });
     }
   }
 

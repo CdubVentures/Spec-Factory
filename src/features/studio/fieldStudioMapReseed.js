@@ -1,7 +1,7 @@
 // WHY: Hash-gated reseed for field_studio_map.json.
 // On boot, compares SHA256 of JSON file against stored hash. If changed:
 // 1. Wipes and re-imports field_studio_map table
-// 2. Reconciles list_values source='manual' rows from manual_enum_values
+// 2. Reconciles list_values source='manual' rows from data_lists manual_values
 // 3. Populates compiled_rules + boot_config from _generated/ + categoryConfig
 // If field_overrides changed, logs a warning (compile may be needed for
 // generated artifacts to be correct).
@@ -52,22 +52,22 @@ export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
       specDb.upsertFieldStudioMap(JSON.stringify(map), mapHash);
     }
 
-    // 2. Reconcile list_values source='manual' from manual_enum_values
-    const manualEnumValues = map.manual_enum_values && typeof map.manual_enum_values === 'object'
-      ? map.manual_enum_values : {};
-    const manualEnumTimestamps = map.manual_enum_timestamps && typeof map.manual_enum_timestamps === 'object'
-      ? map.manual_enum_timestamps : {};
+    // 2. Reconcile list_values source='manual' from data_lists manual_values
+    const reseedDataLists = Array.isArray(map.data_lists) ? map.data_lists
+      : Array.isArray(map.enum_lists) ? map.enum_lists : [];
 
-    // Build expected set from JSON
+    // Build expected set from data_lists
     const expectedManual = new Set();
-    for (const [fieldKey, values] of Object.entries(manualEnumValues)) {
-      if (!Array.isArray(values)) continue;
+    for (const dl of reseedDataLists) {
+      const fieldKey = String(dl.field || '').trim();
+      if (!fieldKey) continue;
+      const values = Array.isArray(dl.manual_values) ? dl.manual_values
+        : Array.isArray(dl.values) ? dl.values : [];
       for (const value of values) {
         const trimmed = String(value || '').trim();
         if (!trimmed) continue;
         expectedManual.add(`${fieldKey}::${normalizeToken(trimmed)}`);
 
-        const tsKey = `${fieldKey}::${normalizeToken(trimmed)}`;
         specDb.upsertListValue({
           fieldKey,
           value: trimmed,
@@ -75,7 +75,7 @@ export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
           source: 'manual',
           overridden: 0,
           needsReview: 0,
-          sourceTimestamp: manualEnumTimestamps[tsKey] || null,
+          sourceTimestamp: null,
         });
       }
     }

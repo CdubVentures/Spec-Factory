@@ -71,6 +71,7 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
           productId,
           fieldKey,
           value: serialized,
+          unit: candidate.unit ?? null,
           confidence: maxConfidence,
           sourceCount: sources.length,
           sourcesJson: sources,

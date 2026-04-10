@@ -129,7 +129,7 @@ describe('buildRepairPrompt — P4 (format_mismatch)', () => {
 describe('buildRepairPrompt — unit_required', () => {
   it('builds prompt for bare number missing required unit', () => {
     const rejections = [makeRejection('unit_required', { expected: 'g', detected: '' })];
-    const rule = makeFieldRule({ contract: { type: 'number', unit: 'g' }, parse: { strict_unit_required: true } });
+    const rule = makeFieldRule({ contract: { type: 'number', unit: 'g' } });
     const result = buildRepairPrompt({ rejections, value: '42', fieldKey: 'weight', fieldRule: rule });
 
     assert.equal(result.promptId, 'unit_conversion');
@@ -257,22 +257,13 @@ describe('buildRepairPrompt — format_hint enrichment', () => {
   });
 });
 
-describe('buildRepairPrompt — unit_conversions enrichment', () => {
-  it('unit prompt includes conversion factors when present', () => {
-    const rejections = [makeRejection('wrong_unit', { expected: 'g', detected: 'lb' })];
-    const rule = makeFieldRule({ contract: { unit: 'g' }, parse: { unit_conversions: { lb: 453.592, oz: 28.3495 } } });
-    const result = buildRepairPrompt({ rejections, value: '2.65 lb', fieldKey: 'weight', fieldRule: rule });
-    assert.ok(result.user.includes('453.592'));
-    assert.ok(result.user.includes('conversion factor'));
-  });
-
-  it('unit prompt works without conversions', () => {
+describe('buildRepairPrompt — unit prompt', () => {
+  it('unit prompt works for wrong_unit rejection', () => {
     const rejections = [makeRejection('wrong_unit', { expected: 'g', detected: 'lb' })];
     const rule = makeFieldRule({ contract: { unit: 'g' } });
     const result = buildRepairPrompt({ rejections, value: '2.65 lb', fieldKey: 'weight', fieldRule: rule });
     assert.equal(result.promptId, 'unit_conversion');
-    // Should NOT contain conversion factors
-    assert.equal(result.user.includes('conversion factor'), false);
+    assert.ok(result.user.includes("'g'"));
   });
 });
 

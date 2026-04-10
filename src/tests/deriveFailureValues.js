@@ -134,6 +134,30 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
 
   // ── REPAIRS — one per repair knob ─────────────────────────────────────
 
+  // contract.unit — synonym repair (registry resolves synonym → canonical)
+  // WHY: Only generates a synonym test when the unit has a known synonym in the registry.
+  // This proves the registry is wired end-to-end through the validator.
+  const UNIT_SYNONYM_MAP = { g: 'grams', Hz: 'hertz', mm: 'millimeters', ms: 'milliseconds', W: 'watt', '%': 'percent' };
+  const UNIT_CONVERSION_MAP = { g: { from: 'lb', factor: 453.592 }, mm: { from: 'in', factor: 25.4 }, Hz: { from: 'kHz', factor: 1000 } };
+  if (unit && unit !== 'none' && shape === 'scalar' && UNIT_SYNONYM_MAP[unit]) {
+    const synonym = UNIT_SYNONYM_MAP[unit];
+    const mid = rangeConfig ? ((rangeConfig.min ?? 0) + (rangeConfig.max ?? 100)) / 2 : 50;
+    let numVal = mid;
+    if (roundingConfig?.decimals != null) {
+      const f = Math.pow(10, roundingConfig.decimals);
+      numVal = Math.round(numVal * f) / f;
+    }
+    repairs.push({ value: `${numVal} ${synonym}`, expectedRepair: numVal, knob: 'unit', description: `synonym "${synonym}" → strips to number` });
+  }
+
+  // contract.unit — conversion repair (registry converts foreign unit → canonical)
+  if (unit && unit !== 'none' && shape === 'scalar' && UNIT_CONVERSION_MAP[unit]) {
+    const conv = UNIT_CONVERSION_MAP[unit];
+    const inputVal = 1;
+    const expectedVal = inputVal * conv.factor;
+    repairs.push({ value: `${inputVal} ${conv.from}`, expectedRepair: expectedVal, knob: 'unit_convert', description: `conversion ${conv.from}→${unit} via factor ${conv.factor}` });
+  }
+
   // contract.rounding
   if (roundingConfig?.decimals != null && shape === 'scalar' && (type === 'number' || type === 'integer')) {
     const mid = rangeConfig ? ((rangeConfig.min ?? 0) + (rangeConfig.max ?? 100)) / 2 : 50;

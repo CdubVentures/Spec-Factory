@@ -9,8 +9,7 @@ import {
   ruleRequiredLevel as ruleRequiredLevelAccessor,
   ruleAvailability as ruleAvailabilityAccessor,
   ruleDifficulty as ruleDifficultyAccessor,
-  ruleEffort as ruleEffortAccessor,
-  ruleEvidenceRequired as ruleEvidenceRequiredAccessor
+  ruleEffort as ruleEffortAccessor
 } from '../engine/ruleAccessors.js';
 import {
   isObject, toArray, normalizeToken, normalizeFieldKey, titleCase,
@@ -104,7 +103,6 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
     const availability = ruleAvailabilityAccessor(rule);
     const difficulty = ruleDifficultyAccessor(rule);
     const normalizedEffort = ruleEffortAccessor(rule);
-    const evidenceRequired = ruleEvidenceRequiredAccessor(rule);
 
     rule.field_key = String(rule.field_key || fieldKey);
     rule.display_name = String(rule.display_name || ui.label || titleCase(fieldKey));
@@ -115,7 +113,6 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
     rule.availability = availability;
     rule.difficulty = difficulty;
     rule.effort = normalizedEffort;
-    rule.evidence_required = evidenceRequired;
     rule.priority = {
       ...priority,
       required_level: requiredLevel,
@@ -129,10 +126,9 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
       shape: String(contract.shape || outputShape || 'scalar')
     };
     rule.parse = { ...parse };
-    rule.evidence = {
-      ...evidence,
-      required: evidenceRequired
-    };
+    const { required: _evReq, conflict_policy: _cp, ...restEvidence } = evidence;
+    rule.evidence = restEvidence;
+    delete rule.evidence_required;
     if (!nonEmptyString(rule.unknown_reason_default)) {
       rule.unknown_reason_default = 'not_found_after_search';
     }

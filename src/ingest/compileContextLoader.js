@@ -211,14 +211,12 @@ export async function loadCompileContext({
     columns: []
   };
   const enumLists = {};
-  // Merge manual_enum_values into pulled enum lists
-  const manualEnumValues2 = isObject(map.manual_enum_values) ? map.manual_enum_values : {};
-  for (const [field, values] of Object.entries(manualEnumValues2)) {
-    const nf = normalizeFieldKey(field);
-    if (!nf) continue;
-    const existing = toArray(enumLists[nf]);
-    const manual = toArray(values).map((v) => String(v).trim()).filter(Boolean);
-    enumLists[nf] = orderedUniqueStrings([...existing, ...manual]);
+  // Populate enumLists from data_lists[*].manual_values
+  for (const dl of toArray(map.data_lists)) {
+    const nf = normalizeFieldKey(dl.field || '');
+    if (!nf || !Array.isArray(dl.manual_values) || dl.manual_values.length === 0) continue;
+    const values = dl.manual_values.map((v) => String(v).trim()).filter(Boolean);
+    enumLists[nf] = orderedUniqueStrings([...toArray(enumLists[nf]), ...values]);
   }
   // WHY: Color registry is a closed vocabulary. Inject all registered names
   // into enumLists so the compile chain generates closed known_values.

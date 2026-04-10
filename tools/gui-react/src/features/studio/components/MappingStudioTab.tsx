@@ -115,17 +115,12 @@ export function MappingStudioTab({
           ? wbMap.enum_lists
           : []
     ) as EnumEntry[];
-    const manualMap =
-      wbMap.manual_enum_values && typeof wbMap.manual_enum_values === "object"
-        ? (wbMap.manual_enum_values as Record<string, unknown>)
-        : {};
     return [
       String(wbMap.version || ""),
       String(wbMap.version_snapshot || ""),
       String(wbMap.tooltip_source?.path || ""),
       String(componentSourceCount),
       String(rawEnumLists.length),
-      String(Object.keys(manualMap).length),
     ].join("|");
   }, [wbMap]);
 
@@ -154,11 +149,6 @@ export function MappingStudioTab({
           ? wbMap.enum_lists
           : []
     ) as EnumEntry[];
-    const manualEnumValues = wbMap.manual_enum_values;
-    const manualMap =
-      manualEnumValues && typeof manualEnumValues === "object"
-        ? manualEnumValues
-        : ({} as Record<string, string[]>);
     const seenFields = new Set<string>();
     const seededLists: DataListEntry[] = [];
     for (const el of rawEnumLists) {
@@ -171,30 +161,12 @@ export function MappingStudioTab({
           ? el.values
           : Array.isArray(el.manual_values)
             ? el.manual_values
-            : Array.isArray(manualMap[el.field])
-              ? manualMap[el.field]
-              : [],
+            : [],
         priority: hasExplicitPriority(el.priority)
           ? normalizePriorityProfile(el.priority)
           : deriveListPriority(el.field, rules),
         ai_assist: normalizeAiAssistConfig(el.ai_assist),
       });
-    }
-    for (const [field, values] of Object.entries(manualMap)) {
-      if (
-        !seenFields.has(field) &&
-        Array.isArray(values) &&
-        values.length > 0
-      ) {
-        seededLists.push({
-          field,
-          normalize: "lower_trim",
-          delimiter: "",
-          manual_values: values,
-          priority: { ...DEFAULT_PRIORITY_PROFILE },
-          ai_assist: normalizeAiAssistConfig(undefined),
-        });
-      }
     }
     // WHY: EG-locked fields with known_values (e.g., colors from registry)
     // appear as locked enum entries. O(1): driven by egLockedKeys + knownValues.
@@ -212,11 +184,11 @@ export function MappingStudioTab({
       });
     }
     setDataLists(seededLists);
-    // WHY: assembleMap converts data_lists + manual_enum_values into the
-    // derived enum_lists on save. The seeded fingerprint must use the same
-    // shape so the auto-save dedup gate sees a match and doesn't fire a
-    // spurious save after every rehydration.
-    const { data_lists: _omitSeedDl, manual_enum_values: _omitSeedMev, ...cleanSeedBase } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
+    // WHY: assembleMap converts data_lists into the derived enum_lists on
+    // save. The seeded fingerprint must use the same shape so the auto-save
+    // dedup gate sees a match and doesn't fire a spurious save after every
+    // rehydration.
+    const { data_lists: _omitSeedDl, ...cleanSeedBase } = wbMap as StudioConfig & { data_lists?: unknown };
     const seededPayload: StudioConfig = {
       ...cleanSeedBase,
       tooltip_source: {
@@ -241,11 +213,10 @@ export function MappingStudioTab({
 
   const assembleMap = useCallback((): StudioConfig => {
     // WHY: assembleMap converts the UI's dataLists state into the derived
-    // enum_lists array. data_lists (authoring config) and manual_enum_values
-    // (scratch-mode values) are omitted because the enum_lists output below
-    // already carries the merged result. On reload, seeding re-derives them
+    // enum_lists array. data_lists is omitted because the enum_lists output
+    // below already carries the merged result. On reload, seeding re-derives
     // from whichever source is present.
-    const { data_lists: _omitDl, manual_enum_values: _omitMev, ...cleanMap } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
+    const { data_lists: _omitDl, ...cleanMap } = wbMap as StudioConfig & { data_lists?: unknown };
     return {
       ...cleanMap,
       tooltip_source: {

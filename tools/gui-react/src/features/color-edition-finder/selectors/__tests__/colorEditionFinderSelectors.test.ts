@@ -334,6 +334,74 @@ describe('deriveRunHistoryRows', () => {
     }
   });
 
+  // ── v2 audit fields: siblings_excluded + discovery_log ──
+
+  it('derives siblingsExcluded from response.siblings_excluded', () => {
+    const runWithSiblings = {
+      ...SAMPLE_RESULT.runs[0],
+      run_number: 5,
+      response: {
+        ...SAMPLE_RESULT.runs[0].response,
+        siblings_excluded: ['M75 Air Wireless Pro', 'M75 Wired'],
+        discovery_log: {
+          confirmed_from_known: ['black'],
+          added_new: ['white'],
+          rejected_from_known: ['gray'],
+          urls_checked: ['https://corsair.com/m75'],
+          queries_run: ['Corsair M75 colors'],
+        },
+      },
+    };
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      runs: [runWithSiblings],
+    };
+    const rows = deriveRunHistoryRows(result);
+    assert.deepEqual(rows[0].siblingsExcluded, ['M75 Air Wireless Pro', 'M75 Wired']);
+  });
+
+  it('derives discoveryLog counts and arrays from response.discovery_log', () => {
+    const runWithLog = {
+      ...SAMPLE_RESULT.runs[0],
+      run_number: 6,
+      response: {
+        ...SAMPLE_RESULT.runs[0].response,
+        discovery_log: {
+          confirmed_from_known: ['black', 'white'],
+          added_new: ['red'],
+          rejected_from_known: [],
+          urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'],
+          queries_run: ['Corsair M75 colors', 'Corsair M75 editions'],
+        },
+      },
+    };
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      runs: [runWithLog],
+    };
+    const rows = deriveRunHistoryRows(result);
+    const log = rows[0].discoveryLog;
+    assert.equal(log.confirmedCount, 2);
+    assert.equal(log.addedNewCount, 1);
+    assert.equal(log.rejectedCount, 0);
+    assert.equal(log.urlsCheckedCount, 2);
+    assert.equal(log.queriesRunCount, 2);
+    assert.deepEqual(log.confirmedFromKnown, ['black', 'white']);
+    assert.deepEqual(log.addedNew, ['red']);
+    assert.deepEqual(log.urlsChecked, ['https://corsair.com/m75', 'https://amazon.com/dp/B123']);
+  });
+
+  it('v1 runs without audit fields default to empty', () => {
+    const rows = deriveRunHistoryRows(SAMPLE_RESULT);
+    const row = rows[0];
+    assert.deepEqual(row.siblingsExcluded, []);
+    assert.equal(row.discoveryLog.confirmedCount, 0);
+    assert.equal(row.discoveryLog.addedNewCount, 0);
+    assert.equal(row.discoveryLog.urlsCheckedCount, 0);
+    assert.deepEqual(row.discoveryLog.confirmedFromKnown, []);
+    assert.deepEqual(row.discoveryLog.addedNew, []);
+  });
+
   it('rejected run has validationStatus "rejected" with reason summary', () => {
     const rejectedRun = {
       run_number: 4,

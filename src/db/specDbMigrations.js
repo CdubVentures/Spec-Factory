@@ -47,6 +47,11 @@ export const MIGRATIONS = [
   // unresolved candidates from resolved ones.
   `ALTER TABLE field_candidates ADD COLUMN status TEXT DEFAULT 'candidate'`,
   `ALTER TABLE field_candidates ADD COLUMN metadata_json TEXT DEFAULT '{}'`,
+  // WHY: Phase 2 unit normalization — store unit alongside value so it's queryable
+  // and doesn't require field rule lookup to display.
+  `ALTER TABLE field_candidates ADD COLUMN unit TEXT DEFAULT NULL`,
+  `ALTER TABLE item_field_state ADD COLUMN unit TEXT DEFAULT NULL`,
+  `ALTER TABLE component_values ADD COLUMN unit TEXT DEFAULT NULL`,
 ];
 
 export const SECONDARY_INDEXES = `

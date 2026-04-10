@@ -98,7 +98,7 @@ export function inferUnitByField(key) {
   const token = normalizeFieldKey(key);
   if (token === 'weight' || token.endsWith('_weight')) return 'g';
   if (token === 'dpi' || token.endsWith('_dpi') || token.endsWith('_cpi')) return 'dpi';
-  if (token.includes('polling') || token === 'hz' || token.endsWith('_hz')) return 'hz';
+  if (token.includes('polling') || token === 'hz' || token.endsWith('_hz')) return 'Hz';
   if (token === 'lngth' || token === 'length' || token === 'width' || token === 'height' || token.endsWith('_length') || token.endsWith('_width') || token.endsWith('_height')) return 'mm';
   if (token.includes('price')) return 'usd';
   if (token.includes('battery') && token.includes('hour')) return 'h';
@@ -259,13 +259,11 @@ export function enforceExpectationPriority({ key, rule, expectations }) {
   priority.publish_gate_reason = rule.publish_gate_reason;
 
   const evidence = isObject(rule.evidence) ? { ...rule.evidence } : {};
-  if (typeof evidence.required !== 'boolean') {
-    evidence.required = true;
-  }
   const defaultMinEvidence = (finalLevel === 'identity' || finalLevel === 'required') ? 2 : 1;
   evidence.min_evidence_refs = asInt(evidence.min_evidence_refs, defaultMinEvidence);
+  delete evidence.required;
   rule.evidence = evidence;
-  rule.evidence_required = evidence.required !== false;
+  delete rule.evidence_required;
   rule.min_evidence_refs = asInt(rule.min_evidence_refs, evidence.min_evidence_refs);
 
   rule.priority = priority;

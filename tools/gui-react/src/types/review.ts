@@ -40,6 +40,7 @@ export interface CandidateEvidence {
 export interface ReviewCandidate {
   candidate_id: string;
   value: unknown;
+  unit?: string | null;
   score: number;
   source_id: string;
   source: string;
@@ -73,6 +74,7 @@ export interface FieldState {
   slot_id?: number | null;
   selected: {
     value: unknown;
+    unit?: string | null;
     confidence: number;
     status: string;
     color: 'green' | 'yellow' | 'red' | 'gray';

@@ -57,4 +57,13 @@ CREATE TABLE IF NOT EXISTS color_registry (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS unit_registry (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  canonical        TEXT NOT NULL UNIQUE,
+  label            TEXT NOT NULL DEFAULT '',
+  synonyms_json    TEXT NOT NULL DEFAULT '[]',
+  conversions_json TEXT NOT NULL DEFAULT '[]',
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;

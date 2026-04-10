@@ -13,7 +13,7 @@ Exported from `index.js`:
 - `deleteColorEditionFinderRun({ productId, productRoot?, runNumber })` — Delete single run, recalculate. Returns null if no runs remain.
 - `deleteColorEditionFinderAll({ productId, productRoot? })` — Delete JSON file entirely
 - `rebuildColorEditionFinderFromJson({ specDb, productRoot? })` — Scan all product dirs, re-populate SQL. Handles legacy + new format.
-- `colorEditionFinderResponseSchema` — Zod schema: `{ colors: string[], editions: Record<slug, { colors: string[] }>, default_color: string }`
+- `colorEditionFinderResponseSchema` — Zod schema: `{ colors: string[], color_names: Record, editions: Record<slug, { display_name, colors }>, default_color: string, siblings_excluded: string[], discovery_log: { confirmed_from_known, added_new, rejected_from_known, urls_checked, queries_run } }`
 - `buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns? })` — Dynamic system prompt with historical context
 - `createColorEditionFinderCallLlm(deps)` — Factory: creates bound LLM caller
 - `runColorEditionFinder({ product, appDb, specDb, config, ... })` — Full orchestrator: LLM call → capture prompt/response → merge → persist
@@ -34,7 +34,7 @@ SQL store (wired through specDb, not imported directly):
 ## Dependencies
 
 - **Allowed**: `src/core/config/runtimeArtifactRoots.js` (path resolution), `src/core/llm/` (LLM client + routing)
-- **Cross-feature (via public API)**: `src/features/studio` (`getEgPresetForKey`), `src/features/indexing` (`createPhaseCallLlm`), `src/features/publisher` (`submitCandidate` — candidate gate)
+- **Cross-feature (via public API)**: `src/features/indexing` (`createPhaseCallLlm`), `src/features/publisher` (`submitCandidate` — candidate gate)
 - **SQL store**: `src/db/stores/colorEditionFinderStore.js` (wired via specDb)
 - **LLM phase**: Registered as `colorFinder` in `src/core/config/llmPhaseDefs.js`
 - **Forbidden**: Other feature internals (only public API imports)

@@ -8,6 +8,7 @@
 // WHY: Canonical keys returned by buildFieldState() in reviewGridData.js.
 export const FIELD_STATE_SELECTED_SHAPE = Object.freeze([
   { key: 'value', coerce: 'unknown' },
+  { key: 'unit', coerce: 'string', nullable: true, optional: true },
   { key: 'confidence', coerce: 'float' },
   { key: 'status', coerce: 'string' },
   { key: 'color', coerce: 'string', literals: ['green', 'yellow', 'red', 'gray'] },
@@ -59,6 +60,7 @@ export const CANDIDATE_EVIDENCE_KEYS = Object.freeze(CANDIDATE_EVIDENCE_SHAPE.ma
 export const REVIEW_CANDIDATE_SHAPE = Object.freeze([
   { key: 'candidate_id', coerce: 'string' },
   { key: 'value', coerce: 'unknown' },
+  { key: 'unit', coerce: 'string', nullable: true, optional: true },
   { key: 'score', coerce: 'float' },
   { key: 'source_id', coerce: 'string' },
   { key: 'source', coerce: 'string' },

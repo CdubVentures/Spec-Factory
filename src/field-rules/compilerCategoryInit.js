@@ -92,7 +92,6 @@ function starterFieldDefinition({ group, fieldKey }) {
     availability,
     difficulty: 'easy',
     effort: isScore ? 4 : 3,
-    evidence_required: true,
     unknown_reason_default: normalizedGroup === 'editorial'
       ? 'editorial_not_generated'
       : 'not_found_after_search',
@@ -128,7 +127,6 @@ function starterFieldRows({ category, templateName }) {
     availability: '',
     difficulty: '',
     effort: '',
-    evidence_required: '',
     unknown_reason_default: '',
     description: `Add category-specific performance fields for '${category}'`
   });
@@ -142,7 +140,6 @@ function starterFieldRows({ category, templateName }) {
     availability: '',
     difficulty: '',
     effort: '',
-    evidence_required: '',
     unknown_reason_default: '',
     description: `Add category-specific feature fields for '${category}'`
   });

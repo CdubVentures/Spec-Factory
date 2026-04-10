@@ -111,4 +111,92 @@ describe('colorEditionFinderResponseSchema', () => {
     const result = colorEditionFinderResponseSchema.parse(input);
     assert.equal(result.editions['launch-edition'].display_name, '');
   });
+
+  // ── siblings_excluded ──
+
+  it('parses siblings_excluded array', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      siblings_excluded: ['M75 Air Wireless Pro', 'M75 Wired'],
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.siblings_excluded, ['M75 Air Wireless Pro', 'M75 Wired']);
+  });
+
+  it('siblings_excluded defaults to empty array when omitted', () => {
+    const input = { colors: ['black'], default_color: 'black' };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.siblings_excluded, []);
+  });
+
+  // ── discovery_log ──
+
+  it('parses full discovery_log with all sub-arrays', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      discovery_log: {
+        confirmed_from_known: ['black'],
+        added_new: ['white'],
+        rejected_from_known: ['gray'],
+        urls_checked: ['https://corsair.com/m75'],
+        queries_run: ['Corsair M75 colors'],
+      },
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.discovery_log.confirmed_from_known, ['black']);
+    assert.deepEqual(result.discovery_log.added_new, ['white']);
+    assert.deepEqual(result.discovery_log.rejected_from_known, ['gray']);
+    assert.deepEqual(result.discovery_log.urls_checked, ['https://corsair.com/m75']);
+    assert.deepEqual(result.discovery_log.queries_run, ['Corsair M75 colors']);
+  });
+
+  it('discovery_log defaults to all-empty when omitted', () => {
+    const input = { colors: ['black'], default_color: 'black' };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.discovery_log, {
+      confirmed_from_known: [],
+      added_new: [],
+      rejected_from_known: [],
+      urls_checked: [],
+      queries_run: [],
+    });
+  });
+
+  it('discovery_log partial: only urls_checked provided, rest default', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      discovery_log: { urls_checked: ['https://example.com'] },
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.discovery_log.urls_checked, ['https://example.com']);
+    assert.deepEqual(result.discovery_log.confirmed_from_known, []);
+    assert.deepEqual(result.discovery_log.added_new, []);
+    assert.deepEqual(result.discovery_log.rejected_from_known, []);
+    assert.deepEqual(result.discovery_log.queries_run, []);
+  });
+
+  // ── backward compat ──
+
+  it('v1 response without siblings_excluded or discovery_log still parses', () => {
+    const v1Input = {
+      colors: ['black', 'white'],
+      color_names: { 'white': 'Arctic White' },
+      editions: { 'launch-edition': { display_name: 'Launch Edition', colors: ['black'] } },
+      default_color: 'black',
+    };
+    const result = colorEditionFinderResponseSchema.parse(v1Input);
+    assert.deepEqual(result.siblings_excluded, []);
+    assert.deepEqual(result.discovery_log, {
+      confirmed_from_known: [],
+      added_new: [],
+      rejected_from_known: [],
+      urls_checked: [],
+      queries_run: [],
+    });
+    assert.deepEqual(result.colors, ['black', 'white']);
+    assert.deepEqual(result.color_names, { 'white': 'Arctic White' });
+  });
 });

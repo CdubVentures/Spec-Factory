@@ -2001,7 +2001,7 @@
       "required_level": "optional",
       "shape": "scalar",
       "short_label": null,
-      "suffix": null,
+      "suffix": "gf",
       "surfaces": {},
       "tooltip_key": "click_force",
       "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
@@ -2553,6 +2553,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-09T09:14:59.461Z",
+  "generated_at": "2026-04-10T03:02:02.650Z",
   "version": 1
 }

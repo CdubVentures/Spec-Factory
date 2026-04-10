@@ -9,12 +9,12 @@ export function createTestModeRouteContext(options = {}) {
 
   const {
     jsonRes, readJsonBody,
-    getSpecDbReady, resolveCategoryAlias,
+    getSpecDbReady, resolveCategoryAlias, appDb,
   } = options;
 
   return {
     jsonRes, readJsonBody,
-    getSpecDbReady, resolveCategoryAlias,
+    getSpecDbReady, resolveCategoryAlias, appDb,
     runFieldContractTests,
     mergeDiscoveredEnums,
     buildDiscoveredEnumMap,

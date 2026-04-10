@@ -21,6 +21,19 @@ export interface SelectedStateDisplay {
   readonly defaultColorHex: string;
 }
 
+export interface RunDiscoveryLog {
+  readonly confirmedCount: number;
+  readonly addedNewCount: number;
+  readonly rejectedCount: number;
+  readonly urlsCheckedCount: number;
+  readonly queriesRunCount: number;
+  readonly confirmedFromKnown: readonly string[];
+  readonly addedNew: readonly string[];
+  readonly rejectedFromKnown: readonly string[];
+  readonly urlsChecked: readonly string[];
+  readonly queriesRun: readonly string[];
+}
+
 export interface RunHistoryRow {
   readonly runNumber: number;
   readonly ranAt: string;
@@ -35,6 +48,8 @@ export interface RunHistoryRow {
   readonly systemPrompt: string;
   readonly userMessage: string;
   readonly responseJson: string;
+  readonly siblingsExcluded: readonly string[];
+  readonly discoveryLog: RunDiscoveryLog;
 }
 
 export interface KpiCard {
@@ -171,6 +186,21 @@ export function deriveRunHistoryRows(
         })
         .join('; ');
 
+      const siblings = run.response?.siblings_excluded ?? [];
+      const dl = run.response?.discovery_log;
+      const discoveryLog: RunDiscoveryLog = {
+        confirmedCount: dl?.confirmed_from_known?.length ?? 0,
+        addedNewCount: dl?.added_new?.length ?? 0,
+        rejectedCount: dl?.rejected_from_known?.length ?? 0,
+        urlsCheckedCount: dl?.urls_checked?.length ?? 0,
+        queriesRunCount: dl?.queries_run?.length ?? 0,
+        confirmedFromKnown: dl?.confirmed_from_known ?? [],
+        addedNew: dl?.added_new ?? [],
+        rejectedFromKnown: dl?.rejected_from_known ?? [],
+        urlsChecked: dl?.urls_checked ?? [],
+        queriesRun: dl?.queries_run ?? [],
+      };
+
       return {
         runNumber: run.run_number,
         ranAt: run.ran_at,
@@ -185,6 +215,8 @@ export function deriveRunHistoryRows(
         systemPrompt: run.prompt?.system ?? '',
         userMessage: run.prompt?.user ?? '',
         responseJson: JSON.stringify(run.response, null, 2),
+        siblingsExcluded: siblings,
+        discoveryLog,
       };
     });
 }

@@ -56,6 +56,7 @@ export function createBootstrapSessionLayer({
     appDb,
     brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
     userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
+    unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
   });
   // WHY: createBootstrapEnvironment applied settings from user-settings.json before
   // appDb existed. Now that SQL is open, rehydrate config from the authoritative store

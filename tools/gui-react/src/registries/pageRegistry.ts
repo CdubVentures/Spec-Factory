@@ -34,6 +34,7 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
   { path: '/categories',  label: 'Categories',          tabGroup: 'global',  loader: () => import('../features/catalog/components/CategoryManager.tsx'),             exportName: 'CategoryManager' },
   { path: '/brands',      label: 'Brands',              tabGroup: 'global',  loader: () => import('../features/studio/components/BrandManager.tsx'),                   exportName: 'BrandManager' },
   { path: '/colors',      label: 'Colors',              tabGroup: 'global',  loader: () => import('../features/color-registry/components/ColorRegistryPage.tsx'),      exportName: 'ColorRegistryPage' },
+  { path: '/units',       label: 'Units',               tabGroup: 'global',  loader: () => import('../pages/unit-registry/UnitRegistryPage.tsx'),                     exportName: 'UnitRegistryPage' },
   { path: '/billing',     label: 'Billing',              tabGroup: 'global',  loader: () => import('../pages/billing/BillingPage.tsx'),                               exportName: 'BillingPage' },
 
   // ── Catalog group ───────────────────────────────────────────────

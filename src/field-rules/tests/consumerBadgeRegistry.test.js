@@ -201,7 +201,7 @@ describe('Backward compatibility', () => {
       'priority.required_level',
       'enum.policy', 'enum.source',
       'enum.match.strategy', 'enum.match.format_hint',
-      'evidence.min_evidence_refs', 'evidence.conflict_policy',
+      'evidence.min_evidence_refs',
       'constraints', 'component.type',
     ];
     for (const path of oldSeedReviewPaths) {

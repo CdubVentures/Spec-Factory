@@ -674,13 +674,13 @@
       "required_level": "expected",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "M",
+      "suffix": "M keystrokes",
       "surfaces": {},
       "tooltip_key": "switch_lifespan",
       "tooltip_md": "Rated lifetime in millions of keystrokes.",
       "tooltip_source": null,
       "type": "number",
-      "unit": "million_presses"
+      "unit": "million keystrokes"
     },
     {
       "aliases": [
@@ -2750,7 +2750,7 @@
       "required_level": "optional",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "deg",
+      "suffix": "°",
       "surfaces": {},
       "tooltip_key": "typing_angle",
       "tooltip_md": "Default typing angle in degrees.",
@@ -2943,13 +2943,13 @@
       "required_level": "optional",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "hours",
+      "suffix": "hrs",
       "surfaces": {},
       "tooltip_key": "battery_life_off",
       "tooltip_md": "Battery life estimate with lighting disabled.",
       "tooltip_source": null,
       "type": "number",
-      "unit": "hours"
+      "unit": "h"
     },
     {
       "aliases": [
@@ -2976,13 +2976,13 @@
       "required_level": "optional",
       "shape": "scalar",
       "short_label": null,
-      "suffix": "hours",
+      "suffix": "hrs",
       "surfaces": {},
       "tooltip_key": "battery_life_rgb",
       "tooltip_md": "Battery life estimate with lighting enabled.",
       "tooltip_source": null,
       "type": "number",
-      "unit": "hours"
+      "unit": "h"
     },
     {
       "aliases": [
@@ -3334,6 +3334,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-09T07:40:00.114Z",
+  "generated_at": "2026-04-10T03:02:02.473Z",
   "version": 1
 }

@@ -147,7 +147,6 @@ export async function createEvidenceFixtureRoot() {
         required_level: 'required',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: true,
         contract: {
           type: 'number',
           shape: 'scalar',
@@ -159,7 +158,6 @@ export async function createEvidenceFixtureRoot() {
         required_level: 'required',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: false,
         enum_policy: 'closed',
         contract: {
           type: 'string',
@@ -170,7 +168,6 @@ export async function createEvidenceFixtureRoot() {
         required_level: 'critical',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: true,
         contract: {
           type: 'string',
           shape: 'scalar'
@@ -280,11 +277,8 @@ export async function createMinRefsFixtureRoot() {
         required_level: 'required',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: true,
         evidence: {
-          required: true,
           min_evidence_refs: 2,
-          conflict_policy: 'resolve_by_tier_else_unknown',
           tier_preference: ['tier1', 'tier2', 'tier3']
         },
         contract: {
@@ -298,11 +292,8 @@ export async function createMinRefsFixtureRoot() {
         required_level: 'required',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: true,
         evidence: {
-          required: true,
           min_evidence_refs: 1,
-          conflict_policy: 'resolve_by_tier_else_unknown',
           tier_preference: ['tier1', 'tier2', 'tier3']
         },
         enum_policy: 'closed',
@@ -315,11 +306,8 @@ export async function createMinRefsFixtureRoot() {
         required_level: 'expected',
         difficulty: 'easy',
         availability: 'always',
-        evidence_required: false,
         evidence: {
-          required: false,
           min_evidence_refs: 2,
-          conflict_policy: 'resolve_by_tier_else_unknown',
           tier_preference: ['tier1', 'tier2', 'tier3']
         },
         contract: {
@@ -332,11 +320,8 @@ export async function createMinRefsFixtureRoot() {
         required_level: 'optional',
         difficulty: 'medium',
         availability: 'sometimes',
-        evidence_required: false,
         evidence: {
-          required: false,
           min_evidence_refs: 0,
-          conflict_policy: 'resolve_by_tier_else_unknown',
           tier_preference: ['tier1', 'tier2', 'tier3']
         },
         contract: {

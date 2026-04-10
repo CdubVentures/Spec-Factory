@@ -28,7 +28,7 @@ function serializeSettingValue(value) {
 
 const FLAT_SETTINGS_SECTIONS = ['runtime', 'convergence', 'storage', 'ui'];
 
-export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
+export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath, unitRegistryPath }) {
   let brands_seeded = 0;
   let brands_removed = 0;
   let renames_seeded = 0;
@@ -37,6 +37,7 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
   let settings_removed = 0;
   let studio_maps_seeded = 0;
   let studio_maps_removed = 0;
+  let units_seeded = 0;
 
   // ── Brand registry reconcile ──
   const brandRaw = readRawSafe(brandRegistryPath);
@@ -180,9 +181,37 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath }) {
     }
   }
 
-  const skipped = !brandRaw && !settingsRaw;
+  // ── Unit Registry ──
+  const unitRaw = unitRegistryPath ? readRawSafe(unitRegistryPath) : null;
+  const unitHash = unitRaw ? sha256Hex(unitRaw) : null;
+  const storedUnitHash = appDb.getSeedHash('unit_registry');
+
+  if (unitRaw && unitHash !== storedUnitHash) {
+    try {
+      const unitDoc = JSON.parse(unitRaw);
+      const units = Array.isArray(unitDoc?.units) ? unitDoc.units : [];
+      const seedUnitsTx = appDb.db.transaction(() => {
+        appDb.db.prepare('DELETE FROM unit_registry').run();
+        for (const u of units) {
+          if (!u.canonical) continue;
+          appDb.upsertUnit({
+            canonical: u.canonical,
+            label: u.label || '',
+            synonyms: Array.isArray(u.synonyms) ? u.synonyms : [],
+            conversions: Array.isArray(u.conversions) ? u.conversions : [],
+          });
+          units_seeded++;
+        }
+      });
+      seedUnitsTx();
+      appDb.setSeedHash('unit_registry', unitHash);
+    } catch { /* ignore malformed JSON — leave existing data */ }
+  }
+
+  const skipped = !brandRaw && !settingsRaw && !unitRaw;
   return {
     skipped, brands_seeded, brands_removed, renames_seeded, renames_removed,
     settings_seeded, settings_removed, studio_maps_seeded, studio_maps_removed,
+    units_seeded,
   };
 }

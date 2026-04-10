@@ -26,7 +26,7 @@ import {
   deriveRunHistoryRows,
   deriveFinderStatusChip,
 } from '../selectors/colorEditionFinderSelectors.ts';
-import type { KpiCard, SelectedStateDisplay, RunHistoryRow, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
+import type { KpiCard, SelectedStateDisplay, RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
 
@@ -170,6 +170,98 @@ function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay
   );
 }
 
+function DiscoverySummaryBar({ log }: { readonly log: RunDiscoveryLog }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Chip label={`${log.confirmedCount} confirmed`} className="sf-chip-success" />
+      <Chip label={`${log.addedNewCount} new`} className="sf-chip-accent" />
+      <Chip label={`${log.rejectedCount} rejected`} className="sf-chip-danger" />
+      <Chip label={`${log.urlsCheckedCount} urls`} className="sf-chip-neutral" />
+      <Chip label={`${log.queriesRunCount} queries`} className="sf-chip-neutral" />
+    </div>
+  );
+}
+
+function DiscoveryDetailsSection({ log, siblingsExcluded }: { readonly log: RunDiscoveryLog; readonly siblingsExcluded: readonly string[] }) {
+  const hasAny = log.confirmedCount > 0 || log.addedNewCount > 0 || log.rejectedCount > 0
+    || log.urlsCheckedCount > 0 || log.queriesRunCount > 0 || siblingsExcluded.length > 0;
+  if (!hasAny) return null;
+
+  return (
+    <details className="sf-surface-panel border sf-border-soft rounded-md">
+      <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
+        Discovery Details
+      </summary>
+      <div className="px-3 pb-3 flex flex-col gap-2.5">
+        {siblingsExcluded.length > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Siblings Excluded</div>
+            <div className="flex flex-wrap gap-1">
+              {siblingsExcluded.map(s => (
+                <Chip key={s} label={s} className="sf-chip-danger" />
+              ))}
+            </div>
+          </div>
+        )}
+        {log.confirmedCount > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Confirmed from Known</div>
+            <div className="flex flex-wrap gap-1">
+              {log.confirmedFromKnown.map(c => (
+                <Chip key={c} label={c} className="sf-chip-success" />
+              ))}
+            </div>
+          </div>
+        )}
+        {log.addedNewCount > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Added New</div>
+            <div className="flex flex-wrap gap-1">
+              {log.addedNew.map(c => (
+                <Chip key={c} label={c} className="sf-chip-accent" />
+              ))}
+            </div>
+          </div>
+        )}
+        {log.rejectedCount > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Rejected from Known</div>
+            <div className="flex flex-wrap gap-1">
+              {log.rejectedFromKnown.map(c => (
+                <Chip key={c} label={c} className="sf-chip-danger" />
+              ))}
+            </div>
+          </div>
+        )}
+        {log.urlsCheckedCount > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">URLs Checked ({log.urlsCheckedCount})</div>
+            <div className="flex flex-col gap-0.5">
+              {log.urlsChecked.map(url => (
+                <span key={url} className="text-[10px] font-mono sf-text-subtle truncate max-w-full" title={url}>
+                  {url}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {log.queriesRunCount > 0 && (
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Queries Run ({log.queriesRunCount})</div>
+            <div className="flex flex-col gap-0.5">
+              {log.queriesRun.map(q => (
+                <span key={q} className="text-[10px] font-mono sf-text-subtle">
+                  {q}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHistoryRow; readonly colorRegistry: ColorRegistryEntry[] }) {
   const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
   const selColors = row.selected?.colors ?? [];
@@ -202,29 +294,43 @@ function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHis
         )}
       </div>
 
-      {/* System Prompt */}
+      {/* Discovery summary + details (v2 audit trail) */}
       <div>
-        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">System Prompt</div>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
+        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Discovery Summary</div>
+        <DiscoverySummaryBar log={row.discoveryLog} />
+      </div>
+
+      <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} />
+
+      {/* System Prompt */}
+      <details className="sf-surface-panel border sf-border-soft rounded-md">
+        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
+          System Prompt
+        </summary>
+        <pre className="sf-pre-block sf-text-caption font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.systemPrompt}
         </pre>
-      </div>
+      </details>
 
       {/* User Message */}
-      <div>
-        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">User Message</div>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
+      <details className="sf-surface-panel border sf-border-soft rounded-md">
+        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
+          User Message
+        </summary>
+        <pre className="sf-pre-block sf-text-caption font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.userMessage}
         </pre>
-      </div>
+      </details>
 
       {/* LLM Response */}
-      <div>
-        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">LLM Response</div>
-        <pre className="sf-pre-block sf-text-label font-mono rounded p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
+      <details className="sf-surface-panel border sf-border-soft rounded-md">
+        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
+          LLM Response
+        </summary>
+        <pre className="sf-pre-block sf-text-label font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
           {row.responseJson}
         </pre>
-      </div>
+      </details>
     </div>
   );
 }

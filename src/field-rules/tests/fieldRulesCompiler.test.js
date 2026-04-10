@@ -300,8 +300,7 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
         required_level: 'optional',
         availability: 'sometimes',
         difficulty: 'medium',
-        effort: 5,
-        evidence_required: false
+        effort: 5
       }
     }
   });
@@ -314,7 +313,6 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
   assert.equal(row.priority.required_level, 'optional');
   assert.equal(typeof row.parse, 'object');
   assert.equal(typeof row.evidence, 'object');
-  assert.equal(row.evidence.required, false);
 });
 
 test('compile-time EG injection: EG-locked keys appear in compiled output even when absent from source map', async () => {

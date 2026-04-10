@@ -628,7 +628,6 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               >
                 <EnumConfigurator
-                  persistTabKey={`studio:keyNavigator:enumSourceTab:${category}:${selectedKey}`}
                   fieldKey={selectedKey}
                   rule={currentRule}
                   knownValues={knownValues}

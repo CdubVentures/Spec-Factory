@@ -319,13 +319,10 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
     }
   }
   // WHY: component_reference was a parse_template. Now component detection is handled by contract.type + parse.component_type.
-  if (component && out.strict_unit_required === undefined && component.require_identity_evidence !== undefined) {
+  if (component && component.require_identity_evidence !== undefined) {
     out.require_component_identity_evidence = component.require_identity_evidence === true;
   }
 
-  if (evidence.required !== undefined && out.evidence_required === undefined) {
-    out.evidence_required = evidence.required !== false;
-  }
   if (evidence.min_evidence_refs !== undefined && out.min_evidence_refs === undefined) {
     out.min_evidence_refs = asInt(evidence.min_evidence_refs, 1);
   }
@@ -488,7 +485,6 @@ export function buildFieldRuleDraft({
     difficulty,
     effort,
     enum_policy: enumPolicy,
-    strict_unit_required: Boolean(unit && unit !== 'none'),
     parse_rules: parseRules,
     array_handling: 'none',
     new_value_policy: {
@@ -501,10 +497,8 @@ export function buildFieldRuleDraft({
       known_values: enumValues
     },
     evidence: {
-      required: true,
       min_evidence_refs: requiredLevel === 'identity' || requiredLevel === 'required' ? 2 : 1,
       tier_preference: isInstrumentedField ? ['tier2', 'tier1', 'tier3'] : ['tier1', 'tier2', 'tier3'],
-      conflict_policy: 'resolve_by_tier_else_unknown'
     },
     publish_gate: (requiredLevel === 'identity' || requiredLevel === 'required') && !isInstrumentedField,
     publish_gate_reason: requiredLevel === 'identity' ? 'missing_identity' : (requiredLevel === 'required' ? 'missing_required' : ''),
@@ -747,9 +741,7 @@ export function buildStudioFieldRule({
     .map((value) => normalizeText(value))
     .filter(Boolean);
   nestedEvidence.tier_preference = evidenceTierPreference.length ? evidenceTierPreference : ['tier1', 'tier2', 'tier3'];
-  nestedEvidence.conflict_policy = normalizeToken(
-    nestedEvidence.conflict_policy || 'resolve_by_tier_else_unknown'
-  ) || 'resolve_by_tier_else_unknown';
+  delete nestedEvidence.conflict_policy;
 
   // Build ai_assist block (auto-derive if not explicitly set)
   const aiAssistInput = isObject(rule.ai_assist) ? rule.ai_assist : {};
@@ -944,7 +936,6 @@ export function buildStudioFieldRule({
     effort,
     enum: nestedEnum,
     evidence: nestedEvidence,
-    evidence_required: nestedEvidence.required !== false,
     field_studio_hints: fieldStudioHints,
     field_key: key,
     group: normalizeFieldKey(uiOut.group || inferGroup(key)),

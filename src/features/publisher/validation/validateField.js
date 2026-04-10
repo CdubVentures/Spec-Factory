@@ -18,9 +18,9 @@ import { checkRange } from './checks/checkRange.js';
  * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object }} opts
  * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[], unknownReason: string|null, repairPrompt: object|null }}
  */
-export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb, consistencyMode }) {
+export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb, consistencyMode, appDb }) {
   if (!fieldRule) {
-    return result('unk', [], [], null, null);
+    return result('unk', null, [], [], null, null);
   }
 
   const shape = fieldRule?.contract?.shape || 'scalar';
@@ -55,15 +55,15 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const shapeResult = checkShape(current, shape);
   if (!shapeResult.pass) {
     rejections.push({ reason_code: 'wrong_shape', detail: { expected: shape, reason: shapeResult.reason } });
-    return result(current, repairs, rejections, null, null);
+    return result(current, unit || null, repairs, rejections, null, null);
   }
 
   // Step 2: Unit verification (BEFORE type coercion — needs unit suffix still in string)
   if (unit) {
-    const unitResult = checkUnit(current, unit);
+    const unitResult = checkUnit(current, unit, appDb);
     if (!unitResult.pass) {
       rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
-      return result(current, repairs, rejections, null, null);
+      return result(current, unit || null, repairs, rejections, null, null);
     }
     if (unitResult.value !== current) {
       repairs.push({ step: 'unit', before: current, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
@@ -172,13 +172,14 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     rejections.push({ reason_code: 'unk_blocks_publish', detail: { value: current, field: fieldKey } });
   }
 
-  return result(current, repairs, rejections, null, null);
+  return result(current, unit || null, repairs, rejections, null, null);
 }
 
-function result(value, repairs, rejections, unknownReason, repairPrompt) {
+function result(value, unit, repairs, rejections, unknownReason, repairPrompt) {
   return {
     valid: rejections.length === 0,
     value,
+    unit,
     confidence: 1.0,
     repairs,
     rejections,

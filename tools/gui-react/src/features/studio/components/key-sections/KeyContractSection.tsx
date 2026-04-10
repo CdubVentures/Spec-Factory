@@ -2,6 +2,7 @@ import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
 import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect.tsx";
+import { useUnitRegistryQuery } from "../../../../pages/unit-registry/unitRegistryQueries.ts";
 import { strN, numN, boolN } from "../../state/nestedValueHelpers.ts";
 import {
   parseIntegerInput,
@@ -13,7 +14,6 @@ import {
   selectCls,
   inputCls,
   labelCls,
-  UNITS,
   UNKNOWN_TOKENS,
   STUDIO_TIPS,
 } from "../studioConstants.ts";
@@ -28,6 +28,8 @@ export function KeyContractSection({
   BadgeRenderer: B,
   disabled,
 }: KeyContractSectionProps) {
+  const { data: unitRegistryData } = useUnitRegistryQuery();
+  const registryUnits = (unitRegistryData?.units ?? []).map(u => u.canonical);
   const currentContractType = currentRule
     ? strN(currentRule, "contract.type", "string")
     : "string";
@@ -145,14 +147,18 @@ export function KeyContractSection({
             </span>
             <B p="contract.unit" />
           </div>
-          <ComboSelect
+          <select
+            className={selectCls}
             value={strN(currentRule, "contract.unit")}
-            onChange={(v) =>
-              updateField(selectedKey, "contract.unit", v || null)
+            onChange={(e) =>
+              updateField(selectedKey, "contract.unit", e.target.value || null)
             }
-            options={UNITS}
-            placeholder="e.g. g, mm, Hz"
-          />
+          >
+            <option value="">— none —</option>
+            {registryUnits.map((u) => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}>

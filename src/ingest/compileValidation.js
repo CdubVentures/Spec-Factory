@@ -148,11 +148,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
         ? rule.block_publish_when_unk
         : (typeof priority.block_publish_when_unk === 'boolean' ? priority.block_publish_when_unk : undefined)
     );
-    const resolvedEvidenceRequired = (
-      rule.evidence_required !== undefined
-        ? rule.evidence_required !== false
-        : (evidence.required !== false)
-    );
     const resolvedMinEvidenceRefs = (
       rule.min_evidence_refs !== undefined
         ? asInt(rule.min_evidence_refs, 0)
@@ -279,9 +274,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     }
     if (resolvedPublishGate && typeof resolvedBlockPublishWhenUnk !== 'boolean') {
       errors.push(`field ${fieldKey}: block_publish_when_unk boolean required when publish_gate=true`);
-    }
-    if (resolvedEvidenceRequired && resolvedMinEvidenceRefs <= 0) {
-      errors.push(`field ${fieldKey}: min_evidence_refs must be >= 1 when evidence is required`);
     }
     if (isObject(rule.selection_policy) && Object.keys(rule.selection_policy).length > 0) {
       const sourceField = normalizeFieldKey(rule.selection_policy.source_field || '');

@@ -71,6 +71,23 @@ function normalizeSheetRoleRow(row = {}) {
   };
 }
 
+// WHY: evidence_required and conflict_policy were retired. Strip from field_overrides
+// so control-plane maps don't perpetuate stale keys through save cycles.
+function stripRetiredEvidenceKnobs(overrides) {
+  if (!isObject(overrides)) return overrides;
+  const cleaned = {};
+  for (const [key, rule] of Object.entries(overrides)) {
+    if (!isObject(rule)) { cleaned[key] = rule; continue; }
+    const { evidence_required: _er, ...rest } = rule;
+    if (isObject(rest.evidence)) {
+      const { required: _req, conflict_policy: _cp, ...restEv } = rest.evidence;
+      rest.evidence = restEv;
+    }
+    cleaned[key] = rest;
+  }
+  return cleaned;
+}
+
 export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
   const sheetRoles = toArray(map.sheet_roles).map((row) => normalizeSheetRoleRow(row));
   const keySourceRaw = isObject(map.key_source) ? map.key_source : {};
@@ -116,13 +133,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     }
     : null;
 
-  const manualEnumValuesInput = isObject(map.manual_enum_values)
-    ? Object.fromEntries(
-        Object.entries(map.manual_enum_values)
-          .filter(([k, v]) => normalizeFieldKey(k) && Array.isArray(v) && v.length > 0)
-          .map(([k, v]) => [normalizeFieldKey(k), orderedUniqueStrings(v.map((val) => String(val).trim()).filter(Boolean))])
-      )
-    : {};
   const dataListsRaw = toArray(map.data_lists).filter((row) => isObject(row));
   const enumRowsRaw = dataListsRaw.length > 0
     ? dataListsRaw.filter((row) => normalizeSourceMode(row.mode) === 'sheet')
@@ -192,9 +202,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       const field = normalizeFieldKey(row.field || '');
       const rawManualValues = Array.isArray(row.manual_values) ? row.manual_values : (Array.isArray(row.values) ? row.values : []);
       const rowManualValues = orderedUniqueStrings(rawManualValues.map((val) => String(val).trim()).filter(Boolean));
-      const mergedManualValues = field
-        ? orderedUniqueStrings([...(manualEnumValuesInput[field] || []), ...rowManualValues])
-        : rowManualValues;
       return {
         field,
         mode: normalizeSourceMode(row.mode),
@@ -205,7 +212,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_end: asInt(row.row_end || row.end_row, 0),
         normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
-        manual_values: mergedManualValues,
+        manual_values: rowManualValues,
         priority: normalizeReviewPriority(row.priority),
         ai_assist: normalizeReviewAiAssist(row.ai_assist)
       };
@@ -227,7 +234,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_end: asInt(row.row_end, 0),
         normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
-        manual_values: field && Array.isArray(manualEnumValuesInput[field]) ? manualEnumValuesInput[field] : [],
+        manual_values: [],
         priority: normalizeReviewPriority(row.priority),
         ai_assist: normalizeReviewAiAssist(row.ai_assist)
       };
@@ -254,25 +261,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
           ai_assist: normalizeReviewAiAssist(row.ai_assist)
         });
       }
-    }
-    for (const [field, values] of Object.entries(manualEnumValuesInput)) {
-      if (seenFields.has(field) || !Array.isArray(values) || values.length === 0) {
-        continue;
-      }
-      dataLists.push({
-        field,
-        mode: 'scratch',
-        sheet: '',
-        value_column: '',
-        header_row: 0,
-        row_start: 2,
-        row_end: 0,
-        normalize: 'lower_trim',
-        delimiter: '',
-        manual_values: values,
-        priority: normalizeReviewPriority({}),
-        ai_assist: normalizeReviewAiAssist({})
-      });
     }
   }
 
@@ -392,24 +380,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     || (tooltipSourcePath ? path.extname(tooltipSourcePath).slice(1) : '')
     || 'auto'
   ) || 'auto';
-  const manualEnumValues = {};
-  for (const [field, values] of Object.entries(manualEnumValuesInput)) {
-    if (!field || !Array.isArray(values) || values.length === 0) {
-      continue;
-    }
-    manualEnumValues[field] = orderedUniqueStrings(values);
-  }
-  for (const row of dataLists) {
-    const field = normalizeFieldKey(row.field || '');
-    if (!field || !Array.isArray(row.manual_values) || row.manual_values.length === 0) {
-      continue;
-    }
-    manualEnumValues[field] = orderedUniqueStrings([
-      ...(manualEnumValues[field] || []),
-      ...row.manual_values
-    ]);
-  }
-
   return {
     version: asInt(map.version, 1),
     field_studio_source_path: normalizeText(map.field_studio_source_path || ''),
@@ -494,7 +464,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     },
     selected_keys: orderedUniqueStrings(toArray(map.selected_keys).map((field) => normalizeFieldKey(field))),
     version_note: normalizeText(map.version_note || ''),
-    field_overrides: isObject(map.field_overrides) ? map.field_overrides : {},
+    field_overrides: stripRetiredEvidenceKnobs(isObject(map.field_overrides) ? map.field_overrides : {}),
     ui_defaults: isObject(map.ui_defaults) ? map.ui_defaults : {},
     tooltip_source: {
       path: tooltipSourcePath,
@@ -507,7 +477,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       min_identifiers: 2,
       anti_merge_rules: []
     },
-    manual_enum_values: manualEnumValues,
     field_groups: Array.isArray(map.field_groups)
       ? orderedUniqueStrings(toArray(map.field_groups).map(g => String(g || '').trim()).filter(Boolean))
       : []

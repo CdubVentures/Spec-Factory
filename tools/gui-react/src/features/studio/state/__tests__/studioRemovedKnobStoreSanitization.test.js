@@ -32,7 +32,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
         publish_gate: true,
         parse: {
           unit: 'g',
-          unit_accepts: ['g', 'grams'],
         },
       },
     },
@@ -50,7 +49,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
   assert.equal(rule.priority?.publish_gate, true, 'hydrate should preserve priority.publish_gate');
   assert.equal(rule.publish_gate, true, 'hydrate should preserve legacy publish_gate alias');
   assert.equal(rule.parse?.unit, 'g', 'hydrate should preserve parse.unit');
-  assert.deepEqual(rule.parse?.unit_accepts, ['g', 'grams'], 'hydrate should preserve wired parse.unit_accepts');
   assert.equal(rule.priority?.block_publish_when_unk, true, 'hydrate should preserve wired publish blocker');
 
   useFieldRulesStore.getState().updateField('weight', 'priority.publish_gate', true);
@@ -80,7 +78,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
       publish_gate: true,
       parse: {
         unit: 'l/s',
-        unit_accepts: ['l/s'],
       },
     },
     'weight',
@@ -94,5 +91,5 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
   assert.equal(rule.priority?.publish_gate, true, 'addKey should preserve priority.publish_gate');
   assert.equal(rule.publish_gate, true, 'addKey should preserve legacy publish_gate alias');
   assert.equal(rule.parse?.unit, 'l/s', 'addKey should preserve parse.unit');
-  assert.deepEqual(rule.parse?.unit_accepts, ['l/s'], 'addKey should preserve parse.unit_accepts');
+  assert.equal(rule.parse?.unit, 'l/s', 'addKey should preserve parse.unit after addKey');
 });

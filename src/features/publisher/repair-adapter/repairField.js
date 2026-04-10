@@ -11,7 +11,7 @@ import { parseRepairResponse, applyRepairDecisions } from './repairResponseSchem
  * @param {{ validationResult: object, fieldKey: string, fieldRule: object, knownValues?: object, callLlm: Function }} opts
  * @returns {Promise<{ status: string, value: *, decisions: object[]|null, revalidation: object|null, promptId: string|null, error?: string }>}
  */
-export async function repairField({ validationResult, fieldKey, fieldRule, knownValues, callLlm, consistencyMode }) {
+export async function repairField({ validationResult, fieldKey, fieldRule, knownValues, callLlm, consistencyMode, appDb }) {
   // Step 1: Short-circuit if already valid
   if (validationResult.valid) {
     return noRepairNeeded(validationResult.value);
@@ -95,7 +95,7 @@ export async function repairField({ validationResult, fieldKey, fieldRule, known
  * @param {{ crossFieldFailures: object[], fields: object, productName: string, fieldRules: object, knownValues?: object, componentDbs?: object, callLlm: Function }} opts
  * @returns {Promise<{ status: string, repairs: object[]|null, revalidation: object|null, promptId: string|null, error?: string }>}
  */
-export async function repairCrossField({ crossFieldFailures, fields, productName, fieldRules, knownValues, crossRules, callLlm, consistencyMode }) {
+export async function repairCrossField({ crossFieldFailures, fields, productName, fieldRules, knownValues, crossRules, callLlm, consistencyMode, appDb }) {
   if (!crossFieldFailures || crossFieldFailures.length === 0) {
     return { status: 'no_repair_needed', repairs: null, revalidation: null, promptId: null };
   }
@@ -136,7 +136,7 @@ export async function repairCrossField({ crossFieldFailures, fields, productName
   }
 
   // Re-validate through validateRecord with crossRules — the ONLY gate
-  const revalidation = validateRecord({ fields: repairedFields, fieldRules, knownValues, crossRules, consistencyMode });
+  const revalidation = validateRecord({ fields: repairedFields, fieldRules, knownValues, crossRules, consistencyMode, appDb });
   const status = revalidation.valid ? 'repaired' : 'still_failed';
 
   return { status, repairs, revalidation, promptId: 'P6' };

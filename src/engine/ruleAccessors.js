@@ -48,11 +48,4 @@ export function ruleUnit(rule = {}) {
   return canonicalUnitToken(contract.unit || rule.unit || '');
 }
 
-// --- Evidence accessors ---
 
-export function ruleEvidenceRequired(rule = {}) {
-  const evidence = isObject(rule.evidence) ? rule.evidence : {};
-  if (evidence.required !== undefined) return Boolean(evidence.required);
-  if (rule.evidence_required !== undefined) return Boolean(rule.evidence_required);
-  return false;
-}

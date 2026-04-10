@@ -22,7 +22,7 @@ import { deriveTestValues } from './deriveFailureValues.js';
  *   summary: { totalFields: number, totalChecks: number, passCount: number, failCount: number }
  * }}
  */
-export function runFieldContractTests({ fieldRules, knownValues, componentDbs, consistencyMode }) {
+export function runFieldContractTests({ fieldRules, knownValues, componentDbs, consistencyMode, appDb }) {
   const fields = fieldRules?.fields || {};
   const fieldKeys = Object.keys(fields);
   const results = [];
@@ -42,7 +42,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
 
     // ── Good value check ──────────────────────────────────────────────
     const goodResult = validateField({
-      fieldKey, value: derived.good.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
+      fieldKey, value: derived.good.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode, appDb,
     });
     const goodPass = goodResult.valid;
     checks.push({
@@ -65,7 +65,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
     // ── Bad value checks ──────────────────────────────────────────────
     for (const reject of derived.rejects) {
       const badResult = validateField({
-        fieldKey, value: reject.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
+        fieldKey, value: reject.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode, appDb,
       });
 
       const hasExpectedRejection = badResult.rejections.some(
@@ -113,7 +113,7 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
     // ── Repair value checks ───────────────────────────────────────────
     for (const repair of derived.repairs) {
       const repairResult = validateField({
-        fieldKey, value: repair.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode,
+        fieldKey, value: repair.value, fieldRule, knownValues: kv, componentDb: compDb, consistencyMode, appDb,
       });
 
       const hasRepair = repairResult.repairs.some(r =>

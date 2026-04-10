@@ -86,7 +86,7 @@
             "field_key": "switch_lifespan",
             "key": "switch_lifespan",
             "type": "number",
-            "unit": "million_presses",
+            "unit": "million keystrokes",
             "variance_policy": "authoritative"
           },
           {
@@ -2248,16 +2248,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_adjustment_step",
       "field_studio_hints": {
         "dataEntry": {
@@ -2274,26 +2271,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -2342,7 +2325,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 2,
@@ -2417,16 +2399,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_distance",
       "field_studio_hints": {
         "dataEntry": {
@@ -2443,26 +2422,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -2511,7 +2476,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -2587,16 +2551,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "actuation_force",
       "field_studio_hints": {
         "dataEntry": {
@@ -2613,28 +2574,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "priority": {
         "availability": "sometimes",
@@ -2683,7 +2628,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -2760,16 +2704,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_actuation_max",
       "field_studio_hints": {
         "dataEntry": {
@@ -2786,26 +2727,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -2854,7 +2781,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -2930,16 +2856,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_actuation_min",
       "field_studio_hints": {
         "dataEntry": {
@@ -2956,26 +2879,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -3024,7 +2933,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -3091,16 +2999,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_feet",
       "field_studio_hints": {
         "dataEntry": {
@@ -3116,17 +3021,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -3174,7 +3073,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3240,16 +3138,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "adjustable_input_granularity",
       "field_studio_hints": {
         "dataEntry": {
@@ -3265,17 +3160,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -3323,7 +3212,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3390,16 +3278,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "analog_input",
       "field_studio_hints": {
         "dataEntry": {
@@ -3415,17 +3300,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -3474,7 +3353,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3541,16 +3419,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "anti_ghosting",
       "field_studio_hints": {
         "dataEntry": {
@@ -3566,17 +3441,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -3625,7 +3494,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3691,16 +3559,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "arrow_keys",
       "field_studio_hints": {
         "dataEntry": {
@@ -3716,17 +3581,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -3775,7 +3634,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3841,16 +3699,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "backlighting",
       "field_studio_hints": {
         "dataEntry": {
@@ -3866,17 +3721,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -3925,7 +3774,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -3991,16 +3839,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "base_model",
       "field_studio_hints": {
         "dataEntry": {
@@ -4016,17 +3861,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -4074,7 +3913,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -4147,16 +3985,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_capacity",
       "field_studio_hints": {
         "dataEntry": {
@@ -4173,24 +4008,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mAh",
-        "unit_accepts": [
-          "mAh",
-          "mah"
-        ],
-        "unit_conversions": {}
+        "unit": "mAh"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mAh",
-        "unit_accepts": [
-          "mAh",
-          "mah"
-        ],
-        "unit_conversions": {}
+        "unit": "mAh"
       },
       "priority": {
         "availability": "sometimes",
@@ -4238,7 +4061,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -4292,7 +4114,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "hours",
+        "unit": "h",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -4314,16 +4136,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_life_off",
       "field_studio_hints": {
         "dataEntry": {
@@ -4340,28 +4159,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ],
-        "unit_conversions": {}
+        "unit": "h"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ],
-        "unit_conversions": {}
+        "unit": "h"
       },
       "priority": {
         "availability": "sometimes",
@@ -4411,7 +4214,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -4425,12 +4227,12 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "hours",
+        "suffix": "hrs",
         "tooltip_key": "battery_life_off",
         "tooltip_md": "Battery life estimate with lighting disabled.",
         "tooltip_source": null
       },
-      "unit": "hours",
+      "unit": "h",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -4465,7 +4267,7 @@
         },
         "shape": "scalar",
         "type": "number",
-        "unit": "hours",
+        "unit": "h",
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
@@ -4487,16 +4289,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "battery_life_rgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -4513,28 +4312,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ],
-        "unit_conversions": {}
+        "unit": "h"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "hours",
-        "unit_accepts": [
-          "hour",
-          "hours",
-          "hr",
-          "hrs"
-        ],
-        "unit_conversions": {}
+        "unit": "h"
       },
       "priority": {
         "availability": "sometimes",
@@ -4584,7 +4367,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -4598,12 +4380,12 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "hours",
+        "suffix": "hrs",
         "tooltip_key": "battery_life_rgb",
         "tooltip_md": "Battery life estimate with lighting enabled.",
         "tooltip_source": null
       },
-      "unit": "hours",
+      "unit": "h",
       "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
@@ -4651,16 +4433,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "bluetooth_version",
       "field_studio_hints": {
         "dataEntry": {
@@ -4676,17 +4455,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -4734,7 +4507,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -4808,16 +4580,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "bottom_out_force",
       "field_studio_hints": {
         "dataEntry": {
@@ -4834,28 +4603,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "g",
-        "unit_accepts": [
-          "g",
-          "gf",
-          "gram",
-          "grams"
-        ],
-        "unit_conversions": {}
+        "unit": "g"
       },
       "priority": {
         "availability": "sometimes",
@@ -4904,7 +4657,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -4972,16 +4724,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "brand",
       "field_studio_hints": {
         "dataEntry": {
@@ -4997,17 +4746,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5055,7 +4798,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5129,16 +4871,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_length",
       "field_studio_hints": {
         "dataEntry": {
@@ -5155,36 +4894,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "m",
-        "unit_accepts": [
-          "m",
-          "meter",
-          "meters",
-          "ft",
-          "feet"
-        ],
-        "unit_conversions": {
-          "feet": 0.3048,
-          "ft": 0.3048
-        }
+        "unit": "m"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "m",
-        "unit_accepts": [
-          "m",
-          "meter",
-          "meters",
-          "ft",
-          "feet"
-        ],
-        "unit_conversions": {
-          "feet": 0.3048,
-          "ft": 0.3048
-        }
+        "unit": "m"
       },
       "priority": {
         "availability": "sometimes",
@@ -5232,7 +4947,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -5299,16 +5013,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -5324,17 +5035,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5382,7 +5087,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5448,16 +5152,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "case_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -5473,17 +5174,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5531,7 +5226,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5597,16 +5291,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "category",
       "field_studio_hints": {
         "dataEntry": {
@@ -5622,17 +5313,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -5680,7 +5365,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5746,16 +5430,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "charging_method",
       "field_studio_hints": {
         "dataEntry": {
@@ -5771,17 +5452,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -5830,7 +5505,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -5901,16 +5575,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "color",
       "field_studio_hints": {
         "dataEntry": {
@@ -5931,10 +5602,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -5948,10 +5616,7 @@
           "/",
           "|",
           ";"
-        ],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        ]
       },
       "priority": {
         "availability": "expected",
@@ -6000,7 +5665,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6056,9 +5720,7 @@
       },
       "enum_policy": "closed",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6257,16 +5919,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "compatible_os",
       "field_studio_hints": {
         "dataEntry": {
@@ -6287,10 +5946,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -6304,10 +5960,7 @@
           "/",
           "|",
           ";"
-        ],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -6356,7 +6009,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6427,16 +6079,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "connection",
       "field_studio_hints": {
         "dataEntry": {
@@ -6457,10 +6106,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -6474,10 +6120,7 @@
           "/",
           "|",
           ";"
-        ],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        ]
       },
       "priority": {
         "availability": "expected",
@@ -6525,7 +6168,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -6599,16 +6241,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "debounce_time",
       "field_studio_hints": {
         "dataEntry": {
@@ -6625,26 +6264,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -6692,7 +6317,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -6767,16 +6391,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "depth",
       "field_studio_hints": {
         "dataEntry": {
@@ -6793,26 +6414,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -6860,7 +6467,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -6927,16 +6533,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "detachable_cable",
       "field_studio_hints": {
         "dataEntry": {
@@ -6952,17 +6555,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -7009,7 +6606,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7075,16 +6671,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
@@ -7100,17 +6693,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -7159,7 +6746,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7225,16 +6811,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "doubleshot",
       "field_studio_hints": {
         "dataEntry": {
@@ -7250,17 +6833,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7309,7 +6886,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7365,9 +6941,7 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7451,16 +7025,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "foam_dampening",
       "field_studio_hints": {
         "dataEntry": {
@@ -7476,17 +7047,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -7534,7 +7099,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7600,16 +7164,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "form_factor",
       "field_studio_hints": {
         "dataEntry": {
@@ -7625,17 +7186,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7684,7 +7239,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7750,16 +7304,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "function_row",
       "field_studio_hints": {
         "dataEntry": {
@@ -7775,17 +7326,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -7834,7 +7379,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -7900,16 +7444,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gasket_mount",
       "field_studio_hints": {
         "dataEntry": {
@@ -7925,17 +7466,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -7983,7 +7518,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8050,16 +7584,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "gtin",
       "field_studio_hints": {
         "dataEntry": {
@@ -8075,17 +7606,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -8134,7 +7659,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8209,16 +7733,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_front",
       "field_studio_hints": {
         "dataEntry": {
@@ -8235,26 +7756,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -8303,7 +7810,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -8379,16 +7885,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "height_rear",
       "field_studio_hints": {
         "dataEntry": {
@@ -8405,26 +7908,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -8473,7 +7962,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -8541,16 +8029,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "hot_swappable",
       "field_studio_hints": {
         "dataEntry": {
@@ -8566,17 +8051,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -8626,7 +8105,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8698,16 +8176,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "included_accessories",
       "field_studio_hints": {
         "dataEntry": {
@@ -8728,10 +8203,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -8745,10 +8217,7 @@
           "/",
           "|",
           ";"
-        ],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -8797,7 +8266,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -8867,16 +8335,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "key_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -8892,17 +8357,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -8951,7 +8410,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "integer",
       "ui": {
         "display_decimals": 0,
@@ -9018,16 +8476,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "key_rollover",
       "field_studio_hints": {
         "dataEntry": {
@@ -9043,17 +8498,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -9102,7 +8551,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -9168,16 +8616,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -9193,17 +8638,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -9252,7 +8691,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -9318,16 +8756,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_profile",
       "field_studio_hints": {
         "dataEntry": {
@@ -9343,17 +8778,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -9402,7 +8831,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -9476,16 +8904,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "keycap_thickness",
       "field_studio_hints": {
         "dataEntry": {
@@ -9502,26 +8927,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -9570,7 +8981,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -9640,16 +9050,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "knob_dial",
       "field_studio_hints": {
         "dataEntry": {
@@ -9665,17 +9072,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -9727,7 +9128,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -9793,16 +9193,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "layout",
       "field_studio_hints": {
         "dataEntry": {
@@ -9818,17 +9215,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -9877,7 +9268,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -9945,16 +9335,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "layout_standard",
       "field_studio_hints": {
         "dataEntry": {
@@ -9970,17 +9357,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -10031,7 +9412,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10098,16 +9478,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "legends",
       "field_studio_hints": {
         "dataEntry": {
@@ -10123,17 +9500,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -10183,7 +9554,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10249,16 +9619,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "macro_keys",
       "field_studio_hints": {
         "dataEntry": {
@@ -10274,17 +9641,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10333,7 +9694,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10400,16 +9760,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "media_controls",
       "field_studio_hints": {
         "dataEntry": {
@@ -10425,17 +9782,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10483,7 +9834,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10549,16 +9899,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "model",
       "field_studio_hints": {
         "dataEntry": {
@@ -10574,17 +9921,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -10632,7 +9973,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10698,16 +10038,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "mounting_style",
       "field_studio_hints": {
         "dataEntry": {
@@ -10723,17 +10060,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10781,7 +10112,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10847,16 +10177,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "mpn",
       "field_studio_hints": {
         "dataEntry": {
@@ -10872,17 +10199,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -10930,7 +10251,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -10997,16 +10317,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_device_pairing",
       "field_studio_hints": {
         "dataEntry": {
@@ -11022,17 +10339,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11081,7 +10392,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11155,16 +10465,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_device_pairing_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -11180,17 +10487,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11237,7 +10538,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "integer",
       "ui": {
         "display_decimals": 0,
@@ -11312,16 +10612,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "multi_key_latency",
       "field_studio_hints": {
         "dataEntry": {
@@ -11338,26 +10635,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -11406,7 +10689,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 2,
@@ -11473,16 +10755,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "numpad",
       "field_studio_hints": {
         "dataEntry": {
@@ -11498,17 +10777,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -11557,7 +10830,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11623,16 +10895,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "onboard_memory",
       "field_studio_hints": {
         "dataEntry": {
@@ -11648,17 +10917,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11707,7 +10970,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -11781,16 +11043,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "onboard_profile_count",
       "field_studio_hints": {
         "dataEntry": {
@@ -11806,17 +11065,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -11864,7 +11117,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "integer",
       "ui": {
         "display_decimals": 0,
@@ -11931,16 +11183,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "os_mode_switch",
       "field_studio_hints": {
         "dataEntry": {
@@ -11956,17 +11205,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -12014,7 +11257,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12081,16 +11323,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "per_key_rgb",
       "field_studio_hints": {
         "dataEntry": {
@@ -12106,17 +11345,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -12166,7 +11399,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12232,16 +11464,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "plate_material",
       "field_studio_hints": {
         "dataEntry": {
@@ -12257,17 +11486,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -12315,7 +11538,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12390,16 +11612,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "polling_rate_wired",
       "field_studio_hints": {
         "dataEntry": {
@@ -12416,26 +11635,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "expected",
@@ -12484,7 +11689,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -12560,16 +11764,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "polling_rate_wireless",
       "field_studio_hints": {
         "dataEntry": {
@@ -12586,26 +11787,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "sometimes",
@@ -12654,7 +11841,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -12721,16 +11907,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
@@ -12746,17 +11929,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -12805,7 +11982,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -12873,16 +12049,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "qmk_via_support",
       "field_studio_hints": {
         "dataEntry": {
@@ -12898,17 +12071,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -12959,7 +12126,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -13025,16 +12191,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "rapid_trigger",
       "field_studio_hints": {
         "dataEntry": {
@@ -13050,17 +12213,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -13108,7 +12265,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -13174,16 +12330,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
@@ -13199,17 +12352,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -13258,7 +12405,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "date",
       "ui": {
         "display_decimals": 0,
@@ -13324,16 +12470,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "rgb_zones",
       "field_studio_hints": {
         "dataEntry": {
@@ -13349,17 +12492,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -13408,7 +12545,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -13483,16 +12619,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "scan_rate",
       "field_studio_hints": {
         "dataEntry": {
@@ -13509,26 +12642,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "Hz",
-        "unit_accepts": [
-          "Hz",
-          "hz",
-          "hertz"
-        ],
-        "unit_conversions": {}
+        "unit": "Hz"
       },
       "priority": {
         "availability": "sometimes",
@@ -13577,7 +12696,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -13645,16 +12763,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "shine_through",
       "field_studio_hints": {
         "dataEntry": {
@@ -13670,17 +12785,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -13730,7 +12839,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -13805,16 +12913,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "single_key_latency",
       "field_studio_hints": {
         "dataEntry": {
@@ -13831,26 +12936,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "ms",
-        "unit_accepts": [
-          "ms",
-          "millisecond",
-          "milliseconds"
-        ],
-        "unit_conversions": {}
+        "unit": "ms"
       },
       "priority": {
         "availability": "sometimes",
@@ -13899,7 +12990,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 2,
@@ -13966,16 +13056,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
@@ -13991,17 +13078,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14049,7 +13130,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14116,16 +13196,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "socd_cleaning",
       "field_studio_hints": {
         "dataEntry": {
@@ -14141,17 +13218,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14200,7 +13271,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14266,16 +13336,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "software",
       "field_studio_hints": {
         "dataEntry": {
@@ -14291,17 +13358,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14350,7 +13411,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14416,16 +13476,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "software_required",
       "field_studio_hints": {
         "dataEntry": {
@@ -14441,17 +13498,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14500,7 +13551,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14566,16 +13616,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sound_dampening",
       "field_studio_hints": {
         "dataEntry": {
@@ -14591,17 +13638,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14649,7 +13690,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14716,16 +13756,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "sound_profile",
       "field_studio_hints": {
         "dataEntry": {
@@ -14741,17 +13778,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14800,7 +13831,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -14867,16 +13897,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "south_facing_leds",
       "field_studio_hints": {
         "dataEntry": {
@@ -14892,17 +13919,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -14951,7 +13972,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15017,16 +14037,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_lubed",
       "field_studio_hints": {
         "dataEntry": {
@@ -15042,17 +14059,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -15100,7 +14111,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15167,16 +14177,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_mount",
       "field_studio_hints": {
         "dataEntry": {
@@ -15192,17 +14199,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -15251,7 +14252,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15317,16 +14317,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "stabilizer_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -15342,17 +14339,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -15400,7 +14391,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15466,16 +14456,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_brand",
       "field_studio_hints": {
         "dataEntry": {
@@ -15491,17 +14478,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -15550,7 +14531,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15617,16 +14597,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_compatibility",
       "field_studio_hints": {
         "dataEntry": {
@@ -15642,17 +14619,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -15701,7 +14672,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15767,16 +14737,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_feel",
       "field_studio_hints": {
         "dataEntry": {
@@ -15792,17 +14759,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -15851,7 +14812,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -15927,16 +14887,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_lifespan",
       "field_studio_hints": {
         "dataEntry": {
@@ -15953,28 +14910,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "million keystrokes",
-        "unit_accepts": [
-          "million keystrokes",
-          "million keypresses",
-          "million",
-          "M"
-        ],
-        "unit_conversions": {}
+        "unit": "million keystrokes"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "million keystrokes",
-        "unit_accepts": [
-          "million keystrokes",
-          "million keypresses",
-          "million",
-          "M"
-        ],
-        "unit_conversions": {}
+        "unit": "million keystrokes"
       },
       "priority": {
         "availability": "sometimes",
@@ -16024,7 +14965,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 0,
@@ -16038,7 +14978,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "M",
+        "suffix": "M keystrokes",
         "tooltip_key": "switch_lifespan",
         "tooltip_md": "Rated lifetime in millions of keystrokes.",
         "tooltip_source": null
@@ -16100,16 +15040,13 @@
       "enum_policy": "open_prefer_known",
       "enum_source": "component_db.sensor",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_name",
       "field_studio_hints": {
         "dataEntry": {
@@ -16125,17 +15062,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -16186,7 +15117,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16253,16 +15183,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_output_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -16278,17 +15205,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16338,7 +15259,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16406,16 +15326,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_pin_support",
       "field_studio_hints": {
         "dataEntry": {
@@ -16431,17 +15348,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -16490,7 +15401,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16562,16 +15472,13 @@
       "enum_policy": "open_prefer_known",
       "enum_source": "component_db.switch",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "switch_type",
       "field_studio_hints": {
         "dataEntry": {
@@ -16587,17 +15494,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -16646,7 +15547,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -16720,16 +15620,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "total_travel",
       "field_studio_hints": {
         "dataEntry": {
@@ -16746,26 +15643,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "sometimes",
@@ -16814,7 +15697,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -16890,16 +15772,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "typing_angle",
       "field_studio_hints": {
         "dataEntry": {
@@ -16916,26 +15795,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "degree",
-          "degrees"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "deg",
-        "unit_accepts": [
-          "deg",
-          "degree",
-          "degrees"
-        ],
-        "unit_conversions": {}
+        "unit": "deg"
       },
       "priority": {
         "availability": "sometimes",
@@ -16983,7 +15848,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -16997,7 +15861,7 @@
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
-        "suffix": "deg",
+        "suffix": "°",
         "tooltip_key": "typing_angle",
         "tooltip_md": "Default typing angle in degrees.",
         "tooltip_source": null
@@ -17050,16 +15914,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "typing_noise",
       "field_studio_hints": {
         "dataEntry": {
@@ -17075,17 +15936,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17133,7 +15988,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17199,16 +16053,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "usb_passthrough",
       "field_studio_hints": {
         "dataEntry": {
@@ -17224,17 +16075,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17282,7 +16127,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17349,16 +16193,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "variant",
       "field_studio_hints": {
         "dataEntry": {
@@ -17374,17 +16215,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17433,7 +16268,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17498,16 +16332,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "warranty",
       "field_studio_hints": {
         "dataEntry": {
@@ -17523,17 +16354,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "sometimes",
@@ -17581,7 +16406,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -17654,16 +16478,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "weight",
       "field_studio_hints": {
         "dataEntry": {
@@ -17680,48 +16501,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "kg",
-        "unit_accepts": [
-          "kg",
-          "kilogram",
-          "kilograms",
-          "g",
-          "gram",
-          "grams",
-          "lb",
-          "lbs"
-        ],
-        "unit_conversions": {
-          "g": 0.001,
-          "gram": 0.001,
-          "grams": 0.001,
-          "lb": 0.453592,
-          "lbs": 0.453592
-        }
+        "unit": "kg"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "kg",
-        "unit_accepts": [
-          "kg",
-          "kilogram",
-          "kilograms",
-          "g",
-          "gram",
-          "grams",
-          "lb",
-          "lbs"
-        ],
-        "unit_conversions": {
-          "g": 0.001,
-          "gram": 0.001,
-          "grams": 0.001,
-          "lb": 0.453592,
-          "lbs": 0.453592
-        }
+        "unit": "kg"
       },
       "priority": {
         "availability": "expected",
@@ -17768,7 +16553,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 2,
@@ -17842,16 +16626,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
@@ -17868,26 +16649,12 @@
       "parse": {
         "delimiters": [],
         "range_separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "parse_rules": {
         "delimiters": [],
         "separators": [],
-        "strict_unit_required": false,
-        "unit": "mm",
-        "unit_accepts": [
-          "mm",
-          "millimeter",
-          "millimeters"
-        ],
-        "unit_conversions": {}
+        "unit": "mm"
       },
       "priority": {
         "availability": "expected",
@@ -17934,7 +16701,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "number",
       "ui": {
         "display_decimals": 1,
@@ -18001,16 +16767,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wired_interface",
       "field_studio_hints": {
         "dataEntry": {
@@ -18026,17 +16789,11 @@
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [],
-        "separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "separators": []
       },
       "priority": {
         "availability": "expected",
@@ -18084,7 +16841,6 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -18155,16 +16911,13 @@
       },
       "enum_policy": "open",
       "evidence": {
-        "conflict_policy": "resolve_by_tier_else_unknown",
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
           "tier3"
         ]
       },
-      "evidence_required": true,
       "field_key": "wireless_technology",
       "field_studio_hints": {
         "dataEntry": {
@@ -18185,10 +16938,7 @@
           "|",
           ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        "range_separators": []
       },
       "parse_rules": {
         "delimiters": [
@@ -18202,10 +16952,7 @@
           "/",
           "|",
           ";"
-        ],
-        "strict_unit_required": false,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        ]
       },
       "priority": {
         "availability": "sometimes",
@@ -18253,7 +17000,6 @@
       },
       "selection_policy": {},
       "shape": "list",
-      "strict_unit_required": false,
       "type": "string",
       "ui": {
         "display_decimals": 0,
@@ -18299,509 +17045,6 @@
     "row_start": 2,
     "sheet": "field_catalog",
     "source": "column_range"
-  },
-  "manual_enum_values": {
-    "adjustable_feet": [
-      "No",
-      "2-stage",
-      "3-stage"
-    ],
-    "adjustable_input_granularity": [
-      "No",
-      "0.1 mm",
-      "0.2 mm",
-      "0.4 mm"
-    ],
-    "analog_input": [
-      "No",
-      "Yes",
-      "Controller Input"
-    ],
-    "anti_ghosting": [
-      "No",
-      "Yes",
-      "Full anti-ghosting"
-    ],
-    "arrow_keys": [
-      "No",
-      "Yes"
-    ],
-    "backlighting": [
-      "None",
-      "White",
-      "RGB",
-      "Per-key RGB"
-    ],
-    "bluetooth_version": [
-      "None",
-      "5.0",
-      "5.1",
-      "5.2",
-      "5.3",
-      "5.4"
-    ],
-    "cable_type": [
-      "USB-C to USB-C",
-      "USB-C to USB-A",
-      "Braided USB-C",
-      "Coiled USB-C",
-      "Attached USB-C",
-      "Attached USB-A"
-    ],
-    "case_material": [
-      "Plastic",
-      "ABS",
-      "Aluminum",
-      "CNC Aluminum",
-      "Polycarbonate",
-      "Wood"
-    ],
-    "category": [
-      "keyboard"
-    ],
-    "charging_method": [
-      "USB-C",
-      "USB-C fast charge",
-      "Wireless charging dock",
-      "AA batteries"
-    ],
-    "color": [
-      "Black",
-      "White",
-      "Silver",
-      "Gray",
-      "Navy",
-      "Green",
-      "Pink",
-      "Two-tone"
-    ],
-    "colors": [
-      "amber",
-      "beige",
-      "black",
-      "blue",
-      "brown",
-      "coral",
-      "cyan",
-      "dark-blue",
-      "dark-brown",
-      "dark-cyan",
-      "dark-fuchsia",
-      "dark-gray",
-      "dark-green",
-      "dark-indigo",
-      "dark-lime",
-      "dark-orange",
-      "dark-pink",
-      "dark-purple",
-      "dark-red",
-      "dark-rose",
-      "dark-sky",
-      "dark-slate",
-      "dark-stone",
-      "dark-teal",
-      "dark-violet",
-      "dark-yellow",
-      "emerald",
-      "fuchsia",
-      "gold",
-      "gray",
-      "green",
-      "indigo",
-      "ivory",
-      "lavender",
-      "light-amber",
-      "light-blue",
-      "light-brown",
-      "light-coral",
-      "light-cyan",
-      "light-emerald",
-      "light-fuchsia",
-      "light-gray",
-      "light-green",
-      "light-indigo",
-      "light-lime",
-      "light-olive",
-      "light-orange",
-      "light-pink",
-      "light-purple",
-      "light-red",
-      "light-rose",
-      "light-sky",
-      "light-slate",
-      "light-stone",
-      "light-teal",
-      "light-violet",
-      "light-yellow",
-      "lime",
-      "magenta",
-      "maroon",
-      "navy",
-      "olive",
-      "orange",
-      "pink",
-      "purple",
-      "red",
-      "rose",
-      "salmon",
-      "silver",
-      "sky",
-      "slate",
-      "stone",
-      "teal",
-      "turquoise",
-      "violet",
-      "white",
-      "yellow"
-    ],
-    "compatible_os": [
-      "Windows",
-      "macOS",
-      "Linux",
-      "ChromeOS",
-      "Xbox",
-      "PlayStation"
-    ],
-    "connection": [
-      "Wired",
-      "2.4 GHz Wireless",
-      "Bluetooth",
-      "Hybrid"
-    ],
-    "detachable_cable": [
-      "No",
-      "Yes"
-    ],
-    "discontinued": [
-      "No",
-      "Yes"
-    ],
-    "doubleshot": [
-      "No",
-      "Yes"
-    ],
-    "foam_dampening": [
-      "None",
-      "Case Foam",
-      "Plate Foam",
-      "Case + Plate Foam",
-      "Case + Plate + PCB Foam"
-    ],
-    "form_factor": [
-      "Full-size (100%)",
-      "96%",
-      "1800 Compact",
-      "TKL (80%)",
-      "75%",
-      "70%",
-      "65%",
-      "60%",
-      "40%"
-    ],
-    "function_row": [
-      "No",
-      "Yes"
-    ],
-    "gasket_mount": [
-      "No",
-      "Yes",
-      "Double Gasket"
-    ],
-    "hot_swappable": [
-      "No",
-      "Yes",
-      "3-pin",
-      "5-pin",
-      "3-pin and 5-pin"
-    ],
-    "included_accessories": [
-      "Detachable cable",
-      "USB receiver",
-      "Keycap puller",
-      "Switch puller",
-      "Mac keycaps",
-      "Extra switches",
-      "Wrist rest",
-      "Dust cover"
-    ],
-    "key_rollover": [
-      "6KRO",
-      "10KRO",
-      "NKRO"
-    ],
-    "keycap_material": [
-      "ABS",
-      "PBT",
-      "POM",
-      "PC"
-    ],
-    "keycap_profile": [
-      "OEM",
-      "Cherry",
-      "OSA",
-      "KSA",
-      "SA",
-      "DSA",
-      "XDA",
-      "Low Profile"
-    ],
-    "knob_dial": [
-      "No",
-      "Yes",
-      "Dual knobs"
-    ],
-    "layout": [
-      "Standard",
-      "Compact",
-      "Alice",
-      "Split",
-      "Ortholinear",
-      "Low-profile",
-      "Numpad"
-    ],
-    "layout_standard": [
-      "ANSI",
-      "ISO",
-      "JIS"
-    ],
-    "legends": [
-      "Pad Printed",
-      "Laser Etched",
-      "Dye-Sub PBT",
-      "Double-shot ABS",
-      "Double-shot PBT",
-      "Side-Printed"
-    ],
-    "macro_keys": [
-      "None",
-      "5 dedicated",
-      "6 dedicated",
-      "All keys programmable"
-    ],
-    "media_controls": [
-      "None",
-      "Dedicated keys",
-      "Dedicated keys and roller",
-      "Knob",
-      "Knob and keys"
-    ],
-    "mounting_style": [
-      "Tray Mount",
-      "Top Mount",
-      "Gasket Mount",
-      "Integrated Plate",
-      "Leaf Spring",
-      "Sandwich Mount"
-    ],
-    "multi_device_pairing": [
-      "None",
-      "2 devices",
-      "3 devices",
-      "4 devices"
-    ],
-    "numpad": [
-      "Yes",
-      "No",
-      "Detached"
-    ],
-    "onboard_memory": [
-      "No",
-      "Yes",
-      "3 profiles",
-      "5 profiles"
-    ],
-    "os_mode_switch": [
-      "No",
-      "Yes",
-      "Windows / Mac",
-      "Windows / Mac / Linux"
-    ],
-    "per_key_rgb": [
-      "No",
-      "Yes"
-    ],
-    "plate_material": [
-      "Steel",
-      "Aluminum",
-      "Brass",
-      "Polycarbonate",
-      "FR4",
-      "POM"
-    ],
-    "qmk_via_support": [
-      "No",
-      "QMK",
-      "VIA",
-      "QMK + VIA"
-    ],
-    "rapid_trigger": [
-      "No",
-      "Yes"
-    ],
-    "rgb_zones": [
-      "None",
-      "Single zone",
-      "4 zones",
-      "10 zones",
-      "24 zones",
-      "Per-key"
-    ],
-    "shine_through": [
-      "Yes",
-      "No",
-      "North-facing only",
-      "Partial"
-    ],
-    "socd_cleaning": [
-      "No",
-      "Yes",
-      "Last input priority",
-      "Neutral",
-      "Snap Tap"
-    ],
-    "software": [
-      "None",
-      "iCUE",
-      "Razer Synapse",
-      "Logitech G HUB",
-      "SteelSeries GG",
-      "NGENUITY",
-      "Keychron Launcher",
-      "QMK VIA"
-    ],
-    "software_required": [
-      "No",
-      "Optional",
-      "Required for advanced features"
-    ],
-    "sound_dampening": [
-      "None",
-      "Basic",
-      "Moderate",
-      "Heavy"
-    ],
-    "sound_profile": [
-      "Muted",
-      "Neutral",
-      "Clacky",
-      "Thocky",
-      "Bright"
-    ],
-    "south_facing_leds": [
-      "No",
-      "Yes"
-    ],
-    "stabilizer_lubed": [
-      "No",
-      "Yes",
-      "Factory lubed"
-    ],
-    "stabilizer_mount": [
-      "Plate-mount",
-      "Screw-in PCB",
-      "Clip-in PCB",
-      "Plate-mount TPU"
-    ],
-    "stabilizer_type": [
-      "Plate-mounted",
-      "PCB-mounted",
-      "Screw-in",
-      "Pre-lubed Screw-in",
-      "Costar"
-    ],
-    "switch_brand": [
-      "Cherry",
-      "Gateron",
-      "Kailh",
-      "Razer",
-      "Logitech G",
-      "SteelSeries",
-      "Topre",
-      "Keychron",
-      "HyperX",
-      "Ducky"
-    ],
-    "switch_compatibility": [
-      "MX-style mechanical",
-      "MX-style 3-pin",
-      "MX-style 5-pin",
-      "MX-style 3-pin and 5-pin",
-      "Low-profile mechanical only",
-      "Hall effect magnetic only",
-      "Proprietary optical only"
-    ],
-    "switch_feel": [
-      "Linear",
-      "Tactile",
-      "Clicky",
-      "Silent Linear",
-      "Silent Tactile"
-    ],
-    "switch_name": [
-      "Cherry MX Red",
-      "Cherry MX Brown",
-      "Cherry MX Blue",
-      "Gateron G Pro Red",
-      "Gateron G Pro Brown",
-      "Gateron Jupiter Banana",
-      "Kailh Box White",
-      "Kailh Speed Silver",
-      "Razer Green",
-      "Razer Yellow",
-      "Logitech GL Tactile",
-      "SteelSeries OmniPoint 2.0",
-      "Keychron K Pro Red",
-      "Keychron K Pro Brown",
-      "Topre 45g"
-    ],
-    "switch_output_type": [
-      "Digital",
-      "Adjustable Actuation",
-      "Analog"
-    ],
-    "switch_pin_support": [
-      "None",
-      "3-pin",
-      "5-pin",
-      "3-pin and 5-pin",
-      "Center-magnet HE only",
-      "Proprietary"
-    ],
-    "switch_type": [
-      "Mechanical",
-      "Low-profile Mechanical",
-      "Optical",
-      "Magnetic",
-      "Hall Effect",
-      "Membrane",
-      "Scissor",
-      "Hybrid"
-    ],
-    "typing_noise": [
-      "Silent",
-      "Moderate",
-      "Loud"
-    ],
-    "usb_passthrough": [
-      "No",
-      "USB 2.0",
-      "USB 3.0",
-      "USB-C passthrough"
-    ],
-    "wired_interface": [
-      "USB-C",
-      "USB-A to USB-C",
-      "Detachable USB-C",
-      "Attached USB-C",
-      "Attached USB-A"
-    ],
-    "wireless_technology": [
-      "2.4 GHz",
-      "Bluetooth 5.0",
-      "Bluetooth 5.1",
-      "Bluetooth 5.2",
-      "Bluetooth 5.3"
-    ]
   },
   "product_table": {
     "brand_row": 3,

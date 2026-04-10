@@ -23,10 +23,8 @@ export interface WorkbenchRow {
   knownValuesCount: number;
 
   // Evidence
-  evidenceRequired: boolean;
   minEvidenceRefs: number;
   tierPreference: string;
-  conflictPolicy: string;
 
   // Priority / Publishing
   publishGate: boolean;

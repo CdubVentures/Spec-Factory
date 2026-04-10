@@ -1,97 +1,95 @@
 /**
- * Color & Edition Finder — LLM adapter.
+ * Color & Edition Finder — LLM adapter (v2).
  *
- * Builds a focused prompt for color/edition discovery and validation.
- * On first run: pure discovery. On subsequent runs: validate + discover + select.
+ * Builds the v2 discovery prompt with identity lock, evidence rules,
+ * anti-anchoring, and multi-run feedback. Web-capable models (Claude,
+ * OpenAI) can browse to verify colors/editions against official sources.
  *
- * Color and edition formatting rules come from the field studio SSOT
- * (egPresets.js via getEgPresetForKey). Web-browsing instructions are stripped
- * since this LLM call is structured output, not a web agent.
- *
- * The prompt sends: product identity, registered color palette with hex,
- * formatting rules, currently selected state (if any), and a response contract.
- * It does NOT send URLs, category, or web-browsing instructions.
+ * The registered color palette is injected dynamically from the colors
+ * parameter (ultimately from appDb.listColors()). Known candidate inputs
+ * are derived from previous runs for incremental discovery.
  */
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
-import { getEgPresetForKey } from '../studio/index.js';
 import { colorEditionFinderResponseSchema } from './colorEditionSchema.js';
 
-// WHY: The field studio reasoning notes include web-browsing instructions
-// ("Check manufacturer page, Amazon, Best Buy, Newegg") that don't apply
-// to this structured-output-only LLM call. Strip those lines.
-const WEB_BROWSING_PATTERNS = [
-  'check the manufacturer',
-  'major retailers',
-  'retailers,',
-  'community forums',
-];
-
 /**
- * Strip web-browsing instruction lines from a field studio reasoning note.
- * @param {string} text
- * @returns {string}
+ * Accumulate urls_checked from all previous runs' discovery_logs.
+ * Pure function — unions across runs, deduplicates, extracts domains.
+ *
+ * @param {object[]} previousRuns
+ * @returns {{ urlsAlreadyChecked: string[], domainsAlreadyChecked: string[] }}
  */
-export function stripWebBrowsingLines(text) {
-  if (!text) return '';
-  return text.split('\n')
-    .filter(line => {
-      const lower = line.toLowerCase();
-      return !WEB_BROWSING_PATTERNS.some(p => lower.includes(p));
-    })
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n');
+export function accumulateUrlsChecked(previousRuns) {
+  const urlSet = new Set();
+  for (const run of previousRuns) {
+    const urls = run?.response?.discovery_log?.urls_checked;
+    if (Array.isArray(urls)) {
+      for (const u of urls) urlSet.add(u);
+    }
+  }
+
+  const urlsAlreadyChecked = [...urlSet];
+  const domainSet = new Set();
+  for (const url of urlsAlreadyChecked) {
+    try {
+      domainSet.add(new URL(url).hostname);
+    } catch { /* skip malformed URLs */ }
+  }
+
+  return {
+    urlsAlreadyChecked,
+    domainsAlreadyChecked: [...domainSet],
+  };
 }
 
 /**
- * Build the currently selected state section for validation runs.
- * @param {object[]} previousRuns — sorted by run_number
- * @returns {string} Section text or empty string
+ * Build the known-inputs block for run N+1.
+ * Extracts known_colors/known_color_names/known_editions from the latest
+ * run's selected state, plus accumulated urls/domains from all runs.
+ *
+ * @param {object[]} previousRuns
+ * @returns {object} { knownColors, knownColorNames, knownEditions, urlsAlreadyChecked, domainsAlreadyChecked }
  */
-function buildSelectedSection(previousRuns) {
-  if (!previousRuns || previousRuns.length === 0) return '';
+function buildKnownInputs(previousRuns) {
+  if (!previousRuns || previousRuns.length === 0) {
+    return {
+      knownColors: [],
+      knownColorNames: {},
+      knownEditions: [],
+      urlsAlreadyChecked: [],
+      domainsAlreadyChecked: [],
+    };
+  }
 
   const latest = previousRuns[previousRuns.length - 1];
-  const sel = latest.selected || {};
-  const colorNames = sel.color_names || {};
-  const defaultColor = sel.default_color || '?';
-  const editions = sel.editions || {};
-  const editionKeys = Object.keys(editions);
+  const sel = latest?.selected || {};
+  const { urlsAlreadyChecked, domainsAlreadyChecked } = accumulateUrlsChecked(previousRuns);
 
-  const colorList = sel.colors
-    ?.map(c => colorNames[c] ? `${c} (${colorNames[c]})` : c)
-    .join(', ') || 'none';
-
-  const editionLines = editionKeys.length > 0
-    ? editionKeys.map(slug => {
-      const ed = editions[slug] || {};
-      const ec = ed.colors || [];
-      const label = ed.display_name ? `${slug} (${ed.display_name})` : slug;
-      return `  ${label}: ${ec.join(', ') || 'no colors'}`;
-    })
-    : ['  (none)'];
-
-  return [
-    'Currently selected (from previous run):',
-    `  Colors: ${colorList}`,
-    `  Default: ${defaultColor}`,
-    '  Editions:',
-    ...editionLines,
-    '',
-    'Your response replaces this selection entirely.',
-    'Validate each entry — confirm it is real and currently available.',
-    'Discover any new colors or editions not yet found.',
-    'Omit any entry that is incorrect or discontinued — omitting IS the rejection.',
-  ].join('\n');
+  return {
+    knownColors: Array.isArray(sel.colors) ? sel.colors : [],
+    knownColorNames: (sel.color_names && typeof sel.color_names === 'object') ? sel.color_names : {},
+    knownEditions: sel.editions ? Object.keys(sel.editions) : [],
+    urlsAlreadyChecked,
+    domainsAlreadyChecked,
+  };
 }
 
 /**
- * Build the system prompt for the Color & Edition Finder.
+ * Build the registered color palette line for injection into the prompt.
+ * Format: "name (#hex), name (#hex), ..."
  *
- * Color and edition guidance come from the field studio SSOT (egPresets.js),
- * with web-browsing lines stripped. The response contract is specific to
- * the Color Edition Finder's structured output format.
+ * @param {object[]} colors — [{ name, hex }]
+ * @returns {string}
+ */
+function buildPaletteLine(colors) {
+  if (!colors || colors.length === 0) return '(no registered colors)';
+  return colors.map(c => `${c.name} (${c.hex})`).join(', ');
+}
+
+/**
+ * Build the system prompt for the Color & Edition Finder (v2).
  *
  * @param {object} opts
  * @param {string[]} opts.colorNames — registered color name strings
@@ -110,44 +108,62 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const queryVariant = baseModel ? variant : '';
   const productLine = [brand, queryModel, queryVariant].filter(Boolean).join(' ');
 
-  const hasPreviousRuns = previousRuns.length > 0;
-  const selectedSection = buildSelectedSection(previousRuns);
+  const known = buildKnownInputs(previousRuns);
+  const palette = buildPaletteLine(colors);
 
-  const directive = hasPreviousRuns
-    ? 'Validate previous findings, discover anything new, and return the definitive complete selection.'
-    : 'Discover all available colors and editions for this product.';
+  const knownColorsStr = known.knownColors.length > 0 ? JSON.stringify(known.knownColors) : '[]';
+  const knownColorNamesStr = Object.keys(known.knownColorNames).length > 0 ? JSON.stringify(known.knownColorNames) : '{}';
+  const knownEditionsStr = known.knownEditions.length > 0 ? JSON.stringify(known.knownEditions) : '[]';
+  const urlsCheckedStr = known.urlsAlreadyChecked.length > 0 ? JSON.stringify(known.urlsAlreadyChecked) : '[]';
+  const domainsCheckedStr = known.domainsAlreadyChecked.length > 0 ? JSON.stringify(known.domainsAlreadyChecked) : '[]';
 
-  // Field studio SSOT: color + edition reasoning notes (web lines stripped)
-  const colorPreset = getEgPresetForKey('colors', { colorNames, colors });
-  const editionPreset = getEgPresetForKey('editions', {});
-  const colorGuidance = stripWebBrowsingLines(colorPreset?.ai_assist?.reasoning_note || '');
-  const editionGuidance = stripWebBrowsingLines(editionPreset?.ai_assist?.reasoning_note || '');
+  return `You are a product researcher. Find every official color and every official edition for this exact product. Be exhaustive — check many sources and do not stop early.
 
-  return [
-    // ── Role + directive ──
-    `Select the complete set of colors and editions for: ${productLine || 'Unknown product'}.`,
-    directive,
-    '',
+Target product: ${brand} ${model}${variant ? ` (variant: ${variant})` : ''}
 
-    // ── Currently selected (validation runs only) ──
-    selectedSection,
-    selectedSection ? '' : null,
+Known from prior runs (re-verify each, then find MORE):
+- known_colors: ${knownColorsStr}
+- known_color_names: ${knownColorNamesStr}
+- known_editions: ${knownEditionsStr}
+- urls_already_checked: ${urlsCheckedStr}
 
-    // ── Color guidance (from field studio SSOT, web lines stripped) ──
-    colorGuidance,
-    '',
+IDENTITY: Only return results for "${brand} ${model}". Exclude sibling models that have a different name (different suffixes like "Air", "Pro", etc. are different products). Only list a sibling in siblings_excluded if you actually encountered it during research — do not guess or invent siblings.
 
-    // ── Edition guidance (from field studio SSOT, web lines stripped) ──
-    editionGuidance,
-    '',
+HOW TO SEARCH — do all of these:
+1. Open the official ${brand} product page for "${model}". Look at the color picker / variant selector on the page. List every color swatch shown.
+2. Open the ${brand} product FAMILY or CATEGORY page that lists all "${model}" variants — manufacturers often list special editions here that don't appear on the base product page.
+3. Search Google: "${brand} ${model}" — check the top results for color and edition info.
+4. Search Google: "${brand} ${model} all colors available" — retailers and review sites often list colors.
+5. Search Google: "${brand} ${model} special edition" OR "limited edition" OR "collaboration"
+6. Search Google: "${brand} ${model} Call of Duty" OR "Witcher" OR "Halo" OR "edition" — many peripherals have game tie-in editions with unique colors.
+7. Check Amazon, Best Buy, Newegg for "${brand} ${model}" — retailers list ALL colorways and special editions as separate listings. Count them.
+8. Search "${brand} ${model} announcement" OR "press release" OR "launch" for new colorways and editions.
+9. Search "${brand} ${model} new color 2025" and "${brand} ${model} new color 2024" for recent additions.
+10. If you found any editions, search each edition name individually to confirm its colors.
 
-    // ── Response contract ──
-    'Return JSON:',
-    '- "colors": all product colors (first = default). Registered atoms or "+"-joined combos.',
-    '- "color_names": object mapping each color to its manufacturer marketing name (e.g. "white+silver": "Frost White"). Omit plain single-atom colors where the atom IS the name.',
-    '- "editions": object keyed by slug, each with "display_name" (manufacturer name) and "colors" array. Empty object if none.',
-    '- "default_color": must equal colors[0].',
-  ].filter(s => s !== null).filter(Boolean).join('\n');
+COMPLETENESS CHECK: Before returning, ask yourself: "Did I find every color shown on the official page? Did I check retailers for editions? Did I search for game/brand collaborations?" If not, search more.
+
+COLOR FORMAT:
+- Lowercase atoms only. Multi-color shells joined by "+" in dominant order (e.g. "black+red").
+- Modifier-first: "light-blue" not "blue-light". Normalize "grey" to "gray".
+- Translate marketing names to the nearest registered color atom by visual/hex similarity.
+- colors[0] = the default/hero color on the official product page.
+- Record the manufacturer's marketing name in color_names (e.g. "light-blue": "Glacier Blue").
+- Registered color atoms: ${palette}
+
+EDITION FORMAT:
+- An edition is an officially named special/limited/collaboration/franchise version of this exact product sold by the manufacturer or authorized retailers.
+- Slugs: kebab-case lowercase (e.g. "witcher-3-10th-anniversary-edition", "cod-bo6-edition").
+- Each edition has a display_name (official name) and its own colors array.
+- NOT an edition: plain color variants without a special name, bundles, refurbs, aftermarket skins.
+
+RETURN JSON:
+- "colors": array of ALL normalized colors (first = default)
+- "default_color": must equal colors[0]
+- "color_names": { color → marketing name } (omit when the atom IS the name)
+- "editions": { slug → { "display_name": "...", "colors": [...] } } or {} if none
+- "siblings_excluded": sibling model names you actually found and excluded (do NOT invent these)
+- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 }
 
 export const COLOR_EDITION_FINDER_SPEC = {

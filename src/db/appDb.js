@@ -5,6 +5,18 @@
 import Database from 'better-sqlite3';
 import { APP_DB_SCHEMA } from './appDbSchema.js';
 
+function safeParseJson(str, fallback) {
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function hydrateUnitRow(row) {
+  return {
+    ...row,
+    synonyms: safeParseJson(row.synonyms_json, []),
+    conversions: safeParseJson(row.conversions_json, []),
+  };
+}
+
 export class AppDb {
   constructor({ dbPath }) {
     this.dbPath = dbPath;
@@ -100,6 +112,21 @@ export class AppDb {
     this._listColors = this.db.prepare('SELECT * FROM color_registry ORDER BY name');
     this._deleteColor = this.db.prepare('DELETE FROM color_registry WHERE name = ?');
     this._countColors = this.db.prepare('SELECT COUNT(*) as c FROM color_registry');
+
+    // ── Unit Registry ──
+
+    this._upsertUnit = this.db.prepare(`
+      INSERT INTO unit_registry (canonical, label, synonyms_json, conversions_json)
+      VALUES (@canonical, @label, @synonyms_json, @conversions_json)
+      ON CONFLICT(canonical) DO UPDATE SET
+        label = excluded.label,
+        synonyms_json = excluded.synonyms_json,
+        conversions_json = excluded.conversions_json,
+        updated_at = datetime('now')
+    `);
+    this._getUnit = this.db.prepare('SELECT * FROM unit_registry WHERE canonical = ?');
+    this._listUnits = this.db.prepare('SELECT * FROM unit_registry ORDER BY canonical');
+    this._deleteUnit = this.db.prepare('DELETE FROM unit_registry WHERE canonical = ?');
 
     // WHY: transaction for setBrandCategories (delete + re-insert atomically)
     this._setBrandCategoriesTx = this.db.transaction((identifier, categories) => {
@@ -238,6 +265,30 @@ export class AppDb {
 
   deleteColor(name) {
     return this._deleteColor.run(name).changes;
+  }
+
+  // ── Unit Registry ──
+
+  upsertUnit({ canonical, label, synonyms, conversions }) {
+    this._upsertUnit.run({
+      canonical,
+      label: label || '',
+      synonyms_json: JSON.stringify(Array.isArray(synonyms) ? synonyms : []),
+      conversions_json: JSON.stringify(Array.isArray(conversions) ? conversions : []),
+    });
+  }
+
+  getUnit(canonical) {
+    const row = this._getUnit.get(canonical);
+    return row ? hydrateUnitRow(row) : null;
+  }
+
+  listUnits() {
+    return this._listUnits.all().map(hydrateUnitRow);
+  }
+
+  deleteUnit(canonical) {
+    return this._deleteUnit.run(canonical).changes;
   }
 
   // ── Seed Hash Tracking ──

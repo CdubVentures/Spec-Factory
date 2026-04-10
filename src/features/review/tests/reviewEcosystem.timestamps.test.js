@@ -149,35 +149,7 @@ test('review ecosystem timestamp contracts share one fixture without weakening t
       assert.equal(typeof braided.needs_review, 'boolean');
     });
 
-    await t.test('TS-10: Multiple enum fields have independent timestamps', async () => {
-      const ts1 = '2026-02-15T21:00:00.000Z';
-      const ts2 = '2026-02-15T21:30:00.000Z';
-      await seedKnownValues(
-        config.categoryAuthorityRoot,
-        CATEGORY,
-        buildKnownValueFieldMap({
-          connection: [...KNOWN_VALUE_ENUMS.connection.values, 'USB-A'],
-          cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'],
-        }),
-      );
-      const workbookSeed = buildWorkbookMapSeed({
-        manualEnumValues: { connection: ['USB-A'], cable_type: ['Braided'] },
-        manualEnumTimestamps: { 'connection::usb-a': ts1, 'cable_type::braided': ts2 },
-      });
-      await seedWorkbookMap(
-        config.categoryAuthorityRoot,
-        CATEGORY,
-        workbookSeed.manualEnumValues,
-        workbookSeed.manualEnumTimestamps,
-      );
-      const payload = await buildEnumPayloadFromSpecDb(config);
-      const connectionField = findEnumField(payload, 'connection');
-      const usbA = findEnumValue(payload, 'connection', 'USB-A');
-      const braided = findEnumValue(payload, 'cable_type', 'Braided');
-      assert.equal(usbA.source_timestamp, ts1);
-      assert.equal(braided.source_timestamp, ts2);
-      const wired = connectionField.values.find((entry) => entry.value === 'Wired');
-      assert.equal(wired.source_timestamp, null);
-    });
+    // TS-10 retired: manual_enum_timestamps was dead code (zero entries in all categories).
+    // source_timestamp is no longer seeded from the control-plane map.
   }, 'review-ts-');
 });

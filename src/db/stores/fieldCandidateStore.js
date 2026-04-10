@@ -26,12 +26,13 @@ function hydrateRow(row) {
  */
 export function createFieldCandidateStore({ db, category, stmts }) {
 
-  function upsert({ productId, fieldKey, value, confidence, sourceCount, sourcesJson, validationJson, metadataJson, status }) {
+  function upsert({ productId, fieldKey, value, unit, confidence, sourceCount, sourcesJson, validationJson, metadataJson, status }) {
     stmts._upsertFieldCandidate.run({
       category,
       product_id: String(productId || ''),
       field_key: String(fieldKey || ''),
       value: value ?? null,
+      unit: unit ?? null,
       confidence: confidence ?? 0,
       source_count: sourceCount ?? 1,
       sources_json: JSON.stringify(Array.isArray(sourcesJson) ? sourcesJson : []),

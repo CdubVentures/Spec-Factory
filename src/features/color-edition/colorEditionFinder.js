@@ -210,18 +210,31 @@ export async function runColorEditionFinder({
       category: product.category, productId: product.product_id,
       fieldKey: 'colors', value: gateColors, confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-      metadata: colorsMeta,
+      metadata: colorsMeta, appDb,
     });
     submitCandidate({
       category: product.category, productId: product.product_id,
       fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
       metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
+      appDb,
     });
   }
   // If no compiled rules available, gate is skipped — CEF proceeds as before
 
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
+
+  // WHY: siblings_excluded and discovery_log are per-run audit data.
+  // They live in run.response (not selected) for feed-forward into run N+1.
+  const emptyLog = { confirmed_from_known: [], added_new: [], rejected_from_known: [], urls_checked: [], queries_run: [] };
+  const storedResponse = {
+    colors: gateColors,
+    color_names: colorNamesMap,
+    editions: gateEditions,
+    default_color: selected.default_color,
+    siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
+    discovery_log: response?.discovery_log || emptyLog,
+  };
 
   // Cooldown: 30 days from now
   const now = new Date();
@@ -256,7 +269,7 @@ export async function runColorEditionFinder({
       fallback_used: false,
       selected,
       prompt: { system: systemPrompt, user: userMessage },
-      response: { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: selected.default_color },
+      response: storedResponse,
     },
   });
 
@@ -272,7 +285,7 @@ export async function runColorEditionFinder({
     cooldown_until: cooldownUntil,
     selected,
     prompt: { system: systemPrompt, user: userMessage },
-    response: { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: selected.default_color },
+    response: storedResponse,
   });
 
   // Upsert SQL summary

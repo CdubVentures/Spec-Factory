@@ -108,22 +108,6 @@ test('applyRuntimeFieldRules reports open-enum curation suggestions', async () =
   });
 });
 
-test('edge: field where evidence_required is undefined is treated as false', async () => {
-  await withBaseEngine((engine) => {
-    const result = applyRuntimeFieldRules({
-      engine,
-      fields: { dpi: 16000 },
-      provenance: {},
-      fieldOrder: ['dpi'],
-      enforceEvidence: false,
-      evidencePack: null
-    });
-
-    assert.equal(result.applied, true);
-    assert.equal(result.fields.dpi, 16000, 'dpi should remain - evidence_required undefined treated as false');
-  });
-});
-
 test('no-op: applyRuntimeFieldRules returns early when engine is null', () => {
   const result = applyRuntimeFieldRules({
     engine: null,

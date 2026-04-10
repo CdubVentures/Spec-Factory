@@ -28,9 +28,7 @@ Array of 12 phase entries: `{ id, title, order, description, behaviorNote, isApp
 |---|---|---|---|
 | data_type | `contract.type` | Step 4 — Type Check | Coerces safe types, rejects mismatches |
 | shape | `contract.shape` | Step 2 — Shape Check | Short-circuits pipeline on failure |
-| unit | `contract.unit` | Step 3 — Unit Verification | Strips matching suffix, converts via factors, rejects unknown |
-| unit_accepts | `parse.unit_accepts` | Step 3 — Unit Verification | Alternate unit forms accepted (e.g., "hours" for "h") |
-| unit_conversions | `parse.unit_conversions` | Step 3 — Unit Verification | Deterministic conversion factors (e.g., `{ lb: 453.592 }`) |
+| unit | `contract.unit` | Step 3 — Unit Verification | Strips matching suffix, resolves synonyms + converts via centralized unit registry, rejects unknown |
 | range | `contract.range` | Step 10 — Range Check | Rejects out-of-bounds (no clamping) |
 | rounding | `contract.rounding` | Step 8 — Rounding | Auto-repairs to precision (decimals + mode) |
 | list_rules | `contract.list_rules` | Step 7 — List Rules | Dedupe, sort, min/max items |

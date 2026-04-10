@@ -109,7 +109,7 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
       priority: { required_level: 'expected', availability: 'sometimes', difficulty: 'hard', effort: 8 },
       contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
       parse: {},
-      evidence: { required: true, min_evidence_refs: 1, tier_preference: ['tier2', 'tier1', 'tier3'], conflict_policy: 'resolve_by_tier_else_unknown' },
+      evidence: { min_evidence_refs: 1, tier_preference: ['tier2', 'tier1', 'tier3'] },
     },
     click_latency_wired: {
       priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 8 },

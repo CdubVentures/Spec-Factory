@@ -95,11 +95,6 @@
       "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
       "description": "Policy for handling new values not in the enum list"
     },
-    "evidence.required": {
-      "status": "live",
-      "consumer": "src/engine/runtimeGate.js:applyRuntimeFieldRules",
-      "description": "Whether evidence audit is enforced for this field"
-    },
     "evidence.min_evidence_refs": {
       "status": "live",
       "consumer": "src/engine/runtimeGate.js:applyRuntimeFieldRules",
@@ -114,12 +109,6 @@
       "status": "live",
       "consumer": "src/engine/fieldRulesEngine.js:getFieldClassification",
       "description": "Top-level array of field keys classified as core facts (derived from priority.required_level during compilation)"
-    },
-    "evidence.conflict_policy": {
-      "status": "deferred",
-      "consumer": null,
-      "reason": "Documents intent; runtime uses fixed consensus logic",
-      "description": "How to resolve conflicting evidence"
     },
     "selection_policy": {
       "status": "live",

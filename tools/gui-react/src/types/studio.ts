@@ -104,7 +104,6 @@ export interface StudioConfig {
   data_lists?: DataListEntry[];
   selected_keys?: string[];
   field_overrides?: Record<string, unknown>;
-  manual_enum_values?: Record<string, string[]>;
   expectations?: Record<string, unknown>;
   field_groups?: string[];
   identity?: Record<string, unknown>;

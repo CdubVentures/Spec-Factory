@@ -9,7 +9,7 @@ import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
  */
 export function createItemStateStore({ db, category, stmts, expandListLinkValues, getListValueByFieldAndValue }) {
   function upsertItemFieldState({
-    productId, fieldKey, value, confidence, source, acceptedCandidateId,
+    productId, fieldKey, value, unit, confidence, source, acceptedCandidateId,
     overridden, needsAiReview, aiReviewComplete,
     overrideSource, overrideValue, overrideReason, overrideProvenance,
     overriddenBy, overriddenAt
@@ -19,6 +19,7 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
       product_id: productId,
       field_key: fieldKey,
       value: value ?? null,
+      unit: unit ?? null,
       confidence: confidence ?? 0,
       source: source || 'pipeline',
       accepted_candidate_id: acceptedCandidateId ?? null,

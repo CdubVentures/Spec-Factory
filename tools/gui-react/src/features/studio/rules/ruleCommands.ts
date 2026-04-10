@@ -78,7 +78,6 @@ function applyLegacyAliasCoupling(
   if (path === 'priority.difficulty') rule.difficulty = value;
   if (path === 'priority.effort') rule.effort = value;
   if (path === 'priority.publish_gate') rule.publish_gate = value;
-  if (path === 'evidence.required') rule.evidence_required = value;
   if (path === 'evidence.min_evidence_refs') rule.min_evidence_refs = value;
   if (path === 'enum.policy') rule.enum_policy = value;
   if (path === 'enum.source') rule.enum_source = value;

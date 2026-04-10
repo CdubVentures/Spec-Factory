@@ -138,7 +138,6 @@ export function normalizeFieldContract(rule = {}) {
     component_type: comp?.type || null,
     enum_source: enu?.source || null,
     min_evidence_refs: toInt(evidence.min_evidence_refs, 1),
-    conflict_policy: String(evidence.conflict_policy || 'resolve_by_tier').trim(),
   };
 }
 
@@ -152,7 +151,6 @@ export const REAL_FLAG_CODES = new Set([
   'new_component',
   'new_enum_value',
   'below_min_evidence',
-  'conflict_policy_hold',
 ]);
 
 export function inferFlags({ reasonCodes = [], fieldRule = {}, candidates = [], acceptedCandidateId = null, overridden = false, evidenceSourceCount = null }) {
@@ -177,15 +175,6 @@ export function inferFlags({ reasonCodes = [], fieldRule = {}, candidates = [], 
       : toInt(evidenceSourceCount, 0);
     if (effectiveSourceCount > 0 && effectiveSourceCount < minRefs) {
       flags.push('below_min_evidence');
-    }
-  }
-  if (fieldRule.conflict_policy === 'preserve_all_candidates' && !overridden) {
-    const candidateValues = toArray(candidates)
-      .map(c => String(c.value ?? '').trim().toLowerCase())
-      .filter(Boolean);
-    const distinctValues = new Set(candidateValues);
-    if (distinctValues.size > 1) {
-      flags.push('conflict_policy_hold');
     }
   }
   return [...new Set(flags)];

@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "units": [
+
+    { "canonical": "g",   "label": "Grams",      "synonyms": ["gram", "grams", "gr"],              "conversions": [{ "from": "kg", "factor": 1000 }, { "from": "lb", "factor": 453.592 }, { "from": "oz", "factor": 28.3495 }, { "from": "gf", "factor": 1 }] },
+    { "canonical": "gf",  "label": "Gram-force",  "synonyms": ["gram-force", "gramforce", "pond"],  "conversions": [{ "from": "g", "factor": 1 }] },
+    { "canonical": "kg",  "label": "Kilograms",   "synonyms": ["kilogram", "kilograms"],            "conversions": [{ "from": "g", "factor": 0.001 }, { "from": "lb", "factor": 0.4536 }, { "from": "oz", "factor": 0.02835 }] },
+    { "canonical": "lb",  "label": "Pounds",      "synonyms": ["pound", "pounds", "lbs"],           "conversions": [{ "from": "kg", "factor": 2.2046 }, { "from": "g", "factor": 0.002205 }, { "from": "oz", "factor": 0.0625 }] },
+    { "canonical": "oz",  "label": "Ounces",      "synonyms": ["ounce", "ounces"],                  "conversions": [{ "from": "lb", "factor": 16 }, { "from": "kg", "factor": 35.274 }, { "from": "g", "factor": 0.03527 }] },
+
+    { "canonical": "nm",  "label": "Nanometers",   "synonyms": ["nanometer", "nanometers", "nanometre"],  "conversions": [{ "from": "mm", "factor": 1000000 }, { "from": "um", "factor": 1000 }] },
+    { "canonical": "mm",  "label": "Millimeters",  "synonyms": ["millimeter", "millimeters", "millimetre", "millimetres"], "conversions": [{ "from": "cm", "factor": 10 }, { "from": "m", "factor": 1000 }, { "from": "in", "factor": 25.4 }, { "from": "ft", "factor": 304.8 }] },
+    { "canonical": "cm",  "label": "Centimeters",  "synonyms": ["centimeter", "centimeters", "centimetre", "centimetres"], "conversions": [{ "from": "mm", "factor": 0.1 }, { "from": "m", "factor": 100 }, { "from": "in", "factor": 2.54 }, { "from": "ft", "factor": 30.48 }] },
+    { "canonical": "m",   "label": "Meters",       "synonyms": ["meter", "meters", "metre", "metres"],     "conversions": [{ "from": "mm", "factor": 0.001 }, { "from": "cm", "factor": 0.01 }, { "from": "in", "factor": 0.0254 }, { "from": "ft", "factor": 0.3048 }] },
+    { "canonical": "in",  "label": "Inches",       "synonyms": ["inch", "inches", "\""],                    "conversions": [{ "from": "mm", "factor": 0.03937 }, { "from": "cm", "factor": 0.3937 }, { "from": "m", "factor": 39.3701 }, { "from": "ft", "factor": 12 }] },
+    { "canonical": "ft",  "label": "Feet",          "synonyms": ["foot", "feet"],                            "conversions": [{ "from": "in", "factor": 0.08333 }, { "from": "m", "factor": 3.2808 }, { "from": "cm", "factor": 0.03281 }] },
+
+    { "canonical": "mm2", "label": "Square Millimeters", "synonyms": ["mm²", "sq mm", "square millimeters"],   "conversions": [{ "from": "cm2", "factor": 100 }, { "from": "in2", "factor": 645.16 }] },
+    { "canonical": "cm2", "label": "Square Centimeters", "synonyms": ["cm²", "sq cm", "square centimeters"],   "conversions": [{ "from": "mm2", "factor": 0.01 }, { "from": "in2", "factor": 6.4516 }] },
+    { "canonical": "in2", "label": "Square Inches",      "synonyms": ["in²", "sq in", "square inches"],        "conversions": [{ "from": "mm2", "factor": 0.00155 }, { "from": "cm2", "factor": 0.155 }] },
+
+    { "canonical": "L", "label": "Liters", "synonyms": ["liter", "liters", "litre", "litres"], "conversions": [] },
+
+    { "canonical": "Hz",  "label": "Hertz",     "synonyms": ["hz", "hertz"],         "conversions": [{ "from": "kHz", "factor": 1000 }, { "from": "MHz", "factor": 1000000 }, { "from": "GHz", "factor": 1000000000 }] },
+    { "canonical": "kHz", "label": "Kilohertz", "synonyms": ["khz", "kilohertz"],    "conversions": [{ "from": "Hz", "factor": 0.001 }, { "from": "MHz", "factor": 1000 }, { "from": "GHz", "factor": 1000000 }] },
+    { "canonical": "MHz", "label": "Megahertz", "synonyms": ["mhz", "megahertz"],    "conversions": [{ "from": "Hz", "factor": 0.000001 }, { "from": "kHz", "factor": 0.001 }, { "from": "GHz", "factor": 1000 }] },
+    { "canonical": "GHz", "label": "Gigahertz", "synonyms": ["ghz", "gigahertz"],    "conversions": [{ "from": "Hz", "factor": 0.000000001 }, { "from": "kHz", "factor": 0.000001 }, { "from": "MHz", "factor": 0.001 }] },
+
+    { "canonical": "ns",  "label": "Nanoseconds",  "synonyms": ["nanosecond", "nanoseconds"],    "conversions": [{ "from": "us", "factor": 1000 }, { "from": "ms", "factor": 1000000 }] },
+    { "canonical": "us",  "label": "Microseconds",  "synonyms": ["microsecond", "microseconds", "usec", "µs"], "conversions": [{ "from": "ns", "factor": 0.001 }, { "from": "ms", "factor": 1000 }] },
+    { "canonical": "ms",  "label": "Milliseconds",  "synonyms": ["millisecond", "milliseconds"],  "conversions": [{ "from": "s", "factor": 1000 }, { "from": "us", "factor": 0.001 }] },
+    { "canonical": "s",   "label": "Seconds",       "synonyms": ["second", "seconds", "sec"],     "conversions": [{ "from": "ms", "factor": 0.001 }, { "from": "min", "factor": 60 }] },
+    { "canonical": "min", "label": "Minutes",       "synonyms": ["minute", "minutes"],             "conversions": [{ "from": "s", "factor": 0.01667 }, { "from": "h", "factor": 60 }] },
+    { "canonical": "h",   "label": "Hours",         "synonyms": ["hour", "hours", "hr", "hrs"],   "conversions": [{ "from": "min", "factor": 0.01667 }] },
+
+    { "canonical": "V",  "label": "Volts",      "synonyms": ["volt", "volts"],           "conversions": [{ "from": "mV", "factor": 0.001 }] },
+    { "canonical": "mV", "label": "Millivolts", "synonyms": ["millivolt", "millivolts"], "conversions": [{ "from": "V", "factor": 1000 }] },
+
+    { "canonical": "A",  "label": "Amperes",       "synonyms": ["amp", "amps", "ampere", "amperes"], "conversions": [{ "from": "mA", "factor": 0.001 }] },
+    { "canonical": "mA", "label": "Milliamperes",  "synonyms": ["milliamp", "milliamps"],             "conversions": [{ "from": "A", "factor": 1000 }] },
+
+    { "canonical": "W",  "label": "Watts",      "synonyms": ["w", "watt", "watts"],           "conversions": [{ "from": "mW", "factor": 0.001 }, { "from": "kW", "factor": 1000 }] },
+    { "canonical": "mW", "label": "Milliwatts", "synonyms": ["milliwatt", "milliwatts"],       "conversions": [{ "from": "W", "factor": 1000 }] },
+    { "canonical": "kW", "label": "Kilowatts",  "synonyms": ["kilowatt", "kilowatts"],         "conversions": [{ "from": "W", "factor": 0.001 }] },
+
+    { "canonical": "ohm", "label": "Ohms", "synonyms": ["ohms", "Ohm", "Ohms", "\u03a9"], "conversions": [] },
+
+    { "canonical": "mAh", "label": "Milliamp-hours", "synonyms": ["mah", "milliamp-hour", "milliamp-hours"], "conversions": [{ "from": "Ah", "factor": 1000 }] },
+    { "canonical": "Ah",  "label": "Amp-hours",      "synonyms": ["ah", "amp-hour", "amp-hours"],            "conversions": [{ "from": "mAh", "factor": 0.001 }] },
+    { "canonical": "Wh",  "label": "Watt-hours",     "synonyms": ["wh", "watt-hour", "watt-hours"],          "conversions": [{ "from": "kWh", "factor": 1000 }] },
+
+    { "canonical": "bit",  "label": "Bits",       "synonyms": ["b", "bits"],                          "conversions": [{ "from": "B", "factor": 8 }] },
+    { "canonical": "B",    "label": "Bytes",      "synonyms": ["byte", "bytes"],                      "conversions": [{ "from": "KB", "factor": 1024 }, { "from": "bit", "factor": 0.125 }] },
+    { "canonical": "KB",   "label": "Kilobytes",  "synonyms": ["kb", "kilobyte", "kilobytes"],        "conversions": [{ "from": "MB", "factor": 1024 }, { "from": "B", "factor": 0.000977 }] },
+    { "canonical": "MB",   "label": "Megabytes",  "synonyms": ["mb", "megabyte", "megabytes"],        "conversions": [{ "from": "GB", "factor": 1024 }, { "from": "KB", "factor": 0.000977 }] },
+    { "canonical": "GB",   "label": "Gigabytes",  "synonyms": ["gb", "gigabyte", "gigabytes"],        "conversions": [{ "from": "TB", "factor": 1024 }, { "from": "MB", "factor": 0.000977 }] },
+    { "canonical": "TB",   "label": "Terabytes",  "synonyms": ["tb", "terabyte", "terabytes"],        "conversions": [{ "from": "GB", "factor": 0.000977 }] },
+
+    { "canonical": "Mbps",  "label": "Megabits per Second",       "synonyms": ["mbps", "Mbit/s", "megabits/s"],              "conversions": [{ "from": "Gbps", "factor": 1000 }] },
+    { "canonical": "Gbps",  "label": "Gigabits per Second",       "synonyms": ["gbps", "Gbit/s", "gigabits/s"],              "conversions": [{ "from": "Mbps", "factor": 0.001 }] },
+    { "canonical": "MB/s",  "label": "Megabytes per Second",      "synonyms": ["megabytes/s", "MBps"],                       "conversions": [{ "from": "GB/s", "factor": 1000 }] },
+    { "canonical": "GB/s",  "label": "Gigabytes per Second",      "synonyms": ["gigabytes/s", "GBps"],                       "conversions": [{ "from": "MB/s", "factor": 0.001 }, { "from": "TB/s", "factor": 1000 }] },
+    { "canonical": "TB/s",  "label": "Terabytes per Second",      "synonyms": ["terabytes/s", "TBps"],                       "conversions": [{ "from": "GB/s", "factor": 0.001 }] },
+    { "canonical": "GT/s",  "label": "Gigatransfers per Second",  "synonyms": ["gigatransfers/s", "gigatransfers per second"], "conversions": [{ "from": "MT/s", "factor": 0.001 }] },
+    { "canonical": "MT/s",  "label": "Megatransfers per Second",  "synonyms": ["megatransfers/s", "megatransfers per second"], "conversions": [{ "from": "GT/s", "factor": 1000 }] },
+
+    { "canonical": "nits", "label": "Nits",             "synonyms": ["nit", "cd/m\u00b2", "cd/m2", "candelas per square meter"], "conversions": [] },
+    { "canonical": "ppi",  "label": "Pixels per Inch",  "synonyms": ["pixels per inch", "PPI"],                                  "conversions": [] },
+    { "canonical": "dpi",  "label": "Dots per Inch",    "synonyms": ["dots per inch", "DPI"],                                    "conversions": [] },
+    { "canonical": "px",   "label": "Pixels",           "synonyms": ["pixel", "pixels"],                                         "conversions": [{ "from": "MP", "factor": 1000000 }] },
+    { "canonical": "MP",   "label": "Megapixels",       "synonyms": ["megapixel", "megapixels", "mpx"],                          "conversions": [{ "from": "px", "factor": 0.000001 }] },
+
+    { "canonical": "ips", "label": "Inches per Second", "synonyms": ["inches per second", "IPS"],                        "conversions": [] },
+    { "canonical": "G",   "label": "G-force",           "synonyms": ["g-force", "gees", "gravitational acceleration"],    "conversions": [] },
+    { "canonical": "cpi", "label": "Counts per Inch",   "synonyms": ["counts per inch", "CPI"],                           "conversions": [] },
+
+    { "canonical": "dB",     "label": "Decibels",                       "synonyms": ["decibel", "decibels"],                                 "conversions": [] },
+    { "canonical": "dBA",    "label": "A-weighted Decibels",            "synonyms": ["dB(A)", "dB-A", "a-weighted decibels"],                 "conversions": [] },
+    { "canonical": "dB SPL", "label": "Decibels Sound Pressure Level",  "synonyms": ["dB-SPL", "decibels SPL", "sound pressure level"],      "conversions": [] },
+    { "canonical": "dBm",    "label": "Decibels Milliwatt",             "synonyms": ["dB milliwatt", "decibels milliwatt"],                   "conversions": [] },
+    { "canonical": "mV/Pa",  "label": "Millivolts per Pascal",          "synonyms": ["millivolts per pascal", "mV per Pa", "sensitivity"],   "conversions": [] },
+
+    { "canonical": "C", "label": "Degrees Celsius",    "synonyms": ["celsius", "centigrade", "\u00b0C", "degC"],    "conversions": [] },
+    { "canonical": "F", "label": "Degrees Fahrenheit",  "synonyms": ["fahrenheit", "\u00b0F", "degF"],               "conversions": [] },
+
+    { "canonical": "CFM",   "label": "Cubic Feet per Minute",       "synonyms": ["cfm", "cubic feet per minute", "cu ft/min"], "conversions": [] },
+    { "canonical": "mmH2O", "label": "Millimeters of Water",        "synonyms": ["mm H2O", "mm water column", "mmAq"],         "conversions": [{ "from": "Pa", "factor": 0.102 }] },
+    { "canonical": "Pa",    "label": "Pascals",                      "synonyms": ["pascal", "pascals"],                         "conversions": [{ "from": "mmH2O", "factor": 9.80665 }] },
+    { "canonical": "RPM",   "label": "Revolutions per Minute",      "synonyms": ["rpm", "revolutions per minute", "rev/min"],  "conversions": [] },
+
+    { "canonical": "TFLOPS", "label": "Teraflops",                   "synonyms": ["tflops", "teraflops", "TFLOP", "TF"],                    "conversions": [{ "from": "GFLOPS", "factor": 0.001 }] },
+    { "canonical": "GFLOPS", "label": "Gigaflops",                   "synonyms": ["gflops", "gigaflops", "GFLOP"],                           "conversions": [{ "from": "TFLOPS", "factor": 1000 }] },
+    { "canonical": "TOPS",   "label": "Tera Operations per Second",  "synonyms": ["tops", "tera ops/s", "tera operations per second"],      "conversions": [] },
+
+    { "canonical": "million keystrokes",  "label": "Million Keystrokes",   "synonyms": ["m keystrokes", "million key presses"],    "conversions": [] },
+    { "canonical": "million clicks",      "label": "Million Clicks",       "synonyms": ["m clicks", "million click cycles"],       "conversions": [] },
+    { "canonical": "million scroll steps","label": "Million Scroll Steps", "synonyms": ["m scroll steps", "million scroll cycles"],"conversions": [] },
+
+    { "canonical": "deg", "label": "Degrees", "synonyms": ["degree", "degrees", "\u00b0"], "conversions": [{ "from": "rad", "factor": 57.2958 }] },
+
+    { "canonical": "%", "label": "Percent", "synonyms": ["percent", "pct"], "conversions": [] },
+
+    { "canonical": "usd", "label": "US Dollars",     "synonyms": ["dollar", "dollars", "$", "USD"], "conversions": [] },
+    { "canonical": "eur", "label": "Euros",           "synonyms": ["euro", "euros", "\u20ac", "EUR"], "conversions": [] },
+    { "canonical": "gbp", "label": "British Pounds",  "synonyms": ["pound sterling", "GBP", "\u00a3"], "conversions": [] },
+
+    { "canonical": "AWG", "label": "American Wire Gauge", "synonyms": ["awg", "wire gauge"], "conversions": [] }
+  ]
+}
