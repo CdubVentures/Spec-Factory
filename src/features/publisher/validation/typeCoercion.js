@@ -1,12 +1,13 @@
 // WHY: O(1) type-driven coercion. Replaces both templateDispatch.js and checkType.js.
 // Adding a type = add one coercer function + one entry in TYPE_COERCERS.
 
-import { UNK_TOKENS } from './unkTokens.js';
+import { ABSENCE_TOKENS } from './absenceTokens.js';
 import { normalizeBoolean, parseDate, parseNumberListWithRanges } from './normalizers.js';
 
 // ── Per-type coercers ─────────────────────────────────────────────────────
 
 function coerceString(value) {
+  if (value === null) return { pass: true, value: null };
   if (typeof value === 'string') return { pass: true, value };
   if (typeof value === 'number') return { pass: true, repaired: String(value), rule: 'number_to_string' };
   if (typeof value === 'boolean') return { pass: true, repaired: value ? 'yes' : 'no', rule: 'bool_to_string' };
@@ -14,10 +15,11 @@ function coerceString(value) {
 }
 
 function coerceNumber(value) {
+  if (value === null) return { pass: true, value: null };
   if (typeof value === 'number' && Number.isFinite(value)) return { pass: true, value };
   if (typeof value === 'string') {
     const lower = value.trim().toLowerCase();
-    if (lower === '' || UNK_TOKENS.has(lower)) return { pass: true, repaired: 'unk', rule: 'unk_token' };
+    if (lower === '' || ABSENCE_TOKENS.has(lower)) return { pass: true, repaired: null, rule: 'absence_token' };
     const stripped = value.replace(/[^\d.\-]/g, '');
     if (stripped.length > 0) {
       const parsed = Number(stripped);
@@ -29,20 +31,23 @@ function coerceNumber(value) {
 }
 
 function coerceBoolean(value) {
+  // WHY: absence normalizer (Step 0) already converts absence tokens to null before coercion.
+  if (value == null) return { pass: true, value: null };
   const result = normalizeBoolean(value);
   if (result === null) return { pass: false, reason: `unrecognized boolean value: ${String(value)}` };
   return { pass: true, repaired: result, rule: 'bool_coerce' };
 }
 
 function coerceDate(value) {
+  if (value === null) return { pass: true, value: null };
   const result = parseDate(value);
   if (result === null) return { pass: false, reason: `unparseable date: ${String(value)}` };
   return { pass: true, repaired: result, rule: 'date_coerce' };
 }
 
 function coerceUrl(value) {
+  if (value === null) return { pass: true, value };
   if (typeof value !== 'string') return { pass: false, reason: `expected URL string, got ${typeof value}` };
-  if (value === 'unk') return { pass: true, value };
   if (/^https?:\/\/.+/.test(value)) return { pass: true, value };
   return { pass: false, reason: `invalid URL: "${value}"` };
 }
@@ -57,6 +62,7 @@ function extractNum(token) {
 }
 
 function coerceRange(value) {
+  if (value === null) return { pass: true, value: null };
   if (typeof value === 'string') {
     const parts = value.split(RANGE_SEP);
     if (parts.length === 2) {

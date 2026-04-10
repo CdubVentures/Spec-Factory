@@ -18,9 +18,9 @@
       "sha256": "5dde9a3a9124f599f56d9ecf447abacf13273280c8792398a960e222ba2d8aa2"
     },
     {
-      "bytes": 343179,
+      "bytes": 322417,
       "path": "field_rules.json",
-      "sha256": "42578284e5f8fe8f680275cc973844ede8c8e9a35d7ddca5fcf955da53f68c66"
+      "sha256": "226220bda8f1d8954cc9b66ff33523b483b7a951c188869b5365573730a477e7"
     },
     {
       "bytes": 201,
@@ -44,7 +44,7 @@
     }
   ],
   "category": "monitor",
-  "generated_at": "2026-04-10T05:09:28.006Z",
-  "source_map_hash": "a17d1b0089b2a1c5022133e80fe1e4c247865bf32f501c78f5feaadd20ca60e3",
+  "generated_at": "2026-04-10T07:08:03.843Z",
+  "source_map_hash": "0d70691521a8b2e07c63a9efb421b6991be818071436878d085d3b12ac1d9439",
   "version": 1
 }

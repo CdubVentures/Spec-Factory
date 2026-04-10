@@ -382,8 +382,6 @@ tr:last-child td { border-bottom: none; }
     <h3>Rule source</h3>
     <span class="rule-source">contract.list_rules.dedupe: true</span>
     <span class="rule-source">contract.list_rules.sort: 'none'</span>
-    <span class="rule-source">contract.list_rules.min_items: 0</span>
-    <span class="rule-source">contract.list_rules.max_items: 100 / 50</span>
   </div>
 
   <table>
@@ -400,18 +398,6 @@ tr:last-child td { border-bottom: none; }
         <td><span class="chip chip-info">none</span></td>
         <td><span class="chip chip-info">none</span></td>
         <td class="small muted">Preserve original order. <strong>Critical for colors</strong>: colors[0] = default color.</td>
-      </tr>
-      <tr>
-        <td class="bold">min_items</td>
-        <td><span class="chip chip-neutral">0</span></td>
-        <td><span class="chip chip-neutral">0</span></td>
-        <td class="small muted">Empty array is valid. No minimum requirement.</td>
-      </tr>
-      <tr>
-        <td class="bold">max_items</td>
-        <td><span class="chip chip-accent">100</span></td>
-        <td><span class="chip chip-accent">50</span></td>
-        <td class="small muted">Truncate to cap if exceeded. Log a warning.</td>
       </tr>
     </tbody>
   </table>
@@ -433,16 +419,10 @@ tr:last-child td { border-bottom: none; }
         <td><span class="chip chip-success">PASS</span> <span class="tiny">white is default (index 0)</span></td>
       </tr>
       <tr>
-        <td>Over max_items</td>
-        <td class="mono tiny">["c1", "c2", ... "c105"] <span class="dim">(105 items)</span></td>
-        <td class="mono tiny">["c1", "c2", ... "c100"]</td>
-        <td><span class="chip chip-warning">REPAIRED</span> <span class="tiny">truncated to 100</span></td>
-      </tr>
-      <tr>
         <td>Empty array</td>
         <td class="mono tiny">[]</td>
         <td class="mono tiny">[]</td>
-        <td><span class="chip chip-success">PASS</span> <span class="tiny">min_items = 0</span></td>
+        <td><span class="chip chip-success">PASS</span></td>
       </tr>
       <tr>
         <td>Single item</td>
@@ -787,7 +767,7 @@ function checkAtom(atom) {
       </tr>
       <tr>
         <td class="mono bold" style="color:var(--sf-accent-strong);">4</td>
-        <td>List Rules (dedupe, max_items)</td>
+        <td>List Rules (dedupe, sort)</td>
         <td><span class="chip chip-success">ALWAYS</span></td>
         <td class="tiny dim">Cannot fail. Dedupes and truncates.</td>
         <td class="tiny muted">~0ms</td>

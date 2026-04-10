@@ -40,8 +40,7 @@ export function buildEvidenceReport(runData) {
 
   const filledFields = Object.keys(spec).filter((k) =>
     k !== 'publishable' && k !== 'identity_outcome' &&
-    spec[k] != null && String(spec[k]).trim() !== '' &&
-    String(spec[k]).trim().toLowerCase() !== 'unk'
+    spec[k] != null && String(spec[k]).trim() !== ''
   );
 
   const runtimeFilled = Object.keys(extraction.candidates || {}).length ||

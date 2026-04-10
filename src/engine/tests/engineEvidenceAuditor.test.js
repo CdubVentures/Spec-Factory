@@ -5,8 +5,8 @@ import { auditEvidence } from '../engineEvidenceAuditor.js';
 // ── Unknown value short-circuits ──────────────────────────────────────────────
 
 test('auditEvidence returns ok for unknown token values', () => {
-  assert.deepEqual(auditEvidence('weight', 'unk'), { ok: true });
-  assert.deepEqual(auditEvidence('weight', { value: 'unk' }), { ok: true });
+  assert.deepEqual(auditEvidence('weight', null), { ok: true });
+  assert.deepEqual(auditEvidence('weight', { value: null }), { ok: true });
   assert.deepEqual(auditEvidence('weight', ''), { ok: true });
 });
 

@@ -31,7 +31,7 @@ function buildTestInput({ fieldKey, value, confidence, evidenceRows, requiredLev
 test('missing field appears in rows with state=missing', () => {
   const input = buildTestInput({
     fieldKey: 'weight',
-    value: 'unk',
+    value: null,
     confidence: null,
     evidenceRows: [
       { retrieved_at: '2026-03-08T10:00:00.000Z', tier: 1, url: 'https://a.com' }
@@ -47,7 +47,7 @@ test('missing field appears in rows with state=missing', () => {
 test('rows contain required_level and priority_bucket', () => {
   const input = buildTestInput({
     fieldKey: 'sensor',
-    value: 'unk',
+    value: null,
     confidence: null,
     evidenceRows: []
   });
@@ -93,7 +93,7 @@ test('covered field does NOT appear in rows', () => {
 test('optional field gets priority_bucket=optional', () => {
   const input = buildTestInput({
     fieldKey: 'cable',
-    value: 'unk',
+    value: null,
     confidence: null,
     requiredLevel: 'optional',
     evidenceRows: []
@@ -108,7 +108,7 @@ test('optional field gets priority_bucket=optional', () => {
 test('total_fields reflects all evaluated fields', () => {
   const input = buildTestInput({
     fieldKey: 'dpi',
-    value: 'unk',
+    value: null,
     confidence: null,
     evidenceRows: []
   });

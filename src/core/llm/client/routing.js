@@ -484,6 +484,7 @@ export async function callLlmWithRouting({
   providerHealth,
   logger,
   onPhaseChange,
+  onModelResolved,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const primary = resolveLlmRoute(config, {
@@ -534,7 +535,11 @@ export async function callLlmWithRouting({
     : (phaseTokenCap > 0
       ? Math.min(phaseTokenCap, primaryTokenCap || phaseTokenCap)
       : primaryTokenCap);
-  const resolvedReasoningBudget = primaryReasoningBudget;
+  // WHY: disableLimits must also zero the reasoning budget, otherwise
+  // roleReasoningCap's min(llmReasoningBudget, roleTokenCap) re-imposes
+  // a cap that starves the visible output (e.g. 4096 total with xhigh
+  // reasoning → model spends 6K on thinking, truncates the JSON).
+  const resolvedReasoningBudget = phaseDisableLimits ? 0 : primaryReasoningBudget;
 
   // WHY: Phase-level timeout from panel. Falls back to caller's timeoutMs param.
   const phaseTimeoutMs = resolvePhaseTimeoutMs(config, phase);
@@ -608,6 +613,7 @@ export async function callLlmWithRouting({
       fallback_base_url: fallback.baseUrl || null,
       message: error.message
     });
+    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true });
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
     const fallbackMaxTokens = phaseDisableLimits
       ? 0
@@ -653,6 +659,7 @@ export async function callLlmWithRouting({
   const useWriterPhase = !jsonStrictEnabled && jsonSchema;
 
   if (useWriterPhase) {
+    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false });
     let researchText;
     try {
       researchText = await callLlmProvider({
@@ -727,6 +734,7 @@ export async function callLlmWithRouting({
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
+  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false });
   try {
     return await callLlmProvider({
       ...effectiveSharedParams,

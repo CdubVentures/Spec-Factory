@@ -154,11 +154,9 @@
   <tr><td><code>contract.rounding.mode</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 8</td><td>nearest / floor / ceil.</td></tr>
   <tr><td><code>contract.list_rules.dedupe</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>First-occurrence preserved.</td></tr>
   <tr><td><code>contract.list_rules.sort</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>alpha / numeric / none.</td></tr>
-  <tr><td><code>contract.list_rules.max_items</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>Truncates to limit.</td></tr>
-  <tr><td><code>contract.list_rules.min_items</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 7</td><td>Rejects undersized lists.</td></tr>
   <tr><td><code>contract.list_rules.item_union</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Multi-source merge strategy. Consumed at compile/ingest layer, not per-value validation.</td></tr>
-  <tr><td><code>contract.unknown_token</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 11</td><td>Configurable unknown token for publish-gate check. Default <code>"unk"</code>.</td></tr>
-  <tr><td><code>contract.unknown_reason_required</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Enforced by pipeline orchestrator, not per-value validation.</td></tr>
+  <tr><td><code>contract.unknown_token</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Retired. Publish gate uses <code>null</code> for absent values.</td></tr>
+  <tr><td><code>contract.unknown_reason_required</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Retired. Was always <code>true</code>; never wired to validation.</td></tr>
 </tbody>
 </table>
 </div>
@@ -203,8 +201,8 @@
 <table>
 <thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
 <tbody>
-  <tr><td><code>priority.block_publish_when_unk</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 11</td><td>Rejects <code>"unk"</code> for fields that block publishing.</td></tr>
-  <tr><td><code>priority.publish_gate</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Category-level gate. Consumed by pipeline orchestrator at record level.</td></tr>
+  <tr><td><s><code>priority.block_publish_when_unk</code></s></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td><strong>Retired.</strong> Now derived from <code>required_level</code> (identity/required). See publish-gate-retirement-roadmap.md.</td></tr>
+  <tr><td><s><code>priority.publish_gate</code></s></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td><strong>Retired.</strong> Now derived from <code>required_level</code> (identity/required). See publish-gate-retirement-roadmap.md.</td></tr>
   <tr><td><code>priority.required_level</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
   <tr><td><code>priority.availability / difficulty / effort</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
 </tbody>
@@ -357,11 +355,10 @@
     <div class="phase-line"><div class="phase-dot">7</div><div class="phase-connector"></div></div>
     <div class="phase-content">
       <div class="phase-title">List Rules <span class="tag tag-both">repair + reject</span></div>
-      <div class="phase-desc">List-specific constraints. Rejects undersized lists.</div>
+      <div class="phase-desc">List-specific constraints: deduplication and sorting.</div>
       <dl class="detail-grid">
-        <dt>Reads</dt><dd><code>contract.list_rules</code> &mdash; <code>{ dedupe, sort, min_items, max_items }</code></dd>
-        <dt>Order</dt><dd>Dedupe &rarr; Sort &rarr; Truncate (max) &rarr; <strong>Reject</strong> (min)</dd>
-        <dt>min_items</dt><dd>Produces <code>min_items_violation</code> rejection (not just a flag)</dd>
+        <dt>Reads</dt><dd><code>contract.list_rules</code> &mdash; <code>{ dedupe, sort }</code></dd>
+        <dt>Order</dt><dd>Dedupe &rarr; Sort</dd>
       </dl>
     </div>
   </div>
@@ -409,9 +406,8 @@
       <div class="phase-title">Publish Gate <span class="tag tag-reject">reject</span></div>
       <div class="phase-desc">Final gate. Rejects unk values for fields that block publishing.</div>
       <dl class="detail-grid">
-        <dt>Reads</dt><dd><code>priority.block_publish_when_unk</code>, <code>contract.unknown_token</code></dd>
-        <dt>Behavior</dt><dd>If value === unknown_token and block flag is true &rarr; <code>unk_blocks_publish</code> rejection</dd>
-        <dt>Default token</dt><dd><code>"unk"</code></dd>
+        <dt>Reads</dt><dd><code>priority.required_level</code> (via <code>shouldBlockUnkPublish()</code>)</dd>
+        <dt>Behavior</dt><dd>If value === <code>null</code> and required_level is identity/required &rarr; <code>unk_blocks_publish</code> rejection</dd>
       </dl>
     </div>
   </div>
@@ -458,7 +454,6 @@
         <tr><td><code>unit_required</code></td><td>3</td><td><code>unit_conversion</code></td><td>Yes</td></tr>
         <tr><td><code>wrong_type</code></td><td>4</td><td><code>P3</code></td><td>Yes</td></tr>
         <tr><td><code>format_mismatch</code></td><td>6</td><td><code>P4</code></td><td>Yes</td></tr>
-        <tr><td><code>min_items_violation</code></td><td>7</td><td>&mdash;</td><td>No (cannot auto-add values)</td></tr>
         <tr><td><code>enum_value_not_allowed</code></td><td>9</td><td><code>P1</code> / <code>P2</code></td><td>Yes</td></tr>
         <tr><td><code>unknown_enum_prefer_known</code></td><td>9</td><td><code>P2</code></td><td>Yes</td></tr>
         <tr><td><code>out_of_range</code></td><td>10</td><td><code>P7</code></td><td>Yes</td></tr>
@@ -816,8 +811,8 @@ Return JSON matching this exact schema:
           <td>Low &mdash; re-validation catches bare numbers.</td>
         </tr>
         <tr>
-          <td><code>block_publish_when_unk</code></td>
-          <td>This is a publish gate, not a repair instruction. If the LLM returns "unk", step 11 rejects it regardless.</td>
+          <td><code>required_level</code> (identity/required)</td>
+          <td>Publish gate derived from required_level. If the LLM returns "unk", step 10 rejects it for identity/required fields.</td>
           <td>None &mdash; the prompt already says "if unsure, return unk" and re-validation rejects it.</td>
         </tr>
         <tr>

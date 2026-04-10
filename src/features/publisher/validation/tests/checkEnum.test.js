@@ -20,14 +20,14 @@ describe('checkEnum — no enum constraint (passthrough)', () => {
   });
 });
 
-describe('checkEnum — unk passthrough', () => {
-  it('unk passes closed enum', () => {
-    const r = checkEnum('unk', 'closed', ['a']);
+describe('checkEnum — null (absence) passthrough', () => {
+  it('null passes closed enum', () => {
+    const r = checkEnum(null, 'closed', ['a']);
     assert.equal(r.pass, true);
   });
 
-  it('unk passes open_prefer_known enum', () => {
-    const r = checkEnum('unk', 'open_prefer_known', ['a']);
+  it('null passes open_prefer_known enum', () => {
+    const r = checkEnum(null, 'open_prefer_known', ['a']);
     assert.equal(r.pass, true);
   });
 });

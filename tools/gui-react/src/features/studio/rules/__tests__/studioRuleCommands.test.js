@@ -45,44 +45,39 @@ test('studio rule commands apply no coupling for string type', async () => {
   assert.equal(rule.contract?.type, 'string');
 });
 
-test('studio rule commands keep ai reasoning-note derivation and explicit-mode cleanup stable', async () => {
+test('priority signal coupling no longer auto-generates reasoning_note after knob retirement', async () => {
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();
 
-  const derivedRule = {};
+  // After knob retirement, priority changes do NOT auto-write reasoning_note
+  const rule = {};
   applyStudioRuleCommand({
-    rule: derivedRule,
+    rule,
     key: 'weight',
     command: createSetFieldValueCommand('priority.required_level', 'expected'),
   });
   applyStudioRuleCommand({
-    rule: derivedRule,
+    rule,
     key: 'weight',
     command: createSetFieldValueCommand('priority.difficulty', 'hard'),
   });
   applyStudioRuleCommand({
-    rule: derivedRule,
+    rule,
     key: 'weight',
     command: createSetFieldValueCommand('priority.effort', 7),
   });
 
-  assert.equal(
-    derivedRule.ai_assist?.reasoning_note,
-    'expected/hard field (effort 7) - auto: planner, budget 3 calls',
-  );
+  // reasoning_note is NOT auto-generated (coupling is a no-op)
+  assert.equal(rule.ai_assist?.reasoning_note, undefined);
 
-  const explicitModeRule = {
-    ai_assist: {
-      mode: 'judge',
-      reasoning_note:
-        'expected/easy field (effort 3) - auto: advisory, budget 1 call',
-    },
+  // Existing manual reasoning_note is NOT cleared when priority changes
+  const manualRule = {
+    ai_assist: { reasoning_note: 'Check manufacturer spec sheets first' },
   };
   applyStudioRuleCommand({
-    rule: explicitModeRule,
+    rule: manualRule,
     key: 'weight',
     command: createSetFieldValueCommand('priority.effort', 4),
   });
-
-  assert.equal(explicitModeRule.ai_assist?.reasoning_note, '');
+  assert.equal(manualRule.ai_assist?.reasoning_note, 'Check manufacturer spec sheets first');
 });

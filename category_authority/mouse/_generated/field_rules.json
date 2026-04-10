@@ -477,10 +477,6 @@
   "fields": {
     "acceleration": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -494,8 +490,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "rounding": {
@@ -523,6 +517,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -557,10 +552,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -613,10 +606,6 @@
     },
     "adjustable_scroll_wheel": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -644,6 +633,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -670,10 +660,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -721,10 +709,6 @@
     },
     "adjustable_weight": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -752,6 +736,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -779,10 +764,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -833,10 +816,6 @@
     },
     "battery_hours": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -874,6 +853,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -901,10 +881,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -957,10 +935,6 @@
     },
     "bluetooth": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -988,6 +962,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1014,10 +989,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -1069,10 +1042,6 @@
     },
     "cable_type": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -1100,6 +1069,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1126,10 +1096,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -1182,10 +1150,6 @@
     },
     "click_force": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -1218,6 +1182,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1245,10 +1210,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -1300,10 +1263,6 @@
     },
     "click_latency": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -1336,6 +1295,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1363,10 +1323,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -1429,10 +1387,6 @@
     },
     "click_latency_bluetooth": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -1468,6 +1422,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1495,10 +1450,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -1551,10 +1504,6 @@
     },
     "click_latency_wired": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -1590,6 +1539,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1617,10 +1567,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -1673,10 +1621,6 @@
     },
     "click_latency_wireless": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -1712,6 +1656,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1739,10 +1684,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -1795,10 +1738,6 @@
     },
     "coating": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -1808,8 +1747,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -1832,6 +1769,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1876,10 +1814,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -1931,10 +1867,6 @@
     },
     "colors": {
       "ai_assist": {
-        "max_calls": 1,
-        "max_tokens": 4096,
-        "mode": "advisory",
-        "model_strategy": "auto",
         "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
       },
       "aliases": [],
@@ -1945,8 +1877,6 @@
         "list_rules": {
           "dedupe": true,
           "item_union": "set_union",
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -1965,6 +1895,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2019,10 +1950,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -2068,10 +1997,6 @@
     },
     "computer_side_connector": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2099,6 +2024,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2125,10 +2051,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -2179,10 +2103,6 @@
     },
     "connection": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2210,6 +2130,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2248,10 +2169,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -2307,10 +2226,6 @@
     },
     "connectivity": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2320,8 +2235,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -2344,6 +2257,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2388,10 +2302,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -2443,10 +2355,6 @@
     },
     "debounce": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2479,6 +2387,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2505,10 +2414,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -2559,10 +2466,6 @@
     },
     "design": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2572,8 +2475,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -2596,6 +2497,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2630,10 +2532,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -2681,10 +2581,6 @@
     },
     "discontinued": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -2712,6 +2608,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2733,10 +2630,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -2783,10 +2678,6 @@
     },
     "dpi": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -2824,6 +2715,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2851,10 +2743,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -2911,10 +2801,6 @@
     },
     "editions": {
       "ai_assist": {
-        "max_calls": 1,
-        "max_tokens": 4096,
-        "mode": "advisory",
-        "model_strategy": "auto",
         "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
       },
       "aliases": [
@@ -2932,8 +2818,6 @@
         "list_rules": {
           "dedupe": true,
           "item_union": "set_union",
-          "max_items": 50,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -2956,6 +2840,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2981,10 +2866,8 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -3023,10 +2906,6 @@
     },
     "encoder": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3081,6 +2960,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3106,10 +2986,8 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3160,10 +3038,6 @@
     },
     "encoder_brand": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3191,6 +3065,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3215,10 +3090,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3268,10 +3141,6 @@
     },
     "encoder_life_span": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -3302,6 +3171,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3323,10 +3193,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3380,10 +3248,6 @@
     },
     "encoder_link": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3411,6 +3275,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3433,10 +3298,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3481,10 +3344,6 @@
     },
     "encoder_steps": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -3511,6 +3370,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3532,10 +3392,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3593,10 +3451,6 @@
     },
     "encoder_type": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -3627,6 +3481,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3648,10 +3503,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3708,10 +3561,6 @@
     },
     "feet_material": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3739,6 +3588,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3776,10 +3626,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3832,10 +3680,6 @@
     },
     "flawless_sensor": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3863,6 +3707,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3889,10 +3734,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -3945,10 +3788,6 @@
     },
     "form_factor": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -3976,6 +3815,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4014,10 +3854,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4072,10 +3910,6 @@
     },
     "front_flare": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4103,6 +3937,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4140,10 +3975,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4192,10 +4025,6 @@
     },
     "grip": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4205,8 +4034,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -4229,6 +4056,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4262,10 +4090,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4317,10 +4143,6 @@
     },
     "hand_size": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4330,8 +4152,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -4354,6 +4174,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4387,10 +4208,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4439,10 +4258,6 @@
     },
     "hardware_acceleration": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4470,6 +4285,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4496,10 +4312,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4548,10 +4362,6 @@
     },
     "height": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -4588,6 +4398,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4615,10 +4426,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -4670,10 +4479,6 @@
     },
     "honeycomb_frame": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4701,6 +4506,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4727,10 +4533,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4781,10 +4585,6 @@
     },
     "hot_swappable": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4812,6 +4612,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4838,10 +4639,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -4892,10 +4691,6 @@
     },
     "hump": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -4923,6 +4718,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4960,10 +4756,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5014,10 +4808,6 @@
     },
     "ips": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -5054,6 +4844,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5080,10 +4871,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5135,10 +4924,6 @@
     },
     "lift": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -5153,8 +4938,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -5178,6 +4961,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5216,10 +5000,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5271,10 +5053,6 @@
     },
     "lift_settings": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -5284,8 +5062,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -5308,6 +5084,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5348,10 +5125,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5399,10 +5174,6 @@
     },
     "lighting": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -5433,6 +5204,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5477,10 +5249,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5530,10 +5300,6 @@
     },
     "lngth": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -5571,6 +5337,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5598,10 +5365,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -5652,10 +5417,6 @@
     },
     "material": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -5706,6 +5467,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5736,10 +5498,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5791,10 +5551,6 @@
     },
     "mcu": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -5822,6 +5578,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5859,10 +5616,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -5913,10 +5668,6 @@
     },
     "mcu_link": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -5944,6 +5695,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5968,10 +5720,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6015,10 +5765,6 @@
     },
     "middle_buttons": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6050,6 +5796,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6076,10 +5823,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -6128,10 +5873,6 @@
     },
     "motion_sync": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6159,6 +5900,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6185,10 +5927,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6238,10 +5978,6 @@
     },
     "mouse_side_connector": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6269,6 +6005,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6295,10 +6032,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6347,10 +6082,6 @@
     },
     "nvidia_reflex": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6378,6 +6109,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6404,10 +6136,8 @@
       "parse": {},
       "priority": {
         "availability": "rare",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -6457,10 +6187,6 @@
     },
     "onboard_memory": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6488,6 +6214,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6514,10 +6241,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6568,10 +6293,6 @@
     },
     "onboard_memory_value": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6603,6 +6324,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6629,10 +6351,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6681,10 +6401,6 @@
     },
     "paracord": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6712,6 +6428,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6738,10 +6455,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -6791,10 +6506,6 @@
     },
     "polling_rate": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -6810,8 +6521,6 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -6835,6 +6544,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6880,10 +6590,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": false,
         "required_level": "critical"
       },
       "required_level": "critical",
@@ -6939,10 +6647,6 @@
     },
     "price_range": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -6970,6 +6674,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6997,10 +6702,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 4,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7049,10 +6752,6 @@
     },
     "profile_switching": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7080,6 +6779,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7106,10 +6806,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7158,10 +6856,6 @@
     },
     "programmable_buttons": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7193,6 +6887,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7219,10 +6914,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7274,10 +6967,6 @@
     },
     "release_date": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7305,6 +6994,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7339,10 +7029,8 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 4,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7392,10 +7080,6 @@
     },
     "releasing_force": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -7427,6 +7111,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7448,10 +7133,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7507,10 +7190,6 @@
     },
     "rgb": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7538,6 +7217,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7564,10 +7244,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -7618,10 +7296,6 @@
     },
     "sensor": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7679,6 +7353,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7714,10 +7389,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 8,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -7771,10 +7444,6 @@
     },
     "sensor_brand": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7802,6 +7471,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7831,10 +7501,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -7886,10 +7554,6 @@
     },
     "sensor_date": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -7923,6 +7587,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7956,10 +7621,8 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -8007,10 +7670,6 @@
     },
     "sensor_latency": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -8043,6 +7702,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8070,10 +7730,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -8135,10 +7793,6 @@
     },
     "sensor_latency_bluetooth": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -8174,6 +7828,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8201,10 +7856,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -8256,10 +7909,6 @@
     },
     "sensor_latency_wired": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -8295,6 +7944,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8322,10 +7972,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -8377,10 +8025,6 @@
     },
     "sensor_latency_wireless": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -8416,6 +8060,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8443,10 +8088,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -8498,10 +8141,6 @@
     },
     "sensor_link": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -8529,6 +8168,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8556,10 +8196,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -8606,10 +8244,6 @@
     },
     "sensor_type": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -8637,6 +8271,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8674,10 +8309,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -8727,10 +8360,6 @@
     },
     "shape": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -8758,6 +8387,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8795,10 +8425,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -8851,10 +8479,6 @@
     },
     "shift_latency": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -8887,6 +8511,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8914,10 +8539,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -8965,10 +8588,6 @@
     },
     "side_buttons": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9000,6 +8619,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9026,10 +8646,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -9080,10 +8698,6 @@
     },
     "silent_clicks": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9111,6 +8725,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9137,10 +8752,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -9191,10 +8804,6 @@
     },
     "sku": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9227,6 +8836,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9253,10 +8863,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 4,
-        "publish_gate": true,
         "required_level": "identity"
       },
       "required_level": "identity",
@@ -9306,10 +8914,6 @@
     },
     "smoothing": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9337,6 +8941,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9363,10 +8968,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -9416,10 +9019,6 @@
     },
     "switch": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9475,6 +9074,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9510,10 +9110,8 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 8,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -9566,10 +9164,6 @@
     },
     "switch_brand": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9597,6 +9191,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9626,10 +9221,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -9682,10 +9275,6 @@
     },
     "switch_life_span": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -9716,6 +9305,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9737,10 +9327,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -9799,10 +9387,6 @@
     },
     "switch_type": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -9830,6 +9414,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9868,10 +9453,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -9921,10 +9504,6 @@
     },
     "switches_link": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -9956,6 +9535,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9983,10 +9563,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "required_level": "optional",
@@ -10031,10 +9609,6 @@
     },
     "thumb_rest": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -10062,6 +9636,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10088,10 +9663,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -10141,10 +9714,6 @@
     },
     "tilt_scroll_wheel": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -10172,6 +9741,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10198,10 +9768,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -10251,10 +9819,6 @@
     },
     "weight": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -10292,6 +9856,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10319,10 +9884,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -10376,10 +9939,6 @@
     },
     "width": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [
@@ -10416,6 +9975,7 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10443,10 +10003,8 @@
       "parse": {},
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
       "required_level": "required",
@@ -10497,10 +10055,6 @@
     },
     "wireless_charging": {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "aliases": [],
@@ -10528,6 +10082,7 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
+        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -10554,10 +10109,8 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "required_level": "expected",
@@ -10608,7 +10161,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-10T04:44:26.378Z",
+  "generated_at": "2026-04-10T17:35:19.379Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

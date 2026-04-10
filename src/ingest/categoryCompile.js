@@ -218,7 +218,7 @@ export async function compileCategoryFieldStudio({
         short_label: normalizeText(passUi.short_label || '') || null,
         prefix: normalizeText(passUi.prefix || '') || null,
         suffix: normalizeText(passUi.suffix || '') || null,
-        placeholder: normalizeText(passUi.placeholder || 'unk') || 'unk',
+        placeholder: normalizeText(passUi.placeholder || '') || '',
         tooltip_key: normalizeText(passUi.tooltip_key || '') || null,
         tooltip_source: normalizeText(passUi.tooltip_source || '') || null,
         guidance_md: normalizeText(passUi.guidance_md || '') || null,
@@ -386,9 +386,7 @@ export async function compileCategoryFieldStudio({
       const existingListRules = isObject(merged.list_rules) ? merged.list_rules : {};
       merged.list_rules = {
         dedupe: existingListRules.dedupe !== false,
-        sort: normalizeToken(existingListRules.sort || 'none') || 'none',
-        min_items: asInt(existingListRules.min_items, 0),
-        max_items: asInt(existingListRules.max_items, 100)
+        sort: normalizeToken(existingListRules.sort || 'none') || 'none'
       };
       // WHY: Default delimiters for list fields — ensures deterministic output across compile cycles.
       const defaultDelimiters = [',', '/', '|', ';'];
@@ -456,7 +454,7 @@ export async function compileCategoryFieldStudio({
       short_label: normalizeText(merged.ui?.short_label || '') || null,
       prefix: normalizeText(merged.ui?.prefix || '') || null,
       suffix: normalizeText(merged.ui?.suffix || '') || null,
-      placeholder: normalizeText(merged.ui?.placeholder || 'unk') || 'unk',
+      placeholder: normalizeText(merged.ui?.placeholder || '') || '',
       tooltip_key: normalizeText(merged.ui?.tooltip_key || '') || null,
       tooltip_source: normalizeText(merged.ui?.tooltip_source || '') || null,
       guidance_md: normalizeText(merged.ui?.guidance_md || '') || null,

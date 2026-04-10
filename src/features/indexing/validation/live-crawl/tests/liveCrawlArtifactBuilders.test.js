@@ -187,7 +187,7 @@ test('buildRuntimeVsFinalDiff computes correct diff', () => {
     weight: { value: '85g', confidence: 0.95 },
     sensor: { value: 'PAW3950', confidence: 0.9 },
     dpi: { value: '30000', confidence: 0.85 },
-    shape: { value: 'unk', confidence: null }
+    shape: { value: null, confidence: null }
   };
   const finalSpec = {
     weight: '85g',

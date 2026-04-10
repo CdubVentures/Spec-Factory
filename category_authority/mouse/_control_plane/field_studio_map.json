@@ -3,10 +3,6 @@
   "component_sources": [
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "auto_derive_aliases": true,
@@ -93,10 +89,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "auto_derive_aliases": true,
@@ -163,10 +155,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "auto_derive_aliases": true,
@@ -224,10 +212,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "auto_derive_aliases": true,
@@ -257,10 +241,6 @@
   "data_lists": [
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -286,10 +266,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -315,10 +291,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -346,10 +318,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -375,10 +343,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -404,10 +368,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -443,10 +403,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -496,10 +452,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -526,10 +478,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -559,10 +507,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -584,10 +528,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -627,10 +567,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -660,10 +596,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -685,10 +617,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -715,10 +643,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -750,10 +674,6 @@
     },
     {
       "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
         "reasoning_note": ""
       },
       "delimiter": "",
@@ -887,20 +807,12 @@
   ],
   "field_overrides": {
     "acceleration": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "acceleration",
         "max acceleration",
         "g"
       ],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "acceleration",
       "component": null,
       "constraints": [],
@@ -976,13 +888,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -1035,16 +944,8 @@
       "variance_policy": "upper_bound"
     },
     "adjustable_scroll_wheel": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "adjustable_scroll_wheel",
       "component": null,
       "constraints": [],
@@ -1143,13 +1044,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -1196,16 +1094,8 @@
       "value_form_sample": "scalar"
     },
     "adjustable_weight": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "adjustable_weight",
       "component": null,
       "constraints": [],
@@ -1305,13 +1195,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -1361,13 +1248,6 @@
       "value_form_sample": "scalar"
     },
     "battery_hours": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "battery_hours",
         "battery life",
@@ -1375,7 +1255,6 @@
         "battery runtime"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "battery_hours",
       "component": null,
       "constraints": [],
@@ -1441,13 +1320,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -1500,16 +1376,8 @@
       "value_form_sample": "scalar"
     },
     "bluetooth": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "bluetooth",
       "component": null,
       "constraints": [],
@@ -1608,13 +1476,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -1665,16 +1530,8 @@
       "value_form_sample": "scalar"
     },
     "cable_type": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "cable_type",
       "component": null,
       "constraints": [],
@@ -1735,13 +1592,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -1793,16 +1647,8 @@
       "value_form_sample": "scalar"
     },
     "click_force": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "click_force",
       "component": null,
       "constraints": [],
@@ -1868,13 +1714,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "int",
       "search_hints": {
@@ -1926,16 +1769,8 @@
       "variance_policy": "override_allowed"
     },
     "click_latency": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "click_latency",
       "component": null,
       "constraints": [],
@@ -2001,13 +1836,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -2069,19 +1901,11 @@
       "value_form_sample": "scalar"
     },
     "click_latency_bluetooth": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "click latency (bluetooth)",
         "click latency bluetooth"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "click_latency_bluetooth",
       "component": null,
       "constraints": [],
@@ -2147,13 +1971,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -2205,19 +2026,11 @@
       "value_form_sample": "scalar"
     },
     "click_latency_wired": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "click latency (wired)",
         "click latency wired"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "click_latency_wired",
       "component": null,
       "constraints": [],
@@ -2283,13 +2096,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -2341,19 +2151,11 @@
       "value_form_sample": "scalar"
     },
     "click_latency_wireless": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "click latency (wireless)",
         "click latency wireless"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "click_latency_wireless",
       "component": null,
       "constraints": [],
@@ -2419,13 +2221,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -2477,16 +2276,8 @@
       "value_form_sample": "scalar"
     },
     "coating": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "coating",
       "component": null,
       "constraints": [],
@@ -2569,13 +2360,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -2627,18 +2415,12 @@
     },
     "colors": {
       "ai_assist": {
-        "max_calls": 1,
-        "max_tokens": 4096,
-        "mode": "advisory",
-        "model_strategy": "auto",
         "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
       },
       "contract": {
         "list_rules": {
           "dedupe": true,
           "item_union": "set_union",
-          "max_items": 100,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -2696,7 +2478,6 @@
         "availability": "expected",
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
       "search_hints": {
@@ -2806,16 +2587,8 @@
       }
     },
     "computer_side_connector": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "computer_side_connector",
       "component": null,
       "constraints": [],
@@ -2876,13 +2649,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -2932,16 +2702,8 @@
       "value_form_sample": "scalar"
     },
     "connection": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "connection",
       "component": null,
       "constraints": [],
@@ -3017,14 +2779,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -3079,16 +2837,8 @@
       "value_form_sample": "scalar"
     },
     "connectivity": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "connectivity",
       "component": null,
       "constraints": [],
@@ -3171,14 +2921,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -3229,16 +2975,8 @@
       "value_form_sample": "list"
     },
     "debounce": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "debounce",
       "component": null,
       "constraints": [],
@@ -3303,13 +3041,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -3360,16 +3095,8 @@
       "value_form_sample": "scalar"
     },
     "design": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "design",
       "component": null,
       "constraints": [],
@@ -3442,13 +3169,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -3495,16 +3219,8 @@
       "value_form_sample": "list"
     },
     "discontinued": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "discontinued",
       "component": null,
       "constraints": [],
@@ -3597,13 +3313,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -3649,13 +3362,6 @@
       "value_form_sample": "scalar"
     },
     "dpi": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "dpi",
         "max dpi",
@@ -3663,7 +3369,6 @@
         "cpi"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "dpi",
       "component": null,
       "constraints": [],
@@ -3729,14 +3434,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "int",
       "search_hints": {
@@ -3794,10 +3495,6 @@
     },
     "editions": {
       "ai_assist": {
-        "max_calls": 1,
-        "max_tokens": 4096,
-        "mode": "advisory",
-        "model_strategy": "auto",
         "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
       },
       "consumers": {
@@ -3809,8 +3506,6 @@
         "list_rules": {
           "dedupe": true,
           "item_union": "set_union",
-          "max_items": 50,
-          "min_items": 0,
           "sort": "none"
         },
         "shape": "list",
@@ -3846,7 +3541,6 @@
         "availability": "sometimes",
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "optional"
       },
       "search_hints": {
@@ -3866,16 +3560,8 @@
       }
     },
     "encoder": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "encoder",
       "component": null,
       "constraints": [],
@@ -3934,13 +3620,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -3990,16 +3673,8 @@
       "value_form_sample": "scalar"
     },
     "encoder_brand": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "encoder_brand",
       "component": null,
       "constraints": [],
@@ -4057,13 +3732,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4112,16 +3784,8 @@
       "value_form_sample": "scalar"
     },
     "encoder_link": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "encoder_link",
       "component": null,
       "constraints": [],
@@ -4177,13 +3841,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4227,16 +3888,8 @@
       "value_form_sample": "scalar"
     },
     "feet_material": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "feet_material",
       "component": null,
       "constraints": [],
@@ -4312,13 +3965,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4370,16 +4020,8 @@
       "value_form_sample": "scalar"
     },
     "flawless_sensor": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "flawless_sensor",
       "component": null,
       "constraints": [],
@@ -4478,13 +4120,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4537,16 +4176,8 @@
       "variance_policy": "authoritative"
     },
     "form_factor": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "form_factor",
       "component": null,
       "constraints": [],
@@ -4620,13 +4251,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4680,16 +4308,8 @@
       "value_form_sample": "scalar"
     },
     "front_flare": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "front_flare",
       "component": null,
       "constraints": [],
@@ -4765,13 +4385,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4819,16 +4436,8 @@
       "value_form_sample": "scalar"
     },
     "grip": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "grip",
       "component": null,
       "constraints": [],
@@ -4899,13 +4508,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -4956,16 +4562,8 @@
       "value_form_sample": "list"
     },
     "hand_size": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "hand_size",
       "component": null,
       "constraints": [],
@@ -5036,13 +4634,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -5090,16 +4685,8 @@
       "value_form_sample": "list"
     },
     "hardware_acceleration": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "hardware_acceleration",
       "component": null,
       "constraints": [],
@@ -5198,13 +4785,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -5252,20 +4836,12 @@
       "value_form_sample": "scalar"
     },
     "height": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "height",
         "height_mm",
         "overall height"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "height",
       "component": null,
       "constraints": [],
@@ -5331,14 +4907,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "1dp",
       "search_hints": {
@@ -5390,16 +4962,8 @@
       "value_form_sample": "scalar"
     },
     "honeycomb_frame": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "honeycomb_frame",
       "component": null,
       "constraints": [],
@@ -5498,13 +5062,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -5554,16 +5115,8 @@
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "hot_swappable",
       "component": null,
       "constraints": [],
@@ -5662,13 +5215,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -5718,16 +5268,8 @@
       "value_form_sample": "scalar"
     },
     "hump": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "hump",
       "component": null,
       "constraints": [],
@@ -5803,13 +5345,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -5859,20 +5398,12 @@
       "value_form_sample": "scalar"
     },
     "ips": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "ips",
         "max ips",
         "inches per second"
       ],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "ips",
       "component": null,
       "constraints": [],
@@ -5937,13 +5468,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -5995,13 +5523,6 @@
       "variance_policy": "upper_bound"
     },
     "lift": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "lift",
         "lod",
@@ -6009,7 +5530,6 @@
         "lift-off distance"
       ],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "lift",
       "component": null,
       "constraints": [],
@@ -6088,13 +5608,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6146,16 +5663,8 @@
       "value_form_sample": "mixed_values_and_ranges"
     },
     "lift_settings": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "lift_settings",
       "component": null,
       "constraints": [],
@@ -6234,13 +5743,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6287,16 +5793,8 @@
       "value_form_sample": "list"
     },
     "lighting": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "lighting",
       "component": null,
       "constraints": [],
@@ -6381,13 +5879,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6436,13 +5931,6 @@
       "value_form_sample": "list"
     },
     "lngth": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "length",
         "length_mm",
@@ -6450,7 +5938,6 @@
         "overall length"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "length",
       "component": null,
       "constraints": [],
@@ -6516,14 +6003,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "1dp",
       "search_hints": {
@@ -6574,16 +6057,8 @@
       "value_form_sample": "scalar"
     },
     "material": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "material",
       "component": null,
       "constraints": [],
@@ -6648,13 +6123,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6705,16 +6177,8 @@
       "value_form_sample": "scalar"
     },
     "mcu": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "mcu",
       "component": null,
       "constraints": [],
@@ -6786,13 +6250,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6842,16 +6303,8 @@
       "value_form_sample": "scalar"
     },
     "mcu_link": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "mcu_link",
       "component": null,
       "constraints": [],
@@ -6910,13 +6363,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -6959,16 +6409,8 @@
       "value_form_sample": "scalar"
     },
     "middle_buttons": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "middle_buttons",
       "component": null,
       "constraints": [],
@@ -7031,14 +6473,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "int",
       "search_hints": {
@@ -7086,16 +6524,8 @@
       "value_form_sample": "scalar"
     },
     "motion_sync": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "motion_sync",
       "component": null,
       "constraints": [],
@@ -7194,13 +6624,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -7249,16 +6676,8 @@
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "mouse_side_connector",
       "component": null,
       "constraints": [],
@@ -7319,13 +6738,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -7373,16 +6789,8 @@
       "value_form_sample": "scalar"
     },
     "nvidia_reflex": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "rare",
-      "block_publish_when_unk": false,
       "canonical_key": "nvidia_reflex",
       "component": null,
       "constraints": [],
@@ -7481,13 +6889,10 @@
       },
       "priority": {
         "availability": "rare",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 7,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "none",
       "search_hints": {
@@ -7536,16 +6941,8 @@
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "onboard_memory",
       "component": null,
       "constraints": [],
@@ -7644,13 +7041,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -7700,16 +7094,8 @@
       "value_form_sample": "scalar"
     },
     "onboard_memory_value": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "onboard_memory_value",
       "component": null,
       "constraints": [],
@@ -7772,13 +7158,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -7826,16 +7209,8 @@
       "value_form_sample": "scalar"
     },
     "paracord": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "paracord",
       "component": null,
       "constraints": [],
@@ -7934,13 +7309,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -7989,13 +7361,6 @@
       "value_form_sample": "scalar"
     },
     "polling_rate": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "polling_rate",
         "polling",
@@ -8004,7 +7369,6 @@
         "report rate"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "polling_rate",
       "component": null,
       "constraints": [],
@@ -8089,14 +7453,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -8152,16 +7512,8 @@
       "value_form_sample": "list"
     },
     "price_range": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "price_range",
       "component": null,
       "constraints": [],
@@ -8225,13 +7577,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 4,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -8279,16 +7628,8 @@
       "value_form_sample": "scalar"
     },
     "profile_switching": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "profile_switching",
       "component": null,
       "constraints": [],
@@ -8387,13 +7728,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -8441,16 +7779,8 @@
       "value_form_sample": "scalar"
     },
     "programmable_buttons": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "programmable_buttons",
       "component": null,
       "constraints": [],
@@ -8513,13 +7843,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -8570,16 +7897,8 @@
       "value_form_sample": "scalar"
     },
     "release_date": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "release_date",
       "component": null,
       "constraints": [],
@@ -8653,13 +7972,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 4,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -8708,16 +8024,8 @@
       "value_form_sample": "scalar"
     },
     "rgb": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "rgb",
       "component": null,
       "constraints": [],
@@ -8816,13 +8124,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -8872,16 +8177,8 @@
       "value_form_sample": "scalar"
     },
     "sensor": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "sensor",
       "component": null,
       "constraints": [],
@@ -8951,14 +8248,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 8,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -9011,16 +8304,8 @@
       "value_form_sample": "scalar"
     },
     "sensor_brand": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "sensor_brand",
       "component": null,
       "constraints": [],
@@ -9084,14 +8369,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -9142,16 +8423,8 @@
       "value_form_sample": "scalar"
     },
     "sensor_date": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_date",
       "component": null,
       "constraints": [
@@ -9229,13 +8502,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "int",
       "search_hints": {
@@ -9282,16 +8552,8 @@
       "variance_policy": "authoritative"
     },
     "sensor_latency": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_latency",
       "component": null,
       "constraints": [],
@@ -9357,13 +8619,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -9424,19 +8683,11 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_bluetooth": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "sensor latency (bluetooth)",
         "sensor latency bluetooth"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_latency_bluetooth",
       "component": null,
       "constraints": [],
@@ -9502,13 +8753,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -9559,19 +8807,11 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_wired": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "sensor latency (wired)",
         "sensor latency wired"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_latency_wired",
       "component": null,
       "constraints": [],
@@ -9637,13 +8877,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -9694,19 +8931,11 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_wireless": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "sensor latency (wireless)",
         "sensor latency wireless"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_latency_wireless",
       "component": null,
       "constraints": [],
@@ -9772,13 +9001,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -9829,16 +9055,8 @@
       "value_form_sample": "scalar"
     },
     "sensor_link": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_link",
       "component": null,
       "constraints": [],
@@ -9900,13 +9118,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -9952,16 +9167,8 @@
       "value_form_sample": "scalar"
     },
     "sensor_type": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "sensor_type",
       "component": null,
       "constraints": [],
@@ -10037,13 +9244,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -10092,16 +9296,8 @@
       "variance_policy": "authoritative"
     },
     "shape": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "shape",
       "component": null,
       "constraints": [],
@@ -10177,13 +9373,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -10235,16 +9428,8 @@
       "value_form_sample": "scalar"
     },
     "shift_latency": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "shift_latency",
       "component": null,
       "constraints": [],
@@ -10310,13 +9495,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "hard",
         "effort": 8,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "2dp",
       "search_hints": {
@@ -10364,16 +9546,8 @@
       "value_form_sample": "scalar"
     },
     "side_buttons": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "side_buttons",
       "component": null,
       "constraints": [],
@@ -10436,14 +9610,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "int",
       "search_hints": {
@@ -10493,16 +9663,8 @@
       "value_form_sample": "scalar"
     },
     "silent_clicks": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "silent_clicks",
       "component": null,
       "constraints": [],
@@ -10601,13 +9763,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -10657,16 +9816,8 @@
       "value_form_sample": "scalar"
     },
     "sku": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "sku",
       "component": null,
       "constraints": [],
@@ -10733,13 +9884,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 4,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -10788,16 +9936,8 @@
       "value_form_sample": "scalar"
     },
     "smoothing": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "smoothing",
       "component": null,
       "constraints": [],
@@ -10896,13 +10036,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -10951,16 +10088,8 @@
       "value_form_sample": "scalar"
     },
     "switch": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "switch",
       "component": null,
       "constraints": [],
@@ -11030,14 +10159,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 8,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -11089,16 +10214,8 @@
       "value_form_sample": "scalar"
     },
     "switch_brand": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "switch_brand",
       "component": null,
       "constraints": [],
@@ -11162,14 +10279,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "medium",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "none",
       "search_hints": {
@@ -11221,16 +10334,8 @@
       "value_form_sample": "scalar"
     },
     "switch_type": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "switch_type",
       "component": null,
       "constraints": [],
@@ -11307,13 +10412,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -11362,20 +10464,12 @@
       "variance_policy": "authoritative"
     },
     "switches_link": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "Switch Link",
         "switch_link",
         "switches_link"
       ],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "switches_link",
       "component": null,
       "constraints": [],
@@ -11436,13 +10530,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "optional"
       },
-      "publish_gate": false,
       "required_level": "optional",
       "round": "none",
       "search_hints": {
@@ -11486,16 +10577,8 @@
       "value_form_sample": "scalar"
     },
     "thumb_rest": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
       "canonical_key": "thumb_rest",
       "component": null,
       "constraints": [],
@@ -11556,13 +10639,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -11611,16 +10691,8 @@
       "value_form_sample": "scalar"
     },
     "tilt_scroll_wheel": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "tilt_scroll_wheel",
       "component": null,
       "constraints": [],
@@ -11719,13 +10791,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 2,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {
@@ -11774,13 +10843,6 @@
       "value_form_sample": "scalar"
     },
     "weight": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "weight",
         "weight_g",
@@ -11788,7 +10850,6 @@
         "grams"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "weight",
       "component": null,
       "constraints": [],
@@ -11854,14 +10915,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "1dp",
       "search_hints": {
@@ -11915,20 +10972,12 @@
       "value_form_sample": "scalar"
     },
     "width": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [
         "width",
         "width_mm",
         "overall width"
       ],
       "availability": "expected",
-      "block_publish_when_unk": true,
       "canonical_key": "width",
       "component": null,
       "constraints": [],
@@ -11994,14 +11043,10 @@
       },
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": true,
         "difficulty": "easy",
         "effort": 6,
-        "publish_gate": true,
         "required_level": "required"
       },
-      "publish_gate": true,
-      "publish_gate_reason": "missing_required",
       "required_level": "required",
       "round": "1dp",
       "search_hints": {
@@ -12052,16 +11097,8 @@
       "value_form_sample": "scalar"
     },
     "wireless_charging": {
-      "ai_assist": {
-        "max_calls": null,
-        "max_tokens": null,
-        "mode": null,
-        "model_strategy": "auto",
-        "reasoning_note": ""
-      },
       "aliases": [],
       "availability": "sometimes",
-      "block_publish_when_unk": false,
       "canonical_key": "wireless_charging",
       "component": null,
       "constraints": [],
@@ -12160,13 +11197,10 @@
       },
       "priority": {
         "availability": "sometimes",
-        "block_publish_when_unk": false,
         "difficulty": "medium",
         "effort": 5,
-        "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
       "round": "none",
       "search_hints": {

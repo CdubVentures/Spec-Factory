@@ -11,6 +11,7 @@
 import { validateField } from '../features/publisher/validation/validateField.js';
 import { buildRepairPrompt } from '../features/publisher/repair-adapter/promptBuilder.js';
 import { PHASE_REGISTRY } from '../features/publisher/validation/phaseRegistry.js';
+import { shouldBlockUnkPublish } from '../features/publisher/validation/shouldBlockUnkPublish.js';
 import { deriveTestValues } from './deriveFailureValues.js';
 
 /**
@@ -200,10 +201,6 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   }
   if (c.list_rules?.dedupe) knobs.push({ knob: 'contract.list_rules.dedupe', value: 'true', step: 6, action: 'deterministic', code: null });
   if (c.list_rules?.sort && c.list_rules.sort !== 'none') knobs.push({ knob: 'contract.list_rules.sort', value: c.list_rules.sort, step: 6, action: 'deterministic', code: null });
-  if (c.list_rules?.max_items) knobs.push({ knob: 'contract.list_rules.max_items', value: String(c.list_rules.max_items), step: 6, action: 'deterministic', code: null });
-  if (c.list_rules?.min_items && c.list_rules.min_items > 0) knobs.push({ knob: 'contract.list_rules.min_items', value: String(c.list_rules.min_items), step: 6, action: 'reject', code: 'min_items_violation' });
-  if (c.unknown_token) knobs.push({ knob: 'contract.unknown_token', value: c.unknown_token, step: 0, action: 'info', code: null });
-
   // parse.*
   if (p.token_map && Object.keys(p.token_map).length > 0) {
     knobs.push({ knob: 'parse.token_map', value: `${Object.keys(p.token_map).length} entries`, step: 4, action: 'deterministic', code: null });
@@ -226,7 +223,7 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   }
 
   // priority.*
-  if (pri.block_publish_when_unk) knobs.push({ knob: 'priority.block_publish_when_unk', value: 'true', step: 10, action: 'reject', code: 'unk_blocks_publish' });
+  if (shouldBlockUnkPublish(fieldRule)) knobs.push({ knob: 'priority.required_level', value: pri.required_level, step: 10, action: 'reject', code: 'unk_blocks_publish' });
 
   // component.* — informational, no dedicated validation step in pipeline
   if (p.component_type) {

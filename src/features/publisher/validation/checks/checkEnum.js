@@ -38,7 +38,7 @@ export function checkEnum(value, policy, knownValues) {
     return { pass: true, known: [], unknown: [], needsLlm: false };
   }
 
-  if (value === 'unk') {
+  if (value === null) {
     return { pass: true, known: [], unknown: [], needsLlm: false };
   }
 

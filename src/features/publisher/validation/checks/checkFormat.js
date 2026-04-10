@@ -11,7 +11,7 @@ import { FORMAT_REGISTRY } from '../formatRegistry.js';
  */
 export function checkFormat(value, type, formatHint) {
   if (typeof value !== 'string') return { pass: true };
-  if (value === 'unk') return { pass: true };
+  if (value === null) return { pass: true };
 
   // 1. Type format registry check
   const regex = FORMAT_REGISTRY[type];

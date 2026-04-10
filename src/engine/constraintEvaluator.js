@@ -46,7 +46,7 @@ function resolveValue(fieldName, componentProps = {}, productValues = {}) {
     return { value: fieldName.slice(1, -1), source: 'literal' };
   }
   // Known tokens
-  if (fieldName === 'unk' || fieldName === 'unknown' || fieldName === 'null') {
+  if (fieldName === 'unknown' || fieldName === 'null') {
     return { value: fieldName, source: 'literal' };
   }
 

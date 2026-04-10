@@ -16,10 +16,6 @@ export const PriorityProfileSchema = z.object({
 });
 
 export const AiAssistConfigSchema = z.object({
-  mode: z.string().nullable().optional(),
-  model_strategy: z.string().optional(),
-  max_calls: z.number().nullable().optional(),
-  max_tokens: z.number().nullable().optional(),
   reasoning_note: z.string().optional(),
 });
 

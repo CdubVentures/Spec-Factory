@@ -4,30 +4,8 @@ import type { WorkbenchRow, ColumnPreset } from './workbenchTypes.ts';
 
 import {
   REQUIRED_LEVEL_OPTIONS,
-  AI_MODE_OPTIONS as _AI_MODE_VALUES,
-  AI_MODEL_STRATEGY_OPTIONS,
   ENUM_POLICY_OPTIONS,
 } from '../../../registries/fieldRuleTaxonomy.ts';
-
-// WHY: Workbench AI mode dropdown includes blank option for "auto/unset"
-const AI_MODE_OPTIONS = ['', ..._AI_MODE_VALUES];
-
-// ── AI Mode badge colors ────────────────────────────────────────────
-const aiModeBadge: Record<string, string> = {
-  off: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
-  advisory: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  planner: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  judge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-};
-
-function AiModeBadge({ value }: { value: string }) {
-  if (!value) return <span className="text-gray-300 text-xs italic">auto</span>;
-  return (
-    <span className={`px-1.5 py-0.5 text-[11px] rounded font-medium ${aiModeBadge[value] || aiModeBadge.off}`}>
-      {value}
-    </span>
-  );
-}
 
 // ── Badge colors ─────────────────────────────────────────────────────
 const reqBadge: Record<string, string> = {
@@ -334,75 +312,6 @@ export function buildColumns(
       },
     },
 
-    // Publish gate (inline toggle)
-    {
-      accessorKey: 'publishGate',
-      header: 'Pub Gate',
-      size: 75,
-      cell: ({ row }) => (
-        <InlineBooleanCell
-          value={row.original.publishGate}
-          onToggle={() => onInlineCommit(row.original.key, 'publishGate', !row.original.publishGate)}
-        />
-      ),
-    },
-
-    // Block publish when unk
-    {
-      accessorKey: 'blockPublishWhenUnk',
-      header: 'Block Unk',
-      size: 80,
-      cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
-    },
-
-    // AI Mode (inline editable)
-    {
-      accessorKey: 'aiMode',
-      header: 'AI Mode',
-      size: 95,
-      cell: ({ row }) => (
-        <InlineSelectCell
-          value={row.original.aiMode}
-          options={AI_MODE_OPTIONS}
-          editingCell={editingCell}
-          cellId={{ key: row.original.key, column: 'aiMode' }}
-          onStartEdit={onStartEdit}
-          onCommit={(v) => onInlineCommit(row.original.key, 'aiMode', v)}
-          renderValue={(v) => <AiModeBadge value={v} />}
-        />
-      ),
-    },
-
-    // AI Model Strategy
-    {
-      accessorKey: 'aiModelStrategy',
-      header: 'AI Model',
-      size: 100,
-      cell: ({ row }) => (
-        <InlineSelectCell
-          value={row.original.aiModelStrategy}
-          options={AI_MODEL_STRATEGY_OPTIONS}
-          editingCell={editingCell}
-          cellId={{ key: row.original.key, column: 'aiModelStrategy' }}
-          onStartEdit={onStartEdit}
-          onCommit={(v) => onInlineCommit(row.original.key, 'aiModelStrategy', v)}
-        />
-      ),
-    },
-
-    // AI Max Calls
-    {
-      accessorKey: 'aiMaxCalls',
-      header: 'AI Calls',
-      size: 65,
-      cell: ({ getValue }) => {
-        const n = getValue() as number;
-        return n > 0
-          ? <span className="text-xs font-medium">{n}</span>
-          : <span className="text-gray-300 text-xs italic">auto</span>;
-      },
-    },
-
     // Query terms count
     { accessorKey: 'queryTermsCount', header: 'Q Terms', size: 65 },
 
@@ -480,14 +389,13 @@ const ALWAYS_VISIBLE = ['select', 'status', 'group', 'displayName'];
 const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   minimal: [
     ...ALWAYS_VISIBLE,
-    'requiredLevel', 'contractType', 'enumPolicy', 'publishGate',
+    'requiredLevel', 'contractType', 'enumPolicy',
   ],
   contract: [
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'contractShape', 'contractUnit', 'unknownToken',
     'constraintsCount', 'constraintVariables',
-    'availability', 'difficulty', 'effort', 'publishGate', 'blockPublishWhenUnk',
-    'aiMode', 'aiMaxCalls',
+    'availability', 'difficulty', 'effort',
   ],
   parsing: [
     ...ALWAYS_VISIBLE,
@@ -499,7 +407,6 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   evidence: [
     ...ALWAYS_VISIBLE,
     'minEvidenceRefs', 'tierPreference',
-    'publishGate', 'blockPublishWhenUnk',
   ],
   search: [
     ...ALWAYS_VISIBLE,
@@ -509,7 +416,6 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'enumPolicy', 'enumSource',
     'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'draftDirty',
-    'aiMode', 'aiModelStrategy', 'aiMaxCalls',
   ],
   all: [], // empty = show all
 };
@@ -542,11 +448,6 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'knownValuesCount', label: 'KV Count' },
   { id: 'minEvidenceRefs', label: 'Min Refs' },
   { id: 'tierPreference', label: 'Tiers' },
-  { id: 'publishGate', label: 'Pub Gate' },
-  { id: 'blockPublishWhenUnk', label: 'Block Unk' },
-  { id: 'aiMode', label: 'AI Mode' },
-  { id: 'aiModelStrategy', label: 'AI Model' },
-  { id: 'aiMaxCalls', label: 'AI Calls' },
   { id: 'queryTermsCount', label: 'Query Terms' },
   { id: 'domainHintsCount', label: 'Domain Hints' },
   { id: 'contentTypesCount', label: 'Content Types' },

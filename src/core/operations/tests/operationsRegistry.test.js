@@ -4,6 +4,7 @@ import {
   initOperationsRegistry,
   registerOperation,
   updateStage,
+  updateModelInfo,
   completeOperation,
   failOperation,
   listOperations,
@@ -108,6 +109,38 @@ describe('updateStage', () => {
   });
 });
 
+// ── updateModelInfo ──────────────────────────────────────────────────
+
+describe('updateModelInfo', () => {
+  beforeEach(() => _resetForTest());
+
+  it('sets modelInfo on a running operation', () => {
+    const op = registerOperation(VALID_OP);
+    updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
+    const ops = listOperations();
+    assert.deepEqual(ops[0].modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false });
+  });
+
+  it('replaces modelInfo on second call (fallback scenario)', () => {
+    const op = registerOperation(VALID_OP);
+    updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
+    updateModelInfo({ id: op.id, model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true });
+    const ops = listOperations();
+    assert.deepEqual(ops[0].modelInfo, { model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true });
+  });
+
+  it('no-ops on nonexistent id (no crash)', () => {
+    assert.doesNotThrow(() => updateModelInfo({ id: 'ghost', model: 'x', provider: 'y', isFallback: false }));
+  });
+
+  it('no-ops on completed operation', () => {
+    const op = registerOperation(VALID_OP);
+    completeOperation({ id: op.id });
+    updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
+    assert.equal(listOperations()[0].modelInfo, null);
+  });
+});
+
 // ── completeOperation ────────────────────────────────────────────────
 
 describe('completeOperation', () => {
@@ -190,6 +223,17 @@ describe('broadcastWs integration', () => {
     failOperation({ id: op.id, error: 'boom' });
     assert.equal(spy.calls[0].data.action, 'upsert');
     assert.equal(spy.calls[0].data.operation.status, 'error');
+  });
+
+  it('updateModelInfo broadcasts upsert with modelInfo', () => {
+    const spy = makeBroadcastSpy();
+    initOperationsRegistry({ broadcastWs: spy });
+    const op = registerOperation(VALID_OP);
+    spy.calls.length = 0;
+    updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
+    assert.equal(spy.calls.length, 1);
+    assert.equal(spy.calls[0].data.action, 'upsert');
+    assert.deepEqual(spy.calls[0].data.operation.modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false });
   });
 
   it('mutations succeed silently when broadcastWs not initialized', () => {

@@ -10,7 +10,7 @@ RULES:
 - You MUST return valid JSON matching the response schema.
 - Your repaired value will be re-validated through the same deterministic
   pipeline that rejected the original. It either passes or fails — binary.
-- You MUST NOT hallucinate new values. If you're unsure, return "unk".
+- You MUST NOT hallucinate new values. If you're unsure, return null.
 - For closed enums, you MUST map to an existing registered value or reject.
   You cannot invent new entries for a closed vocabulary.
 - For open_prefer_known enums, you may confirm genuinely new values,

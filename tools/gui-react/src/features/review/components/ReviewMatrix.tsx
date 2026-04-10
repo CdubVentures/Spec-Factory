@@ -245,7 +245,7 @@ export function ReviewMatrix({
                                 className="px-1 w-full"
                                 valueClassName="text-[11px]"
                                 valueMaxChars={22}
-                                unknownLabel="unk"
+                                unknownLabel=""
                                 showConfidence
                                 showOverrideBadge
                                 flagCount={fieldState?.needs_review ? (fieldState.reason_codes?.length || 1) : 0}

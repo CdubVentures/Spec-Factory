@@ -66,7 +66,7 @@ test('crossValidate group_completeness: met', () => {
 });
 
 test('crossValidate group_completeness: not met', () => {
-  const result = crossValidate('lngth', 120, { lngth: 120, width: 65, height: 'unk' }, {
+  const result = crossValidate('lngth', 120, { lngth: 120, width: 65, height: null }, {
     crossValidationRules: [{
       rule_id: 'dimensions',
       trigger_field: 'lngth',

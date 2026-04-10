@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-10T04:44:26.378Z",
+  "generated_at": "2026-04-10T07:07:45.207Z",
   "rules": [
     {
       "condition": "connection IN ['wireless','hybrid','bluetooth']",

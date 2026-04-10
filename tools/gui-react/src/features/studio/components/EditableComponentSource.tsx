@@ -5,16 +5,10 @@ import { ComboSelect } from "../../../shared/ui/forms/ComboSelect.tsx";
 import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
-  clampNumber,
   parseBoundedIntInput,
-  parseOptionalPositiveIntInput,
 } from "../state/numericInputHelpers.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../state/studioNumericKnobBounds.ts";
 import {
-  STUDIO_NUMERIC_KNOB_BOUNDS,
-} from "../state/studioNumericKnobBounds.ts";
-import {
-  deriveAiCallsFromEffort,
-  deriveAiModeFromPriority,
   normalizeAiAssistConfig,
   normalizePriorityProfile,
 } from "../state/studioPriority.ts";
@@ -485,288 +479,56 @@ export function EditableComponentSource({
         </div>
       ) : null}
 
-      {/* Component table-level AI assist */}
-      <button
-        type="button"
-        onClick={() => toggleCsAiSections()}
-        className="w-full flex items-center gap-2 mb-2"
-      >
-        <span className="inline-flex items-center justify-center w-5 h-5 border sf-border-soft rounded text-xs font-medium sf-text-muted">
-          {showAiSections ? "-" : "+"}
-        </span>
-        <span className="text-xs font-semibold sf-text-muted">AI Assist</span>
-      </button>
-      {showAiSections
-        ? (() => {
-            const explicitMode = sourceAiAssist.mode || "";
-            const strategy = sourceAiAssist.model_strategy || "auto";
-            const explicitCalls = sourceAiAssist.max_calls || 0;
-            const reqLvl = sourcePriority.required_level;
-            const diff = sourcePriority.difficulty;
-            const effort = sourcePriority.effort;
-
-            const derivedMode = deriveAiModeFromPriority(sourcePriority);
-            const effectiveMode = explicitMode || derivedMode;
-
-            const derivedCalls = deriveAiCallsFromEffort(effort);
-            const effectiveCalls =
-              explicitCalls > 0 ? Math.min(explicitCalls, 10) : derivedCalls;
-
-            const modeToModel: Record<
-              string,
-              { model: string; reasoning: boolean }
-            > = {
-              off: { model: "none", reasoning: false },
-              advisory: { model: "gpt-5-low", reasoning: false },
-              planner: {
-                model: "gpt-5-low -> gpt-5.2-high on escalation",
-                reasoning: false,
-              },
-              judge: { model: "gpt-5.2-high", reasoning: true },
-            };
-            let effectiveModel = modeToModel[effectiveMode] || modeToModel.off;
-            if (strategy === "force_fast")
-              effectiveModel = {
-                model: "gpt-5-low (forced)",
-                reasoning: false,
-              };
-            else if (strategy === "force_deep")
-              effectiveModel = {
-                model: "gpt-5.2-high (forced)",
-                reasoning: true,
-              };
-
+      {/* Extraction Guidance */}
+      {(() => {
             const explicitNote = sourceAiAssist.reasoning_note || "";
             const autoNote = [
               `Full component table review for "${compType || "component"}".`,
-              `Apply ${effectiveMode} mode across all linked component rows and evidence.`,
-              `Required level ${reqLvl}, availability ${sourcePriority.availability}, difficulty ${diff}, effort ${effort}.`,
+              `Required level ${sourcePriority.required_level}, difficulty ${sourcePriority.difficulty}, effort ${sourcePriority.effort}.`,
               "Resolve conflicts across sources and keep output normalized for component identity + properties.",
             ].join(" ");
             const hasExplicit = explicitNote.length > 0;
 
             return (
               <div className="border sf-border-default rounded p-3 mb-4 sf-bg-surface-soft sf-dk-surface-900a20">
-                <h4 className="text-xs font-semibold sf-text-muted mb-2">
-                  AI Assist
-                  <Tip
-                    style={{ position: "relative", left: "-3px", top: "-4px" }}
-                    text={STUDIO_TIPS.ai_mode}
-                  />
-                </h4>
-                <div className="grid grid-cols-4 gap-3">
-                  <div>
-                    <div className={labelCls}>
-                      Mode
-                      <Tip
-                        style={{
-                          position: "relative",
-                          left: "-3px",
-                          top: "-4px",
-                        }}
-                        text={STUDIO_TIPS.ai_mode}
-                      />
-                    </div>
-                    <select
-                      className={`${selectCls} w-full`}
-                      value={explicitMode}
-                      onChange={(e) =>
-                        updateAiAssist({ mode: e.target.value || null })
-                      }
-                    >
-                      <option value="">auto ({derivedMode})</option>
-                      <option value="off">
-                        off - no LLM, deterministic only
-                      </option>
-                      <option value="advisory">
-                        advisory - gpt-5-low, single pass
-                      </option>
-                      <option value="planner">
-                        planner - gpt-5-low -&gt; gpt-5.2-high
-                      </option>
-                      <option value="judge">
-                        judge - gpt-5.2-high, reasoning
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <div className={labelCls}>
-                      Model Strategy
-                      <Tip
-                        style={{
-                          position: "relative",
-                          left: "-3px",
-                          top: "-4px",
-                        }}
-                        text={STUDIO_TIPS.ai_model_strategy}
-                      />
-                    </div>
-                    <select
-                      className={`${selectCls} w-full`}
-                      value={strategy}
-                      onChange={(e) =>
-                        updateAiAssist({ model_strategy: e.target.value })
-                      }
-                    >
-                      <option value="auto">auto - mode decides model</option>
-                      <option value="force_fast">
-                        force_fast - always gpt-5-low
-                      </option>
-                      <option value="force_deep">
-                        force_deep - always gpt-5.2-high
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <div className={labelCls}>
-                      Max Calls
-                      <Tip
-                        text={STUDIO_TIPS.ai_max_calls}
-                        style={{
-                          position: "relative",
-                          left: "-3px",
-                          top: "-4px",
-                        }}
-                      />
-                    </div>
-                    <input
-                      className={`${inputCls} w-full`}
-                      type="number"
-                      min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
-                      max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
-                      value={explicitCalls || ""}
-                      onChange={(e) => {
-                        const parsed = parseOptionalPositiveIntInput(
-                          e.target.value,
-                        );
-                        updateAiAssist({
-                          max_calls:
-                            parsed === null
-                              ? null
-                              : clampNumber(
-                                  parsed,
-                                  STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min,
-                                  STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max,
-                                ),
-                        });
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={labelCls.replace(" mb-1", "")}>
+                    Extraction Guidance (sent to LLM)
+                    <Tip
+                      style={{
+                        position: "relative",
+                        left: "-3px",
+                        top: "-4px",
                       }}
-                      placeholder={`auto (${derivedCalls})`}
+                      text={STUDIO_TIPS.ai_reasoning_note}
                     />
-                  </div>
-                  <div>
-                    <div className={labelCls}>
-                      Max Tokens
-                      <Tip
-                        style={{
-                          position: "relative",
-                          left: "-3px",
-                          top: "-4px",
-                        }}
-                        text={STUDIO_TIPS.ai_max_tokens}
-                      />
-                    </div>
-                    <input
-                      className={`${inputCls} w-full`}
-                      type="number"
-                      min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
-                      max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
-                      step={1024}
-                      value={sourceAiAssist.max_tokens || ""}
-                      onChange={(e) => {
-                        const parsed = parseOptionalPositiveIntInput(
-                          e.target.value,
-                        );
-                        updateAiAssist({
-                          max_tokens:
-                            parsed === null
-                              ? null
-                              : clampNumber(
-                                  parsed,
-                                  STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min,
-                                  STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max,
-                                ),
-                        });
-                      }}
-                      placeholder={`auto (${effectiveMode === "off" ? "0" : effectiveMode === "advisory" ? "4096" : effectiveMode === "planner" ? "8192" : "16384"})`}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-2 text-[11px] sf-bg-surface-soft sf-dk-surface-800a50 rounded p-2.5 border sf-border-default space-y-1">
-                  <div className="text-[10px] font-semibold sf-text-subtle mb-1">
-                    Effective AI Configuration
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="sf-text-subtle w-14">Mode:</span>
-                    <span className="sf-text-muted">{effectiveMode}</span>
-                    {!explicitMode && (
-                      <span className="sf-text-subtle italic text-[10px]">
-                        (auto from {reqLvl}
-                        {diff !== "easy" ? ` + ${diff}` : ""})
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="sf-text-subtle w-14">Model:</span>
-                    <span className="sf-text-muted font-mono text-[10px]">
-                      {effectiveModel.model}
+                  </span>
+                  {!hasExplicit && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-muted italic font-medium">
+                      Auto
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="sf-text-subtle w-14">Budget:</span>
-                    <span className="sf-text-muted">
-                      {effectiveMode === "off" ? "0" : effectiveCalls} call
-                      {effectiveCalls !== 1 ? "s" : ""}
-                    </span>
-                    {!explicitCalls && effectiveMode !== "off" && (
-                      <span className="sf-text-subtle italic text-[10px]">
-                        (auto from effort {effort})
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={labelCls.replace(" mb-1", "")}>
-                      Extraction Guidance (sent to LLM)
-                      <Tip
-                        style={{
-                          position: "relative",
-                          left: "-3px",
-                          top: "-4px",
-                        }}
-                        text={STUDIO_TIPS.ai_reasoning_note}
-                      />
-                    </span>
-                    {!hasExplicit && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-muted italic font-medium">
-                        Auto
-                      </span>
-                    )}
-                  </div>
-                  <textarea
-                    className={`${inputCls} w-full`}
-                    rows={3}
-                    value={explicitNote}
-                    onChange={(e) =>
-                      updateAiAssist({ reasoning_note: e.target.value })
-                    }
-                    placeholder={`Auto: ${autoNote}`}
-                  />
-                  {hasExplicit && (
-                    <button
-                      className="text-[10px] sf-link-accent hover:opacity-80 mt-1"
-                      onClick={() => updateAiAssist({ reasoning_note: "" })}
-                    >
-                      Clear &amp; revert to auto-generated guidance
-                    </button>
                   )}
                 </div>
+                <textarea
+                  className={`${inputCls} w-full`}
+                  rows={3}
+                  value={explicitNote}
+                  onChange={(e) =>
+                    updateAiAssist({ reasoning_note: e.target.value })
+                  }
+                  placeholder={`Auto: ${autoNote}`}
+                />
+                {hasExplicit && (
+                  <button
+                    className="text-[10px] sf-link-accent hover:opacity-80 mt-1"
+                    onClick={() => updateAiAssist({ reasoning_note: "" })}
+                  >
+                    Clear &amp; revert to auto-generated guidance
+                  </button>
+                )}
               </div>
             );
-          })()
-        : null}
+          })()}
 
       {/* Tracked Roles */}
       <div className="border-t sf-border-default pt-3">

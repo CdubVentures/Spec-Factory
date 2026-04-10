@@ -23,7 +23,7 @@ test('crossValidate supports component lookup, group completeness, and mutual ex
     const groupWarning = engine.crossValidate('lngth', 120, {
       lngth: 120,
       width: 65,
-      height: 'unk'
+      height: null
     });
     assert.equal(groupWarning.ok, false);
     assert.equal(groupWarning.violations.some((row) => row.rule === 'dimensions_triplet'), true);

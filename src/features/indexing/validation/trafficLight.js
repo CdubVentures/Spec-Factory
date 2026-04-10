@@ -7,7 +7,8 @@ function toInt(value, fallback = 0) {
 
 function hasValue(value) {
   const token = normalizeToken(value);
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined';
+  if (value == null) return false;
+  return token !== '' && token !== 'null' && token !== 'undefined';
 }
 
 function evidenceRank(row = {}) {

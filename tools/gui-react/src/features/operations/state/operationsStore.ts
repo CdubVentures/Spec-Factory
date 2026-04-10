@@ -12,6 +12,11 @@ export interface Operation {
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly error: string | null;
+  readonly modelInfo: {
+    readonly model: string;
+    readonly provider: string;
+    readonly isFallback: boolean;
+  } | null;
 }
 
 interface OperationsState {

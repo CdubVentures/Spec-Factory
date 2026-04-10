@@ -6,8 +6,10 @@
  */
 export function checkShape(value, expectedShape) {
   if (expectedShape === 'scalar') {
-    if (value === null || value === undefined) {
-      return { pass: false, reason: 'expected scalar, got null/undefined' };
+    // WHY: null is a valid scalar value — it means "no data" (absence).
+    if (value === null) return { pass: true };
+    if (value === undefined) {
+      return { pass: false, reason: 'expected scalar, got undefined' };
     }
     if (Array.isArray(value)) {
       return { pass: false, reason: 'expected scalar, got array' };

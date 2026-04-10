@@ -238,10 +238,10 @@ export function buildFieldState({
   const normalizedFields = isObject(normalized.fields) ? normalized.fields : {};
   const rawSelectedValue = Object.prototype.hasOwnProperty.call(normalizedFields, fieldKey)
     ? normalizedFields[fieldKey]
-    : 'unk';
+    : null;
   const selectedShapeValue = normalizeSlotValueForShape(rawSelectedValue, normalizedShape).value;
   const selectedValue = normalizedShape === 'list'
-    ? (slotValueToText(selectedShapeValue, normalizedShape) ?? 'unk')
+    ? (slotValueToText(selectedShapeValue, normalizedShape) ?? null)
     : selectedShapeValue;
   const provenanceRow = isObject(provenance[fieldKey]) ? provenance[fieldKey] : {};
   const selectedConfidenceHint = Math.max(0, Math.min(1, toNumber(provenanceRow.confidence, 0)));

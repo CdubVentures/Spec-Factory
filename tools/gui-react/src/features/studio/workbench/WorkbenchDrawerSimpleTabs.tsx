@@ -95,8 +95,8 @@ export function EvidenceTab({
   onUpdate: (path: string, val: unknown) => void;
   B: BadgeSlot;
 }) {
-  const pubGate = boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'));
-  const blockUnk = boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'));
+  const requiredLevel = strN(rule, 'priority.required_level');
+  const publishGated = requiredLevel === 'identity' || requiredLevel === 'required';
   const minRefs = numN(
     rule,
     'evidence.min_evidence_refs',
@@ -136,16 +136,10 @@ export function EvidenceTab({
 
       <h4 className={SECTION_HEADING_CLASS}>What would fail publish</h4>
       <div className="text-xs sf-bg-surface-soft sf-dk-surface-800a50 rounded p-2 border sf-border-default dark:sf-border-default space-y-1">
-        {pubGate && (
+        {publishGated && (
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full sf-dot-danger flex-shrink-0" />
-            <span>Publish Gate is ON - value must be non-unknown to publish</span>
-          </div>
-        )}
-        {blockUnk && (
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full sf-dot-danger flex-shrink-0" />
-            <span>Block when UNK - unknown token blocks publish</span>
+            <span>Publish gated — required_level is {requiredLevel}</span>
           </div>
         )}
         {minRefs > 0 && (
@@ -154,7 +148,7 @@ export function EvidenceTab({
             <span>Evidence required - at least {minRefs} source ref{minRefs > 1 ? 's' : ''} needed</span>
           </div>
         )}
-        {!pubGate && !blockUnk && minRefs <= 0 && (
+        {!publishGated && minRefs <= 0 && (
           <div className={`${TEXT_GRAY_400} italic`}>No publish-blocking rules configured</div>
         )}
       </div>

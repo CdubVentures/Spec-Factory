@@ -272,13 +272,13 @@ export function buildExtractionFields(events, options) {
     const distinctValues = new Set(
       allCandidates
         .map((c) => String(c.value || '').trim().toLowerCase())
-        .filter((v) => v && v !== 'unk')
+        .filter((v) => v)
     );
 
     let status = 'candidate';
     if (acceptedFields.has(field)) {
       status = 'accepted';
-    } else if (best.value != null && String(best.value).trim().toLowerCase() === 'unk') {
+    } else if (best.value == null) {
       status = 'unknown';
     } else if (distinctValues.size > 1) {
       status = 'conflict';

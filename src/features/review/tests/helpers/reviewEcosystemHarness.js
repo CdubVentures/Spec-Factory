@@ -488,7 +488,7 @@ async function seedLatestArtifacts(storage, category, productId, product) {
   await storage.writeObject(`${latestBase}/summary.json`, Buffer.from(JSON.stringify({
     confidence: 0.85,
     coverage_overall_percent: 80,
-    missing_required_fields: Object.entries(product.fields).filter(([, value]) => value === 'unk').map(([key]) => key),
+    missing_required_fields: Object.entries(product.fields).filter(([, value]) => value == null).map(([key]) => key),
     fields_below_pass_target: [],
     critical_fields_below_pass_target: [],
     field_reasoning: {},

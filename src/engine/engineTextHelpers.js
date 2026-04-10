@@ -9,7 +9,8 @@ export function isUnknownToken(value) {
     return isUnknownToken(value.value);
   }
   const token = normalizeToken(value);
-  return token === '' || token === 'unk' || token === 'unknown' || token === 'n/a' || token === '-' || token === 'none';
+  if (value == null) return true;
+  return token === '' || token === 'unknown' || token === 'n/a' || token === '-' || token === 'none';
 }
 
 export function canonicalizeWhitespace(value) {

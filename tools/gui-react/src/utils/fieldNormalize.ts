@@ -10,7 +10,8 @@ export function normalizeField(field: string): string {
 }
 
 export function hasKnownValue(value: unknown): boolean {
-  const token = String(value ?? '').trim().toLowerCase();
+  if (value == null) return false;
+  const token = String(value).trim().toLowerCase();
   return !UNKNOWN_VALUES.has(token);
 }
 

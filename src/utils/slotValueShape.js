@@ -47,13 +47,13 @@ function unwrapValue(value) {
 function normalizeScalarValue(value) {
   const raw = unwrapValue(value);
   if (raw === null || raw === undefined) {
-    return { value: 'unk', reason: 'empty' };
+    return { value: null, reason: 'empty' };
   }
 
   if (typeof raw === 'string') {
     const trimmed = normalizeText(raw);
     if (normalizeUnknownToken(trimmed)) {
-      return { value: 'unk', reason: 'unknown_token' };
+      return { value: null, reason: 'unknown_token' };
     }
     const parsed = tryParseJson(trimmed);
     if (parsed !== null) {
@@ -73,16 +73,16 @@ function normalizeScalarValue(value) {
     if (normalized.length === 1) {
       return { value: normalized[0].value, reason: 'scalar_from_singleton_array' };
     }
-    return { value: 'unk', reason: 'shape_mismatch_scalar_array' };
+    return { value: null, reason: 'shape_mismatch_scalar_array' };
   }
 
   if (isObject(raw)) {
-    return { value: 'unk', reason: 'shape_mismatch_scalar_object' };
+    return { value: null, reason: 'shape_mismatch_scalar_object' };
   }
 
   const text = normalizeText(raw);
   if (!text || normalizeUnknownToken(text)) {
-    return { value: 'unk', reason: 'unknown_token' };
+    return { value: null, reason: 'unknown_token' };
   }
   return { value: text, reason: null };
 }
@@ -145,7 +145,7 @@ function normalizeListValue(value) {
     items.push(text);
   }
   if (items.length === 0) {
-    return { value: 'unk', reason: 'empty_list' };
+    return { value: null, reason: 'empty_list' };
   }
   return { value: items, reason: null };
 }
@@ -165,16 +165,16 @@ export function slotValueToText(value, shape = 'scalar') {
   }
   if (normalizedShape === 'list') {
     if (Array.isArray(raw)) {
-      return raw.map((item) => normalizeText(item)).filter(Boolean).join(', ') || 'unk';
+      return raw.map((item) => normalizeText(item)).filter(Boolean).join(', ') || null;
     }
     const text = normalizeText(raw);
-    return text || 'unk';
+    return text || null;
   }
   if (typeof raw === 'number' || typeof raw === 'boolean') {
     return String(raw);
   }
   const text = normalizeText(raw);
-  return text || 'unk';
+  return text || null;
 }
 
 export function isKnownSlotValue(value, shape = 'scalar') {
@@ -182,7 +182,7 @@ export function isKnownSlotValue(value, shape = 'scalar') {
   if (String(shape || 'scalar').trim().toLowerCase() === 'list') {
     return Array.isArray(normalized.value) && normalized.value.length > 0;
   }
-  return !normalizeUnknownToken(normalized.value);
+  return normalized.value !== null && normalized.value !== undefined && !normalizeUnknownToken(normalized.value);
 }
 
 export function slotValueComparableToken(value, shape = 'scalar') {

@@ -50,13 +50,6 @@ export function KeyContractSection({
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
-  function parseListRuleCount(value: string): number | undefined {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const parsed = parseIntegerInput(trimmed);
-    if (parsed === null) return undefined;
-    return Math.max(0, parsed);
-  }
 
   return (
     <Section
@@ -313,64 +306,6 @@ export function KeyContractSection({
               <option value="asc">asc</option>
               <option value="desc">desc</option>
             </select>
-          </div>
-          <div>
-            <div className={labelCls}>
-              Min Items
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.list_rules_min_items}
-              />
-            </div>
-            <input
-              className={`${inputCls} w-full`}
-              type="number"
-              min={0}
-              step={1}
-              value={strN(currentRule, "contract.list_rules.min_items")}
-              onChange={(e) =>
-                updateField(
-                  selectedKey,
-                  "contract.list_rules.min_items",
-                  parseListRuleCount(e.target.value),
-                )
-              }
-              placeholder="0"
-              disabled={!isListContract}
-            />
-          </div>
-          <div>
-            <div className={labelCls}>
-              Max Items
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.list_rules_max_items}
-              />
-            </div>
-            <input
-              className={`${inputCls} w-full`}
-              type="number"
-              min={0}
-              step={1}
-              value={strN(currentRule, "contract.list_rules.max_items")}
-              onChange={(e) =>
-                updateField(
-                  selectedKey,
-                  "contract.list_rules.max_items",
-                  parseListRuleCount(e.target.value),
-                )
-              }
-              placeholder="100"
-              disabled={!isListContract}
-            />
           </div>
           <div className="col-span-2">
             <div className={labelCls}>

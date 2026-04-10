@@ -693,7 +693,7 @@ export class FieldRulesEngine {
 
     for (const field of Object.keys(normalized)) {
       const value = normalized[field];
-      if (isObject(value) && value.value === 'unk') {
+      if (isObject(value) && value.value == null) {
         continue;
       }
       const cross = this.crossValidate(field, value, normalized);

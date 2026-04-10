@@ -18,8 +18,8 @@ test('parseFirstNumber extracts number from string', () => {
   assert.equal(parseFirstNumber(''), null);
 });
 
-test('hasKnownFieldValue rejects unk and empty values', () => {
-  assert.ok(!hasKnownFieldValue('unk'));
+test('hasKnownFieldValue rejects null and empty values', () => {
+  assert.ok(!hasKnownFieldValue(null));
   assert.ok(!hasKnownFieldValue(''));
   assert.ok(!hasKnownFieldValue('null'));
   assert.ok(!hasKnownFieldValue('undefined'));
@@ -59,9 +59,9 @@ test('buildCandidateFieldMap picks highest scoring candidate per field', () => {
   assert.equal(map.sensor, 'Focus Pro 35K');
 });
 
-test('buildCandidateFieldMap skips unk values', () => {
+test('buildCandidateFieldMap skips null values', () => {
   const map = buildCandidateFieldMap([
-    { field: 'sensor', value: 'unk', method: 'network_json', keyPath: 'data.sensor' }
+    { field: 'sensor', value: null, method: 'network_json', keyPath: 'data.sensor' }
   ]);
   assert.equal(map.sensor, undefined);
 });
@@ -79,7 +79,7 @@ test('dedupeCandidates removes duplicates by field|value|method|keyPath', () => 
 test('collectContributionFields identifies llm and component fields', () => {
   const result = collectContributionFields({
     fieldOrder: ['sensor', 'dpi', 'weight'],
-    normalized: { fields: { sensor: 'Focus Pro', dpi: '35000', weight: 'unk' } },
+    normalized: { fields: { sensor: 'Focus Pro', dpi: '35000', weight: null } },
     provenance: {
       sensor: { evidence: [{ method: 'llm_extract' }] },
       dpi: { evidence: [{ method: 'component_db' }] },

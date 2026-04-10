@@ -24,4 +24,15 @@ describe('buildLlmCallDeps', () => {
     // Just verify it's a function — calling it would require full config
     assert.equal(deps.callRoutedLlmFn.name, 'callLlmWithRouting');
   });
+
+  it('threads onModelResolved through to returned deps', () => {
+    const cb = () => {};
+    const deps = buildLlmCallDeps({ config: {}, logger: null, onModelResolved: cb });
+    assert.equal(deps.onModelResolved, cb);
+  });
+
+  it('onModelResolved defaults to undefined when not provided', () => {
+    const deps = buildLlmCallDeps({ config: {}, logger: null });
+    assert.equal(deps.onModelResolved, undefined);
+  });
 });

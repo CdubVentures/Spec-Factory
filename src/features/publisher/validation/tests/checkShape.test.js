@@ -7,7 +7,7 @@ describe('checkShape — scalar', () => {
     ['black',  'string is scalar'],
     [42,       'number is scalar'],
     [true,     'boolean is scalar'],
-    ['unk',    'unk string is scalar'],
+    [null,     'null is valid scalar (absence)'],
     [0,        'zero is scalar'],
     ['',       'empty string is scalar'],
     [false,    'false is scalar'],
@@ -23,7 +23,6 @@ describe('checkShape — scalar', () => {
   const fail = [
     [['a'],     'array where scalar expected'],
     [{ a: 1 },  'object where scalar expected'],
-    [null,       'null is not a valid scalar'],
     [undefined,  'undefined is not a valid scalar'],
   ];
 

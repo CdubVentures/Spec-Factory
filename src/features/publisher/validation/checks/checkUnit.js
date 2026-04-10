@@ -21,8 +21,8 @@ export function checkUnit(value, expectedUnit, appDb) {
     return { pass: true, value };
   }
 
-  if (value === 'unk') {
-    return { pass: true, value: 'unk' };
+  if (value === null) {
+    return { pass: true, value: null };
   }
 
   if (typeof value === 'number') {

@@ -10,6 +10,8 @@
  * Type-driven: routes by contract.type, not parse.template.
  */
 
+import { shouldBlockUnkPublish } from '../features/publisher/validation/shouldBlockUnkPublish.js';
+
 /**
  * @param {string} fieldKey
  * @param {object} fieldRule
@@ -36,8 +38,8 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
   const enumPolicy = knownValues?.policy || e?.policy;
   const enumValues = knownValues?.values;
   const formatHint = e?.match?.format_hint || null;
-  const blockPublishWhenUnk = pri?.block_publish_when_unk || false;
-  const unknownToken = c.unknown_token || 'unk';
+  const blockPublishWhenUnk = shouldBlockUnkPublish(fieldRule);
+  const unknownToken = null;
   const allowNewComponents = comp?.allow_new_components || false;
   const tokenMap = p.token_map;
 
@@ -96,11 +98,6 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
   // enum.match.format_hint
   if (formatHint && type === 'string' && shape === 'scalar') {
     rejects.push({ value: '!!!INVALID_FORMAT!!!', expectedCode: 'format_mismatch', description: `does not match format_hint: ${formatHint}` });
-  }
-
-  // contract.list_rules.min_items
-  if (shape === 'list' && listRules?.min_items && listRules.min_items > 0) {
-    rejects.push({ value: [], expectedCode: 'min_items_violation', description: `empty list below min_items=${listRules.min_items}` });
   }
 
   // enum.policy — closed
@@ -183,15 +180,6 @@ export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) 
     const sorted = [...items].sort();
     const reversed = [...sorted].reverse();
     repairs.push({ value: reversed, expectedRepair: sorted, knob: 'sort_alpha', description: 'sorts list alphabetically' });
-  }
-
-  // contract.list_rules.max_items
-  if (shape === 'list' && listRules?.max_items) {
-    const maxN = listRules.max_items;
-    const overSize = generateUniqueListItems(type, shape, maxN + 5);
-    if (overSize) {
-      repairs.push({ value: overSize, expectedRepair: overSize.slice(0, maxN), knob: 'max_items', description: `truncates to max_items=${maxN}` });
-    }
   }
 
   // parse.token_map

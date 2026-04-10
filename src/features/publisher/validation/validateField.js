@@ -8,6 +8,7 @@ import { enforceListRules } from './checks/enforceListRules.js';
 import { applyRounding } from './checks/applyRounding.js';
 import { checkEnum } from './checks/checkEnum.js';
 import { checkRange } from './checks/checkRange.js';
+import { shouldBlockUnkPublish } from './shouldBlockUnkPublish.js';
 /**
  * Single-field validation pipeline. Composes all per-field checks in order.
  * Pure function — no DB, no LLM, no side effects.
@@ -20,7 +21,7 @@ import { checkRange } from './checks/checkRange.js';
  */
 export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb, consistencyMode, appDb }) {
   if (!fieldRule) {
-    return result('unk', null, [], [], null, null);
+    return result(null, null, [], [], null, null);
   }
 
   const shape = fieldRule?.contract?.shape || 'scalar';
@@ -35,8 +36,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   // trigger P2 LLM prompt for vocabulary normalization. No new LLM calls — existing P2 flow.
   if (consistencyMode && enumPolicy === 'open' && enumValues?.length > 0) enumPolicy = 'open_prefer_known';
   const formatHint = fieldRule?.enum?.match?.format_hint || null;
-  const blockPublishWhenUnk = fieldRule?.priority?.block_publish_when_unk || false;
-  const unknownToken = fieldRule?.contract?.unknown_token || 'unk';
+  const blockPublishWhenUnk = shouldBlockUnkPublish(fieldRule);
 
   const repairs = [];
   const rejections = [];
@@ -119,13 +119,13 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   // self-healing works (e.g. ['Black','White'] → ['black','white']).
   if (shape === 'list' && Array.isArray(current)) {
     const normalized = current.map(el =>
-      typeof el === 'string' && el !== 'unk' ? normalizeValue(el, fieldRule) : el
+      typeof el === 'string' ? normalizeValue(el, fieldRule) : el
     );
     if (JSON.stringify(normalized) !== JSON.stringify(current)) {
       repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
       current = normalized;
     }
-  } else if (typeof current === 'string' && current !== 'unk') {
+  } else if (typeof current === 'string') {
     const normalized = normalizeValue(current, fieldRule);
     if (normalized !== current) {
       repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
@@ -143,11 +143,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   if (shape === 'list' && Array.isArray(current) && listRules) {
     const listResult = enforceListRules(current, listRules);
     for (const rep of listResult.repairs) {
-      if (rep.reject) {
-        rejections.push({ reason_code: 'min_items_violation', detail: { have: rep.have, need: rep.need } });
-      } else {
-        repairs.push({ step: 'list_rules', before: current, after: listResult.values, rule: rep.rule });
-      }
+      repairs.push({ step: 'list_rules', before: current, after: listResult.values, rule: rep.rule });
     }
     current = listResult.values;
   }
@@ -184,8 +180,8 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
   }
 
-  // Step 10: Publish gate — reject unk values for fields that block publishing
-  if (blockPublishWhenUnk && current === unknownToken) {
+  // Step 10: Publish gate — reject absent values for fields that block publishing
+  if (blockPublishWhenUnk && current === null) {
     rejections.push({ reason_code: 'unk_blocks_publish', detail: { value: current, field: fieldKey } });
   }
 

@@ -16,7 +16,8 @@ export function toUnitRatio(v) {
 }
 
 export function hasKnownValue(v) {
-  const token = String(v ?? '').trim().toLowerCase();
+  if (v == null) return false;
+  const token = String(v).trim().toLowerCase();
   return !UNKNOWN_VALUE_TOKENS.has(token);
 }
 
@@ -108,7 +109,7 @@ export function countMapValuesAbove(mapRef, threshold = 1) {
 
 // WHY: SSOT for unknown-value tokens. Every hasKnownValue call site in the
 // codebase must agree on this set. Frontend mirror: tools/gui-react/src/utils/constants.ts UNKNOWN_VALUES
-export const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);
+export const UNKNOWN_VALUE_TOKENS = new Set(['', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);
 
 export function addTokensFromText(set, value) {
   for (const token of String(value || '').toLowerCase().split(/[^a-z0-9]+/g)) {

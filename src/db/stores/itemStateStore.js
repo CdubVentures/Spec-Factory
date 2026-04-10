@@ -203,7 +203,7 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
         WHERE category = ?
           AND field_key = ?
           AND value IS NOT NULL
-          AND LOWER(TRIM(value)) NOT IN ('', 'unk', 'n/a', 'na')
+          AND LOWER(TRIM(value)) NOT IN ('', 'n/a', 'na')
         GROUP BY value
         ORDER BY product_count DESC, value ASC
       `)

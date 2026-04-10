@@ -461,7 +461,7 @@ export class SpecDb {
     const violations = [];
     const compliant = [];
     // Inline quick variance check (mirrors varianceEvaluator logic, avoids circular import)
-    const skipVals = new Set(['', 'unk', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
+    const skipVals = new Set(['', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
     const parseNum = (v) => {
       if (v == null) return NaN;
       const s = String(v).trim().replace(/,/g, '').replace(/\s+/g, '');
@@ -606,7 +606,7 @@ export class SpecDb {
     const leftVal = resolve(parsed.left);
     const rightVal = resolve(parsed.right);
     if (leftVal === undefined || rightVal === undefined) return null;
-    const skipSet = new Set(['unk', 'unknown', 'n/a', '']);
+    const skipSet = new Set(['unknown', 'n/a', '']);
     if (skipSet.has(String(leftVal).toLowerCase().trim()) || skipSet.has(String(rightVal).toLowerCase().trim())) return null;
 
     const toNum = (v) => { const n = Number(String(v).trim().replace(/,/g, '')); return Number.isFinite(n) ? n : null; };

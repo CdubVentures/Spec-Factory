@@ -145,13 +145,10 @@ test('studio priority derives component-source and list priority from ranked mat
   );
 });
 
-test('studio priority normalizes ai assist config and preserves current ai derivation thresholds', async () => {
-  const {
-    normalizeAiAssistConfig,
-    deriveAiModeFromPriority,
-    deriveAiCallsFromEffort,
-  } = await loadStudioPriority();
+test('normalizeAiAssistConfig returns only reasoning_note after knob retirement', async () => {
+  const { normalizeAiAssistConfig } = await loadStudioPriority();
 
+  // Retired fields are ignored; only reasoning_note survives
   assert.deepEqual(
     normalizeAiAssistConfig({
       mode: ' Planner ',
@@ -160,69 +157,28 @@ test('studio priority normalizes ai assist config and preserves current ai deriv
       max_tokens: 42,
       reasoning_note: 5,
     }),
-    {
-      mode: 'planner',
-      model_strategy: 'force_deep',
-      max_calls: 10,
-      max_tokens: 256,
-      reasoning_note: '5',
-    },
+    { reasoning_note: '5' },
   );
 
   assert.deepEqual(
-    normalizeAiAssistConfig({
-      mode: 'invalid',
-      model_strategy: 'unknown',
-      max_calls: '',
-      max_tokens: null,
-    }),
-    {
-      mode: null,
-      model_strategy: 'auto',
-      max_calls: null,
-      max_tokens: null,
-      reasoning_note: '',
-    },
+    normalizeAiAssistConfig({ mode: 'invalid', model_strategy: 'unknown' }),
+    { reasoning_note: '' },
   );
+});
 
-  assert.equal(
-    deriveAiModeFromPriority({
-      required_level: 'identity',
-      availability: 'always',
-      difficulty: 'easy',
-      effort: 1,
-    }),
-    'judge',
-  );
-  assert.equal(
-    deriveAiModeFromPriority({
-      required_level: 'expected',
-      availability: 'expected',
-      difficulty: 'hard',
-      effort: 5,
-    }),
-    'planner',
-  );
-  assert.equal(
-    deriveAiModeFromPriority({
-      required_level: 'expected',
-      availability: 'expected',
-      difficulty: 'medium',
-      effort: 5,
-    }),
-    'advisory',
-  );
-  assert.equal(
-    deriveAiModeFromPriority({
-      required_level: 'optional',
-      availability: 'rare',
-      difficulty: 'easy',
-      effort: 1,
-    }),
-    'off',
-  );
+test('normalizeAiAssistConfig boundary characterization', async () => {
+  const { normalizeAiAssistConfig } = await loadStudioPriority();
 
-  assert.equal(deriveAiCallsFromEffort(3), 1);
-  assert.equal(deriveAiCallsFromEffort(6), 2);
-  assert.equal(deriveAiCallsFromEffort(7), 3);
+  const cases = [
+    { label: 'undefined', input: undefined, expected: { reasoning_note: '' } },
+    { label: 'null', input: null, expected: { reasoning_note: '' } },
+    { label: 'empty object', input: {}, expected: { reasoning_note: '' } },
+    { label: 'reasoning_note: string', input: { reasoning_note: 'test' }, expected: { reasoning_note: 'test' } },
+    { label: 'reasoning_note: number coercion', input: { reasoning_note: 42 }, expected: { reasoning_note: '42' } },
+    { label: 'retired fields ignored', input: { mode: 'judge', max_calls: 5, reasoning_note: 'keep' }, expected: { reasoning_note: 'keep' } },
+  ];
+
+  for (const { label, input, expected } of cases) {
+    assert.deepEqual(normalizeAiAssistConfig(input), expected, label);
+  }
 });

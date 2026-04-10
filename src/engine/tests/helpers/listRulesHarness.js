@@ -67,7 +67,7 @@ export async function createListRulesHarness() {
         contract: {
           type: 'string',
           shape: 'list',
-          list_rules: { dedupe: true, sort: 'none', min_items: 0, max_items: 100 }
+          list_rules: { dedupe: true, sort: 'none' }
         },
         evidence: { required: false }
       },
@@ -78,7 +78,7 @@ export async function createListRulesHarness() {
         contract: {
           type: 'string',
           shape: 'list',
-          list_rules: { dedupe: true, sort: 'asc', min_items: 0, max_items: 5 }
+          list_rules: { dedupe: true, sort: 'asc' }
         },
         evidence: { required: false }
       },
@@ -89,7 +89,7 @@ export async function createListRulesHarness() {
         contract: {
           type: 'number',
           shape: 'list',
-          list_rules: { dedupe: true, sort: 'desc', min_items: 2, max_items: 10 }
+          list_rules: { dedupe: true, sort: 'desc' }
         },
         evidence: { required: false }
       },
@@ -100,7 +100,78 @@ export async function createListRulesHarness() {
         contract: {
           type: 'string',
           shape: 'list',
-          list_rules: { dedupe: false, sort: 'none', min_items: 0, max_items: 100 }
+          list_rules: { dedupe: false, sort: 'none' }
+        },
+        evidence: { required: false }
+      },
+      weight: {
+        required_level: 'required',
+        difficulty: 'easy',
+        availability: 'always',
+        contract: {
+          type: 'number',
+          shape: 'scalar',
+          unit: 'g',
+          range: { min: 30, max: 200 }
+        },
+        evidence: { required: false }
+      }
+    },
+    uiFields: [
+      { key: 'colors', group: 'physical' },
+      { key: 'features', group: 'features' },
+      { key: 'sizes', group: 'physical' },
+      { key: 'tags', group: 'meta' },
+      { key: 'weight', group: 'physical' }
+    ]
+  });
+}
+
+export async function createListRulesNoLimitsHarness() {
+  return createHarness({
+    tempPrefix: 'list-rules-nolimits-',
+    fields: {
+      colors: {
+        required_level: 'expected',
+        difficulty: 'easy',
+        availability: 'always',
+        contract: {
+          type: 'string',
+          shape: 'list',
+          list_rules: { dedupe: true, sort: 'none' }
+        },
+        evidence: { required: false }
+      },
+      features: {
+        required_level: 'expected',
+        difficulty: 'easy',
+        availability: 'always',
+        contract: {
+          type: 'string',
+          shape: 'list',
+          list_rules: { dedupe: true, sort: 'asc' }
+        },
+        evidence: { required: false }
+      },
+      sizes: {
+        required_level: 'expected',
+        difficulty: 'easy',
+        availability: 'always',
+        contract: {
+          type: 'number',
+          shape: 'list',
+          list_rules: { dedupe: true, sort: 'desc' }
+        },
+        evidence: { required: false }
+      },
+      tags: {
+        required_level: 'optional',
+        difficulty: 'easy',
+        availability: 'always',
+        contract: {
+          type: 'string',
+          shape: 'list',
+          list_rules: { dedupe: false, sort: 'none' }
         },
         evidence: { required: false }
       },

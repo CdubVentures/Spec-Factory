@@ -20,8 +20,8 @@ const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
 // Real field rules for colors — from category_authority/mouse/_generated/field_rules.json
 const REAL_COLORS_FIELD_RULE = {
   contract: {
-    shape: 'list', type: 'string', unknown_token: 'unk',
-    list_rules: { dedupe: true, item_union: 'set_union', max_items: 100, min_items: 0, sort: 'none' },
+    shape: 'list', type: 'string',
+    list_rules: { dedupe: true, item_union: 'set_union', sort: 'none' },
   },
   parse: {
     template: 'list_of_tokens_delimited',
@@ -36,7 +36,6 @@ const REAL_COLORS_FIELD_RULE = {
     },
   },
   enum: { policy: 'closed', match: { strategy: 'exact' }, source: 'data_lists.colors' },
-  priority: { block_publish_when_unk: false },
 };
 
 // Real known_values for colors — subset of actual registered colors
@@ -62,7 +61,7 @@ function makeLlmStub(response) {
 }
 
 const REAL_EDITIONS_FIELD_RULE = {
-  contract: { shape: 'record', type: 'string', unknown_token: 'unk' },
+  contract: { shape: 'record', type: 'string' },
   parse: { template: null },
   enum: { policy: 'open', match: { strategy: 'exact' } },
   priority: {},

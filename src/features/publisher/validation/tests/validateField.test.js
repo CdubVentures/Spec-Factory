@@ -49,10 +49,10 @@ describe('validateField — string', () => {
     assert.equal(r.value, 'gray');
   });
 
-  it('null → unk via absence normalization', () => {
+  it('null → null via absence normalization', () => {
     const r = validateField({ fieldKey: 'model', value: null, fieldRule: textRule });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
   it('number auto-coerced to string', () => {
@@ -114,16 +114,16 @@ describe('validateField — number', () => {
     assert.ok(r.rejections.some(rej => rej.reason_code.includes('range')));
   });
 
-  it('unk passthrough for number field', () => {
+  it('unk token → null for number field', () => {
     const r = validateField({ fieldKey: 'weight', value: 'unk', fieldRule: numRule });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
-  it('null → unk for number field', () => {
+  it('null → null for number field', () => {
     const r = validateField({ fieldKey: 'weight', value: null, fieldRule: numRule });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 });
 
@@ -146,16 +146,16 @@ describe('validateField — boolean', () => {
     assert.equal(r.value, 'no');
   });
 
-  it('"unk" passthrough', () => {
+  it('"unk" → null (absence normalized)', () => {
     const r = validateField({ fieldKey: 'wireless', value: 'unk', fieldRule: boolRule });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
-  it('null → unk', () => {
+  it('null → null', () => {
     const r = validateField({ fieldKey: 'wireless', value: null, fieldRule: boolRule });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 });
 
@@ -164,7 +164,7 @@ describe('validateField — boolean', () => {
 // ============================================================
 
 describe('validateField — string list', () => {
-  const listRule = rule({ shape: 'list', listRules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 } });
+  const listRule = rule({ shape: 'list', listRules: { dedupe: true, sort: 'none' } });
   const knownColors = { policy: 'closed', values: ['black', 'white', 'red'] };
 
   it('array of strings + enum pass', () => {
@@ -259,60 +259,60 @@ describe('validateField — open_prefer_known (alias resolution)', () => {
 });
 
 // ============================================================
-// block_publish_when_unk + unknown_token
+// publish gate (derived from required_level)
 // ============================================================
 
-describe('validateField — block_publish_when_unk', () => {
-  it('unk value rejected when block_publish_when_unk is true', () => {
+describe('validateField — publish gate (derived from required_level)', () => {
+  it('unk value rejected when required_level is identity', () => {
     const r = validateField({
       fieldKey: 'weight',
       value: null,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { block_publish_when_unk: true },
+        priority: { required_level: 'identity' },
       },
     });
     assert.equal(r.valid, false);
     assert.ok(r.rejections.some(rej => rej.reason_code === 'unk_blocks_publish'));
   });
 
-  it('unk value passes when block_publish_when_unk is false', () => {
+  it('null value passes when required_level is optional', () => {
     const r = validateField({
       fieldKey: 'weight',
       value: null,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { block_publish_when_unk: false },
+        priority: { required_level: 'optional' },
       },
     });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
-  it('non-unk value passes regardless of block flag', () => {
+  it('non-unk value passes regardless of required_level', () => {
     const r = validateField({
       fieldKey: 'weight',
       value: 42,
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { block_publish_when_unk: true },
+        priority: { required_level: 'identity' },
       },
     });
     assert.equal(r.valid, true);
     assert.equal(r.value, 42);
   });
 
-  it('unk-token input (n/a) normalized to unk → blocked', () => {
+  it('absence token (n/a) normalized to null → blocked for required fields', () => {
     const r = validateField({
       fieldKey: 'color',
       value: 'n/a',
       fieldRule: {
         contract: { shape: 'scalar', type: 'string' },
         parse: {},
-        priority: { block_publish_when_unk: true },
+        priority: { required_level: 'required' },
       },
     });
     assert.equal(r.valid, false);
@@ -325,10 +325,10 @@ describe('validateField — block_publish_when_unk', () => {
 // ============================================================
 
 describe('validateField — edge cases', () => {
-  it('null fieldRule → unk', () => {
+  it('null fieldRule → null', () => {
     const r = validateField({ fieldKey: 'x', value: 'hello', fieldRule: null });
     assert.equal(r.valid, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
   it('empty fieldRule → graceful defaults', () => {
@@ -399,8 +399,8 @@ describe('validateField — consistencyMode', () => {
     assert.equal(r.valid, true);
   });
 
-  it('mode ON + open policy + unk → valid (unk passthrough)', () => {
-    const r = validateField({ fieldKey: 'x', value: 'unk', fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv, consistencyMode: true });
+  it('mode ON + open policy + null (absence) → valid (null passthrough)', () => {
+    const r = validateField({ fieldKey: 'x', value: null, fieldRule: rule({ enumPolicy: 'open' }), knownValues: kv, consistencyMode: true });
     assert.equal(r.valid, true);
   });
 

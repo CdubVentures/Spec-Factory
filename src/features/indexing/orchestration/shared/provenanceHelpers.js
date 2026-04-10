@@ -14,7 +14,7 @@ export function createEmptyProvenance(fieldOrder, fields) {
   return output;
 }
 
-export function ensureProvenanceField(provenance, field, fallbackValue = 'unk') {
+export function ensureProvenanceField(provenance, field, fallbackValue = null) {
   if (!provenance[field]) {
     provenance[field] = {
       value: fallbackValue,

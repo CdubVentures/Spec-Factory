@@ -25,11 +25,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
         rounding_decimals: 2,
         round: 2,
         rounding_mode: 'floor',
-        priority: {
-          publish_gate: true,
-          block_publish_when_unk: true,
-        },
-        publish_gate: true,
         parse: {
           unit: 'g',
         },
@@ -46,19 +41,14 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
   assert.equal(rule.rounding_decimals, 2, 'hydrate should preserve legacy rounding_decimals alias');
   assert.equal(rule.round, 2, 'hydrate should preserve legacy round alias');
   assert.equal(rule.rounding_mode, 'floor', 'hydrate should preserve legacy rounding_mode alias');
-  assert.equal(rule.priority?.publish_gate, true, 'hydrate should preserve priority.publish_gate');
-  assert.equal(rule.publish_gate, true, 'hydrate should preserve legacy publish_gate alias');
   assert.equal(rule.parse?.unit, 'g', 'hydrate should preserve parse.unit');
-  assert.equal(rule.priority?.block_publish_when_unk, true, 'hydrate should preserve wired publish blocker');
 
-  useFieldRulesStore.getState().updateField('weight', 'priority.publish_gate', true);
   useFieldRulesStore.getState().updateField('weight', 'parse.unit', 'lb');
   useFieldRulesStore.getState().updateField('weight', 'contract.rounding.mode', 'ceil');
 
   snap = useFieldRulesStore.getState().getSnapshot();
   rule = snap.rules.weight;
 
-  assert.equal(rule.priority?.publish_gate, true, 'updateField should preserve priority.publish_gate');
   assert.equal(rule.parse?.unit, 'lb', 'updateField should preserve parse.unit updates');
   assert.equal(rule.contract?.rounding?.mode, 'ceil', 'updateField should preserve contract.rounding.mode updates');
 
@@ -72,10 +62,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
           mode: 'nearest',
         },
       },
-      priority: {
-        publish_gate: true,
-      },
-      publish_gate: true,
       parse: {
         unit: 'l/s',
       },
@@ -88,8 +74,6 @@ test('field rules store preserves non-indexlab knobs through hydrate, update, an
 
   assert.equal(rule.contract?.rounding?.decimals, 1, 'addKey should preserve contract.rounding.decimals');
   assert.equal(rule.contract?.rounding?.mode, 'nearest', 'addKey should preserve contract.rounding.mode');
-  assert.equal(rule.priority?.publish_gate, true, 'addKey should preserve priority.publish_gate');
-  assert.equal(rule.publish_gate, true, 'addKey should preserve legacy publish_gate alias');
   assert.equal(rule.parse?.unit, 'l/s', 'addKey should preserve parse.unit');
   assert.equal(rule.parse?.unit, 'l/s', 'addKey should preserve parse.unit after addKey');
 });

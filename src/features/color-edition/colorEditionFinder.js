@@ -105,6 +105,7 @@ export async function runColorEditionFinder({
   productRoot,
   _callLlmOverride = null,
   onStageAdvance = null,
+  onModelResolved = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
   const resolvedModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
@@ -126,6 +127,7 @@ export async function runColorEditionFinder({
       onPhaseChange: onStageAdvance ? (phase) => {
         if (phase === 'writer') onStageAdvance('Writer');
       } : undefined,
+      onModelResolved,
     }));
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles

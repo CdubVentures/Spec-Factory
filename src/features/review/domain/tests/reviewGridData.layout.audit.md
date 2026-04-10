@@ -8,7 +8,7 @@ Disposition:
 | --- | --- | --- | --- | --- |
 | `buildReviewLayout follows field-studio row order and inherits blank group labels` | KEEP | Protects layout ordering and group-label inheritance. | `reviewGridData.layoutOrdering.test.js` | Preserved |
 | `buildReviewLayout strips review-disabled rule paths before deriving field_rule metadata` | KEEP | Protects review consumer-gate stripping in layout metadata. | `reviewGridData.layoutConsumerGate.test.js` | Preserved |
-| `buildReviewLayout ignores parse.unit and priority.publish_gate when deriving review field metadata - characterization (GAP-9)` | RETIRE | It only pinned what the layout builder currently ignores from field rules. That is implementation detail, not a review contract. | `reviewGridData.layoutOrdering.test.js`, `reviewGridData.layoutConsumerGate.test.js` | Deleted |
+| `buildReviewLayout ignores parse.unit and priority.publish_gate when deriving review field metadata - characterization (GAP-9)` | RETIRE | It only pinned what the layout builder currently ignores from field rules. That is implementation detail, not a review contract. Note: `priority.publish_gate` fully retired 2026-04-10 — now derived from `required_level`. | `reviewGridData.layoutOrdering.test.js`, `reviewGridData.layoutConsumerGate.test.js` | Deleted |
 
 Proof log:
 

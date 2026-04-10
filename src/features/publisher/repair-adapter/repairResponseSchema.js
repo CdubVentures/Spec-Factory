@@ -56,7 +56,7 @@ export function applyRepairDecisions({ decisions, currentValue, shape }) {
 
   for (const dec of decisions) {
     if (dec.decision === 'reject' || dec.decision === 'set_unk') {
-      applied.push({ ...dec, resolvedValue: 'unk' });
+      applied.push({ ...dec, resolvedValue: null });
       continue;
     }
 

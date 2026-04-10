@@ -81,7 +81,7 @@ export function buildCandidateFieldMap(fieldCandidates) {
   const map = {};
   const scoreByField = {};
   for (const row of fieldCandidates || []) {
-    if (String(row.value || '').trim().toLowerCase() === 'unk') {
+    if (row.value == null) {
       continue;
     }
     const score = candidateScore(row);

@@ -17,7 +17,7 @@ test('valueToken normalizes scalars and objects', () => {
 });
 
 test('hasKnownValue rejects unknowns', () => {
-  const unknowns = [null, undefined, '', 'unk', 'unknown', 'n/a', 'null', 'UNK', 'Unknown', 'N/A'];
+  const unknowns = [null, undefined, '', 'unknown', 'n/a', 'null', 'Unknown', 'N/A'];
   for (const value of unknowns) {
     assert.equal(hasKnownValue(value), false, `hasKnownValue(${JSON.stringify(value)}) should be false`);
   }

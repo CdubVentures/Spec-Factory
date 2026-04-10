@@ -1,10 +1,8 @@
 import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
-  clampNumber,
   parseBoundedIntInput,
   parseIntegerInput,
-  parseOptionalPositiveIntInput,
 } from '../state/numericInputHelpers.ts';
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
@@ -68,13 +66,6 @@ export function ContractTab({
     return Number.isFinite(parsed) ? parsed : undefined;
   };
 
-  const parseListRuleCount = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const parsed = parseIntegerInput(trimmed);
-    if (parsed === null) return undefined;
-    return Math.max(0, parsed);
-  };
 
   return (
     <div className="space-y-3">
@@ -160,32 +151,6 @@ export function ContractTab({
               <option value="asc">asc</option>
               <option value="desc">desc</option>
             </select>
-          </div>
-          <div>
-            <div className={labelCls}>Min Items<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_min_items} /></div>
-            <input
-              className={`${inputCls} w-full`}
-              type="number"
-              min={0}
-              step={1}
-              value={strN(rule, 'contract.list_rules.min_items')}
-              onChange={(e) => onUpdate('contract.list_rules.min_items', parseListRuleCount(e.target.value))}
-              placeholder="0"
-              disabled={!isListContract}
-            />
-          </div>
-          <div>
-            <div className={labelCls}>Max Items<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_max_items} /></div>
-            <input
-              className={`${inputCls} w-full`}
-              type="number"
-              min={0}
-              step={1}
-              value={strN(rule, 'contract.list_rules.max_items')}
-              onChange={(e) => onUpdate('contract.list_rules.max_items', parseListRuleCount(e.target.value))}
-              placeholder="100"
-              disabled={!isListContract}
-            />
           </div>
           <div className="col-span-2">
             <div className={labelCls}>Item Union<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_item_union} /></div>
@@ -284,203 +249,73 @@ export function ContractTab({
           />
         </div>
       </div>
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={boolN(rule, 'priority.publish_gate', boolN(rule, 'publish_gate'))} onChange={(e) => onUpdate('priority.publish_gate', e.target.checked)} className="rounded sf-border-soft" />
-          Publish Gate<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.publish_gate} />
-          <B p="priority.publish_gate" />
-        </label>
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input type="checkbox" checked={boolN(rule, 'priority.block_publish_when_unk', boolN(rule, 'block_publish_when_unk'))} onChange={(e) => onUpdate('priority.block_publish_when_unk', e.target.checked)} className="rounded sf-border-soft" />
-          Block when unk<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.block_publish_when_unk} />
-          <B p="priority.block_publish_when_unk" />
-        </label>
-      </div>
 
-      <h4 className={SECTION_HEADING_CLASS}>AI Assist</h4>
+      <h4 className={SECTION_HEADING_CLASS}>Extraction Guidance</h4>
       {(() => {
-        const explicitMode = strN(rule, 'ai_assist.mode');
-        const strategy = strN(rule, 'ai_assist.model_strategy', 'auto');
-        const explicitCalls = numN(rule, 'ai_assist.max_calls', 0);
         const rl = strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'));
         const diff = strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'));
-        const effort = numN(rule, 'priority.effort', numN(rule, 'effort', 3));
+        const explicitNote = strN(rule, 'ai_assist.reasoning_note');
+        const type = strN(rule, 'contract.data_type', strN(rule, 'data_type', 'string'));
+        const shape = strN(rule, 'contract.shape', strN(rule, 'shape', 'scalar'));
+        const unit = strN(rule, 'contract.unit', strN(rule, 'unit'));
+        const enumPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
+        const enumSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
+        const minRefs = numN(
+          rule,
+          'evidence.min_evidence_refs',
+          numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
+        );
+        const componentType = strN(rule, 'component.type', strN(rule, 'component_type'));
 
-        let derivedMode = 'off';
-        if (['identity', 'required', 'critical'].includes(rl)) derivedMode = 'judge';
-        else if (rl === 'expected' && diff === 'hard') derivedMode = 'planner';
-        else if (rl === 'expected') derivedMode = 'advisory';
-        const effectiveMode = explicitMode || derivedMode;
-
-        const derivedCalls = effort <= 3 ? 1 : effort <= 6 ? 2 : 3;
-        const effectiveCalls = explicitCalls > 0 ? Math.min(explicitCalls, 10) : derivedCalls;
-
-        const modeToModel = {
-          off: { model: 'none', reasoning: false },
-          advisory: { model: 'gpt-5-low', reasoning: false },
-          planner: { model: 'gpt-5-low -> gpt-5.2-high', reasoning: false },
-          judge: { model: 'gpt-5.2-high', reasoning: true },
-        };
-        let effectiveModel = modeToModel[effectiveMode as keyof typeof modeToModel] || modeToModel.off;
-        if (strategy === 'force_fast') effectiveModel = { model: 'gpt-5-low (forced)', reasoning: false };
-        else if (strategy === 'force_deep') effectiveModel = { model: 'gpt-5.2-high (forced)', reasoning: true };
+        const guidanceParts: string[] = [];
+        if (rl === 'identity') guidanceParts.push('Identity field - must exactly match the product.');
+        if (componentType) {
+          const ct = componentType || enumSource.replace('component_db.', '');
+          guidanceParts.push(`Component ref (${ct}). Match to known names/aliases.`);
+        }
+        if (type === 'boolean') {
+          guidanceParts.push('Boolean - determine yes or no from explicit evidence.');
+        } else if ((type === 'number' || type === 'integer') && unit) {
+          guidanceParts.push(`Numeric - extract exact value in ${unit}.`);
+        } else if (type === 'url') {
+          guidanceParts.push('URL - extract full, valid URL.');
+        } else if (type === 'date' || fieldKey.includes('date')) {
+          guidanceParts.push('Date - extract actual date from official sources.');
+        } else if (type === 'string' && !componentType) {
+          guidanceParts.push('Text - extract exact value as stated.');
+        }
+        if (shape === 'list') guidanceParts.push('Multiple values - extract all distinct.');
+        if (enumPolicy === 'closed' && enumSource) guidanceParts.push(`Closed enum - must match ${enumSource}.`);
+        if (diff === 'hard') guidanceParts.push('Often inconsistent - prefer manufacturer spec sheets.');
+        else if (diff === 'instrumented') guidanceParts.push('Lab-measured - only from independent tests.');
+        if (minRefs >= 2) guidanceParts.push(`Requires ${minRefs}+ independent refs.`);
+        if (rl === 'required' || rl === 'critical') guidanceParts.push('High-priority - blocked if unknown.');
+        if (guidanceParts.length === 0) guidanceParts.push('Extract from most authoritative source.');
+        const autoNote = guidanceParts.join(' ');
+        const hasExplicit = explicitNote.length > 0;
 
         return (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className={`${labelCls} flex items-center`}><span>Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_mode} /></span><B p="ai_assist.mode" /></div>
-                <select className={`${selectCls} w-full`} value={explicitMode} onChange={(e) => onUpdate('ai_assist.mode', e.target.value || null)}>
-                  <option value="">auto ({derivedMode})</option>
-                  <option value="off">off - no LLM</option>
-                  <option value="advisory">advisory - gpt-5-low</option>
-                  <option value="planner">planner - 5-low-&gt;5.2-high</option>
-                  <option value="judge">judge - gpt-5.2-high</option>
-                </select>
-              </div>
-              <div>
-                <div className={`${labelCls} flex items-center`}><span>Model Strategy<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_model_strategy} /></span><B p="ai_assist.model_strategy" /></div>
-                <select className={`${selectCls} w-full`} value={strategy} onChange={(e) => onUpdate('ai_assist.model_strategy', e.target.value)}>
-                  <option value="auto">auto - mode decides</option>
-                  <option value="force_fast">force_fast - gpt-5-low</option>
-                  <option value="force_deep">force_deep - gpt-5.2-high</option>
-                </select>
-              </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={labelCls.replace(' mb-1', '')}>Extraction Guidance<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_reasoning_note} /></span><B p="ai_assist.reasoning_note" />
+              {!hasExplicit && <span className={NEUTRAL_INLINE_BADGE_CLASS}>Auto</span>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className={`${labelCls} flex items-center`}><span>Max Calls<Tip text={STUDIO_TIPS.ai_max_calls} style={{ position: 'relative', left: '-3px', top: '-4px' }} /></span><B p="ai_assist.max_calls" /></div>
-                <input
-                  className={`${inputCls} w-full`}
-                  type="number"
-                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min}
-                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max}
-                  value={explicitCalls || ''}
-                  onChange={(e) => {
-                    const parsed = parseOptionalPositiveIntInput(e.target.value);
-                    onUpdate(
-                      'ai_assist.max_calls',
-                      parsed === null
-                        ? null
-                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max),
-                    );
-                  }}
-                  placeholder={`auto (${derivedCalls})`}
-                />
-              </div>
-              <div>
-                <div className={`${labelCls} flex items-center`}><span>Max Tokens<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_max_tokens} /></span><B p="ai_assist.max_tokens" /></div>
-                <input
-                  className={`${inputCls} w-full`}
-                  type="number"
-                  min={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min}
-                  max={STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max}
-                  step={1024}
-                  value={numN(rule, 'ai_assist.max_tokens', 0) || ''}
-                  onChange={(e) => {
-                    const parsed = parseOptionalPositiveIntInput(e.target.value);
-                    onUpdate(
-                      'ai_assist.max_tokens',
-                      parsed === null
-                        ? null
-                        : clampNumber(parsed, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min, STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max),
-                    );
-                  }}
-                  placeholder={`auto (${effectiveMode === 'off' ? '0' : effectiveMode === 'advisory' ? '4096' : effectiveMode === 'planner' ? '8192' : '16384'})`}
-                />
-              </div>
-            </div>
-
-            <div className={`text-[11px] ${INFO_SURFACE_CLASS} space-y-1`}>
-              <div className={EFFECTIVE_CONFIG_LABEL_CLASS}>Effective Config</div>
-              <div className="flex items-center gap-1.5">
-                <span className={MUTED_LABEL_W12_CLASS}>Mode:</span>
-                <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
-                  effectiveMode === 'judge' ? 'sf-llm-soft-badge'
-                  : effectiveMode === 'planner' ? 'sf-chip-info'
-                  : effectiveMode === 'advisory' ? 'sf-chip-success'
-                  : 'sf-chip-neutral'
-                }`}>{effectiveMode}</span>
-                {!explicitMode && <span className={MUTED_ITALIC_T10_CLASS}>({rl}{diff !== 'easy' ? `+${diff}` : ''})</span>}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={MUTED_LABEL_W12_CLASS}>Model:</span>
-                <span className="sf-text-muted font-mono text-[10px]">{effectiveModel.model}</span>
-                {effectiveModel.reasoning && <span className="text-[9px] px-1 rounded sf-chip-warning font-medium">REASONING</span>}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={MUTED_LABEL_W12_CLASS}>Budget:</span>
-                <span className="sf-text-muted">{effectiveMode === 'off' ? '0' : effectiveCalls} call{effectiveCalls !== 1 ? 's' : ''}</span>
-                {!explicitCalls && effectiveMode !== 'off' && <span className={MUTED_ITALIC_T10_CLASS}>(effort {effort})</span>}
-              </div>
-            </div>
-
-            {(() => {
-              const explicitNote = strN(rule, 'ai_assist.reasoning_note');
-              const type = strN(rule, 'contract.data_type', strN(rule, 'data_type', 'string'));
-              const shape = strN(rule, 'contract.shape', strN(rule, 'shape', 'scalar'));
-              const unit = strN(rule, 'contract.unit', strN(rule, 'unit'));
-              const enumPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
-              const enumSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
-              const minRefs = numN(
-                rule,
-                'evidence.min_evidence_refs',
-                numN(rule, 'min_evidence_refs', STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback),
-              );
-              const componentType = strN(rule, 'component.type', strN(rule, 'component_type'));
-
-              const guidanceParts: string[] = [];
-              if (rl === 'identity') guidanceParts.push('Identity field - must exactly match the product.');
-              if (componentType) {
-                const ct = componentType || enumSource.replace('component_db.', '');
-                guidanceParts.push(`Component ref (${ct}). Match to known names/aliases.`);
-              }
-              if (type === 'boolean') {
-                guidanceParts.push('Boolean - determine yes or no from explicit evidence.');
-              } else if ((type === 'number' || type === 'integer') && unit) {
-                guidanceParts.push(`Numeric - extract exact value in ${unit}.`);
-              } else if (type === 'url') {
-                guidanceParts.push('URL - extract full, valid URL.');
-              } else if (type === 'date' || fieldKey.includes('date')) {
-                guidanceParts.push('Date - extract actual date from official sources.');
-              } else if (type === 'string' && !componentType) {
-                guidanceParts.push('Text - extract exact value as stated.');
-              }
-              if (shape === 'list') guidanceParts.push('Multiple values - extract all distinct.');
-              if (enumPolicy === 'closed' && enumSource) guidanceParts.push(`Closed enum - must match ${enumSource}.`);
-              if (diff === 'hard') guidanceParts.push('Often inconsistent - prefer manufacturer spec sheets.');
-              else if (diff === 'instrumented') guidanceParts.push('Lab-measured - only from independent tests.');
-              if (minRefs >= 2) guidanceParts.push(`Requires ${minRefs}+ independent refs.`);
-              if (rl === 'required' || rl === 'critical') guidanceParts.push('High-priority - blocked if unknown.');
-              if (guidanceParts.length === 0) guidanceParts.push('Extract from most authoritative source.');
-              const autoNote = guidanceParts.join(' ');
-              const hasExplicit = explicitNote.length > 0;
-
-              return (
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={labelCls.replace(' mb-1', '')}>Extraction Guidance<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.ai_reasoning_note} /></span><B p="ai_assist.reasoning_note" />
-                    {!hasExplicit && <span className={NEUTRAL_INLINE_BADGE_CLASS}>Auto</span>}
-                  </div>
-                  <textarea
-                    className={`${inputCls} w-full`}
-                    rows={2}
-                    value={explicitNote}
-                    onChange={(e) => onUpdate('ai_assist.reasoning_note', e.target.value)}
-                    placeholder={`Auto: ${autoNote}`}
-                  />
-                  {hasExplicit && (
-                    <button
-                      className={SOFT_INFO_LINK_CLASS}
-                      onClick={() => onUpdate('ai_assist.reasoning_note', '')}
-                    >
-                      Clear &amp; revert to auto
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-          </>
+            <textarea
+              className={`${inputCls} w-full`}
+              rows={2}
+              value={explicitNote}
+              onChange={(e) => onUpdate('ai_assist.reasoning_note', e.target.value)}
+              placeholder={`Auto: ${autoNote}`}
+            />
+            {hasExplicit && (
+              <button
+                className={SOFT_INFO_LINK_CLASS}
+                onClick={() => onUpdate('ai_assist.reasoning_note', '')}
+              >
+                Clear &amp; revert to auto
+              </button>
+            )}
+          </div>
         );
       })()}
 

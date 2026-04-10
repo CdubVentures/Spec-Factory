@@ -4,25 +4,25 @@ import { normalizeAbsence } from '../absenceNormalizer.js';
 
 describe('normalizeAbsence — scalar', () => {
   const cases = [
-    [null,              'scalar', 'unk',    'null -> unk'],
-    [undefined,         'scalar', 'unk',    'undefined -> unk'],
-    ['',                'scalar', 'unk',    'empty string -> unk'],
-    ['N/A',             'scalar', 'unk',    'N/A -> unk'],
-    ['n/a',             'scalar', 'unk',    'n/a lowercase -> unk'],
-    ['unknown',         'scalar', 'unk',    'unknown -> unk'],
-    ['Unknown',         'scalar', 'unk',    'Unknown mixed case -> unk'],
-    ['unk',             'scalar', 'unk',    'unk token -> unk'],
-    ['tbd',             'scalar', 'unk',    'tbd -> unk'],
-    ['TBD',             'scalar', 'unk',    'TBD uppercase -> unk'],
-    ['tba',             'scalar', 'unk',    'tba -> unk'],
-    ['unspecified',     'scalar', 'unk',    'unspecified -> unk'],
-    ['-',               'scalar', 'unk',    'dash -> unk'],
-    ['\u2014',          'scalar', 'unk',    'em-dash -> unk'],
-    ['\u2013',          'scalar', 'unk',    'en-dash -> unk'],
-    ['not available',   'scalar', 'unk',    'not available -> unk'],
-    ['not applicable',  'scalar', 'unk',    'not applicable -> unk'],
-    ['  N/A  ',         'scalar', 'unk',    'padded N/A -> unk (trimmed)'],
-    ['  ',              'scalar', 'unk',    'whitespace only -> unk'],
+    [null,              'scalar', null,    'null -> null'],
+    [undefined,         'scalar', null,    'undefined -> null'],
+    ['',                'scalar', null,    'empty string -> null'],
+    ['N/A',             'scalar', null,    'N/A -> null'],
+    ['n/a',             'scalar', null,    'n/a lowercase -> null'],
+    ['unknown',         'scalar', null,    'unknown -> null'],
+    ['Unknown',         'scalar', null,    'Unknown mixed case -> null'],
+    ['unk',             'scalar', null,    'unk token -> null'],
+    ['tbd',             'scalar', null,    'tbd -> null'],
+    ['TBD',             'scalar', null,    'TBD uppercase -> null'],
+    ['tba',             'scalar', null,    'tba -> null'],
+    ['unspecified',     'scalar', null,    'unspecified -> null'],
+    ['-',               'scalar', null,    'dash -> null'],
+    ['\u2014',          'scalar', null,    'em-dash -> null'],
+    ['\u2013',          'scalar', null,    'en-dash -> null'],
+    ['not available',   'scalar', null,    'not available -> null'],
+    ['not applicable',  'scalar', null,    'not applicable -> null'],
+    ['  N/A  ',         'scalar', null,    'padded N/A -> null (trimmed)'],
+    ['  ',              'scalar', null,    'whitespace only -> null'],
   ];
 
   for (const [input, shape, expected, label] of cases) {
@@ -34,8 +34,8 @@ describe('normalizeAbsence — scalar', () => {
 
 describe('normalizeAbsence — scalar non-absence passthrough', () => {
   const cases = [
-    ['none',    'scalar', 'none',   '"none" is semantic, NOT unk'],
-    [0,         'scalar', 0,        'zero is valid, NOT unk'],
+    ['none',    'scalar', 'none',   '"none" is semantic, NOT absent'],
+    [0,         'scalar', 0,        'zero is valid, NOT absent'],
     [false,     'scalar', false,    'boolean false passes through'],
     ['black',   'scalar', 'black',  'normal string passes through'],
     [42,        'scalar', 42,       'number passes through'],
@@ -67,7 +67,7 @@ describe('normalizeAbsence — list', () => {
 });
 
 describe('normalizeAbsence — record shape retired', () => {
-  it('null + record falls through to scalar default (unk)', () => {
-    assert.strictEqual(normalizeAbsence(null, 'record'), 'unk');
+  it('null + record falls through to scalar default (null)', () => {
+    assert.strictEqual(normalizeAbsence(null, 'record'), null);
   });
 });

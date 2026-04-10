@@ -22,11 +22,11 @@ import { VALID_TYPES, VALID_SHAPES, validateTypeShapeCombo } from '../field-rule
 export function buildParseTemplateCatalog() {
   return {
     boolean_yes_no_unk: {
-      description: "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
+      description: "Parse yes/no/true/false/1/0 tokens. Output boolean or null.",
       tests: [
         { raw: 'Yes', expected: true },
         { raw: 'no', expected: false },
-        { raw: 'unk', expected: 'unk' }
+        { raw: 'unk', expected: null }
       ]
     },
     number_with_unit: {
@@ -138,16 +138,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     const resolvedNewValuePolicy = isObject(rule.new_value_policy)
       ? rule.new_value_policy
       : (isObject(enumObj.new_value_policy) ? enumObj.new_value_policy : null);
-    const resolvedPublishGate = (
-      typeof rule.publish_gate === 'boolean'
-        ? rule.publish_gate
-        : (typeof priority.publish_gate === 'boolean' ? priority.publish_gate : false)
-    );
-    const resolvedBlockPublishWhenUnk = (
-      typeof rule.block_publish_when_unk === 'boolean'
-        ? rule.block_publish_when_unk
-        : (typeof priority.block_publish_when_unk === 'boolean' ? priority.block_publish_when_unk : undefined)
-    );
     const resolvedMinEvidenceRefs = (
       rule.min_evidence_refs !== undefined
         ? asInt(rule.min_evidence_refs, 0)
@@ -271,9 +261,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
           errors.push(`field ${fieldKey}: new_value_policy.mark_needs_curation boolean required`);
         }
       }
-    }
-    if (resolvedPublishGate && typeof resolvedBlockPublishWhenUnk !== 'boolean') {
-      errors.push(`field ${fieldKey}: block_publish_when_unk boolean required when publish_gate=true`);
     }
     if (isObject(rule.selection_policy) && Object.keys(rule.selection_policy).length > 0) {
       const sourceField = normalizeFieldKey(rule.selection_policy.source_field || '');

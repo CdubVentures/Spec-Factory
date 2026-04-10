@@ -127,12 +127,6 @@ export function buildWorkbenchRows(
       ),
       tierPreference: arrN(r, 'evidence.tier_preference').join(', '),
 
-      publishGate: boolN(r, 'priority.publish_gate', boolN(r, 'publish_gate')),
-      blockPublishWhenUnk: boolN(r, 'priority.block_publish_when_unk', boolN(r, 'block_publish_when_unk')),
-
-      aiMode: strN(r, 'ai_assist.mode'),
-      aiModelStrategy: strN(r, 'ai_assist.model_strategy', 'auto'),
-      aiMaxCalls: numN(r, 'ai_assist.max_calls', 0),
       aiReasoningNote: strN(r, 'ai_assist.reasoning_note'),
 
       queryTermsCount: arrN(r, 'search_hints.query_terms').length,

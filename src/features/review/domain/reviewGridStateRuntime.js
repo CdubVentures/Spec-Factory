@@ -2,9 +2,10 @@ function normalizeLower(value) {
   return String(value ?? '').trim().toLowerCase();
 }
 
-const UNKNOWN_LIKE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'null', 'undefined', '-']);
+const UNKNOWN_LIKE_TOKENS = new Set(['', 'unknown', 'n/a', 'na', 'null', 'undefined', '-']);
 
 function isMeaningfulValue(value) {
+  if (value == null) return false;
   return !UNKNOWN_LIKE_TOKENS.has(normalizeLower(value));
 }
 

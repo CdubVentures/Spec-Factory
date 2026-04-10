@@ -17,7 +17,7 @@ test('P03 judge audits a complete product spec and reports summary counts', asyn
       fields: {
         weight: '54',
         sensor: 'Focus Pro 4K',
-        dpi: 'unk',
+        dpi: null,
         polling_rate: '4000',
       },
     },
@@ -40,7 +40,7 @@ test('P03 judge audits a complete product spec and reports summary counts', asyn
 test('P03 judge reports zero coverage when all fields are unknown', async () => {
   const storage = createMockStorage({
     'mouse/p1/final/spec.json': {
-      fields: { weight: 'unk', sensor: 'unk' },
+      fields: { weight: null, sensor: null },
     },
   });
   const result = await runQaJudge({ storage, config: {}, category: 'mouse', productId: 'p1' });

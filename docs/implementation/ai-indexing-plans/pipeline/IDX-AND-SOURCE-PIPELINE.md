@@ -12,7 +12,7 @@ This file remains in the preserved `docs/implementation/ai-indexing-plans/` subt
 - The old follow-up link `docs/category-source-authority-guide.md` was broken. The current maintained category/source authority doc is [../../../04-features/category-authority.md](../../../04-features/category-authority.md).
 - The earlier source inventory counts in this file were stale. Current `sources.json` counts are `keyboard=23`, `monitor=23`, `mouse=22`.
 - The host plan concept (`effectiveHostPlan`, `hostPlanQueryRows`, `buildEffectiveHostPlan`, `domainHintResolver`, `queryHostPlanScorer`) has been entirely deleted as of 2026-03-23. All historical references to host plan assembly in this file are obsolete.
-- `priority.block_publish_when_unk` remains live in publish-time behavior through `src/publish/publishingPipeline.js`.
+- `priority.block_publish_when_unk` has been **retired** (2026-04-10). Publish-gate blocking is now derived from `priority.required_level` (identity/required) via `shouldBlockUnkPublish()`. See `publish-gate-retirement-roadmap.md`.
 - Runtime Ops still derives IDX runtime badges from `src/features/indexing/runtime/idxRuntimeMetadata.js`.
 - LLM dashboard rows intentionally omit `input_summary` and `output_summary`, but runtime-ops worker/detail payloads still carry those fields. The old wording should not be read as a repo-wide telemetry removal.
 
@@ -26,7 +26,7 @@ This file remains in the preserved `docs/implementation/ai-indexing-plans/` subt
 | discovery pipeline | `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/sourceRegistry.js`, `src/features/indexing/search/queryBuilder.js` | the discovery path builds deterministic search profiles with tier-tagged query rows |
 | runtime bridge artifact propagation | `src/indexlab/runtimeBridge.js`, `src/features/indexing/api/builders/runtimeOpsPreFetchBuilders.js` | search-profile artifacts propagated into runtime-ops surfaces |
 | runtime badge generation | `src/features/indexing/api/runtimeOpsRoutes.js`, `src/features/indexing/runtime/idxRuntimeMetadata.js` | runtime surfaces still expose IDX usage badges by surface and worker pool |
-| publish-time field blockers | `src/publish/publishingPipeline.js` | `priority.block_publish_when_unk` still blocks publication when configured fields remain unknown |
+| publish-time field blockers | `src/features/publisher/validation/shouldBlockUnkPublish.js` | Derived from `priority.required_level` (identity/required). `block_publish_when_unk` flag retired 2026-04-10. |
 
 ## Current Source Inventory Snapshot
 
@@ -49,7 +49,7 @@ Representative high-value hosts still present in current source authority:
 | search-profile hints | `aliases`, `search_hints.query_terms`, `search_hints.domain_hints`, `search_hints.preferred_content_types`, `ui.tooltip_md` |
 | need/prioritization | `priority.required_level`, `evidence.min_evidence_refs` |
 | extraction/validation | `contract.*`, `priority.availability`, `priority.difficulty`, `priority.effort`, `ai_assist.*`, `parse.template`, `enum.*`, `evidence.*`, `constraints`, `component.type` |
-| publish-only gate | `priority.block_publish_when_unk` |
+| publish-only gate | Derived from `priority.required_level` (identity/required) — `block_publish_when_unk` flag retired |
 
 These surfaces are documented directly in `src/features/indexing/runtime/idxRuntimeMetadata.js` and enforced or exercised by the current runtime builders and publish pipeline.
 
@@ -72,7 +72,7 @@ The following should now be read as historical observations only:
 | source | `src/categories/loader.js` | category config still builds `sourceHostMap` and `validatedRegistry` |
 | source | `src/features/indexing/discovery/searchDiscovery.js` | discovery path and deterministic search profile generation |
 | source | `src/features/indexing/runtime/idxRuntimeMetadata.js` | current runtime IDX badge surface definitions |
-| source | `src/publish/publishingPipeline.js` | `block_publish_when_unk` publish-time behavior |
+| source | `src/features/publisher/validation/shouldBlockUnkPublish.js` | Publish gate derived from `required_level` (flag retired 2026-04-10) |
 
 ## Related Documents
 

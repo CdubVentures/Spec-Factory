@@ -226,13 +226,6 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
   if (out.effort === undefined && priority.effort !== undefined) {
     out.effort = asInt(priority.effort, asInt(baseRule.effort, 5));
   }
-  if (out.publish_gate === undefined && priority.publish_gate !== undefined) {
-    out.publish_gate = priority.publish_gate === true;
-  }
-  if (out.block_publish_when_unk === undefined && priority.block_publish_when_unk !== undefined) {
-    out.block_publish_when_unk = priority.block_publish_when_unk === true;
-  }
-
   const contractType = normalizeToken(contract.type);
   if (!normalizeText(out.type) && contractType) {
     out.type = contractType;
@@ -264,7 +257,8 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
     }
   }
   if (!isObject(out.list_rules) && isObject(contract.list_rules)) {
-    out.list_rules = { ...contract.list_rules };
+    const { min_items, max_items, ...restListRules } = contract.list_rules;
+    out.list_rules = { ...restListRules };
   }
   if (!isObject(out.object_schema) && isObject(contract.object_schema)) {
     out.object_schema = { ...contract.object_schema };
@@ -463,7 +457,7 @@ export function buildFieldRuleDraft({
     prefix: null,
     suffix: unit && unit !== 'none' ? unit : null,
     examples: [],
-    placeholder: 'unk',
+    placeholder: '',
     tooltip_key: normalizeText(tooltipEntry?.key || '') || null,
     tooltip_source: normalizeText(tooltipEntry?.source || '') || null,
     display_mode: key === 'polling_rate' ? 'high' : 'all',
@@ -499,9 +493,6 @@ export function buildFieldRuleDraft({
       min_evidence_refs: requiredLevel === 'identity' || requiredLevel === 'required' ? 2 : 1,
       tier_preference: isInstrumentedField ? ['tier2', 'tier1', 'tier3'] : ['tier1', 'tier2', 'tier3'],
     },
-    publish_gate: (requiredLevel === 'identity' || requiredLevel === 'required') && !isInstrumentedField,
-    publish_gate_reason: requiredLevel === 'identity' ? 'missing_identity' : (requiredLevel === 'required' ? 'missing_required' : ''),
-    block_publish_when_unk: (requiredLevel === 'identity' || requiredLevel === 'required') && !isInstrumentedField,
     ui,
     validate
   };
@@ -535,15 +526,6 @@ export function buildStudioFieldRule({
     rule.effort,
     asInt(priorityBlock.effort, 5)
   );
-  const publishGate = (
-    rule.publish_gate === true
-    || (rule.publish_gate === undefined && priorityBlock.publish_gate === true)
-  );
-  const blockPublishWhenUnk = (
-    rule.block_publish_when_unk === true
-    || (rule.block_publish_when_unk === undefined && priorityBlock.block_publish_when_unk === true)
-  );
-
   const enumBlock = isObject(rule.enum) ? rule.enum : {};
   const source = parseEnumSource(rule.enum_source || enumBlock.source, key);
   const sourceRef = sourceRefToString(source);
@@ -561,10 +543,8 @@ export function buildStudioFieldRule({
   const validate = isObject(rule.validate) ? rule.validate : {};
 
   const nestedContract = isObject(rule.contract) ? { ...rule.contract } : {};
-  nestedContract.unknown_token = normalizeText(
-    nestedContract.unknown_token || rule.unknown_token || 'unk'
-  ) || 'unk';
-  nestedContract.unknown_reason_required = nestedContract.unknown_reason_required !== false;
+  delete nestedContract.unknown_token;
+  delete nestedContract.unknown_reason_required;
   nestedContract.type = normalizeToken(nestedContract.type || contractType || 'string') || 'string';
   nestedContract.shape = normalizeToken(nestedContract.shape || contractShape || 'scalar') || 'scalar';
   if (contractType === 'date') {
@@ -592,17 +572,13 @@ export function buildStudioFieldRule({
   if (nestedContract.shape === 'list' && !isObject(nestedContract.list_rules) && isObject(rule.list_rules)) {
     nestedContract.list_rules = {
       dedupe: rule.list_rules.dedupe !== false,
-      sort: normalizeToken(rule.list_rules.sort || 'none') || 'none',
-      min_items: asInt(rule.list_rules.min_items, 0),
-      max_items: asInt(rule.list_rules.max_items, 100)
+      sort: normalizeToken(rule.list_rules.sort || 'none') || 'none'
     };
   }
   if (nestedContract.shape === 'list' && !isObject(nestedContract.list_rules)) {
     nestedContract.list_rules = {
       dedupe: true,
-      sort: 'none',
-      min_items: 0,
-      max_items: 100
+      sort: 'none'
     };
   }
   if (nestedContract.shape === 'object' && !isObject(nestedContract.object_schema) && isObject(rule.object_schema)) {
@@ -739,10 +715,6 @@ export function buildStudioFieldRule({
   // Build ai_assist block (auto-derive if not explicitly set)
   const aiAssistInput = isObject(rule.ai_assist) ? rule.ai_assist : {};
   const nestedAiAssist = {
-    mode: normalizeToken(aiAssistInput.mode || '') || null,
-    model_strategy: normalizeToken(aiAssistInput.model_strategy || '') || 'auto',
-    max_calls: asInt(aiAssistInput.max_calls, 0) || null,
-    max_tokens: asInt(aiAssistInput.max_tokens, 0) || null,
     reasoning_note: normalizeText(aiAssistInput.reasoning_note || '')
   };
 
@@ -755,7 +727,7 @@ export function buildStudioFieldRule({
     suffix: normalizeText(ui.suffix || '') || null,
     examples: toArray(ui.examples || []).map((value) => normalizeText(value)).filter(Boolean),
     short_label: normalizeText(ui.short_label || '') || null,
-    placeholder: normalizeText(ui.placeholder || 'unk') || 'unk',
+    placeholder: normalizeText(ui.placeholder || '') || '',
     guidance_md: normalizeText(ui.guidance_md || '') || null,
     tooltip_key: normalizeText(ui.tooltip_key || '') || null,
     tooltip_source: normalizeText(ui.tooltip_source || '') || null,
@@ -835,8 +807,6 @@ export function buildStudioFieldRule({
 
   // Build contract block
   const outContract = {
-    unknown_token: nestedContract.unknown_token,
-    unknown_reason_required: nestedContract.unknown_reason_required !== false,
     type: nestedContract.type,
     shape: nestedContract.shape
   };
@@ -856,7 +826,7 @@ export function buildStudioFieldRule({
     outContract.list_rules = sortDeep(
       isObject(nestedContract.list_rules) && Object.keys(nestedContract.list_rules).length > 0
         ? nestedContract.list_rules
-        : { dedupe: true, sort: 'none', min_items: 0, max_items: 100 }
+        : { dedupe: true, sort: 'none' }
     );
   }
   if ((nestedContract.shape === 'object' || nestedContract.type === 'object') && isObject(nestedContract.object_schema) && Object.keys(nestedContract.object_schema).length > 0) {
@@ -939,8 +909,6 @@ export function buildStudioFieldRule({
       availability,
       difficulty,
       effort,
-      publish_gate: publishGate,
-      block_publish_when_unk: blockPublishWhenUnk
     },
     required_level: requiredLevel,
     search_hints: searchHints,

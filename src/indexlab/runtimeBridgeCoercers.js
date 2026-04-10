@@ -142,3 +142,15 @@ export function incrementCounterMap(target = {}, key = '') {
   target[token] = asInt(target[token], 0) + 1;
   return target;
 }
+
+export function decrementCounterMap(target = {}, key = '') {
+  const token = String(key || '').trim();
+  if (!token) return target;
+  const current = asInt(target[token], 0);
+  if (current <= 1) {
+    delete target[token];
+  } else {
+    target[token] = current - 1;
+  }
+  return target;
+}

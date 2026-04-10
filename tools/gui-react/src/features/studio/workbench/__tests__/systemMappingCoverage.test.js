@@ -72,11 +72,9 @@ test('dead knobs stay out of the published field map', async () => {
   const omittedKnobs = [
     'contract.rounding.decimals',
     'contract.rounding.mode',
-    'priority.publish_gate',
     'parse.unit',
     'parse.allow_unitless',
     'parse.allow_ranges',
-    'ai_assist.max_calls',
   ];
 
   for (const knob of omittedKnobs) {

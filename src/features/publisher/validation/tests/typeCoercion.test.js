@@ -37,9 +37,10 @@ describe('coerceByType — string', () => {
     assert.ok(r.reason);
   });
 
-  it('null → reject', () => {
+  it('null → passthrough (absence)', () => {
     const r = coerceByType(null, 'string');
-    assert.equal(r.pass, false);
+    assert.equal(r.pass, true);
+    assert.equal(r.value, null);
   });
 });
 
@@ -64,17 +65,17 @@ describe('coerceByType — number', () => {
     assert.equal(r.repaired, 42);
   });
 
-  it('unk token → "unk"', () => {
+  it('absence token → null', () => {
     const r = coerceByType('n/a', 'number');
     assert.equal(r.pass, true);
-    assert.equal(r.repaired, 'unk');
-    assert.equal(r.rule, 'unk_token');
+    assert.equal(r.repaired, null);
+    assert.equal(r.rule, 'absence_token');
   });
 
-  it('empty string → "unk"', () => {
+  it('empty string → null', () => {
     const r = coerceByType('', 'number');
     assert.equal(r.pass, true);
-    assert.equal(r.repaired, 'unk');
+    assert.equal(r.repaired, null);
   });
 
   it('non-numeric string → reject', () => {
@@ -113,10 +114,10 @@ describe('coerceByType — integer', () => {
     assert.equal(r.repaired, 42);
   });
 
-  it('unk token → "unk"', () => {
+  it('absence token → null', () => {
     const r = coerceByType('unk', 'integer');
     assert.equal(r.pass, true);
-    assert.equal(r.repaired, 'unk');
+    assert.equal(r.repaired, null);
   });
 });
 
@@ -153,16 +154,18 @@ describe('coerceByType — boolean', () => {
     assert.equal(r.repaired ?? r.value, 'no');
   });
 
-  it('null → "unk"', () => {
+  it('null → null', () => {
     const r = coerceByType(null, 'boolean');
     assert.equal(r.pass, true);
-    assert.equal(r.repaired ?? r.value, 'unk');
+    assert.equal(r.repaired ?? r.value, null);
   });
 
-  it('unk token → "unk"', () => {
-    const r = coerceByType('n/a', 'boolean');
+  it('absence token (pre-normalized by Step 0) → null', () => {
+    // WHY: in real pipeline, absence normalizer converts 'n/a' → null before coercion.
+    // coerceBoolean receives null, not the raw token.
+    const r = coerceByType(null, 'boolean');
     assert.equal(r.pass, true);
-    assert.equal(r.repaired ?? r.value, 'unk');
+    assert.equal(r.value, null);
   });
 
   it('unrecognized string → reject', () => {
@@ -219,10 +222,10 @@ describe('coerceByType — url', () => {
     assert.equal(r.pass, false);
   });
 
-  it('unk passthrough', () => {
-    const r = coerceByType('unk', 'url');
+  it('null passthrough', () => {
+    const r = coerceByType(null, 'url');
     assert.equal(r.pass, true);
-    assert.equal(r.value, 'unk');
+    assert.equal(r.value, null);
   });
 });
 

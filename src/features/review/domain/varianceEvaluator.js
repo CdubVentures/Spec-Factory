@@ -6,7 +6,7 @@
 // WHY: Strategy map (O(1) scaling) — adding a new policy = add one
 // evaluator function + one registry entry. No switch modification.
 
-const SKIP_VALUES = new Set(['', 'unk', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
+const SKIP_VALUES = new Set(['', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
 
 /**
  * Parse a potentially formatted numeric string into a number.

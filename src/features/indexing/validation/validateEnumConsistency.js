@@ -5,7 +5,8 @@ import { normalizeToken, clamp01 } from '../../../shared/primitives.js';
 
 function hasMeaningfulValue(value) {
   const token = normalizeToken(value);
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
+  if (value == null) return false;
+  return token !== '' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
 }
 
 function dedupeValues(values = []) {

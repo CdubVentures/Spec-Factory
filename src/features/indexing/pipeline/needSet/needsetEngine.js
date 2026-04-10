@@ -421,7 +421,7 @@ export function computeNeedSet({
     const prov = provenance?.[field] || {};
     const rule = rulesMap?.[field] || {};
     const requiredLevel = normalizeRequiredLevel(ruleRequiredLevel(rule));
-    const value = prov.value ?? 'unk';
+    const value = prov.value ?? null;
     const confidence = toFloat(prov.confidence, null);
     const passTarget = clamp01(toFloat(prov.pass_target, 0.8));
     const missing = !hasKnownFieldValue(value);

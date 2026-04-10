@@ -115,8 +115,6 @@ export const DEFAULT_REVIEW_PRIORITY = Object.freeze({
   difficulty: 'medium',
   effort: 3
 });
-export const REVIEW_AI_MODES = new Set(['off', 'advisory', 'planner', 'judge']);
-export const REVIEW_AI_MODEL_STRATEGIES = new Set(['auto', 'force_fast', 'force_deep']);
 
 export function normalizeReviewPriority(value = {}) {
   const priority = isObject(value) ? value : {};
@@ -134,15 +132,7 @@ export function normalizeReviewPriority(value = {}) {
 
 export function normalizeReviewAiAssist(value = {}) {
   const aiAssist = isObject(value) ? value : {};
-  const modeToken = normalizeToken(aiAssist.mode || '');
-  const strategyToken = normalizeToken(aiAssist.model_strategy || 'auto') || 'auto';
-  const maxCallsRaw = asInt(aiAssist.max_calls, 0);
-  const maxTokensRaw = asInt(aiAssist.max_tokens, 0);
   return {
-    mode: REVIEW_AI_MODES.has(modeToken) ? modeToken : null,
-    model_strategy: REVIEW_AI_MODEL_STRATEGIES.has(strategyToken) ? strategyToken : 'auto',
-    max_calls: maxCallsRaw > 0 ? Math.max(1, Math.min(10, maxCallsRaw)) : null,
-    max_tokens: maxTokensRaw > 0 ? Math.max(256, Math.min(65536, maxTokensRaw)) : null,
     reasoning_note: normalizeText(aiAssist.reasoning_note || '')
   };
 }

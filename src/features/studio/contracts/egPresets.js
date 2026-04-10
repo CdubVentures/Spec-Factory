@@ -130,7 +130,7 @@ export function buildEgColorFieldRule(ctx) {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', min_items: 0, max_items: 100, item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
       unknown_token: 'unk',
       unknown_reason_required: true,
     },
@@ -176,17 +176,12 @@ export function buildEgColorFieldRule(ctx) {
       availability: 'expected',
       difficulty: 'easy',
       effort: 3,
-      publish_gate: false,
     },
     evidence: {
       min_evidence_refs: 1,
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      mode: 'advisory',
-      model_strategy: 'auto',
-      max_calls: 1,
-      max_tokens: 4096,
       reasoning_note: buildColorReasoningNote(colorNames, colors),
     },
     ui: {
@@ -208,7 +203,7 @@ export function buildEgEditionFieldRule(ctx) {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', min_items: 0, max_items: 50, item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
       unknown_token: 'unk',
       unknown_reason_required: true,
     },
@@ -229,17 +224,12 @@ export function buildEgEditionFieldRule(ctx) {
       availability: 'sometimes',
       difficulty: 'easy',
       effort: 3,
-      publish_gate: false,
     },
     evidence: {
       min_evidence_refs: 1,
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      mode: 'advisory',
-      model_strategy: 'auto',
-      max_calls: 1,
-      max_tokens: 4096,
       reasoning_note: [
         'Discover every special, limited, or collaboration edition of this product.',
         'Check the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.',

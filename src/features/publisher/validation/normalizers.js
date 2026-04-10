@@ -1,4 +1,4 @@
-import { UNK_TOKENS } from './unkTokens.js';
+import { ABSENCE_TOKENS } from './absenceTokens.js';
 
 // --- Helpers ---
 
@@ -34,11 +34,11 @@ const NO_TOKENS = new Set(['no', 'n', 'false', '0', 'off']);
 export function normalizeBoolean(value) {
   if (value === true) return 'yes';
   if (value === false) return 'no';
-  if (value === null || value === undefined) return 'unk';
+  if (value === null || value === undefined) return null;
   if (typeof value !== 'string') return null;
 
   const token = value.trim().toLowerCase();
-  if (token === '' || UNK_TOKENS.has(token)) return 'unk';
+  if (token === '' || ABSENCE_TOKENS.has(token)) return null;
   if (YES_TOKENS.has(token)) return 'yes';
   if (NO_TOKENS.has(token)) return 'no';
   return null;
@@ -85,7 +85,7 @@ export function parseNumberListWithRanges(value) {
   const str = String(value ?? '').trim();
   if (!str) return [];
   const lower = str.toLowerCase();
-  if (UNK_TOKENS.has(lower) || lower === 'n/a') return [];
+  if (ABSENCE_TOKENS.has(lower) || lower === 'n/a') return [];
 
   // Split by delimiters: comma, slash, pipe, semicolon
   const tokens = str.split(/[,/|;]+/).map(t => t.trim()).filter(Boolean);

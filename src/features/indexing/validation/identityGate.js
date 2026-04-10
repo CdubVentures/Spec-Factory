@@ -183,7 +183,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
       detectConnectionClass(source.connectionHint)
     );
 
-    if (expectedClass === 'unk') {
+    if (expectedClass == null) {
       if (normalizeAlphanumToken(expectedVariant) && normalizeAlphanumToken(expectedVariant) === candidateVariantToken) {
         score += 0.15;
         reasons.push('variant_match');
@@ -193,7 +193,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
       score += 0.15;
       reasons.push('variant_match');
       reasonCodes.push('variant_match');
-    } else if (candidateClass !== 'unk') {
+    } else if (candidateClass != null) {
       criticalConflicts.push('variant_mismatch');
       reasonCodes.push('variant_mismatch');
     }

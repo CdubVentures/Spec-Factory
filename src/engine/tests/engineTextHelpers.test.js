@@ -14,7 +14,7 @@ import {
 // ── isUnknownToken ────────────────────────────────────────────────────────────
 
 test('isUnknownToken identifies unknown-equivalent values', () => {
-  const unknowns = ['unk', 'unknown', 'UNK', 'N/A', 'n/a', '-', 'none', '', null, undefined];
+  const unknowns = ['unknown', 'N/A', 'n/a', '-', 'none', '', null, undefined];
   for (const input of unknowns) {
     assert.equal(isUnknownToken(input), true, `expected true for ${JSON.stringify(input)}`);
   }
@@ -28,7 +28,7 @@ test('isUnknownToken returns false for meaningful values', () => {
 });
 
 test('isUnknownToken recursively checks .value property on objects', () => {
-  assert.equal(isUnknownToken({ value: 'unk' }), true);
+  assert.equal(isUnknownToken({ value: null }), true);
   assert.equal(isUnknownToken({ value: 'PAW3395' }), false);
   assert.equal(isUnknownToken({ value: { value: 'unknown' } }), true);
 });

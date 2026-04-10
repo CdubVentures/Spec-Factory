@@ -113,6 +113,19 @@ function OpCard({ op, onClick }: { readonly op: Operation; readonly onClick: () 
         </span>
       </span>
 
+      {/* Row 1.5: model info (only when resolved) */}
+      {op.modelInfo && (
+        <span className="flex items-center gap-1 min-w-0">
+          <span className={`text-[9px] font-mono truncate min-w-0 flex-1 text-left ${
+            op.modelInfo.isFallback
+              ? 'text-[var(--sf-state-warning-fg)]'
+              : 'sf-text-subtle'
+          }`}>
+            {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
+          </span>
+        </span>
+      )}
+
       {/* Row 2: stage pipeline + elapsed */}
       <span className="flex items-center">
         <StagePipeline stages={op.stages} currentIndex={op.currentStageIndex} status={op.status} />

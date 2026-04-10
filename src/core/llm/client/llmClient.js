@@ -586,14 +586,20 @@ export async function callLlmProvider({
   ]
     .filter(Boolean)
     .join('\n');
-  const effectiveMaxTokens = resolveEffectiveMaxTokens({
-    model,
-    deepSeekMode,
-    reasoningMode: Boolean(reasoningMode),
-    reasoningBudget: Number(reasoningBudget || 0),
-    maxTokens: Number(maxTokens || 0),
-    usageContext
-  });
+  // WHY: When disableLimits is on, routing sends maxTokens=0 AND reasoningBudget=0.
+  // Skip resolveEffectiveMaxTokens entirely so the fallback chain doesn't re-impose
+  // a cap from defaultCap or profile. The model's hardware max applies instead.
+  const _noLimitRequested = Number(maxTokens || 0) === 0 && Number(reasoningBudget || 0) === 0;
+  const effectiveMaxTokens = _noLimitRequested
+    ? 0
+    : resolveEffectiveMaxTokens({
+        model,
+        deepSeekMode,
+        reasoningMode: Boolean(reasoningMode),
+        reasoningBudget: Number(reasoningBudget || 0),
+        maxTokens: Number(maxTokens || 0),
+        usageContext
+      });
   const userMessage = await buildUserMessageContent({
     user,
     usageContext
@@ -809,6 +815,13 @@ export async function callLlmProvider({
       responseModel: first.responseModel
     });
     if (rawTextMode) return first.content;
+    // TEMP DEBUG: dump raw LLM content to disk for edition-loss diagnosis
+    try {
+      const _debugPath = `.tmp/llm-raw-${Date.now()}.txt`;
+      await fs.mkdir('.tmp', { recursive: true }).catch(() => {});
+      await fs.writeFile(_debugPath, first.content, 'utf-8');
+      logger?.info?.('llm_debug_raw_content_dumped', { path: _debugPath, length: first.content.length });
+    } catch { /* best-effort debug */ }
     const parsed = parseStructuredResult(first.content);
     health.recordSuccess(providerLabel);
     logger?.info?.('llm_call_completed', {

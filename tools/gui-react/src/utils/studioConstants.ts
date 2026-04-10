@@ -73,8 +73,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   list_rules: 'List normalization rules for list-shaped contracts. IDX applies these rules during runtime normalization when the field resolves to a list.',
   list_rules_dedupe: 'Remove duplicate list items during runtime normalization. Case-insensitive for strings; exact-match for numbers.',
   list_rules_sort: 'Sort list items after parsing. none keeps source order; asc/desc apply normalized list ordering.',
-  list_rules_min_items: 'Minimum accepted list length after dedupe and sorting. If the list falls below this count, runtime validation can fail the field.',
-  list_rules_max_items: 'Maximum accepted list length after normalization. Extra items are truncated during runtime handling.',
   list_rules_item_union: 'How approved list candidates merge across sources. Leave blank to keep the winning list only.',
   unknown_token: 'Field-specific placeholder used in extraction guidance when data can\'t be determined.',
   rounding_decimals: 'Decimal places for rounding numeric values. 0 = integer. Only affects number/integer types.',
@@ -87,9 +85,6 @@ export const STUDIO_TIPS: Record<string, string> = {
   availability: 'How often this data exists. always: every product, expected: most, sometimes: ~half, rare: few, editorial_only: reviews only.',
   difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, instrumented: needs physical measurement.',
   effort: 'Relative extraction effort. 1 = trivial lookup, 10 = multi-source synthesis. Affects pipeline scheduling.',
-  publish_gate: 'If checked, this field MUST have a non-unknown value before the product spec can be published.',
-  block_publish_when_unk: 'If checked, products with this field set to the unknown token cannot be published.',
-
   // Tab 2: Key Navigator - Enum
   key_section_enum: 'Enum policy and enum source define accepted vocabulary, matching behavior, and suggestions for this field.',
   enum_policy: 'Enum Policy controls vocabulary matching after parsing. closed: requires a known list, rejects unknowns. open_prefer_known: prefers known values but accepts new evidence-backed values and queues them as suggestions. open: accepts any value (valid for all field types including number, url, date). For boolean fields, this is auto-locked to closed/yes_no.',
@@ -135,28 +130,7 @@ export const STUDIO_TIPS: Record<string, string> = {
   comp_allow_new: 'If enabled, the pipeline can suggest new components not in the database when no fuzzy match meets the flag_review_score threshold. Suggestions are flagged for review. If disabled, unmatched values are rejected.',
   comp_require_identity_evidence: 'If enabled, component identity matching requires supporting evidence from at least one source. Prevents phantom component assignments from noisy extraction.',
 
-  // Tab 2: Key Navigator - AI Assist
-  ai_mode: 'Controls how aggressively the LLM extracts this field.\n\n'
-    + 'off — No LLM. Deterministic extraction only (pattern matching, component DB lookup). No API cost.\n'
-    + 'advisory — gpt-5-low only. Single extraction pass, no verification, no escalation. Cheapest LLM option.\n'
-    + 'planner — Starts with gpt-5-low. If conflicts or low confidence, escalates to gpt-5.2-high (reasoning). Balanced cost/quality.\n'
-    + 'judge — gpt-5.2-high (reasoning) from the start. Full conflict resolution, evidence audit, multi-source verification. Highest quality but most expensive.\n\n'
-    + 'Auto-derive: identity/required/critical → judge, expected+hard → planner, expected+easy/medium → advisory, optional → off.',
-  ai_model_strategy: 'Override which model tier is used, regardless of mode.\n\n'
-    + 'auto — Let the mode decide: advisory uses fast model, judge uses reasoning model, planner escalates as needed.\n'
-    + 'force_fast — Always use gpt-5-low, even in judge mode. Saves cost but reduces accuracy on complex fields.\n'
-    + 'force_deep — Always use gpt-5.2-high (reasoning), even in advisory mode. Best accuracy but higher cost.',
-  ai_max_calls: 'Maximum LLM API calls for this field across ALL extraction rounds. Once exhausted, the field stops getting LLM attention.\n\n'
-    + 'Auto-derive from effort: effort 1-3 → 1 call, effort 4-6 → 2 calls, effort 7-10 → 3 calls.\n'
-    + 'Higher values = more chances to extract but more cost. Max 10.',
-  ai_max_tokens: 'Maximum output tokens per LLM call for this field. Controls how much reasoning/output the model can produce.\n\n'
-    + 'Auto-derive from AI mode:\n'
-    + '• off → 0 (no LLM calls)\n'
-    + '• advisory → 4,096 tokens (fast extraction)\n'
-    + '• planner → 8,192 tokens (escalation headroom)\n'
-    + '• judge → 16,384 tokens (full reasoning)\n\n'
-    + 'When multiple fields are in one batch, the highest max_tokens across all fields is used for the API call.\n'
-    + 'Global ceiling: LLM_REASONING_BUDGET (env) for reasoning calls, LLM_MAX_TOKENS for fast calls.',
+  // Tab 2: Key Navigator - Extraction Guidance
   ai_reasoning_note: 'Extraction guidance injected directly into the LLM prompt for this field. The AI reads this note when deciding how to extract the value.\n\n'
     + 'When empty, guidance is auto-generated from field properties (data type, difficulty, evidence requirements, enum policy, component type).\n\n'
     + 'Examples:\n'

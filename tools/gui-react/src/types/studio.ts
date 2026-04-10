@@ -36,10 +36,6 @@ export interface PriorityProfile {
 }
 
 export interface AiAssistConfig {
-  mode?: string | null;
-  model_strategy?: string;
-  max_calls?: number | null;
-  max_tokens?: number | null;
   reasoning_note?: string;
 }
 

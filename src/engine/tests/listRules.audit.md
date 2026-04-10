@@ -24,10 +24,8 @@ Policy:
 | `list_rules sort: asc sorts strings case-insensitively` | COLLAPSE | Same ordering family as the numeric-desc and no-sort cases. | `src/engine/tests/listRulesOrderingContracts.test.js` | Merged into ordering contract |
 | `list_rules sort: desc sorts numbers descending` | COLLAPSE | Same ordering family as the string-asc and no-sort cases. | `src/engine/tests/listRulesOrderingContracts.test.js` | Merged into ordering contract |
 | `list_rules sort: none preserves original order` | COLLAPSE | Same ordering family as the asc and desc sort cases. | `src/engine/tests/listRulesOrderingContracts.test.js` | Merged into ordering contract |
-| `list_rules max_items: truncates list and records change` | KEEP | Distinct runtime contract for deterministic truncation plus emitted `changes` metadata. | `src/engine/tests/listRulesLimitContracts.test.js` | Preserved |
-| `list_rules min_items: violation sets field to unk with failure` | COLLAPSE | Same min-items family as the exact-boundary and post-dedupe failure cases. | `src/engine/tests/listRulesLimitContracts.test.js` | Merged into table-driven min-items contract |
-| `list_rules min_items: exactly min_items passes` | COLLAPSE | Same min-items family as the violation and post-dedupe failure cases. | `src/engine/tests/listRulesLimitContracts.test.js` | Merged into table-driven min-items contract |
-| `list_rules min_items: after dedupe - duplicates collapse below minimum` | COLLAPSE | Same min-items family as the direct violation and exact-boundary cases. | `src/engine/tests/listRulesLimitContracts.test.js` | Merged into table-driven min-items contract |
+| `list_rules max_items` | RETIRED | min_items/max_items knobs removed from list_rules contract. | — | Deleted with `listRulesLimitContracts.test.js` |
+| `list_rules min_items` | RETIRED | min_items/max_items knobs removed from list_rules contract. | — | Deleted with `listRulesLimitContracts.test.js` |
 
 ## Boundary and Sequencing Contracts
 

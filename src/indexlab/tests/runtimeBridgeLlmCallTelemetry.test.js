@@ -214,3 +214,88 @@ test('failed llm calls keep telemetry mapping and drain active aggregate count',
   assert.equal(bridge._llmAgg.failed_calls, 1);
   assert.equal(bridge._llmAgg.active_calls, 0);
 });
+
+test('fallback model replaces primary in calls_by_model when primary fails and worker ID is reused', async () => {
+  const { bridge, events } = await makeBridge();
+  await startRun(bridge);
+
+  // Primary starts (no batch_id — forces reason-based worker ID matching)
+  bridge.onRuntimeEvent(baseRow({
+    event: 'llm_call_started',
+    ts: '2025-01-01T00:02:00Z',
+    reason: 'extract_evidence',
+    model: 'gpt-4o',
+    provider: 'openai'
+  }));
+  await bridge.queue;
+
+  // Primary fails
+  bridge.onRuntimeEvent(baseRow({
+    event: 'llm_call_failed',
+    ts: '2025-01-01T00:02:01Z',
+    reason: 'extract_evidence',
+    model: 'gpt-4o',
+    provider: 'openai',
+    message: 'rate limit exceeded'
+  }));
+  await bridge.queue;
+
+  // Fallback starts (same reason, different model — reuses worker ID)
+  bridge.onRuntimeEvent(baseRow({
+    event: 'llm_call_started',
+    ts: '2025-01-01T00:02:02Z',
+    reason: 'extract_evidence',
+    model: 'claude-sonnet',
+    provider: 'anthropic'
+  }));
+  await bridge.queue;
+
+  // Fallback completes
+  bridge.onRuntimeEvent(baseRow({
+    event: 'llm_call_completed',
+    ts: '2025-01-01T00:02:04Z',
+    reason: 'extract_evidence',
+    model: 'claude-sonnet',
+    provider: 'anthropic',
+    prompt_tokens: 150,
+    completion_tokens: 60,
+    estimated_cost: 0.003,
+    duration_ms: 1800
+  }));
+  await bridge.queue;
+
+  // Aggregate should attribute the call to the fallback model, not the primary
+  assert.deepEqual(bridge._llmAgg, {
+    total_calls: 1,
+    completed_calls: 2,
+    failed_calls: 1,
+    active_calls: 0,
+    total_prompt_tokens: 150,
+    total_completion_tokens: 60,
+    total_cost: 0.003,
+    calls_by_type: { extraction: 1 },
+    calls_by_model: { 'claude-sonnet': 1 }
+  });
+
+  // Emitted events should carry correct is_fallback flag and model
+  const starts = llmEvents(events, 'llm_started');
+  const finishes = llmEvents(events, 'llm_finished');
+  const failures = llmEvents(events, 'llm_failed');
+
+  assert.equal(starts.length, 2, 'two llm_started events (primary + fallback)');
+  assert.equal(failures.length, 1, 'one llm_failed event');
+  assert.equal(finishes.length, 1, 'one llm_finished event');
+
+  // Fallback start carries is_fallback and correct model
+  assert.equal(starts[1].payload.is_fallback, true);
+  assert.equal(starts[1].payload.model, 'claude-sonnet');
+
+  // Fallback finish carries correct model
+  // WHY: is_fallback is not available on finish events because resolveLlmWorkerId
+  // deletes the call entry from _llmCallMap during finish resolution.
+  assert.equal(finishes[0].payload.model, 'claude-sonnet');
+
+  // Both share the same worker ID
+  assert.equal(starts[0].payload.worker_id, starts[1].payload.worker_id);
+  assert.equal(starts[1].payload.worker_id, finishes[0].payload.worker_id);
+});

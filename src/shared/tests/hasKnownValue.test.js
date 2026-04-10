@@ -16,9 +16,6 @@ const KNOWN_CASES = [
 
 const UNKNOWN_CASES = [
   ['', 'empty string'],
-  ['unk', 'standard sentinel'],
-  ['UNK', 'upper-case sentinel'],
-  [' Unk ', 'padded sentinel'],
   ['unknown', 'full word'],
   ['Unknown', 'mixed-case unknown'],
   ['UNKNOWN', 'upper-case unknown'],
@@ -39,7 +36,7 @@ const UNKNOWN_CASES = [
   [undefined, 'JS undefined'],
 ];
 
-const REQUIRED_UNKNOWN_VALUE_TOKENS = ['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-'];
+const REQUIRED_UNKNOWN_VALUE_TOKENS = ['', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-'];
 
 describe('hasKnownValue', () => {
   for (const [input, label] of KNOWN_CASES) {

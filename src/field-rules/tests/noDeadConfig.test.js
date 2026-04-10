@@ -121,10 +121,6 @@ test('non-indexlab knobs remain authorable in capabilities registry', async () =
 test('live AI assist knobs remain registered with consumer metadata', async () => {
   const cap = await loadCapabilities();
   const expectedLiveAiKnobs = [
-    'ai_assist.mode',
-    'ai_assist.model_strategy',
-    'ai_assist.max_calls',
-    'ai_assist.max_tokens',
     'ai_assist.reasoning_note',
   ];
 

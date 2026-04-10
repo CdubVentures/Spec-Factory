@@ -1,8 +1,6 @@
 export const STUDIO_NUMERIC_KNOB_BOUNDS = {
   contractRoundingDecimals: { min: 0, max: 6, fallback: 0 },
   priorityEffort: { min: 1, max: 10, fallback: 1 },
-  aiMaxCalls: { min: 1, max: 10 },
-  aiMaxTokens: { min: 256, max: 65536 },
   evidenceMinRefs: { min: 0, max: 10, fallback: 0 },
   componentMatch: { min: 0, max: 1 },
 } as const;

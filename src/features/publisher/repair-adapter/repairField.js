@@ -129,8 +129,8 @@ export async function repairCrossField({ crossFieldFailures, fields, productName
       repairedFields[dec.value] = dec.resolved_to;
       repairs.push({ field: dec.value, old_value: fields[dec.value], new_value: dec.resolved_to, reasoning: dec.reasoning });
     } else if (dec.decision === 'set_unk') {
-      repairedFields[dec.value] = 'unk';
-      repairs.push({ field: dec.value, old_value: fields[dec.value], new_value: 'unk', reasoning: dec.reasoning });
+      repairedFields[dec.value] = null;
+      repairs.push({ field: dec.value, old_value: fields[dec.value], new_value: null, reasoning: dec.reasoning });
     }
     // reject = leave field unchanged (LLM says the constraint itself is wrong)
   }

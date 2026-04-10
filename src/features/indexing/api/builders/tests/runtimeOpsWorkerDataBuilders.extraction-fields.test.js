@@ -120,13 +120,13 @@ test('buildExtractionFields: marks conflict when multiple different values exist
   assert.equal(row.status, 'conflict');
 });
 
-test('buildExtractionFields: marks unknown when value is unk', () => {
+test('buildExtractionFields: marks unknown when value is null', () => {
   const events = [
     makeEvent('llm_finished', {
       batch_id: 'b1',
       round: 1,
       candidates: [
-        { field: 'weight', value: 'unk', confidence: 0.1, method: 'llm_extract', source_url: 'https://x.com', source_tier: 3 },
+        { field: 'weight', value: null, confidence: 0.1, method: 'llm_extract', source_url: 'https://x.com', source_tier: 3 },
       ],
     }),
   ];

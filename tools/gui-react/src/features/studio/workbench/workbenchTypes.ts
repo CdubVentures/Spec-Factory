@@ -25,14 +25,7 @@ export interface WorkbenchRow {
   minEvidenceRefs: number;
   tierPreference: string;
 
-  // Priority / Publishing
-  publishGate: boolean;
-  blockPublishWhenUnk: boolean;
-
   // AI Assist
-  aiMode: string;
-  aiModelStrategy: string;
-  aiMaxCalls: number;
   aiReasoningNote: string;
 
   // Search

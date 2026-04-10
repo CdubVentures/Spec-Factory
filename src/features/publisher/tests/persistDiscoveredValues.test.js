@@ -36,9 +36,9 @@ describe('persistDiscoveredValue — skips', () => {
     assert.equal(db.calls.upsertListValue.length, 0);
   });
 
-  it('skips when value is unk', () => {
+  it('skips when value is null', () => {
     const db = mockSpecDb();
-    persistDiscoveredValue({ specDb: db, fieldKey: 'sensor_brand', value: 'unk', fieldRule: makeRule() });
+    persistDiscoveredValue({ specDb: db, fieldKey: 'sensor_brand', value: null, fieldRule: makeRule() });
     assert.equal(db.calls.upsertListValue.length, 0);
   });
 
@@ -127,7 +127,7 @@ describe('persistDiscoveredValue — onValueDiscovered callback', () => {
     persistDiscoveredValue({
       specDb: db,
       fieldKey: 'sensor_brand',
-      value: 'unk',
+      value: null,
       fieldRule: makeRule(),
       onValueDiscovered: (entry) => captured.push(entry),
     });

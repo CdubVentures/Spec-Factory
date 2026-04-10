@@ -146,6 +146,14 @@ describe('createPhaseCallLlm', () => {
     assert.deepEqual(result, { mock: true });
   });
 
+  it('forwards onModelResolved from deps to callRoutedLlmFn', async () => {
+    const cb = () => {};
+    const { deps, getCaptured } = makeDeps({ onModelResolved: cb });
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    await fn({});
+    assert.equal(getCaptured().onModelResolved, cb);
+  });
+
   it('propagates callRoutedLlmFn rejection', async () => {
     const deps = {
       callRoutedLlmFn: async () => { throw new Error('LLM_FAIL'); },

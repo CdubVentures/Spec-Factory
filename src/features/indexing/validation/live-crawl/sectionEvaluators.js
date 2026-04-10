@@ -216,8 +216,7 @@ export function evaluatePublishableAlive(runData) {
   const spec = runData.final_spec || {};
   const filledCount = Object.keys(spec).filter((k) =>
     k !== 'publishable' && k !== 'identity_outcome' &&
-    spec[k] != null && String(spec[k]).trim() !== '' &&
-    String(spec[k]).trim().toLowerCase() !== 'unk'
+    spec[k] != null && String(spec[k]).trim() !== ''
   ).length;
 
   return [

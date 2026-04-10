@@ -34,7 +34,7 @@ async function loadWorkbenchInlineEditContracts() {
   });
 }
 
-test('studio workbench contracts keep publish-gate authorable after IDX-only retirement', async () => {
+test('studio workbench contracts preserve core field metadata after publish-gate retirement', async () => {
   const [
     { buildWorkbenchRows },
     { ALL_COLUMN_IDS_WITH_LABELS, getPresetVisibility },
@@ -51,7 +51,7 @@ test('studio workbench contracts keep publish-gate authorable after IDX-only ret
       weight: {
         ui: { label: 'Weight', group: 'specs' },
         contract: { unit: 'g' },
-        priority: { publish_gate: true },
+        priority: { required_level: 'identity' },
       },
     },
     null,
@@ -60,17 +60,11 @@ test('studio workbench contracts keep publish-gate authorable after IDX-only ret
 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].contractUnit, 'g');
-  assert.equal(rows[0].publishGate, true);
 
   const columnIds = ALL_COLUMN_IDS_WITH_LABELS.map((entry) => entry.id);
   assert.equal(columnIds.includes('contractUnit'), true);
-  assert.equal(columnIds.includes('publishGate'), true);
+  assert.equal(columnIds.includes('publishGate'), false, 'publishGate column should be retired');
+  assert.equal(columnIds.includes('blockPublishWhenUnk'), false, 'blockPublishWhenUnk column should be retired');
 
-  const minimalPreset = getPresetVisibility('minimal');
-  const evidencePreset = getPresetVisibility('evidence');
-  assert.equal(minimalPreset.publishGate, true);
-  assert.equal(evidencePreset.publishGate, true);
-
-  assert.equal(resolveWorkbenchInlineEditPath('publishGate'), 'priority.publish_gate');
   assert.equal(resolveWorkbenchInlineEditPath('unknownColumn'), '');
 });

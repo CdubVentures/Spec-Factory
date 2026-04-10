@@ -247,17 +247,6 @@ export function enforceExpectationPriority({ key, rule, expectations }) {
   rule.availability = finalAvailability;
   priority.availability = finalAvailability;
 
-  const instrumented = INSTRUMENTED_HARD_FIELDS.has(fieldKey);
-  const publishGate = (finalLevel === 'identity' || finalLevel === 'required') && !instrumented;
-  rule.publish_gate = publishGate;
-  priority.publish_gate = publishGate;
-  rule.block_publish_when_unk = publishGate;
-  priority.block_publish_when_unk = publishGate;
-  rule.publish_gate_reason = finalLevel === 'identity'
-    ? 'missing_identity'
-    : (finalLevel === 'required' ? 'missing_required' : '');
-  priority.publish_gate_reason = rule.publish_gate_reason;
-
   const evidence = isObject(rule.evidence) ? { ...rule.evidence } : {};
   const defaultMinEvidence = (finalLevel === 'identity' || finalLevel === 'required') ? 2 : 1;
   evidence.min_evidence_refs = asInt(evidence.min_evidence_refs, defaultMinEvidence);

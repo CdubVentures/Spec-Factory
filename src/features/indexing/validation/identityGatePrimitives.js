@@ -106,7 +106,7 @@ export function hasAllExpectedNumericFragments(expectedValue, candidateValues = 
 export function detectConnectionClass(value) {
   const token = normalizeAlphanumToken(value);
   if (!token) {
-    return 'unk';
+    return null;
   }
   if (token.includes('wireless') && token.includes('wired')) {
     return 'dual';
@@ -122,11 +122,11 @@ export function detectConnectionClass(value) {
 
 export function firstKnownClass(...classes) {
   for (const value of classes) {
-    if (value && value !== 'unk') {
+    if (value != null && value !== '') {
       return value;
     }
   }
-  return 'unk';
+  return null;
 }
 
 export function str(value) {
@@ -248,7 +248,7 @@ export function gateStatusFromIdentityResult(identityResult = {}) {
 }
 
 export function firstFieldValue(source, field) {
-  const hit = (source.fieldCandidates || []).find((row) => row.field === field && row.value !== 'unk');
+  const hit = (source.fieldCandidates || []).find((row) => row.field === field && row.value != null);
   return hit?.value || null;
 }
 
@@ -263,7 +263,7 @@ export function firstFieldValueMatching(source, field, isValidValue = () => true
       continue;
     }
     const token = String(value).trim().toLowerCase();
-    if (!token || token === 'unk') {
+    if (!token) {
       continue;
     }
     if (!isValidValue(value, row)) {

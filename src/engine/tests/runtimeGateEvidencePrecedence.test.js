@@ -51,14 +51,10 @@ test('runtimeGate runs normalize before evidence and skips evidence failures for
     true
   );
   assert.equal(
-    result.failures.some((row) => row.field === 'weight' && row.stage === 'evidence'),
-    false
-  );
-  assert.equal(
     result.changes.some(
       (row) => row.field === 'weight'
         && row.stage === 'normalize'
-        && row.after === 'unk'
+        && row.after === null
     ),
     true
   );

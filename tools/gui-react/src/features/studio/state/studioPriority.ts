@@ -17,8 +17,6 @@ import {
   AVAILABILITY_RANK,
   DIFFICULTY_OPTIONS,
   DIFFICULTY_RANK,
-  AI_MODE_OPTIONS,
-  AI_MODEL_STRATEGY_OPTIONS,
 } from "../../../registries/fieldRuleTaxonomy.ts";
 
 export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
@@ -202,58 +200,7 @@ export function normalizeAiAssistConfig(
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : {};
-  const modeToken = String(input.mode || "")
-    .trim()
-    .toLowerCase();
-  const strategyToken = String(input.model_strategy || "auto")
-    .trim()
-    .toLowerCase();
-  const maxCallsRaw = parseOptionalPositiveIntInput(input.max_calls);
-  const maxTokensRaw = parseOptionalPositiveIntInput(input.max_tokens);
-  const maxCalls =
-    maxCallsRaw === null
-      ? null
-      : clampNumber(
-          maxCallsRaw,
-          STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.min,
-          STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxCalls.max,
-        );
-  const maxTokens =
-    maxTokensRaw === null
-      ? null
-      : clampNumber(
-          maxTokensRaw,
-          STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.min,
-          STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max,
-        );
   return {
-    mode: (AI_MODE_OPTIONS as readonly string[]).includes(modeToken)
-      ? (modeToken as string)
-      : null,
-    model_strategy: (AI_MODEL_STRATEGY_OPTIONS as readonly string[]).includes(strategyToken)
-      ? (strategyToken as NonNullable<AiAssistConfig['model_strategy']>)
-      : "auto",
-    max_calls: maxCalls,
-    max_tokens: maxTokens,
     reasoning_note: String(input.reasoning_note || ""),
   };
-}
-
-export function deriveAiModeFromPriority(
-  priority: Required<PriorityProfile>,
-): string {
-  const requiredLevel = priority.required_level;
-  const difficulty = priority.difficulty;
-  if (["identity", "required", "critical"].includes(requiredLevel)) {
-    return "judge";
-  }
-  if (requiredLevel === "expected" && difficulty === "hard") return "planner";
-  if (requiredLevel === "expected") return "advisory";
-  return "off";
-}
-
-export function deriveAiCallsFromEffort(effort: number): number {
-  if (effort <= 3) return 1;
-  if (effort <= 6) return 2;
-  return 3;
 }

@@ -12,28 +12,28 @@ const PRODUCT_ROOT = path.join('.tmp', '_test_submit_candidate');
 function sampleFieldRules() {
   return {
     weight: {
-      contract: { shape: 'scalar', type: 'number', unknown_token: 'unk' },
+      contract: { shape: 'scalar', type: 'number' },
       parse: {},
       enum: { policy: 'open' },
       priority: {},
     },
     colors: {
       contract: {
-        shape: 'list', type: 'string', unknown_token: 'unk',
-        list_rules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 },
+        shape: 'list', type: 'string',
+        list_rules: { dedupe: true, sort: 'none' },
       },
       parse: {},
       enum: { policy: 'closed', match: { strategy: 'exact' } },
       priority: {},
     },
     sensor_brand: {
-      contract: { shape: 'scalar', type: 'string', unknown_token: 'unk' },
+      contract: { shape: 'scalar', type: 'string' },
       parse: {},
       enum: { policy: 'open_prefer_known', match: { strategy: 'alias' } },
       priority: {},
     },
     coating: {
-      contract: { shape: 'scalar', type: 'string', unknown_token: 'unk' },
+      contract: { shape: 'scalar', type: 'string' },
       parse: {},
       enum: { policy: 'closed', match: { strategy: 'exact' } },
       priority: {},

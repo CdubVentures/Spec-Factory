@@ -104,7 +104,6 @@ describe('buildEgColorFieldRule', () => {
 
   it('has ai_assist with EG extraction guidance', () => {
     const rule = buildEgColorFieldRule();
-    assert.equal(rule.ai_assist.mode, 'advisory');
     assert.ok(rule.ai_assist.reasoning_note.includes('lowercase'));
     assert.ok(rule.ai_assist.reasoning_note.includes('+'));
     assert.ok(rule.ai_assist.reasoning_note.includes('hex'));
@@ -191,7 +190,6 @@ describe('buildEgEditionFieldRule', () => {
 
   it('has ai_assist with kebab-case guidance', () => {
     const rule = buildEgEditionFieldRule();
-    assert.equal(rule.ai_assist.mode, 'advisory');
     assert.ok(rule.ai_assist.reasoning_note.includes('kebab-case'));
     assert.ok(rule.ai_assist.reasoning_note.toLowerCase().includes('lowercase'));
   });

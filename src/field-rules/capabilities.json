@@ -43,32 +43,10 @@
       "consumer": "src/engine/runtimeGate.js:applyRuntimeFieldRules",
       "description": "Sort order for list fields (asc, desc, none)"
     },
-    "contract.list_rules.min_items": {
-      "status": "live",
-      "consumer": "src/engine/runtimeGate.js:applyRuntimeFieldRules",
-      "description": "Minimum list item count (reject if below)"
-    },
-    "contract.list_rules.max_items": {
-      "status": "live",
-      "consumer": "src/engine/runtimeGate.js:applyRuntimeFieldRules",
-      "description": "Maximum list item count (truncate if above)"
-    },
     "contract.list_rules.item_union": {
       "status": "live",
       "consumer": "src/scoring/listUnionReducer.js:applyListUnionReducers",
       "description": "List merge policy across sources (set_union, ordered_union)"
-    },
-    "contract.unknown_token": {
-      "status": "deferred",
-      "consumer": null,
-      "reason": "Runtime hardcodes 'unk'; will wire when categories need different tokens",
-      "description": "Canonical unknown value marker"
-    },
-    "contract.unknown_reason_required": {
-      "status": "deferred",
-      "consumer": null,
-      "reason": "Always true; will wire for opt-out scenarios",
-      "description": "Whether unknown values require a reason"
     },
     "enum.policy": {
       "status": "live",
@@ -155,26 +133,6 @@
       "consumer": null,
       "reason": "Always 'not_found_after_search'; runtime hardcodes same",
       "description": "Default reason when field value is unknown"
-    },
-    "ai_assist.mode": {
-      "status": "live",
-      "consumer": "src/features/indexing/extraction/fieldBatching.js:getRuleDifficulty + buildFieldBatches + src/features/indexing/extraction/extractCandidatesLLM.js:verification routing",
-      "description": "AI assist level (off, advisory, planner, judge). Auto-derived from priority+difficulty when not set."
-    },
-    "ai_assist.model_strategy": {
-      "status": "live",
-      "consumer": "src/features/indexing/extraction/fieldBatching.js:resolveBatchModel",
-      "description": "Model tier strategy (auto, force_fast, force_deep)"
-    },
-    "ai_assist.max_calls": {
-      "status": "live",
-      "consumer": "src/runner/runUntilComplete.js:fieldCallCounts budget enforcement",
-      "description": "Maximum LLM calls for this field across all rounds. Auto-derived from effort when not set."
-    },
-    "ai_assist.max_tokens": {
-      "status": "live",
-      "consumer": "src/features/indexing/extraction/fieldBatching.js:resolveBatchModel -> src/features/indexing/extraction/extractCandidatesLLM.js -> openaiClient.js:body.max_tokens",
-      "description": "Per-field token budget for LLM output. Auto-derived from mode: advisory=4096, planner=8192, judge=16384. Batch uses MAX across fields."
     },
     "ai_assist.reasoning_note": {
       "status": "live",

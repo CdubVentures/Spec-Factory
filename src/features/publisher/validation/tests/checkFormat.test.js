@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkFormat } from '../checks/checkFormat.js';
 
 describe('checkFormat — boolean', () => {
-  const pass = ['yes', 'no', 'unk'];
+  const pass = ['yes', 'no'];
   for (const v of pass) {
     it(`pass: "${v}"`, () => {
       assert.equal(checkFormat(v, 'boolean').pass, true);
@@ -53,8 +53,8 @@ describe('checkFormat — url', () => {
     assert.equal(checkFormat('example.com', 'url').pass, false);
   });
 
-  it('unk passes', () => {
-    assert.equal(checkFormat('unk', 'url').pass, true);
+  it('null (absence) passes', () => {
+    assert.equal(checkFormat(null, 'url').pass, true);
   });
 });
 
@@ -97,17 +97,17 @@ describe('checkFormat — unknown type (no regex → pass)', () => {
   });
 });
 
-describe('checkFormat — unk passthrough', () => {
-  it('unk passes boolean format', () => {
-    assert.equal(checkFormat('unk', 'boolean').pass, true);
+describe('checkFormat — null (absence) passthrough', () => {
+  it('null passes boolean format', () => {
+    assert.equal(checkFormat(null, 'boolean').pass, true);
   });
 
-  it('unk passes date format', () => {
-    assert.equal(checkFormat('unk', 'date').pass, true);
+  it('null passes date format', () => {
+    assert.equal(checkFormat(null, 'date').pass, true);
   });
 
-  it('unk passes url format', () => {
-    assert.equal(checkFormat('unk', 'url').pass, true);
+  it('null passes url format', () => {
+    assert.equal(checkFormat(null, 'url').pass, true);
   });
 });
 
@@ -127,8 +127,8 @@ describe('checkFormat — custom format_hint regex', () => {
     assert.ok(r.reason.includes('format_hint'));
   });
 
-  it('unk still passes with format_hint', () => {
-    const r = checkFormat('unk', 'string', hint);
+  it('null still passes with format_hint', () => {
+    const r = checkFormat(null, 'string', hint);
     assert.equal(r.pass, true);
   });
 

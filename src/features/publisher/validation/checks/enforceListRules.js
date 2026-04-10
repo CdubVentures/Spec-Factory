@@ -1,9 +1,9 @@
 /**
- * List rules enforcement (Step 7). Dedupe, sort, min/max items.
- * Order: dedupe → sort → max_items → min_items check.
+ * List rules enforcement (Step 7). Dedupe, sort.
+ * Order: dedupe → sort.
  *
  * @param {*} values - Array of validated elements
- * @param {{ dedupe?: boolean, sort?: 'none'|'alpha'|'numeric', min_items?: number, max_items?: number }|null} listRules
+ * @param {{ dedupe?: boolean, sort?: 'none'|'alpha'|'numeric' }|null} listRules
  * @returns {{ values: any[], repairs: { rule: string, [key: string]: any }[] }}
  */
 export function enforceListRules(values, listRules) {
@@ -37,17 +37,6 @@ export function enforceListRules(values, listRules) {
     repairs.push({ rule: 'sort_numeric' });
   }
   // sort: 'none' or absent → preserve order
-
-  // 3. Max items
-  if (listRules.max_items && result.length > listRules.max_items) {
-    repairs.push({ rule: 'max_items', truncatedFrom: result.length, to: listRules.max_items });
-    result = result.slice(0, listRules.max_items);
-  }
-
-  // 4. Min items — reject undersized lists (cannot auto-add values)
-  if (listRules.min_items && result.length < listRules.min_items) {
-    repairs.push({ rule: 'min_items_violation', have: result.length, need: listRules.min_items, reject: true });
-  }
 
   return { values: result, repairs };
 }

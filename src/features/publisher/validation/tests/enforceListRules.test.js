@@ -50,52 +50,10 @@ describe('enforceListRules — sort', () => {
   });
 });
 
-describe('enforceListRules — max items', () => {
-  it('truncates when over max', () => {
-    const r = enforceListRules(['a', 'b', 'c', 'd'], { max_items: 2 });
-    assert.deepStrictEqual(r.values, ['a', 'b']);
-    assert.ok(r.repairs.some(rep => rep.rule === 'max_items'));
-  });
-
-  it('under max → no repair', () => {
-    const r = enforceListRules(['a', 'b'], { max_items: 5 });
-    assert.deepStrictEqual(r.values, ['a', 'b']);
-    assert.equal(r.repairs.length, 0);
-  });
-
-  it('exact max → no repair', () => {
-    const r = enforceListRules(['a', 'b'], { max_items: 2 });
-    assert.deepStrictEqual(r.values, ['a', 'b']);
-    assert.equal(r.repairs.length, 0);
-  });
-});
-
-describe('enforceListRules — min items (reject)', () => {
-  it('below min → reject flag', () => {
-    const r = enforceListRules([], { min_items: 1 });
-    assert.deepStrictEqual(r.values, []);
-    const minRep = r.repairs.find(rep => rep.rule === 'min_items_violation');
-    assert.ok(minRep);
-    assert.equal(minRep.reject, true);
-  });
-
-  it('meets min → no flag', () => {
-    const r = enforceListRules(['a'], { min_items: 1 });
-    assert.deepStrictEqual(r.values, ['a']);
-    assert.equal(r.repairs.length, 0);
-  });
-
-  it('min_items: 0 with empty array → no flag', () => {
-    const r = enforceListRules([], { min_items: 0 });
-    assert.deepStrictEqual(r.values, []);
-    assert.equal(r.repairs.length, 0);
-  });
-});
-
 describe('enforceListRules — combined rules', () => {
-  it('dedupe → sort → truncate in order', () => {
-    const r = enforceListRules(['c', 'a', 'b', 'a'], { dedupe: true, sort: 'alpha', max_items: 2 });
-    assert.deepStrictEqual(r.values, ['a', 'b']);
+  it('dedupe → sort in order', () => {
+    const r = enforceListRules(['c', 'a', 'b', 'a'], { dedupe: true, sort: 'alpha' });
+    assert.deepStrictEqual(r.values, ['a', 'b', 'c']);
   });
 });
 

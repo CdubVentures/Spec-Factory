@@ -65,18 +65,18 @@ describe('normalizeBoolean', () => {
     });
   }
 
-  const unk = [
-    ['unk',       'canonical unk'],
-    ['unknown',   'verbose unknown'],
-    ['n/a',       'not applicable'],
-    ['',          'empty -> unk'],
-    [null,        'null -> unk'],
-    [undefined,   'undefined -> unk'],
+  const absent = [
+    ['unk',       'unk token → null'],
+    ['unknown',   'verbose unknown → null'],
+    ['n/a',       'not applicable → null'],
+    ['',          'empty → null'],
+    [null,        'null → null'],
+    [undefined,   'undefined → null'],
   ];
 
-  for (const [input, label] of unk) {
-    it(`unk: ${label}`, () => {
-      assert.strictEqual(normalizeBoolean(input), 'unk');
+  for (const [input, label] of absent) {
+    it(`absent: ${label}`, () => {
+      assert.strictEqual(normalizeBoolean(input), null);
     });
   }
 

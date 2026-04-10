@@ -38,7 +38,8 @@ import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
 
 function isKnownToken(v) {
   const token = normalizeToken(v);
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
+  if (v == null) return false;
+  return token !== '' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
 }
 
 function extractComponentTypeFromRule(rule) {
@@ -804,7 +805,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
           const rawValue = fields[fieldKey];
           const normalizedComponentValue = normalizeSlotValueForShape(rawValue, fm.shape || 'scalar').value;
           const rawValueText = String(slotValueToText(normalizedComponentValue, fm.shape || 'scalar') || '').trim();
-          if (!rawValueText || normalizeToken(rawValueText) === 'unk' || normalizeToken(rawValueText) === 'n/a') continue;
+          if (!rawValueText || normalizeToken(rawValueText) === 'n/a') continue;
 
           const compType = fm.component_type;
           // Try singular key first (loadFieldRules keys by filename: sensor.json → "sensor"),
@@ -931,7 +932,7 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
         SELECT ifs.product_id, ifs.value
         FROM item_field_state ifs
         WHERE ifs.category = ? AND ifs.field_key = ?
-          AND ifs.value IS NOT NULL AND LOWER(TRIM(ifs.value)) NOT IN ('unk', 'n/a', '')
+          AND ifs.value IS NOT NULL AND LOWER(TRIM(ifs.value)) NOT IN ('n/a', '')
           AND NOT EXISTS (
             SELECT 1 FROM item_component_links icl
             WHERE icl.category = ifs.category AND icl.product_id = ifs.product_id AND icl.field_key = ifs.field_key

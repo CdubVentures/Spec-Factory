@@ -58,8 +58,8 @@
 
 ### Phase 5 — Dead code cleanup (DONE)
 
-- Deleted dead `block_publish_when_unk` branch in `needsetEngine.js`
-- Deleted dead `getPublishGate()` method from `fieldRulesEngine.js`
+- Deleted dead `block_publish_when_unk` branch in `needsetEngine.js` (flag fully retired — now derived from `required_level`)
+- Deleted dead `getPublishGate()` method from `fieldRulesEngine.js` (flag fully retired — now derived from `required_level`)
 - Deleted 16 dead accessor functions from `ruleAccessors.js` (file: 220 → 62 lines)
 - Updated `engine/README.md` public API list
 

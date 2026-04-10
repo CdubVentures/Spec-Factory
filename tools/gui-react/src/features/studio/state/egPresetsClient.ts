@@ -67,7 +67,7 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', min_items: 0, max_items: 100, item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
       unknown_token: 'unk',
       unknown_reason_required: true,
     },
@@ -106,17 +106,12 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
       availability: 'expected',
       difficulty: 'easy',
       effort: 3,
-      publish_gate: false,
     },
     evidence: {
       min_evidence_refs: 1,
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      mode: 'advisory',
-      model_strategy: 'auto',
-      max_calls: 1,
-      max_tokens: 4096,
       reasoning_note: buildColorReasoningNote(colorNames),
     },
     ui: {
@@ -138,7 +133,7 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', min_items: 0, max_items: 50, item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
       unknown_token: 'unk',
       unknown_reason_required: true,
     },
@@ -158,17 +153,12 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
       availability: 'sometimes',
       difficulty: 'easy',
       effort: 3,
-      publish_gate: false,
     },
     evidence: {
       min_evidence_refs: 1,
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      mode: 'advisory',
-      model_strategy: 'auto',
-      max_calls: 1,
-      max_tokens: 4096,
       reasoning_note: 'Return editions as kebab-case slugs. Lowercase, hyphens only, no spaces. Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness. Do not return display names or title case.',
     },
     ui: {

@@ -94,12 +94,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.gate': { desc: 'Derives AI call budget and model tier from effort score.' },
     } },
 
-  { path: 'priority.block_publish_when_unk', type: 'presence', flatAliases: [],
-    section: 'Priority & Effort', key: 'Block Publish When Unk',
-    consumers: {
-      'val.gate': { desc: 'Step 12 — Rejects "unk" values for fields that block publishing.' },
-    } },
-
   // ═══ Contract ════════════════════════════════════════════════════════
 
   { path: 'contract.type', type: 'string', flatAliases: ['data_type', 'type'],
@@ -162,19 +156,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'val.list': { desc: 'Step 7 — Sorts list values (alpha, numeric, or none).' },
     } },
 
-  { path: 'contract.list_rules.max_items', type: 'presence', flatAliases: [],
-    section: 'Contract (Type, Shape, Unit)', key: 'List Max Items',
-    consumers: {
-      'eng.list': { desc: 'Truncates list values exceeding the declared maximum item count.' },
-      'val.list': { desc: 'Step 7 — Truncates list to max item count.' },
-    } },
-
-  { path: 'contract.list_rules.min_items', type: 'presence', flatAliases: [],
-    section: 'Contract (Type, Shape, Unit)', key: 'List Min Items',
-    consumers: {
-      'eng.list': { desc: 'Flags list values with fewer items than the declared minimum.' },
-      'val.list': { desc: 'Step 7 — Rejects lists with fewer items than minimum.' },
-    } },
 
   { path: 'contract.rounding.decimals', type: 'presence', flatAliases: [],
     section: 'Contract (Type, Shape, Unit)', key: 'Rounding Decimals',
@@ -264,30 +245,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
   // WHY: parse.template retired — type+shape is the contract. Consumers migrated in Phase 1-2.
 
   // ═══ AI Assist ═══════════════════════════════════════════════════════
-
-  { path: 'ai_assist.mode', type: 'string', flatAliases: [],
-    section: 'AI Assist', key: 'Mode',
-    consumers: {
-      'eng.component': { desc: 'Sets the AI assist mode (off, advisory, planner, judge) for LLM-assisted extraction.' },
-    } },
-
-  { path: 'ai_assist.model_strategy', type: 'string', flatAliases: [],
-    section: 'AI Assist', key: 'Model Strategy',
-    consumers: {
-      'eng.component': { desc: 'Controls which model tier is selected for AI-assisted extraction calls.' },
-    } },
-
-  { path: 'ai_assist.max_calls', type: 'presence', flatAliases: [],
-    section: 'AI Assist', key: 'Max Calls',
-    consumers: {
-      'eng.component': { desc: 'Caps the number of LLM calls per field per extraction cycle.' },
-    } },
-
-  { path: 'ai_assist.max_tokens', type: 'presence', flatAliases: [],
-    section: 'AI Assist', key: 'Max Tokens',
-    consumers: {
-      'eng.component': { desc: 'Sets the max output token budget per LLM extraction call.' },
-    } },
 
   { path: 'ai_assist.reasoning_note', type: 'string', flatAliases: [],
     section: 'AI Assist', key: 'Extraction Guidance',

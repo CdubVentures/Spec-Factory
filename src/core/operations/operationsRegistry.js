@@ -75,6 +75,7 @@ export function registerOperation({ type, category, productId, productLabel, sta
     _seq: ++_seq,
     endedAt: null,
     error: null,
+    modelInfo: null,
   };
   ops.set(id, operation);
   broadcast(operation);
@@ -95,6 +96,21 @@ export function updateStage({ id, stageIndex, stageName }) {
     const idx = op.stages.indexOf(stageName);
     if (idx >= 0) op.currentStageIndex = idx;
   }
+  broadcast(op);
+}
+
+/**
+ * Attach resolved model info to a running operation.
+ * Replaces on repeat calls (primary → fallback).
+ */
+export function updateModelInfo({ id, model, provider, isFallback }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  op.modelInfo = {
+    model: typeof model === 'string' ? model : '',
+    provider: typeof provider === 'string' ? provider : '',
+    isFallback: Boolean(isFallback),
+  };
   broadcast(op);
 }
 

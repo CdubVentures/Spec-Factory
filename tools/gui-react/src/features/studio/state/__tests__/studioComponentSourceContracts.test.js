@@ -61,10 +61,6 @@ test('studio component sources create empty component rows with stable default p
       effort: 3,
     },
     ai_assist: {
-      mode: null,
-      model_strategy: 'auto',
-      max_calls: null,
-      max_tokens: null,
       reasoning_note: '',
     },
   });

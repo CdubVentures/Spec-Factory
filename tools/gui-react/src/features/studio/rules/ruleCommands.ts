@@ -77,7 +77,6 @@ function applyLegacyAliasCoupling(
   if (path === 'priority.availability') rule.availability = value;
   if (path === 'priority.difficulty') rule.difficulty = value;
   if (path === 'priority.effort') rule.effort = value;
-  if (path === 'priority.publish_gate') rule.publish_gate = value;
   if (path === 'evidence.min_evidence_refs') rule.min_evidence_refs = value;
   if (path === 'enum.policy') rule.enum_policy = value;
   if (path === 'enum.source') rule.enum_source = value;
@@ -100,48 +99,10 @@ function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void 
   }
 }
 
-function applyPrioritySignalCoupling(rule: Record<string, unknown>): void {
-  const aiAssist = (rule.ai_assist || {}) as Record<string, unknown>;
-  const existingNote = String(aiAssist.reasoning_note || '');
-  const explicitMode = String(aiAssist.mode || '');
-  if (!explicitMode) {
-    const requiredLevel = String(
-      (rule.priority as Record<string, unknown>)?.required_level ||
-        rule.required_level ||
-        'expected',
-    );
-    const difficulty = String(
-      (rule.priority as Record<string, unknown>)?.difficulty ||
-        rule.difficulty ||
-        'easy',
-    );
-    const effort = Number(
-      (rule.priority as Record<string, unknown>)?.effort || rule.effort || 3,
-    );
-    let derivedMode = 'off';
-    if (['identity', 'required', 'critical'].includes(requiredLevel)) {
-      derivedMode = 'judge';
-    } else if (requiredLevel === 'expected' && difficulty === 'hard') {
-      derivedMode = 'planner';
-    } else if (requiredLevel === 'expected') {
-      derivedMode = 'advisory';
-    }
-    const maxCalls = effort <= 3 ? 1 : effort <= 6 ? 2 : 3;
-    const note =
-      derivedMode === 'off'
-        ? `${requiredLevel} field - LLM extraction skipped (deterministic only)`
-        : `${requiredLevel}/${difficulty} field (effort ${effort}) - auto: ${derivedMode}, budget ${maxCalls} call${maxCalls > 1 ? 's' : ''}`;
-    setNestedRuleValue(rule, 'ai_assist.reasoning_note', note);
-    return;
-  }
-
-  if (
-    existingNote &&
-    (existingNote.includes(' - auto: ') ||
-      existingNote.includes('LLM extraction skipped'))
-  ) {
-    setNestedRuleValue(rule, 'ai_assist.reasoning_note', '');
-  }
+// WHY: AI assist mode/budget knobs retired. Auto-note generation removed.
+// Users set extraction guidance manually via ai_assist.reasoning_note.
+function applyPrioritySignalCoupling(_rule: Record<string, unknown>): void {
+  // no-op after knob retirement
 }
 
 function applyComponentTypeCoupling(

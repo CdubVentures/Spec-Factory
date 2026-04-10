@@ -147,8 +147,8 @@ export function connectionClassesCompatible(values) {
     if (hasWireless && hasWired) return 'dual';
     if (hasWireless) return 'wireless';
     if (hasWired) return 'wired';
-    return 'unk';
-  }).filter((c) => c !== 'unk');
+    return null;
+  }).filter((c) => c !== null);
   if (classes.length < 2) return true;
   const unique = [...new Set(classes)];
   if (unique.length === 1) return true;

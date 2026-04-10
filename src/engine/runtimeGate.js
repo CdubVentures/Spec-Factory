@@ -126,7 +126,7 @@ export function applyRuntimeFieldRules({
     }
   }
 
-  // Pass 1.5: list_rules enforcement — sort + min/max (dedupe already applied in normalizeCandidate).
+  // Pass 1.5: list_rules enforcement — sort (dedupe already applied in normalizeCandidate).
   for (const field of orderedFields) {
     const value = nextFields[field];
     if (!Array.isArray(value)) {
@@ -151,39 +151,6 @@ export function applyRuntimeFieldRules({
       list = [...list].sort(isNumeric
         ? (a, b) => b - a
         : (a, b) => String(b).toLowerCase().localeCompare(String(a).toLowerCase()));
-    }
-
-    // max_items — truncate deterministically
-    if (typeof listRules.max_items === 'number' && listRules.max_items > 0 && list.length > listRules.max_items) {
-      const before = list;
-      list = list.slice(0, listRules.max_items);
-      changes.push({
-        field,
-        stage: 'list_rules',
-        rule: 'max_items_truncated',
-        before,
-        after: list
-      });
-    }
-
-    // min_items — fail if below minimum
-    if (typeof listRules.min_items === 'number' && listRules.min_items > 0 && list.length < listRules.min_items) {
-      const before = list;
-      nextFields[field] = 'unk';
-      failures.push({
-        field,
-        stage: 'list_rules',
-        reason_code: 'min_items_not_met',
-        required: listRules.min_items,
-        actual: list.length
-      });
-      changes.push({
-        field,
-        stage: 'list_rules',
-        before,
-        after: 'unk'
-      });
-      continue;
     }
 
     nextFields[field] = list;

@@ -190,7 +190,7 @@ describe('repairField — failure cases', () => {
 // ── decisions (reject/set_unk) ──────────────────────────────────────────────
 
 describe('repairField — decisions', () => {
-  it('set_unk produces unk value', async () => {
+  it('set_unk produces null value', async () => {
     const callLlm = stubCallLlm(makeLlmResponse({
       decisions: [{ value: 'pink', decision: 'set_unk', resolved_to: null, reasoning: 'unknown' }],
     }));
@@ -199,10 +199,10 @@ describe('repairField — decisions', () => {
       fieldKey: 'color', fieldRule: makeFieldRule(),
       knownValues: { policy: 'closed', values: ['black'] }, callLlm,
     });
-    assert.equal(result.revalidation.value, 'unk');
+    assert.equal(result.revalidation.value, null);
   });
 
-  it('reject produces unk value', async () => {
+  it('reject produces null value', async () => {
     const callLlm = stubCallLlm(makeLlmResponse({
       decisions: [{ value: 'pink', decision: 'reject', resolved_to: null, reasoning: 'hallucination' }],
     }));
@@ -211,7 +211,7 @@ describe('repairField — decisions', () => {
       fieldKey: 'color', fieldRule: makeFieldRule(),
       knownValues: { policy: 'closed', values: ['black'] }, callLlm,
     });
-    assert.equal(result.revalidation.value, 'unk');
+    assert.equal(result.revalidation.value, null);
   });
 
   it('low-confidence decision still applied (re-validation is the gate)', async () => {

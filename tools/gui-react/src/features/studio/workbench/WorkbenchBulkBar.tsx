@@ -14,13 +14,11 @@ import { REQUIRED_LEVEL_OPTIONS as REQUIRED_OPTIONS, ENUM_POLICY_OPTIONS as POLI
 export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
   const [bulkRequired, setBulkRequired] = useState('');
   const [bulkPolicy, setBulkPolicy] = useState('');
-  const [bulkPubGate, setBulkPubGate] = useState<boolean | null>(null);
   const [bulkMinRefs, setBulkMinRefs] = useState('');
 
   function handleApply() {
     if (bulkRequired) onApply('priority.required_level', bulkRequired);
     if (bulkPolicy) onApply('enum.policy', bulkPolicy);
-    if (bulkPubGate !== null) onApply('priority.publish_gate', bulkPubGate);
     if (bulkMinRefs !== '') onApply(
       'evidence.min_evidence_refs',
       parseBoundedIntInput(
@@ -33,11 +31,10 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
     // Reset
     setBulkRequired('');
     setBulkPolicy('');
-    setBulkPubGate(null);
     setBulkMinRefs('');
   }
 
-  const hasChanges = bulkRequired || bulkPolicy || bulkPubGate !== null || bulkMinRefs !== '';
+  const hasChanges = bulkRequired || bulkPolicy || bulkMinRefs !== '';
 
   const selCls = 'px-1.5 py-1 text-xs border sf-border-soft rounded sf-input';
 
@@ -73,21 +70,6 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
           onChange={(e) => setBulkMinRefs(e.target.value)}
           placeholder="\u2014"
         />
-      </label>
-
-      <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
-        <input
-          type="checkbox"
-          ref={(el) => { if (el) el.indeterminate = bulkPubGate === null; }}
-          checked={bulkPubGate === true}
-          onChange={() => {
-            if (bulkPubGate === null) setBulkPubGate(true);
-            else if (bulkPubGate === true) setBulkPubGate(false);
-            else setBulkPubGate(null);
-          }}
-          className="rounded sf-border-soft"
-        />
-        Pub Gate
       </label>
 
       <span className="sf-text-muted dark:sf-text-muted">|</span>

@@ -45,15 +45,15 @@ function seedCompiledRules(specDb) {
     fields: {
       colors: {
         contract: {
-          shape: 'list', type: 'string', unknown_token: 'unk',
-          list_rules: { dedupe: true, sort: 'none', max_items: 100, min_items: 0 },
+          shape: 'list', type: 'string',
+          list_rules: { dedupe: true, sort: 'none' },
         },
         parse: { template: 'list_of_tokens_delimited' },
         enum: { policy: 'closed', match: { strategy: 'exact' } },
         priority: {},
       },
       editions: {
-        contract: { shape: 'list', type: 'string', unknown_token: 'unk' },
+        contract: { shape: 'list', type: 'string' },
         parse: { template: null },
         enum: { policy: 'open', match: { strategy: 'exact' } },
         priority: {},

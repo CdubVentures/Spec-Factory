@@ -3,6 +3,7 @@
 // Predicates mirror the guard conditions in validateField.js exactly.
 
 import { FORMAT_REGISTRY } from './formatRegistry.js';
+import { shouldBlockUnkPublish } from './shouldBlockUnkPublish.js';
 
 const FORMAT_KEYS = new Set(Object.keys(FORMAT_REGISTRY));
 
@@ -107,7 +108,7 @@ export const PHASE_REGISTRY = [
     id: 'list_rules',
     title: 'List Rules',
     order: 6,
-    description: 'Enforces list-specific constraints: deduplication, sorting, min/max items.',
+    description: 'Enforces list-specific constraints: deduplication, sorting.',
     behaviorNote: 'Only for list-shaped fields with list_rules configured.',
     isApplicable: (rule) => {
       const shape = rule?.contract?.shape;
@@ -119,8 +120,6 @@ export const PHASE_REGISTRY = [
       const parts = [];
       if (lr.dedupe) parts.push('Deduplicate');
       if (lr.sort) parts.push(`Sort: ${lr.sort}`);
-      if (lr.min_items != null) parts.push(`Min items: ${lr.min_items}`);
-      if (lr.max_items != null) parts.push(`Max items: ${lr.max_items}`);
       return parts.length > 0 ? parts.join(', ') : 'List rules configured';
     },
   },
@@ -176,11 +175,8 @@ export const PHASE_REGISTRY = [
     title: 'Publish Gate',
     order: 10,
     description: 'Rejects unknown values for fields that block publishing.',
-    behaviorNote: 'Final gate. Rejects unk values when block_publish_when_unk is true.',
-    isApplicable: (rule) => Boolean(rule?.priority?.block_publish_when_unk),
-    triggerDetail: (rule) => {
-      const token = rule?.contract?.unknown_token || 'unk';
-      return `Blocks publish when value is "${token}"`;
-    },
+    behaviorNote: 'Final gate. Rejects unk values when required_level is identity or required.',
+    isApplicable: shouldBlockUnkPublish,
+    triggerDetail: () => 'Blocks publish when value is null (absent)',
   },
 ];

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/index.js';
+import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../../../core/operations/index.js';
 
 function cleanProductJsonCandidates(productId, fieldKeys) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
@@ -111,6 +111,8 @@ export function registerColorEditionFinderRoutes(ctx) {
           config,
           logger: logger || null,
           onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+          onModelResolved: ({ model, provider, isFallback }) =>
+            updateModelInfo({ id: op.id, model, provider, isFallback }),
         });
 
         if (result.rejected) {

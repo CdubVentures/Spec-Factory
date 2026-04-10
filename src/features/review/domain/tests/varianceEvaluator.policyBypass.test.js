@@ -21,7 +21,7 @@ test('missing or unknown values skip enforcement', () => {
   const cases = [
     { policy: 'authoritative', dbValue: null, productValue: '100' },
     { policy: 'authoritative', dbValue: '100', productValue: null },
-    { policy: 'authoritative', dbValue: 'unk', productValue: '100' },
+    { policy: 'authoritative', dbValue: null, productValue: '100' },
     { policy: 'upper_bound', dbValue: '100', productValue: 'n/a' },
     { policy: 'authoritative', dbValue: 'foo', productValue: '' },
     { policy: 'range', dbValue: '100', productValue: 'unknown' },

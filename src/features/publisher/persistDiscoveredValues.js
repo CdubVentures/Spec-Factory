@@ -10,7 +10,7 @@
  */
 export function persistDiscoveredValue({ specDb, fieldKey, value, fieldRule, onValueDiscovered }) {
   if (!fieldRule || fieldRule?.enum?.policy !== 'open_prefer_known') return;
-  if (value == null || value === '' || value === 'unk') return;
+  if (value == null || value === '') return;
 
   const strValue = String(value);
   if (!strValue.trim()) return;

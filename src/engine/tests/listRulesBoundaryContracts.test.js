@@ -16,7 +16,7 @@ test.after(async () => {
   ]);
 });
 
-test('list_rules pipeline applies dedupe before sort before truncation', () => {
+test('list_rules pipeline applies dedupe before sort', () => {
   const result = applyRuntimeFieldRules({
     engine: listHarness.engine,
     fields: {
@@ -25,7 +25,7 @@ test('list_rules pipeline applies dedupe before sort before truncation', () => {
     fieldOrder: ['features']
   });
 
-  assert.deepEqual(result.fields.features, ['Apple', 'Banana', 'Cherry', 'Date', 'Mango']);
+  assert.deepEqual(result.fields.features, ['Apple', 'Banana', 'Cherry', 'Date', 'Mango', 'Zebra']);
 });
 
 test('list_rules enforcement is opt-in for scalar fields and list fields without list_rules', () => {

@@ -1,12 +1,13 @@
 // WHY: LLM call lifecycle tracker extracted from runtimeBridge.js
 // Factory pattern — encapsulates worker ID resolution and aggregate metrics.
 
-import { buildLlmCallKey, incrementCounterMap } from './runtimeBridgeCoercers.js';
+import { buildLlmCallKey, incrementCounterMap, decrementCounterMap } from './runtimeBridgeCoercers.js';
 
 export function createLlmCallTracker() {
   let _llmCounter = 0;
   const _llmCallMap = new Map();
-  const _llmSeenWorkers = new Set();
+  // WHY: Map (not Set) so we can track workerId → model and swap counts on fallback.
+  const _llmSeenWorkers = new Map();
   // WHY: Track recently-failed workers by reason so fallback calls reuse the
   // same worker ID instead of creating a duplicate row in the Workers tab.
   const _llmFailedByReason = new Map();
@@ -97,10 +98,17 @@ export function createLlmCallTracker() {
     if (!safeWorkerId) return;
 
     if (!_llmSeenWorkers.has(safeWorkerId)) {
-      _llmSeenWorkers.add(safeWorkerId);
+      _llmSeenWorkers.set(safeWorkerId, model);
       _llmAgg.total_calls += 1;
       incrementCounterMap(_llmAgg.calls_by_type, callType);
       incrementCounterMap(_llmAgg.calls_by_model, model);
+    } else {
+      const previousModel = _llmSeenWorkers.get(safeWorkerId);
+      if (previousModel !== model && model) {
+        decrementCounterMap(_llmAgg.calls_by_model, previousModel);
+        incrementCounterMap(_llmAgg.calls_by_model, model);
+        _llmSeenWorkers.set(safeWorkerId, model);
+      }
     }
 
     if (llmEvent === 'llm_started') {

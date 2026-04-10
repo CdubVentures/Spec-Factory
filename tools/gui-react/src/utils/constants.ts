@@ -52,4 +52,4 @@ export const PIPELINE_STAGE_DEFS = [
 ] as const;
 
 // SSOT: must match src/shared/valueNormalizers.js UNKNOWN_VALUE_TOKENS
-export const UNKNOWN_VALUES = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);
+export const UNKNOWN_VALUES = new Set(['', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);

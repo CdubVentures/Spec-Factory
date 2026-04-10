@@ -47,8 +47,8 @@ describe('characterization: closed policy — flag unknowns for LLM repair', () 
     assert.equal(r.needsLlm, true);
   });
 
-  it('unk token always passes', () => {
-    const r = checkEnum('unk', 'closed', COLOR_KNOWN, 'exact');
+  it('null (absence) always passes', () => {
+    const r = checkEnum(null, 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, true);
     assert.equal(r.needsLlm, false);
   });
