@@ -119,6 +119,18 @@ export function createFinderRouteHandler(finderConfig) {
           const productRow = specDb.getProduct(productId);
           if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
+          // WHY: Field Studio gate — if requiredFields are not enabled in
+          // compiled rules, this module is disabled for this category.
+          if (finderConfig.requiredFields?.length > 0) {
+            const compiled = specDb.getCompiledRules?.();
+            const fields = compiled?.fields || {};
+            for (const key of finderConfig.requiredFields) {
+              if (!fields[key]) {
+                return jsonRes(res, 403, { error: `${routePrefix} disabled: field '${key}' not enabled in field studio` });
+              }
+            }
+          }
+
           // WHY: When jsonStrict is off, LLM routing splits into Research + Writer.
           const jsonStrictKey = `_resolved${capitalize(phase)}JsonStrict`;
           const useWriterPhase = config[jsonStrictKey] === false;

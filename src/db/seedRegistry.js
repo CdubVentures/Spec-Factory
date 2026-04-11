@@ -148,9 +148,31 @@ export function buildCategorySurfaces(steps) {
   ];
 }
 
+import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
+
 // ── Reseed surface factory (runtime-dispatched, best-effort) ────────────────
 
 export function buildReseedSurfaces(deps) {
+  // WHY: Finder module reseed surfaces are auto-generated from the registry.
+  // Each finder's rebuildFnKey maps to a function passed via DI in deps.
+  const finderSurfaces = FINDER_MODULES
+    .filter(mod => mod.rebuildFnKey && typeof deps[mod.rebuildFnKey] === 'function')
+    .map(mod => ({
+      key: mod.reseedKey || mod.id,
+      label: mod.moduleLabel,
+      scope: 'reseed',
+      tables: [mod.tableName, mod.runsTableName],
+      shouldRun: null,
+      execute: (ctx) => deps[mod.rebuildFnKey]({
+        specDb: ctx.db,
+        productRoot: ctx.productRoot,
+      }),
+      formatLog: (category, result) =>
+        result.seeded > 0
+          ? `${category}: ${result.seeded} ${mod.moduleLabel} re-seeded`
+          : '',
+    }));
+
   return [
     {
       key: 'checkpoint',
@@ -172,21 +194,7 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: ${result.runs_seeded} runs re-seeded from checkpoints`
           : '',
     },
-    {
-      key: 'color_edition',
-      label: 'Color Edition',
-      scope: 'reseed',
-      tables: ['color_edition_finder', 'color_edition_finder_runs'],
-      shouldRun: null,
-      execute: (ctx) => deps.rebuildColorEditionFinderFromJson({
-        specDb: ctx.db,
-        productRoot: ctx.productRoot,
-      }),
-      formatLog: (category, result) =>
-        result.seeded > 0
-          ? `${category}: ${result.seeded} color editions re-seeded`
-          : '',
-    },
+    ...finderSurfaces,
     {
       key: 'llm_route_matrix',
       label: 'LLM Route Matrix',

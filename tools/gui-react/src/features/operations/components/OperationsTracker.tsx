@@ -4,18 +4,24 @@ import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { useProductStore } from '../../../stores/productStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
+import {
+  MODULE_STYLES as FINDER_STYLES,
+  MODULE_LABELS as FINDER_LABELS,
+} from '../state/finderModuleRegistry.generated.ts';
 
 /* ── Module chip color map ─────────────────────────────────────────── */
+// WHY: Finder modules are auto-generated from the backend registry.
+// Non-finder module types (brand-resolver, field-audit, publisher) stay static.
 
 const MODULE_STYLES: Readonly<Record<string, string>> = {
-  cef: 'sf-chip-accent',
+  ...FINDER_STYLES,
   'brand-resolver': 'sf-chip-info',
   'field-audit': 'sf-chip-warning',
   publisher: 'sf-chip-success',
 };
 
 const MODULE_LABELS: Readonly<Record<string, string>> = {
-  cef: 'CEF',
+  ...FINDER_LABELS,
   'brand-resolver': 'BR',
   'field-audit': 'FA',
   publisher: 'PUB',

@@ -35,6 +35,9 @@ import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
 import { createColorEditionFinderStore } from './stores/colorEditionFinderStore.js';
+import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
+import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
+import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
 import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
 
 export class SpecDb {
@@ -43,6 +46,11 @@ export class SpecDb {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
     this.db.exec(SCHEMA);
+    // WHY: Auto-create tables for all registered finder modules.
+    // Uses IF NOT EXISTS so existing tables (like CEF in static SCHEMA) are no-ops.
+    for (const ddl of generateFinderDdl(FINDER_MODULES)) {
+      this.db.exec(ddl);
+    }
     this.category = category;
 
     applyMigrations(this.db);
@@ -164,6 +172,14 @@ export class SpecDb {
         _deleteAllColorEditionFinderRuns: this._deleteAllColorEditionFinderRuns,
       },
     });
+    // WHY: Generic finder store map — auto-wires all registered finder modules.
+    // Existing CEF delegating methods below use this map for backward compat.
+    this._finderStores = new Map();
+    for (const mod of FINDER_MODULES) {
+      this._finderStores.set(mod.id, createFinderSqlStore({
+        db: this.db, category: this.category, module: mod,
+      }));
+    }
     this._fieldCandidateStore = createFieldCandidateStore({
       db: this.db,
       category: this.category,
@@ -740,19 +756,24 @@ export class SpecDb {
   buildQueryExecutionHistory(pid) { return this._crawlLedgerStore.buildQueryExecutionHistory(pid); }
   purgeExpiredCooldowns() { return this._crawlLedgerStore.purgeExpiredCooldowns(); }
 
-  // --- Color & Edition Finder ---
-  upsertColorEditionFinder(row) { this._colorEditionFinderStore.upsert(row); }
-  getColorEditionFinder(pid) { return this._colorEditionFinderStore.get(pid); }
-  listColorEditionFinderByCategory(cat) { return this._colorEditionFinderStore.listByCategory(cat); }
-  getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
-  deleteColorEditionFinder(pid) { return this._colorEditionFinderStore.remove(pid); }
+  // --- Generic Finder Store Accessor ---
+  // WHY: O(1) access to any registered finder's SQL store.
+  // New modules use this directly; legacy CEF methods below for backward compat.
+  getFinderStore(moduleId) { return this._finderStores.get(moduleId); }
 
-  // --- Color & Edition Finder Runs ---
-  insertColorEditionFinderRun(row) { this._colorEditionFinderStore.insertRun(row); }
-  listColorEditionFinderRuns(pid) { return this._colorEditionFinderStore.listRuns(pid); }
-  getLatestColorEditionFinderRun(pid) { return this._colorEditionFinderStore.getLatestRun(pid); }
-  deleteColorEditionFinderRunByNumber(pid, runNum) { return this._colorEditionFinderStore.removeRun(pid, runNum); }
-  deleteAllColorEditionFinderRuns(pid) { return this._colorEditionFinderStore.removeAllRuns(pid); }
+  // --- Color & Edition Finder (backward-compat — delegates to generic store) ---
+  upsertColorEditionFinder(row) { this.getFinderStore('colorEditionFinder').upsert(row); }
+  getColorEditionFinder(pid) { return this.getFinderStore('colorEditionFinder').get(pid); }
+  listColorEditionFinderByCategory(cat) { return this.getFinderStore('colorEditionFinder').listByCategory(cat); }
+  getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
+  deleteColorEditionFinder(pid) { return this.getFinderStore('colorEditionFinder').remove(pid); }
+
+  // --- Color & Edition Finder Runs (backward-compat) ---
+  insertColorEditionFinderRun(row) { this.getFinderStore('colorEditionFinder').insertRun(row); }
+  listColorEditionFinderRuns(pid) { return this.getFinderStore('colorEditionFinder').listRuns(pid); }
+  getLatestColorEditionFinderRun(pid) { return this.getFinderStore('colorEditionFinder').getLatestRun(pid); }
+  deleteColorEditionFinderRunByNumber(pid, runNum) { return this.getFinderStore('colorEditionFinder').removeRun(pid, runNum); }
+  deleteAllColorEditionFinderRuns(pid) { return this.getFinderStore('colorEditionFinder').removeAllRuns(pid); }
 
   // --- Runtime Events ---
 

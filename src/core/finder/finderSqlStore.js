@@ -1,0 +1,175 @@
+/**
+ * Generic Finder SQL Store Factory.
+ *
+ * Creates a standard SQL store for any finder module from its manifest.
+ * Each store manages a summary table (custom columns) and a runs table
+ * (standard shape). Statements are prepared at construction time.
+ *
+ * Hydrates JSON columns (selected_json, prompt_json, response_json)
+ * on read. Serializes them on write.
+ */
+
+function safeJsonParse(str, fallback) {
+  if (!str || typeof str !== 'string') return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function hydrateRunRow(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    selected: safeJsonParse(row.selected_json, {}),
+    prompt: safeJsonParse(row.prompt_json, {}),
+    response: safeJsonParse(row.response_json, {}),
+    fallback_used: Boolean(row.fallback_used),
+  };
+}
+
+/**
+ * @param {object} opts
+ * @param {object} opts.db — better-sqlite3 Database instance
+ * @param {string} opts.category — category scope for all operations
+ * @param {object} opts.module — finder module manifest (tableName, runsTableName, summaryColumns)
+ * @returns {object} store with upsert, get, listByCategory, remove, insertRun, listRuns, getLatestRun, removeRun, removeAllRuns
+ */
+export function createFinderSqlStore({ db, category, module: mod }) {
+  const { tableName, runsTableName, summaryColumns = [] } = mod;
+  const customColNames = summaryColumns.map(c => c.name);
+  // WHY: Map column name → default value for use when upsert receives undefined.
+  // Includes both common and custom columns.
+  const COMMON_DEFAULTS = { cooldown_until: '', latest_ran_at: '', run_count: 0, category: '', product_id: '' };
+  const colDefaults = new Map(Object.entries(COMMON_DEFAULTS));
+  for (const c of summaryColumns) {
+    const d = c.default || '';
+    // Strip SQL string quotes: "'[]'" → "[]"
+    const stripped = (typeof d === 'string' && d.startsWith("'") && d.endsWith("'"))
+      ? d.slice(1, -1) : d;
+    colDefaults.set(c.name, stripped);
+  }
+
+  // ── Prepare statements ──────────────────────────────────────────
+
+  const allSummaryCols = ['category', 'product_id', ...customColNames, 'cooldown_until', 'latest_ran_at', 'run_count'];
+  const placeholders = allSummaryCols.map(() => '?').join(', ');
+  const updateSet = allSummaryCols
+    .filter(c => c !== 'category' && c !== 'product_id')
+    .map(c => `${c} = excluded.${c}`)
+    .join(', ');
+
+  const stmts = {
+    _upsert: db.prepare(
+      `INSERT INTO ${tableName} (${allSummaryCols.join(', ')}) VALUES (${placeholders})
+       ON CONFLICT(category, product_id) DO UPDATE SET ${updateSet}`
+    ),
+    _get: db.prepare(
+      `SELECT * FROM ${tableName} WHERE category = ? AND product_id = ?`
+    ),
+    _list: db.prepare(
+      `SELECT * FROM ${tableName} WHERE category = ? ORDER BY product_id`
+    ),
+    _remove: db.prepare(
+      `DELETE FROM ${tableName} WHERE category = ? AND product_id = ?`
+    ),
+    _insertRun: db.prepare(
+      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, cooldown_until, selected_json, prompt_json, response_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ),
+    _listRuns: db.prepare(
+      `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
+    ),
+    _getLatestRun: db.prepare(
+      `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number DESC LIMIT 1`
+    ),
+    _removeRun: db.prepare(
+      `DELETE FROM ${runsTableName} WHERE category = ? AND product_id = ? AND run_number = ?`
+    ),
+    _removeAllRuns: db.prepare(
+      `DELETE FROM ${runsTableName} WHERE category = ? AND product_id = ?`
+    ),
+  };
+
+  // ── Summary methods ─────────────────────────────────────────────
+
+  function serializeSummaryValue(value, colName) {
+    if (value === null || value === undefined) {
+      // WHY: Use the manifest's declared default for custom columns,
+      // '' for common columns. Preserves SQL default behavior on minimal upsert.
+      return colDefaults.get(colName) ?? '';
+    }
+    if (Array.isArray(value)) return JSON.stringify(value);
+    if (typeof value === 'object') return JSON.stringify(value);
+    return value;
+  }
+
+  function upsert(row) {
+    const values = allSummaryCols.map(col => {
+      const v = row[col];
+      return serializeSummaryValue(v, col);
+    });
+    stmts._upsert.run(...values);
+  }
+
+  function hydrateSummaryRow(row) {
+    if (!row) return null;
+    const result = { ...row };
+    // WHY: JSON array columns need parsing on read
+    for (const col of customColNames) {
+      const val = row[col];
+      if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
+        result[col] = safeJsonParse(val, val);
+      }
+    }
+    return result;
+  }
+
+  function get(productId) {
+    const row = stmts._get.get(category, productId);
+    return row ? hydrateSummaryRow(row) : null;
+  }
+
+  function listByCategory(cat) {
+    return stmts._list.all(cat || category).map(hydrateSummaryRow);
+  }
+
+  function remove(productId) {
+    stmts._remove.run(category, productId);
+  }
+
+  // ── Run methods ─────────────────────────────────────────────────
+
+  function insertRun(row) {
+    stmts._insertRun.run(
+      row.category || category,
+      row.product_id,
+      row.run_number,
+      row.ran_at || '',
+      row.model || 'unknown',
+      row.fallback_used ? 1 : 0,
+      row.cooldown_until || '',
+      JSON.stringify(row.selected || {}),
+      JSON.stringify(row.prompt || {}),
+      JSON.stringify(row.response || {}),
+    );
+  }
+
+  function listRuns(productId) {
+    return stmts._listRuns.all(category, productId).map(hydrateRunRow);
+  }
+
+  function getLatestRun(productId) {
+    return hydrateRunRow(stmts._getLatestRun.get(category, productId));
+  }
+
+  function removeRun(productId, runNumber) {
+    stmts._removeRun.run(category, productId, runNumber);
+  }
+
+  function removeAllRuns(productId) {
+    stmts._removeAllRuns.run(category, productId);
+  }
+
+  return {
+    upsert, get, listByCategory, remove,
+    insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
+  };
+}

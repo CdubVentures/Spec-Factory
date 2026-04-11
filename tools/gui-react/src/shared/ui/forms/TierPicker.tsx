@@ -42,11 +42,11 @@ export function TierPicker({ value, onChange }: TierPickerProps) {
             title={tier.label}
             className={`px-2 py-1 text-[11px] font-medium rounded border transition-colors ${
               checked
-                ? 'sf-bg-accent sf-text-on-emphasis border-transparent'
-                : 'sf-bg-surface-soft sf-text-subtle sf-border-default sf-hover-bg-surface-soft-strong'
+                ? 'sf-chip-confirm font-semibold shadow-sm'
+                : 'sf-bg-surface-soft sf-text-muted sf-border-default sf-hover-bg-surface-soft-strong opacity-60'
             }`}
           >
-            {SHORT_LABELS[tier.id] ?? tier.id}
+            {checked ? '\u2713 ' : ''}{SHORT_LABELS[tier.id] ?? tier.id}
           </button>
         );
       })}

@@ -73,6 +73,8 @@ function normalizeSheetRoleRow(row = {}) {
 
 // WHY: evidence_required and conflict_policy were retired. Strip from field_overrides
 // so control-plane maps don't perpetuate stale keys through save cycles.
+// Also strip empty ai_assist blocks that leak from compiled defaults via the
+// frontend auto-save round-trip (compiled rules → GET → auto-save → PUT → JSON).
 function stripRetiredEvidenceKnobs(overrides) {
   if (!isObject(overrides)) return overrides;
   const cleaned = {};
@@ -82,6 +84,12 @@ function stripRetiredEvidenceKnobs(overrides) {
     if (isObject(rest.evidence)) {
       const { required: _req, conflict_policy: _cp, ...restEv } = rest.evidence;
       rest.evidence = restEv;
+    }
+    // WHY: Empty ai_assist blocks (reasoning_note: "") are compiled defaults,
+    // not user-authored overrides. Strip them so they don't pollute the
+    // source-controlled control-plane map on every save cycle.
+    if (isObject(rest.ai_assist) && !normalizeText(rest.ai_assist.reasoning_note)) {
+      delete rest.ai_assist;
     }
     cleaned[key] = rest;
   }

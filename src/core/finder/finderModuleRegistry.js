@@ -40,13 +40,18 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase (reference to existing llmPhaseDefs entry)
     phase: 'colorFinder',
 
-    // Feature module path (for auto-wiring routes + orchestrator)
+    // Feature module paths (for auto-wiring routes + orchestrator)
     featurePath: 'color-edition',
+    routeFile: 'colorEditionFinderRoutes',
+    contextFile: 'colorEditionFinderRouteContext',
+    registrarExport: 'registerColorEditionFinderRoutes',
+    contextExport: 'createColorEditionFinderRouteContext',
 
     // JSON store config
     filePrefix: 'color_edition',
 
-    // Reseed: key for the rebuild function passed via DI to seedRegistry
+    // Reseed: key for the surface in seedRegistry + rebuild function in DI deps
+    reseedKey: 'color_edition',
     rebuildFnKey: 'rebuildColorEditionFinderFromJson',
   },
 ]);

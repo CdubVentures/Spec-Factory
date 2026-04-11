@@ -6,6 +6,7 @@
 // Output: writes 4 .generated.ts files in the llm-config feature directory
 
 import { LLM_PHASE_DEFS, LLM_PHASE_UI_GLOBAL, LLM_PHASE_GROUPS } from '../../../src/core/config/llmPhaseDefs.js';
+import { FINDER_MODULES } from '../../../src/core/finder/finderModuleRegistry.js';
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const STATE_DIR = resolve(__dirname, '../src/features/llm-config/state');
 const TYPES_DIR = resolve(__dirname, '../src/features/llm-config/types');
+const OPS_DIR = resolve(__dirname, '../src/features/operations/state');
 
 const HEADER = '// AUTO-GENERATED from src/core/config/llmPhaseDefs.js — do not edit manually.\n// Run: node tools/gui-react/scripts/generateLlmPhaseRegistry.js\n';
 
@@ -317,20 +319,51 @@ export function resolvePhaseModel(
   return lines.join('\n');
 }
 
+// ── Generate finderModuleRegistry.generated.ts (Operations Tracker) ──
+
+function generateFinderModuleRegistry() {
+  const lines = [HEADER];
+  lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
+  lines.push('// Eliminates hardcoded MODULE_STYLES / MODULE_LABELS in OperationsTracker.\n');
+
+  // FinderModuleType union
+  const types = FINDER_MODULES.map(m => m.moduleType);
+  lines.push(`export type FinderModuleType =\n  ${types.map(t => `| ${quote(t)}`).join('\n  ')};\n`);
+
+  // MODULE_STYLES map
+  lines.push('export const MODULE_STYLES: Readonly<Record<string, string>> = {');
+  for (const m of FINDER_MODULES) {
+    lines.push(`  ${quote(m.moduleType)}: ${quote(m.chipStyle)},`);
+  }
+  lines.push('};\n');
+
+  // MODULE_LABELS map
+  lines.push('export const MODULE_LABELS: Readonly<Record<string, string>> = {');
+  for (const m of FINDER_MODULES) {
+    lines.push(`  ${quote(m.moduleType)}: ${quote(m.moduleLabel)},`);
+  }
+  lines.push('};\n');
+
+  return lines.join('\n');
+}
+
 // ── Main ──
 
 const phaseTypes = generatePhaseTypes();
 const registry = generatePhaseRegistry();
 const overrideTypes = generatePhaseOverrideTypes();
 const bridge = generatePhaseOverridesBridge();
+const finderRegistry = generateFinderModuleRegistry();
 
 writeFileSync(resolve(TYPES_DIR, 'llmPhaseTypes.generated.ts'), phaseTypes);
 writeFileSync(resolve(STATE_DIR, 'llmPhaseRegistry.generated.ts'), registry);
 writeFileSync(resolve(TYPES_DIR, 'llmPhaseOverrideTypes.generated.ts'), overrideTypes);
 writeFileSync(resolve(STATE_DIR, 'llmPhaseOverridesBridge.generated.ts'), bridge);
+writeFileSync(resolve(OPS_DIR, 'finderModuleRegistry.generated.ts'), finderRegistry);
 
 console.log('Generated:');
 console.log('  types/llmPhaseTypes.generated.ts');
 console.log('  state/llmPhaseRegistry.generated.ts');
 console.log('  types/llmPhaseOverrideTypes.generated.ts');
 console.log('  state/llmPhaseOverridesBridge.generated.ts');
+console.log('  operations/state/finderModuleRegistry.generated.ts');
