@@ -6,6 +6,7 @@ import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { FinderPanelFooter } from '../../../shared/ui/finder/index.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
@@ -443,12 +444,12 @@ function buildRunHistoryColumns(
         <button
           onClick={(e) => { e.stopPropagation(); onDeleteRun(row.original.runNumber); }}
           disabled={isDeletePending}
-          className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          Delete
+          Del
         </button>
       ),
-      size: 70,
+      size: 50,
     },
   ];
 }
@@ -609,7 +610,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         <button
           onClick={(e) => { e.stopPropagation(); runMut.mutate(); }}
           disabled={isRunningCef}
-          className="ml-auto px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
+          className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
         >
           {isRunningCef ? 'Running...' : 'Run Now'}
         </button>
@@ -694,24 +695,23 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           )}
 
           {/* Footer */}
-          <div className="flex items-center gap-3 pt-4 border-t sf-border-soft text-[10px] sf-text-muted">
-            <span>Last run: <strong className="sf-text-subtle">{effectiveResult.last_ran_at?.split('T')[0] ?? '--'}</strong></span>
-            <span>&middot;</span>
-            <span className="inline-flex items-center gap-1.5">Model:
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
+          <FinderPanelFooter
+            lastRanAt={effectiveResult?.last_ran_at}
+            runCount={effectiveResult?.run_count ?? 0}
+            modelSlot={
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold sf-text-subtle">
                 <ModelBadgeGroup {...badgeProps} />
                 {modelDisplay}
               </span>
-            </span>
-            <span>&middot;</span>
-            <span>Runs: <strong className="sf-text-subtle">{effectiveResult.run_count}</strong></span>
+            }
+          >
             {selectedState.ssotRunNumber > 0 && (
               <>
                 <span>&middot;</span>
                 <span>SSOT source: <strong className="sf-text-subtle">Run #{selectedState.ssotRunNumber}</strong></span>
               </>
             )}
-          </div>
+          </FinderPanelFooter>
         </div>
       )}
 

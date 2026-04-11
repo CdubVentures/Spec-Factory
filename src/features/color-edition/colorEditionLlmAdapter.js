@@ -134,21 +134,21 @@ Color output rules:
 - colors[0] must be the default color shown on the official product page
 - Map marketing names in color_names (e.g. "light-blue": "Glacier Blue")
 - UNIQUE ATOMS REQUIRED: Every colorway must map to a different atom. Never duplicate atoms in the colors array. If two colorways would share an atom (e.g. "White" and "Frost White" both mapping to "white"), use the next-closest atom for the variant (e.g. "ivory" for Frost White). Each product SKU/colorway = one unique atom.
-- MASTER SUPERSET: The colors array must contain every unique atom for the product — all standard colorways AND all edition-exclusive colorways. If an edition introduces a color not sold as a standard variant, that atom still belongs in colors. Edition colors are always a subset of this master list.
+- STANDARD COLORS ONLY: The colors array must contain ONLY the standard colorways that the product is sold in as regular SKUs. Do NOT include edition-exclusive colors as separate atoms. Edition colorways are represented as "+" combos in each edition's colors field.
 
 Edition output rules:
 - An edition is a named special/limited/collaboration version sold by the manufacturer
 - Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
-- Each edition needs display_name (official name) and a colors array describing the edition's actual color composition
-- The colors array lists each distinct color visible on the edition's product shell/body, ordered by visual dominance (most dominant first). Use 1–5 colors per edition. Most editions have 2–3 colors (e.g. a yellow edition with black accents = ["yellow", "black"]).
-- Every edition color atom must also appear in the master colors array
+- Each edition needs display_name (official name) and a colors array with a SINGLE combo entry
+- The combo entry joins all visible shell/body colors with "+" in dominant order (most dominant first). Example: a dark gray body with black accents and orange highlights = ["dark-gray+black+orange"]. A black and red edition = ["black+red"]. Use the same registered atoms.
+- Edition combo colors do NOT need to appear in the master colors array — they are edition-exclusive
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
 Return JSON with these exact keys and shapes:
 - "colors": ["atom", ...] (first = default)
 - "default_color": "atom" (must equal colors[0])
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
-- "editions": { "slug": { "display_name": "Official Name", "colors": ["atom", ...] }, ... } or {} if none found
+- "editions": { "slug": { "display_name": "Official Name", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
 - "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 }

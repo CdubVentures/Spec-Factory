@@ -6,10 +6,14 @@
  * to support single-variant and batch runs.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { readImageDimensions } from '../productImageFinder.js';
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
@@ -33,18 +37,37 @@ export function registerProductImageFinderRoutes(ctx) {
     deleteRunSql: (specDb, pid, rn) => store(specDb).removeRun(pid, rn),
     deleteAllRunsSql: (specDb, pid) => store(specDb).removeAllRuns(pid),
 
-    buildGetResponse: (row, selected, runs, onCooldown) => ({
-      product_id: row.product_id,
-      category: row.category,
-      images: row.images,
-      image_count: row.image_count,
-      cooldown_until: row.cooldown_until,
-      on_cooldown: onCooldown,
-      run_count: row.run_count,
-      last_ran_at: row.latest_ran_at,
-      selected,
-      runs,
-    }),
+    buildGetResponse: (row, selected, runs, onCooldown) => {
+      // Backfill dimensions for images that predate dimension capture
+      const productRoot = defaultProductRoot();
+      const enrichImage = (img) => {
+        if (img && img.filename && !img.width && !img.height) {
+          const filePath = path.join(productRoot, row.product_id, 'images', img.filename);
+          const dims = readImageDimensions(filePath);
+          if (dims) { img.width = dims.width; img.height = dims.height; }
+        }
+        return img;
+      };
+      const enrichedSelected = selected?.images
+        ? { ...selected, images: selected.images.map(enrichImage) }
+        : selected;
+      const enrichedRuns = runs.map(r => r.selected?.images
+        ? { ...r, selected: { ...r.selected, images: r.selected.images.map(enrichImage) } }
+        : r,
+      );
+      return {
+        product_id: row.product_id,
+        category: row.category,
+        images: row.images,
+        image_count: row.image_count,
+        cooldown_until: row.cooldown_until,
+        on_cooldown: onCooldown,
+        run_count: row.run_count,
+        last_ran_at: row.latest_ran_at,
+        selected: enrichedSelected,
+        runs: enrichedRuns,
+      };
+    },
 
     buildResultMeta: (result) => ({
       imagesDownloaded: Array.isArray(result.images) ? result.images.length : 0,
@@ -59,6 +82,24 @@ export function registerProductImageFinderRoutes(ctx) {
 
     const category = parts[1] || '';
     const productId = parts[2] || '';
+
+    // Serve image file: GET /product-image-finder/:category/:productId/images/:filename
+    if (method === 'GET' && category && productId && parts[3] === 'images' && parts[4]) {
+      const filename = parts[4];
+      // Sanitize: only allow alphanumeric, dash, underscore, dot
+      if (!/^[\w\-]+\.\w+$/.test(filename)) return jsonRes(res, 400, { error: 'invalid filename' });
+      const productRoot = defaultProductRoot();
+      const filePath = path.join(productRoot, productId, 'images', filename);
+      if (!fs.existsSync(filePath)) return jsonRes(res, 404, { error: 'image not found' });
+
+      const ext = path.extname(filename).toLowerCase();
+      const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.avif': 'image/avif' };
+      const contentType = mimeMap[ext] || 'application/octet-stream';
+      const stat = fs.statSync(filePath);
+      res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': 'public, max-age=86400' });
+      fs.createReadStream(filePath).pipe(res);
+      return true;
+    }
 
     // Custom POST: reads body for variant_key
     if (method === 'POST' && category && productId && !parts[3]) {
@@ -91,6 +132,7 @@ export function registerProductImageFinderRoutes(ctx) {
             category,
             brand: productRow.brand || '',
             model: productRow.model || '',
+            base_model: productRow.base_model || '',
             variant: productRow.variant || '',
           },
           appDb,

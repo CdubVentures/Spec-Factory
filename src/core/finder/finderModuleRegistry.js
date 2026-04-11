@@ -2,7 +2,8 @@
  * Finder Module Registry — SSOT for all finder modules.
  *
  * O(1): add one entry here → DDL, SQL store, routes, reseed, operations
- * tracker, and frontend types are all derived automatically.
+ * tracker, frontend types, phase schema preview, indexing lab panel,
+ * and module settings sections are all derived automatically.
  *
  * Each entry declares everything the system needs to auto-wire a finder
  * module: identity, DB schema, route config, LLM phase, field keys,
@@ -56,6 +57,19 @@ export const FINDER_MODULES = Object.freeze([
 
     // Per-category settings (stored in {tableName}_settings table)
     settingsDefaults: {},
+
+    // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
+    promptBuilderExport: 'buildColorEditionFinderPrompt',
+    responseSchemaExport: 'colorEditionFinderResponseSchema',
+
+    // GUI panel (codegen: finderPanelRegistry.generated.ts)
+    panelFeaturePath: 'color-edition-finder',
+    panelExport: 'ColorEditionFinderPanel',
+
+    // Module Settings (codegen: moduleSettingsSections.generated.ts)
+    settingsLabel: 'Color & Edition Finder',
+    settingsSubtitle: 'CEF module settings',
+    settingsTip: 'Per-category settings for the Color & Edition Finder discovery module.',
   },
   {
     // Identity
@@ -98,7 +112,20 @@ export const FINDER_MODULES = Object.freeze([
     rebuildFnKey: 'rebuildProductImageFinderFromJson',
 
     // Per-category settings (stored in {tableName}_settings table)
-    settingsDefaults: { view1: 'top', view2: 'left' },
+    settingsDefaults: { view1: 'top', view2: 'left', minWidth: '800', minHeight: '600', minFileSize: '50000' },
+
+    // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
+    promptBuilderExport: 'buildProductImageFinderPrompt',
+    responseSchemaExport: 'productImageFinderResponseSchema',
+
+    // GUI panel (codegen: finderPanelRegistry.generated.ts)
+    panelFeaturePath: 'product-image-finder',
+    panelExport: 'ProductImageFinderPanel',
+
+    // Module Settings (codegen: moduleSettingsSections.generated.ts)
+    settingsLabel: 'Product Image Finder',
+    settingsSubtitle: 'PIF module settings',
+    settingsTip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
   },
 ]);
 

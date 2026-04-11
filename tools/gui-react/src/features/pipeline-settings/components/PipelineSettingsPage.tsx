@@ -51,6 +51,8 @@ const ModuleSettingsPanel = lazy(async () => {
   return { default: module.ModuleSettingsPanel };
 });
 
+import { MODULE_SETTINGS_SECTIONS } from '../state/moduleSettingsSections.generated.ts';
+
 // WHY: Helper to test whether a section ID belongs to a runtime category panel.
 function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategoryId {
   return (SETTINGS_CATEGORY_KEYS as readonly string[]).includes(id);
@@ -340,16 +342,13 @@ export function PipelineSettingsPage() {
           </Suspense>
         )}
 
-        {/* Module Settings */}
-        {activeSection === 'module-cef' && (
-          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
-            <ModuleSettingsPanel moduleId="colorEditionFinder" />
-          </Suspense>
-        )}
-        {activeSection === 'module-pif' && (
-          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
-            <ModuleSettingsPanel moduleId="productImageFinder" />
-          </Suspense>
+        {/* Module Settings (auto-derived from generated sections) */}
+        {MODULE_SETTINGS_SECTIONS.map(({ id, moduleId }) =>
+          activeSection === id ? (
+            <Suspense key={id} fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
+              <ModuleSettingsPanel moduleId={moduleId as 'colorEditionFinder' | 'productImageFinder'} />
+            </Suspense>
+          ) : null
         )}
     </>
   );

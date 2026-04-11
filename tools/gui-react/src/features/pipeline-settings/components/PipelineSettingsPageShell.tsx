@@ -1,31 +1,26 @@
 import { useMemo, type ReactNode } from 'react';
 import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { MODULE_SETTINGS_SECTIONS, type ModuleSettingsSectionId } from '../state/moduleSettingsSections.generated.ts';
 
-export type PipelineSectionId =
-  | 'global'
-  | 'planner'
-  | 'fetcher'
-  | 'extraction'
-  | 'source-strategy'
-  | 'deterministic-strategy'
-  | 'module-cef'
-  | 'module-pif'
-  | 'review-publisher'
-  | 'validation';
+type RuntimeSectionId = 'global' | 'planner' | 'fetcher' | 'extraction' | 'source-strategy' | 'deterministic-strategy';
+type EvaluationSectionId = 'review-publisher' | 'validation';
+
+export type PipelineSectionId = RuntimeSectionId | ModuleSettingsSectionId | EvaluationSectionId;
+
+const moduleIds = MODULE_SETTINGS_SECTIONS.map(s => s.id) as ModuleSettingsSectionId[];
 
 export const PIPELINE_SECTION_IDS = [
-  'global',
-  'planner',
-  'fetcher',
-  'extraction',
-  'source-strategy',
-  'deterministic-strategy',
-  'module-cef',
-  'module-pif',
-  'review-publisher',
-  'validation',
-] as const satisfies readonly PipelineSectionId[];
+  'global' as const,
+  'planner' as const,
+  'fetcher' as const,
+  'extraction' as const,
+  'source-strategy' as const,
+  'deterministic-strategy' as const,
+  ...moduleIds,
+  'review-publisher' as const,
+  'validation' as const,
+] satisfies readonly PipelineSectionId[];
 
 // WHY: O(1) group registry — add one entry here for a new top-level sidebar group.
 // Order here = render order. Items reference a group ID.
@@ -86,21 +81,8 @@ const PIPELINE_SECTIONS = [
     tip: 'Ordered list of specification seed query templates per category. These replace the single hardcoded "specifications" query in Tier 1 query generation.',
     group: 'runtime',
   },
-  // ── Module Settings ───────────────────────────────────────────────
-  {
-    id: 'module-cef' as const,
-    label: 'Color & Edition Finder',
-    subtitle: 'CEF module settings',
-    tip: 'Per-category settings for the Color & Edition Finder discovery module.',
-    group: 'modules',
-  },
-  {
-    id: 'module-pif' as const,
-    label: 'Product Image Finder',
-    subtitle: 'PIF module settings',
-    tip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
-    group: 'modules',
-  },
+  // ── Module Settings (auto-generated from finder module registry) ──
+  ...MODULE_SETTINGS_SECTIONS,
   // ── Evaluation Settings ───────────────────────────────────────────
   {
     id: 'review-publisher' as const,
@@ -211,7 +193,12 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
   );
 }
 
-const CATEGORY_SCOPED: ReadonlySet<PipelineSectionId> = new Set(['source-strategy', 'deterministic-strategy', 'module-pif']);
+// WHY: Module settings sections with per-category knobs get a category badge.
+// Derived from generated sections — any module with settingsDefaults gets scoped.
+const CATEGORY_SCOPED: ReadonlySet<PipelineSectionId> = new Set([
+  'source-strategy', 'deterministic-strategy',
+  ...MODULE_SETTINGS_SECTIONS.map(s => s.id),
+]);
 
 // WHY: Derived from SETTINGS_GROUP_REGISTRY so adding a group is O(1).
 const GROUP_LABELS: Record<string, string> = Object.fromEntries(

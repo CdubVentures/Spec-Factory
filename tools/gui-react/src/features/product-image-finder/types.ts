@@ -5,6 +5,9 @@ export interface ProductImageEntry {
   source_page: string;
   alt_text: string;
   bytes: number;
+  width: number;
+  height: number;
+  quality_pass: boolean;
   variant_key: string;
   variant_label: string;
   variant_type: 'color' | 'edition';
@@ -17,6 +20,7 @@ export interface ProductImageFinderRun {
   model: string;
   fallback_used: boolean;
   selected: { images: ProductImageEntry[] };
+  prompt: { system: string; user: string };
   response: {
     images: ProductImageEntry[];
     download_errors: Array<{ view: string; url: string; error: string }>;

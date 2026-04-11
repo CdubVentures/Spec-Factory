@@ -347,6 +347,90 @@ function generateFinderModuleRegistry() {
   return lines.join('\n');
 }
 
+// ── Generate phaseSchemaRegistry.generated.js (backend — phase prompt/schema preview) ──
+
+function phaseUiId(phaseId) {
+  // colorFinder → color-finder, imageFinder → image-finder
+  return phaseId.replace(/([A-Z])/g, '-$1').toLowerCase();
+}
+
+function generateFinderPhaseSchemaRegistry() {
+  const SRC_ROOT = resolve(__dirname, '../../../src');
+  const lines = ['// AUTO-GENERATED from src/core/finder/finderModuleRegistry.js — do not edit manually.'];
+  lines.push('// Run: node tools/gui-react/scripts/generateLlmPhaseRegistry.js\n');
+  lines.push("import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';\n");
+
+  // Static imports for each finder module's adapter + schema
+  for (const m of FINDER_MODULES) {
+    if (!m.promptBuilderExport || !m.responseSchemaExport) continue;
+    const adapterPath = `../../../${m.featurePath}/${m.promptBuilderExport.replace(/^build/, '').replace(/Prompt$/, '').replace(/([A-Z])/g, (_, c, i) => i === 0 ? c.toLowerCase() : c)}`;
+    // Use featurePath to derive the actual source file paths
+    lines.push(`import { ${m.promptBuilderExport} } from '../../../${m.featurePath}/${m.featurePath.split('-').map((w, i) => i === 0 ? w : w[0].toUpperCase() + w.slice(1)).join('')}LlmAdapter.js';`);
+    lines.push(`import { ${m.responseSchemaExport} } from '../../../${m.featurePath}/${m.featurePath.split('-').map((w, i) => i === 0 ? w : w[0].toUpperCase() + w.slice(1)).join('')}Schema.js';`);
+  }
+
+  lines.push('\nexport const FINDER_PHASE_SCHEMAS = Object.freeze({');
+  for (const m of FINDER_MODULES) {
+    if (!m.promptBuilderExport || !m.responseSchemaExport) continue;
+    const uiId = phaseUiId(m.phase);
+    lines.push(`  ${quote(uiId)}: {`);
+    lines.push(`    system_prompt: ${m.promptBuilderExport}({ product: { brand: '{brand}', model: '{model}' } }),`);
+    lines.push(`    response_schema: zodToLlmSchema(${m.responseSchemaExport}),`);
+    lines.push(`  },`);
+  }
+  lines.push('});\n');
+
+  return lines.join('\n');
+}
+
+// ── Generate finderPanelRegistry.generated.ts (Indexing Lab panels) ──
+
+function generateFinderPanelRegistry() {
+  const lines = [HEADER];
+  lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
+  lines.push('// Indexing Lab auto-renders panels from this registry. Zero manual imports.\n');
+  lines.push("import { lazy } from 'react';\n");
+
+  lines.push('export const FINDER_PANELS = [');
+  for (const m of FINDER_MODULES) {
+    if (!m.panelFeaturePath || !m.panelExport) continue;
+    lines.push(`  {`);
+    lines.push(`    id: ${quote(m.id)},`);
+    lines.push(`    component: lazy(() => import('../../${m.panelFeaturePath}/components/${m.panelExport}.tsx').then(m => ({ default: m.${m.panelExport} }))),`);
+    lines.push(`  },`);
+  }
+  lines.push('] as const;\n');
+
+  return lines.join('\n');
+}
+
+// ── Generate moduleSettingsSections.generated.ts (Pipeline Settings sidebar) ──
+
+function generateModuleSettingsSections() {
+  const lines = [HEADER];
+  lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
+  lines.push('// Pipeline Settings auto-renders module sections from this registry.\n');
+
+  lines.push('export const MODULE_SETTINGS_SECTIONS = [');
+  for (const m of FINDER_MODULES) {
+    if (!m.settingsLabel) continue;
+    const sectionId = `module-${m.moduleType}`;
+    lines.push(`  {`);
+    lines.push(`    id: ${quote(sectionId)} as const,`);
+    lines.push(`    moduleId: ${quote(m.id)},`);
+    lines.push(`    label: ${quote(m.settingsLabel)},`);
+    lines.push(`    subtitle: ${quote(m.settingsSubtitle || '')},`);
+    lines.push(`    tip: ${quote(m.settingsTip || '')},`);
+    lines.push(`    group: 'modules',`);
+    lines.push(`  },`);
+  }
+  lines.push('] as const;\n');
+
+  lines.push('export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number][\'id\'];\n');
+
+  return lines.join('\n');
+}
+
 // ── Main ──
 
 const phaseTypes = generatePhaseTypes();
@@ -354,12 +438,22 @@ const registry = generatePhaseRegistry();
 const overrideTypes = generatePhaseOverrideTypes();
 const bridge = generatePhaseOverridesBridge();
 const finderRegistry = generateFinderModuleRegistry();
+const finderPhaseSchemas = generateFinderPhaseSchemaRegistry();
+const finderPanels = generateFinderPanelRegistry();
+const moduleSettingsSections = generateModuleSettingsSections();
+
+const INDEXING_DIR = resolve(__dirname, '../src/features/indexing/state');
+const PIPELINE_DIR = resolve(__dirname, '../src/features/pipeline-settings/state');
+const BACKEND_SCHEMA_DIR = resolve(__dirname, '../../../src/features/indexing/pipeline/shared');
 
 writeFileSync(resolve(TYPES_DIR, 'llmPhaseTypes.generated.ts'), phaseTypes);
 writeFileSync(resolve(STATE_DIR, 'llmPhaseRegistry.generated.ts'), registry);
 writeFileSync(resolve(TYPES_DIR, 'llmPhaseOverrideTypes.generated.ts'), overrideTypes);
 writeFileSync(resolve(STATE_DIR, 'llmPhaseOverridesBridge.generated.ts'), bridge);
 writeFileSync(resolve(OPS_DIR, 'finderModuleRegistry.generated.ts'), finderRegistry);
+writeFileSync(resolve(BACKEND_SCHEMA_DIR, 'phaseSchemaRegistry.generated.js'), finderPhaseSchemas);
+writeFileSync(resolve(INDEXING_DIR, 'finderPanelRegistry.generated.ts'), finderPanels);
+writeFileSync(resolve(PIPELINE_DIR, 'moduleSettingsSections.generated.ts'), moduleSettingsSections);
 
 console.log('Generated:');
 console.log('  types/llmPhaseTypes.generated.ts');
@@ -367,3 +461,6 @@ console.log('  state/llmPhaseRegistry.generated.ts');
 console.log('  types/llmPhaseOverrideTypes.generated.ts');
 console.log('  state/llmPhaseOverridesBridge.generated.ts');
 console.log('  operations/state/finderModuleRegistry.generated.ts');
+console.log('  backend/phaseSchemaRegistry.generated.js');
+console.log('  indexing/state/finderPanelRegistry.generated.ts');
+console.log('  pipeline-settings/state/moduleSettingsSections.generated.ts');

@@ -14,6 +14,8 @@ interface FinderPanelHeaderProps {
   statusChip: StatusChipData;
   tip: string;
   isRunning: boolean;
+  /** Disable the run button (e.g. missing prerequisite data) */
+  runDisabled?: boolean;
   runLabel?: string;
   onRun: () => void;
   /** Extra elements between tip and Run button */
@@ -29,6 +31,7 @@ export function FinderPanelHeader({
   statusChip,
   tip,
   isRunning,
+  runDisabled = false,
   runLabel = 'Run Now',
   onRun,
   children,
@@ -57,11 +60,11 @@ export function FinderPanelHeader({
 
       <button
         onClick={(e) => { e.stopPropagation(); onRun(); }}
-        disabled={isRunning}
-        className="ml-auto px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
+        disabled={isRunning || runDisabled}
+        className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
       >
         {isRunning ? (
-          <span className="flex items-center gap-1.5"><Spinner className="h-3 w-3" /> Running...</span>
+          <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Running...</span>
         ) : runLabel}
       </button>
     </div>

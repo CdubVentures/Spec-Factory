@@ -43,8 +43,7 @@ import {
 } from '../state/indexingRuntimeSettingsProjection.ts';
 import { PickerPanel } from '../panels/PickerPanel.tsx';
 import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
-import { ColorEditionFinderPanel } from '../../color-edition-finder/components/ColorEditionFinderPanel.tsx';
-import { ProductImageFinderPanel } from '../../product-image-finder/components/ProductImageFinderPanel.tsx';
+import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
@@ -296,8 +295,9 @@ export function IndexingPage() {
     <div className="space-y-4 flex flex-col">
       <PickerPanel {...pickerPanelProps} />
       <ProductHistoryPanel productId={singleProductId} category={category} />
-      <ColorEditionFinderPanel productId={singleProductId} category={category} />
-      <ProductImageFinderPanel productId={singleProductId} category={category} />
+      {FINDER_PANELS.map(({ id, component: Panel }) => (
+        <Panel key={id} productId={singleProductId} category={category} />
+      ))}
 
       {actionError && (
         <div className="sf-callout sf-callout-danger px-3 py-2 sf-text-caption" style={{ order: 100 }}>
