@@ -18,9 +18,9 @@
       "sha256": "faf438f0c431580e3588bf8b1e6b7bcf8705a5cc308c9fcacafa306fd0525006"
     },
     {
-      "bytes": 290761,
+      "bytes": 290896,
       "path": "field_rules.json",
-      "sha256": "9a2e280c95e35c3b8919c7a414570bb7651e005161c88e9fb9a4b8f757f26517"
+      "sha256": "00a7bfa81803cca03cebedf6636073013c9dd6880fef4ac361e88a5b7b9097ca"
     },
     {
       "bytes": 201,
@@ -44,7 +44,7 @@
     }
   ],
   "category": "keyboard",
-  "generated_at": "2026-04-11T00:15:01.854Z",
-  "source_map_hash": "b9c613b1382019babb990b7c16bb117a225f8006c4609246af17c7fcbcbe39bc",
+  "generated_at": "2026-04-11T01:11:58.655Z",
+  "source_map_hash": "ac32666e90d89c0b2a0968f27dd1748df87a35fbafe9e5f9abc56b0301dc69fd",
   "version": 1
 }

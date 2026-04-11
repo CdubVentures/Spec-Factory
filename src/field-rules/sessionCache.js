@@ -178,15 +178,16 @@ export function createSessionCache({
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 
-    // WHY: both timestamps live in DB. map updated_at changes only when
-    // auto-save detects a real content change (fingerprint dedup).
-    // If map was saved after compile → stale. Simple.
-    // parseUtcTimestamp normalises SQLite's bare datetime('now') format
-    // so the comparison isn't poisoned by the host's timezone offset.
-    const mapTs = parseUtcTimestamp(mapSavedAt);
-    const compileTs = parseUtcTimestamp(compiledAt);
+    // WHY: Hash-based staleness — immune to timestamp races.
+    // Timestamp comparison breaks because compileProcessCompletion (which may
+    // bump updated_at) always runs AFTER the compile writes manifest.generated_at,
+    // and the frontend auto-save can fire right after compile too.
+    // Hash comparison: if current map_hash === the hash the compiler used
+    // (source_map_hash), the compiled artifacts are up-to-date.
+    const sourceMapHash = compiledRules?.source_map_hash || null;
+    const currentMapHash = sqlRow?.map_hash || null;
     const compileStale = Boolean(
-      mapTs && (!compileTs || mapTs > compileTs)
+      currentMapHash && (!sourceMapHash || currentMapHash !== sourceMapHash)
     );
 
     return {

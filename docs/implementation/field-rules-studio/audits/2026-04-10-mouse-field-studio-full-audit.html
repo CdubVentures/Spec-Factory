@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mouse Field Studio Map - Full Contract Audit (2026-04-10)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f4f8;
+      color: #334155;
+      padding: 32px 24px;
+      line-height: 1.6;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+
+    /* Header */
+    .header { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+    .header h1 { font-size: 26px; color: #0f172a; margin-bottom: 4px; }
+    .header .subtitle { color: #64748b; font-size: 14px; }
+    .header .meta { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+    .header .meta-item { font-size: 13px; color: #475569; }
+    .header .meta-item strong { color: #0f172a; }
+
+    /* Score Ring */
+    .score-section { display: flex; align-items: center; gap: 32px; margin-top: 20px; flex-wrap: wrap; }
+    .score-ring {
+      width: 100px; height: 100px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: 800; color: #fff;
+    }
+    .score-ring .label { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; opacity: 0.9; }
+    .ring-red { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .ring-amber { background: linear-gradient(135deg, #d97706, #b45309); }
+    .ring-green { background: linear-gradient(135deg, #16a34a, #15803d); }
+
+    /* Stat Grid */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stat-card {
+      background: #fff; border-radius: 10px; padding: 16px; text-align: center;
+      border: 1px solid #e2e8f0; transition: transform 0.15s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .stat-card .num { font-size: 28px; font-weight: 800; color: #0f172a; }
+    .stat-card .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    /* Section Headers */
+    h2 {
+      font-size: 20px; color: #0f172a; margin-top: 36px; margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;
+    }
+    h3 { font-size: 16px; color: #1e293b; margin-top: 20px; margin-bottom: 8px; }
+
+    /* Severity Legend */
+    .legend { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .dot-critical { background: #dc2626; }
+    .dot-high { background: #ea580c; }
+    .dot-medium { background: #d97706; }
+    .dot-low { background: #3b82f6; }
+    .dot-info { background: #8b5cf6; }
+
+    /* Finding Cards */
+    .finding {
+      background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 14px;
+      border: 1px solid #e2e8f0; transition: box-shadow 0.15s;
+    }
+    .finding:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .finding.sev-critical { border-left: 5px solid #dc2626; }
+    .finding.sev-high { border-left: 5px solid #ea580c; }
+    .finding.sev-medium { border-left: 5px solid #d97706; }
+    .finding.sev-low { border-left: 5px solid #3b82f6; }
+    .finding.sev-info { border-left: 5px solid #8b5cf6; }
+
+    .finding-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .finding-id { font-size: 12px; font-weight: 700; color: #fff; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+    .id-critical { background: #dc2626; }
+    .id-high { background: #ea580c; }
+    .id-medium { background: #d97706; }
+    .id-low { background: #3b82f6; }
+    .id-info { background: #8b5cf6; }
+
+    .finding-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .finding-fields {
+      display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
+    }
+    .field-tag {
+      font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace;
+      background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    .finding-body { font-size: 14px; color: #475569; margin-top: 8px; }
+    .finding-body p { margin-bottom: 8px; }
+    .finding-body code {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
+      background: #f8fafc; color: #be185d; padding: 1px 5px; border-radius: 3px;
+    }
+    .finding-body ul { margin-left: 20px; margin-bottom: 8px; }
+    .finding-body li { margin-bottom: 4px; }
+
+    /* Evidence Table */
+    .ev-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    .ev-table th {
+      text-align: left; padding: 8px 12px; background: #f8fafc;
+      color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .ev-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .ev-table tr:hover td { background: #f8fafc; }
+
+    /* Recommendation box */
+    .rec-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+      padding: 12px 16px; margin-top: 10px; font-size: 13px; color: #166534;
+    }
+    .rec-box strong { color: #15803d; }
+
+    .warn-box {
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+      padding: 12px 16px; margin-top: 10px; font-size: 13px; color: #92400e;
+    }
+
+    /* Per-Key Section */
+    .key-section {
+      background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 14px;
+      border: 1px solid #e2e8f0;
+    }
+    .key-section.has-issues { border-left: 4px solid #ea580c; }
+    .key-section.clean { border-left: 4px solid #16a34a; }
+
+    .key-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .key-name {
+      font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; color: #0f172a;
+    }
+    .key-meta { font-size: 12px; color: #64748b; }
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .badge-identity { background: #fef3c7; color: #92400e; }
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-required { background: #dbeafe; color: #1e40af; }
+    .badge-expected { background: #f0fdf4; color: #166534; }
+    .badge-optional { background: #f1f5f9; color: #475569; }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-warn { background: #fef9c3; color: #854d0e; }
+    .badge-err { background: #fee2e2; color: #991b1b; }
+
+    .props-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px 16px; margin-top: 10px; font-size: 13px;
+    }
+    .prop { color: #64748b; }
+    .prop strong { color: #334155; font-weight: 600; }
+    .issue-list { margin-top: 10px; }
+    .issue-item {
+      font-size: 13px; padding: 6px 10px; margin-bottom: 4px;
+      border-radius: 6px; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .issue-item.err { background: #fef2f2; color: #991b1b; }
+    .issue-item.warn { background: #fffbeb; color: #92400e; }
+    .issue-item.info { background: #eff6ff; color: #1e40af; }
+    .issue-icon { font-weight: 700; flex-shrink: 0; }
+
+    /* TOC */
+    .toc { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+    .toc h3 { margin-top: 0; }
+    .toc ul { list-style: none; padding: 0; columns: 2; column-gap: 24px; }
+    .toc li { font-size: 13px; margin-bottom: 4px; }
+    .toc a { color: #3b82f6; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .toc ul { columns: 1; }
+      .score-section { flex-direction: column; align-items: flex-start; }
+      .props-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ========== HEADER ========== -->
+  <div class="header">
+    <h1>Mouse Field Studio Map - Full Contract Audit</h1>
+    <div class="subtitle">Comprehensive per-key analysis of field_studio_map.json contracts, enum quality, and domain plausibility</div>
+    <div class="meta">
+      <div class="meta-item"><strong>Category:</strong> mouse</div>
+      <div class="meta-item"><strong>Date:</strong> 2026-04-10</div>
+      <div class="meta-item"><strong>Fields Audited:</strong> 85</div>
+      <div class="meta-item"><strong>Component Types:</strong> 4 (sensor, switch, encoder, material)</div>
+      <div class="meta-item"><strong>Source:</strong> field_studio_map.json + generated field_rules.json</div>
+    </div>
+
+    <div class="score-section">
+      <div class="score-ring ring-amber">
+        68%
+        <div class="label">Health</div>
+      </div>
+      <div>
+        <div style="font-size:14px;color:#475569;"><strong style="color:#0f172a;">Verdict: Needs Revision</strong></div>
+        <div style="font-size:13px;color:#64748b;margin-top:4px;">
+          7 critical issues, 12 high, 8 medium, 6 low findings across 85 fields.
+          Key gaps: zero numeric range validation, garbage enum data, unit inconsistencies, and type mismatches.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== STAT GRID ========== -->
+  <div class="stat-grid">
+    <div class="stat-card"><div class="num">85</div><div class="lbl">Total Fields</div></div>
+    <div class="stat-card"><div class="num" style="color:#dc2626;">7</div><div class="lbl">Critical</div></div>
+    <div class="stat-card"><div class="num" style="color:#ea580c;">12</div><div class="lbl">High</div></div>
+    <div class="stat-card"><div class="num" style="color:#d97706;">8</div><div class="lbl">Medium</div></div>
+    <div class="stat-card"><div class="num" style="color:#3b82f6;">6</div><div class="lbl">Low</div></div>
+    <div class="stat-card"><div class="num" style="color:#16a34a;">52</div><div class="lbl">Clean Keys</div></div>
+    <div class="stat-card"><div class="num">15</div><div class="lbl">Enums</div></div>
+    <div class="stat-card"><div class="num">4</div><div class="lbl">Components</div></div>
+  </div>
+
+  <!-- ========== LEGEND ========== -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot dot-critical"></div> Critical - Data corruption / wrong contracts</div>
+    <div class="legend-item"><div class="legend-dot dot-high"></div> High - Missing validation / type mismatches</div>
+    <div class="legend-item"><div class="legend-dot dot-medium"></div> Medium - Completeness gaps / weak coverage</div>
+    <div class="legend-item"><div class="legend-dot dot-low"></div> Low - Polish / cosmetic issues</div>
+    <div class="legend-item"><div class="legend-dot dot-info"></div> Info - Notes &amp; observations</div>
+  </div>
+
+  <!-- ========== TABLE OF CONTENTS ========== -->
+  <div class="toc">
+    <h3>Jump To</h3>
+    <ul>
+      <li><a href="#critical">Critical Findings (C1-C7)</a></li>
+      <li><a href="#high">High Findings (H1-H12)</a></li>
+      <li><a href="#medium">Medium Findings (M1-M8)</a></li>
+      <li><a href="#low">Low Findings (L1-L6)</a></li>
+      <li><a href="#per-key">Per-Key Audit (all 85 fields)</a></li>
+      <li><a href="#ranges">Recommended Range Table</a></li>
+      <li><a href="#component-db">Component DB Coverage</a></li>
+    </ul>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--                     CRITICAL FINDINGS                              -->
+  <!-- ================================================================== -->
+  <h2 id="critical">Critical Findings</h2>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C1</span>
+      <span class="finding-title">Zero numeric range validation on ALL numeric fields</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">dpi</span>
+      <span class="field-tag">weight</span>
+      <span class="field-tag">height</span>
+      <span class="field-tag">width</span>
+      <span class="field-tag">lngth</span>
+      <span class="field-tag">battery_hours</span>
+      <span class="field-tag">click_force</span>
+      <span class="field-tag">acceleration</span>
+      <span class="field-tag">ips</span>
+      <span class="field-tag">polling_rate</span>
+      <span class="field-tag">+ 12 more</span>
+    </div>
+    <div class="finding-body">
+      <p>No field in the mouse category defines a <code>contract.range</code> object. The keyboard category has plausibility ranges on every numeric field, generating cross-validation rules. The mouse has <strong>zero</strong>.</p>
+      <p>This means the publisher pipeline will accept any number: DPI of 999,999,999, weight of -50g, or battery life of 0 hours &mdash; all pass validation.</p>
+      <p>The cross_validation_rules.json only has 3 rules (wireless_battery, sensor_dpi_consistency, dimensions_consistency) but <strong>none are range plausibility checks</strong>.</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Add <code>contract.range: { min, max }</code> to every numeric field in field_overrides. See the <a href="#ranges">Recommended Ranges</a> table below.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C2</span>
+      <span class="finding-title">Garbage test data in production enum lists</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">switch_type</span>
+      <span class="field-tag">feet_material</span>
+      <span class="field-tag">coating</span>
+    </div>
+    <div class="finding-body">
+      <p>Several data_lists contain obvious test/garbage values that have leaked into compiled known_values.json:</p>
+      <table class="ev-table">
+        <thead><tr><th>Field</th><th>Garbage Values</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td><code>switch_type</code></td><td><code>"eqwe"</code>, <code>"yay"</code></td><td>LLM will try to match real switch names against these; "eqwe" and "yay" appear in the closed known_values enum</td></tr>
+          <tr><td><code>feet_material</code></td><td><code>"l"</code></td><td>Single character &mdash; incomplete entry. Pollutes open_prefer_known matching.</td></tr>
+          <tr><td><code>coating</code></td><td><code>"A"</code>, <code>"help"</code></td><td>"help" is a placeholder. "A" is a single character. Both pollute coating normalization.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Remove <code>"eqwe"</code>, <code>"yay"</code> from switch_type. Remove <code>"l"</code> from feet_material. Remove <code>"A"</code>, <code>"help"</code> from coating. Re-compile.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C3</span>
+      <span class="finding-title">Unit mismatch: click_force (gf) vs releasing_force (g)</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">click_force</span>
+      <span class="field-tag">releasing_force</span>
+    </div>
+    <div class="finding-body">
+      <p>Both fields measure switch actuation force but use different units:</p>
+      <ul>
+        <li><code>click_force</code>: contract.unit = <code>"gf"</code> (gram-force) &mdash; correct industry standard</li>
+        <li><code>releasing_force</code>: contract.unit = <code>"g"</code> (ambiguous: grams-mass vs grams-force)</li>
+      </ul>
+      <p>The component_sources switch definition also declares releasing_force with <code>"unit": "g"</code>. Since both measure the same physical quantity (force), they should use the same unit token.</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Standardize both to <code>"gf"</code> (gram-force). Update releasing_force in component_sources and field_overrides.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C4</span>
+      <span class="finding-title">sensor_date declared as string but has date-ordering constraint</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">sensor_date</span>
+    </div>
+    <div class="finding-body">
+      <p><code>sensor_date</code> has <code>contract.type: "string"</code> but carries the constraint <code>"sensor_date &lt;= release_date"</code>.</p>
+      <p>String lexicographic comparison only works if both values are ISO-8601 formatted (YYYY-MM-DD). But the field has no format validation, no parse template, and <code>release_date</code> is properly typed as <code>"date"</code>. A string-vs-date comparison is undefined behavior in the publisher pipeline.</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Change sensor_date to <code>contract.type: "date"</code> to match release_date. Add the <code>date_field</code> parse template.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C5</span>
+      <span class="finding-title">switch_life_span typed as string but contains numeric data</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">switch_life_span</span>
+    </div>
+    <div class="finding-body">
+      <p>The component_sources switch definition declares <code>switch_life_span</code> with <code>"type": "string"</code>, and the generated field rule also shows <code>data_type: "string"</code>.</p>
+      <p>However, the actual data contains numeric values representing lifespan in millions of clicks (e.g., "20", "50", "70", "100"). Without numeric typing, the publisher cannot do range validation, rounding, or meaningful comparison.</p>
+      <p>Additionally, the field has no unit declared. In the mouse domain, switch lifespan is universally measured in "million clicks".</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Change type to <code>"number"</code> and add <code>unit: "million clicks"</code>. Add <code>range: { min: 1, max: 200 }</code>.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C6</span>
+      <span class="finding-title">encoder_life_span and encoder_steps: numeric fields without units</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">encoder_life_span</span>
+      <span class="field-tag">encoder_steps</span>
+    </div>
+    <div class="finding-body">
+      <p>Both fields are <code>type: "number"</code> but have <code>unit: ""</code> (empty string). The compile report explicitly warns about this:</p>
+      <ul>
+        <li><em>"field encoder_life_span: numeric type 'number' without unit declared"</em></li>
+        <li><em>"field encoder_steps: numeric type 'number' without unit declared"</em></li>
+      </ul>
+      <p><code>encoder_life_span</code> should have unit "million rotations" or "million clicks". <code>encoder_steps</code> should have unit "steps/revolution" or "notches".</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Set <code>encoder_life_span</code> unit to <code>"million rotations"</code>. Set <code>encoder_steps</code> unit to <code>"steps"</code>.
+    </div>
+  </div>
+
+  <div class="finding sev-critical">
+    <div class="finding-header">
+      <span class="finding-id id-critical">C7</span>
+      <span class="finding-title">connectivity enum contains meaningless values</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">connectivity</span>
+    </div>
+    <div class="finding-body">
+      <p>The <code>connectivity</code> data_list and known_values contain:</p>
+      <ul>
+        <li><code>"1"</code> &mdash; meaningless numeric string</li>
+        <li><code>"2.5"</code> &mdash; meaningless numeric string</li>
+        <li><code>"n/a"</code> &mdash; should be handled by unknown_reason, not as a valid value</li>
+        <li><code>"unk"</code> &mdash; same, should be unknown_reason not an enum value</li>
+      </ul>
+      <p>Legitimate values exist alongside them: <code>"2.4GHz Dongle"</code>, <code>"2.4GHz RF Dongle"</code>, <code>"2.4GHz WIFI Dongle"</code>. The field describes the wireless dongle/adapter type but "1" and "2.5" are data entry errors.</p>
+    </div>
+    <div class="rec-box">
+      <strong>Fix:</strong> Remove <code>"1"</code>, <code>"2.5"</code>, <code>"n/a"</code>, <code>"unk"</code>. Add proper values like <code>"USB-A dongle"</code>, <code>"USB-C dongle"</code> if needed.
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--                       HIGH FINDINGS                                -->
+  <!-- ================================================================== -->
+  <h2 id="high">High Findings</h2>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H1</span>
+      <span class="finding-title">rgb field: string type with yes_no boolean enum source</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">rgb</span></div>
+    <div class="finding-body">
+      <p><code>rgb</code> has <code>contract.type: "string"</code> but <code>enum.source: "yes_no"</code> &mdash; a boolean enum. Similar fields (bluetooth, hot_swappable, silent_clicks) are correctly typed as <code>"boolean"</code>.</p>
+      <p>This means the publisher will try string normalization (lowercase, trim) instead of boolean coercion. "yes"/"no" values won't be converted to true/false.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Change <code>rgb</code> to <code>contract.type: "boolean"</code> and <code>data_type: "boolean"</code>.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H2</span>
+      <span class="finding-title">nvidia_reflex: invalid availability value "rare"</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">nvidia_reflex</span></div>
+    <div class="finding-body">
+      <p><code>nvidia_reflex</code> has <code>availability: "rare"</code>. The valid enum for availability per the schema is: <code>always | expected | sometimes | never</code>. "rare" is not a recognized value and may silently pass or cause unexpected behavior in field priority classification.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Change to <code>"sometimes"</code> (closest valid equivalent).</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H3</span>
+      <span class="finding-title">form_factor conflates handedness with form factor</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">form_factor</span></div>
+    <div class="finding-body">
+      <p>Known values are: <code>ambidextrous</code>, <code>left</code>, <code>right</code>. In the mouse industry, "form factor" typically means the overall design category (e.g., standard, ergonomic, vertical, trackball, mini/travel). The values listed describe <strong>handedness</strong>, not form factor.</p>
+      <p>Meanwhile, there is a separate <code>shape</code> field with values <code>asymmetrical</code>, <code>ergonomic</code>, <code>symmetrical</code> which describes shape geometry. And a <code>design</code> field with no enum values.</p>
+      <p>This creates semantic confusion: is a right-handed ergonomic mouse "right" form_factor + "ergonomic" shape? The two fields overlap.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Rename to <code>handedness</code> or redefine form_factor to mean actual form factor with values like <code>standard</code>, <code>ergonomic</code>, <code>vertical</code>, <code>trackball</code>, <code>travel</code>.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H4</span>
+      <span class="finding-title">hump enum values are inconsistent / contradictory</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">hump</span></div>
+    <div class="finding-body">
+      <p>Values: <code>"back - front"</code>, <code>"back - rear"</code>, <code>"back mid"</code>, <code>"front"</code>, <code>"middle"</code>.</p>
+      <ul>
+        <li><code>"back - rear"</code> is redundant: "back" and "rear" mean the same thing</li>
+        <li><code>"back - front"</code> suggests a hump spanning back-to-front but this isn't standard terminology</li>
+        <li>Standard mouse hump positions are: <code>rear</code>, <code>center/mid</code>, <code>front</code></li>
+      </ul>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Normalize to standard positions: <code>rear</code>, <code>center</code>, <code>front</code>, <code>rear-center</code>, <code>front-center</code>.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H5</span>
+      <span class="finding-title">encoder_steps has closed enum on a numeric field</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">encoder_steps</span></div>
+    <div class="finding-body">
+      <p><code>encoder_steps</code> is <code>type: "number"</code> with <code>enum.policy: "closed"</code> and string values <code>["5","16","18","20","24","25","26","30","59"]</code>.</p>
+      <p>Issues:</p>
+      <ul>
+        <li>A closed enum on a numeric field means only these exact values are accepted &mdash; any new encoder with a different step count (e.g., 12, 36) will be rejected</li>
+        <li>The value <code>"59"</code> is unusual for encoder steps (standard counts are 12, 16, 18, 24) &mdash; likely test data</li>
+        <li>Values are strings but the field is numeric</li>
+      </ul>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Change to <code>"open_prefer_known"</code> policy. Remove <code>"59"</code> if unverified. Consider range validation <code>{ min: 5, max: 48 }</code> instead.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H6</span>
+      <span class="finding-title">click_latency references nonexistent source field</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">click_latency</span></div>
+    <div class="finding-body">
+      <p><code>click_latency</code> has a <code>selection_policy</code> that references <code>"source_field": "click_latency_list"</code>. No field named <code>click_latency_list</code> exists in the 85-field inventory. The mode-specific variants are individual scalar fields (click_latency_wired, click_latency_wireless, click_latency_bluetooth), not a list.</p>
+      <p>The selection_policy rule says: "If one measurement remains after selecting the best mode OR all remaining are within tolerance_ms, set scalar to median; else unk." This logic cannot execute without the source field.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Either create the <code>click_latency_list</code> aggregate field, or rewrite selection_policy to reference the three variant fields directly.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H7</span>
+      <span class="finding-title">polling_rate has no known_values enum despite discrete standard values</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">polling_rate</span></div>
+    <div class="finding-body">
+      <p><code>polling_rate</code> is the <strong>only critical field</strong> in the entire category. It has <code>enum.policy: "open_prefer_known"</code> but no enum source is defined &mdash; no data_list entry and no known_values bucket.</p>
+      <p>Polling rates are discrete industry-standard values: 125, 250, 500, 1000, 2000, 4000, 8000 Hz. Without a known_values list, the LLM has no guidance on valid values and non-standard values (like 333 Hz or 750 Hz) would pass unchecked.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Add a <code>polling_rate</code> data_list or known_values entry with values: <code>[125, 250, 500, 1000, 2000, 4000, 8000]</code>.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H8</span>
+      <span class="finding-title">Orphaned / misplaced field groups</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">switch_life_span</span>
+      <span class="field-tag">encoder_life_span</span>
+      <span class="field-tag">encoder_steps</span>
+      <span class="field-tag">encoder_type</span>
+      <span class="field-tag">releasing_force</span>
+    </div>
+    <div class="finding-body">
+      <p>Several fields are in the wrong group:</p>
+      <table class="ev-table">
+        <thead><tr><th>Field</th><th>Current Group</th><th>Expected Group</th></tr></thead>
+        <tbody>
+          <tr><td><code>switch_life_span</code></td><td>controls (only 1 field!)</td><td>switches</td></tr>
+          <tr><td><code>encoder_life_span</code></td><td>general</td><td>encoder</td></tr>
+          <tr><td><code>encoder_steps</code></td><td>general</td><td>encoder</td></tr>
+          <tr><td><code>encoder_type</code></td><td>general</td><td>encoder</td></tr>
+          <tr><td><code>releasing_force</code></td><td>general</td><td>switches</td></tr>
+        </tbody>
+      </table>
+      <p>The "controls" group contains only 1 field and shouldn't exist. The "general" group is overpopulated with unrelated fields.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Move fields to their correct semantic groups. Delete the "controls" group.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H9</span>
+      <span class="finding-title">releasing_force: missing rounding and wrong unit in contract</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">releasing_force</span></div>
+    <div class="finding-body">
+      <p><code>releasing_force</code> is <code>type: "number"</code> with <code>unit: "g"</code> but has <strong>no rounding definition</strong>. Compare to <code>click_force</code> which correctly has <code>rounding: { decimals: 0, mode: "nearest" }</code>.</p>
+      <p>Additionally, the compile report warns: <em>"field releasing_force: enum_policy=open but parse_rules is empty"</em></p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Add <code>rounding: { decimals: 0, mode: "nearest" }</code>. Change unit to <code>"gf"</code>. Add parse_rules.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H10</span>
+      <span class="finding-title">Generic tooltips provide zero LLM guidance</span>
+    </div>
+    <div class="finding-body">
+      <p>Nearly every field has the identical template tooltip: <code>"Define 'X' according to contract. If not provable with evidence, output 'unk' with unknown_reason."</code></p>
+      <p>This wastes tokens and provides no domain-specific guidance. Compare to the keyboard category which has field-specific tooltips explaining exactly what the value means and how to find it.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Write field-specific tooltip_md for at least all required and critical fields (14 fields minimum).</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H11</span>
+      <span class="finding-title">Empty ai_assist.reasoning_note on all component sources</span>
+    </div>
+    <div class="finding-body">
+      <p>All 4 component_sources (sensor, switch, encoder, material) have <code>ai_assist.reasoning_note: ""</code>. The keyboard category provides substantive reasoning notes that guide the LLM on why each component is important and how to prioritize its data.</p>
+    </div>
+    <div class="rec-box"><strong>Fix:</strong> Add reasoning notes to each component source explaining its role in the mouse specification hierarchy.</div>
+  </div>
+
+  <div class="finding sev-high">
+    <div class="finding-header">
+      <span class="finding-id id-high">H12</span>
+      <span class="finding-title">Multiple compile warnings unfixed</span>
+    </div>
+    <div class="finding-body">
+      <p>The _compile_report.json contains 12 warnings, none addressed:</p>
+      <ul>
+        <li>Key migration reversal warning (length &rarr; lngth)</li>
+        <li>encoder_life_span: number without unit</li>
+        <li>encoder_steps: number without unit</li>
+        <li>encoder_life_span, encoder_type, releasing_force, switch_life_span: open policy but empty parse_rules</li>
+        <li>5 component DB coverage warnings (flawless_sensor at 4.3%, sensor_date at 24.1%, etc.)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--                      MEDIUM FINDINGS                               -->
+  <!-- ================================================================== -->
+  <h2 id="medium">Medium Findings</h2>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M1</span>
+      <span class="finding-title">Component DB: flawless_sensor coverage at 4.3%</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">flawless_sensor</span></div>
+    <div class="finding-body">
+      <p>Only 5 out of 116 sensors have <code>flawless_sensor</code> populated. This is a key differentiator for gaming mice (indicates whether a sensor has no native smoothing/acceleration). The vast majority of modern PixArt/HERO sensors are flawless &mdash; this data is easily available from sensor.fyi.</p>
+    </div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M2</span>
+      <span class="finding-title">Component DB: sensor_date coverage at 24.1%</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">sensor_date</span></div>
+    <div class="finding-body"><p>Only 28 of 116 sensors have release dates populated. This undermines the <code>sensor_date &lt;= release_date</code> constraint &mdash; it can't fire for 76% of sensors.</p></div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M3</span>
+      <span class="finding-title">Component DB: click_force at 56.6%, releasing_force at 36.8%</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">click_force</span>
+      <span class="field-tag">releasing_force</span>
+    </div>
+    <div class="finding-body"><p>Force measurements are missing for the majority of switches. This data is available from manufacturer datasheets (Omron, Kailh, TTC, etc.).</p></div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M4</span>
+      <span class="finding-title">design field: no enum values, unclear purpose</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">design</span></div>
+    <div class="finding-body">
+      <p><code>design</code> is <code>type: "string", shape: "list"</code> with <code>enum.policy: "open_prefer_known"</code> but no known values defined anywhere. No data_list, no known_values bucket. What values does this field accept? "gaming"? "office"? "ergonomic"? Without any guidance, the LLM has to guess.</p>
+    </div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M5</span>
+      <span class="finding-title">price_range: string type with no defined ranges</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">price_range</span></div>
+    <div class="finding-body"><p>Has <code>type: "string"</code> and <code>enum.policy: "open_prefer_known"</code> but no known_values. Should define buckets like <code>budget</code>, <code>mid-range</code>, <code>premium</code>, <code>ultra-premium</code> with dollar thresholds in tooltip_md.</p></div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M6</span>
+      <span class="finding-title">Many fields have zero aliases</span>
+    </div>
+    <div class="finding-body">
+      <p>41 out of 85 fields have zero aliases. Aliases are critical for search discovery &mdash; an LLM searching for "LOD" won't match <code>lift</code>, and "actuation weight" won't match <code>click_force</code> unless aliases exist.</p>
+      <p>Notable missing aliases: <code>bluetooth</code> (needs "BT", "BLE"), <code>cable_type</code> (needs "cord type", "wire type"), <code>feet_material</code> (needs "mouse feet", "skates"), <code>hot_swappable</code> (needs "hot swap"), <code>silent_clicks</code> (needs "quiet clicks", "silent switches").</p>
+    </div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M7</span>
+      <span class="finding-title">click_latency_bluetooth/wired/wireless share same field_studio_hints row</span>
+    </div>
+    <div class="finding-fields">
+      <span class="field-tag">click_latency_bluetooth</span>
+      <span class="field-tag">click_latency_wired</span>
+      <span class="field-tag">click_latency_wireless</span>
+    </div>
+    <div class="finding-body"><p>All three variants point to <code>row: 70</code> in dataEntry hints. Same issue with sensor_latency variants (all row 51). These should have distinct rows or the hints should distinguish them.</p></div>
+  </div>
+
+  <div class="finding sev-medium">
+    <div class="finding-header">
+      <span class="finding-id id-medium">M8</span>
+      <span class="finding-title">coating known_values are minimal and contain garbage</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">coating</span></div>
+    <div class="finding-body">
+      <p>After removing garbage ("A", "help"), only 2 real values remain: <code>"matte"</code> and <code>"rubber grips"</code>. Missing common coatings: <code>glossy</code>, <code>soft-touch</code>, <code>textured</code>, <code>PBT</code>, <code>UV coating</code>, <code>sandblasted</code>.</p>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--                       LOW FINDINGS                                 -->
+  <!-- ================================================================== -->
+  <h2 id="low">Low Findings</h2>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L1</span>
+      <span class="finding-title">switches_link: label typo "LInk"</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">switches_link</span></div>
+    <div class="finding-body"><p>Display name is <code>"Switches LInk"</code> &mdash; capital I in "LInk". Should be <code>"Switches Link"</code>.</p></div>
+  </div>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L2</span>
+      <span class="finding-title">switches_link: missing evidence requirements and non-standard hints</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">switches_link</span></div>
+    <div class="finding-body"><p>Missing <code>min_evidence_refs</code> in evidence block. Has non-standard field_studio_hints structure (uses <code>key_column</code>, <code>key_row</code>, <code>key_sheet</code> instead of standard dataEntry format).</p></div>
+  </div>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L3</span>
+      <span class="finding-title">lngth key name is confusing</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">lngth</span></div>
+    <div class="finding-body">
+      <p>While intentionally abbreviated (to avoid collision), <code>"lngth"</code> is non-obvious. The key_migration confirms: <code>length &rarr; lngth</code>. The compile report warns about the reversed migration direction. This creates friction for anyone reading the data.</p>
+    </div>
+  </div>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L4</span>
+      <span class="finding-title">sensor_latency has selection_policy referencing nonexistent field</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">sensor_latency</span></div>
+    <div class="finding-body"><p>Same issue as H6: references <code>"source_field": "sensor_latency_list"</code> which doesn't exist.</p></div>
+  </div>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L5</span>
+      <span class="finding-title">sku field has no format validation</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">sku</span></div>
+    <div class="finding-body"><p>The only identity field has no regex pattern or format constraint. Any string is accepted, including empty strings or random text.</p></div>
+  </div>
+
+  <div class="finding sev-low">
+    <div class="finding-header">
+      <span class="finding-id id-low">L6</span>
+      <span class="finding-title">lift uses unique mixed_number_range type</span>
+    </div>
+    <div class="finding-fields"><span class="field-tag">lift</span></div>
+    <div class="finding-body"><p><code>mixed_number_range</code> is used only by this field. While functionally correct (LOD can be "1-2mm"), it creates a one-off code path in the publisher pipeline.</p></div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!--                  RECOMMENDED RANGES TABLE                          -->
+  <!-- ================================================================== -->
+  <h2 id="ranges">Recommended Range Validations (Missing from All Numeric Fields)</h2>
+  <p style="font-size:14px;color:#475569;margin-bottom:16px;">Based on real-world mouse specification data from RTINGS, TechPowerUp, sensor.fyi, and manufacturer datasheets. Every range below should be added to the corresponding field's <code>contract.range</code>.</p>
+
+  <table class="ev-table">
+    <thead>
+      <tr><th>Field</th><th>Unit</th><th>Min</th><th>Max</th><th>Rationale</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>dpi</code></td><td>dpi</td><td>100</td><td>50,000</td><td>PAW3950 = 42K, HERO 2 = 44K. Headroom for next-gen.</td></tr>
+      <tr><td><code>ips</code></td><td>ips</td><td>50</td><td>1,000</td><td>Budget ~150, flagship ~750. 1000 gives headroom.</td></tr>
+      <tr><td><code>acceleration</code></td><td>g</td><td>10</td><td>100</td><td>Budget ~15G, flagship 88G (HERO 2).</td></tr>
+      <tr><td><code>weight</code></td><td>g</td><td>30</td><td>200</td><td>Ultralight ~40g, weighted ergo ~150g.</td></tr>
+      <tr><td><code>lngth</code></td><td>mm</td><td>80</td><td>170</td><td>Mini ~100mm, large ergo ~140mm.</td></tr>
+      <tr><td><code>width</code></td><td>mm</td><td>40</td><td>90</td><td>Narrow ~55mm, wide ergo ~75mm.</td></tr>
+      <tr><td><code>height</code></td><td>mm</td><td>25</td><td>55</td><td>Low-profile ~33mm, ergo ~45mm.</td></tr>
+      <tr><td><code>battery_hours</code></td><td>h</td><td>5</td><td>500</td><td>RGB-on ~20h, BT-mode ~300h.</td></tr>
+      <tr><td><code>polling_rate</code></td><td>Hz</td><td>100</td><td>8,000</td><td>Legacy 125Hz to cutting-edge 8KHz.</td></tr>
+      <tr><td><code>click_force</code></td><td>gf</td><td>20</td><td>100</td><td>Light ~30gf, heavy ~80gf.</td></tr>
+      <tr><td><code>releasing_force</code></td><td>gf</td><td>10</td><td>80</td><td>Typically lower than click force.</td></tr>
+      <tr><td><code>click_latency</code></td><td>ms</td><td>0.1</td><td>30</td><td>Sub-1ms (optical 8KHz) to ~20ms (BT office).</td></tr>
+      <tr><td><code>click_latency_wired</code></td><td>ms</td><td>0.1</td><td>15</td><td>Wired is faster than wireless.</td></tr>
+      <tr><td><code>click_latency_wireless</code></td><td>ms</td><td>0.1</td><td>20</td><td>2.4GHz dongle mode.</td></tr>
+      <tr><td><code>click_latency_bluetooth</code></td><td>ms</td><td>0.5</td><td>30</td><td>BT has highest latency.</td></tr>
+      <tr><td><code>sensor_latency</code></td><td>ms</td><td>0.1</td><td>25</td><td>Motion delay / tracking latency.</td></tr>
+      <tr><td><code>sensor_latency_wired</code></td><td>ms</td><td>0.1</td><td>10</td><td>Wired tracking latency.</td></tr>
+      <tr><td><code>sensor_latency_wireless</code></td><td>ms</td><td>0.1</td><td>15</td><td>2.4GHz tracking latency.</td></tr>
+      <tr><td><code>sensor_latency_bluetooth</code></td><td>ms</td><td>0.5</td><td>25</td><td>BT tracking latency.</td></tr>
+      <tr><td><code>debounce</code></td><td>ms</td><td>0</td><td>25</td><td>Optical = 0ms, mechanical 1-20ms.</td></tr>
+      <tr><td><code>shift_latency</code></td><td>ms</td><td>0.1</td><td>25</td><td>Shift/motion-start latency.</td></tr>
+      <tr><td><code>lift</code></td><td>mm</td><td>0.3</td><td>10</td><td>Competitive ~1mm, adjustable up to 10mm.</td></tr>
+      <tr><td><code>encoder_steps</code></td><td>steps</td><td>5</td><td>48</td><td>Standard 12-24, exotic up to 36+.</td></tr>
+      <tr><td><code>encoder_life_span</code></td><td>M rot.</td><td>0.5</td><td>50</td><td>Budget ~1M, premium ~20M rotations.</td></tr>
+      <tr><td><code>switch_life_span</code></td><td>M clicks</td><td>1</td><td>200</td><td>Budget 10M, optical 100M+.</td></tr>
+      <tr><td><code>middle_buttons</code></td><td>&mdash;</td><td>0</td><td>5</td><td>Most mice have 0-1 middle buttons.</td></tr>
+      <tr><td><code>side_buttons</code></td><td>&mdash;</td><td>0</td><td>20</td><td>Standard 2, MMO up to 12-20.</td></tr>
+      <tr><td><code>programmable_buttons</code></td><td>&mdash;</td><td>0</td><td>30</td><td>Total programmable including all buttons.</td></tr>
+      <tr><td><code>onboard_memory_value</code></td><td>&mdash;</td><td>1</td><td>20</td><td>Profile slots, typically 1-5.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================================================================== -->
+  <!--                  COMPONENT DB COVERAGE                             -->
+  <!-- ================================================================== -->
+  <h2 id="component-db">Component DB Coverage Gaps</h2>
+
+  <table class="ev-table">
+    <thead>
+      <tr><th>Component</th><th>Property</th><th>Coverage</th><th>Missing</th><th>Examples Missing</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>sensor</td><td>flawless_sensor</td><td style="color:#dc2626;font-weight:700;">4.3% (5/116)</td><td>111</td><td>PAW3392, PMW3367, PAW3393, Focus Pro 45K, PAW3950 Ti</td></tr>
+      <tr><td>sensor</td><td>sensor_date</td><td style="color:#ea580c;font-weight:700;">24.1% (28/116)</td><td>88</td><td>Focus Pro 45K, PAW3950 Ti, PAW3950 Max</td></tr>
+      <tr><td>switch</td><td>releasing_force</td><td style="color:#ea580c;font-weight:700;">36.8% (39/106)</td><td>67</td><td>ROG Micro Switch, Light Blade, Optical Switches</td></tr>
+      <tr><td>switch</td><td>click_force</td><td style="color:#d97706;font-weight:700;">56.6% (60/106)</td><td>46</td><td>ROG Micro Switch, ROG Micro Switch II, Light Blade</td></tr>
+      <tr><td>switch</td><td>switch_life_span</td><td style="color:#3b82f6;">85.8% (91/106)</td><td>15</td><td>Light Blade, Optical Switches, Crispy Pink</td></tr>
+      <tr><td>sensor</td><td>dpi</td><td style="color:#16a34a;">95.7% (111/116)</td><td>5</td><td>PAW3392, PMW3367, PAW3393</td></tr>
+      <tr><td>sensor</td><td>ips</td><td style="color:#16a34a;">95.7% (111/116)</td><td>5</td><td>PAW3392, PMW3367, PAW3393</td></tr>
+      <tr><td>sensor</td><td>acceleration</td><td style="color:#16a34a;">95.7% (111/116)</td><td>5</td><td>PAW3392, PMW3367, PAW3393</td></tr>
+      <tr><td>sensor</td><td>sensor_type</td><td style="color:#16a34a;">95.7% (111/116)</td><td>5</td><td>PAW3392, PMW3367, PAW3393</td></tr>
+      <tr><td>encoder</td><td>encoder_steps</td><td style="color:#16a34a;">95.0% (38/40)</td><td>2</td><td>Magnetic Encoder, Optical Encoder</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================================================================== -->
+  <!--                     PER-KEY AUDIT                                  -->
+  <!-- ================================================================== -->
+  <h2 id="per-key">Per-Key Audit (All 85 Fields)</h2>
+  <p style="font-size:14px;color:#475569;margin-bottom:16px;">Each field's contract is checked against domain knowledge, compiler requirements, and internal consistency.</p>
+
+  <!-- ===== IDENTITY ===== -->
+  <h3>Identity (1 field)</h3>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">sku</span>
+      <span class="badge badge-identity">identity</span>
+      <span class="badge badge-warn">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 4</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string</div>
+      <div class="prop"><strong>Shape:</strong> scalar</div>
+      <div class="prop"><strong>Enum:</strong> open</div>
+      <div class="prop"><strong>Availability:</strong> expected</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> No format validation (regex pattern for SKU format) on the only identity field.</div>
+    </div>
+  </div>
+
+  <!-- ===== CRITICAL ===== -->
+  <h3>Critical (1 field)</h3>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">polling_rate</span>
+      <span class="badge badge-critical">critical</span>
+      <span class="badge badge-err">2 issues</span>
+      <span class="key-meta">number &middot; list &middot; Hz &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number (list)</div>
+      <div class="prop"><strong>Unit:</strong> Hz</div>
+      <div class="prop"><strong>Rounding:</strong> 0 decimals</div>
+      <div class="prop"><strong>Enum:</strong> open_prefer_known (NO source!)</div>
+      <div class="prop"><strong>Aliases:</strong> 5</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range validation &mdash; any number accepted (H7).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> No known_values enum for discrete standard values (125-8000 Hz) (H7).</div>
+    </div>
+  </div>
+
+  <!-- ===== REQUIRED ===== -->
+  <h3>Required (13 fields)</h3>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">connection</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-ok">OK</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string</div>
+      <div class="prop"><strong>Enum:</strong> open_prefer_known</div>
+      <div class="prop"><strong>Values:</strong> bluetooth, hybrid, wired, wireless</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item info"><span class="issue-icon">i</span> Clean contract. Enum values are correct and complete.</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">connectivity</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; list &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string (list)</div>
+      <div class="prop"><strong>Enum:</strong> open_prefer_known</div>
+      <div class="prop"><strong>Values:</strong> "1", "2.4GHz Dongle", "2.4GHz RF Dongle", "2.4GHz WIFI Dongle", "2.5", "n/a", "unk"</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Contains garbage values "1", "2.5", "n/a", "unk" (C7).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">dpi</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; dpi &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number</div>
+      <div class="prop"><strong>Unit:</strong> dpi</div>
+      <div class="prop"><strong>Rounding:</strong> 0 decimals</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs required</div>
+      <div class="prop"><strong>Variance:</strong> upper_bound</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range validation. Should be 100-50,000 (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section clean">
+    <div class="key-header">
+      <span class="key-name">height</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; mm &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number</div>
+      <div class="prop"><strong>Unit:</strong> mm</div>
+      <div class="prop"><strong>Rounding:</strong> 1 decimal</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 25-55mm (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">lngth</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">2 issues</span>
+      <span class="key-meta">number &middot; scalar &middot; mm &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number</div>
+      <div class="prop"><strong>Unit:</strong> mm</div>
+      <div class="prop"><strong>Rounding:</strong> 1 decimal</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+      <div class="prop"><strong>Aliases:</strong> length, length_mm, lngth, overall length</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 80-170mm (C1).</div>
+      <div class="issue-item warn"><span class="issue-icon">!</span> Confusing abbreviated key name (L3).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">middle_buttons</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">integer &middot; scalar &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> integer</div>
+      <div class="prop"><strong>Rounding:</strong> 0 decimals</div>
+      <div class="prop"><strong>Enum:</strong> open</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 0-5 (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section clean">
+    <div class="key-header">
+      <span class="key-name">sensor</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-ok">OK</span>
+      <span class="key-meta">string &middot; scalar &middot; component_ref &middot; effort 8</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string (component DB backed)</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+      <div class="prop"><strong>Enum:</strong> open_prefer_known</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item info"><span class="issue-icon">i</span> Clean contract. 116 entities in component DB.</div>
+    </div>
+  </div>
+
+  <div class="key-section clean">
+    <div class="key-header">
+      <span class="key-name">sensor_brand</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-ok">OK</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string</div>
+      <div class="prop"><strong>Enum:</strong> open_prefer_known</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">side_buttons</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">integer &middot; scalar &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> integer</div>
+      <div class="prop"><strong>Rounding:</strong> 0 decimals</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 0-20 (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section clean">
+    <div class="key-header">
+      <span class="key-name">switch</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-ok">OK</span>
+      <span class="key-meta">string &middot; scalar &middot; component_ref &middot; effort 8</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> string (component DB backed)</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+    </div>
+  </div>
+
+  <div class="key-section clean">
+    <div class="key-header">
+      <span class="key-name">switch_brand</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-ok">OK</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 6</span>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">weight</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; g &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number</div>
+      <div class="prop"><strong>Unit:</strong> g</div>
+      <div class="prop"><strong>Rounding:</strong> 1 decimal</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 30-200g (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">width</span>
+      <span class="badge badge-required">required</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; mm &middot; effort 6</span>
+    </div>
+    <div class="props-grid">
+      <div class="prop"><strong>Type:</strong> number</div>
+      <div class="prop"><strong>Unit:</strong> mm</div>
+      <div class="prop"><strong>Rounding:</strong> 1 decimal</div>
+      <div class="prop"><strong>Evidence:</strong> 2 refs</div>
+      <div class="prop"><strong>Range:</strong> NONE</div>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 40-90mm (C1).</div>
+    </div>
+  </div>
+
+  <!-- ===== EXPECTED (selected highlights) ===== -->
+  <h3>Expected Fields (56 fields) &mdash; Key Issues Only</h3>
+  <p style="font-size:13px;color:#64748b;margin-bottom:12px;">Clean expected fields not shown individually. Only fields with findings are listed.</p>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">acceleration</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; list &middot; g &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 10-100G (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">battery_hours</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; h &middot; effort 5</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 5-500h (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">coating</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">2 issues</span>
+      <span class="key-meta">string &middot; list &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Contains garbage values "A", "help" (C2).</div>
+      <div class="issue-item warn"><span class="issue-icon">!</span> Only 2 real values after cleanup (M8). Missing: glossy, soft-touch, textured, PBT, sandblasted.</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">design</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-warn">1 issue</span>
+      <span class="key-meta">string &middot; list &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> No enum values defined at all. Purpose unclear (M4).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">encoder_life_span</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">2 issues</span>
+      <span class="key-meta">number &middot; scalar &middot; NO UNIT &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Missing unit (C6). Should be "million rotations".</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Wrong group: "general" instead of "encoder" (H8).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">encoder_steps</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">3 issues</span>
+      <span class="key-meta">number &middot; scalar &middot; NO UNIT &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Missing unit (C6). Should be "steps".</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Closed enum on numeric field with suspicious value "59" (H5).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Wrong group: "general" instead of "encoder" (H8).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">encoder_type</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Wrong group: "general" instead of "encoder" (H8).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">feet_material</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Contains garbage value "l" (C2).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">form_factor</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-warn">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> Values describe handedness, not form factor (H3).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">hump</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-warn">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> Values "back - rear" is redundant; inconsistent naming (H4).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">ips</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; ips &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 50-1000 ips (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">price_range</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-warn">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 4</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> No known_values defined. Should have price tier buckets (M5).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">releasing_force</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">3 issues</span>
+      <span class="key-meta">number &middot; scalar &middot; g &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Unit "g" should be "gf" to match click_force (C3).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Missing rounding definition (H9).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Wrong group: "general" instead of "switches" (H8).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">rgb</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 2</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Type mismatch: string with yes_no boolean enum source (H1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">sensor_date</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Typed as string but has date-ordering constraint. Should be type: "date" (C4).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">switch_life_span</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">3 issues</span>
+      <span class="key-meta">string &middot; scalar &middot; NO UNIT &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Should be number, not string (C5).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Missing unit "million clicks" (C5).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> Wrong group: "controls" (orphan) instead of "switches" (H8).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">switch_type</span>
+      <span class="badge badge-expected">expected</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">string &middot; scalar &middot; effort 3</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Enum contains garbage: "eqwe", "yay" (C2).</div>
+    </div>
+  </div>
+
+  <!-- ===== CLEAN EXPECTED FIELDS ===== -->
+  <h3>Clean Expected Fields (39 fields)</h3>
+  <p style="font-size:13px;color:#64748b;margin-bottom:12px;">These fields have correct contracts with no issues found (aside from the global missing-range issue C1 for numeric types).</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;">
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">adjustable_scroll_wheel</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">adjustable_weight</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">bluetooth</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">cable_type</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">colors</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">computer_side_connector</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">discontinued</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">editions</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">encoder</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">encoder_brand</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">encoder_link</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">flawless_sensor</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">front_flare</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">grip</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">hand_size</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">hardware_acceleration</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">honeycomb_frame</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">hot_swappable</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">lift</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">lift_settings</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">lighting</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">material</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">mcu</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">mcu_link</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">motion_sync</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">mouse_side_connector</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">onboard_memory</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">onboard_memory_value</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">paracord</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">profile_switching</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">programmable_buttons</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">release_date</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">sensor_link</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">sensor_type</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">shape</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">silent_clicks</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">smoothing</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">thumb_rest</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">tilt_scroll_wheel</span> <span class="badge badge-ok">OK</span></div>
+    <div class="key-section clean" style="margin-bottom:0;padding:12px;"><span class="key-name">wireless_charging</span> <span class="badge badge-ok">OK</span></div>
+  </div>
+
+  <!-- ===== OPTIONAL ===== -->
+  <h3 style="margin-top:24px;">Optional Fields (14 fields)</h3>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">click_force</span>
+      <span class="badge badge-optional">optional</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">number &middot; scalar &middot; gf &middot; effort 7</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 20-100gf (C1).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">click_latency</span>
+      <span class="badge badge-optional">optional</span>
+      <span class="badge badge-err">2 issues</span>
+      <span class="key-meta">number &middot; scalar &middot; ms &middot; effort 8</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> No range. Should be 0.1-30ms (C1).</div>
+      <div class="issue-item err"><span class="issue-icon">X</span> selection_policy references nonexistent click_latency_list (H6).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">nvidia_reflex</span>
+      <span class="badge badge-optional">optional</span>
+      <span class="badge badge-err">1 issue</span>
+      <span class="key-meta">boolean &middot; scalar &middot; effort 7</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item err"><span class="issue-icon">X</span> Invalid availability "rare" &mdash; not in schema enum (H2).</div>
+    </div>
+  </div>
+
+  <div class="key-section has-issues">
+    <div class="key-header">
+      <span class="key-name">switches_link</span>
+      <span class="badge badge-optional">optional</span>
+      <span class="badge badge-warn">2 issues</span>
+      <span class="key-meta">url &middot; scalar &middot; effort 5</span>
+    </div>
+    <div class="issue-list">
+      <div class="issue-item warn"><span class="issue-icon">!</span> Label typo "Switches LInk" (L1).</div>
+      <div class="issue-item warn"><span class="issue-icon">!</span> Non-standard field_studio_hints structure (L2).</div>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:#64748b;margin-top:12px;">
+    <strong>Remaining optional fields (clean):</strong>
+    click_latency_bluetooth, click_latency_wired, click_latency_wireless,
+    debounce, sensor_latency, sensor_latency_bluetooth, sensor_latency_wired,
+    sensor_latency_wireless, shift_latency &mdash; all have correct contracts aside from missing ranges (C1).
+  </p>
+
+  <!-- ========== FOOTER ========== -->
+  <div style="margin-top:48px;padding-top:24px;border-top:2px solid #e2e8f0;color:#94a3b8;font-size:12px;">
+    <p>Generated: 2026-04-10 | Source: category_authority/mouse/_control_plane/field_studio_map.json | Compiled: 2026-04-11T00:52:25.737Z</p>
+    <p>Audit methodology: field_studio_map overrides &rarr; compiled field_rules.json &rarr; known_values.json &rarr; cross_validation_rules.json &rarr; component_db &rarr; domain validation via web research (RTINGS, sensor.fyi, TechPowerUp, manufacturer datasheets).</p>
+  </div>
+
+</div>
+</body>
+</html>

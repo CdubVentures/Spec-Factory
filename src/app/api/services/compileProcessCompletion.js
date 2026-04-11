@@ -51,6 +51,12 @@ export async function handleCompileProcessCompletion({
           specDb,
           helperRoot: 'category_authority',
         }).catch((e) => logError?.(`[compile-sync] compiled_rules sync failed for ${category}:`, e?.message || e));
+
+        // WHY: Invalidate AGAIN after DB updates complete. The first invalidation
+        // (line 34) clears stale cache, but a frontend request arriving between
+        // invalidation and DB update would re-cache stale data. This second
+        // invalidation ensures the next read gets fresh compiled_rules + map_hash.
+        sessionCache?.invalidateSessionCache?.(category);
       }
     } catch (err) {
       logError?.(`[compile-sync] field_studio_map SQL re-sync failed for ${category}:`, err?.message || err);

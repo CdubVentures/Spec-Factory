@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyboard Field Studio Contract Audit — 2026-04-10</title>
+<style>
+  :root {
+    --bg: #fafbfc;
+    --card-bg: #ffffff;
+    --border: #e1e4e8;
+    --text: #24292e;
+    --text-muted: #586069;
+    --accent: #0366d6;
+    --critical-bg: #ffeef0;
+    --critical-border: #fdaeb7;
+    --critical-text: #86181d;
+    --warning-bg: #fffbdd;
+    --warning-border: #f9c513;
+    --warning-text: #735c0f;
+    --info-bg: #f1f8ff;
+    --info-border: #79b8ff;
+    --info-text: #044289;
+    --ok-bg: #f0fff4;
+    --ok-border: #34d058;
+    --ok-text: #22863a;
+    --group-switch: #6f42c1;
+    --group-performance: #e36209;
+    --group-connectivity: #0366d6;
+    --group-general: #586069;
+    --group-dimensions: #28a745;
+    --group-features: #d73a49;
+    --group-layout: #005cc5;
+    --group-build: #5a32a3;
+    --group-keycaps: #b08800;
+    --group-power: #22863a;
+    --group-sound: #6a737d;
+    --group-identity: #24292e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-card .num { font-size: 36px; font-weight: 700; }
+  .summary-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-card.critical .num { color: var(--critical-text); }
+  .summary-card.warning .num { color: var(--warning-text); }
+  .summary-card.info .num { color: var(--info-text); }
+  .summary-card.ok .num { color: var(--ok-text); }
+
+  .toc { margin-bottom: 32px; }
+  .toc h2 { font-size: 18px; margin-bottom: 12px; }
+  .toc ul { list-style: none; columns: 2; column-gap: 24px; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .toc a:hover { text-decoration: underline; }
+
+  .section { margin-bottom: 40px; }
+  .section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .finding {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .finding-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #f6f8fa;
+  }
+  .finding-header .field-key {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-critical { background: var(--critical-bg); color: var(--critical-text); border: 1px solid var(--critical-border); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+  .badge-info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+  .badge-ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+  .badge-group {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: white;
+  }
+  .group-switch { background: var(--group-switch); }
+  .group-performance { background: var(--group-performance); }
+  .group-connectivity { background: var(--group-connectivity); }
+  .group-general { background: var(--group-general); }
+  .group-dimensions { background: var(--group-dimensions); }
+  .group-features { background: var(--group-features); }
+  .group-layout { background: var(--group-layout); }
+  .group-build { background: var(--group-build); }
+  .group-keycaps { background: var(--group-keycaps); }
+  .group-power { background: var(--group-power); }
+  .group-sound { background: var(--group-sound); }
+  .group-identity { background: var(--group-identity); }
+
+  .finding-body { padding: 12px 16px; }
+  .finding-body p { margin-bottom: 8px; font-size: 14px; }
+  .finding-body ul { margin-left: 20px; margin-bottom: 8px; font-size: 14px; }
+  .finding-body li { margin-bottom: 4px; }
+  .finding-body code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    background: #f0f0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 4px 12px;
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f6f8fa;
+    border-radius: 6px;
+  }
+  .detail-grid dt { color: var(--text-muted); font-weight: 500; }
+  .detail-grid dd { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+  .recommendation {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-style: italic;
+  }
+  .rec-critical { background: var(--critical-bg); border-left: 3px solid var(--critical-border); }
+  .rec-warning { background: var(--warning-bg); border-left: 3px solid var(--warning-border); }
+  .rec-info { background: var(--info-bg); border-left: 3px solid var(--info-border); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  th { background: #f6f8fa; text-align: left; padding: 8px 12px; border: 1px solid var(--border); font-weight: 600; }
+  td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:hover { background: #f6f8fa; }
+
+  .pass-row td:first-child::before { content: "OK"; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Keyboard Field Studio Contract Audit</h1>
+<p class="subtitle">Generated 2026-04-10 &mdash; 103 fields audited across 12 groups &mdash; field_studio_map.json + field_rules.json + known_values.json + cross_validation_rules.json</p>
+
+<!-- ============ SUMMARY ============ -->
+<div class="summary-grid">
+  <div class="summary-card critical"><div class="num">6</div><div class="label">Critical Issues</div></div>
+  <div class="summary-card warning"><div class="num">12</div><div class="label">Warnings</div></div>
+  <div class="summary-card info"><div class="num">9</div><div class="label">Suggestions</div></div>
+  <div class="summary-card ok"><div class="num">76</div><div class="label">Fields OK</div></div>
+</div>
+
+<!-- ============ TABLE OF CONTENTS ============ -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ul>
+    <li><a href="#critical">1. Critical Issues (Must Fix)</a></li>
+    <li><a href="#warnings">2. Warnings (Should Fix)</a></li>
+    <li><a href="#suggestions">3. Suggestions (Consider)</a></li>
+    <li><a href="#cross-val">4. Missing Cross-Validation Rules</a></li>
+    <li><a href="#enum-gaps">5. Enum Coverage Gaps</a></li>
+    <li><a href="#group-audit">6. Per-Group Audit Summary</a></li>
+    <li><a href="#missing-fields">7. Potentially Missing Fields</a></li>
+  </ul>
+</div>
+
+<!-- ============ SECTION 1: CRITICAL ============ -->
+<div class="section" id="critical">
+  <h2>1. Critical Issues (Must Fix)</h2>
+
+  <!-- C1 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">actuation_force / bottom_out_force</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Unit mismatch between component_sources and field contract.</strong></p>
+      <p>The component_sources definition declares <code>actuation_force</code> with unit <code>"gf"</code> (gram-force), while the field contract and UI suffix use <code>"g"</code> (grams). The same applies to <code>bottom_out_force</code>.</p>
+      <dl class="detail-grid">
+        <dt>component_sources</dt><dd>unit: "gf" (lines 47-50 of field_studio_map.json)</dd>
+        <dt>field contract</dt><dd>unit: "g" (field_rules.json, line 320)</dd>
+        <dt>UI suffix</dt><dd>"g"</dd>
+      </dl>
+      <p>While "g" and "gf" are used interchangeably in the keyboard industry, this creates an internal inconsistency. The component_db switch properties store values that were defined with "gf" but the validation pipeline processes them against "g" rules. If a unit-conversion phase ever distinguishes between mass and force, this will silently produce wrong values.</p>
+      <div class="recommendation rec-critical">Recommendation: Standardize on one unit token across all layers. Use <code>"gf"</code> everywhere (technically correct) or <code>"g"</code> everywhere (industry convention). Update component_sources to match the field contract, or vice versa.</div>
+    </div>
+  </div>
+
+  <!-- C2 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">actuation_adjustment_step vs adjustable_input_granularity</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Duplicate fields capturing the same real-world specification.</strong></p>
+      <ul>
+        <li><code>actuation_adjustment_step</code> &mdash; type: <code>number</code>, unit: <code>mm</code>, range: 0.01&ndash;0.5, group: Switch</li>
+        <li><code>adjustable_input_granularity</code> &mdash; type: <code>string</code>, enum: ["No", "0.1 mm", "0.2 mm", "0.4 mm"], group: Performance</li>
+      </ul>
+      <p>The alias for <code>adjustable_input_granularity</code> includes <code>"adjustable actuation step"</code>, which is semantically identical to <code>actuation_adjustment_step</code>. Both tooltips describe the same concept: the minimum adjustable actuation step size.</p>
+      <p>This violates the Single Source of Truth mandate. During ingestion, the LLM could populate one, both, or neither with conflicting values. There is no cross-validation rule to reconcile them.</p>
+      <div class="recommendation rec-critical">Recommendation: Deprecate one field. If you want a boolean "does this keyboard support adjustable granularity?" use the numeric field with <code>null</code> for absence. Alternatively, keep <code>adjustable_input_granularity</code> as the boolean gate (No/Yes) and <code>actuation_adjustment_step</code> for the numeric precision, but add a cross-validation rule to ensure consistency.</div>
+    </div>
+  </div>
+
+  <!-- C3 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">hot_swappable (variance_policy)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Incorrect variance_policy: "authoritative" on a keyboard-level property.</strong></p>
+      <p>In component_sources, <code>hot_swappable</code> is marked with <code>variance_policy: "authoritative"</code> as a switch property. However, hot-swappability is a property of the <em>keyboard PCB/socket</em>, not the switch itself. A Cherry MX Red switch is physically compatible with hot-swap sockets, but whether a specific keyboard supports hot-swap depends on its PCB design.</p>
+      <p>With "authoritative" policy, the component_db switch property would override the keyboard's actual hot-swap capability, producing incorrect data. For example, all keyboards with Cherry MX Red would inherit the switch's hot_swappable value instead of reflecting the actual keyboard design.</p>
+      <div class="recommendation rec-critical">Recommendation: Change <code>hot_swappable</code> variance_policy from <code>"authoritative"</code> to <code>"override_allowed"</code> in component_sources. The keyboard-level value should always take precedence over the switch-level default.</div>
+    </div>
+  </div>
+
+  <!-- C4 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">adjustable_actuation_min (display_decimals vs rounding)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Precision truncation: rounding allows 2 decimals but display shows only 1.</strong></p>
+      <dl class="detail-grid">
+        <dt>contract.rounding</dt><dd>decimals: 2 (e.g., 0.05mm)</dd>
+        <dt>ui.display_decimals</dt><dd>1 (would show "0.1mm")</dd>
+      </dl>
+      <p>A value of <code>0.05mm</code> (which is within the valid range 0.01&ndash;2.5mm) would be stored correctly but displayed as <code>0.1mm</code> in the UI, hiding meaningful precision. The Wooting 60HE supports 0.1mm minimum actuation, but future products may go lower.</p>
+      <div class="recommendation rec-critical">Recommendation: Align <code>ui.display_decimals</code> with <code>contract.rounding.decimals</code>. Set display_decimals to <code>2</code> for this field.</div>
+    </div>
+  </div>
+
+  <!-- C5 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-connectivity">Connectivity</span>
+      <span class="field-key">wireless_technology (overlaps bluetooth_version)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Overlapping data with no reconciliation rule.</strong></p>
+      <ul>
+        <li><code>wireless_technology</code> enum: ["2.4 GHz", "Bluetooth 5.0", "Bluetooth 5.1", "Bluetooth 5.2", "Bluetooth 5.3"]</li>
+        <li><code>bluetooth_version</code> enum: ["None", "5.0", "5.1", "5.2", "5.3", "5.4"]</li>
+      </ul>
+      <p>If <code>wireless_technology</code> is set to "Bluetooth 5.3", the Bluetooth version is already encoded. But <code>bluetooth_version</code> is a separate field. During ingestion, these two fields could contain conflicting Bluetooth versions (e.g., wireless_technology = "Bluetooth 5.1" but bluetooth_version = "5.3"). There is no cross-validation rule to catch this.</p>
+      <div class="recommendation rec-critical">Recommendation: Add a cross-validation rule: if <code>wireless_technology</code> starts with "Bluetooth", the embedded version must match <code>bluetooth_version</code>. Alternatively, remove the version from <code>wireless_technology</code> values (use just "Bluetooth") and rely on <code>bluetooth_version</code> for the specific version.</div>
+    </div>
+  </div>
+
+  <!-- C6 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-critical">Critical</span>
+      <span class="badge badge-group group-features">Features</span>
+      <span class="field-key">onboard_memory (conflated boolean + count)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Enum values mix boolean semantics with numeric counts despite a dedicated count field.</strong></p>
+      <ul>
+        <li><code>onboard_memory</code> enum: ["No", "Yes", "3 profiles", "5 profiles"]</li>
+        <li><code>onboard_profile_count</code> &mdash; separate numeric field (range 1&ndash;100) already exists in the same group</li>
+      </ul>
+      <p>The values "3 profiles" and "5 profiles" in <code>onboard_memory</code> duplicate information that should live in <code>onboard_profile_count</code>. During ingestion, if a keyboard has 5 onboard profiles, should the LLM set <code>onboard_memory = "5 profiles"</code> or <code>onboard_memory = "Yes"</code> + <code>onboard_profile_count = 5</code>? The ambiguity will cause inconsistent data.</p>
+      <div class="recommendation rec-critical">Recommendation: Reduce <code>onboard_memory</code> to a strict boolean enum: ["No", "Yes"]. The specific count belongs exclusively in <code>onboard_profile_count</code>. Add a cross-validation rule: if <code>onboard_memory = "No"</code>, then <code>onboard_profile_count</code> must be null.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 2: WARNINGS ============ -->
+<div class="section" id="warnings">
+  <h2>2. Warnings (Should Fix)</h2>
+
+  <!-- W1 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-general">General</span>
+      <span class="field-key">color vs colors</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Two color fields with confusing naming and different semantics.</strong></p>
+      <ul>
+        <li><code>color</code> &mdash; string, open policy, title-case values ("Black", "White", "Silver") &mdash; represents primary color/finish label</li>
+        <li><code>colors</code> &mdash; closed policy, 69 lowercase hyphenated design tokens ("dark-blue", "light-gray") &mdash; represents normalized palette tokens</li>
+      </ul>
+      <p>The plural naming is counterintuitive: <code>color</code> (singular) is a descriptive label, while <code>colors</code> (plural) is a design-system token set. During LLM ingestion, the model may confuse which field to populate, or may populate both with conflicting information. The <code>color</code> field uses title-case while <code>colors</code> uses lowercase-hyphenated, adding another confusion vector.</p>
+      <div class="recommendation rec-warning">Recommendation: Rename <code>colors</code> to <code>color_tokens</code> or <code>normalized_colors</code> to clearly distinguish it from the user-facing <code>color</code> label. Add a tooltip that explicitly says "Do not confuse with the 'color' field."</div>
+    </div>
+  </div>
+
+  <!-- W2 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-performance">Performance</span>
+      <span class="field-key">scan_rate (range too restrictive)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Max range of 8000 Hz is too low for modern keyboards.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current range</dt><dd>125 &ndash; 8,000 Hz</dd>
+        <dt>Real-world max</dt><dd>Wooting 80HE: 24,000 Hz scan rate; some brands claim 30,000+ Hz</dd>
+      </dl>
+      <p>Scan rate is distinct from polling rate. While USB polling rate is typically capped at 8,000 Hz, the internal key matrix scan rate on Hall Effect and magnetic switch keyboards can be much higher. Products from Wooting, Razer, and SteelSeries already exceed the 8,000 Hz cap.</p>
+      <div class="recommendation rec-warning">Recommendation: Increase <code>scan_rate</code> cross-validation max to at least <code>40000</code> Hz. Also update the contract range in field_studio_map.json accordingly.</div>
+    </div>
+  </div>
+
+  <!-- W3 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">switch_lifespan (range ceiling)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Max of 200 million keystrokes may be too low.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current range</dt><dd>10 &ndash; 200 million keystrokes</dd>
+        <dt>Real-world</dt><dd>Hall Effect/magnetic switches are often marketed with "unlimited" or "100M+" lifespan. Some optical switches claim 150M+.</dd>
+      </dl>
+      <p>While 200M covers most switches, the marketing trend is toward higher numbers. More importantly, Hall Effect switches (no physical contact) technically have no mechanical wear limit. Consider whether this field should support a sentinel value for "unlimited."</p>
+      <div class="recommendation rec-warning">Recommendation: Either raise max to <code>500</code> (million keystrokes) to future-proof, or add an enum value like "Unlimited" to <code>known_values</code> alongside the numeric range. If keeping numeric-only, 500M provides enough headroom.</div>
+    </div>
+  </div>
+
+  <!-- W4 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-layout">Layout</span>
+      <span class="field-key">key_count (range ceiling)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Range 20&ndash;120 may exclude edge cases.</strong></p>
+      <ul>
+        <li>Some macro pads/numpads have as few as 3&ndash;12 keys</li>
+        <li>Some full-size keyboards with extra macro columns have 104&ndash;130+ keys (e.g., SteelSeries Apex Pro with macro keys, or Corsair K100 with 110 keys + 6 macro keys = 116)</li>
+      </ul>
+      <p>If the system ever indexes macro pads or numpads as a sub-category, the min of 20 will reject valid products. The max of 120 is tight for keyboards with extra macro rows.</p>
+      <div class="recommendation rec-warning">Recommendation: Expand range to <code>10&ndash;130</code> to cover macro pads at the low end and macro-heavy full-size boards at the high end.</div>
+    </div>
+  </div>
+
+  <!-- W5 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-dimensions">Dimensions</span>
+      <span class="field-key">typing_angle (range ceiling)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Max of 15 degrees too low for ergonomic keyboards.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current range</dt><dd>0 &ndash; 15 degrees</dd>
+        <dt>Ergonomic keyboards</dt><dd>Split keyboards like ZSA Moonlander support tenting up to ~45 degrees. Kinesis Advantage has ~20-degree tenting options.</dd>
+      </dl>
+      <p>If "typing_angle" encompasses tenting angle (which the tooltip "Keyboard resting angle" suggests), 15 degrees excludes many ergonomic keyboards. If it only refers to the front-to-back incline of flat keyboards, 15 degrees is borderline but acceptable.</p>
+      <div class="recommendation rec-warning">Recommendation: Clarify the tooltip to specify whether this is front-to-back incline only. If tenting is included, raise max to <code>50</code>. If not, consider adding a separate <code>tenting_angle</code> field for split keyboards, or expand the tooltip to disambiguate.</div>
+    </div>
+  </div>
+
+  <!-- W6 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-general">General</span>
+      <span class="field-key">warranty (no enum values or structure)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Free-text string field with no enum guidance leads to inconsistent data.</strong></p>
+      <p>Warranty is typed as an open string with no enum values defined in <code>known_values.json</code>. In practice, warranties cluster around standard durations: "1 year", "2 years", "3 years", "Limited Lifetime". Without even a seed enum, the LLM could produce wildly inconsistent formats: "1yr", "1 Year", "12 months", "1-year limited".</p>
+      <div class="recommendation rec-warning">Recommendation: Add seed enum values to the data_lists: ["1 year", "2 years", "3 years", "5 years", "Limited Lifetime", "None"]. Set policy to <code>"open_prefer_known"</code> to allow unusual values while normalizing common ones.</div>
+    </div>
+  </div>
+
+  <!-- W7 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-general">General</span>
+      <span class="field-key">price_range (no structure)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Free-text string with no parsing guidance for a highly structured value.</strong></p>
+      <p>Prices follow predictable patterns ("$49.99", "$99-149", "Budget", "Premium") but the field has no format hint, no enum, and no parse template. The LLM will produce inconsistent formats.</p>
+      <div class="recommendation rec-warning">Recommendation: Either define tiered enum values (e.g., "Budget ($0-50)", "Mid-range ($50-150)", "Premium ($150-300)", "Enthusiast ($300+)") or change the type to a structured format with currency + amount fields.</div>
+    </div>
+  </div>
+
+  <!-- W8 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-connectivity">Connectivity</span>
+      <span class="field-key">bluetooth_version (incomplete enum)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Enum starts at 5.0 but older keyboards use Bluetooth 3.0, 4.0, 4.1, 4.2.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current values</dt><dd>["None", "5.0", "5.1", "5.2", "5.3", "5.4"]</dd>
+        <dt>Missing</dt><dd>"3.0", "4.0", "4.1", "4.2"</dd>
+      </dl>
+      <p>Budget and older wireless keyboards (Logitech K380, Microsoft Sculpt, older Anne Pro models) use Bluetooth 4.x or even 3.0. Since the policy is "open", the system will accept them, but the seed enum biases the LLM toward thinking only BT 5.x exists.</p>
+      <div class="recommendation rec-warning">Recommendation: Add "3.0", "4.0", "4.1", "4.2" to the enum values. These are still common in currently-sold products.</div>
+    </div>
+  </div>
+
+  <!-- W9 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">switch_type (policy should be stricter)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Policy is "open_prefer_known" but switch types are a closed taxonomy.</strong></p>
+      <p>The current values cover the complete taxonomy of keyboard switch technologies: Mechanical, Low-profile Mechanical, Optical, Magnetic, Hall Effect, Membrane, Scissor, Hybrid. There are no realistic "unknown" switch types that should be auto-accepted.</p>
+      <p>With "open_prefer_known", the LLM could introduce nonsensical values like "Capacitive" (which would be a Topre variant covered by "Mechanical" or should be added explicitly) or typos that silently pass validation.</p>
+      <div class="recommendation rec-warning">Recommendation: Change policy to <code>"closed_with_curation"</code> to prevent invalid switch type values from entering the system. If a genuinely new switch technology emerges, it should go through the curation workflow.</div>
+    </div>
+  </div>
+
+  <!-- W10 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-general">General</span>
+      <span class="field-key">editions (only 1 alias)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Field has very few aliases for a concept with many names.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current aliases</dt><dd>["editions"]</dd>
+        <dt>Suggested additions</dt><dd>"special edition", "limited edition", "collaboration", "colorway", "variant edition"</dd>
+      </dl>
+      <p>Product pages use many terms for editions: "Special Edition", "Limited Edition", "x [Brand] Collaboration", "[Character] Edition". With only one alias, the LLM parser may miss this field entirely on many product pages.</p>
+      <div class="recommendation rec-warning">Recommendation: Add at least 3&ndash;5 common aliases to improve parsing coverage.</div>
+    </div>
+  </div>
+
+  <!-- W11 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-keycaps">Keycaps</span>
+      <span class="field-key">keycap_thickness (missing unit)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Numeric field with range 0.8&ndash;2.5 but no unit specified in the contract.</strong></p>
+      <p>The range clearly refers to millimeters (keycap wall thickness is typically 1.0&ndash;1.5mm), but the contract omits the <code>unit</code> property entirely. The UI suffix also appears to be missing. Without a unit, the validation pipeline skips unit conversion, and the UI displays a raw number without context.</p>
+      <div class="recommendation rec-warning">Recommendation: Add <code>"unit": "mm"</code> to the contract and <code>"suffix": "mm"</code> to the UI config.</div>
+    </div>
+  </div>
+
+  <!-- W12 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-warning">Warning</span>
+      <span class="badge badge-group group-general">General</span>
+      <span class="field-key">warranty (only 1 alias)</span>
+    </div>
+    <div class="finding-body">
+      <p><strong>Single alias "warranty" misses common phrasings.</strong></p>
+      <dl class="detail-grid">
+        <dt>Current aliases</dt><dd>["warranty"]</dd>
+        <dt>Suggested</dt><dd>"warranty period", "guarantee", "manufacturer warranty", "limited warranty"</dd>
+      </dl>
+      <div class="recommendation rec-warning">Recommendation: Add common warranty-related terms as aliases to improve LLM parsing coverage.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 3: SUGGESTIONS ============ -->
+<div class="section" id="suggestions">
+  <h2>3. Suggestions (Consider)</h2>
+
+  <!-- S1 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-keycaps">Keycaps</span>
+      <span class="field-key">keycap_profile (missing popular profiles)</span>
+    </div>
+    <div class="finding-body">
+      <p>Missing popular enthusiast profiles in enum:</p>
+      <ul>
+        <li><strong>MT3</strong> &mdash; Drop's signature sculpted profile, very popular in the enthusiast community</li>
+        <li><strong>MDA</strong> &mdash; Mix of DSA and MA, gaining popularity</li>
+        <li><strong>ASA</strong> &mdash; Akko's sculpted profile</li>
+        <li><strong>MOA</strong> &mdash; similar to SA but shorter, used by several Chinese manufacturers</li>
+      </ul>
+      <div class="recommendation rec-info">Recommendation: Add "MT3", "MDA", "ASA", and "MOA" to the seed enum. Since policy is "open", the system won't reject them, but having them in the seed list improves LLM normalization accuracy.</div>
+    </div>
+  </div>
+
+  <!-- S2 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-features">Features</span>
+      <span class="field-key">backlighting (missing enum value)</span>
+    </div>
+    <div class="finding-body">
+      <p>Missing "Single-color LED" value. Some keyboards have red, blue, or green single-color backlighting that doesn't fit "White" or "RGB". Current enum: ["None", "White", "RGB", "Per-key RGB"].</p>
+      <div class="recommendation rec-info">Recommendation: Add "Single-color" or "Single-color LED" to the enum.</div>
+    </div>
+  </div>
+
+  <!-- S3 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-layout">Layout</span>
+      <span class="field-key">form_factor (missing "Ergonomic")</span>
+    </div>
+    <div class="finding-body">
+      <p>No enum value for ergonomic/split form factors. Keyboards like the Kinesis Advantage, ZSA Moonlander, and Dygma Defy don't fit neatly into percentage-based form factors.</p>
+      <p>Current values: "1800 Compact", "40%", "60%", "65%", "70%", "75%", "96%", "Full-size (100%)", "TKL (80%)"</p>
+      <div class="recommendation rec-info">Recommendation: Add "Ergonomic" and/or "Split" to form_factor enum. These are distinct physical form factors, not just layouts.</div>
+    </div>
+  </div>
+
+  <!-- S4 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">switch_name (small seed list)</span>
+    </div>
+    <div class="finding-body">
+      <p>Only 15 switches in the seed enum for an "open_prefer_known" policy. The market has 500+ switch variants. While new values are accepted, a larger seed list would significantly improve normalization accuracy during LLM ingestion (the model would have more examples of the canonical naming format).</p>
+      <p>Notable missing switches: Cherry MX Silent Black, Gateron Oil King, Kailh Box Jade, Razer Purple, HyperX Aqua, Akko CS switches, Outemu series, Boba U4T, Holy Panda.</p>
+      <div class="recommendation rec-info">Recommendation: Expand the seed list to at least 30&ndash;40 common switches covering all major manufacturers.</div>
+    </div>
+  </div>
+
+  <!-- S5 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-switch">Switch</span>
+      <span class="field-key">switch_type (missing "Capacitive")</span>
+    </div>
+    <div class="finding-body">
+      <p>Topre switches use electrostatic capacitive technology, which is distinct from mechanical switches. Currently covered by "Mechanical" in the enum, but enthusiasts strongly distinguish Topre as a separate category.</p>
+      <p>Current values: Mechanical, Low-profile Mechanical, Optical, Magnetic, Hall Effect, Membrane, Scissor, Hybrid</p>
+      <div class="recommendation rec-info">Recommendation: Add "Electrostatic Capacitive" or "Topre" to the switch_type enum to properly classify Topre/Niz keyboards.</div>
+    </div>
+  </div>
+
+  <!-- S6 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-build">Build</span>
+      <span class="field-key">case_material (missing common values)</span>
+    </div>
+    <div class="finding-body">
+      <p>Missing materials seen in the keyboard market:</p>
+      <ul>
+        <li><strong>Brass</strong> &mdash; used in premium custom keyboards (weight plates, cases)</li>
+        <li><strong>Carbon Fiber</strong> &mdash; emerging in high-end gaming keyboards</li>
+        <li><strong>Steel</strong> &mdash; used in industrial keyboards</li>
+      </ul>
+      <p>Current values: Plastic, ABS, Aluminum, CNC Aluminum, Polycarbonate, Wood</p>
+      <div class="recommendation rec-info">Recommendation: Consider adding "Brass", "Carbon Fiber", and "Steel" to the seed enum.</div>
+    </div>
+  </div>
+
+  <!-- S7 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-connectivity">Connectivity</span>
+      <span class="field-key">connection (missing "Tri-mode")</span>
+    </div>
+    <div class="finding-body">
+      <p>Many modern wireless keyboards are marketed as "tri-mode" (Wired + 2.4GHz + Bluetooth). The current enum value "Hybrid" covers this, but "Tri-mode" is a more specific and commonly-used industry term.</p>
+      <p>Current values: Wired, 2.4 GHz Wireless, Bluetooth, Hybrid</p>
+      <div class="recommendation rec-info">Recommendation: Add "Tri-mode" as an alias for "Hybrid" in the aliases list, or add it as a separate enum value. Also consider adding "Dual-mode" for keyboards that support Bluetooth + Wired but lack 2.4GHz.</div>
+    </div>
+  </div>
+
+  <!-- S8 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-performance">Performance</span>
+      <span class="field-key">debounce_time (min includes 0)</span>
+    </div>
+    <div class="finding-body">
+      <p>Cross-validation allows <code>min: 0</code> ms. While Hall Effect switches genuinely have near-zero debounce, traditional mechanical switches with 0ms debounce would produce key chatter. A minimum of 0 is technically correct for the range, but the system might benefit from a conditional cross-validation rule: if switch_type is "Mechanical", debounce_time should be &ge; 1ms.</p>
+      <div class="recommendation rec-info">Recommendation: No action required if the system doesn't support conditional cross-validation. Note for future: conditional validation rules would make this more precise.</div>
+    </div>
+  </div>
+
+  <!-- S9 -->
+  <div class="finding">
+    <div class="finding-header">
+      <span class="badge badge-info">Suggestion</span>
+      <span class="badge badge-group group-identity">Identity</span>
+      <span class="field-key">brand (only 1 alias)</span>
+    </div>
+    <div class="finding-body">
+      <p>The <code>brand</code> field has aliases ["brand", "manufacturer"] but misses common synonyms used in product data:</p>
+      <ul>
+        <li>"maker", "company", "OEM", "vendor"</li>
+      </ul>
+      <div class="recommendation rec-info">Recommendation: Add "maker" and "vendor" as aliases to improve parsing coverage on diverse data sources.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 4: MISSING CROSS-VALIDATION ============ -->
+<div class="section" id="cross-val">
+  <h2>4. Missing Cross-Validation Rules</h2>
+  <p>The system has 27 range-based plausibility rules but lacks relational rules between fields. These missing rules could allow logically impossible data combinations:</p>
+  <table>
+    <thead>
+      <tr><th>Rule</th><th>Fields</th><th>Invariant</th><th>Severity</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Force ordering</td>
+        <td><code>actuation_force</code> + <code>bottom_out_force</code></td>
+        <td>bottom_out_force &gt; actuation_force (physics invariant: you must pass actuation before bottoming out)</td>
+        <td><span class="badge badge-critical">Critical</span></td>
+      </tr>
+      <tr>
+        <td>Adjustable actuation ordering</td>
+        <td><code>adjustable_actuation_min</code> + <code>adjustable_actuation_max</code></td>
+        <td>min &lt; max</td>
+        <td><span class="badge badge-critical">Critical</span></td>
+      </tr>
+      <tr>
+        <td>Actuation &le; travel</td>
+        <td><code>actuation_distance</code> + <code>total_travel</code></td>
+        <td>actuation_distance &le; total_travel (actuation point must be before end of travel)</td>
+        <td><span class="badge badge-critical">Critical</span></td>
+      </tr>
+      <tr>
+        <td>Wireless technology &harr; bluetooth_version</td>
+        <td><code>wireless_technology</code> + <code>bluetooth_version</code></td>
+        <td>If wireless_technology contains "Bluetooth X.Y", bluetooth_version must equal "X.Y"</td>
+        <td><span class="badge badge-warning">Warning</span></td>
+      </tr>
+      <tr>
+        <td>Polling rate ordering</td>
+        <td><code>polling_rate_wired</code> + <code>polling_rate_wireless</code></td>
+        <td>polling_rate_wired &ge; polling_rate_wireless (wired always has equal or higher bandwidth)</td>
+        <td><span class="badge badge-warning">Warning</span></td>
+      </tr>
+      <tr>
+        <td>Battery life ordering</td>
+        <td><code>battery_life_off</code> + <code>battery_life_rgb</code></td>
+        <td>battery_life_off &ge; battery_life_rgb (lighting off always lasts longer)</td>
+        <td><span class="badge badge-warning">Warning</span></td>
+      </tr>
+      <tr>
+        <td>Height ordering</td>
+        <td><code>height_front</code> + <code>height_rear</code></td>
+        <td>height_rear &ge; height_front (keyboards slope upward toward the back)</td>
+        <td><span class="badge badge-info">Suggestion</span></td>
+      </tr>
+      <tr>
+        <td>Onboard memory &harr; profile count</td>
+        <td><code>onboard_memory</code> + <code>onboard_profile_count</code></td>
+        <td>If onboard_memory = "No", onboard_profile_count must be null</td>
+        <td><span class="badge badge-warning">Warning</span></td>
+      </tr>
+      <tr>
+        <td>Per-key RGB &harr; backlighting</td>
+        <td><code>per_key_rgb</code> + <code>backlighting</code></td>
+        <td>If per_key_rgb = "Yes", backlighting should be "Per-key RGB" or "RGB"</td>
+        <td><span class="badge badge-info">Suggestion</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ SECTION 5: ENUM GAPS ============ -->
+<div class="section" id="enum-gaps">
+  <h2>5. Enum Coverage Gaps</h2>
+  <table>
+    <thead>
+      <tr><th>Field</th><th>Current Values</th><th>Missing Values</th><th>Impact</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>bluetooth_version</code></td>
+        <td>None, 5.0&ndash;5.4</td>
+        <td>"3.0", "4.0", "4.1", "4.2"</td>
+        <td>Older/budget keyboards rejected or mislabeled</td>
+      </tr>
+      <tr>
+        <td><code>keycap_profile</code></td>
+        <td>OEM, Cherry, OSA, KSA, SA, DSA, XDA, Low Profile</td>
+        <td>"MT3", "MDA", "ASA", "MOA"</td>
+        <td>Popular enthusiast profiles not normalized</td>
+      </tr>
+      <tr>
+        <td><code>switch_type</code></td>
+        <td>Mechanical, Low-profile, Optical, Magnetic, Hall Effect, Membrane, Scissor, Hybrid</td>
+        <td>"Electrostatic Capacitive" (Topre)</td>
+        <td>Topre keyboards misclassified</td>
+      </tr>
+      <tr>
+        <td><code>backlighting</code></td>
+        <td>None, White, RGB, Per-key RGB</td>
+        <td>"Single-color LED"</td>
+        <td>Red/blue/green LED boards forced into wrong category</td>
+      </tr>
+      <tr>
+        <td><code>form_factor</code></td>
+        <td>1800 Compact, 40%&ndash;100%, TKL</td>
+        <td>"Ergonomic", "Split", "Numpad"</td>
+        <td>Ergonomic keyboards forced into ill-fitting percentage categories</td>
+      </tr>
+      <tr>
+        <td><code>case_material</code></td>
+        <td>Plastic, ABS, Aluminum, CNC Aluminum, Polycarbonate, Wood</td>
+        <td>"Brass", "Carbon Fiber", "Steel"</td>
+        <td>Premium/industrial materials not in seed list</td>
+      </tr>
+      <tr>
+        <td><code>switch_brand</code></td>
+        <td>Cherry, Gateron, Kailh, Razer, Logitech G, SteelSeries, Topre, Keychron, HyperX, Ducky</td>
+        <td>"Akko", "Outemu", "TTC", "JWK/Durock", "Boba (Gazzew)"</td>
+        <td>Popular switch brands missing from seed list</td>
+      </tr>
+      <tr>
+        <td><code>charging_method</code></td>
+        <td>USB-C, USB-C fast charge, Wireless charging dock, AA batteries</td>
+        <td>"AAA batteries", "Micro-USB"</td>
+        <td>Older/budget keyboards use Micro-USB; some use AAA</td>
+      </tr>
+      <tr>
+        <td><code>warranty</code></td>
+        <td><em>(no enum values)</em></td>
+        <td>"1 year", "2 years", "3 years", "5 years", "Limited Lifetime", "None"</td>
+        <td>No normalization guidance; free-text chaos</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ SECTION 6: GROUP AUDIT ============ -->
+<div class="section" id="group-audit">
+  <h2>6. Per-Group Audit Summary</h2>
+  <table>
+    <thead>
+      <tr><th>Group</th><th>Fields</th><th>Issues</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-group group-identity">Identity</span></td>
+        <td>8</td>
+        <td>Minor: <code>brand</code> has few aliases. <code>base_model</code> has required_level "identity" which is correct. All types/shapes correct.</td>
+        <td><span class="badge badge-ok">Mostly OK</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-switch">Switch</span></td>
+        <td>16</td>
+        <td>3 critical issues (unit mismatch, duplicate field, hot_swappable variance). 1 display_decimals mismatch. Switch_type policy too loose.</td>
+        <td><span class="badge badge-critical">Needs Fix</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-layout">Layout</span></td>
+        <td>7</td>
+        <td>key_count range slightly tight. form_factor missing ergonomic. Otherwise solid.</td>
+        <td><span class="badge badge-warning">Minor Issues</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-keycaps">Keycaps</span></td>
+        <td>6</td>
+        <td>keycap_thickness missing unit. keycap_profile missing popular profiles. Otherwise correct.</td>
+        <td><span class="badge badge-warning">Minor Issues</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-performance">Performance</span></td>
+        <td>12</td>
+        <td>scan_rate range too low. Duplicate field (adjustable_input_granularity). debounce_time min=0 edge case. Otherwise good.</td>
+        <td><span class="badge badge-warning">Minor Issues</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-features">Features</span></td>
+        <td>11</td>
+        <td>onboard_memory conflated with count. backlighting missing value. Otherwise correct contracts.</td>
+        <td><span class="badge badge-warning">Minor Issues</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-connectivity">Connectivity</span></td>
+        <td>10</td>
+        <td>wireless_technology/bluetooth_version overlap (critical). bluetooth_version missing old versions. All types and shapes correct.</td>
+        <td><span class="badge badge-critical">Needs Fix</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-build">Build</span></td>
+        <td>9</td>
+        <td>case_material missing a few materials. All contracts well-formed. Stabilizer fields are thorough.</td>
+        <td><span class="badge badge-ok">Mostly OK</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-sound">Sound</span></td>
+        <td>3</td>
+        <td>All three fields are subjective (sound_profile, typing_noise, sound_dampening). Contracts are appropriate for subjective classification. No issues.</td>
+        <td><span class="badge badge-ok">OK</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-dimensions">Dimensions</span></td>
+        <td>7</td>
+        <td>typing_angle max may be too low for ergonomic keyboards. Weight range and unit (kg) are correct. depth/width ranges are reasonable.</td>
+        <td><span class="badge badge-ok">Mostly OK</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-power">Power</span></td>
+        <td>4</td>
+        <td>All contracts well-formed. Ranges reasonable. charging_method missing Micro-USB/AAA. Good shape.</td>
+        <td><span class="badge badge-ok">OK</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-group group-general">General</span></td>
+        <td>10</td>
+        <td>color/colors confusion. warranty unstructured. price_range unstructured. editions has 1 alias. release_date correctly typed as "date".</td>
+        <td><span class="badge badge-warning">Minor Issues</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ SECTION 7: MISSING FIELDS ============ -->
+<div class="section" id="missing-fields">
+  <h2>7. Potentially Missing Fields</h2>
+  <p>The following specs are commonly listed on keyboard product pages but not captured by any of the 103 current fields:</p>
+  <table>
+    <thead>
+      <tr><th>Proposed Field</th><th>Group</th><th>Type</th><th>Rationale</th><th>Priority</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>switch_lubed</code></td>
+        <td>Switch</td>
+        <td>string (enum)</td>
+        <td>Whether switches come pre-lubed from factory. Values: "No", "Factory lubed", "Yes". Major selling point for pre-built enthusiast boards (Keychron Q series, IQUNIX).</td>
+        <td><span class="badge badge-info">Nice to have</span></td>
+      </tr>
+      <tr>
+        <td><code>pcb_flex</code></td>
+        <td>Build</td>
+        <td>string (enum)</td>
+        <td>Whether the PCB supports flex cuts. Values: "No", "Yes", "Daughterboard". Relevant for typing feel in gasket-mount keyboards.</td>
+        <td><span class="badge badge-info">Nice to have</span></td>
+      </tr>
+      <tr>
+        <td><code>rgb_effect_count</code></td>
+        <td>Features</td>
+        <td>number</td>
+        <td>Number of built-in RGB lighting effects. Commonly listed in specs.</td>
+        <td><span class="badge badge-info">Low priority</span></td>
+      </tr>
+      <tr>
+        <td><code>n_key_programmable</code></td>
+        <td>Features</td>
+        <td>string (enum)</td>
+        <td>Whether all keys are fully programmable/remappable. Distinct from macro_keys.</td>
+        <td><span class="badge badge-info">Nice to have</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Note: These are suggestions only. The current 103 fields provide excellent coverage for the keyboard category. Missing fields here are edge cases that can be added incrementally via the field studio.</p>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <p>Audit performed against: <code>field_studio_map.json</code> (hash: 2e26c6b5), <code>field_rules.json</code>, <code>known_values.json</code>, <code>cross_validation_rules.json</code></p>
+  <p>Auditor: Claude Opus 4.6 &mdash; Date: 2026-04-10 &mdash; Spec Factory / IndexLab</p>
+  <p>Next recommended audit: After next major field_studio_map edit or when new fields are added.</p>
+</footer>
+
+</body>
+</html>

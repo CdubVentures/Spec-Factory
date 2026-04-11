@@ -7,10 +7,48 @@
 
 ---
 
-## Current State: CEF Module Registration Audit
+## Status (as of 2026-04-10)
 
-Adding a new finder today requires touching **7 existing files** and creating
-**~9 new files**, plus running codegen. Here's the full map:
+| Phase | Status | Tests |
+|-------|--------|-------|
+| **Phase 0**: Fix CEF defects | **DONE** | 30/30 |
+| **Phase 1**: Extract generic finder infrastructure | **DONE** | 88/88 → 104/104 |
+| **Phase 2**: Module manifest & auto-registration | **DONE** | 261/261 (all suites) |
+| **Phase 3**: Metadata contract | Not started | — |
+| **Phase 4**: Prove it — build module #2 | Not started | — |
+
+### What was built
+
+**`src/core/finder/`** — generic finder infrastructure:
+- `finderModuleRegistry.js` — SSOT manifest registry (CEF is first entry)
+- `finderJsonStore.js` — generic per-product JSON store factory
+- `finderSqlStore.js` — generic SQL store factory (summary + runs)
+- `finderSqlDdl.js` — DDL generator from manifests
+- `finderRoutes.js` — generic route handler (5 endpoints + operations lifecycle + field studio gate)
+- `finderRouteWiring.js` — dynamic route auto-wiring (ready for async boot)
+- `README.md` — domain contract
+
+**Wiring completed:**
+- `specDb.js` — `getFinderStore(moduleId)` accessor + backward-compat CEF methods
+- `specDbSchema.js` — auto-execs generated DDL at boot (IF NOT EXISTS)
+- `seedRegistry.js` — auto-generates reseed surfaces from registry
+- `generateLlmPhaseRegistry.js` — emits `finderModuleRegistry.generated.ts` (MODULE_STYLES/LABELS)
+- `OperationsTracker.tsx` — imports generated styles/labels from registry
+
+### To add a new finder module
+
+1. Add field rule builder to `EG_PRESET_REGISTRY` in `egPresets.js`
+2. Add phase definition to `llmPhaseDefs.js`
+3. Create feature folder: `src/features/<name>/` (prompt, schema, orchestrator, store wrapper, routes config)
+4. Add 1 entry to `finderModuleRegistry.js`
+5. Run codegen: `node tools/gui-react/scripts/generateLlmPhaseRegistry.js`
+
+---
+
+## Original Pre-Implementation Audit (historical context)
+
+Adding a new finder before Phase 1-2 required touching **10 existing files** and creating
+**~9 new files**, plus running codegen. Here's the original map:
 
 ### Files modified per new module (today)
 
@@ -596,33 +634,31 @@ If more files were touched, feed back into the framework.
 
 ## Phase Summary
 
-| Phase | Goal | Key Deliverable | CEF Impact |
-|-------|------|----------------|-----------|
-| **0** | Fix defects | CEF rejection path works, tests green | Bug fixes |
-| **1** | Extract generics | `src/core/finder/` shared infrastructure | CEF rewired, behavior identical |
-| **2** | O(1) registration | Manifest + auto-discovery | CEF uses manifest, no more hardcoded wiring |
-| **3** | Metadata contract | Engine validates metadata, publisher reviews it | color_names/edition_details validated |
-| **4** | Prove it | Module #2 built in ~3 files | Framework validated |
+| Phase | Goal | Key Deliverable | CEF Impact | Status |
+|-------|------|----------------|-----------|--------|
+| **0** | Fix defects | CEF rejection path works, tests green | Bug fixes | **DONE** |
+| **1** | Extract generics | `src/core/finder/` shared infrastructure | CEF rewired, behavior identical | **DONE** |
+| **2** | O(1) registration | Manifest + auto-discovery | CEF uses manifest, no more hardcoded wiring | **DONE** |
+| **3** | Metadata contract | Engine validates metadata, publisher reviews it | color_names/edition_details validated | Next |
+| **4** | Prove it | Module #2 built using framework | Framework validated | Next |
 
-## File touch target per phase
+## Actual file touches (completed phases)
 
-| Phase | Existing files modified | New files created |
-|-------|------------------------|-------------------|
-| 0 | 2-3 (bug fixes) | 0 |
-| 1 | ~5 (rewire CEF) | ~5 (generic infra) |
-| 2 | ~4 (auto-registration) | ~3 (manifest, discovery) |
-| 3 | ~4 (engine, publisher, routes) | 0 |
-| 4 | 0 (framework handles it) | ~4 (manifest + custom logic) |
+| Phase | Existing files modified | New files created | Tests |
+|-------|------------------------|-------------------|-------|
+| 0 | 4 (bug fixes + test fixtures) | 0 | 30 pass |
+| 1 | 2 (CEF store + routes as thin wrappers) | 5 (generic infra + tests) | 104 pass |
+| 2 | 5 (specDb, seedRegistry, codegen, OperationsTracker, finderRoutes) | 7 (registry, DDL, SQL store, route wiring, tests, generated TS) | 261 pass |
 
----
+## Remaining phases
 
-## Ordering Rationale
+**Phase 3 — Metadata contract**: Add `metadata_schema` to field rules so
+`color_names` and `edition_details` get validated by the engine. Publisher
+frontend can then review rich metadata alongside field values.
 
-Phase 0 is mandatory — you can't extract a framework from broken code.
-
-Phase 1 before Phase 2 because you need the generic pieces to exist before
-you can auto-register them. Extracting without manifests means CEF still
-works via direct wiring; manifests layer on top.
+**Phase 4 — Prove it**: Build Release Date Finder, SKU Finder, or Price
+Finder using the framework. Target: feature folder + 1 registry entry +
+1 EG preset entry + codegen run. Zero other files touched.
 
 Phase 3 can run in parallel with Phase 2 — metadata validation is orthogonal
 to registration mechanics.

@@ -33,10 +33,12 @@ SQL store (wired through specDb, not imported directly):
 
 ## Dependencies
 
+- **Generic infrastructure**: `src/core/finder/` — JSON store (`finderJsonStore`), route handler (`finderRoutes`), SQL store (`finderSqlStore`), module registry (`finderModuleRegistry`)
 - **Allowed**: `src/core/config/runtimeArtifactRoots.js` (path resolution), `src/core/llm/` (LLM client + routing)
 - **Cross-feature (via public API)**: `src/features/indexing` (`createPhaseCallLlm`), `src/features/publisher` (`submitCandidate` — candidate gate)
-- **SQL store**: `src/db/stores/colorEditionFinderStore.js` (wired via specDb)
+- **SQL store**: Generic `finderSqlStore` wired via `specDb.getFinderStore('colorEditionFinder')`. Backward-compat methods (`specDb.upsertColorEditionFinder`, etc.) delegate to generic store.
 - **LLM phase**: Registered as `colorFinder` in `src/core/config/llmPhaseDefs.js`
+- **Module manifest**: Registered in `src/core/finder/finderModuleRegistry.js` — drives DDL, reseed, operations tracker labels, field studio gate
 - **Forbidden**: Other feature internals (only public API imports)
 
 ## Domain Invariants

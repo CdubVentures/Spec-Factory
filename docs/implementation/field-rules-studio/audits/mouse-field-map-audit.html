@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mouse Field Studio Map — Contract Audit</title>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card: #ffffff;
+    --border: #e2e6ed;
+    --text: #2d3748;
+    --text-muted: #718096;
+    --critical: #e53e3e;
+    --critical-bg: #fff5f5;
+    --critical-border: #feb2b2;
+    --warning: #d69e2e;
+    --warning-bg: #fffff0;
+    --warning-border: #fefcbf;
+    --info: #3182ce;
+    --info-bg: #ebf8ff;
+    --info-border: #bee3f8;
+    --ok: #38a169;
+    --ok-bg: #f0fff4;
+    --ok-border: #c6f6d5;
+    --accent: #5a67d8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--accent);
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-size: 32px;
+    font-weight: 700;
+    display: block;
+  }
+  .stat-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-card.critical .num { color: var(--critical); }
+  .stat-card.warning .num { color: var(--warning); }
+  .stat-card.info .num { color: var(--info); }
+  .stat-card.ok .num { color: var(--ok); }
+
+  .section {
+    margin-bottom: 36px;
+  }
+  .section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section h2.critical { color: var(--critical); border-color: var(--critical); }
+  .section h2.warning { color: var(--warning); border-color: var(--warning); }
+  .section h2.info { color: var(--info); border-color: var(--info); }
+
+  .finding {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    border-left: 4px solid var(--border);
+  }
+  .finding.critical { border-left-color: var(--critical); background: var(--critical-bg); }
+  .finding.warning { border-left-color: var(--warning); background: var(--warning-bg); }
+  .finding.info { border-left-color: var(--info); background: var(--info-bg); }
+
+  .finding .title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .finding .field-tag {
+    display: inline-block;
+    background: #edf2f7;
+    color: var(--accent);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .finding .desc {
+    font-size: 14px;
+    color: var(--text);
+    margin-top: 6px;
+  }
+  .finding .fix {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--ok-bg);
+    border: 1px solid var(--ok-border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .finding .fix strong {
+    color: var(--ok);
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    background: #edf2f7;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+  .badge.critical { background: #fed7d7; color: var(--critical); }
+  .badge.warning { background: #fefcbf; color: #975a16; }
+  .badge.info { background: #bee3f8; color: #2a4365; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #f7fafc;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+  }
+  tr:hover td { background: #f7fafc; }
+
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 32px;
+  }
+  .toc h3 { font-size: 14px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .toc ul { list-style: none; padding: 0; columns: 2; }
+  .toc li { padding: 3px 0; font-size: 14px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .field-detail { margin-bottom: 28px; }
+  .field-detail h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 8px 14px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+  }
+  .field-detail h3 span.type-badge {
+    float: right;
+    font-size: 11px;
+    font-weight: 500;
+    background: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  @media print {
+    body { padding: 12px; font-size: 12px; }
+    .finding { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Mouse Field Studio Map &mdash; Contract Audit</h1>
+<p class="subtitle">Generated 2026-04-10 &bull; Source: <code>category_authority/mouse/_control_plane/field_studio_map.json</code> &bull; 85 fields &bull; 4 component types</p>
+
+<!-- ===================== SUMMARY ===================== -->
+<div class="summary-grid">
+  <div class="stat-card critical"><span class="num">8</span><span class="label">Critical</span></div>
+  <div class="stat-card warning"><span class="num">12</span><span class="label">Warnings</span></div>
+  <div class="stat-card info"><span class="num">7</span><span class="label">Informational</span></div>
+  <div class="stat-card ok"><span class="num">85</span><span class="label">Total Fields</span></div>
+</div>
+
+<!-- ===================== TABLE OF CONTENTS ===================== -->
+<div class="toc">
+  <h3>Jump To</h3>
+  <ul>
+    <li><a href="#critical">Critical Issues (8)</a></li>
+    <li><a href="#warnings">Warnings (12)</a></li>
+    <li><a href="#info">Informational (7)</a></li>
+    <li><a href="#per-field">Per-Field Detail Matrix</a></li>
+    <li><a href="#group-audit">Field Group Audit</a></li>
+    <li><a href="#component-db">Component DB Coverage</a></li>
+    <li><a href="#cross-val">Cross-Validation Rules Audit</a></li>
+  </ul>
+</div>
+
+<!-- ===================== CRITICAL ===================== -->
+<div class="section" id="critical">
+<h2 class="critical">Critical Issues</h2>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-01</span> Garbage / test values in enum known_values</div>
+  <span class="field-tag">coating</span><span class="field-tag">feet_material</span><span class="field-tag">switch_type</span>
+  <div class="desc">
+    Multiple enum lists contain obvious test/garbage entries that will pollute validation and LLM outputs:
+    <table>
+      <tr><th>Field</th><th>Garbage Values</th><th>Problem</th></tr>
+      <tr><td><code>coating</code></td><td><code>"A"</code>, <code>"help"</code></td><td>Single letter "A" and the word "help" are clearly test inputs, not real coatings.</td></tr>
+      <tr><td><code>feet_material</code></td><td><code>"l"</code></td><td>Single letter "l" — likely a typo or accidental keystroke.</td></tr>
+      <tr><td><code>switch_type</code></td><td><code>"eqwe"</code>, <code>"yay"</code></td><td>Keyboard smash and exclamation — test data left behind.</td></tr>
+    </table>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Remove <code>"A"</code>, <code>"help"</code> from coating; remove <code>"l"</code> from feet_material; remove <code>"eqwe"</code>, <code>"yay"</code> from switch_type. Also add missing common coatings: <code>"glossy"</code>, <code>"textured"</code>, <code>"soft-touch"</code>.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-02</span> <code>connectivity</code> enum contains meaningless numeric values</div>
+  <span class="field-tag">connectivity</span>
+  <div class="desc">
+    The known_values for <code>connectivity</code> include <code>"1"</code> and <code>"2.5"</code> which have no clear meaning in the mouse connectivity domain. The real values appear to be RF dongle types, but these numeric entries are nonsensical and will confuse the LLM extraction pipeline.
+    <br><br>Current values: <code>["1", "2.4GHz Dongle", "2.4GHz RF Dongle", "2.4GHz WIFI Dongle", "2.5", "n/a", "unk"]</code>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Remove <code>"1"</code> and <code>"2.5"</code>. Consider normalizing the remaining dongle variants (e.g., unify "2.4GHz Dongle" / "2.4GHz RF Dongle" / "2.4GHz WIFI Dongle" or define clear semantic distinctions). Also consider whether <code>connectivity</code> and <code>connection</code> have distinct enough purposes to justify both fields — see Info I-02.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-03</span> <code>encoder_life_span</code>, <code>encoder_steps</code>, <code>encoder_type</code> misplaced in "General" group</div>
+  <span class="field-tag">encoder_life_span</span><span class="field-tag">encoder_steps</span><span class="field-tag">encoder_type</span><span class="field-tag">releasing_force</span>
+  <div class="desc">
+    These encoder-specific fields are grouped under <b>"General"</b> instead of <b>"Encoder"</b> or <b>"Switches"</b>:
+    <ul style="margin-top:6px;">
+      <li><code>encoder_life_span</code> — should be in "Encoder"</li>
+      <li><code>encoder_steps</code> — should be in "Encoder"</li>
+      <li><code>encoder_type</code> — should be in "Encoder"</li>
+      <li><code>releasing_force</code> — should be in "Switches"</li>
+    </ul>
+    Additionally, <code>switch_life_span</code> is in a lone <b>"controls"</b> group (only member), displayed with a lowercase "c" — should be in "Switches".
+  </div>
+  <div class="fix"><strong>Fix:</strong> Move <code>encoder_life_span</code>, <code>encoder_steps</code>, <code>encoder_type</code> to group "Encoder". Move <code>releasing_force</code> and <code>switch_life_span</code> to group "Switches". Delete the orphaned "controls" group.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-04</span> <code>encoder_steps</code> closed enum with string values but numeric contract type</div>
+  <span class="field-tag">encoder_steps</span>
+  <div class="desc">
+    <code>encoder_steps</code> has <code>contract.type = "number"</code> and the data_list is typed as <code>number</code> in the component source. However, the known_values enum contains <b>string values</b>: <code>["5", "16", "18", "20", "24", "25", "26", "30", "59"]</code> with a <b>closed</b> policy. This means:
+    <ol style="margin-top:6px;">
+      <li>The publisher will try to coerce to number but then check against string enum values — potential mismatch.</li>
+      <li>The closed policy prevents accepting valid step counts not in this list (e.g., 8, 10, 12, 15, 32, 36, 48).</li>
+    </ol>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Change enum policy to <code>"open_prefer_known"</code> since encoder step counts vary widely. If keeping as closed, expand the list significantly. Also ensure compile pipeline handles string↔number coercion for enum matching.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-05</span> <code>acceleration</code> value_form/shape contract inconsistency</div>
+  <span class="field-tag">acceleration</span>
+  <div class="desc">
+    The <code>acceleration</code> field has conflicting shape declarations:
+    <ul style="margin-top:6px;">
+      <li><code>contract.shape = "list"</code>, <code>contract.type = "mixed_number_range"</code></li>
+      <li><code>output_shape = "list"</code></li>
+      <li><b>But</b> <code>value_form = "single"</code> and <code>value_form_sample = "scalar"</code></li>
+    </ul>
+    The value_form says "this field holds a single value" while the contract says "this is a list of mixed number ranges." Sample values are simple scalars like "40", "50" — suggesting it should be <code>scalar/number</code>, not <code>list/mixed_number_range</code>.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Decide on canonical shape. If acceleration is always a single max G value (e.g., "40g"), change to <code>type: "number", shape: "scalar"</code>. If it needs to represent ranges (e.g., "40-50g"), use <code>type: "range", shape: "scalar"</code>. The current <code>mixed_number_range/list</code> is overkill for this field.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-06</span> <code>polling</code> data_list references non-existent field key</div>
+  <span class="field-tag">polling</span>
+  <div class="desc">
+    A data_list entry exists with <code>field: "polling"</code> but no field key <code>"polling"</code> exists in the 85 generated fields. The actual field is <code>"polling_rate"</code>. This orphaned data_list wastes compile cycles and its priority/enum data is silently discarded.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Rename the data_list's <code>field</code> to <code>"polling_rate"</code>, or remove it entirely if polling_rate doesn't need enum values (it's a numeric field).</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-07</span> <code>lift_notes</code> data_list references non-existent field key with empty values</div>
+  <span class="field-tag">lift_notes</span>
+  <div class="desc">
+    A data_list entry exists with <code>field: "lift_notes"</code> with <b>empty</b> <code>manual_values: []</code>, but there is no <code>lift_notes</code> field key in the 85 generated fields. This is a dead reference — neither producing enum values nor mapping to any field.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Remove the <code>lift_notes</code> data_list entry entirely. If lift-off distance notes are needed, add a proper <code>lift_notes</code> field to the field overrides, or extend the existing <code>lift_settings</code> field.</div>
+</div>
+
+<div class="finding critical">
+  <div class="title"><span class="badge critical">C-08</span> Duplicate <code>ui.order</code> values across latency variant fields</div>
+  <span class="field-tag">click_latency</span><span class="field-tag">click_latency_bluetooth</span><span class="field-tag">click_latency_wired</span><span class="field-tag">click_latency_wireless</span>
+  <div class="desc">
+    All four click latency fields share <code>ui.order: 70</code>. The three sensor latency variants likely also share the same order. Duplicate orders mean the UI rendering sequence is non-deterministic, causing fields to jump position between compiles/loads.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Assign unique sequential orders. For example: <code>click_latency: 70</code>, <code>click_latency_wired: 71</code>, <code>click_latency_wireless: 72</code>, <code>click_latency_bluetooth: 73</code>. Do the same for <code>sensor_latency</code> variants.</div>
+</div>
+
+</div><!-- /critical -->
+
+
+<!-- ===================== WARNINGS ===================== -->
+<div class="section" id="warnings">
+<h2 class="warning">Warnings</h2>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-01</span> Numeric fields missing unit declarations</div>
+  <span class="field-tag">encoder_life_span</span><span class="field-tag">encoder_steps</span>
+  <div class="desc">
+    The compile report flags these as: <code>"numeric type 'number' without unit declared"</code>.
+    <ul style="margin-top:6px;">
+      <li><code>encoder_life_span</code> — should have unit <code>"million_cycles"</code> or <code>"M"</code> (industry standard is millions of scroll notches)</li>
+      <li><code>encoder_steps</code> — should have unit <code>"steps"</code> or <code>"notches"</code> (steps per revolution of the scroll wheel)</li>
+    </ul>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Add <code>unit: "M"</code> to encoder_life_span contract, and <code>unit: "steps"</code> to encoder_steps contract.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-02</span> Empty parse_rules on open-enum fields</div>
+  <span class="field-tag">encoder_life_span</span><span class="field-tag">encoder_type</span><span class="field-tag">releasing_force</span><span class="field-tag">switch_life_span</span>
+  <div class="desc">
+    These fields have <code>enum_policy: "open"</code> but <b>empty parse_rules</b>, meaning the parser has no guidance on how to extract or normalize values. This is flagged in compile warnings.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Add parse_rules with appropriate delimiters and unit info. For <code>releasing_force</code>: <code>{unit: "gf"}</code>. For <code>switch_life_span</code>: <code>{unit: "M"}</code> with context_keywords like "million clicks". For encoder fields, add type-appropriate parse rules.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-03</span> <code>flawless_sensor</code> type mismatch across layers</div>
+  <span class="field-tag">flawless_sensor</span>
+  <div class="desc">
+    <ul style="margin-top:6px;">
+      <li>Field override: <code>contract.type = "boolean"</code>, <code>enum_source = yes_no</code></li>
+      <li>Component source (sensor sheet): <code>type = "string"</code></li>
+      <li>Parse template: <code>type = "string"</code></li>
+    </ul>
+    The field <b>should</b> be boolean (is it a flawless sensor or not), but the component DB stores it as string. The parse template also says "string", creating a 3-way type disagreement.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Align all three: change component source property type to <code>"boolean"</code> or <code>"string"</code> with known_values <code>["yes","no"]</code>. Ensure parse_template uses type <code>"boolean"</code>.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-04</span> <code>sensor_date</code> type mismatch in parse template</div>
+  <span class="field-tag">sensor_date</span>
+  <div class="desc">
+    Field contract says <code>type: "date"</code> but the parse_template entry says <code>type: "string"</code>. The compile pipeline should emit a "date" parse template, not string.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Update parse template or compile pipeline to align sensor_date template type with its contract type <code>"date"</code>.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-05</span> <code>ips</code> data_type vs contract.type mismatch</div>
+  <span class="field-tag">ips</span>
+  <div class="desc">
+    <code>data_type: "number"</code> but <code>contract.type: "integer"</code>. IPS values are always whole numbers (e.g., 400, 650, 750). The contract correctly says <code>integer</code> but the top-level <code>data_type</code> says <code>number</code>, which could cause looser validation.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Align <code>data_type</code> to <code>"integer"</code> to match the contract.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-06</span> <code>click_force</code> unit inconsistency between component source and field contract</div>
+  <span class="field-tag">click_force</span>
+  <div class="desc">
+    Component source (switch sheet) declares click_force with <code>unit: "g"</code> but the field contract says <code>unit: "gf"</code> (grams-force). While physically equivalent, inconsistent unit tokens may cause unit-stripping/conversion issues in the publisher pipeline.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Standardize on <code>"gf"</code> everywhere (it's the more precise notation). Update the component source property unit from <code>"g"</code> to <code>"gf"</code>.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-07</span> <code>hot_swappable</code> has display_decimals: 1 (nonsensical for boolean)</div>
+  <span class="field-tag">hot_swappable</span>
+  <div class="desc">
+    A boolean field displaying with 1 decimal place makes no sense. Likely a copy-paste artifact from a numeric field template.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Set <code>ui.display_decimals: 0</code>.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-08</span> <code>sensor_date</code> has rounding config but is a date type</div>
+  <span class="field-tag">sensor_date</span>
+  <div class="desc">
+    The contract includes <code>rounding: {decimals: 0, mode: "nearest"}</code> and <code>round: "int"</code>, but this field is type <code>"date"</code>. Rounding config is meaningless for dates.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Remove the rounding config from sensor_date, or set <code>round: "none"</code>.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-09</span> Missing range constraints on critical numeric fields</div>
+  <span class="field-tag">dpi</span><span class="field-tag">ips</span><span class="field-tag">acceleration</span><span class="field-tag">weight</span><span class="field-tag">polling_rate</span><span class="field-tag">battery_hours</span>
+  <div class="desc">
+    Key numeric fields lack <code>contract.range</code> bounds. Without min/max, the publisher cannot catch obviously wrong values (e.g., DPI of 5,000,000 or weight of 0.001g).
+    <table>
+      <tr><th>Field</th><th>Suggested Range</th><th>Rationale</th></tr>
+      <tr><td>dpi</td><td>100 – 60,000</td><td>Lowest DPI mice ~100; highest current sensor (PAW3950) is 44,000; 60K allows headroom</td></tr>
+      <tr><td>ips</td><td>50 – 1,000</td><td>Budget mice ~100 IPS; high-end up to 750 IPS; 1000 allows headroom</td></tr>
+      <tr><td>acceleration</td><td>10 – 100</td><td>Budget sensors ~20g; high-end 40-50g; 100g is extreme theoretical max</td></tr>
+      <tr><td>weight</td><td>15 – 350</td><td>Ultralight mice ~30g; heavy ergonomic mice ~150g; with weights up to ~300g</td></tr>
+      <tr><td>polling_rate</td><td>62 – 8,000</td><td>Low end 125Hz; standard 1000Hz; 4K/8K Hz mice exist</td></tr>
+      <tr><td>battery_hours</td><td>1 – 5,000</td><td>Tiny mice ~10h; AA-battery mice ~1000h; 5000 allows edge cases</td></tr>
+    </table>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Add <code>contract.range: {min, max}</code> to each of these fields.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-10</span> Generic placeholder tooltips on most fields</div>
+  <div class="desc">
+    <b>~75 of 85 fields</b> use the template tooltip: <i>"Define 'X' according to contract. If not provable with evidence, output 'unk' with unknown_reason."</i> This provides zero domain-specific guidance for LLM extraction. Only a handful of fields (sensor, colors, sensor_brand, editions) have meaningful tooltips.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Prioritize writing real tooltips for at least the required/critical fields: <code>connection</code>, <code>dpi</code>, <code>weight</code>, <code>polling_rate</code>, <code>sensor</code>, <code>sensor_brand</code>. Each tooltip should explain what the field captures, how to measure it, and common gotchas.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-11</span> <code>sensor_latency</code> enum_policy = "open_prefer_known" on a pure numeric measurement</div>
+  <span class="field-tag">sensor_latency</span><span class="field-tag">sensor_latency_bluetooth</span><span class="field-tag">sensor_latency_wired</span><span class="field-tag">sensor_latency_wireless</span>
+  <div class="desc">
+    Sensor latency is a measured number in milliseconds. Having <code>enum_policy: "open_prefer_known"</code> suggests there should be a list of "known" latency values, which doesn't make sense for a continuous measurement. Should be <code>"open"</code> with no enum source.
+  </div>
+  <div class="fix"><strong>Fix:</strong> Change to <code>enum_policy: "open"</code> and remove any enum source reference.</div>
+</div>
+
+<div class="finding warning">
+  <div class="title"><span class="badge warning">W-12</span> Low component DB coverage for key properties</div>
+  <div class="desc">
+    Several component DB properties have very low fill rates, limiting their usefulness for cross-validation:
+    <table>
+      <tr><th>Component</th><th>Property</th><th>Coverage</th><th>Issue</th></tr>
+      <tr><td>sensor</td><td>flawless_sensor</td><td>4.3% (5/116)</td><td>Nearly empty — cross-validation impossible</td></tr>
+      <tr><td>sensor</td><td>sensor_date</td><td>24.1% (28/116)</td><td>Low — constrains date validation usefulness</td></tr>
+      <tr><td>switch</td><td>click_force</td><td>56.6% (60/106)</td><td>Medium — many switches lack force data</td></tr>
+      <tr><td>switch</td><td>releasing_force</td><td>36.8% (39/106)</td><td>Low — limits force validation</td></tr>
+    </table>
+  </div>
+  <div class="fix"><strong>Fix:</strong> Prioritize backfilling sensor_date and click_force from manufacturer datasheets. For flawless_sensor, consider whether it's worth tracking as a component property at all given only 5/116 sensors have the data.</div>
+</div>
+
+</div><!-- /warnings -->
+
+
+<!-- ===================== INFORMATIONAL ===================== -->
+<div class="section" id="info">
+<h2 class="info">Informational Notes</h2>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-01</span> <code>lngth</code> field key is a non-standard abbreviation</div>
+  <span class="field-tag">lngth</span>
+  <div class="desc">
+    The field key <code>lngth</code> is a truncated spelling of "length", likely to avoid a JavaScript reserved word conflict. The compile report notes the migration was reversed: <code>"reversed 'lngth -> length' to 'length -> lngth'"</code>. While functional, this is confusing for contributors and LLM agents.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Consider whether <code>length_mm</code> or <code>mouse_length</code> would be clearer. If keeping <code>lngth</code>, ensure the alias list includes "length" for LLM discovery.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-02</span> <code>connectivity</code> vs <code>connection</code> semantic overlap</div>
+  <span class="field-tag">connectivity</span><span class="field-tag">connection</span>
+  <div class="desc">
+    Two very similar fields exist:
+    <ul style="margin-top:6px;">
+      <li><code>connection</code>: {bluetooth, hybrid, wired, wireless} — connection <b>mode</b></li>
+      <li><code>connectivity</code>: {2.4GHz Dongle, 2.4GHz RF Dongle, ...} — wireless <b>technology</b></li>
+    </ul>
+    The distinction is valid but the naming is confusing. Many data sources will use "connectivity" to mean what <code>connection</code> captures.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Consider renaming <code>connectivity</code> to <code>wireless_technology</code> or <code>wireless_receiver</code> for clarity. Add detailed tooltips explaining the distinction.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-03</span> <code>rgb</code> field overlaps with <code>lighting</code></div>
+  <span class="field-tag">rgb</span><span class="field-tag">lighting</span>
+  <div class="desc">
+    <code>rgb</code> is typed as <code>string</code> but appears to capture boolean-like info ("yes"/"no"). Meanwhile <code>lighting</code> captures structured zone info ("3 zone (rgb)", "none", etc.). The semantic boundary between these two fields is unclear.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Consider making <code>rgb</code> a <code>boolean</code> ("has RGB? yes/no") and leaving <code>lighting</code> for the detailed zone breakdown. Or merge them into a single structured field.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-04</span> <code>design</code> field is undefined</div>
+  <span class="field-tag">design</span>
+  <div class="desc">
+    The <code>design</code> field has no known_values, no aliases, no meaningful tooltip, and a generic description. It's unclear what it captures that <code>shape</code>, <code>form_factor</code>, and <code>honeycomb_frame</code> don't already cover.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Define a clear contract for what "design" means (e.g., overall aesthetic: minimal, gamer, ergonomic), or consider removing it if it's redundant.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-05</span> Missing cross-validation rules for component relationships</div>
+  <div class="desc">
+    Only 3 cross-validation rules exist. Missing rules for:
+    <ul style="margin-top:6px;">
+      <li><b>sensor ↔ sensor_brand</b>: If sensor is "PAW3395", sensor_brand should be "PixArt"</li>
+      <li><b>switch ↔ switch_type/switch_brand</b>: Component-to-field consistency</li>
+      <li><b>encoder ↔ encoder_brand/encoder_type</b>: Component consistency</li>
+      <li><b>connection=wired → battery_hours should be unk/not_applicable</b>: Inverse of wireless rule</li>
+      <li><b>onboard_memory=yes → onboard_memory_value should exist</b>: Boolean-to-value dependency</li>
+      <li><b>bluetooth=yes → connection should include bluetooth/hybrid</b>: Consistency check</li>
+    </ul>
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Add cross-validation rules for at least the component-to-field relationships, as these are high-value automated checks.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-06</span> <code>hump</code> known_values naming inconsistency</div>
+  <span class="field-tag">hump</span>
+  <div class="desc">
+    The hump enum values use inconsistent naming: <code>"back - front"</code> and <code>"back - rear"</code> use " - " separator, while <code>"back mid"</code> uses a space. Also "back - front" and "back - rear" are confusing — does "back - front" mean "hump centered between back and front" or "hump is in the back, with front being..."? The semantics are unclear.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Normalize to consistent naming: e.g., <code>"rear"</code>, <code>"center"</code>, <code>"front"</code>, <code>"rear-center"</code>, <code>"center-front"</code> with a clear tooltip defining each.</div>
+</div>
+
+<div class="finding info">
+  <div class="title"><span class="badge info">I-07</span> <code>feet_material</code> enum uses mixed casing</div>
+  <span class="field-tag">feet_material</span>
+  <div class="desc">
+    Current values: <code>["Glass", "PTFE", "PTFE (95%)", "PTFE (Black-Dyed)", "PTFE (Teflon)", "PTFE (Virgin-Grade)"]</code>. The casing is mixed (capitalized words). The <code>normalize: "lower_trim"</code> is set on the data_list, but the known_values in the compiled output retain original casing. This could cause case-sensitive enum matching failures.
+  </div>
+  <div class="fix"><strong>Recommendation:</strong> Decide on a casing convention (lowercase or Title Case) and apply it consistently across all enum known_values.</div>
+</div>
+
+</div><!-- /info -->
+
+
+<!-- ===================== PER-FIELD DETAIL ===================== -->
+<div class="section" id="per-field">
+<h2>Per-Field Contract Status Matrix</h2>
+<p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">All 85 fields audited. Fields with no issues are marked OK. Key contract properties checked: type, shape, unit, enum_policy, range, group, ui.order, tooltip quality, parse_rules.</p>
+
+<table>
+  <thead>
+    <tr><th>Field Key</th><th>Group</th><th>Type/Shape</th><th>Unit</th><th>Enum</th><th>Status</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>acceleration</code></td><td>Sensor</td><td>mixed_number_range/list</td><td>g</td><td>open</td><td><span class="badge critical">C-05</span></td><td>value_form/shape conflict; consider scalar/number</td></tr>
+    <tr><td><code>adjustable_scroll_wheel</code></td><td>Buttons</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>adjustable_weight</code></td><td>Construction</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>battery_hours</code></td><td>Connectivity</td><td>number/scalar</td><td>h</td><td>open</td><td><span class="badge warning">W-09</span></td><td>Missing range bounds</td></tr>
+    <tr><td><code>bluetooth</code></td><td>Connectivity</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>cable_type</code></td><td>Connectivity</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Consider open_prefer_known with values: braided, rubber, paracord</td></tr>
+    <tr><td><code>click_force</code></td><td>Switches</td><td>number/scalar</td><td>gf</td><td>open</td><td><span class="badge warning">W-06</span></td><td>Component DB says "g", field says "gf"</td></tr>
+    <tr><td><code>click_latency</code></td><td>Switches</td><td>number/scalar</td><td>ms</td><td>open</td><td><span class="badge critical">C-08</span></td><td>Duplicate order=70</td></tr>
+    <tr><td><code>click_latency_bluetooth</code></td><td>Switches</td><td>number/scalar</td><td>ms</td><td>open</td><td><span class="badge critical">C-08</span></td><td>Duplicate order=70</td></tr>
+    <tr><td><code>click_latency_wired</code></td><td>Switches</td><td>number/scalar</td><td>ms</td><td>open</td><td><span class="badge critical">C-08</span></td><td>Duplicate order=70</td></tr>
+    <tr><td><code>click_latency_wireless</code></td><td>Switches</td><td>number/scalar</td><td>ms</td><td>open</td><td><span class="badge critical">C-08</span></td><td>Duplicate order=70</td></tr>
+    <tr><td><code>coating</code></td><td>Construction</td><td>string/list</td><td>—</td><td>open_prefer</td><td><span class="badge critical">C-01</span></td><td>Garbage values: "A", "help"</td></tr>
+    <tr><td><code>colors</code></td><td>General</td><td>string/list</td><td>—</td><td>closed</td><td style="color:var(--ok)">OK</td><td>Excellent ai_assist prompt &amp; token_map</td></tr>
+    <tr><td><code>computer_side_connector</code></td><td>Connectivity</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>connection</code></td><td>Connectivity</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>connectivity</code></td><td>Connectivity</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td><span class="badge critical">C-02</span></td><td>Garbage: "1", "2.5"</td></tr>
+    <tr><td><code>debounce</code></td><td>Switches</td><td>number/scalar</td><td>ms</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>design</code></td><td>General</td><td>string/scalar</td><td>—</td><td>open</td><td><span class="badge info">I-04</span></td><td>Undefined semantics</td></tr>
+    <tr><td><code>discontinued</code></td><td>General</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>dpi</code></td><td>Sensor</td><td>number/scalar</td><td>dpi</td><td>open</td><td><span class="badge warning">W-09</span></td><td>Missing range bounds</td></tr>
+    <tr><td><code>editions</code></td><td>General</td><td>string/list</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Good tooltip</td></tr>
+    <tr><td><code>encoder</code></td><td>Encoder</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>encoder_brand</code></td><td>Encoder</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>encoder_life_span</code></td><td style="color:var(--critical)">General*</td><td>number/scalar</td><td style="color:var(--critical)">NONE</td><td>open</td><td><span class="badge critical">C-03</span> <span class="badge warning">W-01,02</span></td><td>Wrong group, no unit, no parse</td></tr>
+    <tr><td><code>encoder_link</code></td><td>Encoder</td><td>url/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>encoder_steps</code></td><td style="color:var(--critical)">General*</td><td>number/scalar</td><td style="color:var(--critical)">NONE</td><td style="color:var(--critical)">closed</td><td><span class="badge critical">C-03,04</span> <span class="badge warning">W-01</span></td><td>Wrong group, no unit, closed enum on numeric</td></tr>
+    <tr><td><code>encoder_type</code></td><td style="color:var(--critical)">General*</td><td>string/scalar</td><td>—</td><td>open</td><td><span class="badge critical">C-03</span> <span class="badge warning">W-02</span></td><td>Wrong group, no parse_rules</td></tr>
+    <tr><td><code>feet_material</code></td><td>Construction</td><td>string/scalar</td><td>—</td><td>closed</td><td><span class="badge critical">C-01</span></td><td>Garbage value: "l"</td></tr>
+    <tr><td><code>flawless_sensor</code></td><td>Sensor</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td><span class="badge warning">W-03</span></td><td>Type mismatch across layers</td></tr>
+    <tr><td><code>form_factor</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>front_flare</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>grip</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Consider adding known_values: claw, palm, fingertip</td></tr>
+    <tr><td><code>hand_size</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Consider known_values: small, medium, large</td></tr>
+    <tr><td><code>hardware_acceleration</code></td><td>Sensor</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>height</code></td><td>Dimensions</td><td>number/scalar</td><td>mm</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>honeycomb_frame</code></td><td>Construction</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>hot_swappable</code></td><td>Switches</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td><span class="badge warning">W-07</span></td><td>display_decimals: 1 on boolean</td></tr>
+    <tr><td><code>hump</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>closed</td><td><span class="badge info">I-06</span></td><td>Inconsistent value naming</td></tr>
+    <tr><td><code>ips</code></td><td>Sensor</td><td>integer/scalar</td><td>ips</td><td>open</td><td><span class="badge warning">W-05,09</span></td><td>data_type/contract mismatch, missing range</td></tr>
+    <tr><td><code>lift</code></td><td>Sensor</td><td>mixed_number_range/list</td><td>mm</td><td>open</td><td style="color:var(--ok)">OK</td><td>Good aliases and parse setup</td></tr>
+    <tr><td><code>lift_settings</code></td><td>Sensor</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>lighting</code></td><td>General</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td>Good structured enum values</td></tr>
+    <tr><td><code>lngth</code></td><td>Dimensions</td><td>number/scalar</td><td>mm</td><td>open</td><td><span class="badge info">I-01</span></td><td>Non-standard abbreviation</td></tr>
+    <tr><td><code>material</code></td><td>Construction</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>mcu</code></td><td>Electronics</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td>Good known_values list</td></tr>
+    <tr><td><code>mcu_link</code></td><td>Electronics</td><td>url/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>middle_buttons</code></td><td>Buttons</td><td>integer/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>motion_sync</code></td><td>Sensor</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>mouse_side_connector</code></td><td>Connectivity</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Consider known_values: USB-C, Micro-B</td></tr>
+    <tr><td><code>nvidia_reflex</code></td><td>Sensor</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>onboard_memory</code></td><td>Buttons</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>onboard_memory_value</code></td><td>Buttons</td><td>integer/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td>Consider unit: "profiles"</td></tr>
+    <tr><td><code>paracord</code></td><td>Connectivity</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>polling_rate</code></td><td>Sensor</td><td>number/list</td><td>Hz</td><td>open</td><td><span class="badge warning">W-09</span></td><td>Missing range bounds</td></tr>
+    <tr><td><code>price_range</code></td><td>General</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>profile_switching</code></td><td>Buttons</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>programmable_buttons</code></td><td>Buttons</td><td>integer/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>release_date</code></td><td>General</td><td>date/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>releasing_force</code></td><td style="color:var(--critical)">General*</td><td>number/scalar</td><td>gf</td><td>open</td><td><span class="badge critical">C-03</span> <span class="badge warning">W-02</span></td><td>Wrong group, no parse_rules</td></tr>
+    <tr><td><code>rgb</code></td><td>General</td><td>string/scalar</td><td>—</td><td>open</td><td><span class="badge info">I-03</span></td><td>Overlaps with lighting; consider boolean</td></tr>
+    <tr><td><code>sensor</code></td><td>Sensor</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td>Good tooltip &amp; component_db link</td></tr>
+    <tr><td><code>sensor_brand</code></td><td>Sensor</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td>Good tooltip</td></tr>
+    <tr><td><code>sensor_date</code></td><td>Sensor</td><td>date/scalar</td><td>—</td><td>open_prefer</td><td><span class="badge warning">W-04,08</span></td><td>Parse type mismatch, rounding on date</td></tr>
+    <tr><td><code>sensor_latency</code></td><td>Sensor</td><td>number/scalar</td><td>ms</td><td style="color:var(--warning)">open_prefer*</td><td><span class="badge warning">W-11</span></td><td>Wrong enum_policy for measurement</td></tr>
+    <tr><td><code>sensor_latency_bluetooth</code></td><td>Sensor</td><td>number/scalar</td><td>ms</td><td style="color:var(--warning)">open_prefer*</td><td><span class="badge warning">W-11</span></td><td>Same as sensor_latency</td></tr>
+    <tr><td><code>sensor_latency_wired</code></td><td>Sensor</td><td>number/scalar</td><td>ms</td><td style="color:var(--warning)">open_prefer*</td><td><span class="badge warning">W-11</span></td><td>Same as sensor_latency</td></tr>
+    <tr><td><code>sensor_latency_wireless</code></td><td>Sensor</td><td>number/scalar</td><td>ms</td><td style="color:var(--warning)">open_prefer*</td><td><span class="badge warning">W-11</span></td><td>Same as sensor_latency</td></tr>
+    <tr><td><code>sensor_link</code></td><td>Sensor</td><td>url/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>sensor_type</code></td><td>Sensor</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>shape</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>shift_latency</code></td><td>Sensor</td><td>number/scalar</td><td>ms</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>side_buttons</code></td><td>Buttons</td><td>integer/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>silent_clicks</code></td><td>Switches</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>sku</code></td><td>General</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>smoothing</code></td><td>Sensor</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>switch</code></td><td>Switches</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>switch_brand</code></td><td>Switches</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>switch_life_span</code></td><td style="color:var(--critical)">controls*</td><td>string/scalar</td><td>—</td><td>open</td><td><span class="badge critical">C-03</span> <span class="badge warning">W-02</span></td><td>Lone "controls" group, no parse_rules</td></tr>
+    <tr><td><code>switch_type</code></td><td>Switches</td><td>string/scalar</td><td>—</td><td>open_prefer</td><td><span class="badge critical">C-01</span></td><td>Garbage: "eqwe", "yay"</td></tr>
+    <tr><td><code>switches_link</code></td><td>Switches</td><td>url/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>thumb_rest</code></td><td>Ergonomics</td><td>string/scalar</td><td>—</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>tilt_scroll_wheel</code></td><td>Buttons</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>weight</code></td><td>Construction</td><td>number/scalar</td><td>g</td><td>open</td><td><span class="badge warning">W-09</span></td><td>Missing range bounds</td></tr>
+    <tr><td><code>width</code></td><td>Dimensions</td><td>number/scalar</td><td>mm</td><td>open</td><td style="color:var(--ok)">OK</td><td></td></tr>
+    <tr><td><code>wireless_charging</code></td><td>Connectivity</td><td>boolean/scalar</td><td>—</td><td>yes_no</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<!-- ===================== GROUP AUDIT ===================== -->
+<div class="section" id="group-audit">
+<h2>Field Group Audit</h2>
+
+<table>
+  <tr><th>Group</th><th>Count</th><th>Status</th><th>Issue</th></tr>
+  <tr><td>Sensor &amp; Performance</td><td>21</td><td style="color:var(--ok)">OK</td><td>Well-organized</td></tr>
+  <tr><td>General</td><td>13</td><td><span class="badge critical">ISSUE</span></td><td>Contains 4 misplaced fields: encoder_life_span, encoder_steps, encoder_type, releasing_force</td></tr>
+  <tr><td>Switches</td><td>12</td><td><span class="badge warning">WARN</span></td><td>Missing: switch_life_span (in "controls"), releasing_force (in "General")</td></tr>
+  <tr><td>Connectivity</td><td>9</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td>Buttons &amp; Features</td><td>8</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td>Ergonomics</td><td>7</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td>Construction</td><td>6</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td>Dimensions</td><td>3</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td>Encoder</td><td>3</td><td><span class="badge warning">WARN</span></td><td>Missing: encoder_life_span, encoder_steps, encoder_type (all in "General")</td></tr>
+  <tr><td>Electronics</td><td>2</td><td style="color:var(--ok)">OK</td><td></td></tr>
+  <tr><td style="color:var(--critical)">controls</td><td style="color:var(--critical)">1</td><td><span class="badge critical">ISSUE</span></td><td>Orphan group with only switch_life_span; lowercase name</td></tr>
+</table>
+
+<p style="margin-top:14px; font-size:13px; color:var(--text-muted);">
+  <b>After fixes:</b> General would drop from 13 to 9 fields. Encoder would grow from 3 to 6 fields. Switches from 12 to 14. The "controls" group would be deleted.
+</p>
+</div>
+
+
+<!-- ===================== COMPONENT DB ===================== -->
+<div class="section" id="component-db">
+<h2>Component DB Coverage Summary</h2>
+
+<table>
+  <tr><th>Component</th><th>Entities</th><th>Property</th><th>Coverage</th><th>Health</th></tr>
+  <tr><td rowspan="6">Sensor</td><td rowspan="6">116</td><td>dpi</td><td>95.7% (111/116)</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>ips</td><td>95.7% (111/116)</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>acceleration</td><td>95.7% (111/116)</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>sensor_type</td><td>95.7% (111/116)</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>sensor_date</td><td style="color:var(--warning)">24.1% (28/116)</td><td style="color:var(--warning)">Low</td></tr>
+  <tr><td>flawless_sensor</td><td style="color:var(--critical)">4.3% (5/116)</td><td style="color:var(--critical)">Very Low</td></tr>
+  <tr><td rowspan="4">Switch</td><td rowspan="4">106</td><td>switch_type</td><td>~95%</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>switch_life_span</td><td>85.8% (91/106)</td><td style="color:var(--ok)">Fair</td></tr>
+  <tr><td>click_force</td><td style="color:var(--warning)">56.6% (60/106)</td><td style="color:var(--warning)">Low</td></tr>
+  <tr><td>releasing_force</td><td style="color:var(--critical)">36.8% (39/106)</td><td style="color:var(--critical)">Very Low</td></tr>
+  <tr><td>Encoder</td><td>40</td><td>encoder_steps</td><td>95% (38/40)</td><td style="color:var(--ok)">Good</td></tr>
+  <tr><td>Material</td><td>3</td><td>(none)</td><td>—</td><td style="color:var(--ok)">OK</td></tr>
+</table>
+</div>
+
+
+<!-- ===================== CROSS-VALIDATION ===================== -->
+<div class="section" id="cross-val">
+<h2>Cross-Validation Rules Audit</h2>
+
+<h3 style="font-size:14px; margin-top:14px; margin-bottom:10px;">Existing Rules (3)</h3>
+<table>
+  <tr><th>Rule ID</th><th>Trigger</th><th>Check</th><th>Status</th></tr>
+  <tr><td>wireless_battery_required</td><td>connection</td><td>If wireless/hybrid/bluetooth → battery_hours required</td><td style="color:var(--ok)">OK</td></tr>
+  <tr><td>sensor_dpi_consistency</td><td>dpi</td><td>DPI &le; sensor max_dpi (5% tolerance)</td><td style="color:var(--ok)">OK</td></tr>
+  <tr><td>dimensions_consistency</td><td>lngth</td><td>width + height + lngth should be a complete triplet</td><td style="color:var(--ok)">OK</td></tr>
+</table>
+
+<h3 style="font-size:14px; margin-top:20px; margin-bottom:10px;">Recommended Additional Rules</h3>
+<table>
+  <tr><th>Suggested Rule</th><th>Trigger</th><th>Logic</th><th>Priority</th></tr>
+  <tr><td>sensor_brand_consistency</td><td>sensor</td><td>If sensor identified in DB, sensor_brand must match DB maker</td><td>High</td></tr>
+  <tr><td>switch_brand_consistency</td><td>switch</td><td>If switch identified in DB, switch_brand must match DB maker</td><td>High</td></tr>
+  <tr><td>encoder_brand_consistency</td><td>encoder</td><td>If encoder identified in DB, encoder_brand must match DB maker</td><td>Medium</td></tr>
+  <tr><td>wired_no_battery</td><td>connection</td><td>If connection=wired → battery_hours should be unk/not_applicable</td><td>Medium</td></tr>
+  <tr><td>onboard_memory_value_required</td><td>onboard_memory</td><td>If onboard_memory=yes → onboard_memory_value should exist</td><td>Medium</td></tr>
+  <tr><td>bluetooth_connection_consistency</td><td>bluetooth</td><td>If bluetooth=yes → connection should be hybrid or bluetooth</td><td>Medium</td></tr>
+  <tr><td>sensor_ips_consistency</td><td>ips</td><td>IPS &le; sensor max_ips from component DB</td><td>Medium</td></tr>
+  <tr><td>sensor_acceleration_consistency</td><td>acceleration</td><td>acceleration &le; sensor max_acceleration from component DB</td><td>Medium</td></tr>
+</table>
+</div>
+
+
+<!-- ===================== FOOTER ===================== -->
+<hr style="margin-top:40px; border:none; border-top:1px solid var(--border);">
+<p style="font-size:12px; color:var(--text-muted); margin-top:12px;">
+  Audit generated by Claude Code &bull; 2026-04-10 &bull;
+  Source hash: <code>effac85f639955102ff3c91f8cfd69457e57d0b84186216e3609ff47bbbd0bb4</code> &bull;
+  Compile report: <code>2026-04-11T00:52:25.737Z</code> (no compile errors, 13 warnings)
+</p>
+
+</body>
+</html>

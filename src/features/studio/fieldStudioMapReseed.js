@@ -124,7 +124,11 @@ export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
 
 // WHY: Populates compiled_rules and boot_config on field_studio_map.
 // Called from reseed (boot) and can be called standalone after compile.
-export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, storage = null, config = {} }) {
+// compiledAtOverride: when called from compileProcessCompletion, pass the current
+// time so compiled_at is set AFTER the map re-sync (which may bump updated_at).
+// Without this, compiled_at reads from manifest (written mid-compile) and is always
+// earlier than updated_at, making the compileStale indicator permanently orange.
+export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, storage = null, config = {}, compiledAtOverride = null }) {
   if (!specDb) return { reseeded: false };
   const category = specDb.category;
   if (!category) return { reseeded: false };
@@ -161,7 +165,16 @@ export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, sto
     ui_field_catalog: loaded?.uiFieldCatalog || categoryConfig.uiFieldCatalog || {},
     component_dbs: stripComponentDbMaps(loaded?.componentDBs || {}),
     key_migrations: await readKeyMigrationsJson(helperRoot, category),
-    compiled_at: await readCompiledAt(helperRoot, category),
+    ...(await (async () => {
+      const manifest = await readManifestMeta(helperRoot, category);
+      return {
+        compiled_at: compiledAtOverride || manifest?.compiled_at || null,
+        // WHY: source_map_hash enables hash-based staleness detection.
+        // Timestamp comparison is fragile (re-sync always runs after compile).
+        // Hash comparison: if map_hash === source_map_hash, artifacts are current.
+        source_map_hash: manifest?.source_map_hash || null,
+      };
+    })()),
   };
 
   const bootConfig = {
@@ -200,12 +213,16 @@ async function readKeyMigrationsJson(helperRoot, category) {
   }
 }
 
-async function readCompiledAt(helperRoot, category) {
+async function readManifestMeta(helperRoot, category) {
   try {
     const raw = await fs.readFile(
       path.join(helperRoot, category, '_generated', 'manifest.json'), 'utf8'
     );
-    return JSON.parse(raw)?.generated_at || null;
+    const parsed = JSON.parse(raw);
+    return {
+      compiled_at: parsed?.generated_at || null,
+      source_map_hash: parsed?.source_map_hash || null,
+    };
   } catch {
     return null;
   }

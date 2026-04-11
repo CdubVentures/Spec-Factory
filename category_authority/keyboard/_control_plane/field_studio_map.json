@@ -1938,9 +1938,6 @@
   ],
   "field_overrides": {
     "actuation_adjustment_step": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "actuation step",
         "adjustment step",
@@ -2077,9 +2074,6 @@
       "value_form_sample": "scalar"
     },
     "actuation_distance": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "actuation distance",
         "pre-travel"
@@ -2216,9 +2210,6 @@
       "variance_policy": "authoritative"
     },
     "actuation_force": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "actuation force",
         "operating force"
@@ -2355,9 +2346,6 @@
       "variance_policy": "authoritative"
     },
     "adjustable_actuation_max": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "maximum actuation",
         "adjustable actuation max",
@@ -2494,9 +2482,6 @@
       "value_form_sample": "scalar"
     },
     "adjustable_actuation_min": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "minimum actuation",
         "adjustable actuation min",
@@ -2633,9 +2618,6 @@
       "value_form_sample": "scalar"
     },
     "adjustable_feet": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "adjustable feet",
         "height adjustment feet"
@@ -2759,9 +2741,6 @@
       "value_form_sample": "scalar"
     },
     "adjustable_input_granularity": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "adjustable input granularity",
         "adjustable actuation step"
@@ -2885,9 +2864,6 @@
       "value_form_sample": "scalar"
     },
     "analog_input": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "analog input",
         "controller input",
@@ -3013,9 +2989,6 @@
       "value_form_sample": "scalar"
     },
     "anti_ghosting": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "anti-ghosting",
         "anti ghosting",
@@ -3141,9 +3114,6 @@
       "value_form_sample": "scalar"
     },
     "arrow_keys": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "arrow keys",
         "dedicated arrows"
@@ -3268,9 +3238,6 @@
       "value_form_sample": "scalar"
     },
     "backlighting": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "backlighting",
         "lighting"
@@ -3395,9 +3362,6 @@
       "value_form_sample": "scalar"
     },
     "base_model": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "base model",
         "series"
@@ -3521,9 +3485,6 @@
       "value_form_sample": "scalar"
     },
     "battery_capacity": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "battery capacity"
       ],
@@ -3657,9 +3618,6 @@
       "value_form_sample": "scalar"
     },
     "battery_life_off": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "battery life (lighting off)",
         "battery life off",
@@ -3797,9 +3755,6 @@
       "value_form_sample": "scalar"
     },
     "battery_life_rgb": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "battery life (lighting on)",
         "battery life rgb",
@@ -3937,9 +3892,6 @@
       "value_form_sample": "scalar"
     },
     "bluetooth_version": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "bluetooth version",
         "bt version"
@@ -4063,9 +4015,6 @@
       "value_form_sample": "scalar"
     },
     "bottom_out_force": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "bottom-out force",
         "bottom out force"
@@ -4202,9 +4151,6 @@
       "variance_policy": "authoritative"
     },
     "brand": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "brand",
         "manufacturer"
@@ -4215,9 +4161,16 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
-        "rounding": null,
+        "range": {
+          "max": null,
+          "min": null
+        },
+        "rounding": {
+          "decimals": null
+        },
         "shape": "scalar",
-        "type": "string"
+        "type": "string",
+        "unit": null
       },
       "data_type": "string",
       "difficulty": "easy",
@@ -4329,9 +4282,6 @@
       "value_form_sample": "scalar"
     },
     "cable_length": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "cable length",
         "cord length"
@@ -4466,9 +4416,6 @@
       "value_form_sample": "scalar"
     },
     "cable_type": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "cable type",
         "included cable"
@@ -4592,9 +4539,6 @@
       "value_form_sample": "scalar"
     },
     "case_material": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "case material",
         "chassis material"
@@ -4718,9 +4662,6 @@
       "value_form_sample": "scalar"
     },
     "category": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "category",
         "product type"
@@ -4844,9 +4785,6 @@
       "value_form_sample": "scalar"
     },
     "charging_method": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "charging method",
         "charging"
@@ -4971,9 +4909,6 @@
       "value_form_sample": "scalar"
     },
     "color": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "color",
         "colorway"
@@ -5322,9 +5257,6 @@
       }
     },
     "compatible_os": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "compatible os",
         "supported operating systems"
@@ -5467,9 +5399,6 @@
       "value_form_sample": "list"
     },
     "connection": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "connection",
         "connectivity mode"
@@ -5611,9 +5540,6 @@
       "value_form_sample": "list"
     },
     "debounce_time": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "debounce time",
         "debounce"
@@ -5748,9 +5674,6 @@
       "value_form_sample": "scalar"
     },
     "depth": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "depth",
         "front to back"
@@ -5885,9 +5808,6 @@
       "value_form_sample": "scalar"
     },
     "detachable_cable": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "detachable cable",
         "removable cable"
@@ -6010,9 +5930,6 @@
       "value_form_sample": "scalar"
     },
     "discontinued": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "discontinued",
         "end of life"
@@ -6137,9 +6054,6 @@
       "value_form_sample": "scalar"
     },
     "doubleshot": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "doubleshot",
         "double-shot"
@@ -6365,9 +6279,6 @@
       "unknown_reason_default": "not_found_after_search"
     },
     "foam_dampening": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "foam dampening",
         "acoustic foam"
@@ -6491,9 +6402,6 @@
       "value_form_sample": "scalar"
     },
     "form_factor": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "form factor",
         "size"
@@ -6618,9 +6526,6 @@
       "value_form_sample": "scalar"
     },
     "function_row": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "function row",
         "f-row"
@@ -6745,9 +6650,6 @@
       "value_form_sample": "scalar"
     },
     "gasket_mount": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "gasket mount",
         "double gasket"
@@ -6871,9 +6773,6 @@
       "value_form_sample": "scalar"
     },
     "gtin": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "gtin",
         "upc",
@@ -6999,9 +6898,6 @@
       "value_form_sample": "scalar"
     },
     "height_front": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "front height",
         "height front",
@@ -7138,9 +7034,6 @@
       "value_form_sample": "scalar"
     },
     "height_rear": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "rear height",
         "height rear",
@@ -7277,9 +7170,6 @@
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "hot-swappable",
         "hot swappable",
@@ -7407,9 +7297,6 @@
       "variance_policy": "authoritative"
     },
     "included_accessories": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "included accessories",
         "in the box"
@@ -7552,9 +7439,6 @@
       "value_form_sample": "list"
     },
     "key_count": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "key count",
         "number of keys"
@@ -7683,9 +7567,6 @@
       "value_form_sample": "scalar"
     },
     "key_rollover": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "key rollover",
         "nkro",
@@ -7811,9 +7692,6 @@
       "value_form_sample": "scalar"
     },
     "keycap_material": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "keycap material",
         "cap material"
@@ -7938,9 +7816,6 @@
       "value_form_sample": "scalar"
     },
     "keycap_profile": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "keycap profile",
         "profile"
@@ -8065,9 +7940,6 @@
       "value_form_sample": "scalar"
     },
     "keycap_thickness": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "keycap thickness",
         "wall thickness"
@@ -8203,9 +8075,6 @@
       "value_form_sample": "scalar"
     },
     "knob_dial": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "knob / dial",
         "knob dial",
@@ -8336,9 +8205,6 @@
       "value_form_sample": "scalar"
     },
     "layout": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "layout",
         "physical layout"
@@ -8463,9 +8329,6 @@
       "value_form_sample": "scalar"
     },
     "layout_standard": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "layout standard",
         "ansi",
@@ -8594,9 +8457,6 @@
       "value_form_sample": "scalar"
     },
     "legends": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "legends",
         "legend method",
@@ -8723,9 +8583,6 @@
       "value_form_sample": "scalar"
     },
     "macro_keys": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "macro keys",
         "programmable keys"
@@ -8850,9 +8707,6 @@
       "value_form_sample": "scalar"
     },
     "media_controls": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "media controls",
         "media keys",
@@ -8977,9 +8831,6 @@
       "value_form_sample": "scalar"
     },
     "model": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "model",
         "model number"
@@ -9103,9 +8954,6 @@
       "value_form_sample": "scalar"
     },
     "mounting_style": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "mounting style",
         "mount type"
@@ -9229,9 +9077,6 @@
       "value_form_sample": "scalar"
     },
     "mpn": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "mpn",
         "manufacturer part number"
@@ -9355,9 +9200,6 @@
       "value_form_sample": "scalar"
     },
     "multi_device_pairing": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "multi-device pairing",
         "multi device pairing",
@@ -9483,9 +9325,6 @@
       "value_form_sample": "scalar"
     },
     "multi_device_pairing_count": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "device count",
         "paired devices",
@@ -9616,9 +9455,6 @@
       "value_form_sample": "scalar"
     },
     "multi_key_latency": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "multi-key latency",
         "multi key latency",
@@ -9755,9 +9591,6 @@
       "value_form_sample": "scalar"
     },
     "numpad": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "numpad",
         "numeric keypad"
@@ -9882,9 +9715,6 @@
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "onboard memory",
         "profile memory"
@@ -10009,9 +9839,6 @@
       "value_form_sample": "scalar"
     },
     "onboard_profile_count": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "profile count",
         "onboard profiles",
@@ -10143,9 +9970,6 @@
       "value_form_sample": "scalar"
     },
     "os_mode_switch": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "os mode switch",
         "mac windows switch",
@@ -10270,9 +10094,6 @@
       "value_form_sample": "scalar"
     },
     "per_key_rgb": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "per-key rgb",
         "per key rgb",
@@ -10399,9 +10220,6 @@
       "value_form_sample": "scalar"
     },
     "plate_material": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "plate material",
         "switch plate"
@@ -10525,9 +10343,6 @@
       "value_form_sample": "scalar"
     },
     "polling_rate_wired": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "polling rate wired",
         "wired polling rate",
@@ -10664,9 +10479,6 @@
       "value_form_sample": "scalar"
     },
     "polling_rate_wireless": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "polling rate wireless",
         "wireless polling rate",
@@ -10803,9 +10615,6 @@
       "value_form_sample": "scalar"
     },
     "price_range": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "price range",
         "msrp"
@@ -10930,9 +10739,6 @@
       "value_form_sample": "scalar"
     },
     "qmk_via_support": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "qmk / via support",
         "qmk via support",
@@ -11061,9 +10867,6 @@
       "value_form_sample": "scalar"
     },
     "rapid_trigger": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "rapid trigger",
         "dynamic reset"
@@ -11187,9 +10990,6 @@
       "value_form_sample": "scalar"
     },
     "release_date": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "release date",
         "launch date"
@@ -11314,9 +11114,6 @@
       "value_form_sample": "scalar"
     },
     "rgb_zones": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "rgb zones",
         "lighting zones"
@@ -11441,9 +11238,6 @@
       "value_form_sample": "scalar"
     },
     "scan_rate": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "scan rate",
         "key scan rate",
@@ -11580,9 +11374,6 @@
       "value_form_sample": "scalar"
     },
     "shine_through": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "shine-through",
         "shine through",
@@ -11709,9 +11500,6 @@
       "value_form_sample": "scalar"
     },
     "single_key_latency": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "single-key latency",
         "single key latency",
@@ -11848,9 +11636,6 @@
       "value_form_sample": "scalar"
     },
     "sku": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "sku",
         "stock keeping unit"
@@ -11974,9 +11759,6 @@
       "value_form_sample": "scalar"
     },
     "socd_cleaning": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "socd cleaning",
         "rapid tap",
@@ -12102,9 +11884,6 @@
       "value_form_sample": "scalar"
     },
     "software": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "software",
         "configuration software"
@@ -12229,9 +12008,6 @@
       "value_form_sample": "scalar"
     },
     "software_required": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "software required",
         "driver required"
@@ -12356,9 +12132,6 @@
       "value_form_sample": "scalar"
     },
     "sound_dampening": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "sound dampening",
         "acoustic treatment"
@@ -12482,9 +12255,6 @@
       "value_form_sample": "scalar"
     },
     "sound_profile": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "sound profile",
         "clacky",
@@ -12610,9 +12380,6 @@
       "value_form_sample": "scalar"
     },
     "south_facing_leds": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "south-facing leds",
         "south facing leds",
@@ -12738,9 +12505,6 @@
       "value_form_sample": "scalar"
     },
     "stabilizer_lubed": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "stabilizer lubed",
         "factory lubed stabilizers"
@@ -12864,9 +12628,6 @@
       "value_form_sample": "scalar"
     },
     "stabilizer_mount": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "stabilizer mount",
         "stabilizer mounting",
@@ -12992,9 +12753,6 @@
       "value_form_sample": "scalar"
     },
     "stabilizer_type": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "stabilizer type",
         "stabs"
@@ -13118,9 +12876,6 @@
       "value_form_sample": "scalar"
     },
     "switch_brand": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch brand",
         "switch maker"
@@ -13245,9 +13000,6 @@
       "value_form_sample": "scalar"
     },
     "switch_compatibility": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch compatibility",
         "switch support",
@@ -13373,9 +13125,6 @@
       "value_form_sample": "scalar"
     },
     "switch_feel": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch feel",
         "linear tactile clicky"
@@ -13501,9 +13250,6 @@
       "variance_policy": "authoritative"
     },
     "switch_lifespan": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch lifespan",
         "durability",
@@ -13642,9 +13388,6 @@
       "variance_policy": "authoritative"
     },
     "switch_name": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch name",
         "switch",
@@ -13779,9 +13522,6 @@
       "value_form_sample": "scalar"
     },
     "switch_output_type": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch output type",
         "analog switch",
@@ -13909,9 +13649,6 @@
       "variance_policy": "authoritative"
     },
     "switch_pin_support": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "pin support",
         "switch pin support",
@@ -14037,9 +13774,6 @@
       "value_form_sample": "scalar"
     },
     "switch_type": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "switch type",
         "switch technology"
@@ -14170,9 +13904,6 @@
       "value_form_sample": "scalar"
     },
     "total_travel": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "total travel",
         "travel distance"
@@ -14309,9 +14040,6 @@
       "variance_policy": "authoritative"
     },
     "typing_angle": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "typing angle",
         "angle"
@@ -14446,9 +14174,6 @@
       "value_form_sample": "scalar"
     },
     "typing_noise": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "typing noise",
         "noise level"
@@ -14572,9 +14297,6 @@
       "value_form_sample": "scalar"
     },
     "usb_passthrough": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "usb passthrough",
         "passthrough port"
@@ -14698,9 +14420,6 @@
       "value_form_sample": "scalar"
     },
     "variant": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "variant",
         "edition",
@@ -14826,9 +14545,6 @@
       "value_form_sample": "scalar"
     },
     "warranty": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "warranty"
       ],
@@ -14951,9 +14667,6 @@
       "value_form_sample": "scalar"
     },
     "weight": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "weight"
       ],
@@ -15086,9 +14799,6 @@
       "value_form_sample": "scalar"
     },
     "width": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "width"
       ],
@@ -15221,9 +14931,6 @@
       "value_form_sample": "scalar"
     },
     "wired_interface": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "wired interface",
         "wired connector"
@@ -15347,9 +15054,6 @@
       "value_form_sample": "scalar"
     },
     "wireless_technology": {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "aliases": [
         "wireless technology",
         "wireless mode"
