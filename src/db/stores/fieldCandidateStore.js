@@ -68,6 +68,12 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     stmts._deleteFieldCandidatesByProductAndField.run(category, String(productId || ''), String(fieldKey || ''));
   }
 
+  function deleteByProductFieldValue(productId, fieldKey, value) {
+    db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?'
+    ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
+  }
+
   function getPaginated({ limit = 100, offset = 0 } = {}) {
     return stmts._getFieldCandidatesPaginated
       .all(category, limit, offset)
@@ -119,5 +125,5 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).all(category).map(r => r.product_id);
   }
 
-  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts };
+  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts };
 }

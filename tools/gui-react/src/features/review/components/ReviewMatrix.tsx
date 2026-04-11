@@ -2,7 +2,6 @@ import { useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
-import { isKeyReviewLanePending } from '../../../utils/keyReview.ts';
 import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx';
 import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
 import { FlagIcon } from '../../../shared/ui/icons/FlagIcon.tsx';
@@ -193,21 +192,6 @@ export function ReviewMatrix({
                         const isEditing = isActive && cellMode === 'editing';
                         const isSelected = isActive && cellMode === 'selected';
                         const dimmed = p.hasRun === false;
-                        // Two-lane pending: derive from keyReview data + layout field_rule
-                        // Only show AI badges for products that have run data with actual field state
-                        const kr = fieldState?.keyReview;
-                        const hasFieldData = p.hasRun !== false && !!fieldState;
-                        const actionableCandidateCount = Number(
-                          fieldState?.candidate_count ?? fieldState?.candidates?.length ?? 0,
-                        );
-                        const hasPendingAIPrimary = hasFieldData
-                          && actionableCandidateCount > 0
-                          && Boolean(kr)
-                          && isKeyReviewLanePending({
-                            status: kr?.primaryStatus,
-                            userAcceptStatus: kr?.userAcceptPrimary,
-                            override: kr?.overridePrimary,
-                          });
                         return (
                           <div
                             key={p.product_id}
@@ -240,7 +224,7 @@ export function ReviewMatrix({
                               <ReviewValueCell
                                 state={fieldState}
                                 hasRun={p.hasRun}
-                                pendingAIPrimary={hasPendingAIPrimary}
+                                pendingAIPrimary={false}
                                 pendingAIShared={false}
                                 className="px-1 w-full"
                                 valueClassName="text-[11px]"

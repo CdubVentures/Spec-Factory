@@ -19,7 +19,6 @@
 
 - `src/features/review-curation/index.js`
 - `src/features/review/domain/overrideWorkflow.js` - override accept/manual/approve/finalize (no longer writes to DB directly)
-- `src/features/review/domain/reviewGridStateRuntime.js` - grid state sync (`syncItemFieldStateFromPrimaryLaneAccept` is now a no-op stub)
 - `src/db/specDb.js`
 - `src/field-rules/sessionCache.js`
 - `src/features/indexing/index.js`
@@ -43,8 +42,6 @@ Direct DB sync has been removed from the core override workflow functions in `sr
 - `setManualOverride()` no longer writes to specDb.
 - `approveGreenOverrides()` no longer batch-writes to specDb.
 - `finalizeOverrides()` no longer runs transactional DB writes.
-- `syncItemFieldStateFromPrimaryLaneAccept()` in `reviewGridStateRuntime.js` is now a no-op stub.
-
 Overrides persist to JSON SSOT only; DB sync is deferred to the publisher pipeline. Grid review UI state (`key_review_state`) still writes to DB normally.
 
 ## Side Effects
@@ -102,7 +99,6 @@ sequenceDiagram
 | source | `src/features/review/api/componentMutationRoutes.js` | Component review mutations |
 | source | `src/features/review/api/enumMutationRoutes.js` | Enum review mutations |
 | source | `src/features/review/domain/overrideWorkflow.js` | Override functions: DB sync removed, JSON SSOT only |
-| source | `src/features/review/domain/reviewGridStateRuntime.js` | `syncItemFieldStateFromPrimaryLaneAccept` confirmed as no-op stub |
 | source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | Scalar review GUI |
 | source | `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` | Component review GUI |
 

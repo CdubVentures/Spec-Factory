@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Product Image Finder (PIF) Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .priority-list { list-style: none; padding: 0; margin: 8px 0 0; }
+  .priority-list li { padding: 8px 12px; border-left: 3px solid var(--accent); margin-bottom: 6px; background: var(--surface-alt); border-radius: 0 4px 4px 0; font-size: 13.5px; }
+  .priority-list li strong { color: var(--accent); }
+  .priority-list li code { font-family: var(--mono); font-size: 12px; background: var(--surface); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .priority-list li.active { border-left-color: var(--green); }
+  .priority-list li.active strong { color: var(--green); }
+  .priority-list li.fallback { border-left-color: var(--orange); }
+  .priority-list li.fallback strong { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Product Image Finder (PIF) Reference</h1>
+  <p>Downloads high-resolution product images per color variant and edition via LLM web search</p>
+</div>
+
+<div class="container">
+
+<!-- 1. Overview -->
+<div class="section-title"><span class="num">1</span> Overview</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">CEF-Dependent Image Discovery</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      The Product Image Finder discovers and downloads product images for each colorway defined by the
+      Color &amp; Edition Finder (CEF). It uses a web-search LLM to locate high-resolution product photos,
+      firing all variant searches concurrently with a 1-second stagger between launches.
+    </p>
+    <div class="flow-row">
+      <div class="flow-box flow-neutral">CEF Data<br><small>colors + editions</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent">Build Search List<br><small>per variant</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal">LLM Web Search<br><small>staggered parallel</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">Download + Quality Gate<br><small>flag, don't delete</small></div>
+    </div>
+    <dl class="detail-grid">
+      <dt>Dependency</dt><dd>Requires CEF (Color &amp; Edition Finder) data to build the variant search list</dd>
+      <dt>Concurrency</dt><dd>All variants fired concurrently with 1-second stagger between launches</dd>
+      <dt>Output</dt><dd>Gallery of all downloaded images with quality flags per image</dd>
+      <dt>Quality gate</dt><dd>Flag-based (<code>quality_pass: true/false</code>). All images are kept regardless of quality.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 2. Variant Resolution -->
+<div class="section-title"><span class="num">2</span> Variant Resolution</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Search Target Resolution from CEF Data</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      PIF builds its search list from CEF's <code>colors</code> array. Each entry becomes a search target.
+      The search label is resolved using a strict priority chain &mdash; never searching raw atoms when a
+      better name exists.
+    </p>
+    <ul class="priority-list">
+      <li class="active">
+        <strong>Priority 1: Edition display name</strong> &mdash;
+        If a combo entry matches an edition, search by edition name.
+        <br>Example: <code>"Call of Duty Black Ops 6 Edition"</code> instead of the underlying color atom.
+      </li>
+      <li class="active">
+        <strong>Priority 2: Marketing color name</strong> &mdash;
+        If a color has a <code>color_name</code>, search by that.
+        <br>Example: <code>"Frost White"</code> not <code>"ivory"</code>.
+      </li>
+      <li class="fallback">
+        <strong>Priority 3: Raw atom (fallback)</strong> &mdash;
+        If neither edition nor color_name exists, search by atom.
+        <br>Example: <code>"black"</code>.
+      </li>
+    </ul>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Source</dt><dd>CEF <code>colors</code> array &mdash; each entry is one search target</dd>
+      <dt>Rule</dt><dd>Never search raw atoms when a better name (edition or color_name) exists</dd>
+      <dt>Combo detection</dt><dd>If a combo entry matches an edition, the edition display name takes full priority</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 3. Identity -->
+<div class="section-title"><span class="num">3</span> Identity</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Exact Product Matching</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      PIF constructs a precise identity block for the LLM search prompt so the correct product is found
+      and sibling models are excluded.
+    </p>
+    <dl class="detail-grid">
+      <dt>Identity fields</dt><dd><code>base_model</code> + <code>variant</code> for exact product matching</dd>
+      <dt>Sibling exclusion</dt><dd>Reads <code>siblings_excluded</code> from CEF data &mdash; tells the LLM which related products to skip</dd>
+      <dt>Prompt strategy</dt><dd>The prompt states the EXACT product identity and lists known siblings that must not be confused with the target</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 4. Image Quality -->
+<div class="section-title"><span class="num">4</span> Image Quality</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Per-Category Quality Settings</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>view1</code></td><td><code>"top"</code></td><td>Primary view angle for product image</td></tr>
+        <tr><td><code>view2</code></td><td><code>"left"</code></td><td>Secondary view angle for product image</td></tr>
+        <tr><td><code>minWidth</code></td><td><code>800px</code></td><td>Minimum acceptable image width in pixels</td></tr>
+        <tr><td><code>minHeight</code></td><td><code>600px</code></td><td>Minimum acceptable image height in pixels</td></tr>
+        <tr><td><code>minFileSize</code></td><td><code>50KB</code> (50,000 bytes)</td><td>Minimum acceptable file size to filter thumbnails</td></tr>
+      </tbody>
+    </table>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Quality gate</dt><dd>Flag-based only &mdash; <code>quality_pass: true/false</code>. All images are kept regardless of result.</dd>
+      <dt>Not a hard delete</dt><dd>Images that fail quality checks are flagged, never removed. Users decide what to keep.</dd>
+      <dt>Dimension reading</dt><dd>Post-download: reads image dimensions from file headers (PNG, JPEG, WebP, GIF)</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 5. Multi-Image Search -->
+<div class="section-title"><span class="num">5</span> Multi-Image Search</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Candidate Ranking and Gallery Tagging</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      The search prompt asks the LLM for up to 3 candidate images per view, ranked by quality.
+      All downloads appear in the gallery tagged by run number. Images that fail the quality gate
+      receive visual indicators but are never deleted.
+    </p>
+    <div class="two-col">
+      <div>
+        <dl class="detail-grid" style="margin-top:0;">
+          <dt>Candidates</dt><dd>Up to 3 per view, ranked by quality</dd>
+          <dt>Tagging</dt><dd>Every image tagged with its run number</dd>
+          <dt>Gallery</dt><dd>All downloads from all runs shown together</dd>
+        </dl>
+      </div>
+      <div>
+        <dl class="detail-grid" style="margin-top:0;">
+          <dt>Quality fail</dt><dd><span class="tag tag-red">LOW</span> badge + red border</dd>
+          <dt>Quality pass</dt><dd>Normal display, no extra badge</dd>
+          <dt>Deletion</dt><dd>Never. All images preserved.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Image Serving -->
+<div class="section-title"><span class="num">6</span> Image Serving</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Static File Serving Endpoint</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Route</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/:filename</code></dd>
+      <dt>Storage path</dt><dd><code>.workspace/products/{pid}/images/</code></dd>
+      <dt>MIME types</dt><dd>Proper Content-Type headers for PNG, JPEG, WebP, GIF</dd>
+      <dt>Caching</dt><dd>24-hour cache (<code>Cache-Control: max-age=86400</code>)</dd>
+      <dt>Backfill</dt><dd>Dimensions backfilled on GET for older images that lack stored dimension metadata</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 7. Architecture -->
+<div class="section-title"><span class="num">7</span> Architecture</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Module Architecture Detail</div>
+  <div class="card-body">
+    <dl class="detail-grid" style="grid-template-columns: 180px 1fr;">
+      <dt>Module ID</dt><dd><code>productImageFinder</code></dd>
+      <dt>Phase</dt><dd><code>imageFinder</code></dd>
+      <dt>Route</dt><dd><code>/api/v1/product-image-finder/:category/:productId</code></dd>
+      <dt>DB Tables</dt><dd><code>product_image_finder</code> + <code>_runs</code> + <code>_settings</code></dd>
+      <dt>JSON Store</dt><dd><code>.workspace/products/{pid}/product_images.json</code></dd>
+      <dt>Cooldown</dt><dd>30 days</dd>
+      <dt>Accumulation</dt><dd>Per-variant latest-wins; all variants preserved across runs</dd>
+      <dt>Concurrency</dt><dd>Staggered parallel (1-second delay between launches); each variant persisted on completion</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 8. GUI Panel -->
+<div class="section-title"><span class="num">8</span> GUI Panel</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Panel Layout and Interactions</div>
+  <div class="card-body">
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">KPI Cards</p>
+    <div class="flow-row" style="margin:8px 0 20px; justify-content:flex-start;">
+      <div class="flow-box flow-accent" style="min-width:100px; border-width:1px;">Images<br><small>total count</small></div>
+      <div class="flow-box flow-teal" style="min-width:100px; border-width:1px;">Variants<br><small>color targets</small></div>
+      <div class="flow-box flow-repair" style="min-width:100px; border-width:1px;">Runs<br><small>search count</small></div>
+      <div class="flow-box flow-neutral" style="min-width:100px; border-width:1px;">Cooldown<br><small>days remaining</small></div>
+    </div>
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Variant Grid</p>
+    <p style="font-size:13.5px; margin-bottom:16px;">
+      CLR/ED chips for each variant with the resolved search label displayed.
+      Chips indicate which resolution priority was used (edition name, color name, or raw atom).
+    </p>
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">All Images Gallery</p>
+    <p style="font-size:13.5px; margin-bottom:6px;">
+      Every image from every run displayed together, tagged with run number.
+      Quality failures shown with <span class="tag tag-red">LOW</span> badge and red border.
+    </p>
+    <dl class="detail-grid" style="margin-bottom:16px;">
+      <dt>Click action</dt><dd>Opens full-size lightbox portaled to <code>document.body</code></dd>
+      <dt>Dismiss</dt><dd>Press Escape or click outside to close lightbox</dd>
+    </dl>
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Run History</p>
+    <p style="font-size:13.5px; margin-bottom:6px;">
+      Expandable with chevron toggle. Each run entry contains:
+    </p>
+    <table style="margin-top:0;">
+      <thead><tr><th>Section</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td>Discovery log</td><td>URLs found, download status per candidate</td></tr>
+        <tr><td>Download errors</td><td>Failed URLs with error details</td></tr>
+        <tr><td>System prompt</td><td>Full system prompt sent to LLM</td></tr>
+        <tr><td>User message</td><td>Product identity + variant search message</td></tr>
+        <tr><td>LLM response</td><td>Raw LLM response with candidate URLs and reasoning</td></tr>
+      </tbody>
+    </table>
+
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Footer</dt><dd>Model badge + run count (shared <code>FinderPanelFooter</code> component)</dd>
+    </dl>
+  </div>
+</div>
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Generated from source &mdash; Spec Factory Product Image Finder (PIF)<br>
+  CEF-dependent &bull; staggered parallel &bull; flag-based quality gate &bull; per-variant latest-wins accumulation
+</div>
+
+</div>
+</body>
+</html>

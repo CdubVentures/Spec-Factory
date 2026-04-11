@@ -25,8 +25,6 @@ import {
 import {
   toInt,
   hasKnownValue,
-  resolveOverrideFilePath,
-  readOverrideFile,
   parseFieldStudioRowFromCell,
   extractFieldStudioHints,
   reviewKeys,
@@ -413,271 +411,132 @@ export async function buildProductReviewPayload({
   catalogProduct = null,
 }) {
   const resolvedLayout = layout || await buildReviewLayout({ storage, config, category });
-  const latest = await readLatestArtifacts(storage, category, productId, specDb);
   const rows = {};
   let reviewableFlags = 0;
   let missingCount = 0;
 
-  let useSpecDb = false;
-  let dbHasAnyState = false;
-  let dbProduct = null;
-  let dbFieldRowsByField = new Map();
-  if (specDb) {
-    try {
-      const dbFieldRows = toArray(specDb.getItemFieldState(productId));
-      dbHasAnyState = dbFieldRows.length > 0;
-      dbFieldRowsByField = new Map(dbFieldRows.map((row) => [normalizeField(row.field_key), row]));
-      dbProduct = specDb.getProduct(productId) || null;
+  // Two tables only: products + field_candidates.
+  const dbProduct = specDb?.getProduct(productId) || null;
+  const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
 
-      useSpecDb = dbHasAnyState || Boolean(dbProduct);
-
-      if (useSpecDb) {
-        // ID-first invariant: every grid field must have a persisted slot row.
-        // This guarantees itemFieldStateId exists for all drawer mutations.
-        const layoutFields = toArray(resolvedLayout?.rows)
-          .map((row) => normalizeField(row?.key))
-          .filter(Boolean);
-        const missingFields = layoutFields.filter((field) => !dbFieldRowsByField.has(field));
-        if (missingFields.length > 0) {
-          for (const fieldKey of missingFields) {
-            specDb.upsertItemFieldState({
-              productId,
-              fieldKey,
-              value: null,
-              confidence: 0,
-              source: 'pipeline',
-              acceptedCandidateId: null,
-              overridden: false,
-              needsAiReview: false,
-              aiReviewComplete: false,
-            });
-          }
-          const refreshedRows = toArray(specDb.getItemFieldState(productId));
-          dbHasAnyState = refreshedRows.length > 0;
-          dbFieldRowsByField = new Map(refreshedRows.map((row) => [normalizeField(row.field_key), row]));
-        }
+  // Group candidates by field_key, track resolved (published) per field.
+  const candidatesByField = new Map();
+  const resolvedByField = new Map();
+  for (const row of allCandidates) {
+    const fk = normalizeField(row.field_key);
+    if (!candidatesByField.has(fk)) candidatesByField.set(fk, []);
+    candidatesByField.get(fk).push(row);
+    if (String(row.status || '').trim() === 'resolved') {
+      const existing = resolvedByField.get(fk);
+      if (!existing || toNumber(row.confidence, 0) > toNumber(existing.confidence, 0)) {
+        resolvedByField.set(fk, row);
       }
-    } catch {
-      useSpecDb = false;
-      dbHasAnyState = false;
-      dbFieldRowsByField = new Map();
     }
   }
 
-  // Read override file only in JSON-primary mode.
-  const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const overrideDoc = useSpecDb ? null : await readOverrideFile(overridePath, { config, category, productId });
-  const overrides = isObject(overrideDoc?.overrides) ? overrideDoc.overrides : {};
+  for (const layoutRow of resolvedLayout.rows || []) {
+    const field = normalizeField(layoutRow.key);
+    const fieldCandidateRows = candidatesByField.get(field) || [];
+    const resolvedRow = resolvedByField.get(field) || null;
+    const isOverridden = resolvedRow?.metadata_json?.source === 'manual_override';
 
-  for (const row of resolvedLayout.rows || []) {
-    const field = normalizeField(row.key);
-    const fieldShape = String(row?.field_rule?.shape || 'scalar').trim().toLowerCase() || 'scalar';
-    const dbFieldRow = useSpecDb ? dbFieldRowsByField.get(field) : null;
+    // Published value = resolved candidate.
+    const resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
+      ? resolvedRow.value : null;
+    const resolvedConfidence = resolvedRow
+      ? Math.max(0, Math.min(1, toNumber(resolvedRow.confidence, 0)))
+      : 0;
+    const hasValue = hasKnownValue(resolvedValue);
 
-    if (dbFieldRow) {
-      const dbCandidateRows = [];
-      const isOverridden = Boolean(dbFieldRow.overridden);
-      const selectedShapeValue = normalizeSlotValueForShape(
-        dbFieldRow.value != null && String(dbFieldRow.value).trim() !== '' ? dbFieldRow.value : null,
-        fieldShape
-      ).value;
-      const selectedValue = slotValueToText(selectedShapeValue, fieldShape) ?? null;
-      const state = buildFieldState({
-        field,
-        candidates: { [field]: dbCandidateRows },
-        normalized: { fields: { [field]: selectedValue } },
-        provenance: {
-          [field]: {
-            value: selectedValue,
-            confidence: Math.max(0, Math.min(1, toNumber(dbFieldRow.confidence, 0))),
-            host: '',
-            source: dbFieldRow.source || '',
-            evidence: [],
-          }
+    // Map field_candidates rows → candidate shape.
+    const candidates = fieldCandidateRows.map((c) => {
+      const meta = isObject(c.metadata_json) ? c.metadata_json : {};
+      const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
+      const firstSource = isObject(sources[0]) ? sources[0] : {};
+      const sourceToken = String(meta.source || firstSource.source || '').trim().toLowerCase();
+      return {
+        candidate_id: `fc_${c.id}`,
+        value: c.value,
+        score: Math.max(0, Math.min(1, toNumber(c.confidence, 0))),
+        source_id: sourceToken || '',
+        source: dbSourceLabel(sourceToken) || sourceToken || '',
+        tier: null,
+        method: String(meta.method || sourceToken || '').trim() || null,
+        status: c.status || 'candidate',
+        evidence: {
+          url: String(meta.evidence?.url || '').trim(),
+          quote: String(meta.evidence?.quote || meta.reason || '').trim(),
+          source_id: sourceToken || '',
         },
-        summary: latest.summary,
-        includeCandidates,
-        category,
-        productId,
-        fieldShape,
-        acceptedCandidateId: dbFieldRow.accepted_candidate_id || null,
-        overridden: isOverridden,
-        contractUnit: dbFieldRow.unit || row.field_rule?.units || null,
-      });
+      };
+    });
 
-      const needsReview = Boolean(dbFieldRow.needs_ai_review);
-      const reasonCodes = needsReview
-        ? (state.reason_codes.length > 0 ? state.reason_codes : ['needs_ai_review'])
-        : [];
-      const selectedConfidence = isOverridden
-        ? 1
-        : Math.max(
-          Math.max(0, Math.min(1, toNumber(dbFieldRow.confidence, 0))),
-          Math.max(0, Math.min(1, toNumber(state.selected?.confidence, 0)))
-        );
-      const color = hasKnownValue(state.selected?.value)
-        ? confidenceColor(selectedConfidence, reasonCodes)
-        : 'gray';
+    // Determine source/method from resolved candidate.
+    let source = '';
+    let method = null;
+    if (isOverridden) {
+      source = 'user';
+      method = 'manual_override';
+    } else if (resolvedRow) {
+      const st = String(resolvedRow.metadata_json?.source || '').trim();
+      source = dbSourceLabel(st) || st;
+      method = String(resolvedRow.metadata_json?.method || '').trim() || null;
+    }
 
-      state.selected = {
-        value: isOverridden ? selectedValue : state.selected.value,
-        confidence: selectedConfidence,
+    const color = hasValue
+      ? confidenceColor(isOverridden ? 1 : resolvedConfidence, [])
+      : 'gray';
+
+    const needsReview = !hasValue;
+    if (needsReview) missingCount += 1;
+
+    rows[field] = {
+      selected: {
+        value: resolvedValue,
+        confidence: isOverridden ? 1 : resolvedConfidence,
         status: needsReview ? 'needs_review' : 'ok',
         color,
-      };
-      state.needs_review = needsReview;
-      state.reason_codes = reasonCodes;
-      state.candidate_count = Number.isFinite(Number(state.candidate_count))
-        ? Number(state.candidate_count)
-        : dbCandidateRows.length;
-      state.overridden = isOverridden;
-      state.slot_id = dbFieldRow.id ?? null;
-      state.accepted_candidate_id = state.overridden
-        ? null
-        : (state.accepted_candidate_id || String(dbFieldRow.accepted_candidate_id || '').trim() || null);
-      state.source_timestamp = String(dbFieldRow.updated_at || '').trim() || null;
-
-      if (state.overridden) {
-        state.source = 'user';
-        state.method = 'manual_override';
-        state.tier = null;
-      } else if (dbFieldRow.source) {
-        state.source = state.source || dbSourceLabel(dbFieldRow.source);
-        state.method = state.method || dbSourceMethod(dbFieldRow.source);
-        state.tier = null;
-      }
-
-      rows[field] = state;
-    } else if (useSpecDb) {
-      rows[field] = buildFieldState({
-        field,
-        candidates: {},
-        normalized: { fields: {} },
-        provenance: {},
-        summary: {},
-        includeCandidates,
-        category,
-        productId,
-        fieldShape,
-      });
-    } else {
-      rows[field] = buildFieldState({
-        field,
-        candidates: latest.candidates,
-        normalized: latest.normalized,
-        provenance: latest.provenance,
-        summary: latest.summary,
-        includeCandidates,
-        category,
-        productId,
-        fieldShape,
-      });
-    }
-
-    // Apply override on top of pipeline data (JSON-primary mode only).
-    const ovr = overrides[field];
-    if (isObject(ovr) && ovr.override_value != null) {
-      const overrideShapeValue = normalizeSlotValueForShape(ovr.override_value, fieldShape).value;
-      const overrideValue = slotValueToText(overrideShapeValue, fieldShape) ?? null;
-      rows[field].selected = {
-        value: overrideValue,
-        confidence: 1.0,
-        status: 'ok',
-        color: 'green'
-      };
-      rows[field].needs_review = false;
-      rows[field].reason_codes = [];
-      // Only show OVR badge for manual entries — candidate acceptance is confirmation, not override
-      rows[field].overridden = ovr.override_source === 'manual_entry';
-      rows[field].accepted_candidate_id = rows[field].overridden
-        ? null
-        : String(ovr.candidate_id || '').trim() || null;
-      // Surface the timestamp from override provenance
-      rows[field].source_timestamp = ovr.overridden_at || ovr.set_at || null;
-
-      // Populate source from override provenance so tooltip/drawer show correct source
-      if (ovr.override_source === 'manual_entry') {
-        rows[field].source = 'user';
-        rows[field].method = 'manual_override';
-        rows[field].tier = null;
-      } else if (isObject(ovr.source)) {
-        rows[field].source = String(ovr.source.host || '').trim();
-        rows[field].method = String(ovr.source.method || '').trim();
-        rows[field].tier = toInt(ovr.source.tier, 0) || null;
-      }
-      if (isObject(ovr.override_provenance)) {
-        rows[field].evidence_url = String(ovr.override_provenance.url || '').trim();
-        rows[field].evidence_quote = String(ovr.override_provenance.quote || '').trim();
-      }
-    }
-
-    // WHY: In specDb mode, summary field_reasoning preserves the original source count
-    // from the pipeline run. Pass it to inferFlags so below_min_evidence can trigger
-    // even when only synthetic candidates exist.
-    const fieldReasoning = isObject(latest.summary?.field_reasoning?.[field])
-      ? latest.summary.field_reasoning[field]
-      : null;
-    const fieldFlags = inferFlags({
-      reasonCodes: rows[field].reason_codes || [],
-      fieldRule: row.field_rule || {},
-      candidates: rows[field].candidates || [],
-      acceptedCandidateId: rows[field].accepted_candidate_id || null,
-      overridden: Boolean(rows[field].overridden),
-      evidenceSourceCount: fieldReasoning?.sources ?? null,
-    });
-    for (const flag of fieldFlags) {
-      if (!(rows[field].reason_codes || []).includes(flag)) {
-        rows[field].reason_codes = [...(rows[field].reason_codes || []), flag];
-        if (!rows[field].needs_review) {
-          rows[field].needs_review = true;
-          rows[field].selected = {
-            ...rows[field].selected,
-            status: 'needs_review',
-          };
-        }
-      }
-    }
-
-    if (fieldFlags.length > 0) {
-      reviewableFlags += 1;
-    }
-    if (!hasKnownValue(rows[field].selected.value) && rows[field].needs_review) {
-      missingCount += 1;
-    }
+      },
+      needs_review: needsReview,
+      reason_codes: [],
+      candidate_count: fieldCandidateRows.length,
+      candidates: includeCandidates ? candidates : [],
+      accepted_candidate_id: null,
+      selected_candidate_id: null,
+      source,
+      method,
+      tier: null,
+      evidence_url: '',
+      evidence_quote: '',
+      overridden: isOverridden,
+      source_timestamp: String(resolvedRow?.updated_at || '').trim() || null,
+    };
   }
 
-  const fallbackConfidence = toNumber(latest.summary.confidence, 0);
-  const fallbackCoverage = toNumber(latest.summary.coverage_overall_percent, 0) / 100;
-  const computedCoverage = resolvedLayout.rows.length > 0
-    ? (resolvedLayout.rows.length - missingCount) / resolvedLayout.rows.length
-    : 0;
-  const knownFieldStates = Object.values(rows).filter((state) => hasKnownValue(state?.selected?.value));
+  // Metrics from field state.
+  const totalFields = resolvedLayout.rows?.length || 0;
+  const knownFieldStates = Object.values(rows).filter((s) => hasKnownValue(s?.selected?.value));
   const computedConfidence = knownFieldStates.length > 0
-    ? knownFieldStates.reduce((sum, state) => sum + toNumber(state?.selected?.confidence, 0), 0) / knownFieldStates.length
+    ? knownFieldStates.reduce((sum, s) => sum + toNumber(s?.selected?.confidence, 0), 0) / knownFieldStates.length
     : 0;
-  const confidence = useSpecDb && computedConfidence > 0 ? computedConfidence : fallbackConfidence;
-  const coverage = useSpecDb ? computedCoverage : fallbackCoverage;
+  const computedCoverage = totalFields > 0
+    ? (totalFields - missingCount) / totalFields
+    : 0;
 
-  const normalizedIdentity = isObject(latest.normalized.identity) ? latest.normalized.identity : {};
   const catalogIdentity = isObject(catalogProduct) ? catalogProduct : {};
   const authoritativeIdentity = resolveAuthoritativeProductIdentity({
     productId,
     category,
     catalogProduct: catalogIdentity,
     dbProduct,
-    normalizedIdentity,
+    normalizedIdentity: {},
   });
-  const updatedAt = (() => {
-    if (useSpecDb) {
-      let maxTs = 0;
-      for (const state of Object.values(rows)) {
-        const ts = parseDateMs(state?.source_timestamp || '');
-        if (ts > maxTs) maxTs = ts;
-      }
-      if (maxTs > 0) return new Date(maxTs).toISOString();
-    }
-    return String(latest.summary.generated_at || nowIso());
-  })();
+
+  let updatedAt = nowIso();
+  for (const state of Object.values(rows)) {
+    const ts = parseDateMs(state?.source_timestamp || '');
+    if (ts > parseDateMs(updatedAt)) updatedAt = new Date(ts).toISOString();
+  }
 
   return {
     product_id: productId,
@@ -685,15 +544,13 @@ export async function buildProductReviewPayload({
     identity: authoritativeIdentity,
     fields: rows,
     metrics: {
-      confidence,
-      coverage,
+      confidence: computedConfidence,
+      coverage: computedCoverage,
       flags: reviewableFlags,
       missing: missingCount,
-      has_run: useSpecDb
-        ? dbHasAnyState
-        : !!(latest.summary.generated_at && (confidence > 0 || coverage > 0)),
-      updated_at: updatedAt
-    }
+      has_run: allCandidates.length > 0,
+      updated_at: updatedAt,
+    },
   };
 }
 

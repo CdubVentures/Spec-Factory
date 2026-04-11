@@ -164,28 +164,7 @@ async function handleEnumOverrideEndpoint({
           cascadeNewValue = resolvedValue;
         }
         const existingLv = runtimeSpecDb.getListValueByFieldAndValue(field, resolvedValue);
-        const existingState = runtimeSpecDb.getKeyReviewState({
-          category,
-          targetKind: 'enum_key',
-          fieldKey: field,
-          enumValueNorm: normalizedResolved,
-          listValueId: existingLv?.id ?? null,
-        });
-        const priorState = isRenameAccept
-          ? runtimeSpecDb.getKeyReviewState({
-            category,
-            targetKind: 'enum_key',
-            fieldKey: field,
-            enumValueNorm: normalizedPrior,
-            listValueId: oldLv?.id ?? null,
-          })
-          : null;
-        const existingStateStatus = String(existingState?.ai_confirm_shared_status || '').trim().toLowerCase();
-        const priorStateStatus = String(priorState?.ai_confirm_shared_status || '').trim().toLowerCase();
-        const keepNeedsReview = existingStateStatus === 'pending'
-          || priorStateStatus === 'pending'
-          || Boolean(existingLv?.needs_review)
-          || Boolean(oldLv?.needs_review);
+        const keepNeedsReview = Boolean(existingLv?.needs_review) || Boolean(oldLv?.needs_review);
         const selectedSource = String(
           existingLv?.source
           || oldLv?.source

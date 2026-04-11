@@ -57,21 +57,7 @@ export interface ReviewCandidate {
   human_accepted?: boolean;
 }
 
-export interface KeyReviewLaneState {
-  id: number;
-  selectedCandidateId?: string | null;
-  primaryStatus: string | null;
-  primaryConfidence: number | null;
-  sharedStatus: string | null;
-  sharedConfidence: number | null;
-  userAcceptPrimary: string | null;
-  userAcceptShared: string | null;
-  overridePrimary: boolean;
-  overrideShared: boolean;
-}
-
 export interface FieldState {
-  slot_id?: number | null;
   selected: {
     value: unknown;
     unit?: string | null;
@@ -92,7 +78,6 @@ export interface FieldState {
   evidence_quote?: string;
   accepted_candidate_id?: string | null;
   selected_candidate_id?: string | null;
-  keyReview?: KeyReviewLaneState;
 }
 
 export interface ProductReviewPayload {
@@ -147,5 +132,4 @@ export interface CandidateResponse {
   field: string;
   candidates: ReviewCandidate[];
   candidate_count: number;
-  keyReview?: KeyReviewLaneState | null;
 }

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Color &amp; Edition Finder (CEF) Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-repair { background: var(--green-bg); color: var(--green); }
+  .tag-reject { background: var(--red-bg); color: var(--red); }
+  .tag-shortcircuit { background: var(--orange-bg); color: var(--orange); }
+  .tag-always { background: var(--surface-alt); color: var(--text-muted); }
+  .tag-both { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .rule-list { list-style: none; padding: 0; margin: 0; }
+  .rule-list li { padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13.5px; display: flex; align-items: flex-start; gap: 8px; }
+  .rule-list li:last-child { border-bottom: none; }
+  .rule-icon { flex-shrink: 0; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: white; }
+  .rule-icon-green { background: var(--green); }
+  .rule-icon-red { background: var(--red); }
+  .rule-icon-orange { background: var(--orange); }
+  .rule-icon-accent { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Color &amp; Edition Finder (CEF) Reference</h1>
+  <p>Discovers standard colorways, marketing names, and special editions for each product via LLM web search</p>
+</div>
+
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">1</span> Overview</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">What CEF Does</div>
+<div class="card-body">
+  <p>The Color &amp; Edition Finder discovers <strong>every color variant and special edition</strong> for a given product. It uses an LLM-driven web search to find all standard colorways, multi-color combos, marketing color names, and named special/limited/collaboration editions.</p>
+  <p>CEF produces a normalized, deduplicated color inventory and an edition map, each keyed to the product's base model and variant identity.</p>
+  <p><strong>Gate:</strong> CEF only runs when Field Studio has <code>colors</code> and/or <code>editions</code> enabled for the category. If neither field is enabled, the module is skipped entirely.</p>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Field Studio Gate</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-teal">LLM Web Search</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-repair">Normalize &amp; Validate</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Store Results</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">2</span> Data Model</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">CEF Output Schema</div>
+<div class="card-body">
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+  <tr>
+    <td><code>colors</code></td>
+    <td>string[]</td>
+    <td>ALL colorways &mdash; single atoms (<code>"black"</code>) and combos (<code>"dark-gray+black+orange"</code>). One entry per distinct SKU colorway. This is the master list.</td>
+  </tr>
+  <tr>
+    <td><code>color_names</code></td>
+    <td>Record&lt;string, string&gt;</td>
+    <td>Map of atom &rarr; marketing name. <strong>Required</strong> when the atom differs from the manufacturer's name (e.g. <code>"dark-gray": "Storm Gray"</code>). Omit when atom IS the name (e.g. <code>"black"</code>).</td>
+  </tr>
+  <tr>
+    <td><code>editions</code></td>
+    <td>Record&lt;string, object&gt;</td>
+    <td>Map of slug &rarr; <code>{ display_name, colors: ["combo"] }</code>. Each edition's color is a single <code>"+"</code>-joined combo entry.</td>
+  </tr>
+  <tr>
+    <td><code>default_color</code></td>
+    <td>string</td>
+    <td>First color in the <code>colors</code> array. Default colorway shown on the product page.</td>
+  </tr>
+  <tr>
+    <td><code>siblings_excluded</code></td>
+    <td>string[]</td>
+    <td>Sibling models that were found during search but excluded (wrong product).</td>
+  </tr>
+  <tr>
+    <td><code>discovery_log</code></td>
+    <td>string[]</td>
+    <td>Audit trail of search decisions, normalizations, and exclusions.</td>
+  </tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">3</span> Color Rules</div>
+
+<div class="two-col">
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Required</div>
+<div class="card-body">
+<ul class="rule-list">
+  <li><span class="rule-icon rule-icon-green">1</span> Normalize every color to a registered palette atom (e.g. manufacturer's "Midnight" &rarr; atom <code>black</code>).</li>
+  <li><span class="rule-icon rule-icon-green">2</span> Multi-color combos: join atoms with <code>+</code> in dominant-to-accent order (e.g. <code>"dark-gray+black+orange"</code>).</li>
+  <li><span class="rule-icon rule-icon-green">3</span> Marketing names are <strong>required</strong> in <code>color_names</code> when the atom does not match the manufacturer's real name.</li>
+  <li><span class="rule-icon rule-icon-green">4</span> Every entry in <code>colors</code> must be unique &mdash; no duplicate atoms or combos.</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Excluded</div>
+<div class="card-body">
+<ul class="rule-list">
+  <li><span class="rule-icon rule-icon-red">1</span> Edition-exclusive individual atoms that are not available as a standard SKU must <strong>not</strong> appear as standalone entries in the master <code>colors</code> array.</li>
+  <li><span class="rule-icon rule-icon-red">2</span> Do not invent atoms. Only use colors from the registered palette.</li>
+  <li><span class="rule-icon rule-icon-red">3</span> Do not include marketing name as the atom. The atom is always the normalized palette key.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">4</span> Edition Rules</div>
+
+<div class="two-col">
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">What IS an Edition</div>
+<div class="card-body">
+<ul class="rule-list">
+  <li><span class="rule-icon rule-icon-accent">1</span> Named special, limited, or collaboration versions of the product (e.g. "Faker Edition", "Neon Rider").</li>
+  <li><span class="rule-icon rule-icon-accent">2</span> Slug must be kebab-case (e.g. <code>faker-edition</code>).</li>
+  <li><span class="rule-icon rule-icon-accent">3</span> Colors expressed as a single <code>"+"</code>-joined combo entry (e.g. <code>"dark-gray+black+orange"</code>).</li>
+  <li><span class="rule-icon rule-icon-accent">4</span> The edition's combo <strong>must also appear</strong> in the master <code>colors</code> array.</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--orange-bg);">What is NOT an Edition</div>
+<div class="card-body">
+<ul class="rule-list">
+  <li><span class="rule-icon rule-icon-orange">1</span> Plain color variants &mdash; a product in "white" is not an edition.</li>
+  <li><span class="rule-icon rule-icon-orange">2</span> Bundles or kits (product + accessories packaged together).</li>
+  <li><span class="rule-icon rule-icon-orange">3</span> Refurbished or renewed units.</li>
+  <li><span class="rule-icon rule-icon-orange">4</span> Aftermarket or third-party modifications.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">5</span> Identity</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Product Identity &amp; Disambiguation</div>
+<div class="card-body">
+<ul class="rule-list">
+  <li><span class="rule-icon rule-icon-accent">1</span> <strong>base_model + variant:</strong> CEF uses both fields together to identify the exact product. A "DeathAdder V3" (wired) and "DeathAdder V3 Pro" (wireless) are separate products with separate color inventories.</li>
+  <li><span class="rule-icon rule-icon-accent">2</span> <strong>Sibling exclusion:</strong> When LLM search returns colors for related but different models, those siblings are excluded and logged in <code>siblings_excluded</code>. Only the exact product's colors are kept.</li>
+  <li><span class="rule-icon rule-icon-accent">3</span> <strong>Family count / ambiguity:</strong> CEF is aware of how many siblings exist in the same family. High sibling counts increase ambiguity risk, so the module logs additional disambiguation context in <code>discovery_log</code>.</li>
+</ul>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">6</span> Architecture</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Module Details</div>
+<div class="card-body">
+<dl class="detail-grid">
+  <dt>Module ID</dt>
+  <dd><code>colorEditionFinder</code></dd>
+  <dt>Phase</dt>
+  <dd><code>colorFinder</code></dd>
+  <dt>Route</dt>
+  <dd><code>/api/v1/color-edition-finder/:category/:productId</code></dd>
+  <dt>DB Tables</dt>
+  <dd><code>color_edition_finder</code>, <code>color_edition_finder_runs</code>, <code>color_edition_finder_settings</code></dd>
+  <dt>JSON Store</dt>
+  <dd><code>.workspace/products/{pid}/color_edition.json</code></dd>
+  <dt>Cooldown</dt>
+  <dd>30 days</dd>
+  <dt>Field Gate</dt>
+  <dd><span class="tag tag-teal">colors</span> <span class="tag tag-teal">editions</span></dd>
+</dl>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">7</span> Example Output</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Sample CEF Response &mdash; 4 standard colors + 2 editions</div>
+<div class="card-body">
+<pre class="json-block">{
+  "colors": [
+    "black",
+    "white",
+    "red",
+    "dark-gray+black+orange"
+  ],
+  "color_names": {
+    "dark-gray": "Storm Gray"
+  },
+  "editions": {
+    "faker-edition": {
+      "display_name": "Faker Edition",
+      "colors": ["dark-gray+black+orange"]
+    },
+    "neon-rider": {
+      "display_name": "Neon Rider",
+      "colors": ["black+green+pink"]
+    }
+  },
+  "default_color": "black",
+  "siblings_excluded": [
+    "DeathAdder V3 Pro",
+    "DeathAdder V3 HyperSpeed"
+  ],
+  "discovery_log": [
+    "Found 6 colorways on manufacturer page",
+    "Excluded 2 sibling models (Pro, HyperSpeed)",
+    "Normalized 'Storm Gray' -&gt; atom 'dark-gray'",
+    "Faker Edition combo added to master colors list",
+    "Neon Rider combo 'black+green+pink' added to master colors list"
+  ]
+}</pre>
+</div>
+</div>
+
+</div>
+</body>
+</html>

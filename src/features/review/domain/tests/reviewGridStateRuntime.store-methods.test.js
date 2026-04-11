@@ -1,10 +1,37 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  CATEGORY,
-  seedItemFieldState,
-  withTempSpecDb,
-} from './helpers/reviewGridStateRuntimeHarness.js';
+import { SpecDb } from '../../../../db/specDb.js';
+
+const CATEGORY = '_test_grid_runtime';
+
+async function withTempSpecDb(runTest) {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: CATEGORY });
+  try {
+    return await runTest(specDb);
+  } finally {
+    try { specDb?.close?.(); } catch { /* best-effort */ }
+  }
+}
+
+function seedItemFieldState(specDb, {
+  productId = 'mouse-1',
+  fieldKey = 'dpi',
+  value = '16000',
+  confidence = 0.9,
+  source = 'pipeline',
+  acceptedCandidateId = null,
+  needsAiReview = true,
+  aiReviewComplete = false,
+  overridden = false,
+} = {}) {
+  specDb.upsertItemFieldState({
+    productId, fieldKey, value, confidence, source,
+    acceptedCandidateId, overridden, needsAiReview, aiReviewComplete,
+  });
+  return specDb.db.prepare(
+    'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
+  ).get(CATEGORY, productId, fieldKey);
+}
 
 describe('store methods — getKeyReviewStateById', () => {
   it('returns row by id', () => withTempSpecDb(async (specDb) => {

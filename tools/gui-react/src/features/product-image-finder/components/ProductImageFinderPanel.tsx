@@ -17,6 +17,7 @@ import {
   FinderPanelFooter,
   FinderDeleteConfirmModal,
   FinderRunPromptDetails,
+  FinderSectionCard,
   useResolvedFinderModel,
   deriveCooldownState,
   deriveFinderStatusChip,
@@ -52,8 +53,10 @@ function imageServeUrl(category: string, productId: string, filename: string): s
 }
 
 /**
- * Standard colors (marketing name when available) + editions by display name.
- * Edition-exclusive colors no longer in the master list — they're combos inside editions.
+ * Every entry in colors is a colorway. Search priority:
+ *   1. Edition display name (if combo matches an edition)
+ *   2. Marketing name (from color_names)
+ *   3. Raw atom/combo (fallback)
  */
 function buildVariantList(cefData: {
   colors?: string[];
@@ -63,15 +66,23 @@ function buildVariantList(cefData: {
   const colors = cefData.colors || [];
   const colorNames = cefData.color_names || {};
   const editions = cefData.editions || {};
-  const variants: VariantInfo[] = [];
 
-  for (const atom of colors) {
-    const name = colorNames[atom];
-    const hasName = !!(name && name.toLowerCase() !== atom.toLowerCase());
-    variants.push({ key: `color:${atom}`, label: hasName ? name : atom, type: 'color' });
-  }
+  const comboToEdition = new Map<string, { slug: string; displayName: string }>();
   for (const [slug, ed] of Object.entries(editions)) {
-    variants.push({ key: `edition:${slug}`, label: ed.display_name || slug, type: 'edition' });
+    const combo = (ed.colors || [])[0];
+    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+  }
+
+  const variants: VariantInfo[] = [];
+  for (const entry of colors) {
+    const edition = comboToEdition.get(entry);
+    if (edition) {
+      variants.push({ key: `edition:${edition.slug}`, label: edition.displayName, type: 'edition' });
+    } else {
+      const name = colorNames[entry];
+      const hasName = !!(name && name.toLowerCase() !== entry.toLowerCase());
+      variants.push({ key: `color:${entry}`, label: hasName ? name : entry, type: 'color' });
+    }
   }
   return variants;
 }
@@ -98,6 +109,36 @@ function buildGalleryImages(runs: ProductImageFinderRun[]): GalleryImage[] {
     }
   }
   return images;
+}
+
+interface ImageGroup {
+  key: string;
+  label: string;
+  type: 'color' | 'edition';
+  images: GalleryImage[];
+}
+
+/** Group gallery images by variant key, preserving variant order from CEF. */
+function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[]): ImageGroup[] {
+  const imageMap = new Map<string, GalleryImage[]>();
+  for (const img of images) {
+    const key = img.variant_key || '';
+    if (!imageMap.has(key)) imageMap.set(key, []);
+    imageMap.get(key)!.push(img);
+  }
+  const groups: ImageGroup[] = [];
+  for (const v of variants) {
+    const imgs = imageMap.get(v.key);
+    if (imgs && imgs.length > 0) {
+      groups.push({ key: v.key, label: v.label, type: v.type, images: imgs });
+    }
+  }
+  for (const [key, imgs] of imageMap) {
+    if (!variants.some(v => v.key === key) && imgs.length > 0) {
+      groups.push({ key, label: key, type: 'color', images: imgs });
+    }
+  }
+  return groups;
 }
 
 /* ── Lightbox (portaled to document.body) ────────────────────────── */
@@ -242,9 +283,6 @@ function GalleryCard({
             {dims}px
           </span>
         )}
-        <span className="text-[9px] sf-text-muted truncate" title={img.variant_label || img.variant_key}>
-          {img.variant_label || img.variant_key}
-        </span>
         {img.url && (
           <a
             href={img.url}
@@ -275,7 +313,7 @@ function VariantRow({
   readonly onRun: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 sf-surface-elevated rounded-lg">
+    <div className="flex items-center gap-3 px-4 py-2.5 sf-surface-panel rounded-lg">
       <Chip
         label={variant.type === 'edition' ? 'ED' : 'CLR'}
         className={variant.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
@@ -301,7 +339,7 @@ function VariantRow({
 
 /* ── Run History Row ─────────────────────────────────────────────── */
 
-function RunHistoryRow({
+function PifRunHistoryRow({
   run,
   onDelete,
 }: {
@@ -314,20 +352,20 @@ function RunHistoryRow({
   const log = run.response?.discovery_log;
 
   return (
-    <div className="sf-surface-elevated rounded-lg overflow-hidden">
+    <div className="sf-surface-panel rounded-lg overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-2.5">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 hover:underline cursor-pointer"
+          className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
         >
           <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
             {'\u25B6'}
           </span>
-          <span className="text-[11px] font-mono font-bold sf-text-primary">
+          <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
             #{run.run_number}
           </span>
         </button>
-        <span className="text-[10px] sf-text-muted">{run.ran_at ? new Date(run.ran_at).toLocaleString() : '--'}</span>
+        <span className="font-mono text-[10px] sf-text-muted">{run.ran_at?.split('T')[0] ?? '--'}</span>
         {run.model && <Chip label={run.model} className="sf-chip-neutral" />}
         <span className="text-[10px] sf-text-subtle">
           {run.response?.variant_label || run.response?.variant_key || '--'}
@@ -422,7 +460,7 @@ interface ProductImageFinderPanelProps {
 }
 
 export function ProductImageFinderPanel({ productId, category }: ProductImageFinderPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:pif:collapsed:${category}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:pif:collapsed:${productId}`, true);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [lightboxImg, setLightboxImg] = useState<GalleryImage | null>(null);
 
@@ -464,15 +502,22 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     [pifData],
   );
 
-  // Count images per variant (from selected state for KPI accuracy)
+  // Images grouped by variant (preserves CEF variant order)
+  const imageGroups = useMemo(
+    () => groupImagesByVariant(galleryImages, variants),
+    [galleryImages, variants],
+  );
+
+  // Count images per variant from gallery (all runs), not pifData.selected
+  // which only reflects the latest run's single-variant images.
   const variantImageCounts = useMemo(() => {
     const map = new Map<string, number>();
-    for (const img of (pifData?.selected?.images || [])) {
+    for (const img of galleryImages) {
       const key = img.variant_key || '';
       map.set(key, (map.get(key) || 0) + 1);
     }
     return map;
-  }, [pifData]);
+  }, [galleryImages]);
 
   const handleRunAll = useCallback(() => {
     if (!isRunning && variants.length > 0) runMutation.mutate({});
@@ -512,6 +557,13 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     },
   ];
 
+  const badgeProps = {
+    accessMode: resolvedAccessMode,
+    role: (resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
+    thinking: resolvedModel?.thinking ?? false,
+    webSearch: resolvedModel?.webSearch ?? false,
+  };
+
   return (
     <div className="sf-surface-panel p-0 flex flex-col">
       {/* Header */}
@@ -529,12 +581,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         onRun={handleRunAll}
       >
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-          <ModelBadgeGroup
-            accessMode={resolvedAccessMode}
-            role={(resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary'}
-            thinking={resolvedModel?.thinking ?? false}
-            webSearch={resolvedModel?.webSearch ?? false}
-          />
+          <ModelBadgeGroup {...badgeProps} />
           {modelDisplay}
         </span>
       </FinderPanelHeader>
@@ -560,22 +607,48 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           {/* Cooldown Strip */}
           {runCount > 0 && <FinderCooldownStrip cooldown={cooldown} />}
 
-          {/* Variant Grid */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
-                Variants <span className="font-mono sf-text-subtle">{variants.length} total</span>
+          {/* All Images — grouped by variant, collapsible */}
+          {imageGroups.length > 0 && (
+            <FinderSectionCard
+              title="All Images"
+              count={`${imageCount} found`}
+              storeKey={`pif:images:${productId}`}
+              defaultOpen
+            >
+              <div style={{ columns: 2, columnGap: '0.75rem' }}>
+                {imageGroups.map(group => (
+                  <div key={group.key} className="break-inside-avoid mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Chip
+                        label={group.type === 'edition' ? 'ED' : 'CLR'}
+                        className={group.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
+                      />
+                      <span className="text-[12px] font-semibold sf-text-primary">{group.label}</span>
+                      <span className="text-[10px] font-mono sf-text-subtle">{group.images.length} img</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {group.images.map((img, i) => (
+                        <GalleryCard
+                          key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
+                          img={img}
+                          category={category}
+                          productId={productId}
+                          onOpen={() => setLightboxImg(img)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              {runCount > 0 && (
-                <button
-                  onClick={() => setDeleteTarget({ kind: 'all', count: runCount })}
-                  disabled={deleteAllMut.isPending}
-                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  Delete All
-                </button>
-              )}
-            </div>
+            </FinderSectionCard>
+          )}
+
+          {/* Variants — collapsible, default closed */}
+          <FinderSectionCard
+            title="Variants"
+            count={`${variants.length} total`}
+            storeKey={`pif:variants:${productId}`}
+          >
             <div className="space-y-1.5">
               {variants.map((v) => (
                 <VariantRow
@@ -587,44 +660,34 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                 />
               ))}
             </div>
-          </div>
+          </FinderSectionCard>
 
-          {/* All Images Gallery */}
-          {galleryImages.length > 0 && (
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-2">
-                All Images <span className="font-mono sf-text-subtle">{galleryImages.length} found</span>
-              </div>
-              <div className="flex gap-3 flex-wrap">
-                {galleryImages.map((img, i) => (
-                  <GalleryCard
-                    key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
-                    img={img}
-                    category={category}
-                    productId={productId}
-                    onOpen={() => setLightboxImg(img)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Run History */}
+          {/* Run History — collapsible, default closed */}
           {runs.length > 0 && (
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-2">
-                Run History <span className="font-mono sf-text-subtle">{runs.length} runs</span>
-              </div>
+            <FinderSectionCard
+              title="Run History"
+              count={`${runs.length} run${runs.length !== 1 ? 's' : ''}`}
+              storeKey={`pif:history:${productId}`}
+              trailing={
+                <button
+                  onClick={() => setDeleteTarget({ kind: 'all', count: runCount })}
+                  disabled={deleteAllMut.isPending}
+                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Delete All
+                </button>
+              }
+            >
               <div className="space-y-1.5">
                 {[...runs].reverse().map((run) => (
-                  <RunHistoryRow
+                  <PifRunHistoryRow
                     key={run.run_number}
                     run={run}
                     onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
                   />
                 ))}
               </div>
-            </div>
+            </FinderSectionCard>
           )}
 
           {/* Error display */}
@@ -640,12 +703,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
             runCount={runCount}
             modelSlot={
               <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold sf-text-subtle">
-                <ModelBadgeGroup
-                  accessMode={resolvedAccessMode}
-                  role={(resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary'}
-                  thinking={resolvedModel?.thinking ?? false}
-                  webSearch={resolvedModel?.webSearch ?? false}
-                />
+                <ModelBadgeGroup {...badgeProps} />
                 {modelDisplay}
               </span>
             }

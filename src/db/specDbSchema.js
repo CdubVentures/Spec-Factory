@@ -73,42 +73,6 @@ CREATE TABLE IF NOT EXISTS list_values (
   UNIQUE(category, field_key, value)
 );
 
-CREATE TABLE IF NOT EXISTS item_field_state (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  field_key TEXT NOT NULL,
-  value TEXT,
-  unit TEXT DEFAULT NULL,
-  confidence REAL DEFAULT 0,
-  source TEXT DEFAULT 'pipeline',
-  accepted_candidate_id TEXT,
-  overridden INTEGER DEFAULT 0,
-  needs_ai_review INTEGER DEFAULT 0,
-  ai_review_complete INTEGER DEFAULT 0,
-  updated_at TEXT DEFAULT (datetime('now')),
-  override_source TEXT,
-  override_value TEXT,
-  override_reason TEXT,
-  override_provenance TEXT,
-  overridden_by TEXT,
-  overridden_at TEXT,
-  UNIQUE(category, product_id, field_key)
-);
-
-CREATE TABLE IF NOT EXISTS product_review_state (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  review_status TEXT DEFAULT 'pending',
-  review_started_at TEXT,
-  reviewed_by TEXT,
-  reviewed_at TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id)
-);
-
 CREATE TABLE IF NOT EXISTS item_component_links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -138,7 +102,6 @@ CREATE INDEX IF NOT EXISTS idx_cv_type_name ON component_values(component_type, 
 CREATE INDEX IF NOT EXISTS idx_ca_alias ON component_aliases(alias);
 CREATE INDEX IF NOT EXISTS idx_el_field ON enum_lists(category, field_key);
 CREATE INDEX IF NOT EXISTS idx_lv_field ON list_values(field_key);
-CREATE INDEX IF NOT EXISTS idx_ifs_product ON item_field_state(product_id);
 CREATE INDEX IF NOT EXISTS idx_icl_product ON item_component_links(product_id);
 CREATE INDEX IF NOT EXISTS idx_ill_product ON item_list_links(product_id);
 CREATE INDEX IF NOT EXISTS idx_icl_component ON item_component_links(category, component_type, component_name, component_maker);
@@ -251,129 +214,6 @@ CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, 
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
-
--- Key review tables (AI decisions, user overrides, contract snapshots)
-
-CREATE TABLE IF NOT EXISTS key_review_state (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL,
-  target_kind TEXT NOT NULL CHECK(target_kind IN ('grid_key','enum_key','component_key')),
-  item_identifier TEXT,
-  field_key TEXT NOT NULL,
-  enum_value_norm TEXT,
-  component_identifier TEXT,
-  property_key TEXT,
-  item_field_state_id INTEGER REFERENCES item_field_state(id),
-  component_value_id INTEGER REFERENCES component_values(id),
-  component_identity_id INTEGER REFERENCES component_identity(id),
-  list_value_id INTEGER REFERENCES list_values(id),
-  enum_list_id INTEGER REFERENCES enum_lists(id),
-
-  required_level TEXT,
-  availability TEXT,
-  difficulty TEXT,
-  effort INTEGER,
-  ai_mode TEXT,
-  parse_template TEXT,
-  evidence_policy TEXT,
-  min_evidence_refs_effective INTEGER DEFAULT 1,
-  min_distinct_sources_required INTEGER DEFAULT 1,
-
-  send_mode TEXT CHECK(send_mode IN ('single_source_data','all_source_data')),
-  component_send_mode TEXT CHECK(component_send_mode IN ('component_values','component_values_prime_sources')),
-  list_send_mode TEXT CHECK(list_send_mode IN ('list_values','list_values_prime_sources')),
-
-  selected_value TEXT,
-  selected_candidate_id TEXT,
-  confidence_score REAL DEFAULT 0,
-  confidence_level TEXT,
-  flagged_at TEXT,
-  resolved_at TEXT,
-
-  ai_confirm_primary_status TEXT,
-  ai_confirm_primary_confidence REAL,
-  ai_confirm_primary_at TEXT,
-  ai_confirm_primary_interrupted INTEGER DEFAULT 0,
-  ai_confirm_primary_error TEXT,
-  ai_confirm_shared_status TEXT,
-  ai_confirm_shared_confidence REAL,
-  ai_confirm_shared_at TEXT,
-  ai_confirm_shared_interrupted INTEGER DEFAULT 0,
-  ai_confirm_shared_error TEXT,
-
-  user_accept_primary_status TEXT,
-  user_accept_primary_at TEXT,
-  user_accept_primary_by TEXT,
-  user_accept_shared_status TEXT,
-  user_accept_shared_at TEXT,
-  user_accept_shared_by TEXT,
-
-  user_override_ai_primary INTEGER DEFAULT 0,
-  user_override_ai_primary_at TEXT,
-  user_override_ai_primary_reason TEXT,
-  user_override_ai_shared INTEGER DEFAULT 0,
-  user_override_ai_shared_at TEXT,
-  user_override_ai_shared_reason TEXT,
-
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS key_review_runs (
-  run_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  key_review_state_id INTEGER NOT NULL REFERENCES key_review_state(id),
-  stage TEXT NOT NULL,
-  status TEXT NOT NULL,
-  provider TEXT,
-  model_used TEXT,
-  prompt_hash TEXT,
-  response_schema_version TEXT,
-  input_tokens INTEGER,
-  output_tokens INTEGER,
-  latency_ms INTEGER,
-  cost_usd REAL,
-  error TEXT,
-  started_at TEXT,
-  finished_at TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS key_review_run_sources (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  key_review_run_id INTEGER NOT NULL REFERENCES key_review_runs(run_id),
-  assertion_id TEXT NOT NULL,
-  packet_role TEXT,
-  position INTEGER,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS key_review_audit (
-  event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  key_review_state_id INTEGER NOT NULL REFERENCES key_review_state(id),
-  event_type TEXT NOT NULL,
-  actor_type TEXT NOT NULL,
-  actor_id TEXT,
-  old_value TEXT,
-  new_value TEXT,
-  reason TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_grid
-  ON key_review_state(category, item_identifier, field_key)
-  WHERE target_kind = 'grid_key';
-
-CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_enum
-  ON key_review_state(category, field_key, enum_value_norm)
-  WHERE target_kind = 'enum_key';
-
-CREATE UNIQUE INDEX IF NOT EXISTS ux_krs_component
-  ON key_review_state(category, component_identifier, property_key)
-  WHERE target_kind = 'component_key';
-
-CREATE INDEX IF NOT EXISTS idx_krs_kind ON key_review_state(category, target_kind, field_key);
-CREATE INDEX IF NOT EXISTS idx_krs_selected_candidate ON key_review_state(category, selected_candidate_id);
-CREATE INDEX IF NOT EXISTS idx_krr_state ON key_review_runs(key_review_state_id, stage, status);
 
 -- Migration Phase 2: Billing entries
 CREATE TABLE IF NOT EXISTS billing_entries (
@@ -760,12 +600,10 @@ export const LLM_ROUTE_BOOLEAN_KEYS = LLM_ROUTE_COLUMN_REGISTRY
 // Used by hydrateRow/hydrateRows in specDbHelpers.js to convert 0/1 → true/false on read.
 export const COMPONENT_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
 export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
-export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs_ai_review', 'ai_review_complete']);
-export const KEY_REVIEW_STATE_BOOLEAN_KEYS = Object.freeze(['ai_confirm_primary_interrupted', 'ai_confirm_shared_interrupted', 'user_override_ai_primary', 'user_override_ai_shared']);
 export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
 
 // WHY: SSOT for component identity property keys (synthetic __-prefixed keys).
-// Used by keyReviewStore SQL exclusions and features/review contract shapes.
+// Used by features/review contract shapes.
 export const COMPONENT_IDENTITY_PROPERTY_KEYS = Object.freeze([
   '__name', '__maker', '__links', '__aliases',
 ]);

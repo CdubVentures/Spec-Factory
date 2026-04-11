@@ -207,7 +207,8 @@ export async function runColorEditionFinder({
 
   if (fieldRules && fieldRules.colors) {
     const cefRunId = `cef-${Date.now()}`;
-    const cefSourceMeta = { source: 'cef', model: actualModel, run_id: cefRunId };
+    const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
+    const cefSourceMeta = { source: 'cef', model: actualModel, run_id: cefRunId, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({

@@ -148,18 +148,7 @@ async function handleComponentOverrideEndpoint({
             });
           }
           const componentIdentifier = buildComponentIdentifier(componentType, name, componentMaker);
-          const existingSharedLaneState = runtimeSpecDb.getKeyReviewState({
-            category,
-            targetKind: 'component_key',
-            fieldKey: String(property),
-            componentIdentifier,
-            propertyKey: String(property),
-            componentValueId: componentCtx?.componentValueId ?? existingProperty.id,
-          });
-          const existingSharedLaneStatus = String(existingSharedLaneState?.ai_confirm_shared_status || '').trim().toLowerCase();
-          const keepNeedsReview = acceptedCandidateId
-            ? (existingSharedLaneStatus === 'pending' || Boolean(existingProperty?.needs_review))
-            : false;
+          const keepNeedsReview = acceptedCandidateId ? Boolean(existingProperty?.needs_review) : false;
           const parsedConstraints = parseJsonArray(existingProperty?.constraints);
           runtimeSpecDb.upsertComponentValue({
             componentType,
@@ -379,18 +368,8 @@ async function handleComponentKeyReviewConfirmEndpoint({
       }
 
       const componentIdentifier = buildComponentIdentifier(componentType, name, componentMaker);
-      const existingState = runtimeSpecDb.getKeyReviewState({
-        category,
-        targetKind: 'component_key',
-        fieldKey: property,
-        componentIdentifier,
-        propertyKey: property,
-        componentValueId: componentCtx?.componentValueId ?? propertyRow?.id ?? null,
-        componentIdentityId: componentIdentityId ?? null,
-      });
       const resolvedValue = String(
-        existingState?.selected_value
-        ?? (property === '__name' ? name : null)
+        (property === '__name' ? name : null)
         ?? (property === '__maker' ? componentMaker : null)
         ?? propertyRow?.value
         ?? ''

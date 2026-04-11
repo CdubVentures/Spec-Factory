@@ -7,6 +7,11 @@
  * Variant key format:
  *   "color:{atom}"    — standard color variant
  *   "edition:{slug}"  — named edition
+ *
+ * Filename convention (aligned with Photoshop cut-out pipeline):
+ *   {view}-{variant_slug}{ext}
+ *   e.g. top-black.jpg, left-glacier-blue.png, sangle-cod-bo6-edition.jpg
+ *   Duplicates: top-black-2.jpg, top-black-3.jpg
  */
 
 import fs from 'node:fs';
@@ -19,6 +24,9 @@ import { stripCompositeKey } from '../../core/llm/routeResolver.js';
 import {
   buildProductImageFinderPrompt,
   createProductImageFinderCallLlm,
+  resolveViewConfig,
+  migrateFromLegacyViews,
+  CANONICAL_VIEW_KEYS,
 } from './productImageLlmAdapter.js';
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
@@ -125,6 +133,22 @@ function inferExtension(url, contentType) {
   return '.jpg';
 }
 
+/* ── Filename helpers ────────────────────────────────────────────── */
+
+/**
+ * Slugify a variant label for use in filenames.
+ *   "Glacier Blue"  → "glacier-blue"
+ *   "black+red"     → "black-red"
+ *   "CoD: BO6 Ed."  → "cod-bo6-ed"
+ */
+function slugifyLabel(label) {
+  return (label || 'unknown')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'unknown';
+}
+
 /* ── Variant list builder ──────────────────────────────────────────── */
 
 /**
@@ -138,30 +162,29 @@ function inferExtension(url, contentType) {
 /**
  * Build the list of search variants from CEF data.
  *
- * Colors: standard SKU colors from the master colors array.
- * Uses marketing name when available, atom when not.
- * Edition-exclusive colors no longer pollute the master list
- * (they're combo entries inside editions).
- *
- * Editions: searched by display name.
+ * Every entry in the colors array is a colorway — single atom or "+" combo.
+ * If a combo matches an edition, search by edition display name.
+ * If a color has a marketing name, use that.
+ * Otherwise use the atom/combo string.
  */
 export function buildVariantList({ colors = [], colorNames = {}, editions = {} }) {
-  const variants = [];
-
-  // Standard colors — marketing name wins over atom
-  for (const atom of colors) {
-    const name = colorNames[atom];
-    const hasName = name && name.toLowerCase() !== atom.toLowerCase();
-    variants.push({
-      key: `color:${atom}`,
-      label: hasName ? name : atom,
-      type: 'color',
-    });
+  // Build reverse lookup: combo string → edition display name
+  const comboToEdition = new Map();
+  for (const [slug, ed] of Object.entries(editions)) {
+    const combo = (ed.colors || [])[0];
+    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
   }
 
-  // Editions by display name
-  for (const [slug, ed] of Object.entries(editions)) {
-    variants.push({ key: `edition:${slug}`, label: ed.display_name || slug, type: 'edition' });
+  const variants = [];
+  for (const entry of colors) {
+    const edition = comboToEdition.get(entry);
+    if (edition) {
+      variants.push({ key: `edition:${edition.slug}`, label: edition.displayName, type: 'edition' });
+    } else {
+      const name = colorNames[entry];
+      const hasName = name && name.toLowerCase() !== entry.toLowerCase();
+      variants.push({ key: `color:${entry}`, label: hasName ? name : entry, type: 'color' });
+    }
   }
 
   return variants;
@@ -170,7 +193,7 @@ export function buildVariantList({ colors = [], colorNames = {}, editions = {} }
 /* ── Single-variant runner ─────────────────────────────────────────── */
 
 async function runSingleVariant({
-  product, variant, view1, view2, minWidth, minHeight, minFileSize,
+  product, variant, viewConfig, minWidth, minHeight, minFileSize,
   callLlm, productRoot, specDb, actualModel, actualFallbackUsed,
   logger, siblingsExcluded,
 }) {
@@ -180,7 +203,7 @@ async function runSingleVariant({
       product,
       variantLabel: variant.label,
       variantType: variant.type,
-      view1, view2, minWidth, minHeight,
+      viewConfig, minWidth, minHeight,
       siblingsExcluded: siblingsExcluded || [],
     });
   } catch (err) {
@@ -193,14 +216,28 @@ async function runSingleVariant({
   const downloaded = [];
   const errors = [];
 
-  // Sanitize variant key for filenames: "color:black" → "color-black"
-  const filePrefix = variant.key.replace(/:/g, '-');
+  // Filename: {view}-{variant_slug}{-N}{ext}
+  const variantSlug = slugifyLabel(variant.label);
+  const viewCounts = {}; // track per-view counts for dedup numbering
 
   for (const img of llmImages) {
     if (!img.url || !img.view) continue;
+
+    // Normalize view to canonical (lowercase, strip whitespace)
+    const view = (img.view || '').toLowerCase().trim();
+    if (!CANONICAL_VIEW_KEYS.includes(view)) {
+      errors.push({ view: img.view, url: img.url, error: `non-canonical view "${img.view}" skipped` });
+      continue;
+    }
+
     try {
+      // Dedup numbering: first = no suffix, 2nd+ = -2, -3, etc.
+      viewCounts[view] = (viewCounts[view] || 0) + 1;
+      const n = viewCounts[view];
+      const suffix = n > 1 ? `-${n}` : '';
+
       const ext = inferExtension(img.url, '');
-      const filename = `${filePrefix}_${img.view}${ext}`;
+      const filename = `${view}-${variantSlug}${suffix}${ext}`;
       const destPath = path.join(imagesDir, filename);
       const result = await downloadFile(img.url, destPath);
 
@@ -208,20 +245,30 @@ async function runSingleVariant({
         const actualExt = inferExtension(img.url, result.contentType || '');
         let finalFilename = filename;
         if (actualExt !== ext) {
-          const newPath = path.join(imagesDir, `${filePrefix}_${img.view}${actualExt}`);
-          try { fs.renameSync(destPath, newPath); finalFilename = `${filePrefix}_${img.view}${actualExt}`; } catch { /* */ }
+          const corrected = `${view}-${variantSlug}${suffix}${actualExt}`;
+          const newPath = path.join(imagesDir, corrected);
+          try { fs.renameSync(destPath, newPath); finalFilename = corrected; } catch { /* */ }
         }
 
         const finalPath = path.join(imagesDir, finalFilename);
 
-        // Post-download quality assessment (flag, don't delete)
+        // Quality gate: reject and delete below-quality images
         const dims = readImageDimensions(finalPath);
         const belowMinSize = minFileSize > 0 && result.bytes < minFileSize;
         const belowMinDims = dims && ((minWidth > 0 && dims.width < minWidth) || (minHeight > 0 && dims.height < minHeight));
-        const qualityPass = !belowMinSize && !belowMinDims;
+
+        if (belowMinSize || belowMinDims) {
+          // Delete the file — we don't keep below-quality images
+          try { fs.unlinkSync(finalPath); } catch { /* */ }
+          const reason = belowMinSize
+            ? `file size ${result.bytes} < min ${minFileSize}`
+            : `dimensions ${dims?.width}x${dims?.height} < min ${minWidth}x${minHeight}`;
+          errors.push({ view, url: img.url, error: `quality rejected: ${reason}` });
+          continue;
+        }
 
         downloaded.push({
-          view: img.view,
+          view,
           filename: finalFilename,
           url: img.url,
           source_page: img.source_page || '',
@@ -229,14 +276,14 @@ async function runSingleVariant({
           bytes: result.bytes,
           width: dims?.width || 0,
           height: dims?.height || 0,
-          quality_pass: qualityPass,
+          quality_pass: true,
           variant_key: variant.key,
           variant_label: variant.label,
           variant_type: variant.type,
           downloaded_at: new Date().toISOString(),
         });
       } else {
-        errors.push({ view: img.view, url: img.url, error: result.error });
+        errors.push({ view, url: img.url, error: result.error });
       }
     } catch (err) {
       errors.push({ view: img.view, url: img.url || '', error: err.message });
@@ -285,10 +332,23 @@ export async function runProductImageFinder({
     onModelResolved?.(info);
   };
 
-  // Read per-category settings (views + quality)
+  // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
-  const view1 = finderStore.getSetting('view1') || 'top';
-  const view2 = finderStore.getSetting('view2') || 'left';
+
+  // View config: new viewConfig setting → legacy view1/view2 migration → category defaults
+  const rawViewConfig = finderStore.getSetting('viewConfig');
+  const legacyView1 = finderStore.getSetting('view1');
+  const legacyView2 = finderStore.getSetting('view2');
+
+  let viewConfig;
+  if (rawViewConfig && rawViewConfig.trim()) {
+    viewConfig = resolveViewConfig(rawViewConfig, product.category);
+  } else if (legacyView1 || legacyView2) {
+    viewConfig = migrateFromLegacyViews(legacyView1, legacyView2, product.category);
+  } else {
+    viewConfig = resolveViewConfig('', product.category);
+  }
+
   const minWidth = parseInt(finderStore.getSetting('minWidth'), 10) || 800;
   const minHeight = parseInt(finderStore.getSetting('minHeight'), 10) || 600;
   const minFileSize = parseInt(finderStore.getSetting('minFileSize'), 10) || 50000;
@@ -338,78 +398,84 @@ export async function runProductImageFinder({
         onStreamChunk,
       }));
 
-  // Run each variant sequentially
-  const allImages = [];
-  const allErrors = [];
+  // Fire all variants concurrently with 1s stagger
   const now = new Date();
   const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const STAGGER_MS = 1000;
 
-  for (let i = 0; i < variants.length; i++) {
-    const variant = variants[i];
-    onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
-    onVariantProgress?.(i, variants.length, variant.key);
+  // Fire all variants with 1s stagger, persist each as it completes
+  const allImages = [];
+  const allErrors = [];
 
-    try {
-      const result = await runSingleVariant({
-        product, variant, view1, view2, minWidth, minHeight, minFileSize,
-        callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
-        siblingsExcluded,
-      });
+  const variantPromises = variants.map((variant, i) => {
+    const delay = i * STAGGER_MS;
+    return new Promise((resolve) => setTimeout(resolve, delay)).then(async () => {
+      onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
+      onVariantProgress?.(i, variants.length, variant.key);
 
-      allImages.push(...result.images);
-      allErrors.push(...result.errors);
+      try {
+        const result = await runSingleVariant({
+          product, variant, viewConfig, minWidth, minHeight, minFileSize,
+          callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
+          siblingsExcluded,
+        });
 
-      // Persist each variant run individually
-      const ranAt = new Date().toISOString();
-      const selected = { images: result.images };
-      const systemPrompt = buildProductImageFinderPrompt({
-        product, variantLabel: variant.label, variantType: variant.type,
-        view1, view2, minWidth, minHeight, siblingsExcluded,
-      });
+        allImages.push(...result.images);
+        allErrors.push(...result.errors);
 
-      const merged = mergeProductImageDiscovery({
-        productId: product.product_id,
-        productRoot,
-        newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
-        run: {
+        // Persist immediately on completion
+        const ranAt = new Date().toISOString();
+        const selected = { images: result.images };
+        const systemPrompt = buildProductImageFinderPrompt({
+          product, variantLabel: variant.label, variantType: variant.type,
+          viewConfig, minWidth, minHeight, siblingsExcluded,
+        });
+
+        const merged = mergeProductImageDiscovery({
+          productId: product.product_id,
+          productRoot,
+          newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
+          run: {
+            model: actualModel,
+            fallback_used: actualFallbackUsed,
+            selected,
+            prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
+            response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
+          },
+        });
+
+        const store = specDb.getFinderStore('productImageFinder');
+        const latestRun = merged.runs[merged.runs.length - 1];
+        store.insertRun({
+          category: product.category,
+          product_id: product.product_id,
+          run_number: latestRun.run_number,
+          ran_at: ranAt,
           model: actualModel,
           fallback_used: actualFallbackUsed,
+          cooldown_until: cooldownUntil,
           selected,
-          prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
-          response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
-        },
-      });
+          prompt: latestRun.prompt,
+          response: latestRun.response,
+        });
 
-      // SQL projection
-      const store = specDb.getFinderStore('productImageFinder');
-      const latestRun = merged.runs[merged.runs.length - 1];
-      store.insertRun({
-        category: product.category,
-        product_id: product.product_id,
-        run_number: latestRun.run_number,
-        ran_at: ranAt,
-        model: actualModel,
-        fallback_used: actualFallbackUsed,
-        cooldown_until: cooldownUntil,
-        selected,
-        prompt: latestRun.prompt,
-        response: latestRun.response,
-      });
+        store.upsert({
+          category: product.category,
+          product_id: product.product_id,
+          images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
+          image_count: merged.selected.images.length,
+          cooldown_until: cooldownUntil,
+          latest_ran_at: ranAt,
+          run_count: merged.run_count,
+        });
+      } catch (err) {
+        logger?.error?.('pif_variant_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
+        allErrors.push({ view: '*', url: '', error: `variant ${variant.key} failed: ${err.message}` });
+      }
+    });
+  });
 
-      store.upsert({
-        category: product.category,
-        product_id: product.product_id,
-        images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-        image_count: merged.selected.images.length,
-        cooldown_until: cooldownUntil,
-        latest_ran_at: ranAt,
-        run_count: merged.run_count,
-      });
-    } catch (err) {
-      logger?.error?.('pif_variant_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
-      allErrors.push({ view: '*', url: '', error: `variant ${variant.key} failed: ${err.message}` });
-    }
-  }
+  await Promise.all(variantPromises);
 
   onVariantProgress?.(variants.length, variants.length, 'done');
   onStageAdvance?.('Complete');

@@ -1,4 +1,4 @@
-import type { ColorEditionFinderResult, ColorEditionFinderSelected, ColorRegistryEntry } from '../types.ts';
+import type { ColorEditionFinderResult, ColorEditionFinderSelected, ColorRegistryEntry, CefCandidateEntry } from '../types.ts';
 
 export interface ColorPill {
   readonly name: string;
@@ -6,12 +6,14 @@ export interface ColorPill {
   readonly hex: string;
   readonly hexParts: readonly string[];
   readonly isDefault: boolean;
+  readonly sourceCount: number;
 }
 
 export interface EditionBlock {
   readonly slug: string;
   readonly displayName: string;
   readonly pairedColors: readonly ColorPill[];
+  readonly sourceCount: number;
 }
 
 export interface SelectedStateDisplay {
@@ -74,8 +76,10 @@ export interface StatusChip {
 const COOLDOWN_DAYS = 30;
 
 export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): KpiCard[] {
-  const colors = result?.colors?.length ?? 0;
-  const editions = result?.editions?.length ?? 0;
+  // Prefer published truth from field_candidates; fall back to summary table
+  const colors = result?.published?.colors?.length ?? result?.colors?.length ?? 0;
+  const editions = result?.published?.editions?.length ?? result?.editions?.length ?? 0;
+  const defaultColor = result?.published?.default_color || result?.default_color || '--';
   const runCount = result?.run_count ?? 0;
 
   const cooldown = deriveCooldownState(result);
@@ -86,7 +90,7 @@ export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): K
   return [
     { label: 'Colors', value: String(colors), tone: 'accent' },
     { label: 'Editions', value: String(editions), tone: 'purple' },
-    { label: 'Default Color', value: result?.default_color || '--', tone: 'teal' },
+    { label: 'Default Color', value: defaultColor, tone: 'teal' },
     { label: 'Runs', value: String(runCount), tone: 'success' },
     { label: 'Cooldown', value: cooldownLabel, tone: 'info' },
   ];
@@ -134,28 +138,98 @@ function resolveHex(name: string, hexMap: Map<string, string>): string {
   return hexMap.get(firstAtom) || hexMap.get(name) || '';
 }
 
-function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = ''): ColorPill {
-  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor };
+function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0): ColorPill {
+  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount };
+}
+
+/**
+ * Find the candidate entry whose array value contains a given item.
+ * Returns the source_count from the best-matching candidate, or 0.
+ */
+function findItemSourceCount(candidates: readonly CefCandidateEntry[], item: string): number {
+  let total = 0;
+  for (const c of candidates) {
+    let items: string[];
+    try { items = typeof c.value === 'string' ? JSON.parse(c.value) : []; }
+    catch { items = []; }
+    if (!Array.isArray(items)) items = [c.value as string];
+    if (items.some(v => String(v) === item)) total += c.source_count;
+  }
+  return total;
 }
 
 export function deriveSelectedStateDisplay(
   result: ColorEditionFinderResult | null,
   colorRegistry: ColorRegistryEntry[],
 ): SelectedStateDisplay {
+  const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
+
+  // Prefer published truth from field_candidates; fall back to selected
+  const pub = result?.published;
+  const cands = result?.candidates;
+
+  if (pub && pub.colors.length > 0) {
+    // Build display name map from candidate metadata
+    const colorNameMap: Record<string, string> = {};
+    for (const c of cands?.colors ?? []) {
+      const meta = c.metadata as Record<string, unknown>;
+      const names = meta?.color_names as Record<string, string> | undefined;
+      if (names) Object.assign(colorNameMap, names);
+    }
+
+    const defaultColor = pub.default_color || pub.colors[0] || '';
+    const colorCands = cands?.colors ?? [];
+    const editionCands = cands?.editions ?? [];
+
+    const colors = pub.colors.map(name =>
+      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
+    );
+
+    // Build edition blocks from candidate metadata
+    const editions: EditionBlock[] = pub.editions.map(slug => {
+      const edCand = editionCands.find(c => {
+        let items: string[];
+        try { items = typeof c.value === 'string' ? JSON.parse(c.value) : []; }
+        catch { items = []; }
+        if (!Array.isArray(items)) items = [c.value as string];
+        return items.includes(slug);
+      });
+      const meta = (edCand?.metadata ?? {}) as Record<string, unknown>;
+      const edDetails = meta?.edition_details as Record<string, { display_name?: string; colors?: string[] }> | undefined;
+      const edMeta = edDetails?.[slug];
+      return {
+        slug,
+        displayName: (edMeta?.display_name as string) || '',
+        pairedColors: (edMeta?.colors ?? []).map((name: string) =>
+          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
+        ),
+        sourceCount: findItemSourceCount(editionCands, slug),
+      };
+    });
+
+    return {
+      colors,
+      editions,
+      ssotRunNumber: result?.run_count ?? 0,
+      defaultColorHex: resolveHex(defaultColor, hexMap),
+    };
+  }
+
+  // Fallback: use deprecated selected (backward compat)
   if (!result?.selected) {
     return { colors: [], editions: [], ssotRunNumber: 0, defaultColorHex: '' };
   }
 
-  const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
   const sel = result.selected;
   const colorNamesMap = sel.color_names ?? {};
 
-  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || ''));
+  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '', 0));
 
   const editions = Object.entries(sel.editions).map(([slug, ed]) => ({
     slug,
     displayName: ed.display_name || '',
-    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '')),
+    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '', 0)),
+    sourceCount: 0,
   }));
 
   return {

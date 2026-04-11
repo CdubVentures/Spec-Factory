@@ -2,8 +2,8 @@ import {
   buildReviewLayout, buildProductReviewPayload, buildReviewQueue,
   buildComponentReviewLayout, buildComponentReviewPayloads,
   buildEnumReviewPayloads, readLatestArtifacts,
-  findProductsReferencingComponent, setOverrideFromCandidate,
-  setManualOverride, applySharedLaneState, cascadeComponentChange,
+  findProductsReferencingComponent,
+  applySharedLaneState, cascadeComponentChange,
   cascadeEnumChange,
 } from '../../review-curation/index.js';
 import {
@@ -24,13 +24,9 @@ export function createReviewRouteContext(options = {}) {
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
     sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson, spawn,
-    syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
-    markPrimaryLaneReviewedInItemState,
-    syncItemFieldStateFromPrimaryLaneAccept, isMeaningfulValue,
-    propagateSharedLaneDecision,
+    isMeaningfulValue,
     normalizeLower,
     remapPendingComponentReviewItemsForNameChange,
-    ensureGridKeyReviewState,
     patchCompiledComponentDb,
   } = options;
 
@@ -43,18 +39,13 @@ export function createReviewRouteContext(options = {}) {
     broadcastWs, specDbCache, findProductsReferencingComponent,
     invalidateFieldRulesCache,
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,
-    setOverrideFromCandidate, setManualOverride,
-    syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
-    markPrimaryLaneReviewedInItemState,
-    syncItemFieldStateFromPrimaryLaneAccept, isMeaningfulValue,
-    propagateSharedLaneDecision,
+    isMeaningfulValue,
     resolveComponentMutationContext, normalizeLower,
     buildComponentIdentifier, applySharedLaneState, cascadeComponentChange,
     remapPendingComponentReviewItemsForNameChange,
     resolveEnumMutationContext,
     cascadeEnumChange,
     runEnumConsistencyReview,
-    ensureGridKeyReviewState,
     patchCompiledComponentDb,
   };
 }

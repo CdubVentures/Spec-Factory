@@ -141,9 +141,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <header class="header">
   <h1>Spec Factory &mdash; SQL Surface Status</h1>
-  <p class="subtitle">Current SQL surface verified against the live codebase. 42 base tables across two database surfaces (36 SpecDb + 6 AppDb). Every current table in the app DDL is accounted for.</p>
+  <p class="subtitle">Current SQL surface verified against the live codebase. 44 base tables across two database surfaces (37 SpecDb + 7 AppDb). Every current table in the app DDL is accounted for.</p>
   <div class="meta">
-    <span>Verified 2026-04-04</span>
+    <span>Verified 2026-04-11</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -152,8 +152,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!--  STATS                                                       -->
 <!-- ============================================================ -->
 <div class="stats">
-  <div class="stat"><div class="n green">42</div><div class="l">Base Tables</div></div>
-  <div class="stat"><div class="n green">19</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n green">44</div><div class="l">Base Tables</div></div>
+  <div class="stat"><div class="n green">20</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n green">0</div><div class="l">Phantom Tables</div></div>
   <div class="stat"><div class="n green">0</div><div class="l">Omitted</div></div>
 </div>
@@ -167,7 +167,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <path d="M22 36l10 10 18-20" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
   <h2>Current SQL Surface Verified</h2>
-  <p>Every table in <code>specDbSchema.js</code> and <code>appDbSchema.js</code> is accounted for. 36 SpecDb tables + 6 AppDb tables = 42 total. No extra documented tables and no current DDL omissions.</p>
+  <p>Every table in <code>specDbSchema.js</code> and <code>appDbSchema.js</code> is accounted for. 37 SpecDb tables + 7 AppDb tables = 44 total. No extra documented tables and no current DDL omissions.</p>
 </div>
 
 <!-- ============================================================ -->
@@ -178,12 +178,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <h2>Table Count Breakdown</h2>
     <span class="badge badge-complete">Verified</span>
   </div>
-  <p class="section-desc">Canonical sources: <code>src/db/specDbSchema.js</code> (36 tables) and <code>src/db/appDbSchema.js</code> (6 tables).</p>
+  <p class="section-desc">Canonical sources: <code>src/db/specDbSchema.js</code> (37 tables) and <code>src/db/appDbSchema.js</code> (7 tables).</p>
 
   <div class="perf-grid">
     <div class="perf-card">
       <h4>SpecDb Schema DDL</h4>
-      <p><strong>36 tables</strong> defined in <code>specDbSchema.js</code> CREATE TABLE statements. These are created on first open of each per-category database.</p>
+      <p><strong>37 tables</strong> defined in <code>specDbSchema.js</code> CREATE TABLE statements. These are created on first open of each per-category database.</p>
     </div>
     <div class="perf-card">
       <h4>SpecDb Surface</h4>
@@ -191,7 +191,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
     <div class="perf-card">
       <h4>AppDb Schema</h4>
-      <p><strong>6 tables</strong> in <code>appDbSchema.js</code>: brands, brand_categories, brand_renames, settings, studio_maps, color_registry. Single global <code>app.sqlite</code>.</p>
+      <p><strong>7 tables</strong> in <code>appDbSchema.js</code>: brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry. Single global <code>app.sqlite</code>.</p>
     </div>
   </div>
 </section>
@@ -271,7 +271,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
         <!-- AppDb -->
         <circle cx="980" cy="100" r="14" fill="#f8fafc" stroke="#22c55e" stroke-width="2.5"/>
-        <text x="980" y="104" fill="#22c55e" font-weight="700" font-size="10">6</text>
+        <text x="980" y="104" fill="#22c55e" font-weight="700" font-size="10">7</text>
         <text x="980" y="75" font-weight="600" font-size="9" fill="#0f172a">AppDb</text>
         <text x="980" y="130" font-size="8" fill="#94a3b8">Global Tables</text>
 
@@ -305,7 +305,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <section class="section">
   <div class="section-head">
     <h2>Current Domain Buckets</h2>
-    <span class="badge badge-complete">42 Tables Mapped</span>
+    <span class="badge badge-complete">44 Tables Mapped</span>
   </div>
   <p class="section-desc">Current table inventory grouped by the runtime domains they serve. Column counts below are from the current DDL.</p>
 
@@ -461,11 +461,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <details class="wave-card">
     <summary>
       <span class="wave-title">AppDb</span>
-      <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps, color_registry</span>
-      <span class="tags"><span class="badge badge-complete">6 tables</span></span>
+      <span class="wave-desc">brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry</span>
+      <span class="tags"><span class="badge badge-complete">7 tables</span></span>
     </summary>
     <div class="wave-body">
-      <p>Global application database. Brand metadata, settings, studio maps, and the color registry all live in the single shared <code>app.sqlite</code> surface.</p>
+      <p>Global application database. Brand metadata, settings, studio maps, the color registry, and the unit registry all live in the single shared <code>app.sqlite</code> surface.</p>
       <div class="table-list">
         <div class="table-item"><span class="dot"></span><code>brands</code><span class="note">8 cols &mdash; AppDb</span></div>
         <div class="table-item"><span class="dot"></span><code>brand_categories</code><span class="note">2 cols &mdash; AppDb</span></div>
@@ -473,6 +473,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <div class="table-item"><span class="dot"></span><code>settings</code><span class="note">5 cols &mdash; AppDb</span></div>
         <div class="table-item"><span class="dot"></span><code>studio_maps</code><span class="note">4 cols &mdash; AppDb</span></div>
         <div class="table-item"><span class="dot"></span><code>color_registry</code><span class="note">5 cols &mdash; AppDb</span></div>
+        <div class="table-item"><span class="dot"></span><code>unit_registry</code><span class="note">unit synonym resolution and conversion factors &mdash; AppDb</span></div>
       </div>
     </div>
   </details>
@@ -572,7 +573,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <section class="section">
   <div class="section-head">
     <h2>Store Module &rarr; Table Mapping</h2>
-    <span class="badge badge-complete">19 Modules</span>
+    <span class="badge badge-complete">20 Modules</span>
   </div>
   <p class="section-desc">Actual file names from <code>src/db/stores/</code>. Each store module owns one or more SQL tables, or provides a DB-facing read/orchestration boundary over them.</p>
 
@@ -656,7 +657,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <rect x="20" y="20" width="280" height="260" rx="12" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
       <text x="160" y="52" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="14" font-weight="700" fill="#3b82f6">SpecDb</text>
       <text x="160" y="70" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Per-Category &middot; spec.sqlite</text>
-      <text x="160" y="95" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">36</text>
+      <text x="160" y="95" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">37</text>
       <text x="160" y="112" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">tables</text>
       <line x1="40" y1="125" x2="280" y2="125" stroke="#e2e8f0" stroke-width="1"/>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#475569">
@@ -679,17 +680,17 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <text x="280" y="220">5 tables</text>
         <text x="280" y="235">4 tables</text>
         <text x="280" y="250">6 tables</text>
-        <text x="280" y="265">36 tables</text>
+        <text x="280" y="265">37 tables</text>
       </g>
 
       <!-- Arrow SpecDb -> AppDb -->
       <line x1="310" y1="150" x2="340" y2="150" stroke="#3f3f46" stroke-width="1.5" stroke-dasharray="4 3"/>
 
       <!-- AppDb -->
-      <rect x="340" y="50" width="280" height="215" rx="12" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+      <rect x="340" y="50" width="280" height="230" rx="12" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
       <text x="480" y="82" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="14" font-weight="700" fill="#22c55e">AppDb</text>
       <text x="480" y="100" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#94a3b8">Global &middot; app.sqlite</text>
-      <text x="480" y="130" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">6</text>
+      <text x="480" y="130" text-anchor="middle" font-family="SF Mono,Cascadia Code,Consolas,monospace" font-size="28" font-weight="700" fill="#0f172a">7</text>
       <text x="480" y="147" text-anchor="middle" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="10" fill="#475569">tables</text>
       <line x1="360" y1="160" x2="600" y2="160" stroke="#e2e8f0" stroke-width="1"/>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#475569">
@@ -699,6 +700,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <text x="360" y="225">settings</text>
         <text x="360" y="240">studio_maps</text>
         <text x="360" y="255">color_registry</text>
+        <text x="360" y="270">unit_registry</text>
       </g>
       <g font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="9" fill="#22c55e" text-anchor="end">
         <text x="600" y="180">SQL only</text>
@@ -707,6 +709,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <text x="600" y="225">SQL only</text>
         <text x="600" y="240">SQL only</text>
         <text x="600" y="255">SQL only</text>
+        <text x="600" y="270">SQL only</text>
       </g>
 
     </svg>
@@ -718,7 +721,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <!-- ============================================================ -->
 <footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:48px">
   <p style="font-size:0.78rem;color:var(--t3)">
-    Spec Factory SQL Surface Status &mdash; Verified 2026-04-04 &mdash; All current tables verified against live codebase
+    Spec Factory SQL Surface Status &mdash; Verified 2026-04-11 &mdash; All current tables verified against live codebase
   </p>
   <p style="font-size:0.72rem;color:var(--t3);margin-top:4px">
     See also: <a href="schema-reference.html" style="color:var(--accent);text-decoration:none">Schema Reference</a>

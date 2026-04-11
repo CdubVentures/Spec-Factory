@@ -1,38 +1,19 @@
 import {
   jsonResIfError,
-  routeMatches,
-  runHandledRouteChain,
   sendDataChangeResponse,
 } from './routeSharedHelpers.js';
 
 import {
-  resolveGridLaneStateForMutation,
-  resolvePrimaryConfirmItemFieldStateId,
-  updateKeyReviewSelectedCandidate,
-  resolveItemLaneCandidateMutationRequest,
-  setItemFieldNeedsAiReview,
-  applyPrimaryItemConfirmLane,
-  applyLaneCandidateSelection,
-  applyLaneDecisionStatusAndAudit,
   resolveItemFieldMutationRequest,
-  applyItemManualOverrideAndSync,
   buildManualOverrideEvidence,
   resolveItemOverrideMode,
 } from '../services/itemMutationService.js';
-import { publishManualOverride } from '../../publisher/publish/publishManualOverride.js';
+import { submitCandidate } from '../../publisher/candidate-gate/submitCandidate.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 // Re-export for characterization tests and any external consumers
 export {
-  resolveGridLaneStateForMutation,
-  resolvePrimaryConfirmItemFieldStateId,
-  updateKeyReviewSelectedCandidate,
-  resolveItemLaneCandidateMutationRequest,
-  setItemFieldNeedsAiReview,
-  applyPrimaryItemConfirmLane,
-  applyLaneCandidateSelection,
-  applyLaneDecisionStatusAndAudit,
   resolveItemFieldMutationRequest,
-  applyItemManualOverrideAndSync,
   buildManualOverrideEvidence,
   resolveItemOverrideMode,
 };
@@ -45,15 +26,10 @@ async function handleReviewItemOverrideMutationEndpoint({
   context,
 }) {
   const {
-    storage,
-    config,
     readJsonBody,
     jsonRes,
     getSpecDb,
     resolveGridFieldStateForMutation,
-    setOverrideFromCandidate,
-    setManualOverride,
-    syncPrimaryLaneAcceptFromItemSelection,
     broadcastWs,
   } = context || {};
   const category = parts[1];
@@ -71,45 +47,37 @@ async function handleReviewItemOverrideMutationEndpoint({
     resolveGridFieldStateForMutation,
     category,
     body,
-    missingSlotMessage: mode === 'manual-override'
-      ? 'Valid itemFieldStateId is required for manual override.'
-      : 'Valid itemFieldStateId is required for review override.',
+    missingSlotMessage: 'productId and field are required for override.',
   });
   if (jsonResIfError({ jsonRes, res, error: fieldRequest.error })) return true;
   const { specDb, productId, field } = fieldRequest;
 
   try {
     const normalizedCandidateId = String(candidateId || '').trim();
+
+    // Candidate override — user picked a candidate from the drawer.
     if (mode === 'override' && normalizedCandidateId) {
-      const result = await setOverrideFromCandidate({
-        storage,
-        config,
+      const candidateValue = value ?? body?.candidateValue ?? body?.candidate_value ?? null;
+      const confidence = body?.candidateConfidence ?? body?.candidate_confidence ?? 1.0;
+      const sourceToken = body?.candidateSource ?? body?.candidate_source ?? 'candidate_override';
+
+      // Flow through submitCandidate — validates, dual-writes, auto-publishes.
+      const result = submitCandidate({
         category,
         productId,
-        field,
-        candidateId: normalizedCandidateId,
-        candidateValue: value ?? body?.candidateValue ?? body?.candidate_value ?? null,
-        candidateScore: body?.candidateConfidence ?? body?.candidate_confidence ?? null,
-        candidateSource: body?.candidateSource ?? body?.candidate_source ?? '',
-        candidateMethod: body?.candidateMethod ?? body?.candidate_method ?? '',
-        candidateTier: body?.candidateTier ?? body?.candidate_tier ?? null,
-        candidateEvidence: body?.candidateEvidence ?? body?.candidate_evidence ?? null,
-        reviewer,
-        reason,
+        fieldKey: field,
+        value: candidateValue,
+        confidence,
+        sourceMeta: { source: sourceToken, method: body?.candidateMethod ?? 'candidate_override', reviewer: reviewer || null },
+        fieldRules: specDb?.getCompiledRules?.()?.fields || {},
+        knownValues: null,
+        componentDb: null,
         specDb,
+        productRoot: defaultProductRoot(),
+        metadata: { source: 'candidate_override', evidence: body?.candidateEvidence ?? null },
+        config: { publishConfidenceThreshold: 0 },
       });
-      if (specDb) {
-        syncPrimaryLaneAcceptFromItemSelection({
-          specDb,
-          category,
-          productId,
-          fieldKey: field,
-          selectedCandidateId: result?.candidate_id || normalizedCandidateId,
-          selectedValue: result?.value ?? body?.candidateValue ?? body?.candidate_value ?? value ?? null,
-          confidenceScore: body?.candidateConfidence ?? body?.candidate_confidence ?? null,
-          reason: `User accepted primary lane via item override${normalizedCandidateId ? ` (${normalizedCandidateId})` : ''}`,
-        });
-      }
+
       return sendDataChangeResponse({
         jsonRes,
         res,
@@ -120,44 +88,31 @@ async function handleReviewItemOverrideMutationEndpoint({
         payload: { result },
       });
     }
+
+    // Manual override — user typed a value.
     if (value === undefined || String(value).trim() === '') {
       jsonRes(res, 400, { error: 'invalid_override_request', message: 'Provide candidateId or value.' });
       return true;
     }
 
     const manualEvidence = buildManualOverrideEvidence({ mode, value, body });
-    const result = await applyItemManualOverrideAndSync({
-      storage,
-      config,
-      setManualOverride,
-      syncPrimaryLaneAcceptFromItemSelection,
-      specDb,
+
+    // Flow through submitCandidate with confidence 1.0 so it auto-publishes.
+    const result = submitCandidate({
       category,
       productId,
-      field,
+      fieldKey: field,
       value,
-      reviewer,
-      reason,
-      evidence: manualEvidence,
-      syncReason: mode === 'manual-override'
-        ? 'User manually set item value via manual-override endpoint'
-        : 'User manually set item value via review override',
+      confidence: 1.0,
+      sourceMeta: { source: 'manual_override', method: 'manual_override', reviewer: reviewer || null },
+      fieldRules: specDb?.getCompiledRules?.()?.fields || {},
+      knownValues: null,
+      componentDb: null,
+      specDb,
+      productRoot: defaultProductRoot(),
+      metadata: { source: 'manual_override', reviewer: reviewer || null, reason: reason || null, evidence: manualEvidence },
+      config: { publishConfidenceThreshold: 0 },
     });
-
-    // WHY: Publish manual override to field_candidates (resolved) + product.json fields[].
-    // Manual overrides lock the field from future auto-publish until the override is deleted.
-    if (specDb) {
-      try {
-        publishManualOverride({
-          specDb, category, productId,
-          fieldKey: field,
-          value: result?.value ?? value,
-          reviewer,
-          reason,
-          evidence: manualEvidence,
-        });
-      } catch { /* best-effort publish — override already persisted to JSON SSOT */ }
-    }
 
     return sendDataChangeResponse({
       jsonRes,
@@ -177,165 +132,6 @@ async function handleReviewItemOverrideMutationEndpoint({
   }
 }
 
-async function handleItemKeyReviewDecisionEndpoint({
-  parts,
-  method,
-  req,
-  res,
-  context,
-  action,
-  decision,
-  candidateRequiredMessage,
-  unknownValueMessage,
-  failureErrorCode,
-}) {
-  const {
-    readJsonBody,
-    jsonRes,
-    getSpecDb,
-    resolveKeyReviewForLaneMutation,
-    markPrimaryLaneReviewedInItemState,
-    syncItemFieldStateFromPrimaryLaneAccept,
-    isMeaningfulValue,
-    propagateSharedLaneDecision,
-    broadcastWs,
-  } = context || {};
-  const category = parts[1];
-
-  if (!routeMatches({ parts, method, scope: 'review', action })) {
-    return false;
-  }
-
-  try {
-    const laneRequest = await resolveItemLaneCandidateMutationRequest({
-      req,
-      category,
-      readJsonBody,
-      getSpecDb,
-      resolveKeyReviewForLaneMutation,
-      candidateRequiredMessage,
-    });
-    if (jsonResIfError({ jsonRes, res, error: laneRequest.error })) return true;
-    const {
-      body,
-      lane,
-      candidateId,
-      specDb,
-      stateCtx,
-      stateRow,
-      candidateRow,
-      persistedCandidateId,
-    } = laneRequest;
-
-    if (decision === 'confirm' && lane === 'primary') {
-      const stateProductId = String(stateRow.item_identifier || '').trim();
-      const stateFieldKey = String(stateRow.field_key || '').trim();
-      const stateItemFieldStateId = resolvePrimaryConfirmItemFieldStateId({
-        stateRow,
-        stateCtx,
-        body,
-      });
-      if (!Number.isFinite(stateItemFieldStateId) || stateItemFieldStateId <= 0) {
-        jsonRes(res, 400, {
-          error: 'item_field_state_id_required',
-          message: 'Valid itemFieldStateId is required for candidate-scoped item confirm.',
-        });
-        return true;
-      }
-      const { pendingCandidateIds, updated } = applyPrimaryItemConfirmLane({
-        specDb,
-        category,
-        stateRow,
-        stateProductId,
-        stateFieldKey,
-        stateItemFieldStateId,
-        persistedCandidateId,
-        candidateScore: candidateRow?.score,
-        candidateConfidence: body?.candidateConfidence,
-        markPrimaryLaneReviewedInItemState,
-      });
-      return sendDataChangeResponse({
-        jsonRes,
-        res,
-        broadcastWs,
-        eventType: action,
-        category,
-        broadcastExtra: { id: stateRow.id, lane },
-        payload: {
-          keyReviewState: updated,
-          pendingPrimaryCandidateIds: pendingCandidateIds,
-          confirmedCandidateId: persistedCandidateId,
-        },
-      });
-    }
-
-    const selection = applyLaneCandidateSelection({
-      specDb,
-      stateRow,
-      candidateId,
-      candidateRow,
-      isMeaningfulValue,
-      unknownValueMessage,
-    });
-    if (jsonResIfError({ jsonRes, res, error: selection.error })) return true;
-    const { updated } = applyLaneDecisionStatusAndAudit({
-      specDb,
-      stateRow,
-      lane,
-      decision,
-      candidateId: decision === 'accept' ? candidateId : null,
-    });
-    if (decision === 'accept') {
-      if (lane === 'primary') {
-        syncItemFieldStateFromPrimaryLaneAccept(specDb, category, updated);
-      }
-      if (lane === 'shared') {
-        await propagateSharedLaneDecision({
-          category,
-          specDb,
-          keyReviewState: updated,
-          laneAction: 'accept',
-          candidateValue: selection.selectedValue,
-        });
-      }
-    }
-    return sendDataChangeResponse({
-      jsonRes,
-      res,
-      broadcastWs,
-      eventType: action,
-      category,
-      broadcastExtra: { id: stateRow.id, lane },
-      payload: { keyReviewState: updated },
-    });
-  } catch (err) {
-    jsonRes(res, 500, { error: failureErrorCode, message: err.message });
-    return true;
-  }
-}
-
-async function handleReviewItemKeyReviewConfirmEndpoint(args) {
-  return handleItemKeyReviewDecisionEndpoint({
-    ...args,
-    action: 'key-review-confirm',
-    decision: 'confirm',
-    candidateRequiredMessage: 'candidateId is required for candidate-scoped AI confirm.',
-    unknownValueMessage: 'Cannot confirm AI review for unknown/empty selected values.',
-    failureErrorCode: 'confirm_failed',
-  });
-}
-
-async function handleReviewItemKeyReviewAcceptEndpoint(args) {
-  return handleItemKeyReviewDecisionEndpoint({
-    ...args,
-    action: 'key-review-accept',
-    decision: 'accept',
-    candidateRequiredMessage: 'candidateId is required for candidate-scoped accept.',
-    unknownValueMessage: 'Cannot accept unknown/empty selected values.',
-    failureErrorCode: 'accept_failed',
-  });
-}
-
 export async function handleReviewItemMutationRoute({
   parts,
   method,
@@ -346,12 +142,5 @@ export async function handleReviewItemMutationRoute({
   if (!Array.isArray(parts) || parts[0] !== 'review' || !parts[1]) {
     return false;
   }
-  return runHandledRouteChain({
-    handlers: [
-      handleReviewItemOverrideMutationEndpoint,
-      handleReviewItemKeyReviewConfirmEndpoint,
-      handleReviewItemKeyReviewAcceptEndpoint,
-    ],
-    args: { parts, method, req, res, context },
-  });
+  return handleReviewItemOverrideMutationEndpoint({ parts, method, req, res, context });
 }

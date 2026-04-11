@@ -203,31 +203,6 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       p.hasRun = !!p.metrics.has_run;
     }
 
-    // Enrich each product's fields with key_review_state data
-    if (specDb) {
-      for (const p of payloads) {
-        try {
-          const krsRows = specDb.getKeyReviewStatesForItem(p.product_id);
-          for (const krs of krsRows) {
-            const fieldState = p.fields[krs.field_key];
-            if (!fieldState) continue;
-            fieldState.keyReview = {
-              id: krs.id,
-              selectedCandidateId: krs.selected_candidate_id || null,
-              primaryStatus: krs.ai_confirm_primary_status || null,
-              primaryConfidence: krs.ai_confirm_primary_confidence ?? null,
-              sharedStatus: krs.ai_confirm_shared_status || null,
-              sharedConfidence: krs.ai_confirm_shared_confidence ?? null,
-              userAcceptPrimary: krs.user_accept_primary_status || null,
-              userAcceptShared: krs.user_accept_shared_status || null,
-              overridePrimary: Boolean(krs.user_override_ai_primary),
-              overrideShared: Boolean(krs.user_override_ai_shared),
-            };
-          }
-        } catch { /* best-effort key review enrichment */ }
-      }
-    }
-
     // Sort by brand (ascending), then model (ascending)
     payloads.sort((a, b) => {
       const brandA = String(a.identity?.brand || '').toLowerCase();
@@ -263,157 +238,48 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
   if (parts[0] === 'review' && parts[1] && parts[2] === 'candidates' && parts[3] && parts[4] && method === 'GET') {
     const [, category, , productId, field] = parts;
     const specDb = getSpecDb(category);
-    // WHY: SQL is the sole SSOT — verify product exists in specDb.
     const dbProduct = specDb?.getProduct(productId);
     if (!dbProduct) {
       return jsonRes(res, 404, { error: 'product_not_found', message: `Product ${productId} not found` });
     }
-    const candSession = await sessionCache.getSessionRules(category);
-    const candLayout = await buildReviewLayout({
-      storage, config, category,
-      specDb: getSpecDb(category),
-      fieldOrderOverride: candSession.mergedFieldOrder,
-      fieldsOverride: candSession.mergedFields,
-      studioMap: readRawStudioMap(category),
-    });
-    const payload = await buildProductReviewPayload({
-      storage,
-      config,
-      category,
-      productId,
-      layout: candLayout,
-      includeCandidates: true,
-      specDb,
-    });
     const requestedField = decodeURIComponent(String(field || ''));
-    const availableFields = Object.keys(payload.fields || {});
-    const resolvedField = payload.fields?.[requestedField]
-      ? requestedField
-      : (availableFields.find((key) => key.toLowerCase() === requestedField.toLowerCase()) || requestedField);
-    const fieldState = payload.fields?.[resolvedField] || { candidates: [] };
-    let itemFieldStateId = (() => {
-      const n = Number(fieldState?.slot_id ?? fieldState?.id ?? null);
-      if (!Number.isFinite(n)) return null;
-      const id = Math.trunc(n);
-      return id > 0 ? id : null;
-    })();
-    const allCandidates = Array.isArray(fieldState.candidates) ? [...fieldState.candidates] : [];
-    let keyReview = null;
-    if (specDb) {
-      try {
-        // WHY: Prefer slot-id lookup; fall back to resolving item_field_state_id
-        // from product/field when the payload slot_id is missing (e.g. after null migration).
-        let resolvedItemFieldStateId = itemFieldStateId;
-        if (!resolvedItemFieldStateId) {
-          const ifsRow = specDb.getItemFieldStateByProductAndField?.(productId, resolvedField);
-          if (ifsRow?.id) resolvedItemFieldStateId = ifsRow.id;
-        }
-        const krs = resolvedItemFieldStateId
-          ? specDb.getKeyReviewState({
-            targetKind: 'grid_key',
-            itemIdentifier: productId,
-            fieldKey: resolvedField,
-            itemFieldStateId: resolvedItemFieldStateId,
-            category,
-          })
-          : null;
-        if (krs) {
-          keyReview = {
-            id: krs.id,
-            selectedCandidateId: krs.selected_candidate_id || null,
-            primaryStatus: krs.ai_confirm_primary_status || null,
-            primaryConfidence: krs.ai_confirm_primary_confidence ?? null,
-            sharedStatus: krs.ai_confirm_shared_status || null,
-            sharedConfidence: krs.ai_confirm_shared_confidence ?? null,
-            userAcceptPrimary: krs.user_accept_primary_status || null,
-            userAcceptShared: krs.user_accept_shared_status || null,
-            overridePrimary: Boolean(krs.user_override_ai_primary),
-            overrideShared: Boolean(krs.user_override_ai_shared),
-            _selectedValue: krs.selected_value ?? null,
-          };
-        }
-      } catch { /* best-effort */ }
-    }
-    // WHY: Fall back to key_review_state.selected_value when the field payload
-    // doesn't carry a selected value (e.g. after specDb cache flush during null migration).
-    const selectedValue = fieldState?.selected?.value
-      ?? (keyReview ? keyReview._selectedValue : undefined)
-      ?? null;
-    const selectedValueNorm = String(selectedValue ?? '').trim().toLowerCase();
-    const hasSelectedValue = hasKnownValue(selectedValue);
-    const selectedCandidateId = String(
-      keyReview?.selectedCandidateId
-      || fieldState?.accepted_candidate_id
-      || '',
-    ).trim();
-    const existingIds = new Set(allCandidates.map((candidate) => String(candidate?.candidate_id || '').trim()).filter(Boolean));
-    const hasSelectedId = selectedCandidateId ? existingIds.has(selectedCandidateId) : false;
-    const hasSelectedValueCandidate = hasSelectedValue
-      && allCandidates.some((candidate) => String(candidate?.value ?? '').trim().toLowerCase() === selectedValueNorm);
-    const sourceTokenRaw = String(fieldState?.source || '').trim().toLowerCase();
-    const sourceId = sourceTokenRaw === 'component_db'
-      || sourceTokenRaw === 'known_values'
-      || sourceTokenRaw === 'reference'
-      ? 'reference'
-      : (sourceTokenRaw.startsWith('pipeline')
-          ? 'pipeline'
-          : (sourceTokenRaw === 'manual' || sourceTokenRaw === 'user' ? 'user' : sourceTokenRaw));
-    const sourceLabel = sourceId === 'reference'
-      ? 'Reference'
-      : (sourceId === 'pipeline'
-          ? 'Pipeline'
-          : (String(fieldState?.source || '').trim() || sourceId || 'Pipeline'));
-    const selectedConfidence = Number.isFinite(Number(fieldState?.selected?.confidence))
-      ? Math.max(0, Math.min(1, Number(fieldState.selected.confidence)))
-      : 0.5;
-    const selectedEvidenceUrl = String(fieldState?.evidence_url || '').trim();
-    const selectedEvidenceQuote = String(fieldState?.evidence_quote || '').trim()
-      || 'Selected value retained from slot state';
-    const ensureSelectedCandidate = (candidateId) => {
-      const cid = String(candidateId || '').trim();
-      if (!cid || existingIds.has(cid) || !hasSelectedValue) return;
-      existingIds.add(cid);
-      allCandidates.push({
-        candidate_id: cid,
-        value: selectedValue,
-        score: selectedConfidence,
-        source_id: sourceId || '',
-        source: sourceLabel,
+
+    // field_candidates is the sole SSOT for candidates.
+    const fcRows = specDb?.getFieldCandidatesByProductAndField?.(productId, requestedField) || [];
+    const allCandidates = fcRows.map((c) => {
+      const meta = c.metadata_json && typeof c.metadata_json === 'object' ? c.metadata_json : {};
+      const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
+      const firstSource = sources[0] && typeof sources[0] === 'object' ? sources[0] : {};
+      const sourceToken = String(meta.source || firstSource.source || '').trim().toLowerCase();
+      return {
+        candidate_id: `fc_${c.id}`,
+        value: c.value,
+        score: Math.max(0, Math.min(1, Number(c.confidence) || 0)),
+        source_id: sourceToken || '',
+        source: sourceToken || '',
         tier: null,
-        method: sourceId === 'user' ? 'manual_override' : 'selected_value',
-        is_synthetic_selected: true,
+        method: String(meta.method || sourceToken || '').trim() || null,
+        status: c.status || 'candidate',
         evidence: {
-          url: selectedEvidenceUrl,
-          retrieved_at: String(fieldState?.source_timestamp || '').trim(),
-          snippet_id: '',
-          snippet_hash: '',
-          quote: selectedEvidenceQuote,
-          quote_span: null,
-          snippet_text: selectedEvidenceQuote,
-          source_id: sourceId || '',
+          url: String(meta.evidence?.url || '').trim(),
+          quote: String(meta.evidence?.quote || meta.reason || '').trim(),
+          source_id: sourceToken || '',
         },
-      });
-    };
-    if (hasSelectedValue && selectedCandidateId && !hasSelectedId) {
-      ensureSelectedCandidate(selectedCandidateId);
-    }
-    if (hasSelectedValue && !hasSelectedValueCandidate) {
-      ensureSelectedCandidate(`selected_${slugify(productId || 'product')}_${slugify(resolvedField || 'field')}`);
-    }
-    allCandidates.sort((a, b) => {
-      const aScore = Number.parseFloat(String(a?.score ?? ''));
-      const bScore = Number.parseFloat(String(b?.score ?? ''));
-      const left = Number.isFinite(aScore) ? aScore : 0;
-      const right = Number.isFinite(bScore) ? bScore : 0;
-      if (right !== left) return right - left;
-      return String(a?.candidate_id || '').localeCompare(String(b?.candidate_id || ''));
+      };
     });
+
+    allCandidates.sort((a, b) => {
+      const left = Number.isFinite(a.score) ? a.score : 0;
+      const right = Number.isFinite(b.score) ? b.score : 0;
+      if (right !== left) return right - left;
+      return String(a.candidate_id || '').localeCompare(String(b.candidate_id || ''));
+    });
+
     return jsonRes(res, 200, {
       product_id: productId,
-      field: resolvedField,
+      field: requestedField,
       candidates: allCandidates,
       candidate_count: allCandidates.length,
-      keyReview,
     });
   }
 

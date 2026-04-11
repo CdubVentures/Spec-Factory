@@ -7,40 +7,6 @@
  */
 export function createPurgeStore({ db, category: defaultCategory }) {
 
-  function deleteKeyReviewStatesByTargetKinds(category, targetKinds) {
-    if (!targetKinds?.length) return 0;
-    const cat = String(category || defaultCategory || '').trim();
-    if (!cat) return 0;
-    const placeholders = targetKinds.map(() => '?').join(',');
-    const ids = db.prepare(`
-      SELECT id FROM key_review_state
-      WHERE category = ? AND target_kind IN (${placeholders})
-    `).all(cat, ...targetKinds).map((row) => row.id);
-    if (!ids.length) return 0;
-    const idPlaceholders = ids.map(() => '?').join(',');
-    // WHY: Cascade key_review_runs → key_review_run_sources → key_review_audit before state
-    db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${idPlaceholders}))`).run(...ids);
-    db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${idPlaceholders})`).run(...ids);
-    db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${idPlaceholders})`).run(...ids);
-    return db.prepare(`DELETE FROM key_review_state WHERE id IN (${idPlaceholders})`).run(...ids).changes;
-  }
-
-  function deleteKeyReviewStatesByProductAndKind(category, productId, targetKind) {
-    const cat = String(category || defaultCategory || '').trim();
-    const pid = String(productId || '').trim();
-    if (!cat || !pid) return 0;
-    const ids = db.prepare(`
-      SELECT id FROM key_review_state
-      WHERE category = ? AND target_kind = ? AND item_identifier = ?
-    `).all(cat, targetKind, pid).map((row) => row.id);
-    if (!ids.length) return 0;
-    const placeholders = ids.map(() => '?').join(',');
-    db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${placeholders}))`).run(...ids);
-    db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${placeholders})`).run(...ids);
-    db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${placeholders})`).run(...ids);
-    return db.prepare(`DELETE FROM key_review_state WHERE id IN (${placeholders})`).run(...ids).changes;
-  }
-
   function purgeCategoryState(category) {
     const cat = String(category || '').trim();
     if (!cat) {

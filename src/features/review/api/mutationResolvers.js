@@ -32,26 +32,16 @@ export function resolveGridFieldStateForMutation(specDb, category, body) {
       errorMessage: 'SpecDb is not available for this category.',
     };
   }
-  const idReq = resolveExplicitPositiveId(body, [
-    'itemFieldStateId',
-    'item_field_state_id',
-  ]);
-  if (idReq.provided) {
-    const byId = idReq.id ? specDb.getItemFieldStateById(idReq.id) : null;
-    if (byId && String(byId.category || '').trim() === String(category || '').trim()) {
-      return { row: byId, error: null };
-    }
+  const productId = String(body?.productId || body?.product_id || '').trim();
+  const fieldKey = String(body?.field || body?.fieldKey || body?.field_key || '').trim();
+  if (!productId || !fieldKey) {
     return {
       row: null,
-      error: 'item_field_state_id_not_found',
-      errorMessage: `itemFieldStateId '${idReq.raw}' does not resolve in category '${category}'.`,
+      error: 'product_and_field_required',
+      errorMessage: 'productId and field are required for this mutation.',
     };
   }
-  return {
-    row: null,
-    error: 'item_field_state_id_required',
-    errorMessage: 'itemFieldStateId is required for this mutation.',
-  };
+  return { row: { product_id: productId, field_key: fieldKey, category }, error: null };
 }
 
 export function resolveComponentMutationContext(specDb, category, body, options = {}) {

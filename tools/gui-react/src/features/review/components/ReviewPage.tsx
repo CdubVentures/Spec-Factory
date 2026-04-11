@@ -20,7 +20,6 @@ import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
 import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
-import type { KeyReviewLaneState } from '../../../types/review.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
@@ -48,13 +47,6 @@ function candidateSourceLabel(candidate: ReviewCandidate | null | undefined): st
   if (sourceId) return sourceId;
   const evidenceUrl = String(candidate.evidence?.url || '').trim();
   return evidenceUrl ? hostFromUrl(evidenceUrl) : '';
-}
-
-function toPositiveId(value: unknown): number | null {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  const id = Math.trunc(n);
-  return id > 0 ? id : null;
 }
 
 export function ReviewPage() {
@@ -245,7 +237,6 @@ export function ReviewPage() {
     mutationFn: (body: {
       productId: string;
       field: string;
-      itemFieldStateId?: number | null;
       candidateId?: string;
       value?: string;
       candidateSource?: string;
@@ -264,7 +255,7 @@ export function ReviewPage() {
 
   // Manual override mutation (for inline edits)
   const manualOverrideMut = useMutation({
-    mutationFn: (body: { productId: string; field: string; value: string; itemFieldStateId?: number | null }) =>
+    mutationFn: (body: { productId: string; field: string; value: string }) =>
       api.post(`/review/${category}/manual-override`, body),
     onSuccess: () => {
       setSaveStatus('saved');
@@ -274,15 +265,6 @@ export function ReviewPage() {
     },
     onError: () => {
       setSaveStatus('error');
-    },
-  });
-
-  const finalizeMut = useMutation({
-    mutationFn: (productId: string) => api.post(`/review/${category}/finalize`, { productId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['catalog', category] });
-      queryClient.invalidateQueries({ queryKey: ['product', category] });
     },
   });
 
@@ -296,80 +278,6 @@ export function ReviewPage() {
     },
   });
 
-  // Two-lane key review mutations
-  type KeyReviewLaneMutation = {
-    lane: 'primary' | 'shared';
-    id?: number;
-    itemFieldStateId?: number;
-    productId?: string;
-    field?: string;
-    candidateId?: string;
-    candidateValue?: string;
-    candidateConfidence?: number;
-  };
-
-  const confirmKeyReviewMut = useMutation({
-    mutationFn: (body: KeyReviewLaneMutation) =>
-      api.post(`/review/${category}/key-review-confirm`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-    },
-  });
-
-  const acceptKeyReviewMut = useMutation({
-    mutationFn: (body: KeyReviewLaneMutation) =>
-      api.post(`/review/${category}/key-review-accept`, body),
-    onMutate: (body) => {
-      if (!body) return;
-      const lane = body.lane === 'shared' ? 'shared' : 'primary';
-      const productId = String(body.productId || selectedProductId || '').trim();
-      const field = String(body.field || selectedField || '').trim();
-      if (!productId || !field) return;
-      queryClient.setQueryData<ProductsIndexResponse>(
-        ['reviewProductsIndex', category],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            products: old.products.map((p) => {
-              if (p.product_id !== productId) return p;
-              const existing = p.fields[field];
-              if (!existing) return p;
-              const keyReview = (existing.keyReview || {}) as Partial<KeyReviewLaneState>;
-              return {
-                ...p,
-                fields: {
-                  ...p.fields,
-                  [field]: {
-                    ...existing,
-                    keyReview: {
-                      ...keyReview,
-                      selectedCandidateId: body.candidateId ?? keyReview.selectedCandidateId ?? null,
-                      ...(lane === 'primary'
-                        ? { userAcceptPrimary: 'accepted' }
-                        : { userAcceptShared: 'accepted' }),
-                    } as KeyReviewLaneState,
-                  },
-                },
-              };
-            }),
-          };
-        },
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });
-      queryClient.invalidateQueries({ queryKey: ['enumReviewData', category] });
-    },
-  });
-
   // Optimistically update the products-index cache so the grid reflects changes instantly.
   // Accepts optional source metadata to preserve provenance from candidates or mark as 'user'.
   const optimisticUpdateField = useCallback((
@@ -377,7 +285,6 @@ export function ReviewPage() {
     field: string,
     value: string,
     sourceMeta?: { source?: string; method?: string; tier?: number | null; acceptedCandidateId?: string | null },
-    keyReviewMeta?: Partial<KeyReviewLaneState>,
   ) => {
     // Only show OVR badge for manual entry, not for candidate acceptance
     const isManualOverride = sourceMeta?.method === 'manual_override';
@@ -391,7 +298,6 @@ export function ReviewPage() {
           products: old.products.map((p) => {
             if (p.product_id !== productId) return p;
             const existing = p.fields[field] || { candidate_count: 0, candidates: [] };
-            const existingKeyReview = (existing.keyReview || {}) as Partial<KeyReviewLaneState>;
             return {
               ...p,
               fields: {
@@ -413,7 +319,6 @@ export function ReviewPage() {
                   ...(sourceMeta?.method !== undefined ? { method: sourceMeta.method } : {}),
                   ...(sourceMeta?.tier !== undefined ? { tier: sourceMeta.tier } : {}),
                   ...(sourceMeta?.acceptedCandidateId !== undefined ? { accepted_candidate_id: sourceMeta.acceptedCandidateId } : {}),
-                  ...(keyReviewMeta ? { keyReview: { ...existingKeyReview, ...keyReviewMeta } as KeyReviewLaneState } : {}),
                 },
               },
             };
@@ -426,14 +331,6 @@ export function ReviewPage() {
   // Core save logic — shared by debounced autosave and immediate commit
   const saveEdit = useCallback((productId: string, field: string, value: string, originalValue: string) => {
     if (value === originalValue) return;
-    const cached = queryClient.getQueryData<ProductsIndexResponse>(['reviewProductsIndex', category]);
-    const slotId = toPositiveId(
-      cached?.products?.find((p) => p.product_id === productId)?.fields?.[field]?.slot_id ?? null,
-    );
-    if (!slotId) {
-      setSaveStatus('error');
-      return;
-    }
 
     // Inline text edits are always manual overrides.
     optimisticUpdateField(
@@ -441,11 +338,10 @@ export function ReviewPage() {
       field,
       value,
       { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-      { selectedCandidateId: null, userAcceptPrimary: 'accepted', primaryStatus: null },
     );
     setSaveStatus('saving');
-    manualOverrideMut.mutate({ productId, field, value, itemFieldStateId: slotId });
-  }, [manualOverrideMut, setSaveStatus, optimisticUpdateField, queryClient, category]);
+    manualOverrideMut.mutate({ productId, field, value });
+  }, [manualOverrideMut, setSaveStatus, optimisticUpdateField]);
 
   // Debounced autosave for inline editing (fires while user is still typing)
   const debouncedSave = useDebouncedCallback(saveEdit, 1500);
@@ -476,12 +372,10 @@ export function ReviewPage() {
     for (const p of products) {
       for (const row of layout.rows) {
         const state = p.fields[row.key];
-        const slotId = toPositiveId(state?.slot_id);
-        if (state?.selected.color === 'green' && state.needs_review && slotId) {
+        if (state?.selected.color === 'green' && state.needs_review) {
           overrideMut.mutate({
             productId: p.product_id,
             field: row.key,
-            itemFieldStateId: slotId,
             candidateId: state.candidates[0]?.candidate_id,
             value: state.candidates[0]?.value != null ? String(state.candidates[0]?.value) : undefined,
           });
@@ -546,20 +440,16 @@ export function ReviewPage() {
     if (!product) return;
     const state = product.fields[activeCell.field];
     if (!state || state.candidates.length === 0) return;
-    const slotId = toPositiveId(state.slot_id);
-    if (!slotId) return;
     const topCand = state.candidates[0];
     optimisticUpdateField(
       activeCell.productId,
       activeCell.field,
       String(topCand.value ?? ''),
       { source: topCand.source || '', method: topCand.method || undefined, tier: topCand.tier },
-      { selectedCandidateId: topCand.candidate_id, userAcceptPrimary: 'accepted' },
     );
     overrideMut.mutate({
       productId: activeCell.productId,
       field: activeCell.field,
-      itemFieldStateId: slotId,
       candidateId: topCand.candidate_id,
       value: String(topCand.value ?? ''),
       candidateSource: topCand.source_id || topCand.source || '',
@@ -579,10 +469,8 @@ export function ReviewPage() {
       debouncedSave.cancel();
       if (activeCell) saveEdit(activeCell.productId, activeCell.field, editingValue, originalEditingValue);
       commitEditing();
-    } else if (selectedProductId) {
-      finalizeMut.mutate(selectedProductId);
     }
-  }, { enableOnFormTags: true }, [cellMode, activeCell, editingValue, originalEditingValue, selectedProductId, finalizeMut, commitEditing, debouncedSave, saveEdit]);
+  }, { enableOnFormTags: true }, [cellMode, activeCell, editingValue, originalEditingValue, commitEditing, debouncedSave, saveEdit]);
 
   // E: open evidence URL for active cell's top candidate
   useHotkeys('e', () => {
@@ -604,20 +492,16 @@ export function ReviewPage() {
     if (!product) return;
     const state = product.fields[activeCell.field];
     if (!state || idx >= state.candidates.length) return;
-    const slotId = toPositiveId(state.slot_id);
-    if (!slotId) return;
     const cand = state.candidates[idx];
     optimisticUpdateField(
       activeCell.productId,
       activeCell.field,
       String(cand.value ?? ''),
       { source: cand.source || '', method: cand.method || undefined, tier: cand.tier },
-      { selectedCandidateId: cand.candidate_id, userAcceptPrimary: 'accepted' },
     );
     overrideMut.mutate({
       productId: activeCell.productId,
       field: activeCell.field,
-      itemFieldStateId: slotId,
       candidateId: cand.candidate_id,
       value: String(cand.value ?? ''),
       candidateSource: cand.source_id || cand.source || '',
@@ -653,8 +537,7 @@ export function ReviewPage() {
     for (const product of products) {
       for (const row of layout.rows) {
         const state = product.fields[row.key];
-        const slotId = toPositiveId(state?.slot_id);
-        if (state?.selected.color === 'green' && state.needs_review && slotId) {
+        if (state?.selected.color === 'green' && state.needs_review) {
           count += 1;
         }
       }
@@ -755,24 +638,6 @@ export function ReviewPage() {
                       {allGreensAccepted ? 'Approved' : 'Approve'}
                     </button>
                   </ActionTooltip>
-                  <ActionTooltip
-                    text={
-                      selectedProductId
-                        ? 'Finalize the selected product and lock the current review decisions.'
-                        : 'Select a product to enable Finalize.'
-                    }
-                  >
-                    <button
-                      onClick={() => {
-                        if (!selectedProductId) return;
-                        finalizeMut.mutate(selectedProductId);
-                      }}
-                      disabled={!selectedProductId || finalizeMut.isPending}
-                      className="sf-review-actions-drawer-button h-6 flex-1 min-w-0 px-2.5 rounded sf-confirm-button-solid disabled:opacity-50"
-                    >
-                      Finalize
-                    </button>
-                  </ActionTooltip>
                 </div>
               </div>
             </div>
@@ -792,7 +657,7 @@ export function ReviewPage() {
         <span>1-9: candidate</span>
         <span>E: evidence URL</span>
         <span>Ctrl+A: approve greens</span>
-        <span>Ctrl+S: save/finalize</span>
+        <span>Ctrl+S: save</span>
         <span>Space: drawer</span>
         <span>Esc: cancel/close</span>
       </div>
@@ -816,44 +681,6 @@ export function ReviewPage() {
           const drawerCandidates = candidateData?.candidates ?? activeFieldState.candidates ?? [];
           const currentSource = activeFieldState.source
             || candidateSourceLabel(drawerCandidates.find((candidate) => candidateSourceLabel(candidate)) ?? drawerCandidates[0]);
-          const selectedValueStr = String(activeFieldState.selected.value ?? '').trim().toLowerCase();
-          const hasValue = hasKnownValue(activeFieldState.selected.value);
-          const activeSlotId = toPositiveId(activeFieldState.slot_id);
-          const canMutateActiveSlot = Boolean(activeSlotId);
-          const kr = activeFieldState.keyReview ?? candidateData?.keyReview ?? null;
-          const actionableCandidates = drawerCandidates.filter((candidate) => {
-            const candidateId = String(candidate?.candidate_id || '').trim();
-            return Boolean(candidateId) && hasKnownValue(candidate?.value);
-          });
-          const isAccepted = hasValue
-            && !activeFieldState.needs_review
-            && !activeFieldState.overridden
-            && (
-              Boolean(activeFieldState.accepted_candidate_id)
-              || String(kr?.userAcceptPrimary || '').trim().toLowerCase() === 'accepted'
-              || activeFieldState.source === 'reference'
-              || activeFieldState.source === 'manual'
-              || activeFieldState.source === 'user'
-            );
-          const canAcceptCurrent = hasValue && !isAccepted && canMutateActiveSlot;
-          // Grid intentionally stays item-lane only (no shared-lane overlays/actions in this surface).
-          const hasPendingAIShared = false;
-          const enrichedCandidates = drawerCandidates;
-          const pendingPrimaryCandidateIds = (() => {
-            const pendingIds = actionableCandidates
-              .filter((candidate) => !candidate?.is_synthetic_selected)
-              .filter((candidate) => {
-                const status = String(candidate?.primary_review_status || '').trim().toLowerCase();
-                return !status || status === 'pending';
-              })
-              .map((candidate) => String(candidate?.candidate_id || '').trim())
-              .filter(Boolean);
-            return [...new Set(pendingIds)];
-          })();
-          const hasPendingAIPrimary = pendingPrimaryCandidateIds.length > 0;
-          const pendingSharedCandidateIds: string[] = [];
-          const pendingPrimaryCandidateId = pendingPrimaryCandidateIds[0] || null;
-          const pendingSharedCandidateId = null;
 
           return (
             <CellDrawer
@@ -869,115 +696,27 @@ export function ReviewPage() {
                 overridden: activeFieldState.overridden,
                 acceptedCandidateId: activeFieldState.accepted_candidate_id ?? null,
               }}
-              sharedAcceptedCandidateId={null}
               badges={activeFieldState.reason_codes.map((code) => ({
                 label: code,
                 className: 'sf-chip-warning',
               }))}
-              isCurrentAccepted={isAccepted}
-              onAcceptCurrent={canAcceptCurrent ? () => {
-                const enrichedMatch = enrichedCandidates.find(
-                  (c: ReviewCandidate) => String(c.value ?? '').trim().toLowerCase() === selectedValueStr,
-                );
-                if (enrichedMatch) {
-                  optimisticUpdateField(
-                    selectedProductId,
-                    selectedField,
-                    String(enrichedMatch.value ?? ''),
-                    {
-                      source: enrichedMatch.source || '',
-                      method: enrichedMatch.method || undefined,
-                      tier: enrichedMatch.tier,
-                      acceptedCandidateId: enrichedMatch.candidate_id,
-                    },
-                    { selectedCandidateId: enrichedMatch.candidate_id, userAcceptPrimary: 'accepted' },
-                  );
-                  overrideMut.mutate({
-                    productId: selectedProductId,
-                    field: selectedField,
-                    itemFieldStateId: activeSlotId ?? undefined,
-                    candidateId: enrichedMatch.candidate_id,
-                    value: String(enrichedMatch.value ?? ''),
-                    candidateSource: enrichedMatch.source_id || enrichedMatch.source || '',
-                    candidateMethod: enrichedMatch.method || undefined,
-                    candidateTier: enrichedMatch.tier,
-                    candidateConfidence: Number(enrichedMatch.score ?? 0),
-                    candidateEvidence: enrichedMatch.evidence,
-                  });
-                } else {
-                  optimisticUpdateField(
-                    selectedProductId,
-                    selectedField,
-                    String(activeFieldState.selected.value),
-                    { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-                    { selectedCandidateId: null, userAcceptPrimary: 'accepted', primaryStatus: null },
-                  );
-                  manualOverrideMut.mutate({
-                    productId: selectedProductId,
-                    field: selectedField,
-                    itemFieldStateId: activeSlotId ?? undefined,
-                    value: String(activeFieldState.selected.value),
-                  });
-                }
-              } : undefined}
               onManualOverride={(value) => {
-                if (!canMutateActiveSlot) return;
                 optimisticUpdateField(
                   selectedProductId,
                   selectedField,
                   value,
                   { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-                  { selectedCandidateId: null, userAcceptPrimary: 'accepted', primaryStatus: null },
                 );
                 manualOverrideMut.mutate({
                   productId: selectedProductId,
                   field: selectedField,
-                  itemFieldStateId: activeSlotId ?? undefined,
                   value,
                 });
               }}
-              pendingAIPrimary={hasPendingAIPrimary}
-              pendingAIShared={hasPendingAIShared}
-              pendingPrimaryCandidateId={pendingPrimaryCandidateId}
-              pendingSharedCandidateId={pendingSharedCandidateId}
-              pendingPrimaryCandidateIds={pendingPrimaryCandidateIds}
-              pendingSharedCandidateIds={pendingSharedCandidateIds}
-              candidateUiContext="grid"
-              onConfirmPrimary={hasPendingAIPrimary && canMutateActiveSlot ? () => confirmKeyReviewMut.mutate(
-                kr?.id
-                  ? {
-                    id: kr.id,
-                    lane: 'primary',
-                    itemFieldStateId: activeSlotId ?? undefined,
-                  }
-                  : {
-                    lane: 'primary',
-                    productId: selectedProductId,
-                    field: selectedField,
-                    itemFieldStateId: activeSlotId ?? undefined,
-                  }
-              ) : undefined}
-              onConfirmPrimaryCandidate={hasPendingAIPrimary && canMutateActiveSlot ? (candidateId, candidate) => confirmKeyReviewMut.mutate(
-                kr?.id
-                  ? {
-                    id: kr.id,
-                    lane: 'primary',
-                    itemFieldStateId: activeSlotId ?? undefined,
-                    candidateId,
-                    candidateValue: String(candidate.value ?? ''),
-                    candidateConfidence: Number(candidate.score ?? 0),
-                  }
-                  : {
-                    lane: 'primary',
-                    productId: selectedProductId,
-                    field: selectedField,
-                    itemFieldStateId: activeSlotId ?? undefined,
-                    candidateId,
-                    candidateValue: String(candidate.value ?? ''),
-                    candidateConfidence: Number(candidate.score ?? 0),
-                  }
-              ) : undefined}
-              onAcceptPrimaryCandidate={canMutateActiveSlot ? (candidateId, candidate) => {
+              isPending={overrideMut.isPending || manualOverrideMut.isPending}
+              candidates={drawerCandidates}
+              candidatesLoading={candidatesLoading}
+              onAcceptCandidate={(candidateId, candidate) => {
                 optimisticUpdateField(
                   selectedProductId,
                   selectedField,
@@ -988,12 +727,10 @@ export function ReviewPage() {
                     tier: candidate.tier,
                     acceptedCandidateId: candidateId,
                   },
-                  { selectedCandidateId: candidateId, userAcceptPrimary: 'accepted' },
                 );
                 overrideMut.mutate({
                   productId: selectedProductId,
                   field: selectedField,
-                  itemFieldStateId: activeSlotId ?? undefined,
                   candidateId,
                   value: String(candidate.value ?? ''),
                   candidateSource: candidate.source_id || candidate.source || '',
@@ -1002,46 +739,7 @@ export function ReviewPage() {
                   candidateConfidence: Number(candidate.score ?? 0),
                   candidateEvidence: candidate.evidence,
                 });
-              } : undefined}
-              onAcceptPrimary={hasPendingAIPrimary && canMutateActiveSlot ? () => acceptKeyReviewMut.mutate(
-                kr?.id
-                  ? { id: kr.id, lane: 'primary', itemFieldStateId: activeSlotId ?? undefined }
-                  : {
-                    lane: 'primary',
-                    productId: selectedProductId,
-                    field: selectedField,
-                    itemFieldStateId: activeSlotId ?? undefined,
-                  }
-              ) : undefined}
-              isPending={overrideMut.isPending || manualOverrideMut.isPending || confirmKeyReviewMut.isPending || acceptKeyReviewMut.isPending}
-              candidates={enrichedCandidates}
-              candidatesLoading={candidatesLoading}
-              onAcceptCandidate={canMutateActiveSlot ? (candidateId, candidate) => {
-                optimisticUpdateField(
-                  selectedProductId,
-                  selectedField,
-                  String(candidate.value ?? ''),
-                  {
-                    source: candidate.source || '',
-                    method: candidate.method || undefined,
-                    tier: candidate.tier,
-                    acceptedCandidateId: candidateId,
-                  },
-                  { selectedCandidateId: candidateId, userAcceptPrimary: 'accepted' },
-                );
-                overrideMut.mutate({
-                  productId: selectedProductId,
-                  field: selectedField,
-                  itemFieldStateId: activeSlotId ?? undefined,
-                  candidateId,
-                  value: String(candidate.value ?? ''),
-                  candidateSource: candidate.source_id || candidate.source || '',
-                  candidateMethod: candidate.method || undefined,
-                  candidateTier: candidate.tier,
-                  candidateConfidence: Number(candidate.score ?? 0),
-                    candidateEvidence: candidate.evidence,
-                });
-              } : undefined}
+              }}
               onRunAIReview={() => runGridAiReviewMut.mutate()}
               aiReviewPending={runGridAiReviewMut.isPending}
               extraSections={

@@ -23,6 +23,43 @@ function serializeValue(value) {
 }
 
 /**
+ * Build linked candidates — all candidate rows that match the published value.
+ * For scalar/winner_only: exact serialization match.
+ * For set_union: candidate's array shares at least one item with the published array.
+ * Sorted by confidence descending.
+ */
+function buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule) {
+  const allCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
+  const itemUnion = fieldRule?.contract?.list_rules?.item_union;
+  const publishedSerialized = serializeValue(publishedValue);
+
+  return allCandidates
+    .filter(row => {
+      if (itemUnion === 'set_union' && Array.isArray(publishedValue)) {
+        // set_union: linked if candidate's array shares items with published array
+        let candidateItems;
+        try { candidateItems = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
+        catch { candidateItems = null; }
+        if (!Array.isArray(candidateItems)) return false;
+        const publishedSet = new Set(publishedValue.map(v => serializeValue(v)));
+        return candidateItems.some(item => publishedSet.has(serializeValue(item)));
+      }
+      // Scalar / winner_only: exact serialization match
+      return (row.value ?? null) === (publishedSerialized ?? null);
+    })
+    .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
+    .map(row => ({
+      candidate_id: row.id,
+      value: row.value,
+      confidence: row.confidence,
+      source_count: row.source_count,
+      sources: Array.isArray(row.sources_json) ? row.sources_json : [],
+      status: row.status,
+      submitted_at: row.submitted_at,
+    }));
+}
+
+/**
  * @param {{ specDb: object, category: string, productId: string, fieldKey: string, candidateRow: object, value: *, unit: string|null, confidence: number, config: object, fieldRule: object, productRoot: string }} opts
  * @returns {{ status: 'published'|'below_threshold'|'manual_override_locked'|'skipped', value?: *, candidateId?: number, confidence?: number, threshold?: number }}
  */
@@ -78,6 +115,11 @@ export function publishCandidate({
   specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
   persistPublishResult(specDb, productId, fieldKey, serialized, { status: 'published', published_at: now });
 
+  // --- Build linked candidates (evidence chain) ---
+  // WHY: All candidate rows that match the published value are linked as proof.
+  // Each carries its own confidence and source history, sorted by confidence desc.
+  const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule);
+
   // --- JSON: write to product.json fields[] ---
   productJson.fields[fieldKey] = {
     value: publishedValue,
@@ -85,6 +127,7 @@ export function publishCandidate({
     source: 'pipeline',
     resolved_at: now,
     sources,
+    linked_candidates: linkedCandidates,
   };
   productJson.updated_at = now;
   fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));

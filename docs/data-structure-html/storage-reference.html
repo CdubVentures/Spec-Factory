@@ -146,7 +146,7 @@ code{font-family:var(--mono);font-size:0.85em}
   <h1>Spec Factory &mdash; Storage Reference</h1>
   <p class="subtitle">Current storage surface verified against the live path builders, checkpoint writers, output namespaces, and committed authority files. This page describes only the storage layout the app uses today.</p>
   <div class="meta">
-    <span>Audited 2026-04-04</span>
+    <span>Audited 2026-04-11</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -154,7 +154,7 @@ code{font-family:var(--mono);font-size:0.85em}
 <!-- ─────────────────────── STATS ─────────────────────── -->
 <div class="stats">
   <div class="stat sql"><div class="n">2</div><div class="l">SQLite Databases</div></div>
-  <div class="stat json"><div class="n">92</div><div class="l">Category Authority Files</div></div>
+  <div class="stat json"><div class="n">91</div><div class="l">Category Authority Files</div></div>
   <div class="stat bin"><div class="n">8</div><div class="l">Runtime File Families</div></div>
   <div class="stat eph"><div class="n">4</div><div class="l">Checkpoint / Recovery Files</div></div>
 </div>
@@ -258,7 +258,7 @@ code{font-family:var(--mono);font-size:0.85em}
 
   <div class="tree"><span class="dir">.workspace/</span>                          <span class="comment"># Git-ignored runtime root</span>
   <span class="dir">db/</span>                                <span class="comment"># SQLite databases</span>
-    <span class="sql">app.sqlite</span>                       <span class="comment"># Global AppDb surface (6 tables)</span>
+    <span class="sql">app.sqlite</span>                       <span class="comment"># Global AppDb surface (7 tables)</span>
     <span class="dir">{category}/</span>
       <span class="sql">spec.sqlite</span>                    <span class="comment"># Per-category SpecDb surface (36 tables)</span>
   <span class="dir">global/</span>                            <span class="comment"># JSON fallback / seed files</span>
@@ -289,11 +289,11 @@ code{font-family:var(--mono);font-size:0.85em}
     <div class="domain-label">Database Files</div>
 
     <details class="card">
-      <summary><span class="card-name">db/app.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">6 tables</span></span></summary>
+      <summary><span class="card-name">db/app.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">7 tables</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Global application database. Holds brands, brand/category links, rename history, runtime settings, studio maps, and the color registry.</td></tr>
-          <tr><td class="pk">Tables</td><td class="pv"><code>brands</code>, <code>brand_categories</code>, <code>brand_renames</code>, <code>settings</code>, <code>studio_maps</code>, <code>color_registry</code></td></tr>
+          <tr><td class="pk">Purpose</td><td class="pv">Global application database. Holds brands, brand/category links, rename history, runtime settings, studio maps, the color registry, and the unit registry.</td></tr>
+          <tr><td class="pk">Tables</td><td class="pv"><code>brands</code>, <code>brand_categories</code>, <code>brand_renames</code>, <code>settings</code>, <code>studio_maps</code>, <code>color_registry</code>, <code>unit_registry</code></td></tr>
           <tr><td class="pk">Write boundary</td><td class="pv">AppDb persistence and the feature routes that manage brands, settings, studio maps, and colors.</td></tr>
           <tr><td class="pk">Recovery inputs</td><td class="pv"><code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, and <code>.workspace/global/user-settings.json</code> for boot-time settings fallback.</td></tr>
           <tr><td class="pk">SQLite mode</td><td class="pv">WAL enabled, <code>synchronous = NORMAL</code>.</td></tr>
@@ -468,7 +468,7 @@ code{font-family:var(--mono);font-size:0.85em}
     <h2>Category Authority Structure</h2>
     <span class="tag tag-git">Committed</span>
   </div>
-  <p class="section-desc"><code>category_authority/</code> is the committed authority/config surface. The current tree contains 92 JSON files across <code>mouse</code>, <code>keyboard</code>, <code>monitor</code>, <code>_global</code>, <code>_test_mouse</code>, and <code>_tests</code>.</p>
+  <p class="section-desc"><code>category_authority/</code> is the committed authority/config surface. The current tree contains 91 JSON files across <code>mouse</code>, <code>keyboard</code>, <code>monitor</code>, <code>_global</code>, <code>_test_mouse</code>, and <code>_tests</code>.</p>
 
   <div class="tree"><span class="dir">category_authority/</span>
   <span class="dir">_global/</span>
@@ -602,9 +602,9 @@ code{font-family:var(--mono);font-size:0.85em}
       <h3><span class="dot" style="background:var(--green)"></span>app.sqlite</h3>
       <div class="db-path">.workspace/db/app.sqlite</div>
       <div class="db-meta">
-        <strong>Tables:</strong> 6 (brands, brand_categories, brand_renames, settings, studio_maps, color_registry)<br>
+        <strong>Tables:</strong> 7 (brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry)<br>
         <strong>Scope:</strong> Global (one per installation)<br>
-        <strong>Purpose:</strong> Cross-category state for brands, settings, studio maps, and colors.<br>
+        <strong>Purpose:</strong> Cross-category state for brands, settings, studio maps, colors, and units.<br>
         <strong>Recovery inputs:</strong> <code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, <code>.workspace/global/user-settings.json</code>
       </div>
     </div>
@@ -784,7 +784,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td class="fname">SQLite databases</td>
         <td>.sqlite (WAL mode)</td>
         <td><code>db/app.sqlite</code>, <code>db/{category}/spec.sqlite</code></td>
-        <td>Primary persistent stores: AppDb (global, 6 tables) + SpecDb (per-category, 36 tables).</td>
+        <td>Primary persistent stores: AppDb (global, 7 tables) + SpecDb (per-category, 36 tables).</td>
       </tr>
       <tr>
         <td class="fname">Crawl checkpoints</td>
@@ -1098,7 +1098,7 @@ code{font-family:var(--mono);font-size:0.85em}
 <!-- ─────────────────────── FOOTER ─────────────────────── -->
 <footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:64px;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:var(--t3)">
   <span>Spec Factory &mdash; Storage Reference</span>
-  <span>Code-validated &middot; Audited 2026-04-04</span>
+  <span>Code-validated &middot; Audited 2026-04-11</span>
 </footer>
 
 </div>

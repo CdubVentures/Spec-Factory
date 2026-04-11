@@ -76,17 +76,10 @@ export function registerReviewRoutes(ctx) {
     spawn,
     // Review mutation helpers
     resolveGridFieldStateForMutation,
-    setOverrideFromCandidate,
-    setManualOverride,
-    syncPrimaryLaneAcceptFromItemSelection,
-    resolveKeyReviewForLaneMutation,
-    markPrimaryLaneReviewedInItemState,
-    syncItemFieldStateFromPrimaryLaneAccept,
-    isMeaningfulValue,
-    propagateSharedLaneDecision,
     // Component mutation helpers
     resolveComponentMutationContext,
     normalizeLower,
+    isMeaningfulValue,
     buildComponentIdentifier,
     applySharedLaneState,
     cascadeComponentChange,
@@ -96,7 +89,6 @@ export function registerReviewRoutes(ctx) {
     resolveEnumMutationContext,
     cascadeEnumChange,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
-    ensureGridKeyReviewState,
     patchCompiledComponentDb,
   } = ctx;
 
@@ -146,20 +138,10 @@ export function registerReviewRoutes(ctx) {
       req,
       res,
       context: {
-        storage,
-        config,
         readJsonBody,
         jsonRes,
         getSpecDb,
         resolveGridFieldStateForMutation,
-        setOverrideFromCandidate,
-        setManualOverride,
-        syncPrimaryLaneAcceptFromItemSelection,
-        resolveKeyReviewForLaneMutation,
-        markPrimaryLaneReviewedInItemState,
-        syncItemFieldStateFromPrimaryLaneAccept,
-        isMeaningfulValue,
-        propagateSharedLaneDecision,
         broadcastWs,
       },
     });

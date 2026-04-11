@@ -1,58 +1,40 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { type ColumnDef } from '@tanstack/react-table';
 import { api } from '../../../api/client.ts';
-import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
-import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { FinderPanelFooter } from '../../../shared/ui/finder/index.ts';
+import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
+import {
+  FinderPanelHeader,
+  FinderKpiCard,
+  FinderCooldownStrip,
+  FinderPanelFooter,
+  FinderDeleteConfirmModal,
+  DiscoverySummaryBar,
+  FinderRunPromptDetails,
+  FinderSectionCard,
+  useResolvedFinderModel,
+  deriveCooldownState,
+  deriveFinderStatusChip,
+} from '../../../shared/ui/finder/index.ts';
+import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
-import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import { usePublishedFields } from '../../../hooks/usePublishedFields.ts';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
-import { resolvePhaseModel } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
-import type { GlobalDraftSlice } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
-import type { LlmPhaseOverrides } from '../../llm-config/types/llmPhaseOverrideTypes.generated.ts';
-import { assembleLlmPolicyFromFlat } from '../../llm-config/state/llmPolicyAdapter.generated.ts';
-import { resolveProviderForModel } from '../../llm-config/state/llmProviderRegistryBridge.ts';
-import type { LlmAccessMode, LlmProviderEntry } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import {
   useColorEditionFinderQuery,
   useColorEditionFinderRunMutation,
   useDeleteColorEditionFinderRunMutation,
   useDeleteColorEditionFinderAllMutation,
 } from '../api/colorEditionFinderQueries.ts';
-import { CefDeleteConfirmModal } from './CefDeleteConfirmModal.tsx';
 import {
   deriveFinderKpiCards,
-  deriveCooldownState,
   deriveSelectedStateDisplay,
   deriveRunHistoryRows,
-  deriveFinderStatusChip,
 } from '../selectors/colorEditionFinderSelectors.ts';
-import type { KpiCard, SelectedStateDisplay, RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
+import type { RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
-
-/* ── Helpers ──────────────────────────────────────────────────────── */
-
-function toneToChipClass(tone: string): string {
-  if (tone === 'success') return 'sf-chip-success';
-  if (tone === 'warning') return 'sf-chip-warning';
-  if (tone === 'danger') return 'sf-chip-danger';
-  return 'sf-chip-neutral';
-}
-
-function toneToValueClass(tone: string): string {
-  if (tone === 'success') return 'sf-status-text-success';
-  if (tone === 'warning') return 'sf-status-text-warning';
-  if (tone === 'danger') return 'sf-status-text-danger';
-  if (tone === 'info') return 'sf-status-text-info';
-  if (tone === 'teal') return 'sf-status-text-success';
-  return 'text-[var(--sf-token-accent-strong)]';
-}
 
 /* ── Color circle (mirrors site's getCircleStyle gradient logic) ──── */
 
@@ -79,20 +61,7 @@ function ColorSwatch({ hexParts, size = 'md' }: { readonly hexParts: readonly st
   );
 }
 
-/* ── Sub-components ───────────────────────────────────────────────── */
-
-function FinderKpiCard({ value, label, tone }: KpiCard) {
-  return (
-    <div className="sf-surface-elevated rounded-lg p-5 flex flex-col gap-1">
-      <div className={`text-[28px] font-bold font-mono leading-none tracking-tight tabular-nums ${toneToValueClass(tone)}`}>
-        {value}
-      </div>
-      <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] sf-text-muted">
-        {label}
-      </div>
-    </div>
-  );
-}
+/* ── CEF-specific sub-components ──────────────────────────────────── */
 
 function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   return (
@@ -105,11 +74,19 @@ function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
       {pill.isDefault && (
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--sf-token-accent-strong)] shrink-0" />
       )}
+      {pill.sourceCount > 0 && (
+        <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
+          {pill.sourceCount}x
+        </span>
+      )}
     </span>
   );
 }
 
-function SelectedStateCard({ display, isPublished }: { readonly display: SelectedStateDisplay; readonly isPublished: (fieldKey: string) => boolean }) {
+function SelectedStateCard({ display, isPublished }: {
+  readonly display: ReturnType<typeof deriveSelectedStateDisplay>;
+  readonly isPublished: (fieldKey: string) => boolean;
+}) {
   if (display.colors.length === 0 && display.editions.length === 0) return null;
 
   return (
@@ -159,6 +136,11 @@ function SelectedStateCard({ display, isPublished }: { readonly display: Selecte
                     <span className="text-[12px] font-mono font-bold sf-chip-purple inline-block px-1.5 py-0.5 rounded">
                       {ed.slug}
                     </span>
+                    {ed.sourceCount > 0 && (
+                      <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
+                        {ed.sourceCount}x
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {ed.pairedColors.map(pc => (
@@ -177,18 +159,6 @@ function SelectedStateCard({ display, isPublished }: { readonly display: Selecte
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function DiscoverySummaryBar({ log }: { readonly log: RunDiscoveryLog }) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <Chip label={`${log.confirmedCount} confirmed`} className="sf-chip-success" />
-      <Chip label={`${log.addedNewCount} new`} className="sf-chip-accent" />
-      <Chip label={`${log.rejectedCount} rejected`} className="sf-chip-danger" />
-      <Chip label={`${log.urlsCheckedCount} urls`} className="sf-chip-neutral" />
-      <Chip label={`${log.queriesRunCount} queries`} className="sf-chip-neutral" />
     </div>
   );
 }
@@ -273,260 +243,137 @@ function DiscoveryDetailsSection({ log, siblingsExcluded }: { readonly log: RunD
   );
 }
 
-function RunHistoryExpandedDetail({ row, colorRegistry }: { readonly row: RunHistoryRow; readonly colorRegistry: ColorRegistryEntry[] }) {
+/* ── Run History Row ─────────────────────────────────────────────── */
+
+function CefRunHistoryRow({
+  row,
+  colorRegistry,
+  onDelete,
+}: {
+  readonly row: RunHistoryRow;
+  readonly colorRegistry: ColorRegistryEntry[];
+  readonly onDelete: (runNumber: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
   const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
   const selColors = row.selected?.colors ?? [];
   const selEditions = row.selected?.editions ?? {};
 
   return (
-    <div className="px-3 py-3 flex flex-col gap-3">
-      {/* Selected output summary */}
-      <div>
-        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Selected Output</div>
-        <div className="flex flex-wrap gap-1 mb-1">
-          {selColors.map(name => {
-            const parts = name.split('+').map(a => hexMap.get(a.trim()) || '');
-            return (
-              <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-panel rounded text-[10px] font-mono sf-text-primary">
-                <ColorSwatch hexParts={parts} size="sm" />
-                {name}
-              </span>
-            );
-          })}
-        </div>
-        {Object.keys(selEditions).length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {Object.keys(selEditions).map(slug => (
-              <span key={slug} className="text-[10px] font-mono font-semibold sf-chip-purple px-1.5 py-0.5 rounded">
-                {slug}
-              </span>
-            ))}
-          </div>
+    <div className={`sf-surface-panel rounded-lg overflow-hidden${row.isLatest ? ' border-l-2 border-[var(--sf-token-accent-strong)]' : ''}`}>
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
+        >
+          <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+            {'\u25B6'}
+          </span>
+          <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+            #{row.runNumber}
+          </span>
+        </button>
+        <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
+        {row.model && <Chip label={row.model} className="sf-chip-neutral" />}
+        {row.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
+        <Chip label={`${row.colorCount} colors`} className="sf-chip-accent" />
+        <Chip label={`${row.editionCount} editions`} className="sf-chip-purple" />
+        <div className="flex-1" />
+        {row.validationStatus === 'rejected' ? (
+          <Chip label="Rejected" className="sf-chip-danger" />
+        ) : (
+          <Chip label="Valid" className="sf-chip-success" />
         )}
+        {row.isLatest && <Chip label={`LATEST \u00B7 SSOT`} className="sf-chip-teal-strong" />}
+        {row.rejectionSummary && (
+          <span className="text-[9px] font-mono sf-text-muted truncate max-w-[180px]" title={row.rejectionSummary}>
+            {row.rejectionSummary}
+          </span>
+        )}
+        <button
+          onClick={() => onDelete(row.runNumber)}
+          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
+        >
+          Del
+        </button>
       </div>
 
-      {/* Discovery summary + details (v2 audit trail) */}
-      <div>
-        <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Discovery Summary</div>
-        <DiscoverySummaryBar log={row.discoveryLog} />
-      </div>
+      {expanded && (
+        <div className="px-4 pb-4 pt-1 border-t sf-border-soft flex flex-col gap-3">
+          {/* Selected output summary */}
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Selected Output</div>
+            <div className="flex flex-wrap gap-1 mb-1">
+              {selColors.map(name => {
+                const parts = name.split('+').map(a => hexMap.get(a.trim()) || '');
+                return (
+                  <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-panel rounded text-[10px] font-mono sf-text-primary">
+                    <ColorSwatch hexParts={parts} size="sm" />
+                    {name}
+                  </span>
+                );
+              })}
+            </div>
+            {Object.keys(selEditions).length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {Object.keys(selEditions).map(slug => (
+                  <span key={slug} className="text-[10px] font-mono font-semibold sf-chip-purple px-1.5 py-0.5 rounded">
+                    {slug}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
-      <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} />
+          {/* Discovery summary + details */}
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Discovery Summary</div>
+            <DiscoverySummaryBar log={row.discoveryLog} />
+          </div>
 
-      {/* System Prompt */}
-      <details className="sf-surface-panel border sf-border-soft rounded-md">
-        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
-          System Prompt
-        </summary>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
-          {row.systemPrompt}
-        </pre>
-      </details>
+          <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} />
 
-      {/* User Message */}
-      <details className="sf-surface-panel border sf-border-soft rounded-md">
-        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
-          User Message
-        </summary>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
-          {row.userMessage}
-        </pre>
-      </details>
-
-      {/* LLM Response */}
-      <details className="sf-surface-panel border sf-border-soft rounded-md">
-        <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
-          LLM Response
-        </summary>
-        <pre className="sf-pre-block sf-text-label font-mono rounded-b p-3 whitespace-pre-wrap leading-relaxed select-text cursor-text">
-          {row.responseJson}
-        </pre>
-      </details>
+          {/* System prompt, user message, LLM response */}
+          <FinderRunPromptDetails
+            systemPrompt={row.systemPrompt}
+            userMessage={row.userMessage}
+            response={row.responseJson}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Run history column defs ──────────────────────────────────────── */
-
-function resolveAccessModeForModel(registry: LlmProviderEntry[], model: string): LlmAccessMode {
-  const provider = resolveProviderForModel(registry, model);
-  if (!provider) return 'api';
-  const entry = provider.models.find((m) => m.modelId === model);
-  return ((entry?.accessMode ?? provider.accessMode ?? 'api') as LlmAccessMode);
-}
-
-function buildRunHistoryColumns(
-  onDeleteRun: (runNumber: number) => void,
-  isDeletePending: boolean,
-  registry: LlmProviderEntry[],
-): ColumnDef<RunHistoryRow, unknown>[] {
-  return [
-    {
-      accessorKey: 'runNumber',
-      header: 'Run',
-      cell: ({ row }) => {
-        const isExpanded = row.getIsExpanded();
-        return (
-          <button
-            onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
-            className="inline-flex items-center gap-1.5 font-mono text-[13px] font-bold text-[var(--sf-token-accent-strong)] hover:opacity-80"
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            <span className={`text-[10px] transition-transform ${isExpanded ? 'rotate-90' : ''}`}>{'\u25B6'}</span>
-            #{row.original.runNumber}
-          </button>
-        );
-      },
-      size: 80,
-    },
-    {
-      accessorKey: 'ranAt',
-      header: 'Date',
-      cell: ({ row }) => (
-        <span className="font-mono text-[10px] sf-text-muted">
-          {row.original.ranAt?.split('T')[0] ?? ''}
-        </span>
-      ),
-      size: 100,
-    },
-    {
-      accessorKey: 'model',
-      header: 'Model',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold sf-chip-purple border border-current">
-            <ModelBadgeGroup accessMode={resolveAccessModeForModel(registry, row.original.model)} />
-            {row.original.model || '?'}
-          </span>
-          {row.original.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
-        </div>
-      ),
-      size: 180,
-    },
-    {
-      id: 'counts',
-      header: 'Results',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <Chip label={`${row.original.colorCount} colors`} className="sf-chip-accent" />
-          <Chip label={`${row.original.editionCount} editions`} className="sf-chip-purple" />
-        </div>
-      ),
-      size: 180,
-    },
-    {
-      id: 'validation',
-      header: 'Status',
-      cell: ({ row }) => {
-        const { validationStatus, rejectionSummary, isLatest } = row.original;
-        return (
-          <div className="flex items-center gap-1.5">
-            {validationStatus === 'rejected' ? (
-              <Chip label="Rejected" className="sf-chip-danger" />
-            ) : (
-              <Chip label="Valid" className="sf-chip-success" />
-            )}
-            {isLatest && <Chip label="LATEST \u00B7 SSOT" className="sf-chip-teal-strong" />}
-            {rejectionSummary && (
-              <span className="text-[9px] font-mono sf-text-muted truncate max-w-[180px]" title={rejectionSummary}>
-                {rejectionSummary}
-              </span>
-            )}
-          </div>
-        );
-      },
-      size: 240,
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDeleteRun(row.original.runNumber); }}
-          disabled={isDeletePending}
-          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          Del
-        </button>
-      ),
-      size: 50,
-    },
-  ];
-}
-
-/* ── LLM model resolver ───────────────────────────────────────────── */
+/* ── Main Component ───────────────────────────────────────────────── */
 
 interface ColorEditionFinderPanelProps {
   readonly productId: string;
   readonly category: string;
 }
 
-interface ResolvedFinderModelResult {
-  model: ReturnType<typeof resolvePhaseModel>;
-  accessMode: LlmAccessMode;
-  registry: LlmProviderEntry[];
-}
-
-function useResolvedFinderModel(): ResolvedFinderModelResult {
-  const storeValues = useRuntimeSettingsValueStore((s) => s.values);
-  return useMemo(() => {
-    const empty: ResolvedFinderModelResult = { model: null, accessMode: 'api' as LlmAccessMode, registry: [] };
-    if (!storeValues) return empty;
-    const policy = assembleLlmPolicyFromFlat(storeValues as Record<string, unknown>);
-    const globalDraft: GlobalDraftSlice = {
-      llmModelPlan: policy.models?.plan ?? '',
-      llmModelReasoning: policy.models?.reasoning ?? '',
-      llmPlanFallbackModel: policy.models?.planFallback ?? '',
-      llmReasoningFallbackModel: policy.models?.reasoningFallback ?? '',
-      llmPlanUseReasoning: policy.reasoning?.enabled ?? false,
-      llmMaxOutputTokensPlan: policy.tokens?.plan ?? 0,
-      llmMaxOutputTokensTriage: policy.tokens?.triage ?? 0,
-      llmTimeoutMs: policy.timeoutMs ?? 0,
-      llmMaxTokens: policy.tokens?.maxTokens ?? 0,
-    };
-    const overrides: LlmPhaseOverrides = (policy.phaseOverrides ?? {}) as LlmPhaseOverrides;
-    const resolved = resolvePhaseModel(overrides, 'colorFinder', globalDraft);
-    // WHY: Resolve accessMode + registry so badges show LAB vs API correctly
-    // across header, footer, AND per-row in the run history table.
-    const registry: LlmProviderEntry[] = Array.isArray(policy.providerRegistry) ? policy.providerRegistry as LlmProviderEntry[] : [];
-    const rawModelKey = resolved?.useReasoning
-      ? (overrides.colorFinder?.reasoningModel || globalDraft.llmModelReasoning)
-      : (overrides.colorFinder?.baseModel || globalDraft.llmModelPlan);
-    const accessMode = resolveAccessModeForModel(registry, rawModelKey);
-    return { model: resolved, accessMode, registry };
-  }, [storeValues]);
-}
-
-/* ── Main Component ───────────────────────────────────────────────── */
-
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:finder:collapsed:${productId}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:cef:collapsed:${productId}`, true);
   const { isPublished } = usePublishedFields(category, productId);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
   const runMut = useColorEditionFinderRunMutation(category, productId);
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
-  const { model: resolvedModel, accessMode: resolvedAccessMode, registry: providerRegistry } = useResolvedFinderModel();
+  const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('colorFinder');
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
     queryKey: ['colors'],
     queryFn: () => api.get<ColorRegistryEntry[]>('/colors'),
   });
 
-  const [deleteTarget, setDeleteTarget] = useState<
-    { kind: 'single'; runNumber: number } | { kind: 'all'; count: number } | null
-  >(null);
-
-  const requestDeleteRun = useCallback((runNumber: number) => {
-    setDeleteTarget({ kind: 'single', runNumber });
-  }, []);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    if (deleteTarget.kind === 'single') {
+    if (deleteTarget.kind === 'run' && deleteTarget.runNumber) {
       deleteRunMut.mutate(deleteTarget.runNumber, {
         onSuccess: () => setDeleteTarget(null),
       });
@@ -537,15 +384,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     }
   }, [deleteTarget, deleteRunMut, deleteAllMut]);
 
-  const runHistoryColumns = useMemo(
-    () => buildRunHistoryColumns(requestDeleteRun, isAnyDeletePending, providerRegistry),
-    [requestDeleteRun, isAnyDeletePending, providerRegistry],
-  );
-
-  // WHY: Derive running state from the operations store (per-product), not from
-  // the mutation hook (per-component-instance). This way "Running" reflects
-  // the actual operation, survives navigation, and doesn't block other products.
-  // NOTE: These hooks MUST be before the early return to satisfy Rules of Hooks.
   const ops = useOperationsStore((s) => s.operations);
   const isRunningCef = useMemo(
     () => [...ops.values()].some((o) => o.type === 'cef' && o.productId === productId && o.status === 'running'),
@@ -554,19 +392,15 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
   if (!productId || !category) return null;
 
-  // WHY: After deleting all runs, the GET returns 404 → isError. Treat as no data.
   const effectiveResult = isError ? null : result;
-
-  const statusChip = deriveFinderStatusChip(effectiveResult);
+  const statusChip = runMut.isError
+    ? { label: 'Failed', tone: 'danger' }
+    : deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);
   const cooldown = deriveCooldownState(effectiveResult);
   const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry);
   const runHistoryRows = deriveRunHistoryRows(effectiveResult);
 
-  const modelDisplay = resolvedModel?.effectiveModel || 'not configured';
-
-  // WHY: Derive badge props once — every ModelBadgeGroup site spreads this.
-  // Avoids O(n) manual wiring per badge instance (CLAUDE.md O(1) Feature Scaling).
   const badgeProps = {
     accessMode: resolvedAccessMode,
     role: (resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
@@ -574,47 +408,24 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     webSearch: resolvedModel?.webSearch ?? false,
   };
 
-  const runStatus = isRunningCef ? 'running'
-    : runMut.isError ? 'error'
-    : runMut.isSuccess ? 'success'
-    : 'idle';
-
   return (
     <div className="sf-surface-panel p-0 flex flex-col">
       {/* Header */}
-      <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
-        <button
-          onClick={toggleCollapsed}
-          className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          {collapsed ? '+' : '-'}
-        </button>
-        <span className="text-[15px] font-bold sf-text-primary">Color & Edition Finder</span>
-
-        {runStatus === 'running' ? (
-          <Chip label="Running" className="sf-chip-purple animate-pulse" />
-        ) : runStatus === 'error' ? (
-          <Chip label="Failed" className="sf-chip-danger" />
-        ) : (
-          <Chip label={statusChip.label} className={toneToChipClass(statusChip.tone)} />
-        )}
-
+      <FinderPanelHeader
+        collapsed={collapsed}
+        onToggle={toggleCollapsed}
+        title="Color & Edition Finder"
+        chipLabel="CEF"
+        statusChip={statusChip}
+        tip="Discovers color variants and edition slugs for this product via LLM analysis."
+        isRunning={isRunningCef}
+        onRun={() => runMut.mutate()}
+      >
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
           <ModelBadgeGroup {...badgeProps} />
           {modelDisplay}
         </span>
-
-        <Tip text="Discovers color variants and edition slugs for this product via LLM analysis." />
-
-        <button
-          onClick={(e) => { e.stopPropagation(); runMut.mutate(); }}
-          disabled={isRunningCef}
-          className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-        >
-          {isRunningCef ? 'Running...' : 'Run Now'}
-        </button>
-      </div>
+      </FinderPanelHeader>
 
       {/* Body */}
       {collapsed ? null : isLoading ? (
@@ -626,7 +437,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         </div>
       ) : (
         <div className="px-6 pb-6 pt-4 space-y-5">
-
           {/* KPI Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {kpiCards.map(card => (
@@ -635,44 +445,18 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           </div>
 
           {/* Cooldown Strip */}
-          {effectiveResult.run_count > 0 && (
-            <div className="flex items-center gap-3.5 px-4 py-2.5 sf-surface-elevated rounded-lg">
-              <span className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted whitespace-nowrap">
-                Cooldown
-              </span>
-              <div className="flex-1 h-1.5 rounded-full sf-surface-panel overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${cooldown.onCooldown ? 'bg-[var(--sf-state-warning-fg)]' : 'bg-[var(--sf-state-success-fg)]'}`}
-                  style={{ width: `${cooldown.progressPct}%` }}
-                />
-              </div>
-              {cooldown.onCooldown ? (
-                <>
-                  <span className="text-[10px] font-bold font-mono sf-status-text-warning">
-                    {cooldown.daysRemaining}d
-                  </span>
-                  <span className="text-[10px] font-mono sf-text-muted whitespace-nowrap">
-                    Eligible: {cooldown.eligibleDate}
-                  </span>
-                </>
-              ) : (
-                <span className="text-[10px] font-bold font-mono sf-status-text-success">
-                  Ready
-                </span>
-              )}
-            </div>
-          )}
+          {effectiveResult.run_count > 0 && <FinderCooldownStrip cooldown={cooldown} />}
 
           {/* Selected State */}
           <SelectedStateCard display={selectedState} isPublished={isPublished} />
 
-          {/* Run History */}
+          {/* Run History — collapsible, default closed */}
           {runHistoryRows.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
-                  Run History <span className="font-mono sf-text-subtle">{runHistoryRows.length} run{runHistoryRows.length !== 1 ? 's' : ''}</span>
-                </div>
+            <FinderSectionCard
+              title="Run History"
+              count={`${runHistoryRows.length} run${runHistoryRows.length !== 1 ? 's' : ''}`}
+              storeKey={`cef:history:${productId}`}
+              trailing={
                 <button
                   onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
                   disabled={isAnyDeletePending}
@@ -680,18 +464,19 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
                 >
                   Delete All
                 </button>
+              }
+            >
+              <div className="space-y-1.5">
+                {runHistoryRows.map((row) => (
+                  <CefRunHistoryRow
+                    key={row.runNumber}
+                    row={row}
+                    colorRegistry={colorRegistry}
+                    onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                  />
+                ))}
               </div>
-              <DataTable
-                data={runHistoryRows}
-                columns={runHistoryColumns}
-                persistKey="cef-runs"
-                maxHeight="max-h-none"
-                renderExpandedRow={(row) => (
-                  <RunHistoryExpandedDetail row={row} colorRegistry={colorRegistry} />
-                )}
-                getRowClassName={(row) => row.isLatest ? 'border-l-2 border-[var(--sf-token-accent-strong)]' : ''}
-              />
-            </div>
+            </FinderSectionCard>
           )}
 
           {/* Footer */}
@@ -716,11 +501,12 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
       )}
 
       {deleteTarget && (
-        <CefDeleteConfirmModal
+        <FinderDeleteConfirmModal
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
           isPending={isAnyDeletePending}
+          moduleLabel="CEF"
         />
       )}
     </div>

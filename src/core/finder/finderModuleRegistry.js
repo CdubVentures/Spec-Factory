@@ -112,7 +112,9 @@ export const FINDER_MODULES = Object.freeze([
     rebuildFnKey: 'rebuildProductImageFinderFromJson',
 
     // Per-category settings (stored in {tableName}_settings table)
-    settingsDefaults: { view1: 'top', view2: 'left', minWidth: '800', minHeight: '600', minFileSize: '50000' },
+    // viewConfig: JSON array of {key, description} in priority order.
+    // Empty string = use category defaults from CATEGORY_VIEW_DEFAULTS.
+    settingsDefaults: { viewConfig: '', minWidth: '800', minHeight: '600', minFileSize: '50000' },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildProductImageFinderPrompt',

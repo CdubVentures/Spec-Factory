@@ -5,8 +5,7 @@ Own all product, component, and enum review workflows: grid state assembly, cand
 ## Public API (The Contract)
 
 - `index.js` -- public exports for cross-feature access
-- `reviewGridStateRuntime.js` -- `createReviewGridStateRuntime()` -- factory returning grid key review state management, primary lane sync, test mode purge/reset
-- `reviewCandidateRuntime.js` -- `createReviewCandidateRuntime()` -- factory returning candidate annotation, pending candidate ID queries, synthetic candidate sync, component name remap
+- `reviewCandidateRuntime.js` -- `createReviewCandidateRuntime()` -- factory returning `normalizeLower`, `isMeaningfulValue`, `candidateLooksReference`, `remapPendingComponentReviewItemsForNameChange`
 - `keyReviewState.js` -- key review state operations
 - `reviewGridData.js`, `reviewGridHelpers.js` -- grid assembly and helpers
 - `candidateInfrastructure.js` -- candidate management infrastructure

@@ -3,12 +3,14 @@ import { z } from 'zod';
 /**
  * Zod schema for the Product Image Finder LLM response.
  *
- * The LLM returns direct-download URLs for each requested view.
+ * View names are constrained to the 8 canonical product-photography
+ * angles aligned with the Photoshop cut-out pipeline.
+ *
  * The orchestrator downloads + validates before persisting.
  */
 export const productImageFinderResponseSchema = z.object({
   images: z.array(z.object({
-    view: z.string(),
+    view: z.enum(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']),
     url: z.string(),
     source_page: z.string().default(''),
     alt_text: z.string().default(''),

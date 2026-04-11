@@ -6,8 +6,6 @@ import { createReviewCandidateRuntime } from '../reviewCandidateRuntime.js';
 function createReviewCandidateRuntimeHarness(overrides = {}) {
   return createReviewCandidateRuntime({
     getSpecDb: () => null,
-    config: {},
-    normalizePathToken: (value) => String(value || '').trim(),
     ...overrides,
   });
 }

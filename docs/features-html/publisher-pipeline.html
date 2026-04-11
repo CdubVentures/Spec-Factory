@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Publisher Pipeline Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .pipeline { display: flex; flex-direction: column; }
+  .phase { display: grid; grid-template-columns: 56px 1fr; }
+  .phase-line { display: flex; flex-direction: column; align-items: center; }
+  .phase-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; flex-shrink: 0; z-index: 1; }
+  .phase-connector { width: 2px; flex: 1; min-height: 16px; }
+  .phase-content { padding: 4px 0 20px 8px; }
+  .phase-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .phase-desc { font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px; }
+  .phase-always .phase-dot { background: #868e96; } .phase-always .phase-connector { background: #ced4da; }
+  .phase-shortcircuit .phase-dot { background: var(--red); } .phase-shortcircuit .phase-connector { background: #ffc9c9; }
+  .phase-repair .phase-dot { background: var(--green); } .phase-repair .phase-connector { background: #b2f2bb; }
+  .phase-reject .phase-dot { background: var(--orange); } .phase-reject .phase-connector { background: #ffec99; }
+  .phase-both .phase-dot { background: var(--purple); } .phase-both .phase-connector { background: #d0bfff; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-repair { background: var(--green-bg); color: var(--green); }
+  .tag-reject { background: var(--red-bg); color: var(--red); }
+  .tag-shortcircuit { background: var(--orange-bg); color: var(--orange); }
+  .tag-always { background: var(--surface-alt); color: var(--text-muted); }
+  .tag-both { background: var(--purple-bg); color: var(--purple); }
+  .tag-gate { background: var(--teal-bg); color: var(--teal); }
+  .tag-write { background: var(--accent-light); color: var(--accent); }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-gate { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-write { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; font-size: 13px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  pre { background: var(--surface-alt); padding: 14px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Publisher Pipeline Reference</h1>
+  <p>Spec Factory &mdash; Candidate Gate + Confidence-Gated Auto-Publish + Manual Overrides + Threshold Reconciliation</p>
+</div>
+
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">1</span> High-Level Flow</div>
+
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
+  Every field value submission &mdash; from pipeline, CEF, review override, or CLI &mdash; enters through a single gate: <code>submitCandidate()</code>.
+  The publisher decides what to persist and what to promote to resolved (published) state.
+</p>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Any Source<br><small>Pipeline / CEF / Review / CLI</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-gate">submitCandidate()<br><small>Validate + Gate</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass" style="min-width:80px;">Accepted?</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-fail">Rejected<br><small>Hard rejections block</small></div>
+  <span style="width:40px"></span>
+  <div class="flow-box flow-pass">Accepted &rarr; Dual-Write</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-write">Auto-Publish Gate</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-pass">Confidence &ge; threshold<br><small>Published (resolved)</small></div>
+  <span style="width:40px"></span>
+  <div class="flow-box flow-neutral">Below threshold<br><small>Candidate (pending)</small></div>
+  <span style="width:40px"></span>
+  <div class="flow-box flow-fail">Manual override lock<br><small>Skipped</small></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">2</span> Candidate Gate &mdash; <code>submitCandidate()</code></div>
+
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
+  Single entry point for all field value submissions. Every source calls this function.
+</p>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Input Parameters</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>category</dt><dd><code>string</code> &mdash; product category</dd>
+      <dt>productId</dt><dd><code>string</code> &mdash; product identifier</dd>
+      <dt>fieldKey</dt><dd><code>string</code> &mdash; field name</dd>
+      <dt>value</dt><dd><code>any</code> &mdash; raw value to submit</dd>
+      <dt>confidence</dt><dd><code>number</code> &mdash; source confidence (0&ndash;1)</dd>
+      <dt>sourceMeta</dt><dd><code>object</code> &mdash; <code>{ source, run_id, model, artifact, url }</code></dd>
+      <dt>fieldRules</dt><dd><code>Record&lt;string, FieldRule&gt;</code> &mdash; compiled field rules</dd>
+      <dt>knownValues</dt><dd><code>Record&lt;string, { policy, values[] }&gt;</code> &mdash; enum known values</dd>
+      <dt>specDb</dt><dd><code>object</code> &mdash; injected SpecDb instance</dd>
+      <dt>productRoot</dt><dd><code>string</code> &mdash; filesystem path to product directory</dd>
+      <dt>appDb</dt><dd><code>object</code> &mdash; injected AppDb for unit registry</dd>
+      <dt>config</dt><dd><code>object</code> &mdash; publish config (threshold)</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Output</div>
+  <div class="card-body">
+<pre>{
+  status: 'accepted' | 'rejected',
+  candidateId: number | null,
+  value: any,                        // Repaired/coerced value
+  validationResult: {
+    valid: boolean,
+    value: any,
+    repairs: [{ step, before, after, rule }],
+    rejections: [{ reason_code, detail }],
+    unknownReason?: string,
+    repairPrompt?: object
+  },
+  publishResult?: {                  // Only if auto-publish attempted
+    status: 'published' | 'below_threshold' | 'manual_override_locked' | 'skipped',
+    confidence?: number,
+    threshold?: number,
+    reason?: string
+  }
+}</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Candidate Gate Steps</div>
+  <div class="card-body">
+    <div class="pipeline">
+      <div class="phase phase-shortcircuit">
+        <div class="phase-line"><div class="phase-dot">1</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Identity Guard <span class="tag tag-shortcircuit">guard</span></div>
+          <div class="phase-desc"><code>productId</code> + <code>fieldKey</code> required. Rejects if missing.</div>
+        </div>
+      </div>
+      <div class="phase phase-shortcircuit">
+        <div class="phase-line"><div class="phase-dot">2</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Field Rule Guard <span class="tag tag-shortcircuit">guard</span></div>
+          <div class="phase-desc">Field rule must exist in <code>fieldRules</code>. Rejects if missing.</div>
+        </div>
+      </div>
+      <div class="phase phase-both">
+        <div class="phase-line"><div class="phase-dot">3</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Validate via <code>validateField()</code> <span class="tag tag-both">11-step pipeline</span></div>
+          <div class="phase-desc">Full deterministic validation. See validator-pipeline.html.</div>
+        </div>
+      </div>
+      <div class="phase phase-always">
+        <div class="phase-line"><div class="phase-dot">4</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Soft vs Hard Rejection Filter <span class="tag tag-always">always</span></div>
+          <div class="phase-desc"><strong>Soft</strong>: <code>unknown_enum_prefer_known</code> passes through (accepted with flag).<br><strong>Hard</strong>: all other rejections block acceptance.</div>
+        </div>
+      </div>
+      <div class="phase phase-repair">
+        <div class="phase-line"><div class="phase-dot">5</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Source Merge <span class="tag tag-repair">merge</span></div>
+          <div class="phase-desc">If candidate exists for this (product, field, value): append source to <code>sources_json</code> array, take max confidence. If new: create entry with single source.</div>
+        </div>
+      </div>
+      <div class="phase phase-repair">
+        <div class="phase-line"><div class="phase-dot">6</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Dual-Write <span class="tag tag-write">sql + json</span></div>
+          <div class="phase-desc"><strong>SQL</strong>: <code>specDb.upsertFieldCandidate()</code> with validation_json, sources_json, metadata_json.<br><strong>JSON</strong>: append to <code>product.json candidates[fieldKey][]</code>.</div>
+        </div>
+      </div>
+      <div class="phase phase-always">
+        <div class="phase-line"><div class="phase-dot">7</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Persist Discovered Enums <span class="tag tag-always">conditional</span></div>
+          <div class="phase-desc">If field has <code>enum.policy === 'open_prefer_known'</code>: calls <code>persistDiscoveredValue()</code> to learn new vocab.</div>
+        </div>
+      </div>
+      <div class="phase phase-repair">
+        <div class="phase-line"><div class="phase-dot">8</div><div class="phase-connector" style="min-height:0"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Auto-Publish <span class="tag tag-gate">conditional</span></div>
+          <div class="phase-desc">If config provided: calls <code>publishCandidate()</code> with accepted value. Result stored in return object.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">3</span> Three Publish Paths</div>
+
+<div class="three-col">
+  <div class="card">
+    <div class="card-header" style="background:var(--green-bg);">Auto-Publish<br><code>publishCandidate()</code></div>
+    <div class="card-body">
+      <dl class="detail-grid" style="grid-template-columns:1fr;">
+        <dt>When</dt><dd>Every accepted candidate (if config provided)</dd>
+        <dt>Confidence gate</dt><dd><code>confidence &ge; threshold</code> (default 0.7)</dd>
+        <dt>Manual lock</dt><dd>Skips if existing published field has <code>source='manual_override'</code></dd>
+        <dt>Set union</dt><dd>If <code>item_union='set_union'</code>: merges with existing published list (dedup)</dd>
+        <dt>Source tag</dt><dd><code>'pipeline'</code></dd>
+        <dt>Can be auto-overridden</dt><dd>Yes &mdash; next higher-confidence candidate replaces</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header" style="background:var(--purple-bg);">Manual Override<br><code>publishManualOverride()</code></div>
+    <div class="card-body">
+      <dl class="detail-grid" style="grid-template-columns:1fr;">
+        <dt>When</dt><dd>User explicitly overrides from review grid</dd>
+        <dt>Confidence</dt><dd>Always <code>1.0</code></dd>
+        <dt>Source tag</dt><dd><code>'manual_override'</code></dd>
+        <dt>Locks field</dt><dd><strong>Yes</strong> &mdash; blocks all future auto-publish until manually changed</dd>
+        <dt>Stores</dt><dd><code>reviewer</code>, <code>reason</code>, <code>evidence</code> in metadata</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header" style="background:var(--accent-light);">Candidate Override<br><code>publishCandidateOverride()</code></div>
+    <div class="card-body">
+      <dl class="detail-grid" style="grid-template-columns:1fr;">
+        <dt>When</dt><dd>User picks existing candidate from review grid drawer</dd>
+        <dt>Confidence</dt><dd>Preserves candidate&rsquo;s confidence (or 1.0 if missing)</dd>
+        <dt>Source tag</dt><dd><code>'candidate_override'</code></dd>
+        <dt>Locks field</dt><dd><strong>No</strong> &mdash; field can still be auto-published later</dd>
+        <dt>Preserves</dt><dd><code>sourcesJson</code>, <code>evidence</code> from original candidate</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Publish Status Decision Tree</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Status</th><th>Condition</th><th>What Happens</th></tr></thead>
+      <tbody>
+        <tr><td><code>published</code></td><td>confidence &ge; threshold AND no manual lock</td><td>SQL: demote previous resolved, mark this resolved. JSON: write to <code>product.json fields[fieldKey]</code></td></tr>
+        <tr><td><code>below_threshold</code></td><td>confidence &lt; threshold</td><td>Candidate stays pending. Metadata records threshold miss.</td></tr>
+        <tr><td><code>manual_override_locked</code></td><td>Existing published field has <code>source='manual_override'</code></td><td>Candidate stays pending. Lock prevents auto-publish.</td></tr>
+        <tr><td><code>skipped</code></td><td>No product.json file exists</td><td>Candidate stays pending. Reason: <code>no_product_json</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">4</span> Dual-Write Architecture</div>
+
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
+  Every publish operation updates both SQL and JSON. SQL is the query projection. JSON is the durable SSOT.
+</p>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header" style="background:var(--accent-light);">SQL: <code>field_candidates</code> table</div>
+    <div class="card-body">
+<pre>CREATE TABLE field_candidates (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  category     TEXT NOT NULL,
+  product_id   TEXT NOT NULL,
+  field_key    TEXT NOT NULL,
+  value        TEXT,
+  unit         TEXT DEFAULT NULL,
+  confidence   REAL DEFAULT 0,
+  source_count INTEGER DEFAULT 1,
+  sources_json TEXT DEFAULT '[]',
+  validation_json TEXT DEFAULT '{}',
+  metadata_json   TEXT DEFAULT '{}',
+  status       TEXT DEFAULT 'candidate',
+  submitted_at TEXT DEFAULT (datetime('now')),
+  updated_at   TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id, field_key, value)
+);
+
+CREATE INDEX idx_fc_product
+  ON field_candidates(product_id);
+CREATE INDEX idx_fc_field
+  ON field_candidates(category, product_id, field_key);</pre>
+      <dl class="detail-grid" style="margin-top:8px;">
+        <dt>status</dt><dd><code>'candidate'</code> (pending) or <code>'resolved'</code> (published)</dd>
+        <dt>sources_json</dt><dd>Array of <code>{ source, confidence, submitted_at, run_id, model, artifact, url }</code></dd>
+        <dt>validation_json</dt><dd><code>{ valid, repairs[], rejections[], llmRepair?: {} }</code></dd>
+        <dt>metadata_json</dt><dd><code>{ source, method, publish_result, reviewer, reason, evidence }</code></dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header" style="background:var(--green-bg);">JSON: <code>product.json</code></div>
+    <div class="card-body">
+<pre>{
+  "candidates": {
+    "fieldKey": [
+      {
+        "value": "*",
+        "unit": "string|null",
+        "validation": {
+          "valid": true,
+          "repairs": [],
+          "rejections": []
+        },
+        "sources": [
+          { "source": "pipeline",
+            "confidence": 0.85,
+            "submitted_at": "..." }
+        ],
+        "metadata": { "..." }
+      }
+    ]
+  },
+  "fields": {
+    "fieldKey": {
+      "value": "*",
+      "confidence": 0.85,
+      "source": "pipeline",
+      "resolved_at": "2026-04-11T...",
+      "sources": [{ "..." }]
+    }
+  }
+}</pre>
+      <dl class="detail-grid" style="margin-top:8px;">
+        <dt>candidates[]</dt><dd>All accepted submissions per field (array of entries)</dd>
+        <dt>fields{}</dt><dd>Current published/resolved value per field (single winner)</dd>
+        <dt>Reseed</dt><dd><code>rebuildFieldCandidatesFromJson()</code> rebuilds SQL from JSON on hash mismatch</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">5</span> Threshold Reconciliation</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);"><code>reconcileThreshold()</code> &mdash; Re-evaluate all candidates against a new confidence threshold</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Input</dt><dd><code>specDb</code>, <code>category</code>, <code>threshold</code> (0&ndash;1), <code>productRoot</code>, <code>dryRun</code> (boolean)</dd>
+      <dt>Output</dt><dd><code>{ unpublished, published, locked, unaffected, total_fields }</code></dd>
+      <dt>Confidence normalization</dt><dd>Mixed scales handled: <code>c &gt; 1 ? c / 100 : c</code></dd>
+      <dt>Stages</dt><dd><code>'Scanning'</code> &rarr; <code>'Evaluating'</code> &rarr; <code>'Complete'</code></dd>
+    </dl>
+
+    <table style="margin-top:16px;">
+      <thead><tr><th>Action</th><th>When</th><th>What Happens</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600; color:var(--orange);">Tightening (threshold raised)</td>
+          <td>Resolved candidate confidence &lt; new threshold</td>
+          <td>Unpublish: demote SQL to <code>'candidate'</code>, delete from <code>product.json fields[]</code></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600; color:var(--green);">Loosening (threshold lowered)</td>
+          <td>No resolved candidate but best candidate &ge; new threshold</td>
+          <td>Publish best: mark resolved in SQL, write to <code>product.json fields[]</code> with <code>source='pipeline'</code></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600; color:var(--purple);">Manual override</td>
+          <td><code>source === 'manual_override'</code></td>
+          <td>Never touched &mdash; locked fields are always skipped</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Dry run</dt><dd><code>dryRun: true</code> &mdash; preview counts without persisting changes. Exposed via <code>GET /publisher/:category/reconcile</code>.</dd>
+      <dt>Apply</dt><dd><code>POST /publisher/:category/reconcile</code> &mdash; applies changes with operation tracking.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">6</span> HTTP Routes</div>
+
+<div class="card">
+  <div class="card-header">Backend Routes &mdash; <code>src/features/publisher/api/publisherRoutes.js</code></div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Response Shape</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/publisher/:category/candidates</code></td>
+          <td>Paginated candidates list with stats</td>
+          <td><code>{ rows[], total, page, limit, stats }</code></td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/publisher/:category/stats</code></td>
+          <td>Aggregated statistics</td>
+          <td><code>{ total, resolved, pending, repaired, products }</code></td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/publisher/:category/published/:productId</code></td>
+          <td>Published fields for a product</td>
+          <td><code>{ product_id, fields: { field: { value, confidence, source, ... } } }</code></td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/publisher/:category/reconcile</code></td>
+          <td>Dry-run threshold reconciliation preview</td>
+          <td><code>{ threshold, unpublished, published, locked, unaffected, total_fields }</code></td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/publisher/:category/reconcile</code></td>
+          <td>Apply threshold reconciliation</td>
+          <td><code>{ operation_id, result }</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Route registration</dt><dd><code>guiServerRuntime.js</code> line 259: <code>{ key: 'publisher', registrar: registerPublisherRoutes }</code></dd>
+      <dt>Context factory</dt><dd><code>createPublisherRouteContext()</code> injects: <code>jsonRes</code>, <code>readJsonBody</code>, <code>getSpecDb</code>, <code>broadcastWs</code>, <code>config</code>, <code>productRoot</code></dd>
+      <dt>Pagination</dt><dd><code>page</code> (default 1), <code>limit</code> (default 100, max 500)</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">7</span> GUI &mdash; Publisher Page</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Page Registration</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Route</dt><dd><code>/publisher</code></dd>
+      <dt>Label</dt><dd>Publisher</dd>
+      <dt>Tab group</dt><dd><code>ops</code></dd>
+      <dt>Component</dt><dd><code>tools/gui-react/src/pages/publisher/PublisherPage.tsx</code></dd>
+      <dt>Auto-refresh</dt><dd>10-second refetch interval</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Stats Bar (5 cards)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Card</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Total Candidates</td><td><code>stats.total</code></td></tr>
+        <tr><td>Resolved</td><td><code>stats.resolved</code></td></tr>
+        <tr><td>Pending</td><td><code>stats.pending</code></td></tr>
+        <tr><td>Repairs Applied</td><td><code>stats.repaired</code></td></tr>
+        <tr><td>Products</td><td><code>stats.products</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Filters (client-side)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Filter</th><th>Options</th><th>Matches</th></tr></thead>
+      <tbody>
+        <tr><td>Date range</td><td><code>24h</code>, <code>7d</code>, <code>30d</code>, <code>all</code></td><td><code>submitted_at</code></td></tr>
+        <tr><td>Product search</td><td>Free text</td><td><code>product_id</code>, <code>brand</code>, <code>model</code> (case-insensitive substring)</td></tr>
+        <tr><td>Field dropdown</td><td>All distinct field keys</td><td><code>field_key</code> exact match</td></tr>
+        <tr><td>Status</td><td><code>all</code>, <code>candidate</code>, <code>resolved</code></td><td><code>status</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Data Table Columns (13 columns)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>#</th><th>Column</th><th>Width</th><th>Renders</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Expand</td><td>32</td><td>Expand/collapse button</td></tr>
+        <tr><td>2</td><td><code>submitted_at</code></td><td>120</td><td>Formatted date (PST)</td></tr>
+        <tr><td>3</td><td><code>brand</code></td><td>90</td><td>Brand name</td></tr>
+        <tr><td>4</td><td><code>model</code></td><td>150</td><td>Model name</td></tr>
+        <tr><td>5</td><td><code>product_id</code></td><td>120</td><td>ID (monospace)</td></tr>
+        <tr><td>6</td><td><code>field_key</code></td><td>100</td><td>Field name (monospace)</td></tr>
+        <tr><td>7</td><td><code>value</code></td><td>flex</td><td>Truncated to 60 chars (monospace)</td></tr>
+        <tr><td>8</td><td><code>status</code></td><td>82</td><td>Chip: <code>candidate</code> | <code>resolved</code></td></tr>
+        <tr><td>9</td><td>Published</td><td>72</td><td>Publish status chip with tooltip</td></tr>
+        <tr><td>10</td><td><code>confidence</code></td><td>70</td><td>Color bar + numeric (0&ndash;100)</td></tr>
+        <tr><td>11</td><td><code>source_count</code></td><td>48</td><td>Count</td></tr>
+        <tr><td>12</td><td>Source type</td><td>76</td><td>Chip: <code>pipeline</code> | <code>cef</code> | <code>override</code> | <code>unknown</code></td></tr>
+        <tr><td>13</td><td>Repairs</td><td>60</td><td>Repair count chip</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Expanded Row Detail (2-column layout)</div>
+  <div class="card-body">
+    <div class="two-col">
+      <div>
+        <p style="font-weight:600; margin-bottom:8px;">Left Column</p>
+        <dl class="detail-grid" style="grid-template-columns:1fr;">
+          <dt>Repairs Applied</dt><dd>Table: Step, Before, &rarr;, After, Rule</dd>
+          <dt>Rejections</dt><dd>Table: Reason Code, Severity, Detail</dd>
+          <dt>LLM Repair</dt><dd>If present: table with Value, Decision, Resolved To, Reasoning</dd>
+          <dt>Full Value</dt><dd>Monospace pre-block, JSON-formatted</dd>
+        </dl>
+      </div>
+      <div>
+        <p style="font-weight:600; margin-bottom:8px;">Right Column</p>
+        <dl class="detail-grid" style="grid-template-columns:1fr;">
+          <dt>Source History</dt><dd>Table: Source, Confidence, Run ID, Submitted</dd>
+          <dt>Candidate Metadata</dt><dd>Grid: ID, Status, Max Confidence, Source Count, Submitted, Updated</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">8</span> TypeScript Types</div>
+
+<div class="card">
+  <div class="card-header"><code>tools/gui-react/src/pages/publisher/types.ts</code></div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Interface</th><th>Fields</th></tr></thead>
+      <tbody>
+        <tr><td><code>PublisherSourceEntry</code></td><td><code>confidence</code>, <code>run_id?</code>, <code>submitted_at?</code>, <code>model?</code>, <code>artifact?</code>, <code>url?</code>, <code>source?</code>, <code>overridden_by?</code>, <code>reason?</code></td></tr>
+        <tr><td><code>PublisherRepairEntry</code></td><td><code>step</code>, <code>before</code>, <code>after</code>, <code>rule</code></td></tr>
+        <tr><td><code>PublisherRejectionEntry</code></td><td><code>reason_code</code>, <code>detail</code></td></tr>
+        <tr><td><code>PublisherLlmRepairDecision</code></td><td><code>value</code>, <code>decision</code> (<code>map_to_existing</code> | <code>keep_new</code> | <code>set_unk</code> | <code>reject</code>), <code>resolved_to?</code>, <code>reasoning?</code></td></tr>
+        <tr><td><code>PublisherLlmRepair</code></td><td><code>promptId</code>, <code>status</code>, <code>decisions[]</code></td></tr>
+        <tr><td><code>PublisherValidationJson</code></td><td><code>valid?</code>, <code>repairs[]</code>, <code>rejections[]</code>, <code>llmRepair?</code></td></tr>
+        <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>reason?</code>, <code>published_at?</code></td></tr>
+        <tr><td><code>PublisherMetadataJson</code></td><td><code>source?</code>, <code>method?</code>, <code>publish_result?</code></td></tr>
+        <tr><td><code>PublisherCandidateRow</code></td><td><code>id</code>, <code>category</code>, <code>product_id</code>, <code>field_key</code>, <code>value</code>, <code>confidence</code>, <code>source_count</code>, <code>sources_json</code>, <code>validation_json</code>, <code>metadata_json</code>, <code>status</code>, <code>submitted_at</code>, <code>updated_at</code>, <code>brand?</code>, <code>model?</code>, <code>variant?</code></td></tr>
+        <tr><td><code>PublisherStats</code></td><td><code>total</code>, <code>resolved</code>, <code>pending</code>, <code>repaired</code>, <code>products</code></td></tr>
+        <tr><td><code>PublisherCandidatesResponse</code></td><td><code>rows[]</code>, <code>total</code>, <code>page</code>, <code>limit</code>, <code>stats</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">9</span> Confidence Handling</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Concern</th><th>Behavior</th></tr></thead>
+      <tbody>
+        <tr><td>Storage scale</td><td>0&ndash;1 in database</td></tr>
+        <tr><td>Mixed sources</td><td>CEF may use 0&ndash;100, provenance uses 0&ndash;1</td></tr>
+        <tr><td>Normalization</td><td><code>c &gt; 1 ? c / 100 : c</code></td></tr>
+        <tr><td>Default threshold</td><td><code>0.7</code> (<code>config.publishConfidenceThreshold</code>)</td></tr>
+        <tr><td>Source merge</td><td>Max confidence across all sources for a candidate</td></tr>
+        <tr><td>Manual override</td><td>Always <code>1.0</code></td></tr>
+        <tr><td>Candidate override</td><td>Preserves original candidate confidence (or <code>1.0</code> if missing)</td></tr>
+        <tr><td>GUI display</td><td>Color-coded bar + numeric (0&ndash;100 scale)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">10</span> Manual Override Lock Semantics</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="flow-row">
+      <div class="flow-box flow-pass">Auto-Published<br><small>source='pipeline'</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair">User Overrides<br><small>source='manual_override'</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-fail">Field Locked<br><small>Auto-publish blocked</small></div>
+    </div>
+    <dl class="detail-grid" style="margin-top:16px;">
+      <dt>Lock condition</dt><dd><code>product.json fields[fieldKey].source === 'manual_override'</code></dd>
+      <dt>Unlock</dt><dd>User must manually delete/change the override</dd>
+      <dt>Reconcile</dt><dd>Manual overrides are <strong>never touched</strong> by threshold reconciliation</dd>
+      <dt>candidate_override</dt><dd>Does <strong>NOT</strong> lock. Source is <code>'candidate_override'</code>, which auto-publish recognizes as non-locked.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">11</span> Reseed Functions</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Function</th><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>rebuildFieldCandidatesFromJson()</code></td>
+          <td><code>candidateReseed.js</code></td>
+          <td>Rebuilds SQL <code>field_candidates</code> from <code>product.json candidates[]</code>. Used after DB wipe or migration.</td>
+        </tr>
+        <tr>
+          <td><code>rebuildPublishedFieldsFromJson()</code></td>
+          <td><code>publish/publishedFieldReseed.js</code></td>
+          <td>Rebuilds resolved state from <code>product.json fields[]</code>. Used after DB wipe or migration.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">12</span> Source File Map</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Exports</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>index.js</code></td><td>Public API barrel</td><td>Feature module entry point</td></tr>
+        <tr><td><code>candidate-gate/submitCandidate.js</code></td><td><code>submitCandidate()</code></td><td>Single entry point for all submissions</td></tr>
+        <tr><td><code>publish/publishCandidate.js</code></td><td><code>publishCandidate()</code></td><td>Auto-publish with confidence + lock gates</td></tr>
+        <tr><td><code>publish/publishManualOverride.js</code></td><td><code>publishManualOverride()</code></td><td>Manual override publish (locks field)</td></tr>
+        <tr><td><code>publish/publishCandidateOverride.js</code></td><td><code>publishCandidateOverride()</code></td><td>Candidate override from review grid</td></tr>
+        <tr><td><code>publish/reconcileThreshold.js</code></td><td><code>reconcileThreshold()</code></td><td>Threshold tightening/loosening</td></tr>
+        <tr><td><code>publish/publishedFieldReseed.js</code></td><td><code>rebuildPublishedFieldsFromJson()</code></td><td>Reseed resolved from JSON</td></tr>
+        <tr><td><code>candidateReseed.js</code></td><td><code>rebuildFieldCandidatesFromJson()</code></td><td>Reseed candidates from JSON</td></tr>
+        <tr><td><code>buildDiscoveredEnumMap.js</code></td><td><code>buildDiscoveredEnumMap()</code></td><td>Build discovered enum map from DB</td></tr>
+        <tr><td><code>persistDiscoveredValues.js</code></td><td><code>persistDiscoveredValue()</code></td><td>Persist new enum values post-validation</td></tr>
+        <tr><td><code>repairLlmAdapter.js</code></td><td><code>createRepairCallLlm()</code></td><td>LLM infrastructure wiring</td></tr>
+        <tr><td><code>api/publisherRoutes.js</code></td><td><code>registerPublisherRoutes()</code></td><td>5 HTTP route handlers</td></tr>
+        <tr><td><code>api/publisherRouteContext.js</code></td><td><code>createPublisherRouteContext()</code></td><td>Route context factory</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">13</span> Domain Invariants</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Invariant</th><th>Enforcement</th></tr></thead>
+      <tbody>
+        <tr><td>No value reaches <code>product.json fields[]</code> without passing validation</td><td><code>submitCandidate()</code> validates before persisting</td></tr>
+        <tr><td>Validation is pure &mdash; no DB, no LLM, no side effects</td><td><code>validateField()</code> is deterministic</td></tr>
+        <tr><td>Field Studio rules are SSOT for validity</td><td>Compiled field rules drive all checks</td></tr>
+        <tr><td>Every publish operation dual-writes SQL + JSON</td><td>All publish paths update both stores</td></tr>
+        <tr><td>Manual overrides lock fields from auto-publish</td><td><code>publishCandidate()</code> checks <code>source === 'manual_override'</code></td></tr>
+        <tr><td>Threshold reconciliation never touches manual overrides</td><td><code>reconcileThreshold()</code> filters locked fields</td></tr>
+        <tr><td>Confidence normalization: mixed scales handled</td><td><code>c &gt; 1 ? c / 100 : c</code> everywhere</td></tr>
+        <tr><td>Candidates are unique per (category, product_id, field_key, value)</td><td>SQL UNIQUE constraint + source merge on collision</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Generated from source &mdash; Spec Factory Publisher Pipeline<br>
+  3 publish paths, 5 HTTP routes, 4 publish statuses, 13 table columns, dual-write SQL + JSON
+</div>
+
+</div>
+</body>
+</html>

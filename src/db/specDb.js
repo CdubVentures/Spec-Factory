@@ -830,6 +830,7 @@ export class SpecDb {
   getAllFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getAllByProduct(pid); }
   deleteFieldCandidatesByProduct(pid) { this._fieldCandidateStore.deleteByProduct(pid); }
   deleteFieldCandidatesByProductAndField(pid, fk) { this._fieldCandidateStore.deleteByProductAndField(pid, fk); }
+  deleteFieldCandidateByValue(pid, fk, val) { this._fieldCandidateStore.deleteByProductFieldValue(pid, fk, val); }
   getFieldCandidatesPaginated(opts) { return this._fieldCandidateStore.getPaginated(opts); }
   countFieldCandidates() { return this._fieldCandidateStore.count(); }
   getFieldCandidatesStats() { return this._fieldCandidateStore.stats(); }

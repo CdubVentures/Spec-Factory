@@ -22,19 +22,10 @@ function candidateLooksReference(candidateId, sourceToken = '') {
 
 export function createReviewCandidateRuntime({
   getSpecDb,
-  config = {},
-  normalizePathToken,
 } = {}) {
   if (typeof getSpecDb !== 'function') {
     throw new TypeError('getSpecDb must be a function');
   }
-
-  // Stubbed — candidates table removed in 7a, callers removed in 7c-7d
-  function annotateCandidatePrimaryReviews() {}
-  function getPendingItemPrimaryCandidateIds() { return []; }
-  async function getPendingComponentSharedCandidateIdsAsync() { return []; }
-  function getPendingEnumSharedCandidateIds() { return []; }
-  async function syncSyntheticCandidatesFromComponentReview() { return { upserted: 0 }; }
 
   async function remapPendingComponentReviewItemsForNameChange({
     category,
@@ -66,38 +57,10 @@ export function createReviewCandidateRuntime({
     return { changed };
   }
 
-  async function propagateSharedLaneDecision({
-    category,
-    specDb,
-    keyReviewState,
-    laneAction,
-    candidateValue = null,
-  }) {
-    if (!specDb || !keyReviewState) return { propagated: false };
-    if (String(keyReviewState.target_kind || '') !== 'grid_key') return { propagated: false };
-    if (laneAction !== 'accept') return { propagated: false };
-
-    const fieldKey = String(keyReviewState.field_key || '').trim();
-    const selectedValue = String(
-      candidateValue ?? keyReviewState.selected_value ?? ''
-    ).trim();
-    if (!fieldKey || !isMeaningfulValue(selectedValue)) return { propagated: false };
-
-    // Grid shared accepts are strictly slot-scoped: one item field slot action must never
-    // mutate peer item slots, component property slots, or enum value slots.
-    return { propagated: false };
-  }
-
   return {
     normalizeLower,
     isMeaningfulValue,
     candidateLooksReference,
-    annotateCandidatePrimaryReviews,
-    getPendingItemPrimaryCandidateIds,
-    getPendingComponentSharedCandidateIdsAsync,
-    getPendingEnumSharedCandidateIds,
-    syncSyntheticCandidatesFromComponentReview,
     remapPendingComponentReviewItemsForNameChange,
-    propagateSharedLaneDecision,
   };
 }

@@ -31,6 +31,72 @@ function cleanProductJsonCandidates(productId, fieldKeys) {
 }
 
 /**
+ * Source-aware candidate cleanup — strips a specific source type from candidates
+ * instead of blanket-deleting all candidates for a field.
+ *
+ * For each candidate row: remove source entries matching `sourceType`.
+ * If no sources remain → delete the row. Otherwise update with remaining sources.
+ *
+ * Also strips from product.json candidates[].
+ */
+function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType) {
+  if (!specDb.getFieldCandidatesByProductAndField) return;
+  for (const fieldKey of fieldKeys) {
+    const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
+    for (const row of rows) {
+      const sources = Array.isArray(row.sources_json) ? row.sources_json : [];
+      const remaining = sources.filter(s => s.source !== sourceType);
+
+      if (remaining.length === 0) {
+        // No sources left — delete the candidate row entirely
+        if (specDb.deleteFieldCandidateByValue) {
+          specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
+        }
+      } else {
+        // Update with remaining sources
+        const maxConfidence = remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0);
+        specDb.upsertFieldCandidate({
+          productId, fieldKey,
+          value: row.value,
+          unit: row.unit,
+          confidence: maxConfidence,
+          sourceCount: remaining.length,
+          sourcesJson: remaining,
+          validationJson: row.validation_json,
+          metadataJson: row.metadata_json,
+          status: row.status,
+        });
+      }
+    }
+  }
+
+  // Same for product.json candidates[]
+  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    if (!data.candidates) return;
+    let changed = false;
+    for (const key of fieldKeys) {
+      if (!Array.isArray(data.candidates[key])) continue;
+      const filtered = [];
+      for (const entry of data.candidates[key]) {
+        if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
+        const remaining = entry.sources.filter(s => s.source !== sourceType);
+        if (remaining.length === 0) { changed = true; continue; } // drop entry
+        entry.sources = remaining;
+        filtered.push(entry);
+        changed = true;
+      }
+      data.candidates[key] = filtered;
+    }
+    if (changed) {
+      data.updated_at = new Date().toISOString();
+      fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
+    }
+  } catch { /* product.json may not exist */ }
+}
+
+/**
  * @param {object} finderConfig
  * @param {string} finderConfig.routePrefix — URL path prefix (e.g. 'color-edition-finder')
  * @param {string} finderConfig.moduleType — operations tracker type (e.g. 'cef')
@@ -93,7 +159,7 @@ export function createFinderRouteHandler(finderConfig) {
           : (row.selected || {});
 
         if (buildGetResponse) {
-          return jsonRes(res, 200, buildGetResponse(row, selected, runRows, onCooldown));
+          return jsonRes(res, 200, buildGetResponse(row, selected, runRows, onCooldown, { specDb, productId }));
         }
 
         return jsonRes(res, 200, {
@@ -206,14 +272,20 @@ export function createFinderRouteHandler(finderConfig) {
         const updated = deleteRun({ productId, runNumber });
 
         if (updated) {
-          upsertSummary(specDb, {
+          const summaryRow = {
             category,
             product_id: productId,
             cooldown_until: updated.cooldown_until || '',
             latest_ran_at: updated.last_ran_at || '',
             run_count: updated.run_count || 0,
-            ...(updated.selected || {}),
-          });
+          };
+          // WHY: When skipSelectedOnDelete is true, published state lives in
+          // field_candidates — deleting a run should not recalculate it from
+          // remaining runs. Only update bookkeeping columns.
+          if (!finderConfig.skipSelectedOnDelete) {
+            Object.assign(summaryRow, updated.selected || {});
+          }
+          upsertSummary(specDb, summaryRow);
         } else {
           deleteAllRunsSql(specDb, productId);
           deleteOneSql(specDb, productId);
@@ -239,10 +311,17 @@ export function createFinderRouteHandler(finderConfig) {
         deleteAllRunsSql(specDb, productId);
         deleteOneSql(specDb, productId);
 
-        for (const key of fieldKeys) {
-          specDb.deleteFieldCandidatesByProductAndField(productId, key);
+        // WHY: Source-aware cleanup strips only this module's source entries
+        // from candidate rows. Candidates from other sources (pipeline, review,
+        // manual override) survive with their remaining sources intact.
+        if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
+          stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType);
+        } else {
+          for (const key of fieldKeys) {
+            specDb.deleteFieldCandidatesByProductAndField(productId, key);
+          }
+          cleanProductJsonCandidates(productId, fieldKeys);
         }
-        cleanProductJsonCandidates(productId, fieldKeys);
 
         emitDataChange({
           broadcastWs,

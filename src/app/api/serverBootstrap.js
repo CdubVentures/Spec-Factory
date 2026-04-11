@@ -42,14 +42,8 @@ export const BOOTSTRAP_RETURN_GROUPS = {
   http: ['jsonRes', 'corsHeaders', 'readJsonBody'],
   helpers: ['toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue', 'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin', 'canonicalSlugify', 'invalidateFieldRulesCache', 'loadCategoryConfig'],
   domain: [
-    'ensureGridKeyReviewState', 'resolveKeyReviewForLaneMutation',
-    'markPrimaryLaneReviewedInItemState', 'syncItemFieldStateFromPrimaryLaneAccept',
-    'syncPrimaryLaneAcceptFromItemSelection',
     'normalizeLower', 'isMeaningfulValue', 'candidateLooksReference',
-    'annotateCandidatePrimaryReviews', 'getPendingItemPrimaryCandidateIds',
-    'getPendingComponentSharedCandidateIdsAsync', 'getPendingEnumSharedCandidateIds',
-    'syncSyntheticCandidatesFromComponentReview',
-    'remapPendingComponentReviewItemsForNameChange', 'propagateSharedLaneDecision',
+    'remapPendingComponentReviewItemsForNameChange',
     'buildCatalog', 'patchCompiledComponentDb',
   ],
 };

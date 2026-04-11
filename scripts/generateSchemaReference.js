@@ -156,7 +156,7 @@ const storeMap = {
   data_authority_sync: 'specDb (direct)',
   field_key_order: 'fieldStudioMapStore', color_edition_finder: 'colorEditionFinderStore', color_edition_finder_runs: 'colorEditionFinderStore',
   field_candidates: 'fieldCandidateStore',
-  brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb',
+  brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb', color_registry: 'appDb', unit_registry: 'appDb',
   url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
   field_audit_cache: 'testModeRoutes (direct)',
 };
@@ -171,7 +171,7 @@ const persistenceMap = {
   field_candidates: 'json',
   llm_route_matrix: 'json', field_key_order: 'json', field_studio_map: 'json',
   brands: 'json', brand_categories: 'json', brand_renames: 'json',
-  settings: 'json', studio_maps: 'json', color_registry: 'json',
+  settings: 'json', studio_maps: 'json', color_registry: 'json', unit_registry: 'json',
   source_screenshots: 'json', source_videos: 'json',
   // Deferred (review grid + partial rebuild)
   component_identity: 'deferred', component_aliases: 'deferred',
@@ -483,6 +483,13 @@ const lifecycleMap = {
     'Fresh rebuild and existing-DB reconcile honor current color registry contents. If the file is missing, bootstrap seeds the default palette and writes the durable JSON.',
     'yes'
   ),
+  unit_registry: life(
+    'category_authority/_global/unit_registry.json',
+    'yes',
+    'yes',
+    'Fresh rebuild and existing-DB reconcile honor current unit registry contents. If the file is missing, bootstrap seeds the default units and writes the durable JSON.',
+    'yes'
+  ),
 };
 
 // ── Domain groups ──
@@ -507,7 +514,7 @@ const specDbGroups = [
 ];
 
 const appDbGroups = [
-  { label: 'Global State', tables: ['brands', 'brand_categories', 'brand_renames', 'settings', 'studio_maps', 'color_registry'] },
+  { label: 'Global State', tables: ['brands', 'brand_categories', 'brand_renames', 'settings', 'studio_maps', 'color_registry', 'unit_registry'] },
 ];
 
 // ── Parse everything ──
@@ -1163,7 +1170,7 @@ const cqrsCompliance = {
   field_candidates: true,
   llm_route_matrix: true, field_key_order: true, field_studio_map: true,
   brands: true, brand_categories: true, brand_renames: true,
-  settings: true, studio_maps: true, color_registry: true,
+  settings: true, studio_maps: true, color_registry: true, unit_registry: true,
   // JSON-backed ext-dep — rebuild correct, external fs dependency
   source_screenshots: true, source_videos: true,
   // DB-only intentionally ephemeral (telemetry / runtime queues / audit trails)

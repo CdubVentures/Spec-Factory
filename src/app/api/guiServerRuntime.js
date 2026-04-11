@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { bootstrapServer } from './serverBootstrap.js';
 import { createGuiServerHttpAssembly } from './guiServerHttpAssembly.js';
 import { registerInfraRoutes } from './routes/infraRoutes.js';
@@ -123,14 +124,8 @@ export function createGuiServerRuntime({
         loadCategoryConfig,
       },
       domain: {
-        ensureGridKeyReviewState, resolveKeyReviewForLaneMutation,
-        markPrimaryLaneReviewedInItemState, syncItemFieldStateFromPrimaryLaneAccept,
-        syncPrimaryLaneAcceptFromItemSelection,
         normalizeLower, isMeaningfulValue, candidateLooksReference,
-        annotateCandidatePrimaryReviews, getPendingItemPrimaryCandidateIds,
-        getPendingComponentSharedCandidateIdsAsync, getPendingEnumSharedCandidateIds,
-        syncSyntheticCandidatesFromComponentReview,
-        remapPendingComponentReviewItemsForNameChange, propagateSharedLaneDecision,
+        remapPendingComponentReviewItemsForNameChange,
         buildCatalog, patchCompiledComponentDb,
       },
     } = bootstrapServer({ projectRoot });
@@ -232,15 +227,10 @@ export function createGuiServerRuntime({
         HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
         sessionCache, reviewLayoutByCategory,
         broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson,
-        syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
-        getPendingItemPrimaryCandidateIds, markPrimaryLaneReviewedInItemState,
-        syncItemFieldStateFromPrimaryLaneAccept, isMeaningfulValue,
-        propagateSharedLaneDecision, syncSyntheticCandidatesFromComponentReview,
-        candidateLooksReference, normalizeLower,
+        isMeaningfulValue, normalizeLower,
         remapPendingComponentReviewItemsForNameChange,
-        getPendingComponentSharedCandidateIdsAsync, getPendingEnumSharedCandidateIds,
-        annotateCandidatePrimaryReviews, ensureGridKeyReviewState,
         patchCompiledComponentDb,
+        spawn,
       }),
     };
 

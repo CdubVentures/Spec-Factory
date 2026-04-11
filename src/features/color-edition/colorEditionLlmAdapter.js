@@ -132,16 +132,16 @@ Color output rules:
 - Lowercase, modifier-first ("light-blue" not "blue-light"), normalize "grey" to "gray"
 - Multi-color shells: atoms joined by "+" in dominant order ("black+red")
 - colors[0] must be the default color shown on the official product page
-- Map marketing names in color_names (e.g. "light-blue": "Glacier Blue")
-- UNIQUE ATOMS REQUIRED: Every colorway must map to a different atom. Never duplicate atoms in the colors array. If two colorways would share an atom (e.g. "White" and "Frost White" both mapping to "white"), use the next-closest atom for the variant (e.g. "ivory" for Frost White). Each product SKU/colorway = one unique atom.
-- STANDARD COLORS ONLY: The colors array must contain ONLY the standard colorways that the product is sold in as regular SKUs. Do NOT include edition-exclusive colors as separate atoms. Edition colorways are represented as "+" combos in each edition's colors field.
+- Map marketing names in color_names (e.g. "light-blue": "Glacier Blue"). REQUIRED when the atom is not an exact match for the manufacturer's color name. If the manufacturer calls it "Navy Sky Blue" and you normalize to "light-blue", you MUST record "light-blue": "Navy Sky Blue". Only omit the color_names entry when the atom IS the exact name (e.g. "black" = "Black").
+- UNIQUE ENTRIES REQUIRED: Every colorway must have a unique entry in the colors array. Single-color products use a single atom ("black"). Multi-color products use atoms joined by "+" in dominant order ("dark-gray+black+orange"). No duplicates.
+- COMPLETE LIST: The colors array must contain EVERY colorway — standard single colors, standard multi-color combos, AND edition combos. One entry per SKU/colorway.
 
 Edition output rules:
 - An edition is a named special/limited/collaboration version sold by the manufacturer
 - Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
 - Each edition needs display_name (official name) and a colors array with a SINGLE combo entry
 - The combo entry joins all visible shell/body colors with "+" in dominant order (most dominant first). Example: a dark gray body with black accents and orange highlights = ["dark-gray+black+orange"]. A black and red edition = ["black+red"]. Use the same registered atoms.
-- Edition combo colors do NOT need to appear in the master colors array — they are edition-exclusive
+- The edition's combo entry MUST also appear in the master colors array
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
 Return JSON with these exact keys and shapes:

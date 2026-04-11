@@ -13,6 +13,8 @@ function makeJsonCapture() {
 
 function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runRows = []) {
   const candidateDeleteCalls = [];
+  const candidateDeleteByValueCalls = [];
+  const candidateUpsertCalls = [];
   return {
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
@@ -25,7 +27,15 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     deleteAllColorEditionFinderRuns: () => {},
     insertColorEditionFinderRun: () => {},
     deleteFieldCandidatesByProductAndField: (...args) => { candidateDeleteCalls.push(args); },
+    // Source-aware cleanup support
+    getFieldCandidatesByProductAndField: () => [
+      { id: 1, value: '["black"]', confidence: 100, source_count: 1, sources_json: [{ source: 'cef', confidence: 100 }], validation_json: {}, metadata_json: {}, status: 'resolved', unit: null },
+    ],
+    deleteFieldCandidateByValue: (...args) => { candidateDeleteByValueCalls.push(args); },
+    upsertFieldCandidate: (...args) => { candidateUpsertCalls.push(args); },
     _candidateDeleteCalls: candidateDeleteCalls,
+    _candidateDeleteByValueCalls: candidateDeleteByValueCalls,
+    _candidateUpsertCalls: candidateUpsertCalls,
     category: 'mouse',
   };
 }
@@ -189,7 +199,11 @@ describe('colorEditionFinderRoutes', () => {
       const { ctx, specDb } = makeCtx({ deleteAllFn });
       const handler = registerColorEditionFinderRoutes(ctx);
       await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
-      assert.ok(specDb._candidateDeleteCalls.length > 0, 'candidates MUST be deleted on delete-all');
+      // Source-aware cleanup: CEF-only candidates are deleted by value, not blanket
+      assert.ok(
+        specDb._candidateDeleteByValueCalls.length > 0,
+        'CEF-only candidates MUST be deleted on delete-all via source-aware cleanup',
+      );
     });
   });
 });

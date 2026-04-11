@@ -54,18 +54,54 @@ export interface ColorEditionFinderRunEntry {
   };
 }
 
-export interface ColorEditionFinderResult {
-  readonly product_id: string;
-  readonly category: string;
+/** A source entry from a candidate submission. */
+export interface CefSourceEntry {
+  readonly source: string;
+  readonly model?: string;
+  readonly run_id?: string;
+  readonly run_number?: number;
+  readonly confidence: number;
+  readonly submitted_at: string;
+}
+
+/** A single candidate row with its evidence chain. */
+export interface CefCandidateEntry {
+  readonly candidate_id: number;
+  readonly value: string;
+  readonly confidence: number;
+  readonly source_count: number;
+  readonly sources: readonly CefSourceEntry[];
+  readonly status: 'candidate' | 'resolved';
+  readonly metadata: Readonly<Record<string, unknown>>;
+  readonly submitted_at: string;
+}
+
+/** Published truth derived from resolved field_candidates. */
+export interface CefPublishedState {
   readonly colors: readonly string[];
   readonly editions: readonly string[];
   readonly default_color: string;
+}
+
+export interface ColorEditionFinderResult {
+  readonly product_id: string;
+  readonly category: string;
   readonly cooldown_until: string;
   readonly on_cooldown: boolean;
   readonly run_count: number;
   readonly last_ran_at: string;
-  readonly selected: ColorEditionFinderSelected;
+  // Published truth from field_candidates
+  readonly published?: CefPublishedState;
+  readonly candidates?: {
+    readonly colors: readonly CefCandidateEntry[];
+    readonly editions: readonly CefCandidateEntry[];
+  };
   readonly runs: readonly ColorEditionFinderRunEntry[];
+  // Deprecated: kept for backward compat
+  readonly colors: readonly string[];
+  readonly editions: readonly string[];
+  readonly default_color: string;
+  readonly selected: ColorEditionFinderSelected;
   readonly color_details: Readonly<Record<string, ColorEditionFinderColorDetail>>;
   readonly edition_details: Readonly<Record<string, ColorEditionFinderEditionDetail>>;
 }

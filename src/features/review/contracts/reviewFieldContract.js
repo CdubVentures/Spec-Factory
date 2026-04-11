@@ -28,10 +28,8 @@ export const FIELD_STATE_SHAPE = Object.freeze([
   { key: 'tier', coerce: 'int', nullable: true, optional: true },
   { key: 'evidence_url', coerce: 'string', optional: true },
   { key: 'evidence_quote', coerce: 'string', optional: true },
-  { key: 'slot_id', coerce: 'int', nullable: true, optional: true },
   { key: 'overridden', coerce: 'bool', optional: true },
   { key: 'source_timestamp', coerce: 'string', nullable: true, optional: true },
-  { key: 'keyReview', coerce: 'object', optional: true },
 ]);
 export const FIELD_STATE_KEYS = Object.freeze(
   FIELD_STATE_SHAPE.filter(d => !d.optional).map(d => d.key),
@@ -77,26 +75,6 @@ export const REVIEW_CANDIDATE_SHAPE = Object.freeze([
   { key: 'human_accepted', coerce: 'bool', optional: true },
 ]);
 export const REVIEW_CANDIDATE_KEYS = Object.freeze(REVIEW_CANDIDATE_SHAPE.map(d => d.key));
-
-// ── Key Review Lane ─────────────────────────────────────────────────
-
-export const KEY_REVIEW_LANE_SHAPE = Object.freeze([
-  { key: 'id', coerce: 'int' },
-  { key: 'selectedCandidateId', coerce: 'string', nullable: true, optional: true },
-  { key: 'primaryStatus', coerce: 'string', nullable: true },
-  { key: 'primaryConfidence', coerce: 'float', nullable: true },
-  { key: 'sharedStatus', coerce: 'string', nullable: true },
-  { key: 'sharedConfidence', coerce: 'float', nullable: true },
-  { key: 'userAcceptPrimary', coerce: 'string', nullable: true },
-  { key: 'userAcceptShared', coerce: 'string', nullable: true },
-  { key: 'overridePrimary', coerce: 'bool' },
-  { key: 'overrideShared', coerce: 'bool' },
-]);
-export const KEY_REVIEW_LANE_KEYS = Object.freeze(KEY_REVIEW_LANE_SHAPE.map(d => d.key));
-
-export const REVIEW_STATUS_VALUES = Object.freeze([
-  'pending', 'confirmed', 'rejected', 'not_run',
-]);
 
 // ── Product Review Payload ──────────────────────────────────────────
 
@@ -167,6 +145,5 @@ export const CANDIDATE_RESPONSE_SHAPE = Object.freeze([
   { key: 'field', coerce: 'string' },
   { key: 'candidates', coerce: 'array', itemRef: 'ReviewCandidateGen' },
   { key: 'candidate_count', coerce: 'int' },
-  { key: 'keyReview', coerce: 'object', nullable: true },
 ]);
 export const CANDIDATE_RESPONSE_KEYS = Object.freeze(CANDIDATE_RESPONSE_SHAPE.map(d => d.key));

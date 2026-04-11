@@ -5,9 +5,9 @@ import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
  * Enum/List store — extracted from SpecDb.
  * Owns: enum_lists, list_values tables.
  *
- * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object, deleteKeyReviewStateRowsByIds: Function }} deps
+ * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
-export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateRowsByIds }) {
+export function createEnumListStore({ db, category, stmts }) {
   function ensureEnumList(fieldKey, source = 'known_values') {
     const key = String(fieldKey || '').trim();
     if (!key) return null;
@@ -229,15 +229,6 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
         .prepare('SELECT id FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
         .get(category, fieldKey, value);
       if (row?.id != null) {
-        const stateIds = db.prepare(`
-          SELECT id
-          FROM key_review_state
-          WHERE category = ?
-            AND target_kind = 'enum_key'
-            AND list_value_id = ?
-        `).all(category, row.id).map((entry) => entry.id);
-        deleteKeyReviewStateRowsByIds(stateIds);
-
         db
           .prepare('DELETE FROM item_list_links WHERE category = ? AND field_key = ? AND list_value_id = ?')
           .run(category, fieldKey, row.id);
@@ -302,30 +293,11 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
         .run(newValue, category, fieldKey, oldValue);
 
       if (oldRow && newRow && Number(oldRow.id) !== Number(newRow.id)) {
-        const oldStateIds = db.prepare(`
-          SELECT id
-          FROM key_review_state
-          WHERE category = ?
-            AND target_kind = 'enum_key'
-            AND list_value_id = ?
-        `).all(category, oldRow.id).map((entry) => entry.id);
-        deleteKeyReviewStateRowsByIds(oldStateIds);
-
         db
           .prepare('UPDATE item_list_links SET list_value_id = ? WHERE category = ? AND field_key = ? AND list_value_id = ?')
           .run(newRow.id, category, fieldKey, oldRow.id);
       }
       if (oldRow && (!newRow || Number(oldRow.id) !== Number(newRow.id))) {
-        if (!newRow) {
-          const oldStateIds = db.prepare(`
-            SELECT id
-            FROM key_review_state
-            WHERE category = ?
-              AND target_kind = 'enum_key'
-              AND list_value_id = ?
-          `).all(category, oldRow.id).map((entry) => entry.id);
-          deleteKeyReviewStateRowsByIds(oldStateIds);
-        }
         db
           .prepare('DELETE FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
           .run(category, fieldKey, oldValue);

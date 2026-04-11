@@ -94,7 +94,7 @@ svg text{font-family:var(--sans)}
   <h1>Spec Factory &mdash; Architecture Reference</h1>
   <p>Complete system architecture. SQLite as durable store. JSON as config + checkpoint safety net. This documents the completed state of the system, not plans.</p>
   <div class="meta">
-    <span>Audited 2026-04-04</span>
+    <span>Audited 2026-04-11</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -104,10 +104,10 @@ svg text{font-family:var(--sans)}
 <!-- ================================================================== -->
 <div class="stats">
   <div class="stat"><div class="n" style="color:var(--accent)">2</div><div class="l">Databases</div></div>
-  <div class="stat"><div class="n" style="color:var(--green)">42</div><div class="l">SQL Tables (base)</div></div>
-  <div class="stat"><div class="n" style="color:var(--violet)">136</div><div class="l">Runtime Settings</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">44</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n" style="color:var(--violet)">146</div><div class="l">Runtime Settings</div></div>
   <div class="stat"><div class="n" style="color:var(--amber)">11</div><div class="l">RuntimeOps Panels</div></div>
-  <div class="stat"><div class="n" style="color:var(--cyan)">19</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">20</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n" style="color:var(--rose)">81&ndash;111</div><div class="l">Field Definitions</div></div>
 </div>
 
@@ -159,7 +159,7 @@ svg text{font-family:var(--sans)}
 
       <!-- Features -->
       <rect x="540" y="20" width="200" height="64" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.5"/>
-      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules (12)</text>
+      <text x="640" y="46" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">Feature Modules (16)</text>
       <text x="640" y="64" text-anchor="middle" fill="#475569" font-size="10">Indexing / Catalog / Review / Settings</text>
 
       <!-- Core -->
@@ -206,8 +206,8 @@ svg text{font-family:var(--sans)}
       <rect x="340" y="250" width="220" height="90" rx="10" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
       <text x="450" y="276" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">APPDB (global)</text>
       <text x="450" y="294" text-anchor="middle" fill="#475569" font-size="10">.workspace/db/app.sqlite</text>
-      <text x="450" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">6 tables</text>
-      <text x="450" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Brands, settings, studio maps, color registry</text>
+      <text x="450" y="310" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">7 tables</text>
+      <text x="450" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Brands, settings, studio maps, color registry, unit registry</text>
 
       <!-- Checkpoint files -->
       <rect x="20" y="390" width="290" height="80" rx="10" fill="#ffffff" stroke="#71717a" stroke-width="1" stroke-dasharray="5,3"/>
@@ -226,7 +226,7 @@ svg text{font-family:var(--sans)}
       <!-- Settings Registry -->
       <rect x="650" y="390" width="200" height="80" rx="10" fill="#ffffff" stroke="#f43f5e" stroke-width="1.5"/>
       <text x="750" y="416" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="700">SETTINGS REGISTRY</text>
-      <text x="750" y="434" text-anchor="middle" fill="#475569" font-size="10">136 entries (SSOT)</text>
+      <text x="750" y="434" text-anchor="middle" fill="#475569" font-size="10">146 entries (SSOT)</text>
       <text x="750" y="450" text-anchor="middle" fill="#94a3b8" font-size="10">Drives: config, TS types, UI, validation</text>
       <text x="750" y="464" text-anchor="middle" fill="#94a3b8" font-size="9">O(1) feature scaling</text>
 
@@ -258,15 +258,15 @@ svg text{font-family:var(--sans)}
   <div class="surface-head">
     <h2>Database Surfaces</h2>
     <span class="tag tag-cols">2 databases</span>
-    <span class="tag" style="background:var(--green-s);color:var(--green)">42 base tables</span>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">44 base tables</span>
   </div>
-  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). 42 tables total. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
+  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). 44 tables total. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
 
   <table class="col-table" style="margin-bottom:24px">
     <thead><tr><th>Database</th><th>Scope</th><th>Path</th><th>Tables</th><th>Purpose</th></tr></thead>
     <tbody>
       <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">36</td><td class="cc">All domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, run metadata, crawl ledger, color-edition finder</td></tr>
-      <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">6</td><td class="cc">Brands, brand categories, brand renames, user settings, studio field maps, color registry</td></tr>
+      <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">7</td><td class="cc">Brands, brand categories, brand renames, user settings, studio field maps, color registry, unit registry</td></tr>
     </tbody>
   </table>
 
@@ -297,7 +297,7 @@ svg text{font-family:var(--sans)}
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">AppDb &mdash; Tables (6 tables)</div>
+    <div class="domain-label">AppDb &mdash; Tables (7 tables)</div>
     <table class="col-table">
       <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
       <tbody>
@@ -307,6 +307,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">settings</td><td class="cc">User settings key-value store (primary for dual-write)</td></tr>
         <tr><td class="cn">studio_maps</td><td class="cc">Field-to-sheet mapping for studio export</td></tr>
         <tr><td class="cn">color_registry</td><td class="cc">Global color definitions (name, hex, css_var)</td></tr>
+        <tr><td class="cn">unit_registry</td><td class="cc">Unit definitions for field value normalization</td></tr>
       </tbody>
     </table>
   </div>
@@ -515,10 +516,11 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="settings" data-search="settings registry runtime ssot configuration knobs">
   <div class="surface-head">
     <h2>Settings Registry (SSOT)</h2>
-    <span class="tag" style="background:rgba(244,63,94,0.12);color:var(--rose)">136 runtime entries</span>
+    <span class="tag" style="background:rgba(244,63,94,0.12);color:var(--rose)">146 runtime entries</span>
     <span class="tag tag-cols">O(1) scaling</span>
   </div>
   <p class="surface-desc">The <code>RUNTIME_SETTINGS_REGISTRY</code> in <code>src/shared/settingsRegistry.js</code> is the single source of truth for all runtime configuration. Each entry is a plain object defining key, type, default, constraints, and UI metadata. Adding one entry auto-derives: config manifest, TypeScript types, UI rendering, validation, clamping, and API payloads. The file also exports <code>BOOTSTRAP_ENV_REGISTRY</code> (3 entries: startup-only env vars) and <code>UI_SETTINGS_REGISTRY</code> (4 entries: auto-save booleans).</p>
+
 
   <div class="domain-group">
     <div class="domain-label">Registry Entry Shape</div>
@@ -560,7 +562,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn" style="color:var(--cyan)">discovery</td><td class="ct">1</td><td class="cc">searxngBaseUrl</td></tr>
       </tbody>
     </table>
-    <p style="color:var(--t3);font-size:0.78rem;margin-top:8px">Note: 3 entries (llmPhaseOverridesJson, llmProviderRegistryJson, localOutputRoot) have no explicit group field. Total with group: 133. Total entries: 136.</p>
+    <p style="color:var(--t3);font-size:0.78rem;margin-top:8px">Note: 3 entries (llmPhaseOverridesJson, llmProviderRegistryJson, localOutputRoot) have no explicit group field. Total with group: 143. Total entries: 146.</p>
   </div>
 
   <div class="domain-group">
@@ -592,7 +594,7 @@ svg text{font-family:var(--sans)}
 <section class="surface" id="stores" data-search="store module registry sql tables ownership">
   <div class="surface-head">
     <h2>Store Module Registry</h2>
-    <span class="tag tag-store">19 modules</span>
+    <span class="tag tag-store">20 modules</span>
   </div>
   <p class="surface-desc">Each store module owns a set of SQL tables and provides the read/write API for its domain. No other module may directly query another store's tables. Store modules are initialized at database open time and exposed through the SpecDb facade. Operational stores (deletionStore, purgeStore, provenanceStore) work across multiple stores' tables rather than owning dedicated tables. All store files live in <code>src/db/stores/</code>.</p>
 
@@ -792,7 +794,7 @@ svg text{font-family:var(--sans)}
 
   <div class="tree-block"><span class="dir">.workspace/</span>
   <span class="dir">db/</span>
-    <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps, color registry (6 tables)</span>
+    <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps, color registry, unit registry (7 tables)</span>
     <span class="dir">{category}/</span>
       <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: 36 base tables</span>
   <span class="dir">runs/</span>
@@ -869,7 +871,7 @@ svg text{font-family:var(--sans)}
 
     <div class="principle-card" style="border-color:var(--rose)">
       <h4 style="color:var(--rose)">O(1) Feature Scaling via Registry</h4>
-      <p>The RUNTIME_SETTINGS_REGISTRY (136 entries) drives config, TypeScript types, UI rendering, and validation from a single definition. Adding a new setting requires modifying exactly one file &mdash; everything else auto-derives.</p>
+      <p>The RUNTIME_SETTINGS_REGISTRY (146 entries) drives config, TypeScript types, UI rendering, and validation from a single definition. Adding a new setting requires modifying exactly one file &mdash; everything else auto-derives.</p>
     </div>
 
     <div class="principle-card" style="border-color:var(--cyan)">
@@ -899,7 +901,7 @@ svg text{font-family:var(--sans)}
   </div>
 
   <div class="domain-group">
-    <div class="domain-label">Feature Modules (12)</div>
+    <div class="domain-label">Feature Modules (16)</div>
     <table class="col-table">
       <thead><tr><th>Module</th><th>Path</th></tr></thead>
       <tbody>
@@ -910,11 +912,15 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">crawl</td><td class="ct">src/features/crawl/</td></tr>
         <tr><td class="cn">extraction</td><td class="ct">src/features/extraction/</td></tr>
         <tr><td class="cn">indexing</td><td class="ct">src/features/indexing/</td></tr>
+        <tr><td class="cn">module-settings</td><td class="ct">src/features/module-settings/</td></tr>
+        <tr><td class="cn">product-image</td><td class="ct">src/features/product-image/</td></tr>
+        <tr><td class="cn">publisher</td><td class="ct">src/features/publisher/</td></tr>
         <tr><td class="cn">review</td><td class="ct">src/features/review/</td></tr>
         <tr><td class="cn">review-curation</td><td class="ct">src/features/review-curation/</td></tr>
         <tr><td class="cn">settings</td><td class="ct">src/features/settings/</td></tr>
         <tr><td class="cn">settings-authority</td><td class="ct">src/features/settings-authority/</td></tr>
         <tr><td class="cn">studio</td><td class="ct">src/features/studio/</td></tr>
+        <tr><td class="cn">unit-registry</td><td class="ct">src/features/unit-registry/</td></tr>
       </tbody>
     </table>
   </div>

@@ -135,7 +135,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <p>Complete run lifecycle from start to completion. Every phase, every data read/write, every SQL table touched. Validated against <code>pipelinePhaseRegistry.js</code>, <code>buildRuntimeOpsPanels.js</code>, and <code>runtimeStageDefs.js</code>.</p>
   <div class="meta">
     <span>Spec Factory</span>
-    <span>Audited 2026-04-04</span>
+    <span>Audited 2026-04-11</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -143,10 +143,10 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 <!-- ═══════════════════════ STATS ═══════════════════════ -->
 <div class="stats">
   <div class="stat"><div class="n">8</div><div class="l">Pipeline Phases</div></div>
-  <div class="stat"><div class="n">42</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n">44</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
-  <div class="stat"><div class="n">3</div><div class="l">Worker Pools</div></div>
+  <div class="stat"><div class="n">5</div><div class="l">Worker Pools</div></div>
 </div>
 
 <!-- ═══════════════════════ LEGEND ═══════════════════════ -->
@@ -289,7 +289,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
       <!-- SQL indicator -->
       <circle cx="624" cy="360" r="5" fill="#22c55e"/>
-      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (36 tables) + AppDb (6 tables) = 42 base tables</text>
+      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (38 tables) + AppDb (6 tables) = 44 base tables</text>
 
       <!-- File indicator -->
       <circle cx="624" cy="384" r="5" fill="#f59e0b"/>
@@ -303,18 +303,26 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <circle cx="624" cy="432" r="5" fill="#3b82f6"/>
       <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, query_cooldowns/url_crawl_ledger, prior run artifacts</text>
 
-      <!-- Worker pool annotations -->
-      <rect x="600" y="460" width="170" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
-      <text x="685" y="480" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700" letter-spacing="0.06em">SEARCH WORKERS</text>
-      <text x="685" y="496" text-anchor="middle" fill="#475569" font-size="9">Phase 06</text>
+      <!-- Worker pool annotations (5 pools) -->
+      <rect x="600" y="460" width="105" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+      <text x="652" y="480" text-anchor="middle" fill="#3b82f6" font-size="9" font-weight="700" letter-spacing="0.06em">SEARCH WORKERS</text>
+      <text x="652" y="496" text-anchor="middle" fill="#475569" font-size="8">Phase 06</text>
 
-      <rect x="790" y="460" width="170" height="48" rx="6" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
-      <text x="875" y="480" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700" letter-spacing="0.06em">FETCH WORKERS</text>
-      <text x="875" y="496" text-anchor="middle" fill="#475569" font-size="9">stage:crawl</text>
+      <rect x="712" y="460" width="105" height="48" rx="6" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+      <text x="764" y="480" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="700" letter-spacing="0.06em">FETCH WORKERS</text>
+      <text x="764" y="496" text-anchor="middle" fill="#475569" font-size="8">stage:crawl</text>
 
-      <rect x="980" y="460" width="170" height="48" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
-      <text x="1065" y="480" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700" letter-spacing="0.06em">LLM WORKERS</text>
-      <text x="1065" y="496" text-anchor="middle" fill="#475569" font-size="9">Phase 04 + stage:crawl</text>
+      <rect x="824" y="460" width="105" height="48" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
+      <text x="876" y="480" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700" letter-spacing="0.06em">PARSE WORKERS</text>
+      <text x="876" y="496" text-anchor="middle" fill="#475569" font-size="8">stage:crawl</text>
+
+      <rect x="936" y="460" width="105" height="48" rx="6" fill="rgba(8,145,178,0.08)" stroke="rgba(8,145,178,0.25)" stroke-width="1"/>
+      <text x="988" y="480" text-anchor="middle" fill="#0891b2" font-size="9" font-weight="700" letter-spacing="0.06em">INDEX WORKERS</text>
+      <text x="988" y="496" text-anchor="middle" fill="#475569" font-size="8">stage:crawl</text>
+
+      <rect x="1048" y="460" width="105" height="48" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+      <text x="1100" y="480" text-anchor="middle" fill="#8b5cf6" font-size="9" font-weight="700" letter-spacing="0.06em">LLM WORKERS</text>
+      <text x="1100" y="496" text-anchor="middle" fill="#475569" font-size="8">Phase 04 + stage:crawl</text>
 
       <!-- Fetch plugins annotation -->
       <rect x="30" y="460" width="540" height="48" rx="6" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.06)" stroke-width="1"/>
@@ -774,6 +782,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Worker Pools</div>
         <ul class="op-list">
           <li>Fetch workers &mdash; parallel browser-based crawl pool (Crawlee/Playwright)</li>
+          <li>Parse workers &mdash; parallel document parsing pool</li>
+          <li>Index workers &mdash; parallel evidence extraction and indexing pool</li>
           <li>LLM workers &mdash; parallel extraction review pool (value quality assessment)</li>
         </ul>
       </div>
@@ -1114,7 +1124,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       </tr>
       <tr>
         <td class="panel-name">workers</td>
-        <td class="panel-desc">Search, fetch, and LLM worker pool states</td>
+        <td class="panel-desc">Search, fetch, parse, index, and LLM worker pool states</td>
         <td>Bridge events + source indexing packets + field-rule metadata</td>
         <td><code>run_summary</code> telemetry events, plus source packet fallback when available</td>
       </tr>
@@ -1383,7 +1393,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
 <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
 <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
-  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Audited 2026-04-04</p>
+  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Audited 2026-04-11</p>
   <p style="color:var(--t3);font-size:0.72rem;margin-top:4px">Validated against pipelinePhaseRegistry.js, buildRuntimeOpsPanels.js, runtimeStageDefs.js, and all 8 phaseDescriptor files.</p>
 </footer>
 
