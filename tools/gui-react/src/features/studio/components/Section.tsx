@@ -64,3 +64,26 @@ export function Section({
     </div>
   );
 }
+
+// WHY: Visual sub-grouping within a Section. Provides a label + optional disabled state
+// with a subtle border separator. Not collapsible — just a layout grouping.
+interface SubSectionProps {
+  label: string;
+  children: ReactNode;
+  disabled?: boolean;
+  disabledHint?: string;
+}
+
+export function SubSection({ label, children, disabled, disabledHint }: SubSectionProps) {
+  return (
+    <div className={`border-t sf-border-default pt-3 first:border-t-0 first:pt-0${disabled ? ' opacity-50' : ''}`}>
+      <div className="text-[11px] font-semibold sf-text-subtle mb-2 uppercase tracking-wide">{label}</div>
+      <div className={disabled ? 'pointer-events-none' : ''}>
+        {children}
+      </div>
+      {disabled && disabledHint ? (
+        <div className="text-xs sf-text-subtle italic mt-1">{disabledHint}</div>
+      ) : null}
+    </div>
+  );
+}

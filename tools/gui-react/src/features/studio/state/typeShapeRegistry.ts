@@ -22,7 +22,7 @@ export const UNIT_BEARING_TYPES: ReadonlySet<string> = new Set<FieldType>([
 // WHY: O(1) coupling map. When user changes contract.type in the studio, these side-effects
 // are applied automatically. Adding coupling for a new type = one entry here, not an if/else branch.
 export const TYPE_COUPLING_MAP: Partial<Record<FieldType, Record<string, unknown>>> = {
-  boolean: { 'enum.policy': 'closed', 'enum.source': 'yes_no' },
+  boolean: { 'enum.policy': 'closed', 'enum.source': 'yes_no', 'contract.shape': 'scalar' },
 };
 
 export function isUnitBearingType(type: string): boolean {

@@ -772,6 +772,7 @@
       "value_column": ""
     }
   ],
+  "eg_toggles": {},
   "enum_lists": [],
   "enum_sources": [],
   "expectations": {
@@ -807,6 +808,9 @@
   ],
   "field_overrides": {
     "acceleration": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "acceleration",
         "max acceleration",
@@ -942,6 +946,9 @@
       "variance_policy": "upper_bound"
     },
     "adjustable_scroll_wheel": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "adjustable_scroll_wheel",
@@ -1090,6 +1097,9 @@
       "value_form_sample": "scalar"
     },
     "adjustable_weight": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "adjustable_weight",
@@ -1242,6 +1252,9 @@
       "value_form_sample": "scalar"
     },
     "battery_hours": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "battery_hours",
         "battery life",
@@ -1368,6 +1381,9 @@
       "value_form_sample": "scalar"
     },
     "bluetooth": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "bluetooth",
@@ -1520,6 +1536,9 @@
       "value_form_sample": "scalar"
     },
     "cable_type": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "cable_type",
@@ -1635,6 +1654,9 @@
       "value_form_sample": "scalar"
     },
     "click_force": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "click_force",
@@ -1755,6 +1777,9 @@
       "variance_policy": "override_allowed"
     },
     "click_latency": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "click_latency",
@@ -1885,6 +1910,9 @@
       "value_form_sample": "scalar"
     },
     "click_latency_bluetooth": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "click latency (bluetooth)",
         "click latency bluetooth"
@@ -2008,6 +2036,9 @@
       "value_form_sample": "scalar"
     },
     "click_latency_wired": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "click latency (wired)",
         "click latency wired"
@@ -2131,6 +2162,9 @@
       "value_form_sample": "scalar"
     },
     "click_latency_wireless": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "click latency (wireless)",
         "click latency wireless"
@@ -2254,6 +2288,9 @@
       "value_form_sample": "scalar"
     },
     "coating": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "coating",
@@ -2403,7 +2440,6 @@
         "type": "string"
       },
       "enum": {
-        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": false
@@ -2561,6 +2597,9 @@
       }
     },
     "computer_side_connector": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "computer_side_connector",
@@ -2674,6 +2713,9 @@
       "value_form_sample": "scalar"
     },
     "connection": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "connection",
@@ -2807,6 +2849,9 @@
       "value_form_sample": "scalar"
     },
     "connectivity": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "connectivity",
@@ -2943,6 +2988,9 @@
       "value_form_sample": "list"
     },
     "debounce": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "debounce",
@@ -3061,6 +3109,9 @@
       "value_form_sample": "scalar"
     },
     "design": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "design",
@@ -3183,6 +3234,9 @@
       "value_form_sample": "list"
     },
     "discontinued": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "discontinued",
@@ -3324,6 +3378,9 @@
       "value_form_sample": "scalar"
     },
     "dpi": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "dpi",
         "max dpi",
@@ -3472,7 +3529,6 @@
         "type": "string"
       },
       "enum": {
-        "match": {},
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3518,6 +3574,9 @@
       }
     },
     "encoder": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "encoder",
@@ -3629,6 +3688,9 @@
       "value_form_sample": "scalar"
     },
     "encoder_brand": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "encoder_brand",
@@ -3738,6 +3800,9 @@
       "value_form_sample": "scalar"
     },
     "encoder_link": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "encoder_link",
@@ -3840,6 +3905,9 @@
       "value_form_sample": "scalar"
     },
     "feet_material": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "feet_material",
@@ -3970,6 +4038,9 @@
       "value_form_sample": "scalar"
     },
     "flawless_sensor": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "flawless_sensor",
@@ -4124,6 +4195,9 @@
       "variance_policy": "authoritative"
     },
     "form_factor": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "form_factor",
@@ -4254,6 +4328,9 @@
       "value_form_sample": "scalar"
     },
     "front_flare": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "front_flare",
@@ -4380,6 +4457,9 @@
       "value_form_sample": "scalar"
     },
     "grip": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "grip",
@@ -4504,6 +4584,9 @@
       "value_form_sample": "list"
     },
     "hand_size": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "hand_size",
@@ -4625,6 +4708,9 @@
       "value_form_sample": "list"
     },
     "hardware_acceleration": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "hardware_acceleration",
@@ -4774,6 +4860,9 @@
       "value_form_sample": "scalar"
     },
     "height": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "height",
         "height_mm",
@@ -4898,6 +4987,9 @@
       "value_form_sample": "scalar"
     },
     "honeycomb_frame": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "honeycomb_frame",
@@ -5049,6 +5141,9 @@
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "hot_swappable",
@@ -5200,6 +5295,9 @@
       "value_form_sample": "scalar"
     },
     "hump": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "hump",
@@ -5328,6 +5426,9 @@
       "value_form_sample": "scalar"
     },
     "ips": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "ips",
         "max ips",
@@ -5451,6 +5552,9 @@
       "variance_policy": "upper_bound"
     },
     "lift": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "lift",
         "lod",
@@ -5589,6 +5693,9 @@
       "value_form_sample": "mixed_values_and_ranges"
     },
     "lift_settings": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "lift_settings",
@@ -5717,6 +5824,9 @@
       "value_form_sample": "list"
     },
     "lighting": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "lighting",
@@ -5853,6 +5963,9 @@
       "value_form_sample": "list"
     },
     "lngth": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "length",
         "length_mm",
@@ -5977,6 +6090,9 @@
       "value_form_sample": "scalar"
     },
     "material": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "material",
@@ -6095,6 +6211,9 @@
       "value_form_sample": "scalar"
     },
     "mcu": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "mcu",
@@ -6219,6 +6338,9 @@
       "value_form_sample": "scalar"
     },
     "mcu_link": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "mcu_link",
@@ -6323,6 +6445,9 @@
       "value_form_sample": "scalar"
     },
     "middle_buttons": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "middle_buttons",
@@ -6436,6 +6561,9 @@
       "value_form_sample": "scalar"
     },
     "motion_sync": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "motion_sync",
@@ -6586,6 +6714,9 @@
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "mouse_side_connector",
@@ -6697,6 +6828,9 @@
       "value_form_sample": "scalar"
     },
     "nvidia_reflex": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "rare",
       "canonical_key": "nvidia_reflex",
@@ -6847,6 +6981,9 @@
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "onboard_memory",
@@ -6998,6 +7135,9 @@
       "value_form_sample": "scalar"
     },
     "onboard_memory_value": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "onboard_memory_value",
@@ -7111,6 +7251,9 @@
       "value_form_sample": "scalar"
     },
     "paracord": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "paracord",
@@ -7261,6 +7404,9 @@
       "value_form_sample": "scalar"
     },
     "polling_rate": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "polling_rate",
         "polling",
@@ -7410,6 +7556,9 @@
       "value_form_sample": "list"
     },
     "price_range": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "price_range",
@@ -7524,6 +7673,9 @@
       "value_form_sample": "scalar"
     },
     "profile_switching": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "profile_switching",
@@ -7673,6 +7825,9 @@
       "value_form_sample": "scalar"
     },
     "programmable_buttons": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "programmable_buttons",
@@ -7789,6 +7944,9 @@
       "value_form_sample": "scalar"
     },
     "release_date": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "release_date",
@@ -7914,6 +8072,9 @@
       "value_form_sample": "scalar"
     },
     "rgb": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "rgb",
@@ -7922,24 +8083,21 @@
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "boolean",
+        "type": "string",
         "unit": null
       },
-      "data_type": "boolean",
+      "data_type": "string",
       "difficulty": "easy",
       "display_name": "RGB",
       "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "closed",
+        "policy": "open_prefer_known",
         "source": "known_values.yes_no"
       },
-      "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_policy": "open_prefer_known",
+      "enum_source": "known_values.yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -8042,7 +8200,7 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "boolean",
+      "type": "string",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
@@ -8065,6 +8223,9 @@
       "value_form_sample": "scalar"
     },
     "sensor": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "sensor",
@@ -8190,6 +8351,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_brand": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "sensor_brand",
@@ -8307,6 +8471,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_date": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "sensor_date",
@@ -8434,6 +8601,9 @@
       "variance_policy": "authoritative"
     },
     "sensor_latency": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "sensor_latency",
@@ -8563,6 +8733,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_bluetooth": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "sensor latency (bluetooth)",
         "sensor latency bluetooth"
@@ -8685,6 +8858,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_wired": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "sensor latency (wired)",
         "sensor latency wired"
@@ -8807,6 +8983,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_latency_wireless": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "sensor latency (wireless)",
         "sensor latency wireless"
@@ -8929,6 +9108,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_link": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "sensor_link",
@@ -9039,6 +9221,9 @@
       "value_form_sample": "scalar"
     },
     "sensor_type": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "sensor_type",
@@ -9166,6 +9351,9 @@
       "variance_policy": "authoritative"
     },
     "shape": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "shape",
@@ -9296,6 +9484,9 @@
       "value_form_sample": "scalar"
     },
     "shift_latency": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "shift_latency",
@@ -9412,6 +9603,9 @@
       "value_form_sample": "scalar"
     },
     "side_buttons": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "side_buttons",
@@ -9527,6 +9721,9 @@
       "value_form_sample": "scalar"
     },
     "silent_clicks": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "silent_clicks",
@@ -9678,6 +9875,9 @@
       "value_form_sample": "scalar"
     },
     "sku": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "sku",
@@ -9796,6 +9996,9 @@
       "value_form_sample": "scalar"
     },
     "smoothing": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "smoothing",
@@ -9946,6 +10149,9 @@
       "value_form_sample": "scalar"
     },
     "switch": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "switch",
@@ -10070,6 +10276,9 @@
       "value_form_sample": "scalar"
     },
     "switch_brand": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "switch_brand",
@@ -10188,6 +10397,9 @@
       "value_form_sample": "scalar"
     },
     "switch_type": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "switch_type",
@@ -10316,6 +10528,9 @@
       "variance_policy": "authoritative"
     },
     "switches_link": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "Switch Link",
         "switch_link",
@@ -10427,6 +10642,9 @@
       "value_form_sample": "scalar"
     },
     "thumb_rest": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "canonical_key": "thumb_rest",
@@ -10539,6 +10757,9 @@
       "value_form_sample": "scalar"
     },
     "tilt_scroll_wheel": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "tilt_scroll_wheel",
@@ -10689,6 +10910,9 @@
       "value_form_sample": "scalar"
     },
     "weight": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight",
         "weight_g",
@@ -10816,6 +11040,9 @@
       "value_form_sample": "scalar"
     },
     "width": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [
         "width",
         "width_mm",
@@ -10939,6 +11166,9 @@
       "value_form_sample": "scalar"
     },
     "wireless_charging": {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "wireless_charging",

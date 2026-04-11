@@ -222,7 +222,7 @@
       "tooltip_key": null,
       "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": null,
-      "type": "boolean",
+      "type": "string",
       "unit": ""
     },
     {
@@ -2468,6 +2468,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-10T21:44:35.026Z",
+  "generated_at": "2026-04-11T00:14:38.242Z",
   "version": 1
 }

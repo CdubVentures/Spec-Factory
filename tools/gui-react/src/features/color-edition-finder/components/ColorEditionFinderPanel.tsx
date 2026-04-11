@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { api } from '../../../api/client.ts';
@@ -21,6 +21,7 @@ import {
   useDeleteColorEditionFinderRunMutation,
   useDeleteColorEditionFinderAllMutation,
 } from '../api/colorEditionFinderQueries.ts';
+import { CefDeleteConfirmModal } from './CefDeleteConfirmModal.tsx';
 import {
   deriveFinderKpiCards,
   deriveCooldownState,
@@ -347,7 +348,8 @@ function resolveAccessModeForModel(registry: LlmProviderEntry[], model: string):
 }
 
 function buildRunHistoryColumns(
-  deleteRunMut: { mutate: (n: number) => void; isPending: boolean },
+  onDeleteRun: (runNumber: number) => void,
+  isDeletePending: boolean,
   registry: LlmProviderEntry[],
 ): ColumnDef<RunHistoryRow, unknown>[] {
   return [
@@ -432,8 +434,8 @@ function buildRunHistoryColumns(
       header: '',
       cell: ({ row }) => (
         <button
-          onClick={(e) => { e.stopPropagation(); deleteRunMut.mutate(row.original.runNumber); }}
-          disabled={deleteRunMut.isPending}
+          onClick={(e) => { e.stopPropagation(); onDeleteRun(row.original.runNumber); }}
+          disabled={isDeletePending}
           className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Delete
@@ -503,9 +505,32 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     queryFn: () => api.get<ColorRegistryEntry[]>('/colors'),
   });
 
+  const [deleteTarget, setDeleteTarget] = useState<
+    { kind: 'single'; runNumber: number } | { kind: 'all'; count: number } | null
+  >(null);
+
+  const requestDeleteRun = useCallback((runNumber: number) => {
+    setDeleteTarget({ kind: 'single', runNumber });
+  }, []);
+
+  const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    if (deleteTarget.kind === 'single') {
+      deleteRunMut.mutate(deleteTarget.runNumber, {
+        onSuccess: () => setDeleteTarget(null),
+      });
+    } else {
+      deleteAllMut.mutate(undefined, {
+        onSuccess: () => setDeleteTarget(null),
+      });
+    }
+  }, [deleteTarget, deleteRunMut, deleteAllMut]);
+
   const runHistoryColumns = useMemo(
-    () => buildRunHistoryColumns(deleteRunMut, providerRegistry),
-    [deleteRunMut, providerRegistry],
+    () => buildRunHistoryColumns(requestDeleteRun, isAnyDeletePending, providerRegistry),
+    [requestDeleteRun, isAnyDeletePending, providerRegistry],
   );
 
   if (!productId || !category) return null;
@@ -639,11 +664,11 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
                   Run History <span className="font-mono sf-text-subtle">{runHistoryRows.length} run{runHistoryRows.length !== 1 ? 's' : ''}</span>
                 </div>
                 <button
-                  onClick={() => deleteAllMut.mutate()}
-                  disabled={deleteAllMut.isPending}
+                  onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
+                  disabled={isAnyDeletePending}
                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  {deleteAllMut.isPending ? 'Deleting...' : 'Delete All'}
+                  Delete All
                 </button>
               </div>
               <DataTable
@@ -679,6 +704,15 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
             )}
           </div>
         </div>
+      )}
+
+      {deleteTarget && (
+        <CefDeleteConfirmModal
+          target={deleteTarget}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+          isPending={isAnyDeletePending}
+        />
       )}
     </div>
   );

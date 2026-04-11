@@ -10,6 +10,8 @@ import fsSync from 'node:fs';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { sha256Hex } from '../../shared/contentHash.js';
+import { hashJson } from '../../ingest/compileUtils.js';
+import { normalizeFieldStudioMap } from '../../ingest/compileMapNormalization.js';
 import { loadCategoryConfig } from '../../categories/loader.js';
 import { loadFieldRules } from '../../field-rules/loader.js';
 
@@ -48,8 +50,11 @@ export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
     // 1. Wipe + re-import field_studio_map table
     specDb.db.prepare('DELETE FROM field_studio_map WHERE id = 1').run();
     if (Object.keys(map).length > 0) {
-      const mapHash = sha256Hex(JSON.stringify(map));
-      specDb.upsertFieldStudioMap(JSON.stringify(map), mapHash);
+      // WHY: normalize before hashing so the stored map_hash matches what
+      // compileProcessCompletion will compute — prevents compileStale drift.
+      const normalizedMap = normalizeFieldStudioMap(map);
+      const mapHash = hashJson(normalizedMap);
+      specDb.upsertFieldStudioMap(JSON.stringify(normalizedMap), mapHash);
     }
 
     // 2. Reconcile list_values source='manual' from data_lists manual_values

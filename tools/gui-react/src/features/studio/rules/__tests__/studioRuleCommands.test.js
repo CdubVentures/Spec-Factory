@@ -81,3 +81,134 @@ test('priority signal coupling no longer auto-generates reasoning_note after kno
   });
   assert.equal(manualRule.ai_assist?.reasoning_note, 'Check manufacturer spec sheets first');
 });
+
+// ---------------------------------------------------------------------------
+// Cascade integration tests — verifying ruleCommands wires fieldCascadeRegistry
+// ---------------------------------------------------------------------------
+
+test('cascade: contract.type number→string clears unit, range, rounding via applyStudioRuleCommand', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'number', unit: 'g', range: { min: 10, max: 100 }, rounding: { decimals: 2 } },
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'weight',
+    command: createSetFieldValueCommand('contract.type', 'string'),
+  });
+
+  assert.equal(rule.contract.type, 'string');
+  assert.equal(rule.contract.unit, null, 'unit cleared');
+  assert.equal(rule.contract.range.min, null, 'range.min cleared');
+  assert.equal(rule.contract.range.max, null, 'range.max cleared');
+  assert.equal(rule.contract.rounding.decimals, null, 'rounding.decimals cleared');
+});
+
+test('cascade: contract.type to integer sets rounding.decimals=0', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'number', rounding: { decimals: 3 } },
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'dpi',
+    command: createSetFieldValueCommand('contract.type', 'integer'),
+  });
+
+  assert.equal(rule.contract.rounding.decimals, 0);
+});
+
+test('cascade: contract.type boolean sets shape=scalar via TYPE_COUPLING_MAP', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = { contract: { type: 'string', shape: 'list' } };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'wireless',
+    command: createSetFieldValueCommand('contract.type', 'boolean'),
+  });
+
+  assert.equal(rule.contract.shape, 'scalar', 'boolean forces scalar shape');
+  assert.equal(rule.enum?.policy, 'closed', 'boolean forces closed enum');
+  // Legacy alias sync
+  assert.equal(rule.shape, 'scalar');
+});
+
+test('cascade: contract.shape list→scalar clears list_rules', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { shape: 'list', list_rules: { dedupe: true, sort: 'asc', item_union: 'set_union' } },
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'colors',
+    command: createSetFieldValueCommand('contract.shape', 'scalar'),
+  });
+
+  assert.equal(rule.contract.list_rules.dedupe, null);
+  assert.equal(rule.contract.list_rules.sort, null);
+  assert.equal(rule.contract.list_rules.item_union, null);
+});
+
+test('cascade: component object set with type cascades to enum via path alias', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {};
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'sensor',
+    command: createSetFieldValueCommand('component', {
+      type: 'sensor',
+      source: 'component_db.sensor',
+      allow_new_components: true,
+      require_identity_evidence: true,
+    }),
+  });
+
+  assert.equal(rule.enum?.source, 'component_db.sensor', 'cascade sets enum.source');
+  assert.equal(rule.enum?.policy, 'open_prefer_known', 'cascade sets enum.policy');
+  assert.equal(rule.enum_source, 'component_db.sensor', 'legacy alias synced');
+  assert.equal(rule.enum_policy, 'open_prefer_known', 'legacy alias synced');
+});
+
+test('cascade: component cleared (null) reverts component_db enum', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    component: { type: 'sensor', source: 'component_db.sensor' },
+    enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+    enum_source: 'component_db.sensor',
+    enum_policy: 'open_prefer_known',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'sensor',
+    command: createSetFieldValueCommand('component', null),
+  });
+
+  assert.equal(rule.enum?.source, null, 'enum.source cleared');
+  assert.equal(rule.enum?.policy, null, 'enum.policy cleared');
+});
+
+test('cascade: priority.required_level → identity floors evidence refs', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = { evidence: { min_evidence_refs: 0 } };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'brand',
+    command: createSetFieldValueCommand('priority.required_level', 'identity'),
+  });
+
+  assert.equal(rule.evidence.min_evidence_refs, 1, 'floored to 1');
+});

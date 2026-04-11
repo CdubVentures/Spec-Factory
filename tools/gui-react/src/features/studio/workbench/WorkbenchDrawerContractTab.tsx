@@ -10,6 +10,7 @@ import {
 import {
   isStudioContractFieldDeferredLocked,
 } from '../state/studioBehaviorContracts.ts';
+import { isFieldAvailable } from '../state/fieldCascadeRegistry.ts';
 import {
   boolN,
   numN,
@@ -41,19 +42,18 @@ export function ContractTab({
   rule,
   onUpdate,
   B,
+  disabled = false,
 }: {
   fieldKey: string;
   rule: Record<string, unknown>;
   onUpdate: (path: string, val: unknown) => void;
   B: BadgeSlot;
+  disabled?: boolean;
 }) {
   const { data: unitRegistryData } = useUnitRegistryQuery();
   const registryUnits = (unitRegistryData?.units ?? []).map(u => u.canonical);
   const tooltipMd = strN(rule, 'ui.tooltip_md');
   const contractType = strN(rule, 'contract.type', 'string');
-  const contractShape = strN(rule, 'contract.shape', 'scalar');
-  const isNumericContract = contractType === 'number' || contractType === 'integer';
-  const isListContract = contractShape === 'list';
 
   const parseRangeValue = (value: string) => {
     const trimmed = value.trim();
@@ -71,7 +71,7 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Data Type<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.data_type} /></span><B p="contract.type" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.type', 'string')} onChange={(e) => onUpdate('contract.type', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.type', 'string')} onChange={(e) => onUpdate('contract.type', e.target.value)} disabled={disabled}>
             <option value="string">string</option>
             <option value="number">number</option>
             <option value="integer">integer</option>
@@ -83,7 +83,7 @@ export function ContractTab({
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Shape<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.shape} /></span><B p="contract.shape" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.shape', 'scalar')} onChange={(e) => onUpdate('contract.shape', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.shape', 'scalar')} onChange={(e) => onUpdate('contract.shape', e.target.value)} disabled={disabled}>
             <option value="scalar">scalar</option>
             <option value="list">list</option>
             <option value="structured">structured</option>
@@ -94,36 +94,41 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Unit<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.contract_unit} /></span><B p="contract.unit" /></div>
-          <select className={selectCls} value={strN(rule, 'contract.unit')} onChange={(e) => onUpdate('contract.unit', e.target.value || null)}>
+          <select className={selectCls} value={strN(rule, 'contract.unit')} onChange={(e) => onUpdate('contract.unit', e.target.value || null)} disabled={disabled || !isFieldAvailable(rule, 'contract.unit')}>
             <option value="">— none —</option>
             {registryUnits.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
       </div>
       <div className="space-y-2">
-        <div className={`${labelCls} flex items-center`}><span>Range<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.contract_range} /></span><B p="contract.range" /></div>
         <div className="grid grid-cols-2 gap-3">
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
-            step={contractType === 'integer' ? 1 : 'any'}
-            value={strN(rule, 'contract.range.min')}
-            onChange={(e) => onUpdate('contract.range.min', parseRangeValue(e.target.value))}
-            placeholder="Min"
-            disabled={!isNumericContract}
-          />
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
-            step={contractType === 'integer' ? 1 : 'any'}
-            value={strN(rule, 'contract.range.max')}
-            onChange={(e) => onUpdate('contract.range.max', parseRangeValue(e.target.value))}
-            placeholder="Max"
-            disabled={!isNumericContract}
-          />
+          <div>
+            <div className={`${labelCls} flex items-center`}><span>Range Min<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.contract_range} /></span><B p="contract.range.min" /></div>
+            <input
+              className={`${inputCls} w-full`}
+              type="number"
+              step={contractType === 'integer' ? 1 : 'any'}
+              value={strN(rule, 'contract.range.min')}
+              onChange={(e) => onUpdate('contract.range.min', parseRangeValue(e.target.value))}
+              placeholder="Min"
+              disabled={!isFieldAvailable(rule, 'contract.range.min')}
+            />
+          </div>
+          <div>
+            <div className={`${labelCls} flex items-center`}><span>Range Max</span><B p="contract.range.max" /></div>
+            <input
+              className={`${inputCls} w-full`}
+              type="number"
+              step={contractType === 'integer' ? 1 : 'any'}
+              value={strN(rule, 'contract.range.max')}
+              onChange={(e) => onUpdate('contract.range.max', parseRangeValue(e.target.value))}
+              placeholder="Max"
+              disabled={!isFieldAvailable(rule, 'contract.range.max')}
+            />
+          </div>
         </div>
-        {!isNumericContract ? (
-          <div className={MUTED_ITALIC_TEXT_CLASS}>Available for number and integer contracts.</div>
+        {!isFieldAvailable(rule, 'contract.range.min') ? (
+          <div className={MUTED_ITALIC_TEXT_CLASS}>Available for numeric contracts.</div>
         ) : null}
       </div>
       <div className="space-y-2">
@@ -135,13 +140,13 @@ export function ContractTab({
               checked={boolN(rule, 'contract.list_rules.dedupe', true)}
               onChange={(e) => onUpdate('contract.list_rules.dedupe', e.target.checked)}
               className="rounded sf-border-soft"
-              disabled={!isListContract}
+              disabled={!isFieldAvailable(rule, 'contract.list_rules.dedupe')}
             />
             <span>Dedupe<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_dedupe} /></span>
           </label>
           <div>
             <div className={labelCls}>Sort<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_sort} /></div>
-            <select className={`${selectCls} w-full`} value={strN(rule, 'contract.list_rules.sort', 'none')} onChange={(e) => onUpdate('contract.list_rules.sort', e.target.value)} disabled={!isListContract}>
+            <select className={`${selectCls} w-full`} value={strN(rule, 'contract.list_rules.sort', 'none')} onChange={(e) => onUpdate('contract.list_rules.sort', e.target.value)} disabled={!isFieldAvailable(rule, 'contract.list_rules.dedupe')}>
               <option value="none">none</option>
               <option value="asc">asc</option>
               <option value="desc">desc</option>
@@ -149,14 +154,14 @@ export function ContractTab({
           </div>
           <div className="col-span-2">
             <div className={labelCls}>Item Union<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.list_rules_item_union} /></div>
-            <select className={`${selectCls} w-full`} value={strN(rule, 'contract.list_rules.item_union')} onChange={(e) => onUpdate('contract.list_rules.item_union', e.target.value || undefined)} disabled={!isListContract}>
+            <select className={`${selectCls} w-full`} value={strN(rule, 'contract.list_rules.item_union')} onChange={(e) => onUpdate('contract.list_rules.item_union', e.target.value || undefined)} disabled={!isFieldAvailable(rule, 'contract.list_rules.dedupe')}>
               <option value="">winner_only</option>
               <option value="set_union">set_union</option>
               <option value="ordered_union">ordered_union</option>
             </select>
           </div>
         </div>
-        {!isListContract ? (
+        {!isFieldAvailable(rule, 'contract.list_rules.dedupe') ? (
           <div className={MUTED_ITALIC_TEXT_CLASS}>Available when contract shape is list.</div>
         ) : null}
       </div>
@@ -178,11 +183,12 @@ export function ContractTab({
                 STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.fallback,
               ),
             )}
+            disabled={!isFieldAvailable(rule, 'contract.rounding.decimals')}
           />
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Rounding Mode<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.rounding_mode} /></span><B p="contract.rounding.mode" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)} disabled={isStudioContractFieldDeferredLocked('contract.rounding.mode')}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'contract.rounding.mode', 'nearest')} onChange={(e) => onUpdate('contract.rounding.mode', e.target.value)} disabled={isStudioContractFieldDeferredLocked('contract.rounding.mode')} title="Locked: applied at compile time">
             <option value="nearest">nearest</option>
             <option value="floor">floor</option>
             <option value="ceil">ceil</option>
@@ -193,7 +199,7 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Required Level<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.required_level} /></span><B p="priority.required_level" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'))} onChange={(e) => onUpdate('priority.required_level', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'))} onChange={(e) => onUpdate('priority.required_level', e.target.value)} disabled={disabled}>
             <option value="identity">identity</option>
             <option value="required">required</option>
             <option value="critical">critical</option>
@@ -205,7 +211,7 @@ export function ContractTab({
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Availability<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.availability} /></span><B p="priority.availability" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.availability', strN(rule, 'availability', 'expected'))} onChange={(e) => onUpdate('priority.availability', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.availability', strN(rule, 'availability', 'expected'))} onChange={(e) => onUpdate('priority.availability', e.target.value)} disabled={disabled}>
             <option value="always">always</option>
             <option value="expected">expected</option>
             <option value="sometimes">sometimes</option>
@@ -217,7 +223,7 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Difficulty<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.difficulty} /></span><B p="priority.difficulty" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'))} onChange={(e) => onUpdate('priority.difficulty', e.target.value)}>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'))} onChange={(e) => onUpdate('priority.difficulty', e.target.value)} disabled={disabled}>
             <option value="easy">easy</option>
             <option value="medium">medium</option>
             <option value="hard">hard</option>

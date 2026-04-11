@@ -230,6 +230,7 @@ export function WorkbenchDrawer({
           onUpdate={update}
           onNavigate={onNavigate}
           isEgLocked={isEgLocked}
+          disabled={isEgLocked && activeTab !== 'search'}
           B={B}
         />
       </div>

@@ -6,21 +6,24 @@ export interface StudioSetFieldValueCommand {
 
 export type StudioRuleCommand = StudioSetFieldValueCommand;
 
-const COMPONENT_TEMPLATE_TYPES: Record<string, string> = {
-  sensor: 'sensor',
-  switch: 'switch',
-  encoder: 'encoder',
-  material: 'material',
-};
-
-import { TYPE_COUPLING_MAP, isUnitBearingType } from '../state/typeShapeRegistry.ts';
+import { TYPE_COUPLING_MAP } from '../state/typeShapeRegistry.ts';
 import type { FieldType } from '../state/typeShapeRegistry.ts';
+import { getN } from '../state/nestedValueHelpers.ts';
+import { applyCascadeEffects } from '../state/fieldCascadeRegistry.ts';
 
 const PRIORITY_SIGNAL_PATHS = new Set([
   'priority.required_level',
   'priority.difficulty',
   'priority.effort',
 ]);
+
+// WHY: component path sets full object; extract .type for cascade comparison.
+const CASCADE_PATH_ALIASES: Record<string, (value: unknown) => { path: string; extracted: unknown }> = {
+  'component': (value) => ({
+    path: 'component.type',
+    extracted: value && typeof value === 'object' ? (value as Record<string, unknown>).type : '',
+  }),
+};
 
 export function createSetFieldValueCommand(
   path: string,
@@ -93,9 +96,14 @@ function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void 
   if (!effects) return;
   for (const [path, effectValue] of Object.entries(effects)) {
     setNestedRuleValue(rule, path, effectValue);
-    // WHY: Legacy alias sync for enum_policy/enum_source at top level.
+    // WHY: Legacy alias sync for enum_policy/enum_source/shape at top level.
     if (path === 'enum.policy') rule.enum_policy = effectValue;
     if (path === 'enum.source') rule.enum_source = effectValue;
+    if (path === 'contract.shape') {
+      rule.shape = effectValue;
+      rule.output_shape = effectValue;
+      rule.value_form = effectValue;
+    }
   }
 }
 
@@ -103,16 +111,6 @@ function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void 
 // Users set extraction guidance manually via ai_assist.reasoning_note.
 function applyPrioritySignalCoupling(_rule: Record<string, unknown>): void {
   // no-op after knob retirement
-}
-
-function applyComponentTypeCoupling(
-  rule: Record<string, unknown>,
-  value: unknown,
-): void {
-  const componentType = String(value || '');
-  if (!componentType) return;
-  setNestedRuleValue(rule, 'enum.source', `component_db.${componentType}`);
-  rule.enum_source = `component_db.${componentType}`;
 }
 
 export function applyStudioRuleCommand({
@@ -127,6 +125,15 @@ export function applyStudioRuleCommand({
   if (command.type !== 'set-field-value') return;
 
   const normalizedPath = String(command.path || '').trim();
+
+  // WHY: Capture previous values before mutation for cascade comparison.
+  const prevValues: Record<string, unknown> = {
+    'contract.type': getN(rule, 'contract.type'),
+    'contract.shape': getN(rule, 'contract.shape'),
+    'component.type': getN(rule, 'component.type'),
+    'priority.required_level': getN(rule, 'priority.required_level'),
+  };
+
   setNestedRuleValue(rule, normalizedPath, command.value);
   applyLegacyAliasCoupling(rule, normalizedPath, command.value);
 
@@ -138,9 +145,24 @@ export function applyStudioRuleCommand({
     applyPrioritySignalCoupling(rule);
   }
 
-  if (normalizedPath === 'component.type') {
-    applyComponentTypeCoupling(rule, command.value);
+  // WHY: Generic cascade engine replaces per-path manual coupling.
+  // All cascade rules live in fieldCascadeRegistry.ts (O(1) scaling).
+  let cascadePath = normalizedPath;
+  let cascadeNewVal: unknown = command.value;
+  const alias = CASCADE_PATH_ALIASES[normalizedPath];
+  if (alias) {
+    const resolved = alias(command.value);
+    cascadePath = resolved.path;
+    cascadeNewVal = resolved.extracted;
   }
+  const prevVal = prevValues[cascadePath];
+  applyCascadeEffects(rule, cascadePath, prevVal, cascadeNewVal);
+
+  // WHY: Legacy alias sync for cascade-derived enum changes.
+  const postEnumSource = getN(rule, 'enum.source');
+  const postEnumPolicy = getN(rule, 'enum.policy');
+  if (postEnumSource !== undefined) rule.enum_source = postEnumSource;
+  if (postEnumPolicy !== undefined) rule.enum_policy = postEnumPolicy;
 
   rule._edited = true;
 }

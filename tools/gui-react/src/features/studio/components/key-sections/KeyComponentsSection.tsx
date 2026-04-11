@@ -63,6 +63,8 @@ export function KeyComponentsSection({
               const v = e.target.value;
               if (!v) {
                 updateField(selectedKey, "component", null);
+                // WHY: Trigger cascade to clear component_db enum coupling.
+                updateField(selectedKey, "component.type", "");
               } else {
                 updateField(selectedKey, "component", {
                   type: v,
@@ -70,17 +72,7 @@ export function KeyComponentsSection({
                   allow_new_components: true,
                   require_identity_evidence: true,
                 });
-                // Cascade: Component DB -> Enum + UI
-                updateField(
-                  selectedKey,
-                  "enum.source",
-                  `component_db.${v}`,
-                );
-                updateField(
-                  selectedKey,
-                  "enum.policy",
-                  "open_prefer_known",
-                );
+                // WHY: enum.source/enum.policy cascade handled by fieldCascadeRegistry
               }
             }}
           >

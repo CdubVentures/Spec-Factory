@@ -1,231 +1,53 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../../../core/operations/index.js';
-import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
+/**
+ * Color & Edition Finder — route handler (thin config).
+ *
+ * Delegates to the generic finder route handler. CEF-specific parts:
+ * - routePrefix, moduleType, phase, fieldKeys
+ * - specDb method bindings
+ * - custom GET response shape (color_details, edition_details)
+ * - custom result meta for data-change events
+ */
 
-function cleanProductJsonCandidates(productId, fieldKeys) {
-  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
-  try {
-    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
-    if (!data.candidates) return;
-    for (const key of fieldKeys) delete data.candidates[key];
-    data.updated_at = new Date().toISOString();
-    fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
-  } catch { /* product.json may not exist */ }
-}
+import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 
 export function registerColorEditionFinderRoutes(ctx) {
-  const {
-    jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    logger, runColorEditionFinder,
-    deleteColorEditionFinderRun, deleteColorEditionFinderAll,
-  } = ctx;
+  return createFinderRouteHandler({
+    routePrefix: 'color-edition-finder',
+    moduleType: 'cef',
+    phase: 'colorFinder',
+    fieldKeys: ['colors', 'editions'],
 
-  return async function handleColorEditionFinderRoutes(parts, params, method, req, res) {
-    if (parts[0] !== 'color-edition-finder') return false;
+    runFinder: ctx.runColorEditionFinder,
+    deleteRun: ctx.deleteColorEditionFinderRun,
+    deleteAll: ctx.deleteColorEditionFinderAll,
 
-    const category = parts[1] || '';
-    const productId = parts[2] || '';
+    getOne: (specDb, pid) => specDb.getColorEditionFinder(pid),
+    listByCategory: (specDb, cat) => specDb.listColorEditionFinderByCategory(cat),
+    listRuns: (specDb, pid) => specDb.listColorEditionFinderRuns(pid),
+    upsertSummary: (specDb, row) => specDb.upsertColorEditionFinder(row),
+    deleteOneSql: (specDb, pid) => specDb.deleteColorEditionFinder(pid),
+    deleteRunSql: (specDb, pid, rn) => specDb.deleteColorEditionFinderRunByNumber(pid, rn),
+    deleteAllRunsSql: (specDb, pid) => specDb.deleteAllColorEditionFinderRuns(pid),
 
-    // GET /color-edition-finder/:category — list all for category
-    if (method === 'GET' && category && !productId) {
-      const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-      const rows = specDb.listColorEditionFinderByCategory(category);
-      return jsonRes(res, 200, rows);
-    }
+    buildGetResponse: (row, selected, runs, onCooldown) => ({
+      product_id: row.product_id,
+      category: row.category,
+      colors: row.colors,
+      editions: row.editions,
+      default_color: row.default_color,
+      cooldown_until: row.cooldown_until,
+      on_cooldown: onCooldown,
+      run_count: row.run_count,
+      last_ran_at: row.latest_ran_at,
+      selected,
+      runs,
+      color_details: selected.color_names || {},
+      edition_details: selected.editions || {},
+    }),
 
-    // GET /color-edition-finder/:category/:productId — single product results
-    if (method === 'GET' && category && productId) {
-      const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-      const row = specDb.getColorEditionFinder(productId);
-      if (!row) return jsonRes(res, 404, { error: 'not found' });
-
-      const now = new Date().toISOString();
-      const onCooldown = Boolean(row.cooldown_until && row.cooldown_until > now);
-
-      // Runs from SQL projection (frontend never reads JSON)
-      const runs = specDb.listColorEditionFinderRuns(productId);
-      // WHY: Latest-wins, but rejected runs have selected: {} (no colors).
-      // Fall back to summary row if latest run's selected is empty.
-      const latestRun = runs.length > 0 ? runs[runs.length - 1] : null;
-      const latestSelected = latestRun?.selected;
-      const selected = (latestSelected && Array.isArray(latestSelected.colors) && latestSelected.colors.length > 0)
-        ? latestSelected
-        : { colors: row.colors, editions: row.editions || [], default_color: row.default_color };
-
-      return jsonRes(res, 200, {
-        product_id: row.product_id,
-        category: row.category,
-        colors: row.colors,
-        editions: row.editions,
-        default_color: row.default_color,
-        cooldown_until: row.cooldown_until,
-        on_cooldown: onCooldown,
-        run_count: row.run_count,
-        last_ran_at: row.latest_ran_at,
-        selected,
-        runs,
-        color_details: selected.color_names || {},
-        edition_details: selected.editions || {},
-      });
-    }
-
-    // POST /color-edition-finder/:category/:productId — trigger finder
-    if (method === 'POST' && category && productId && !parts[3]) {
-      let op = null;
-      let batcher = null;
-      try {
-        const specDb = getSpecDb(category);
-        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-
-        const productRow = specDb.getProduct(productId);
-        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
-
-        // WHY: When jsonStrict is off for colorFinder, the LLM routing splits into
-        // Research (free-form) + Writer (schema formatting). Show 3 stages in that case.
-        const useWriterPhase = config._resolvedColorFinderJsonStrict === false;
-        const stages = useWriterPhase
-          ? ['Research', 'Writer', 'Validate']
-          : ['LLM', 'Validate'];
-
-        op = registerOperation({
-          type: 'cef',
-          category,
-          productId,
-          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
-          stages,
-        });
-
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
-
-        const result = await runColorEditionFinder({
-          product: {
-            product_id: productId,
-            category,
-            brand: productRow.brand || '',
-            model: productRow.model || '',
-            variant: productRow.variant || '',
-          },
-          appDb,
-          specDb,
-          config,
-          logger: logger || null,
-          onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-          onModelResolved: (info) =>
-            updateModelInfo({ id: op.id, ...info }),
-          onStreamChunk: ({ content }) => { if (content) batcher.push(content); },
-        });
-
-        batcher.dispose();
-
-        if (result.rejected) {
-          const reason = result.rejections?.[0]?.reason_code === 'llm_error' ? 'LLM call failed' : 'Validation rejected';
-          failOperation({ id: op.id, error: reason });
-        } else {
-          completeOperation({ id: op.id });
-        }
-
-        emitDataChange({
-          broadcastWs,
-          event: 'color-edition-finder-run',
-          category,
-          entities: { productIds: [productId] },
-          meta: { productId, colorsFound: result.colors.length, editionsFound: Object.keys(result.editions).length },
-        });
-
-        return jsonRes(res, 200, {
-          ok: true,
-          colors: result.colors,
-          editions: result.editions,
-          default_color: result.default_color,
-          fallbackUsed: result.fallbackUsed,
-        });
-      } catch (err) {
-        if (batcher) batcher.dispose();
-        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
-        const message = err instanceof Error ? err.message : String(err);
-        console.error('[color-edition-finder] POST failed:', message);
-        return jsonRes(res, 500, { error: 'finder failed', message });
-      }
-    }
-
-    // DELETE /color-edition-finder/:category/:productId/runs/:runNumber
-    if (method === 'DELETE' && category && productId && parts[3] === 'runs' && parts[4]) {
-      const runNumber = Number(parts[4]);
-      if (!Number.isFinite(runNumber) || runNumber < 1) {
-        return jsonRes(res, 400, { error: 'invalid run number' });
-      }
-
-      const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-
-      specDb.deleteColorEditionFinderRunByNumber(productId, runNumber);
-      const updated = deleteColorEditionFinderRun({ productId, runNumber });
-
-      // WHY: Candidates represent accumulated validated knowledge across runs.
-      // Single-run deletion does NOT nuke candidates. Only delete-all does.
-
-      if (updated) {
-        // Sync SQL summary from recalculated state
-        specDb.upsertColorEditionFinder({
-          category,
-          product_id: productId,
-          colors: updated.selected?.colors || [],
-          editions: Object.keys(updated.selected?.editions || {}),
-          default_color: updated.selected?.default_color || '',
-          cooldown_until: updated.cooldown_until || '',
-          latest_ran_at: updated.last_ran_at || '',
-          run_count: updated.run_count || 0,
-        });
-      } else {
-        // No runs left — delete SQL rows
-        specDb.deleteAllColorEditionFinderRuns(productId);
-        specDb.deleteColorEditionFinder(productId);
-      }
-
-      emitDataChange({
-        broadcastWs,
-        event: 'color-edition-finder-run-deleted',
-        category,
-        entities: { productIds: [productId] },
-        meta: { productId, deletedRun: runNumber, remainingRuns: updated?.run_count || 0 },
-      });
-
-      return jsonRes(res, 200, {
-        ok: true,
-        remaining_runs: updated?.run_count || 0,
-      });
-    }
-
-    // DELETE /color-edition-finder/:category/:productId — delete all
-    if (method === 'DELETE' && category && productId && !parts[3]) {
-      const specDb = getSpecDb(category);
-      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-
-      deleteColorEditionFinderAll({ productId });
-      specDb.deleteAllColorEditionFinderRuns(productId);
-      specDb.deleteColorEditionFinder(productId);
-
-      // Clean up candidates for CEF fields
-      specDb.deleteFieldCandidatesByProductAndField(productId, 'colors');
-      specDb.deleteFieldCandidatesByProductAndField(productId, 'editions');
-      cleanProductJsonCandidates(productId, ['colors', 'editions']);
-
-      emitDataChange({
-        broadcastWs,
-        event: 'color-edition-finder-deleted',
-        category,
-        entities: { productIds: [productId] },
-        meta: { productId },
-      });
-
-      return jsonRes(res, 200, { ok: true });
-    }
-
-    return false;
-  };
+    buildResultMeta: (result) => ({
+      colorsFound: Array.isArray(result.colors) ? result.colors.length : 0,
+      editionsFound: result.editions ? Object.keys(result.editions).length : 0,
+    }),
+  })(ctx);
 }

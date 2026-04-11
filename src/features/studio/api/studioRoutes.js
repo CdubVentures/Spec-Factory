@@ -1,6 +1,7 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { hashJson } from '../../../ingest/compileUtils.js';
+import { normalizeFieldStudioMap } from '../../../ingest/compileMapNormalization.js';
 import {
   applyEnumConsistencyToSuggestions,
   buildPendingEnumValuesFromSuggestions,
@@ -123,8 +124,11 @@ export function registerStudioRoutes(ctx) {
         const specDb = getSpecDb(category);
         if (specDb) {
           try {
-            specDb.upsertFieldStudioMap(JSON.stringify(patched), hashJson(patched));
-            saveFieldStudioMap(category, patched).catch(() => {});
+            // WHY: normalize before hashing so DB hash matches what compile
+            // re-sync will compute — prevents perpetual compileStale orange.
+            const normalizedPatched = normalizeFieldStudioMap(patched);
+            specDb.upsertFieldStudioMap(JSON.stringify(normalizedPatched), hashJson(normalizedPatched));
+            saveFieldStudioMap({ category, fieldStudioMap: normalizedPatched, config }).catch(() => {});
             sessionCache.invalidateSessionCache(category);
           } catch { /* non-critical migration write */ }
         }

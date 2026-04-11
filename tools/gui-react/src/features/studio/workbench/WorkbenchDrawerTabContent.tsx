@@ -29,6 +29,7 @@ export interface WorkbenchDrawerTabContentProps {
   onUpdate: (path: string, value: unknown) => void;
   onNavigate: (key: string) => void;
   isEgLocked?: boolean;
+  disabled?: boolean;
   B: BadgeSlot;
 }
 
@@ -48,10 +49,11 @@ export function WorkbenchDrawerTabContent({
   onUpdate,
   onNavigate,
   isEgLocked = false,
+  disabled = false,
   B,
 }: WorkbenchDrawerTabContentProps) {
   if (activeTab === 'contract') {
-    return <ContractTab fieldKey={fieldKey} rule={rule} onUpdate={onUpdate} B={B} />;
+    return <ContractTab fieldKey={fieldKey} rule={rule} onUpdate={onUpdate} B={B} disabled={disabled} />;
   }
   if (activeTab === 'enum') {
     return (
@@ -72,7 +74,7 @@ export function WorkbenchDrawerTabContent({
     );
   }
   if (activeTab === 'evidence') {
-    return <EvidenceTab rule={rule} onUpdate={onUpdate} B={B} />;
+    return <EvidenceTab rule={rule} onUpdate={onUpdate} B={B} disabled={disabled} />;
   }
   if (activeTab === 'search') {
     return <SearchTab rule={rule} onUpdate={onUpdate} B={B} />;
@@ -87,6 +89,7 @@ export function WorkbenchDrawerTabContent({
         knownValues={knownValues}
         onNavigate={onNavigate}
         B={B}
+        disabled={disabled}
       />
     );
   }

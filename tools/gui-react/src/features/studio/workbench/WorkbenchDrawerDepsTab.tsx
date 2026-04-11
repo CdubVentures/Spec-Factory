@@ -39,6 +39,7 @@ export function DepsTab({
   knownValues,
   onNavigate,
   B,
+  disabled = false,
 }: {
   rule: Record<string, unknown>;
   fieldKey: string;
@@ -47,6 +48,7 @@ export function DepsTab({
   knownValues: Record<string, string[]>;
   onNavigate: (key: string) => void;
   B: BadgeSlot;
+  disabled?: boolean;
 }) {
   const { editedRules } = useStudioFieldRulesState();
   const [newConstraint, setNewConstraint] = useState('');
@@ -67,10 +69,13 @@ export function DepsTab({
         <select
           className={`${selectCls} w-full`}
           value={strN(rule, 'component.type')}
+          disabled={disabled}
           onChange={(e) => {
             const v = e.target.value;
             if (!v) {
               onUpdate('component', null);
+              // WHY: Trigger cascade to clear component_db enum coupling.
+              onUpdate('component.type', '');
             } else {
               onUpdate('component', {
                 type: v,
@@ -78,8 +83,7 @@ export function DepsTab({
                 allow_new_components: true,
                 require_identity_evidence: true,
               });
-              onUpdate('enum.source', `component_db.${v}`);
-              onUpdate('enum.policy', 'open_prefer_known');
+              // WHY: enum.source/enum.policy cascade handled by fieldCascadeRegistry
             }
           }}
         >
@@ -320,8 +324,9 @@ export function DepsTab({
                 const isKnownField = Boolean(editedRules[dep]);
                 if (!isKnownField) {
                   return (
-                    <span key={dep} className="px-1.5 py-0.5 rounded text-[10px] sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle">
+                    <span key={dep} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-800 dark:sf-text-subtle" title={`'${dep}' is not a recognized field key in this category`}>
                       {dep}
+                      <span className="text-[9px] px-1 rounded sf-surface-warning-soft sf-border-warning border font-medium">unknown</span>
                     </span>
                   );
                 }

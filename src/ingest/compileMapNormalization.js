@@ -479,7 +479,10 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     },
     field_groups: Array.isArray(map.field_groups)
       ? orderedUniqueStrings(toArray(map.field_groups).map(g => String(g || '').trim()).filter(Boolean))
-      : []
+      : [],
+    // WHY: eg_toggles controls which EG-locked fields are active. Must survive
+    // normalization so hash stays stable across migration → compile re-sync cycles.
+    eg_toggles: isObject(map.eg_toggles) ? map.eg_toggles : {},
   };
 }
 

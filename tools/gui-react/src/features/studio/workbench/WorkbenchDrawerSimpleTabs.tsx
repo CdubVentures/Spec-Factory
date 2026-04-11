@@ -90,10 +90,12 @@ export function EvidenceTab({
   rule,
   onUpdate,
   B,
+  disabled = false,
 }: {
   rule: Record<string, unknown>;
   onUpdate: (path: string, val: unknown) => void;
   B: BadgeSlot;
+  disabled?: boolean;
 }) {
   const requiredLevel = strN(rule, 'priority.required_level');
   const publishGated = requiredLevel === 'identity' || requiredLevel === 'required';
@@ -123,6 +125,7 @@ export function EvidenceTab({
                 STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
               ),
             )}
+            disabled={disabled}
           />
         </div>
       </div>
