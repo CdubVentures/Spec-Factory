@@ -2,7 +2,7 @@
 
 > **Purpose:** List the verified third-party or out-of-process integrations and distinguish active runtime boundaries from absent ones.
 > **Prerequisites:** [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Integration Table
 

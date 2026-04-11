@@ -59,7 +59,7 @@ export function SidebarShell<T extends string>({
         {items.map((item) => {
           const isActive = activeItem === item.id;
           const itemGroup = item.group;
-          const showDivider = groupLabels && itemGroup && itemGroup !== lastGroup && itemGroup !== 'global';
+          const showDivider = groupLabels && itemGroup && lastGroup !== undefined && itemGroup !== lastGroup;
           lastGroup = itemGroup;
 
           return (

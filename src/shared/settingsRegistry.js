@@ -75,6 +75,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "openaiApiKey", type: "string", default: "", secret: true, allowEmpty: true, policyGroup: "apiKeys", policyField: "openai", configKey: "openaiApiKey", envKey: "OPENAI_API_KEY", group: "llm", uiCategory: "extraction", uiSection: "provider", uiGroup: "API Keys", uiTip: "API key for OpenAI models" },
   { key: "enumConsistencyMode", type: "bool", default: false, configKey: "enumConsistencyMode", envKey: "ENUM_CONSISTENCY_MODE", group: "validation", uiCategory: "validation", uiSection: "enum", uiGroup: "Enum Consistency", uiHero: true, uiTip: "When ON, overrides open enum policy to open_prefer_known for all fields. Unknown values trigger LLM vocabulary normalization via P2 prompt." },
   { key: "pipelineSchemaEnforcementMode", type: "enum", default: "warn", allowed: ["off", "warn", "enforce"], configKey: "pipelineSchemaEnforcementMode", envKey: "PIPELINE_SCHEMA_ENFORCEMENT_MODE", group: "misc", uiCategory: "validation", uiSection: "schema", uiHero: true, uiTip: "How pipeline context schema violations are handled: off, warn, or enforce" },
+  { key: "publishConfidenceThreshold", type: "float", default: 0.7, min: 0, max: 1, configKey: "publishConfidenceThreshold", envKey: "PUBLISH_CONFIDENCE_THRESHOLD", group: "validation", uiCategory: "review-publisher", uiSection: "publish-gate", uiHero: true, uiTip: "Minimum candidate confidence to auto-publish to product.json fields. Candidates below this threshold remain unpublished. Changing this value triggers reconciliation across all published values." },
   { key: "runtimeControlFile", type: "string", default: "_runtime/control/runtime_overrides.json", configKey: "runtimeControlFile", envKey: "RUNTIME_CONTROL_FILE", group: "runtime", uiCategory: "global", uiSection: "output", uiGroup: "Runtime Output", uiTip: "Path to the runtime override JSON file used by the planner" },
   { key: "runtimeScreencastEnabled", type: "bool", default: true, configKey: "runtimeScreencastEnabled", envKey: "RUNTIME_SCREENCAST_ENABLED", group: "runtime", uiCategory: "fetcher", uiSection: "observability", uiHero: true, uiTip: "Record a screencast of browser activity during crawling" },
 
@@ -87,6 +88,9 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "specDbDir", type: "string", default: ".workspace/db", allowEmpty: true, configKey: "specDbDir", envKey: "SPEC_DB_DIR", group: "paths", uiCategory: "global", uiSection: "output", uiGroup: "Paths", uiTip: "Directory for per-category SQLite runtime databases" },
 
 
+
+  // --- Product Image Finder knobs (global only — per-category view settings live in SpecDb) ---
+  { key: "pifMinWidth", type: "int", default: 800, min: 200, max: 4000, configKey: "pifMinWidth", envKey: "PIF_MIN_WIDTH", group: "discovery", uiCategory: "discovery", uiSection: "product-image-finder", uiGroup: "Product Image Finder", uiTip: "Minimum image width in pixels. Images below this threshold are rejected as too low quality." },
 
   // --- Pipeline phase knobs (extracted from hardcoded values) ---
 

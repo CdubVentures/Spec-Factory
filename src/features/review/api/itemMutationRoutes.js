@@ -19,6 +19,7 @@ import {
   buildManualOverrideEvidence,
   resolveItemOverrideMode,
 } from '../services/itemMutationService.js';
+import { publishManualOverride } from '../../publisher/publish/publishManualOverride.js';
 
 // Re-export for characterization tests and any external consumers
 export {
@@ -142,6 +143,22 @@ async function handleReviewItemOverrideMutationEndpoint({
         ? 'User manually set item value via manual-override endpoint'
         : 'User manually set item value via review override',
     });
+
+    // WHY: Publish manual override to field_candidates (resolved) + product.json fields[].
+    // Manual overrides lock the field from future auto-publish until the override is deleted.
+    if (specDb) {
+      try {
+        publishManualOverride({
+          specDb, category, productId,
+          fieldKey: field,
+          value: result?.value ?? value,
+          reviewer,
+          reason,
+          evidence: manualEvidence,
+        });
+      } catch { /* best-effort publish — override already persisted to JSON SSOT */ }
+    }
+
     return sendDataChangeResponse({
       jsonRes,
       res,

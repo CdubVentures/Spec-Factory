@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 import { createDiscoverCommand } from '../discoverCommand.js';
 
 function createDeps(overrides = {}) {
+  const mockProducts = overrides._products || [
+    { product_id: 'mouse-a', brand: 'Logitech', model: 'G502' },
+    { product_id: 'mouse-b', brand: 'Razer', model: 'Viper' },
+  ];
   return {
     loadCategoryConfig: async () => ({ schema: { critical_fields: ['dpi', 'sensor'] } }),
     runDiscoverySeedPlan: async () => ({
@@ -14,11 +18,8 @@ function createDeps(overrides = {}) {
       async flush() { this.flushCount += 1; }
     },
     buildRunId: () => 'run-fixed',
-    openSpecDbForCategory: () => ({
-      getAllProducts: () => [
-        { product_id: 'mouse-a', brand: 'Logitech', model: 'G502' },
-        { product_id: 'mouse-b', brand: 'Razer', model: 'Viper' },
-      ],
+    withSpecDb: async (_config, _category, fn) => fn({
+      getAllProducts: () => mockProducts,
     }),
     ...overrides,
   };
@@ -37,10 +38,6 @@ test('discover command applies brand filter and returns selected run summaries',
     async readJson(key) {
       if (key === 'mouse-a') return { productId: 'mouse-a' };
       return { productId: 'mouse-b' };
-    },
-    async readJsonOrNull(key) {
-      if (key === 'mouse-a') return { identityLock: { brand: 'Logitech' } };
-      return { identityLock: { brand: 'Razer' } };
     },
   };
 
@@ -75,13 +72,10 @@ test('discover command applies brand filter and returns selected run summaries',
 test('discover command runs all inputs when no brand filter', async () => {
   const storage = {
     async readJson() { return { productId: 'mouse-a' }; },
-    async readJsonOrNull() { return { identityLock: { brand: 'Logitech' } }; },
   };
 
   const commandDiscover = createDiscoverCommand(createDeps({
-    openSpecDbForCategory: () => ({
-      getAllProducts: () => [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
-    }),
+    _products: [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
   }));
 
   const result = await commandDiscover({}, storage, { category: 'mouse' });
@@ -101,14 +95,11 @@ test('discover command flushes buffered events before rethrowing discovery failu
 
   const storage = {
     async readJson() { return { productId: 'mouse-a' }; },
-    async readJsonOrNull() { return { identityLock: { brand: 'Logitech' } }; },
   };
 
   const commandDiscover = createDiscoverCommand(createDeps({
     EventLogger: EventLoggerRecorder,
-    openSpecDbForCategory: () => ({
-      getAllProducts: () => [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
-    }),
+    _products: [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
     runDiscoverySeedPlan: async () => { throw expectedError; },
   }));
 

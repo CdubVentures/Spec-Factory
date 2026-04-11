@@ -2,7 +2,7 @@
 
 > **Purpose:** Define where the local runtime stops and external systems or sidecars begin, including contract surfaces and failure behavior.
 > **Prerequisites:** [../02-dependencies/external-services.md](../02-dependencies/external-services.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Boundary Matrix
 
@@ -32,7 +32,6 @@
 - Do not assume the removed relocation/storage-settings feature still exists. The current codebase has no mounted `/storage-settings` route and no mounted `/storage/sync/*` surface.
 - The test-mode field contract audit (`POST /api/v1/test-mode/validate`) is a local compute job — it reads compiled rules and discovered enums from SpecDb, runs contract checks in-process, and writes results back to SpecDb. It has no external integration boundary.
 - The Intel Graph helper API (`intelGraphApi.js`) has been deleted. The orphaned GraphQL proxy route (`POST /api/v1/graphql`) in `src/app/api/routes/infra/graphqlRoutes.js` (mounted via `infraRoutes.js`) still exists on disk but always returns `502` since the helper server is gone.
-- Treat `docs/implementation/` as supplemental reference only. If it disagrees with numbered docs or live source, numbered docs and source win.
 
 ## Validated Against
 

@@ -2,7 +2,7 @@
 
 > **Purpose:** Identify the repository patterns that new work must not introduce, even if legacy code still contains examples of them.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [./canonical-examples.md](./canonical-examples.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Route Logic Or New Route Families Wired Outside `src/app/api/guiServerRuntime.js`
 

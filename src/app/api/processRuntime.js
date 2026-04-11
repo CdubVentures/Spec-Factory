@@ -7,6 +7,40 @@ import {
   deriveProcessStatus,
   normalizeRunIdToken,
 } from './processLifecycleState.js';
+import {
+  registerOperation,
+  updateStage,
+  completeOperation,
+  failOperation,
+  listOperations,
+} from '../../core/operations/index.js';
+
+/* ── Pipeline operations tracking ──────────────────────────────── */
+
+const PIPELINE_OP_STAGES = Object.freeze([
+  'Boot', 'Discover', 'Plan', 'Search', 'Select', 'Crawl', 'Finalize',
+]);
+
+// WHY: Maps the fine-grained bridge stage cursors to the 7 simplified
+// pipeline stages the operations tracker displays.
+const PIPELINE_STAGE_MAP = Object.freeze({
+  'stage:bootstrap':          0, // Boot
+  'stage:needset':            1, // Discover
+  'stage:brand-resolver':     1, // Discover
+  'stage:search':             1, // Discover (brand-resolver sub-cursor)
+  'stage:search-profile':     2, // Plan
+  'stage:search-planner':     2, // Plan
+  'stage:query-journey':      2, // Plan
+  'stage:fetch':              3, // Search
+  'stage:search-results':     3, // Search
+  'stage:parse':              3, // Search
+  'stage:index':              3, // Search
+  'stage:serp-selector':      4, // Select
+  'stage:prime-sources':      4, // Select
+  'stage:domain-classifier':  4, // Select
+  'stage:crawl':              5, // Crawl
+  'stage:finalize':           6, // Finalize
+});
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
@@ -168,6 +202,34 @@ export function createProcessRuntime({
       },
     });
 
+    // ── Pipeline operations tracker registration ──────────────────
+    const isIndexLab = Array.isArray(cliArgs) && cliArgs[0] === 'indexlab';
+    let pipelineOpId = null;
+    let lastPipelineStageIdx = -1;
+
+    if (isIndexLab) {
+      try {
+        const productLabel = `${brand || ''} ${deriveProcessModel(baseModel, variant)}`.trim() || productId || '';
+        const op = registerOperation({
+          type: 'pipeline',
+          category: category || '',
+          productId: productId || '',
+          productLabel,
+          stages: [...PIPELINE_OP_STAGES],
+        });
+        pipelineOpId = op.id;
+
+        // WHY: Also broadcast directly through the DI broadcastWs as a safety net.
+        // The operations registry broadcast relies on its own _broadcastWs reference
+        // set during initOperationsRegistry — this ensures the message reaches clients
+        // even if the registry broadcast path has an issue.
+        const registeredOp = listOperations().find((o) => o.id === pipelineOpId);
+        if (registeredOp) {
+          broadcastWs('operations', { action: 'upsert', operation: { ...registeredOp }, id: registeredOp.id });
+        }
+      } catch { /* operations registry may not be initialized yet */ }
+    }
+
     child.stdout.on('data', (d) => {
       broadcastWs('process', d.toString().split('\n').filter(Boolean));
     });
@@ -185,6 +247,19 @@ export function createProcessRuntime({
         type: 'PROCESS_EXITED',
         payload: { exitCode: resolvedExitCode, endedAt: new Date().toISOString() },
       });
+      // ── Pipeline operation completion ──────────────────────────
+      if (pipelineOpId) {
+        try {
+          if (resolvedExitCode === 0) {
+            completeOperation({ id: pipelineOpId });
+          } else {
+            const reason = resolvedSignal
+              ? `Killed (${resolvedSignal})`
+              : `Exit code ${resolvedExitCode ?? 'null'}`;
+            failOperation({ id: pipelineOpId, error: reason });
+          }
+        } catch { /* ignore */ }
+      }
       if (childProc === child) {
         childProc = null;
       }
@@ -221,7 +296,26 @@ export function createProcessRuntime({
         broadcastWs(msg.channel || 'screencast', msg);
       } else if (msg && msg.__runtime_event) {
         if (typeof invalidateEventCache === 'function') invalidateEventCache(msg.run_id || '');
-        broadcastWs('indexlab-event', [{ type: 'runtime-update', run_id: msg.run_id || '', stage: msg.stage, event: msg.event }]);
+        broadcastWs('indexlab-event', [{ type: 'runtime-update', run_id: msg.run_id || '', stage: msg.stage, stage_cursor: msg.stage_cursor || '', event: msg.event }]);
+        // ── Pipeline operation stage advancement ──────────────────
+        if (pipelineOpId && msg.stage_cursor) {
+          const stageIdx = PIPELINE_STAGE_MAP[msg.stage_cursor];
+          if (typeof stageIdx === 'number' && stageIdx > lastPipelineStageIdx) {
+            lastPipelineStageIdx = stageIdx;
+            updateStage({ id: pipelineOpId, stageIndex: stageIdx });
+            // Direct broadcast fallback
+            const updatedOp = listOperations().find((o) => o.id === pipelineOpId);
+            if (updatedOp) {
+              broadcastWs('operations', { action: 'upsert', operation: { ...updatedOp }, id: updatedOp.id });
+            }
+          }
+          if (msg.event) {
+            broadcastWs('llm-stream', {
+              operationId: pipelineOpId,
+              text: `[${msg.stage.replace('stage:', '')}] ${msg.event}\n`,
+            });
+          }
+        }
       }
     });
     childProc = child;

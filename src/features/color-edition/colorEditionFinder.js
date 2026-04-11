@@ -18,6 +18,20 @@ import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 const COOLDOWN_DAYS = 30;
 
+/**
+ * Merge edition-exclusive colors into the master colors array.
+ * Idempotent — skips atoms already present. Mutates `colors` in place.
+ */
+function mergeEditionColorsInto(colors, editions) {
+  for (const edMeta of Object.values(editions)) {
+    if (Array.isArray(edMeta.colors)) {
+      for (const c of edMeta.colors) {
+        if (!colors.includes(c)) colors.push(c);
+      }
+    }
+  }
+}
+
 function reconcileEditionColors(editions, repairMap) {
   const result = {};
   for (const [name, meta] of Object.entries(editions)) {
@@ -242,23 +256,33 @@ export async function runColorEditionFinder({
       }
     }
 
+    // Step 4b: Merge edition-exclusive colors into master colors array.
+    // WHY: colors[] must be the superset of standard + edition colorways.
+    // Any edition color surviving repair but missing from gateColors gets
+    // appended so the publisher validates the complete color inventory.
+    mergeEditionColorsInto(gateColors, gateEditions);
+
     // Step 5: ALL passed → write both candidates
     const colorsMeta = Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : undefined;
     submitCandidate({
       category: product.category, productId: product.product_id,
       fieldKey: 'colors', value: gateColors, confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-      metadata: colorsMeta, appDb,
+      metadata: colorsMeta, appDb, config,
     });
     submitCandidate({
       category: product.category, productId: product.product_id,
       fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
       sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
       metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
-      appDb,
+      appDb, config,
     });
   }
   // If no compiled rules available, gate is skipped — CEF proceeds as before
+
+  // Safety net: ensure edition-exclusive colors are always in the master array.
+  // Idempotent — skips atoms already merged by the gated path above.
+  mergeEditionColorsInto(gateColors, gateEditions);
 
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 

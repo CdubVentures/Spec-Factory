@@ -8,7 +8,8 @@ export type LlmPhaseId =
   | 'brand-resolver'
   | 'serp-selector'
   | 'validate'
-  | 'color-finder';
+  | 'color-finder'
+  | 'image-finder';
 
 export type LlmPhaseGroup =
   | 'global'

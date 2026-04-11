@@ -1,22 +1,25 @@
-import { filterKeysByBrand } from '../cliHelpers.js';
-
 export function createDiscoverCommand({
   loadCategoryConfig,
   runDiscoverySeedPlan,
   EventLogger,
   buildRunId,
-  openSpecDbForCategory,
+  withSpecDb,
 }) {
   return async function commandDiscover(config, storage, args) {
     const category = args.category || 'mouse';
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
-    // WHY: SQL is the source of truth for products — no fixture scan needed.
-    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
 
-    try {
+    return withSpecDb(config, category, async (specDb) => {
       const allProducts = specDb ? specDb.getAllProducts() : [];
+
+      // Filter by brand using DB rows directly — no storage re-reads needed.
+      const brand = String(args.brand || '').trim().toLowerCase();
+      const filtered = brand
+        ? allProducts.filter((p) => String(p.brand || '').trim().toLowerCase() === brand)
+        : allProducts;
       const allKeys = allProducts.map((p) => p.product_id);
-      const keys = await filterKeysByBrand(storage, allKeys, args.brand);
+      const keys = filtered.map((p) => p.product_id);
+
       const logger = new EventLogger({
         storage,
         context: {
@@ -61,8 +64,6 @@ export function createDiscoverCommand({
         selected_inputs: keys.length,
         runs,
       };
-    } finally {
-      try { specDb?.close(); } catch { /* best-effort */ }
-    }
+    });
   };
 }

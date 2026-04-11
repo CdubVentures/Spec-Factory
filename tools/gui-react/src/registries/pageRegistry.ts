@@ -54,7 +54,7 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
 
   // ── Settings group (far-right) ─────────────────────────────────
   { path: '/llm-config',         label: 'LLM',                tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage' },
-  { path: '/pipeline-settings',  label: 'Pipeline',           tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage' },
+  { path: '/pipeline-settings',  label: 'Pipeline',            tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage' },
 ]);
 
 // ── Derived exports ─────────────────────────────────────────────────

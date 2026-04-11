@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified storage-manager inventory and maintenance surface plus the current storage-backend selection behavior.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 The current live storage feature is the `/storage` inventory and maintenance surface. The older storage-settings and relocation flow is not mounted in the current source tree.
 
@@ -120,7 +120,7 @@ sequenceDiagram
 | source | `src/features/indexing/api/storageManagerRoutes.js` | actual inventory and maintenance endpoints |
 | source | `src/db/stores/deletionStore.js` | URL-delete and product-history purge result shapes |
 | source | `src/core/storage/storage.js` | local filesystem storage adapter |
-| runtime | `GET /api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-04-07 |
+| runtime | `GET /api/v1/storage/overview` | live backend reported `storage_backend: "local"` on 2026-04-10 |
 
 ## Related Documents
 

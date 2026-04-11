@@ -5,12 +5,15 @@
 // Eliminates hardcoded MODULE_STYLES / MODULE_LABELS in OperationsTracker.
 
 export type FinderModuleType =
-  | 'cef';
+  | 'cef'
+  | 'pif';
 
 export const MODULE_STYLES: Readonly<Record<string, string>> = {
   'cef': 'sf-chip-accent',
+  'pif': 'sf-chip-info',
 };
 
 export const MODULE_LABELS: Readonly<Record<string, string>> = {
   'cef': 'CEF',
+  'pif': 'PIF',
 };

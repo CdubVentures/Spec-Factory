@@ -2,7 +2,7 @@
 
 > **Purpose:** Declare the live stack and exact dependency identities so an LLM does not guess frameworks or services.
 > **Prerequisites:** [../01-project-overview/scope.md](../01-project-overview/scope.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Runtime Truth
 
@@ -111,29 +111,22 @@ tools/gui-react/package-lock.json
 
 - Do not assume AWS/S3 support from older docs or stale install artifacts. `@aws-sdk/client-s3` is not a current direct dependency in `package.json`.
 - Do not assume Express, Fastify, Nest, or Next.js. The repo uses Node `http` plus custom dispatch.
-- Do not assume a separate frontend package manager workspace. The GUI is a nested package under `tools/gui-react/`.
+- Do not assume a frontend workspace manager. The GUI is a nested package under `tools/gui-react/`.
 - Do not assume TypeScript on the backend. The backend source remains JavaScript ESM.
 
 ## Validation Snapshot
 
 | Proof | Result |
 |------|--------|
-| `npm run gui:build` | pass on 2026-04-07 |
-| `npm test` | pass on 2026-04-07 |
-| `npm run env:check` | fail on 2026-04-07 with `Missing keys in config manifest: PORT` |
-
-## Read Next
-
-- [Environment and Config](./environment-and-config.md)
-- [External Services](./external-services.md)
-- [Frontend Architecture](../03-architecture/frontend-architecture.md)
-- [Backend Architecture](../03-architecture/backend-architecture.md)
+| `npm run gui:build` | pass on 2026-04-10 |
+| `npm test` | fail on 2026-04-10 (`7778` passed / `10` failed / `7788` total) |
+| `npm run env:check` | fail on 2026-04-10 with `Missing keys in config manifest: PORT` |
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| config | `package.json` | root scripts, Node engine, direct dependency declarations |
+| config | `package.json` | root scripts, Node engine, and direct dependency declarations |
 | config | `package-lock.json` | exact resolved root dependency versions |
 | config | `tools/gui-react/package.json` | GUI scripts and direct dependency declarations |
 | config | `tools/gui-react/package-lock.json` | exact resolved GUI dependency versions |
@@ -142,6 +135,9 @@ tools/gui-react/package-lock.json
 | config | `tools/gui-react/vite.config.ts` | Vite usage |
 | command | `node -v` | observed Node version |
 | command | `npm -v` | observed npm version |
+| command | `npm run gui:build` | build result on 2026-04-10 |
+| command | `npm test` | full-suite result on 2026-04-10 |
+| command | `npm run env:check` | env-check result on 2026-04-10 |
 
 ## Related Documents
 

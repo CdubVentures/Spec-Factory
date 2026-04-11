@@ -21,6 +21,7 @@ const badgeInline: Record<ParentGroup, React.CSSProperties> = {
   seed: { background: '#ecfccb', color: '#4d7c0f', border: '1px solid #d9f99d' },
   comp: { background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' },
   val:  { background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0' },
+  pub:  { background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd' },
 };
 
 const badgeStyle: React.CSSProperties = {
@@ -66,7 +67,7 @@ export function SystemBadges({ fieldPath }: Props) {
                   <div className="font-semibold sf-text-primary">{title}</div>
                   {detail.map((line, i) => {
                     const colonIdx = line.indexOf(':');
-                    if (colonIdx > 0 && line.startsWith('idx.') || line.startsWith('eng.') || line.startsWith('rev.') || line.startsWith('seed.') || line.startsWith('comp.')) {
+                    if (colonIdx > 0 && (line.startsWith('idx.') || line.startsWith('eng.') || line.startsWith('rev.') || line.startsWith('seed.') || line.startsWith('comp.') || line.startsWith('val.') || line.startsWith('pub.'))) {
                       const key = line.slice(0, colonIdx);
                       const desc = line.slice(colonIdx + 1).trim();
                       return (

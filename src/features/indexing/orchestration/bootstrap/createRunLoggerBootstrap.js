@@ -58,7 +58,6 @@ export function buildRunBootstrapLogPayload({
       productId,
       runId,
       category,
-      run_profile: 'standard',
       runtime_mode: runtimeMode,
       identity_fingerprint: identityFingerprint,
       identity_lock_status: identityLockStatus,

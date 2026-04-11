@@ -12,7 +12,7 @@ const SYSTEM_ALIASES = new Map([
 // WHY: FIELD_SYSTEM_MAP derived from the unified consumerBadgeRegistry.
 // Maps parent group keys to legacy system names for backward compat with
 // resolveConsumerGate / projectFieldRulesForConsumer callers.
-const _PARENT_TO_LEGACY = { idx: 'indexlab', eng: null, rev: 'review', seed: 'seed', comp: null };
+const _PARENT_TO_LEGACY = { idx: 'indexlab', eng: null, rev: 'review', seed: 'seed', comp: null, val: null, pub: null };
 
 function _buildFieldSystemMap() {
   const map = {};

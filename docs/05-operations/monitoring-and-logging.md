@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified health checks, telemetry sinks, WebSocket channels, and observability counters used by the live runtime.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Health And Status Endpoints
 
@@ -70,7 +70,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
   - inspect Runtime Ops,
   - inspect WebSocket `process-status`, `process`, `indexlab-event`, and `data-change`,
   - inspect SpecDb telemetry tables such as `bridge_events`, `runs`, `run_artifacts`, `query_index`, `url_index`, and `knob_snapshots`.
-- Observed during live validation on 2026-04-04 local time (re-validated 2026-04-07):
+- Observed during live validation on 2026-04-10:
   - `/api/v1/process/status` returned `running: false` while still retaining the last completed run metadata.
   - `/api/v1/storage/overview` returned `storage_backend: "local"`.
   - startup emitted `[auto-seed] ... field_studio_map re-seed failed ...` warnings without preventing the API from serving health and categories endpoints.

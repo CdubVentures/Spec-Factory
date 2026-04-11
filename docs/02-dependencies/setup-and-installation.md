@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified local setup path from install to a running GUI/API server.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@
    npm run env:check
    ```
 
-   Current observed result on 2026-04-07:
+   Current observed result on 2026-04-10:
 
    ```text
    Missing keys in config manifest: PORT
@@ -115,11 +115,13 @@
    Invoke-WebRequest http://localhost:8788/api/v1/storage/overview
    ```
 
-6. Run the test suite if you need a validation baseline after setup.
+6. Run the test suite if you need the current validation baseline after setup.
 
    ```powershell
    npm test
    ```
+
+   Current baseline on 2026-04-10 is red; use [known-issues.md](../05-operations/known-issues.md) for the failing test inventory.
 
 ## Useful Commands
 
@@ -137,10 +139,10 @@
 
 | Proof | Result |
 |------|--------|
-| `npm run gui:build` | pass on 2026-04-07 |
-| `npm test` | pass on 2026-04-07 with `6803` tests and `0` failures |
-| `npm run env:check` | fail on 2026-04-07 with `Missing keys in config manifest: PORT` |
-| Runtime smoke | `/health`, `/api/v1/categories`, `/api/v1/process/status`, and `/api/v1/storage/overview` all returned `200` on 2026-04-07 |
+| `npm run gui:build` | pass on 2026-04-10 |
+| `npm test` | fail on 2026-04-10 with `7788` tests, `7778` passed, and `10` failures |
+| `npm run env:check` | fail on 2026-04-10 with `Missing keys in config manifest: PORT` |
+| Runtime smoke | `/health`, `/api/v1/categories`, `/api/v1/process/status`, and `/api/v1/storage/overview` all returned `200` on 2026-04-10 |
 
 ## Validated Against
 
@@ -152,13 +154,13 @@
 | source | `src/app/cli/spec.js` | CLI entrypoint |
 | source | `tools/specfactory-launcher.mjs` | helper launcher path |
 | source | `tools/check-env-example-sync.mjs` | env-check implementation |
-| command | `npm run gui:build` | successful build on 2026-04-07 |
-| command | `npm test` | successful test-suite run on 2026-04-07 |
-| command | `npm run env:check` | current manifest coverage failure on 2026-04-07 |
-| runtime | `GET /health` | live server health contract on 2026-04-07 |
-| runtime | `GET /api/v1/categories` | category API response on 2026-04-07 |
-| runtime | `GET /api/v1/process/status` | process-status response on 2026-04-07 |
-| runtime | `GET /api/v1/storage/overview` | storage inventory response on 2026-04-07 |
+| command | `npm run gui:build` | successful build on 2026-04-10 |
+| command | `npm test` | current test-suite result on 2026-04-10 |
+| command | `npm run env:check` | current manifest coverage failure on 2026-04-10 |
+| runtime | `GET /health` | live server health contract on 2026-04-10 |
+| runtime | `GET /api/v1/categories` | category API response on 2026-04-10 |
+| runtime | `GET /api/v1/process/status` | process-status response on 2026-04-10 |
+| runtime | `GET /api/v1/storage/overview` | storage inventory response on 2026-04-10 |
 
 ## Related Documents
 

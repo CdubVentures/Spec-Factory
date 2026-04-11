@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified authority snapshot flow and the artifact roots that represent per-category control-plane truth.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Entry Points
 

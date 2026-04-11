@@ -2,8 +2,9 @@
  * Finder SQL DDL Generator.
  *
  * Generates CREATE TABLE + CREATE INDEX statements from finder module
- * manifests. Each module gets a summary table (common + custom columns)
- * and a runs table (always the same shape).
+ * manifests. Each module gets a summary table (common + custom columns),
+ * a runs table (always the same shape), and optionally a settings table
+ * for per-category module configuration.
  */
 
 /**
@@ -65,6 +66,21 @@ export function generateFinderDdl(modules) {
     statements.push(
       `CREATE INDEX IF NOT EXISTS idx_${mod.tableName}_runs_product ON ${mod.runsTableName}(category, product_id);`
     );
+
+    // ── Settings table: per-category key-value config ───────────
+    // WHY: Each module owns its own settings table. SpecDb is already
+    // per-category, so no category column needed. Reseed rebuilds from
+    // the JSON mirror in category_authority.
+    if (mod.settingsDefaults) {
+      const settingsTableName = `${mod.tableName}_settings`;
+      statements.push([
+        `CREATE TABLE IF NOT EXISTS ${settingsTableName} (`,
+        `  key TEXT PRIMARY KEY,`,
+        `  value TEXT NOT NULL DEFAULT '',`,
+        `  updated_at TEXT NOT NULL DEFAULT (datetime('now'))`,
+        `);`,
+      ].join('\n'));
+    }
   }
 
   return statements;

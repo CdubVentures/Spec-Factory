@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified runtime-settings, source-strategy, deterministic spec-seed, and category-scoped LLM route-matrix surfaces.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 This document covers the settings surfaces owned by `PipelineSettingsPage` and `LlmSettingsPage`, including the deterministic spec-seed editor mounted inside pipeline settings. The separate `/llm-config` composite policy editor is documented in [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md).
 

@@ -772,7 +772,10 @@
       "value_column": ""
     }
   ],
-  "eg_toggles": {},
+  "eg_toggles": {
+    "colors": true,
+    "editions": true
+  },
   "enum_lists": [],
   "enum_sources": [],
   "expectations": {

@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the field contract audit dashboard and its backend test-mode routes.
 > **Prerequisites:** [feature-index.md](./feature-index.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Overview
 

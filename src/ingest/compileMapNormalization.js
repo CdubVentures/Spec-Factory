@@ -490,6 +490,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       : [],
     // WHY: eg_toggles controls which EG-locked fields are active. Must survive
     // normalization so hash stays stable across migration → compile re-sync cycles.
+    // Defaults to {} here; studioRoutes applies EG_DEFAULT_TOGGLES when empty.
     eg_toggles: isObject(map.eg_toggles) ? map.eg_toggles : {},
   };
 }

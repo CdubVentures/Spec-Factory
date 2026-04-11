@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the live knob authority surfaces, inventory counts, and maintenance rules without treating this file as the canonical runtime source.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 This file is supplemental. Canonical behavior still lives in the source files that define registries, defaults, manifest derivation, persistence, and route mounting.
 

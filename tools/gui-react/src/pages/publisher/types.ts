@@ -42,6 +42,20 @@ export interface PublisherValidationJson {
   llmRepair?: PublisherLlmRepair;
 }
 
+export interface PublisherPublishResult {
+  status: 'published' | 'below_threshold' | 'manual_override_locked' | 'skipped';
+  confidence?: number;
+  threshold?: number;
+  reason?: string;
+  published_at?: string;
+}
+
+export interface PublisherMetadataJson {
+  publish_result?: PublisherPublishResult;
+  source?: string;
+  [key: string]: unknown;
+}
+
 export interface PublisherCandidateRow {
   id: number;
   category: string;
@@ -52,6 +66,7 @@ export interface PublisherCandidateRow {
   source_count: number;
   sources_json: PublisherSourceEntry[];
   validation_json: PublisherValidationJson;
+  metadata_json: PublisherMetadataJson;
   status: 'candidate' | 'resolved';
   submitted_at: string;
   updated_at: string;

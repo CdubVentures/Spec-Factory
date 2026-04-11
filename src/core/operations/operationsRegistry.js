@@ -119,6 +119,7 @@ export function updateModelInfo({ id, model, provider, isFallback, accessMode, t
 
 /**
  * Mark operation as completed. Idempotent.
+ * No auto-eviction — operations persist until manually dismissed.
  */
 export function completeOperation({ id }) {
   const op = ops.get(id);
@@ -126,11 +127,11 @@ export function completeOperation({ id }) {
   op.status = 'done';
   op.endedAt = new Date().toISOString();
   broadcast(op);
-  scheduleEviction(id);
 }
 
 /**
  * Mark operation as failed with an error message.
+ * No auto-eviction — operations persist until manually dismissed.
  */
 export function failOperation({ id, error }) {
   const op = ops.get(id);
@@ -139,7 +140,19 @@ export function failOperation({ id, error }) {
   op.error = typeof error === 'string' ? error.slice(0, 200) : 'Unknown error';
   op.endedAt = new Date().toISOString();
   broadcast(op);
-  scheduleEviction(id);
+}
+
+/**
+ * Manually dismiss (remove) an operation. Called from the GUI dismiss button.
+ */
+export function dismissOperation({ id }) {
+  if (!ops.has(id)) return;
+  ops.delete(id);
+  if (evictionTimers.has(id)) {
+    clearTimeout(evictionTimers.get(id));
+    evictionTimers.delete(id);
+  }
+  broadcastRemove(id);
 }
 
 /**

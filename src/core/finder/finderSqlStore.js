@@ -2,8 +2,9 @@
  * Generic Finder SQL Store Factory.
  *
  * Creates a standard SQL store for any finder module from its manifest.
- * Each store manages a summary table (custom columns) and a runs table
- * (standard shape). Statements are prepared at construction time.
+ * Each store manages a summary table (custom columns), a runs table
+ * (standard shape), and optionally a settings table (per-category
+ * key-value config). Statements are prepared at construction time.
  *
  * Hydrates JSON columns (selected_json, prompt_json, response_json)
  * on read. Serializes them on write.
@@ -33,7 +34,8 @@ function hydrateRunRow(row) {
  * @returns {object} store with upsert, get, listByCategory, remove, insertRun, listRuns, getLatestRun, removeRun, removeAllRuns
  */
 export function createFinderSqlStore({ db, category, module: mod }) {
-  const { tableName, runsTableName, summaryColumns = [] } = mod;
+  const { tableName, runsTableName, summaryColumns = [], settingsDefaults } = mod;
+  const settingsTableName = `${tableName}_settings`;
   const customColNames = summaryColumns.map(c => c.name);
   // WHY: Map column name → default value for use when upsert receives undefined.
   // Includes both common and custom columns.
@@ -86,6 +88,16 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     _removeAllRuns: db.prepare(
       `DELETE FROM ${runsTableName} WHERE category = ? AND product_id = ?`
     ),
+    // Settings statements (only if module declares settingsDefaults)
+    ...(settingsDefaults ? {
+      _getSetting: db.prepare(`SELECT value FROM ${settingsTableName} WHERE key = ?`),
+      _upsertSetting: db.prepare(
+        `INSERT INTO ${settingsTableName} (key, value, updated_at) VALUES (?, ?, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+      ),
+      _allSettings: db.prepare(`SELECT key, value FROM ${settingsTableName}`),
+      _deleteSetting: db.prepare(`DELETE FROM ${settingsTableName} WHERE key = ?`),
+    } : {}),
   };
 
   // ── Summary methods ─────────────────────────────────────────────
@@ -168,8 +180,39 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     stmts._removeAllRuns.run(category, productId);
   }
 
+  // ── Settings methods (per-category key-value) ──────────────────
+  // WHY: Falls back to settingsDefaults from the module manifest when
+  // a key has no DB row. This means freshly-created categories get
+  // sensible defaults without explicit seeding.
+
+  function getSetting(key) {
+    if (!stmts._getSetting) return settingsDefaults?.[key] ?? '';
+    const row = stmts._getSetting.get(key);
+    return row ? row.value : (settingsDefaults?.[key] ?? '');
+  }
+
+  function setSetting(key, value) {
+    if (!stmts._upsertSetting) return;
+    stmts._upsertSetting.run(key, String(value));
+  }
+
+  function getAllSettings() {
+    const defaults = { ...(settingsDefaults || {}) };
+    if (!stmts._allSettings) return defaults;
+    for (const row of stmts._allSettings.all()) {
+      defaults[row.key] = row.value;
+    }
+    return defaults;
+  }
+
+  function deleteSetting(key) {
+    if (!stmts._deleteSetting) return;
+    stmts._deleteSetting.run(key);
+  }
+
   return {
     upsert, get, listByCategory, remove,
     insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
+    getSetting, setSetting, getAllSettings, deleteSetting,
   };
 }

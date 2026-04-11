@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the verified absence of user authentication plus the session-like persistence surfaces that do exist, so an arriving LLM does not hallucinate a login system.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Verified Reality
 

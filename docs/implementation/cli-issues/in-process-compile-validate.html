@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>In-Process Compile/Validate — Design Brief</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #252536;
+    --surface2: #2d2d42;
+    --border: #3a3a52;
+    --text: #cdd6f4;
+    --text-dim: #9399b2;
+    --text-bright: #f0f0f8;
+    --accent: #89b4fa;
+    --green: #a6e3a1;
+    --red: #f38ba8;
+    --yellow: #f9e2af;
+    --orange: #fab387;
+    --teal: #94e2d5;
+    --mauve: #cba6f7;
+    --code-bg: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--text-bright); font-size: 1.8rem; margin-bottom: 0.3rem; }
+  h2 { color: var(--accent); font-size: 1.35rem; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h3 { color: var(--teal); font-size: 1.1rem; margin: 1.8rem 0 0.6rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; }
+  p { margin-bottom: 0.8rem; }
+  code {
+    background: var(--code-bg);
+    color: var(--mauve);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0.6rem 0 1.2rem;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--text-bright);
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--surface); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1rem 0;
+  }
+  ul { padding-left: 1.4rem; margin: 0.4rem 0 1rem; }
+  li { margin: 0.3rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>In-Process Compile/Validate</h1>
+<p class="subtitle">Last remaining CLI architecture issue &mdash; requires dedicated design session</p>
+
+<!-- ================================================================== -->
+<h2>1. Problem</h2>
+
+<p>The API server spawns <code>compile-rules</code> and <code>validate-rules</code> as child processes via <code>startProcess()</code> in <code>studioRoutes.js</code>. These are pure JSON&rarr;JSON transforms completing in &lt;5s. The spawn adds PID tracking, orphan detection, completion handler re-sync, and stdout parsing &mdash; all unnecessary for sub-5-second pure functions.</p>
+
+<p><strong>User-facing impact:</strong> Compile is blocked while IndexLab runs. They share a single global process slot. A user cannot compile field rules while a crawl is active.</p>
+
+<h3>Current flow (spawned)</h3>
+<pre>
+POST /studio/:category/compile
+  &rarr; startProcess('src/app/cli/spec.js', ['compile-rules', '--category', cat])
+  &rarr; child writes JSON artifacts to disk
+  &rarr; child exits
+  &rarr; handleCompileProcessCompletion() re-reads JSON, syncs to SQL
+</pre>
+
+<h3>Target flow (in-process)</h3>
+<pre>
+POST /studio/:category/compile
+  &rarr; const result = await compileRules({ category, config })
+  &rarr; handleCompileProcessCompletion() syncs to SQL (using result directly)
+</pre>
+
+<!-- ================================================================== -->
+<h2>2. Blocking Architecture</h2>
+
+<h3>Backend: single process slot</h3>
+<table>
+  <tr><th>File</th><th>Constraint</th></tr>
+  <tr>
+    <td><code>processLifecycleState.js</code></td>
+    <td>Two-state machine: <code>idle &harr; running</code>. No concept of multiple concurrent processes.</td>
+  </tr>
+  <tr>
+    <td><code>processRuntime.js:124</code></td>
+    <td><code>startProcess()</code> throws <code>'process_already_running'</code> if <code>state.phase === 'running'</code>. Single <code>childProc</code> variable.</td>
+  </tr>
+  <tr>
+    <td><code>studioRoutes.js:180,191</code></td>
+    <td>Compile and validate both call <code>startProcess()</code>. Catch blocks return <strong>409</strong>.</td>
+  </tr>
+</table>
+
+<h3>Completion handlers</h3>
+<table>
+  <tr><th>File</th><th>What it does</th></tr>
+  <tr>
+    <td><code>compileProcessCompletion.js</code></td>
+    <td>Runs on exit code 0. Invalidates caches <strong>twice</strong> (before and after DB sync to prevent stale re-caching). Calls <code>syncSpecDbForCategory</code>. Broadcasts <code>process-completed</code> via <code>emitDataChange</code>.</td>
+  </tr>
+  <tr>
+    <td><code>indexLabProcessCompletion.js</code></td>
+    <td>Runs on every exit. Only acts if command is <code>indexlab</code>. Reconciles interrupted runs in SQL. Not relevant to compile/validate.</td>
+  </tr>
+</table>
+
+<h3>Frontend: single Zustand slot</h3>
+<table>
+  <tr><th>File</th><th>Constraint</th></tr>
+  <tr>
+    <td><code>runtimeStore.ts</code></td>
+    <td>Single <code>processStatus: ProcessStatus</code> in Zustand state.</td>
+  </tr>
+  <tr>
+    <td><code>StudioPageShell.tsx:209</code></td>
+    <td><code>disabled={compileMut.isPending || processStatus.running}</code> &mdash; blocks compile when <strong>any</strong> process runs.</td>
+  </tr>
+  <tr>
+    <td><code>CompileReportsTab.tsx:70</code></td>
+    <td>Same pattern: <code>disabled={compilePending || anyProcessRunning}</code>.</td>
+  </tr>
+  <tr>
+    <td><code>useCategorySync.ts</code></td>
+    <td>Polls <code>GET /process/status</code> every 5s, pushes into Zustand store.</td>
+  </tr>
+  <tr>
+    <td><code>useWsEventBridge.ts</code></td>
+    <td>WS <code>process-status</code> channel also pushes into same Zustand slot + React Query cache.</td>
+  </tr>
+</table>
+
+<h3>Polling architecture</h3>
+<p>Three independent polling paths for <code>GET /process/status</code>, all sharing React Query key <code>['processStatus']</code>:</p>
+<table>
+  <tr><th>Location</th><th>Interval</th></tr>
+  <tr><td><code>useCategorySync</code> (AppShell)</td><td>5000ms</td></tr>
+  <tr><td><code>RuntimeOpsPage</code></td><td>1500ms</td></tr>
+  <tr><td><code>IndexingPage</code></td><td>1500ms</td></tr>
+</table>
+
+<p>Seven locations call <code>setProcessStatus</code>: useCategorySync, useWsEventBridge, StudioPage (&times;2 via mutations), IndexingPage (&times;2 via mutations), indexingRunViewActions.</p>
+
+<!-- ================================================================== -->
+<h2>3. What Needs to Change</h2>
+
+<table>
+  <tr><th>Layer</th><th>Current</th><th>Required</th></tr>
+  <tr>
+    <td>Backend state</td>
+    <td>Single <code>phase: 'idle' | 'running'</code></td>
+    <td>Per-command state slots or separate lightweight-process tracking that doesn't touch the global slot</td>
+  </tr>
+  <tr>
+    <td>API contract</td>
+    <td><code>GET /process/status</code> returns single object</td>
+    <td>Multiple slots or separate endpoint for compile status</td>
+  </tr>
+  <tr>
+    <td>Frontend store</td>
+    <td><code>processStatus: ProcessStatus</code></td>
+    <td>Multi-slot Zustand state or separate compile status atom</td>
+  </tr>
+  <tr>
+    <td>UI disable gates</td>
+    <td><code>processStatus.running</code> blocks all commands</td>
+    <td>Per-command <code>running</code> check</td>
+  </tr>
+  <tr>
+    <td>Completion handlers</td>
+    <td>Triggered by child process exit event</td>
+    <td>Must work inline (no child process lifecycle event)</td>
+  </tr>
+  <tr>
+    <td>WebSocket</td>
+    <td>Broadcasts single global <code>process-status</code></td>
+    <td>Per-command broadcast or scoped events</td>
+  </tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>4. Files Involved</h2>
+
+<h3>Backend (must change)</h3>
+<ul>
+  <li><code>src/app/api/processLifecycleState.js</code> (98 LOC)</li>
+  <li><code>src/app/api/processRuntime.js</code> (385 LOC)</li>
+  <li><code>src/features/studio/api/studioRoutes.js</code> (595 LOC) &mdash; compile/validate route handlers</li>
+  <li><code>src/app/api/services/compileProcessCompletion.js</code> (110 LOC)</li>
+</ul>
+
+<h3>Frontend (must change)</h3>
+<ul>
+  <li><code>tools/gui-react/src/features/runtime-ops/state/runtimeStore.ts</code></li>
+  <li><code>tools/gui-react/src/features/studio/components/StudioPageShell.tsx</code></li>
+  <li><code>tools/gui-react/src/features/studio/tabs/CompileReportsTab.tsx</code></li>
+  <li><code>tools/gui-react/src/features/studio/state/useStudioPageMutations.ts</code></li>
+  <li><code>tools/gui-react/src/features/studio/state/studioPageShellController.ts</code></li>
+</ul>
+
+<h3>Frontend (may need changes)</h3>
+<ul>
+  <li><code>tools/gui-react/src/types/events.ts</code> &mdash; ProcessStatus type</li>
+  <li><code>tools/gui-react/src/hooks/useProcessStatusQuery.ts</code></li>
+  <li><code>tools/gui-react/src/pages/layout/hooks/useCategorySync.ts</code></li>
+  <li><code>tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts</code></li>
+  <li><code>tools/gui-react/src/pages/layout/AppShell.tsx</code></li>
+  <li><code>tools/gui-react/src/pages/layout/Sidebar.tsx</code></li>
+  <li><code>tools/gui-react/src/features/studio/state/studioPagePanelProps.ts</code></li>
+  <li><code>tools/gui-react/src/features/indexing/components/IndexingPage.tsx</code></li>
+  <li><code>tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx</code></li>
+</ul>
+
+<h3>Tests (must update)</h3>
+<ul>
+  <li><code>tools/gui-react/src/features/studio/state/__tests__/studioPageShellControllerContracts.test.js</code></li>
+  <li><code>tools/gui-react/src/features/studio/state/__tests__/studioPageControllerContracts.test.js</code></li>
+  <li><code>tools/gui-react/src/features/studio/state/__tests__/studioPagePanelPropsContracts.test.js</code></li>
+  <li><code>tools/gui-react/src/features/indexing/api/__tests__/indexingRunMutationsContract.test.js</code></li>
+  <li><code>tools/gui-react/src/features/runtime-ops/components/__tests__/runtimeOpsPageContracts.test.js</code></li>
+</ul>
+
+<!-- ================================================================== -->
+<h2>5. Prerequisite Decisions</h2>
+
+<div class="card">
+  <p>Before implementation, these design choices must be made:</p>
+  <ul>
+    <li><strong>Separate compile status vs multi-slot process status?</strong> A dedicated <code>compileStatus</code> atom is simpler but less general. A multi-slot <code>processStatusByCommand</code> is more extensible but touches more files.</li>
+    <li><strong>In-process only for compile/validate, or also billing-report/llm-health?</strong> The latter are also thin wrappers over importable functions.</li>
+    <li><strong>Per-category concurrency lock?</strong> Compile writes to <code>_generated/</code>, validate reads from it. Concurrent compile+validate on the same category would conflict.</li>
+    <li><strong>API response contract?</strong> Does <code>POST /studio/:cat/compile</code> return the compile result directly, or still return a process-status-shaped response for backwards compatibility?</li>
+  </ul>
+</div>
+
+</body>
+</html>

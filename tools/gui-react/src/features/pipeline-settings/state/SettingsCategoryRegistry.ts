@@ -4,7 +4,7 @@
 
 // WHY: LLM/extraction settings are owned by the LLM Config page (dedicated rich UI).
 // Pipeline Settings covers global, planner, fetcher, extraction (screenshots), and validation.
-export type SettingsCategoryId = 'global' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+export type SettingsCategoryId = 'review-publisher' | 'global' | 'planner' | 'fetcher' | 'extraction' | 'validation';
 
 export interface SettingsSectionDef {
   readonly id: string;
@@ -23,9 +23,17 @@ export interface SettingsCategoryDef {
   readonly sections: readonly SettingsSectionDef[];
 }
 
-export const SETTINGS_CATEGORY_KEYS = ['global', 'planner', 'fetcher', 'extraction', 'validation'] as const;
+export const SETTINGS_CATEGORY_KEYS = ['review-publisher', 'global', 'planner', 'fetcher', 'extraction', 'validation'] as const;
 
 export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object.freeze([
+  {
+    id: 'review-publisher',
+    label: 'Candidate Validation',
+    subtitle: 'Publish gates and quality controls',
+    sections: Object.freeze([
+      { id: 'publish-gate', label: 'Publisher', tip: 'Confidence threshold for auto-publishing candidates to product.json fields' },
+    ]),
+  },
   {
     id: 'global',
     label: 'Global',

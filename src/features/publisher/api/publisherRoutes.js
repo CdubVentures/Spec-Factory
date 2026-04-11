@@ -38,6 +38,24 @@ export function registerPublisherRoutes(ctx) {
       return true;
     }
 
+    // GET /publisher/:category/published/:productId
+    if (parts[2] === 'published' && parts[3] && method === 'GET') {
+      const productId = parts[3];
+      const allCandidates = specDb.getAllFieldCandidatesByProduct(productId);
+      const fields = {};
+      for (const row of allCandidates) {
+        if (row.status !== 'resolved') continue;
+        fields[row.field_key] = {
+          value: row.value,
+          confidence: row.confidence,
+          source: row.metadata_json?.source || 'pipeline',
+          resolved_at: row.updated_at,
+        };
+      }
+      jsonRes(res, 200, { product_id: productId, fields });
+      return true;
+    }
+
     return false;
   };
 }

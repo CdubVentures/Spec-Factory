@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the config SSOT chain, env inventory, persistence targets, and mutable settings routes.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## SSOT Chain
 
@@ -48,7 +48,7 @@ What it does **not** do:
 - it does not enumerate every config consumer in the repo
 - it does not prove env completeness across all source files
 
-Current result on 2026-04-07:
+Current result on 2026-04-10:
 
 ```text
 Missing keys in config manifest: PORT
@@ -172,7 +172,7 @@ Verified absences:
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy file-backed settings surface |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | spec-seeds file-backed settings surface |
 | source | `tools/check-env-example-sync.mjs` | env-check implementation and limitations |
-| command | `npm run env:check` | current manifest coverage failure on 2026-04-07 |
+| command | `npm run env:check` | current manifest coverage failure on 2026-04-10 |
 | filesystem | `.env` | observed default dotenv file presence |
 
 ## Related Documents

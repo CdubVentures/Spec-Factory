@@ -46,6 +46,11 @@ const DeterministicStrategySection = lazy(async () => {
   return { default: module.PipelineDeterministicStrategySection };
 });
 
+const ModuleSettingsPanel = lazy(async () => {
+  const module = await import('./ModuleSettingsPanel.tsx');
+  return { default: module.ModuleSettingsPanel };
+});
+
 // WHY: Helper to test whether a section ID belongs to a runtime category panel.
 function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategoryId {
   return (SETTINGS_CATEGORY_KEYS as readonly string[]).includes(id);
@@ -332,6 +337,18 @@ export function PipelineSettingsPage() {
         {activeSection === 'deterministic-strategy' && (
           <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading deterministic strategy...</p>}>
             <DeterministicStrategySection />
+          </Suspense>
+        )}
+
+        {/* Module Settings */}
+        {activeSection === 'module-cef' && (
+          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
+            <ModuleSettingsPanel moduleId="colorEditionFinder" />
+          </Suspense>
+        )}
+        {activeSection === 'module-pif' && (
+          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
+            <ModuleSettingsPanel moduleId="productImageFinder" />
           </Suspense>
         )}
     </>

@@ -190,7 +190,6 @@ export function makeRunContextEvent(runId, overrides = {}) {
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
     stage_cursor: 'stage:bootstrap',
-    run_profile: 'indexlab',
     runtime_mode: 'single',
     ...overrides
   };

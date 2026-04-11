@@ -22,7 +22,7 @@ export interface RegistryEntry {
   aliases?: readonly string[];
   deprecated?: boolean;
   // UI presentation metadata (pipeline settings reorganization)
-  uiCategory?: 'flow' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+  uiCategory?: 'review-publisher' | 'flow' | 'planner' | 'fetcher' | 'extraction' | 'validation';
   uiSection?: string;
   uiLabel?: string;
   uiTip?: string;

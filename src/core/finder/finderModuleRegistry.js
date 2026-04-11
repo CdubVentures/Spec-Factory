@@ -53,6 +53,52 @@ export const FINDER_MODULES = Object.freeze([
     // Reseed: key for the surface in seedRegistry + rebuild function in DI deps
     reseedKey: 'color_edition',
     rebuildFnKey: 'rebuildColorEditionFinderFromJson',
+
+    // Per-category settings (stored in {tableName}_settings table)
+    settingsDefaults: {},
+  },
+  {
+    // Identity
+    id: 'productImageFinder',
+    routePrefix: 'product-image-finder',
+    moduleType: 'pif',
+    moduleLabel: 'PIF',
+    chipStyle: 'sf-chip-info',
+
+    // DB schema (summary table — custom columns per module)
+    tableName: 'product_image_finder',
+    runsTableName: 'product_image_finder_runs',
+    summaryColumns: [
+      { name: 'images', type: 'TEXT', default: "'[]'" },
+      { name: 'image_count', type: 'INTEGER', default: '0' },
+    ],
+    summaryIndexes: [
+      { name: 'idx_pif_cooldown', columns: ['cooldown_until'] },
+    ],
+
+    // PIF doesn't populate field candidates — images are artifacts, not spec fields
+    fieldKeys: [],
+    requiredFields: [],
+
+    // LLM phase
+    phase: 'imageFinder',
+
+    // Feature module paths (for auto-wiring)
+    featurePath: 'product-image',
+    routeFile: 'productImageFinderRoutes',
+    contextFile: 'productImageFinderRouteContext',
+    registrarExport: 'registerProductImageFinderRoutes',
+    contextExport: 'createProductImageFinderRouteContext',
+
+    // JSON store config
+    filePrefix: 'product_images',
+
+    // Reseed
+    reseedKey: 'product_images',
+    rebuildFnKey: 'rebuildProductImageFinderFromJson',
+
+    // Per-category settings (stored in {tableName}_settings table)
+    settingsDefaults: { view1: 'top', view2: 'left' },
   },
 ]);
 

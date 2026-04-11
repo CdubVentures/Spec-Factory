@@ -4,8 +4,6 @@ import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { createStorage, toPosixKey } from '../../core/storage/storage.js';
 import { parseArgs, asBool } from './args.js';
 import {
-  slug,
-  parseCsvList,
   parseJsonArg,
   openSpecDbForCategory,
   createWithSpecDb,
@@ -43,9 +41,7 @@ function usage() {
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
     '',
     'Global options:',
-    '  --env <path>   Path to dotenv file (default: .env)',
-    '  --profile <standard|thorough|fast>   Runtime crawl profile (default: standard)',
-    '  --thorough    Shortcut for --profile thorough'
+    '  --env <path>   Path to dotenv file (default: .env)'
   ].join('\n');
 }
 
@@ -201,7 +197,7 @@ const loadDiscoverCommandHandler = createLazyLoader(async () => {
     runDiscoverySeedPlan,
     EventLogger,
     buildRunId,
-    openSpecDbForCategory,
+    withSpecDb,
   });
 });
 
@@ -230,7 +226,6 @@ const loadMigrateToSqliteCommandHandler = createLazyLoader(async () => {
   return createMigrateToSqliteCommand({
     withSpecDb,
     toPosixKey,
-    now: () => Date.now(),
   });
 });
 
@@ -290,10 +285,6 @@ export async function executeCli(argv, { env = {}, stdout = process.stdout, stde
     const storage = createStorage(config);
 
     const output = await executeCommand({ command, config, storage, args });
-
-    if (output && typeof output === 'object') {
-      output.run_profile = 'standard';
-    }
 
     return { exitCode: 0, output };
   } finally {

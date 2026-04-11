@@ -78,7 +78,8 @@ export function registerStudioRoutes(ctx) {
       // WHY: Read eg_toggles from the studio map (SQL) to determine which keys are actively locked.
       const payloadMapRow = typeof getSpecDb === 'function' ? getSpecDb(category)?.getFieldStudioMap?.() ?? null : null;
       const payloadMap = payloadMapRow ? (() => { try { return JSON.parse(payloadMapRow.map_json); } catch { return null; } })() : null;
-      const egToggles = payloadMap?.eg_toggles || { ...EG_DEFAULT_TOGGLES };
+      const rawToggles = payloadMap?.eg_toggles;
+      const egToggles = (rawToggles && typeof rawToggles === 'object' && Object.keys(rawToggles).length > 0) ? rawToggles : { ...EG_DEFAULT_TOGGLES };
       const activeLockedKeys = resolveEgLockedKeys(egToggles);
 
       // WHY: Dynamic color list from color_registry DB — the SSOT for valid atoms.
@@ -117,7 +118,7 @@ export function registerStudioRoutes(ctx) {
           if (!overrides[k]) overrides[k] = getEgPresetForKey(k, egCtx);
         }
         patched.field_overrides = overrides;
-        if (!patched.eg_toggles) patched.eg_toggles = { ...EG_DEFAULT_TOGGLES };
+        if (!patched.eg_toggles || Object.keys(patched.eg_toggles).length === 0) patched.eg_toggles = { ...EG_DEFAULT_TOGGLES };
         const keys = [...(patched.selected_keys || [])];
         for (const k of EG_LOCKED_KEYS) { if (!keys.includes(k)) keys.push(k); }
         patched.selected_keys = keys;

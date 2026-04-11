@@ -2,46 +2,43 @@
 
 > **Purpose:** Describe the verified server entrypoints, bootstrap phases, route families, persistence boundaries, realtime bridge, and error handling for the live backend.
 > **Prerequisites:** [system-map.md](./system-map.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
-## Entrypoints (3 Live)
+## Entrypoints
 
 | Surface | Path | Role |
 |---------|------|------|
-| server entrypoint | `src/app/api/guiServer.js` | desktop/server bootstrap (Node http) |
-| runtime assembly | `src/app/api/guiServerRuntime.js` | runtime assembly, route mounting, WebSocket |
-| CLI entrypoint | `src/app/cli/spec.js` | CLI entrypoint (10 commands) |
-
-There is no Intel Graph helper server (deleted). There is no batch command (deleted).
+| server entrypoint | `src/app/api/guiServer.js` | local Node HTTP bootstrap |
+| runtime assembly | `src/app/api/guiServerRuntime.js` | runtime assembly, route mounting, and WebSocket integration |
+| CLI entrypoint | `src/app/cli/spec.js` | CLI command dispatcher |
 
 ## Bootstrap Phases
 
-`src/app/api/guiServerRuntime.js` orchestrates the full boot sequence through `bootstrapServer()` (defined in `src/app/api/serverBootstrap.js`) and its own route-context and HTTP-assembly steps. The live sequence is:
+`src/app/api/guiServerRuntime.js` orchestrates boot through `bootstrapServer()` in `src/app/api/serverBootstrap.js` and then builds route contexts plus HTTP assembly. The live sequence is:
 
-1. **Environment bootstrap** via `createBootstrapEnvironment` in `src/app/api/bootstrap/createBootstrapEnvironment.js`
+1. Environment bootstrap via `src/app/api/bootstrap/createBootstrapEnvironment.js`
    - loads `.env`
-   - loads config via `src/config.js`
-   - applies persisted runtime settings
+   - loads config through `src/config.js`
    - resolves `PORT`, `HELPER_ROOT`, `OUTPUT_ROOT`, `INDEXLAB_ROOT`, and `LAUNCH_CWD`
-   - creates the config mutation gate and storage adapter
-2. **Session layer + AppDb** via `createBootstrapSessionLayer` in `src/app/api/bootstrap/createBootstrapSessionLayer.js`
+   - builds the config gate and storage adapter
+2. Session layer + AppDb via `src/app/api/bootstrap/createBootstrapSessionLayer.js`
    - creates the category alias resolver
    - creates the lazy SpecDb runtime
    - opens AppDb eagerly at `.workspace/db/app.sqlite`
-   - seeds brand and color registry tables
+   - seeds brand, color, and unit registry tables
    - reapplies persisted runtime settings from AppDb-backed user settings
-3. **Domain runtimes** via `createBootstrapDomainRuntimes` in `src/app/api/bootstrap/createBootstrapDomainRuntimes.js`
+3. Domain runtimes via `src/app/api/bootstrap/createBootstrapDomainRuntimes.js`
    - review, catalog, and related domain helpers
-4. **Route context construction** (15 contexts) in `guiServerRuntime.js`
-   - builds all 15 route contexts (see Route Context Files below)
-5. **Route registration** (15 families) in `guiServerRuntime.js`
-   - defines the `routeDefinitions` array with all 15 families
-6. **HTTP assembly + WebSocket** in `guiServerRuntime.js`
+4. Route context construction in `src/app/api/guiServerRuntime.js`
+   - builds 17 route contexts
+5. Route registration in `src/app/api/guiServerRuntime.js`
+   - defines the `routeDefinitions` array with 17 families
+6. HTTP assembly + WebSocket in `src/app/api/guiServerRuntime.js`
    - `createGuiServerHttpAssembly()` registers family handlers
    - `http.createServer()` creates the server
-   - `attachWebSocketUpgrade()` wires the `/ws` endpoint
+   - `attachWebSocketUpgrade()` wires `/ws`
 
-`src/app/api/serverBootstrap.js` exports `BOOTSTRAP_RETURN_GROUPS`, which documents the grouped return contract used by `src/app/api/guiServerRuntime.js`.
+`src/app/api/serverBootstrap.js` exports `BOOTSTRAP_RETURN_GROUPS`, which is the grouped return contract consumed by `guiServerRuntime.js`.
 
 ## Request Pipeline
 
@@ -57,30 +54,32 @@ There is no Intel Graph helper server (deleted). There is no batch command (dele
    - normalizes category aliases for category-scoped path segments
    - returns `404 { error: 'not_found' }` when no handler claims the request
    - returns `500 { error: 'internal', message }` on uncaught handler errors
-7. `src/app/api/httpPrimitives.js` provides `jsonRes`, `readJsonBody`.
+7. `src/app/api/httpPrimitives.js` provides `jsonRes` and `readJsonBody`.
 8. Non-API requests fall through to `src/app/api/staticFileServer.js`, which serves `tools/gui-react/dist/` and falls back to `index.html` for SPA routes.
 
 ## Mounted Route Families
 
-The live route-order array in `src/app/api/guiServerRuntime.js` is exactly 15 families:
+The live route-order array in `src/app/api/guiServerRuntime.js` is exactly 17 families:
 
-1. `infra` — `registerInfraRoutes`
-2. `config` — `registerConfigRoutes`
-3. `indexlab` — `registerIndexlabRoutes`
-4. `runtimeOps` — `registerRuntimeOpsRoutes`
-5. `catalog` — `registerCatalogRoutes`
-6. `brand` — `registerBrandRoutes`
-7. `color` — `registerColorRoutes`
-8. `colorEditionFinder` — `registerColorEditionFinderRoutes`
-9. `studio` — `registerStudioRoutes`
-10. `dataAuthority` — `registerDataAuthorityRoutes`
-11. `queueBillingLearning` — `registerQueueBillingLearningRoutes`
-12. `review` — `registerReviewRoutes`
-13. `sourceStrategy` — `registerSourceStrategyRoutes`
-14. `specSeeds` — `registerSpecSeedsRoutes`
-15. `testMode` — `registerTestModeRoutes`
+1. `infra`
+2. `config`
+3. `indexlab`
+4. `runtimeOps`
+5. `catalog`
+6. `brand`
+7. `color`
+8. `unitRegistry`
+9. `colorEditionFinder`
+10. `studio`
+11. `dataAuthority`
+12. `queueBillingLearning`
+13. `review`
+14. `publisher`
+15. `sourceStrategy`
+16. `specSeeds`
+17. `testMode`
 
-`src/app/api/routeRegistry.js` exports `GUI_API_ROUTE_ORDER`, but it is not the mounted SSOT because it omits the live `specSeeds` and `testMode` families (13 entries vs 15 mounted).
+`src/app/api/routeRegistry.js` exports `GUI_API_ROUTE_ORDER`, but it is not the mounted SSOT. It currently lists 14 keys and omits the live `unitRegistry`, `specSeeds`, and `testMode` families.
 
 | Family key | Primary paths | Files |
 |------------|---------------|-------|
@@ -88,21 +87,23 @@ The live route-order array in `src/app/api/guiServerRuntime.js` is exactly 15 fa
 | `config` | `/ui-settings`, `/runtime-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config`, `/indexing/llm-metrics`, `/indexing/domain-checklist/*`, `/indexing/review-metrics/*` | `src/features/settings/api/configRoutes.js` |
 | `indexlab` | `/indexlab/runs`, `/indexlab/run/*`, `/indexlab/indexes/*`, `/indexlab/analytics/*`, `/indexlab/live-crawl/*`, `/storage/*` | `src/features/indexing/api/indexlabRoutes.js`, `src/features/indexing/api/storageManagerRoutes.js` |
 | `runtimeOps` | `/indexlab/run/:runId/runtime/*` | `src/features/indexing/api/runtimeOpsRoutes.js` |
-| `catalog` | `/catalog/*`, `/product/*`, `/events/*` | `src/features/catalog/api/catalogRoutes.js` |
+| `catalog` | `/catalog/*`, `/product/*` | `src/features/catalog/api/catalogRoutes.js` |
 | `brand` | `/brands/*` | `src/features/catalog/api/brandRoutes.js` |
 | `color` | `/colors/*` | `src/features/color-registry/api/colorRoutes.js` |
+| `unitRegistry` | `/unit-registry`, `/unit-registry/canonicals`, `/unit-registry/:canonical`, `/unit-registry/sync` | `src/features/unit-registry/api/unitRegistryRoutes.js` |
 | `colorEditionFinder` | `/color-edition-finder/*` | `src/features/color-edition/api/colorEditionFinderRoutes.js` |
 | `studio` | `/field-labels/*`, `/studio/:category/*` | `src/features/studio/api/studioRoutes.js` |
 | `dataAuthority` | `/data-authority/:category/*` | `src/features/category-authority/api/dataAuthorityRoutes.js` |
 | `queueBillingLearning` | `/queue/*`, `/billing/*`, `/learning/*` | `src/features/indexing/api/queueBillingLearningRoutes.js` |
 | `review` | `/review/*`, `/review-components/*` | `src/features/review/api/reviewRoutes.js` |
+| `publisher` | `/publisher/:category/candidates`, `/publisher/:category/stats` | `src/features/publisher/api/publisherRoutes.js` |
 | `sourceStrategy` | `/source-strategy/*` | `src/features/indexing/api/sourceStrategyRoutes.js` |
 | `specSeeds` | `/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js` |
-| `testMode` | `/test-mode/audit` (GET), `/test-mode/validate` (POST) | `src/app/api/routes/testModeRoutes.js`, `src/app/api/routes/testModeRouteContext.js` |
+| `testMode` | `/test-mode/audit`, `/test-mode/validate` | `src/app/api/routes/testModeRoutes.js`, `src/app/api/routes/testModeRouteContext.js` |
 
 ## Route Context Files
 
-Each route family receives a context object. 14 contexts use dedicated factory files; 1 (`specSeedsRouteContext`) is created inline in `guiServerRuntime.js`.
+Each route family receives a context object. Fifteen contexts come from dedicated factory files; two are built inline in `guiServerRuntime.js` (`specSeedsRouteContext`, `unitRegistryRouteContext`).
 
 | Route context | Source |
 |---------------|--------|
@@ -113,21 +114,23 @@ Each route family receives a context object. 14 contexts use dedicated factory f
 | `catalogRouteContext` | `src/features/catalog/api/catalogRouteContext.js` |
 | `brandRouteContext` | `src/features/catalog/api/brandRouteContext.js` |
 | `colorRouteContext` | `src/features/color-registry/api/colorRouteContext.js` |
+| `unitRegistryRouteContext` | inline in `src/app/api/guiServerRuntime.js` |
 | `colorEditionFinderRouteContext` | `src/features/color-edition/api/colorEditionFinderRouteContext.js` |
 | `studioRouteContext` | `src/features/studio/api/studioRouteContext.js` |
 | `dataAuthorityRouteContext` | `src/features/category-authority/api/dataAuthorityRouteContext.js` |
 | `queueBillingLearningRouteContext` | `src/features/indexing/api/queueBillingLearningRouteContext.js` |
 | `reviewRouteContext` | `src/features/review/api/reviewRouteContext.js` |
+| `publisherRouteContext` | `src/features/publisher/api/publisherRouteContext.js` |
 | `sourceStrategyRouteContext` | `src/features/indexing/api/sourceStrategyRouteContext.js` |
-| `specSeedsRouteContext` | created inline |
+| `specSeedsRouteContext` | inline in `src/app/api/guiServerRuntime.js` |
 | `testModeRouteContext` | `src/app/api/routes/testModeRouteContext.js` |
 
 ## Persistence Boundaries
 
 | Boundary | Files | Behavior |
 |----------|-------|----------|
-| global AppDb | `src/db/appDb.js`, `src/app/api/bootstrap/createBootstrapSessionLayer.js` | eager global SQLite store for brands, brand_categories, brand_renames, settings, studio_maps, color_registry |
-| per-category SpecDb | `src/app/api/specDbRuntime.js`, `src/db/specDb.js` | lazy open and auto-seed per category (39 tables) |
+| global AppDb | `src/db/appDb.js`, `src/app/api/bootstrap/createBootstrapSessionLayer.js` | eager global SQLite store for brands, settings, studio maps, color registry, and unit registry |
+| per-category SpecDb | `src/app/api/specDbRuntime.js`, `src/db/specDb.js` | lazy open and auto-seed per category |
 | file-backed | `category_authority/`, `.workspace/products/`, `.workspace/runs/` | category authority control plane, product rebuild JSON, and IndexLab run output |
 | user settings persistence | `src/features/settings/api/configPersistenceContext.js`, `src/features/settings-authority/userSettingsService.js` | AppDb-backed primary store with JSON fallback only when AppDb is unavailable |
 | runtime roots | `src/core/config/runtimeArtifactRoots.js` | defaults to `.workspace/output` and `.workspace/runs` |
@@ -149,7 +152,7 @@ Each route family receives a context object. 14 contexts use dedicated factory f
 
 - `src/app/api/guiApiPipeline.js` wraps all route handlers.
 - `src/app/api/requestDispatch.js` dispatches requests.
-- `src/app/api/httpPrimitives.js` provides `jsonRes`, `readJsonBody`.
+- `src/app/api/httpPrimitives.js` provides `jsonRes` and `readJsonBody`.
 - Unknown API routes return `404 { error: 'not_found' }`.
 - Uncaught handler errors return `500 { error: 'internal', message }`.
 - Family handlers typically return their own `400`, `404`, `409`, `422`, or `503` envelopes for contract-level failures.
@@ -181,7 +184,7 @@ Each route family receives a context object. 14 contexts use dedicated factory f
 | source | `src/app/api/serverBootstrap.js` | bootstrap phases and grouped runtime contract |
 | source | `src/app/api/guiServerHttpAssembly.js` | route-handler registration pipeline |
 | source | `src/app/api/guiApiPipeline.js` | route handler wrapping |
-| source | `src/app/api/httpPrimitives.js` | jsonRes, readJsonBody primitives |
+| source | `src/app/api/httpPrimitives.js` | `jsonRes` and `readJsonBody` primitives |
 | source | `src/app/api/requestDispatch.js` | API detection, alias normalization, and error envelopes |
 | source | `src/app/api/staticFileServer.js` | SPA static serving behavior |
 | source | `src/app/api/specDbRuntime.js` | lazy SpecDb open, seed, and reconcile path |
@@ -191,12 +194,12 @@ Each route family receives a context object. 14 contexts use dedicated factory f
 | source | `src/features/settings/api/configRoutes.js` | live settings route families |
 | source | `src/features/indexing/api/indexlabRoutes.js` | live IndexLab and delegated `/storage/*` routes |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | storage backend reporting and maintenance routes |
-| source | `src/features/color-registry/api/colorRoutes.js` | color route family |
-| source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition route family |
+| source | `src/features/unit-registry/api/unitRegistryRoutes.js` | unit registry route family |
+| source | `src/features/publisher/api/publisherRoutes.js` | publisher route family |
 
 ## Related Documents
 
-- [System Map](./system-map.md) - Runtime topology that this backend implements.
-- [Routing and GUI](./routing-and-gui.md) - Browser routes that call these backend surfaces.
-- [API Surface](../06-references/api-surface.md) - Endpoint-by-endpoint reference for the mounted handlers.
-- [Background Jobs](../06-references/background-jobs.md) - Child-process and batch work started from this backend.
+- [System Map](./system-map.md) - runtime topology that this backend implements.
+- [Routing and GUI](./routing-and-gui.md) - browser routes that call these backend surfaces.
+- [API Surface](../06-references/api-surface.md) - endpoint-by-endpoint reference for the mounted handlers.
+- [Background Jobs](../06-references/background-jobs.md) - child-process and batch work started from this backend.

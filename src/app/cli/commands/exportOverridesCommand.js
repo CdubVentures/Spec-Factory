@@ -6,7 +6,7 @@ import { writeConsolidatedOverrides } from '../../../shared/consolidatedOverride
 
 // ── Shared: build per-product override envelope from SQL ─────────────────────
 
-function buildProductOverridesFromSql(specDb, category, productId) {
+function buildProductOverridesFromSql(specDb, productId) {
   const reviewState = specDb.getProductReviewState(productId);
   const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
 
@@ -55,7 +55,7 @@ export function createExportOverridesCommand({ withSpecDb }) {
         version: 1,
         category,
         product_id: productId,
-        ...buildProductOverridesFromSql(specDb, category, productId),
+        ...buildProductOverridesFromSql(specDb, productId),
       }));
 
       return {
@@ -72,7 +72,7 @@ export function createExportOverridesCommand({ withSpecDb }) {
 
 export function createMigrateOverridesCommand({ withSpecDb }) {
   return async function commandMigrateOverrides(config, _storage, args) {
-    const category = String(args?.category || '').trim();
+    const category = String(args.category || '').trim();
     if (!category) {
       throw new Error('migrate-overrides requires --category <category>');
     }
@@ -86,7 +86,7 @@ export function createMigrateOverridesCommand({ withSpecDb }) {
 
       const products = {};
       for (const productId of productIds) {
-        products[productId] = buildProductOverridesFromSql(specDb, category, productId);
+        products[productId] = buildProductOverridesFromSql(specDb, productId);
       }
 
       const envelope = {

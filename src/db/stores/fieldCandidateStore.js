@@ -89,5 +89,29 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     };
   }
 
-  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats };
+  function markResolved(productId, fieldKey, value) {
+    db.prepare(
+      `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+       WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?`
+    ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
+  }
+
+  function demoteResolved(productId, fieldKey) {
+    db.prepare(
+      `UPDATE field_candidates SET status = 'candidate', updated_at = datetime('now')
+       WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved'`
+    ).run(category, String(productId || ''), String(fieldKey || ''));
+  }
+
+  function getResolved(productId, fieldKey) {
+    return hydrateRow(
+      db.prepare(
+        `SELECT * FROM field_candidates
+         WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved'
+         ORDER BY confidence DESC LIMIT 1`
+      ).get(category, String(productId || ''), String(fieldKey || ''))
+    );
+  }
+
+  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats, markResolved, demoteResolved, getResolved };
 }

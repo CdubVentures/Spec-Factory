@@ -5,5 +5,6 @@ export {
   updateModelInfo,
   completeOperation,
   failOperation,
+  dismissOperation,
   listOperations,
 } from './operationsRegistry.js';

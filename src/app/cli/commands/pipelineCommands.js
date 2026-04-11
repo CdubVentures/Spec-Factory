@@ -127,6 +127,7 @@ export function createPipelineCommands({
       specDb = await openSpecDbForCategory(config, category);
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
+    try {
     // WHY: DB-first job resolution. The products table in spec.sqlite is the SSOT
     // for product identity. This eliminates the "unknown unknown-model" problem
     // when fixture files don't exist or were created without identity args.
@@ -171,7 +172,7 @@ export function createPipelineCommands({
         if (row && row.__screencast) {
           try { process.send(row); } catch { /* ignore IPC errors */ }
         } else if (row) {
-          try { process.send({ __runtime_event: true, run_id: row.run_id || '', stage: row.stage || '', event: row.event || '' }); } catch { /* ignore IPC errors */ }
+          try { process.send({ __runtime_event: true, run_id: row.run_id || '', stage: row.stage || '', stage_cursor: row.stage_cursor || '', event: row.event || '' }); } catch { /* ignore IPC errors */ }
         }
       };
       process.on('message', (msg) => {
@@ -225,7 +226,6 @@ export function createPipelineCommands({
       runConfig.discoveryEnabled = true;
     }
 
-    try {
       const result = await runProduct({
         storage,
         config: runConfig,

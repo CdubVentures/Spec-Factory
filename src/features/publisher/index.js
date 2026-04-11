@@ -38,7 +38,9 @@ export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
 export { persistDiscoveredValue } from './persistDiscoveredValues.js';
 
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
-// TODO: export { publishResolved } from './publisher/publishResolved.js';
+export { publishCandidate } from './publish/publishCandidate.js';
+export { publishManualOverride } from './publish/publishManualOverride.js';
+export { rebuildPublishedFieldsFromJson } from './publish/publishedFieldReseed.js';
 
 // Rebuild contract (reseed surface for deleted-DB recovery)
 export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';

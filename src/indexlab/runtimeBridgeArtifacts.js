@@ -260,6 +260,7 @@ export async function emit(state, stage, event, payload = {}, ts = '') {
     product_id: state.context.productId || '',
     ts: toIso(ts || new Date().toISOString()),
     stage: String(stage || '').trim(),
+    stage_cursor: state.stageCursor || '',
     event: String(event || '').trim(),
     payload: payload && typeof payload === 'object' ? payload : {}
   };

@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { validateField } from '../validation/validateField.js';
 import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
+import { publishCandidate as autoPublish } from '../publish/publishCandidate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -26,8 +27,8 @@ function serializeValue(value) {
 }
 
 /**
- * @param {{ category: string, productId: string, fieldKey: string, value: *, confidence: number, sourceMeta: object, fieldRules: object, knownValues: object|null, componentDb: object|null, specDb: object, productRoot: string }} opts
- * @returns {{ status: 'accepted'|'rejected', candidateId: number|null, value: *, validationResult: object }}
+ * @param {{ category: string, productId: string, fieldKey: string, value: *, confidence: number, sourceMeta: object, fieldRules: object, knownValues: object|null, componentDb: object|null, specDb: object, productRoot: string, config?: object }} opts
+ * @returns {{ status: 'accepted'|'rejected', candidateId: number|null, value: *, validationResult: object, publishResult?: object }}
  */
 export function submitCandidate({
   category, productId, fieldKey,
@@ -36,6 +37,7 @@ export function submitCandidate({
   repairHistory,
   metadata,
   appDb,
+  config,
 }) {
   // --- Guard: identity ---
   if (!productId || !fieldKey) {
@@ -151,5 +153,17 @@ export function submitCandidate({
     persistDiscoveredValue({ specDb, fieldKey, value: repairedValue, fieldRule });
   }
 
-  return { status: 'accepted', candidateId, value: repairedValue, validationResult };
+  // --- Auto-publish ---
+  let publishResult = null;
+  if (config) {
+    publishResult = autoPublish({
+      specDb, category, productId, fieldKey,
+      candidateRow: candidateRow || { id: candidateId },
+      value: repairedValue, unit: repairedUnit,
+      confidence: maxConfidence,
+      config, fieldRule, productRoot,
+    });
+  }
+
+  return { status: 'accepted', candidateId, value: repairedValue, validationResult, publishResult };
 }

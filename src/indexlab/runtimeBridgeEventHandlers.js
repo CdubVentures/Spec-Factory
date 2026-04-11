@@ -39,7 +39,6 @@ async function handleRunContext(state, deps, { ts, row }) {
   }
   await emit(state, 'runtime', 'run_context', {
     scope: 'run',
-    run_profile: 'standard',
     runtime_mode: String(row.runtime_mode || '').trim(),
     identity_fingerprint: state.identityFingerprint,
     identity_lock_status: state.identityLockStatus,

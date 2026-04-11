@@ -11,6 +11,7 @@ export const LLM_PHASE_IDS = [
   'serp-selector',
   'validate',
   'color-finder',
+  'image-finder',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
@@ -21,6 +22,7 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   { id: 'serp-selector', label: 'SERP Selector', subtitle: 'Base Model', tip: 'LLM-based URL selector that decides fetch-worthiness. Uses triage token budget.', roles: ['triage'], sharedWith: ['brand-resolver'], group: 'indexing' },
   { id: 'validate', label: 'Validate', subtitle: 'Base Model', tip: 'Model override for the validation pass that confirms uncertain field candidates.', roles: ['validate'], group: 'publish' },
   { id: 'color-finder', label: 'Color & Edition Finder', subtitle: 'Discovery', tip: 'Discovers product color variants and limited editions using web search. Runs independently of the crawl pipeline.', roles: ['triage'], group: 'discovery' },
+  { id: 'image-finder', label: 'Product Image Finder', subtitle: 'Discovery', tip: 'Finds and downloads official product identity images (specific views) for each product. Runs independently of the crawl pipeline.', roles: ['triage'], group: 'discovery' },
 ] as const;
 
 export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {

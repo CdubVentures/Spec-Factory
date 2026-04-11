@@ -22,8 +22,12 @@ import { registerSpecSeedsRoutes } from '../../features/indexing/api/specSeedsRo
 import { registerColorRoutes } from '../../features/color-registry/api/colorRoutes.js';
 import { createColorRouteContext } from '../../features/color-registry/api/colorRouteContext.js';
 import { registerColorEditionFinderRoutes } from '../../features/color-edition/api/colorEditionFinderRoutes.js';
+import { registerProductImageFinderRoutes } from '../../features/product-image/api/productImageFinderRoutes.js';
 import { registerUnitRegistryRoutes } from '../../features/unit-registry/api/unitRegistryRoutes.js';
 import { createColorEditionFinderRouteContext } from '../../features/color-edition/api/colorEditionFinderRouteContext.js';
+import { createProductImageFinderRouteContext } from '../../features/product-image/api/productImageFinderRouteContext.js';
+import { registerModuleSettingsRoutes } from '../../features/module-settings/api/moduleSettingsRoutes.js';
+import { createModuleSettingsRouteContext } from '../../features/module-settings/api/moduleSettingsRouteContext.js';
 import { registerPublisherRoutes } from '../../features/publisher/api/publisherRoutes.js';
 import { createPublisherRouteContext } from '../../features/publisher/api/publisherRouteContext.js';
 import { createRouteLlmLogger } from '../../core/llm/createRouteLlmLogger.js';
@@ -187,6 +191,13 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
         logger: createRouteLlmLogger('color-edition-finder'),
       }),
+      productImageFinderRouteContext: createProductImageFinderRouteContext({
+        jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
+        logger: createRouteLlmLogger('product-image-finder'),
+      }),
+      moduleSettingsRouteContext: createModuleSettingsRouteContext({
+        jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot: HELPER_ROOT,
+      }),
       publisherRouteContext: createPublisherRouteContext({
         jsonRes, getSpecDb,
       }),
@@ -242,6 +253,8 @@ export function createGuiServerRuntime({
       { key: 'color', registrar: registerColorRoutes },
       { key: 'unitRegistry', registrar: registerUnitRegistryRoutes },
       { key: 'colorEditionFinder', registrar: registerColorEditionFinderRoutes },
+      { key: 'productImageFinder', registrar: registerProductImageFinderRoutes },
+      { key: 'moduleSettings', registrar: registerModuleSettingsRoutes },
       { key: 'studio', registrar: registerStudioRoutes },
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },
       { key: 'queueBillingLearning', registrar: registerQueueBillingLearningRoutes },

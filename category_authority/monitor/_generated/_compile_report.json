@@ -5,24 +5,24 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": false,
-      "hash": "7868f20dd719275123a7f6863d268457b320fbfa97a46b48bd13fad94fab6e7f",
+      "changed": true,
+      "hash": "313484ff6d2d283fef2061b9d0ffb732c1522902849eba7839a913a73f0800d8",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\field_rules.json"
     },
     "key_migrations": null,
     "known_values": {
-      "hash": "db859b7311391e6da946fbd69d390ddc51da84bed91dfe07347304dc1bea2be5",
+      "hash": "f31a97fc2fd4ffcedc6497664bdb08eb321b788d813504a368f78ee3ccf67b17",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "76557a4cff4d1626e8cf7016f17dbac7fca5eafca9be48db1fbf5ba2a3d7405b",
+      "hash": "97f0b803c07942c0a65b56593a3620e2b6c8786ff2a3c511079f31a4853519d8",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "monitor",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-11T00:14:50.880Z",
+  "compiled_at": "2026-04-11T04:58:24.647Z",
   "counts": {
     "component_types": 1,
     "critical": 2,
@@ -35,8 +35,8 @@
     "required": 7
   },
   "diff": {
-    "changed": false,
-    "current_hash": "7868f20dd719275123a7f6863d268457b320fbfa97a46b48bd13fad94fab6e7f",
+    "changed": true,
+    "current_hash": "313484ff6d2d283fef2061b9d0ffb732c1522902849eba7839a913a73f0800d8",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -162,11 +162,11 @@
     "previous_hash": "7868f20dd719275123a7f6863d268457b320fbfa97a46b48bd13fad94fab6e7f"
   },
   "errors": [],
-  "field_studio_map_hash": "d280de79bb9c906aba021b93f935100557290a51f00997d8fd09cce32591515a",
+  "field_studio_map_hash": "a4000a4754a68b4b92cb5f46e48793602c4b2a9925f59a54906361dd50bd200e",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-11T00:14:50.880Z",
+  "generated_at": "2026-04-11T04:58:24.647Z",
   "source_summary": {
     "component_sheets": 1,
     "component_sources": 1,

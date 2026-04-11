@@ -2,13 +2,13 @@
 
 > **Purpose:** Document the live AppDb and SpecDb schema, migration deltas, and canonical-versus-derived data boundaries with exact file paths.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Persistence Topology
 
 | Surface | Path | Role |
 |--------|------|------|
-| AppDb schema DDL | `src/db/appDbSchema.js` | global SQLite schema for brands, settings, studio maps, and color registry |
+| AppDb schema DDL | `src/db/appDbSchema.js` | global SQLite schema for brands, settings, studio maps, color registry, and unit registry |
 | AppDb runtime | `src/db/appDb.js` | eager global SQLite composition root |
 | AppDb bootstrap owner | `src/app/api/bootstrap/createBootstrapSessionLayer.js` | opens `.workspace/db/app.sqlite` and seeds global tables |
 | SpecDb schema DDL | `src/db/specDbSchema.js` | per-category SQLite schema for review, queue, telemetry, and artifact indexes |
@@ -25,6 +25,7 @@
 | global brands | AppDb `brands`, `brand_categories`, `brand_renames` | category-aware brand selectors and catalog flows |
 | persisted operator settings | AppDb `settings` plus `src/features/settings-authority/userSettingsService.js` | runtime config overlays and GUI hydration stores |
 | global color registry | AppDb `color_registry` | GUI `/colors` surface and color-aware feature flows |
+| global unit registry | AppDb `unit_registry` | GUI `/#/units` surface and publisher unit validation |
 | category review/component/list state | per-category SpecDb tables | GUI review pages, queue metrics, runtime analytics |
 | category authority rules and generated JSON | `category_authority/` | seeded/mirrored into SpecDb by `src/db/seed.js` and reseed helpers |
 | runtime artifacts and run directories | `.workspace/output`, `.workspace/runs` | indexed in SpecDb via `runs`, `run_artifacts`, `crawl_sources`, telemetry tables |
@@ -148,6 +149,19 @@ Table constraints: primary key on `category`.
 | `created_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | timestamp |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | timestamp |
 
+### `unit_registry`
+
+Table constraints: primary key on `id`; `canonical` is unique.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
+| `canonical` | `TEXT` | `NOT NULL UNIQUE` | canonical unit token used by publisher validation |
+| `label` | `TEXT` | `NOT NULL DEFAULT ''` | display label |
+| `synonyms_json` | `TEXT` | `NOT NULL DEFAULT '[]'` | serialized synonym array |
+| `conversions_json` | `TEXT` | `NOT NULL DEFAULT '[]'` | serialized conversion array |
+| `updated_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | timestamp |
+
 ## SpecDb: Review State And Normalized Entity Tables
 
 Each category gets its own SpecDb at `.workspace/db/<category>/spec.sqlite`.
@@ -241,7 +255,7 @@ Table constraints: `UNIQUE(category, field_key, value)`.
 
 ### `item_field_state`
 
-Table constraints: `UNIQUE(category, product_id, field_key)`.
+Table constraints: `UNIQUE(category, product_id, field_key, value)`.
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
@@ -927,10 +941,13 @@ Table constraints: `UNIQUE(category, product_id, field_key)`.
 | `product_id` | `TEXT` | `NOT NULL` | |
 | `field_key` | `TEXT` | `NOT NULL` | |
 | `value` | `TEXT` | | validated candidate value |
+| `unit` | `TEXT` | `DEFAULT NULL` | extracted or normalized unit suffix |
 | `confidence` | `REAL` | `DEFAULT 0` | extraction confidence |
 | `source_count` | `INTEGER` | `DEFAULT 0` | number of corroborating sources |
 | `sources_json` | `TEXT` | `DEFAULT '[]'` | serialized source evidence array |
 | `validation_json` | `TEXT` | `DEFAULT '{}'` | serialized validation result |
+| `metadata_json` | `TEXT` | `DEFAULT '{}'` | serialized auxiliary metadata for publisher GUI detail views |
+| `status` | `TEXT` | `DEFAULT 'candidate'` | `candidate` or `resolved` |
 | `submitted_at` | `TEXT` | `DEFAULT (datetime('now'))` | submission timestamp |
 | `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | last update timestamp |
 
@@ -1008,7 +1025,7 @@ SSOT for synthetic `__`-prefixed property keys on `component_identity` rows: `__
 
 | Database | Table count | Notes |
 |----------|-------------|-------|
-| AppDb | 6 | `brands`, `brand_categories`, `brand_renames`, `settings`, `studio_maps`, `color_registry` |
+| AppDb | 7 | `brands`, `brand_categories`, `brand_renames`, `settings`, `studio_maps`, `color_registry`, `unit_registry` |
 | SpecDb | 39 | 9 Phase-1 core + 1 candidate pipeline + 6 catalog/queue/route + 4 key-review + 3 billing/sync + 2 runs + 3 content-addressed + 2 frontier + 4 telemetry + 2 field-control-plane + 2 color/edition + 1 audit cache |
 
 ## Validated Against

@@ -36,26 +36,6 @@ export function looksHttpUrl(value) {
   }
 }
 
-export async function filterKeysByBrand(storage, keys, brand) {
-  if (!brand) {
-    return keys;
-  }
-
-  const expected = String(brand).trim().toLowerCase();
-  const selected = [];
-  for (const key of keys) {
-    const job = await storage.readJsonOrNull(key);
-    if (!job) {
-      continue;
-    }
-    const currentBrand = String(job.identityLock?.brand || '').trim().toLowerCase();
-    if (currentBrand === expected) {
-      selected.push(key);
-    }
-  }
-  return selected;
-}
-
 export function parseQueuePriority(value, fallback = 3) {
   const parsed = Number.parseInt(String(value || ''), 10);
   const resolved = Number.isFinite(parsed) ? parsed : fallback;

@@ -60,6 +60,7 @@ export const PARENT_GROUPS = Object.freeze({
   seed: { label: 'SEED', title: 'Seed Pipeline' },
   comp: { label: 'COMP', title: 'Component System' },
   val:  { label: 'VAL',  title: 'Publish Pipeline Validation' },
+  pub:  { label: 'PUB',  title: 'Publisher Pipeline' },
 });
 
 // ── Registry (SSOT) ──────────────────────────────────────────────────
@@ -140,6 +141,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.list': { desc: 'Applies deduplication, sorting, and item count limits to list-shaped field values.' },
       'val.list': { desc: 'Step 7 — List Rules. Enforces dedupe, sort, min/max items on list-shaped values.' },
+      'pub.union': { desc: 'Applies set-union merge for list fields — new candidate values are added to the published list.' },
     } },
 
   { path: 'contract.list_rules.dedupe', type: 'presence', flatAliases: [],
@@ -154,6 +156,12 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.list': { desc: 'Sorts list values using the declared sort order (asc, desc, none).' },
       'val.list': { desc: 'Step 7 — Sorts list values (alpha, numeric, or none).' },
+    } },
+
+  { path: 'contract.list_rules.item_union', type: 'string', flatAliases: [],
+    section: 'Contract (Type, Shape, Unit)', key: 'Item Union',
+    consumers: {
+      'pub.union': { desc: 'Controls how list-field candidates merge with published values. set_union = append unique values to published list.' },
     } },
 
 
@@ -226,18 +234,21 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.gate': { desc: 'Rejects field value if distinct evidence refs fall below this threshold.' },
       'rev.flag': { desc: 'Flags field for manual review when evidence ref count is insufficient.' },
+      'pub.gate': { desc: 'Rejects candidate at publish time if distinct evidence refs fall below threshold.' },
     } },
 
   { path: 'evidence.tier_preference', type: 'array', flatAliases: [],
     section: 'Evidence Requirements', key: 'Tier Preference',
     consumers: {
       'eng.gate': { desc: 'Prioritizes evidence from preferred tiers during conflict resolution. Higher-preferred tiers win ties.' },
+      'pub.gate': { desc: 'Requires at least one evidence ref from a preferred tier before publishing.' },
     } },
 
   { path: 'evidence.evidence_tier_minimum', type: 'presence', flatAliases: [],
     section: 'Evidence Requirements', key: 'Tier Minimum',
     consumers: {
       'eng.gate': { desc: 'Rejects evidence from tiers below the minimum. Derived from tier_preference at compile time.' },
+      'pub.gate': { desc: 'Rejects evidence from tiers below the minimum at publish time.' },
     } },
 
   // ═══ Parse Rules ═════════════════════════════════════════════════════
@@ -384,6 +395,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'rev.component': { desc: 'Enforces constraint rules during component review property validation.' },
       'seed.component': { desc: 'Seeds constraint definitions into component property meta for review-time enforcement.' },
+      'pub.cross': { desc: 'Enforces cross-field constraint rules at publish time. Hard errors block publishing.' },
     } },
 
   { path: 'variance_policy', type: 'string', flatAliases: [],

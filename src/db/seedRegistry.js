@@ -270,6 +270,21 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: ${result.seeded} products with ${result.candidates_seeded} candidates re-seeded`
           : '',
     },
+    {
+      key: 'published_fields',
+      label: 'Published Fields (resolved candidates from product.json fields[])',
+      scope: 'reseed',
+      tables: ['field_candidates'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildPublishedFieldsFromJson({
+        specDb: ctx.db,
+        productRoot: ctx.productRoot,
+      }),
+      formatLog: (category, result) =>
+        result.seeded > 0
+          ? `${category}: ${result.seeded} products with ${result.fields_seeded} published fields re-seeded`
+          : '',
+    },
   ];
 }
 

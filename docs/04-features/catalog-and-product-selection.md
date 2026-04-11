@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to SQL storage and per-product rebuild files.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Entry Points
 
@@ -10,7 +10,7 @@
 |--------|------|------|
 | Catalog page | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | product CRUD, queue seed, and catalog views |
 | Category manager | `tools/gui-react/src/features/catalog/components/CategoryManager.tsx` | category creation and catalog switching |
-| Catalog API | `src/features/catalog/api/catalogRoutes.js` | `/catalog/*`, `/product/*`, `/events/*` |
+| Catalog API | `src/features/catalog/api/catalogRoutes.js` | `/catalog/*`, `/product/*` |
 | Brand API | `src/features/catalog/api/brandRoutes.js` | `/brands/*` CRUD and rename cascade |
 | Catalog service boundary | `src/features/catalog/index.js` | canonical product identity and catalog helpers |
 
@@ -29,7 +29,7 @@
 
 - **`.workspace/products/{pid}/product.json`** is the sole disk SSOT per product (identity + run history, created at add time, grown after runs).
 - **SQL `products` table** in `spec.sqlite` is the runtime cache, rebuilt from product.json files via `scanAndSeedCheckpoints`.
-- **No fixture input files** — the `fixtures/` directory, `INPUT_KEY_PREFIX` pattern, and `product_catalog.json` have all been eliminated.
+- **No fixture input files** - the `fixtures/` directory, `INPUT_KEY_PREFIX` pattern, and `product_catalog.json` have all been eliminated.
 
 ## Flow
 

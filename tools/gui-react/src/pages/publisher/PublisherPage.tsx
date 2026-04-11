@@ -56,6 +56,32 @@ function repairCount(row: PublisherCandidateRow): number {
   return row.validation_json?.repairs?.length ?? 0;
 }
 
+function publishStatusLabel(row: PublisherCandidateRow): { label: string; cls: string; tip: string } {
+  if (row.status === 'resolved') {
+    return { label: '\u2713', cls: 'sf-chip-success', tip: 'Published' };
+  }
+  const pr = row.metadata_json?.publish_result;
+  if (!pr) {
+    // No publish attempt recorded — check for validation rejections
+    const rejections = row.validation_json?.rejections ?? [];
+    if (rejections.length > 0) {
+      const code = rejections[0].reason_code;
+      return { label: code, cls: 'sf-chip-danger', tip: `Validation rejected: ${code}` };
+    }
+    return { label: '—', cls: 'sf-chip-neutral', tip: 'Not yet evaluated' };
+  }
+  if (pr.status === 'below_threshold') {
+    return { label: `< ${pr.threshold ?? '?'}`, cls: 'sf-chip-warning', tip: `Confidence ${pr.confidence} below threshold ${pr.threshold}` };
+  }
+  if (pr.status === 'manual_override_locked') {
+    return { label: 'locked', cls: 'sf-chip-accent', tip: 'Manual override is published — candidates skip auto-publish' };
+  }
+  if (pr.status === 'skipped') {
+    return { label: 'skip', cls: 'sf-chip-neutral', tip: pr.reason || 'Publish skipped' };
+  }
+  return { label: pr.status, cls: 'sf-chip-neutral', tip: pr.status };
+}
+
 // ── Stat card ────────────────────────────────────────────────────────
 
 function StatCard({ label, value, colorClass }: { label: string; value: number | string; colorClass?: string }) {
@@ -518,6 +544,15 @@ export function PublisherPage() {
         return <Chip label={s} className={s === 'resolved' ? 'sf-chip-info' : 'sf-chip-success'} />;
       },
       size: 82,
+    },
+    {
+      id: 'published',
+      header: 'Pub',
+      cell: ({ row }) => {
+        const ps = publishStatusLabel(row.original);
+        return <span title={ps.tip}><Chip label={ps.label} className={ps.cls} /></span>;
+      },
+      size: 72,
     },
     {
       accessorKey: 'confidence',

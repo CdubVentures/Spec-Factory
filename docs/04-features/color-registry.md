@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified global color registry CRUD flow plus the per-product color and edition discovery flow.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md), [indexing-lab.md](./indexing-lab.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Entry Points
 

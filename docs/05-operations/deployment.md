@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Deployment Model
 
@@ -35,7 +35,7 @@
 | Discover sources | `npm run discover` / `npm run discover-sources` | `package.json`, `src/app/cli/spec.js` |
 | Render authority diagrams | `npm run docs:render:authority-diagrams` | `package.json`, `tools/render-authority-mermaid.mjs` |
 
-Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-04-04, producing the currently served `tools/gui-react/dist/` bundle. Re-validated 2026-04-07.
+Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-04-10, producing the currently served `tools/gui-react/dist/` bundle.
 
 ## Build And Packaging Flow
 

@@ -1,5 +1,11 @@
 # Field Catalog Seed Retirement Audit — 2026-04-04
 
+> **Purpose:** Preserve the 2026-04-04 audit record for retiring the dead `_source` bootstrap seed artifact while keeping the file linked into the current docs set.
+> **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../04-features/field-rules-studio.md](../04-features/field-rules-studio.md)
+> **Last validated:** 2026-04-10
+
+Historical record: proof results in this document reflect the 2026-04-04 audit run, not the 2026-04-10 repo-wide validation baseline.
+
 Scope: retire the dead `_source` bootstrap seed artifact, preserve compile/runtime behavior driven by `field_studio_map.json`, `schema.json`, `sources.json`, and generated artifacts.
 
 Protected behavior:
@@ -27,3 +33,17 @@ Out of scope:
 | `src/field-rules/tests/compilerPipeline.test.js` | COLLAPSE | Old expectation treated init-only scaffolding as compilable discovery input. | Replacement contract proves init-only categories are ignored until real map/generated rules exist. | Targeted compiler tests green; `npm test` green. | Updated |
 | `src/field-rules/tests/fieldRulesCompiler.test.js` | COLLAPSE | Old expectation preserved dead `_source` scaffolding. | Replacement contract proves initCategory creates only live category-authority scaffolding. | Targeted compiler tests green; `npm test` green. | Updated |
 | `docs/data-structure/rebuild-map.html` | REFACTOR | Doc contained stale architectural claims about the retired seed file. | Updated to reflect `field_studio_map.json component_sources` as the component DB input. | Symbol grep 0; `npm test` green. | Updated |
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `src/field-rules/compiler.js` | category discovery still keys off `_control_plane/field_studio_map.json` and generated field-rules artifacts |
+| source | `src/field-rules/compilerCategoryInit.js` | new category scaffolding still creates `schema.json` and `sources.json` |
+| source | `docs/04-features/field-rules-studio.md` | current docs set still treats studio maps and generated rules as the live field-rules contract |
+
+## Related Documents
+
+- [Field Rules Studio](../04-features/field-rules-studio.md) - current control-plane and generated-rules flow that replaced the retired seed artifact.
+- [Data Model](../03-architecture/data-model.md) - AppDb and SpecDb context referenced by field-rules flows.
+- [Known Issues](../05-operations/known-issues.md) - current validation baseline, which is newer than this historical audit.

@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified scalar, component, and enum review flows from the GUI to review mutation handlers and SQLite state. Override functions no longer write directly to DB; overrides persist to JSON SSOT and sync through the publisher pipeline.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [catalog-and-product-selection.md](./catalog-and-product-selection.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Entry Points
 

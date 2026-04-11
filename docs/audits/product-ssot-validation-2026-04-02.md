@@ -1,5 +1,11 @@
 # Product SSOT Validation Audit - 2026-04-02
 
+> **Purpose:** Preserve the 2026-04-02 audit record for the product identity and queue SQL-SSOT migration and keep it linked into the maintained docs set.
+> **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../04-features/catalog-and-product-selection.md](../04-features/catalog-and-product-selection.md)
+> **Last validated:** 2026-04-10
+
+Historical record: proof results in this document reflect the 2026-04-02 audit run, not the 2026-04-10 repo-wide validation baseline.
+
 ## Scope
 
 Validate the SSOT migration for Overlaps 0a (product identity) and 0b (queue state):
@@ -94,3 +100,17 @@ Previous failures (updateProduct regression + contract export) were fixed and ve
 - Overlap 0b (queue state): SQL `product_queue` is sole SSOT. JSON adapter deleted.
 - 139/139 targeted tests green.
 - Remaining catalog loader usage is intentional legacy import (user-triggered, not boot/seed).
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `src/features/catalog/products/productCatalog.js` | current source still documents `product.json` as the disk SSOT and SQL `products` as the runtime cache |
+| source | `src/app/api/specDbRuntime.js` | category boot still uses checkpoint seeding rather than the retired catalog bootstrap path |
+| source | `docs/04-features/catalog-and-product-selection.md` | current feature docs still describe product.json and SQL state in the same direction as this audit |
+
+## Related Documents
+
+- [Catalog and Product Selection](../04-features/catalog-and-product-selection.md) - current-state product CRUD and identity flow.
+- [Data Model](../03-architecture/data-model.md) - current schema context for `products` and queue state.
+- [Known Issues](../05-operations/known-issues.md) - current validation baseline, which is newer than this historical audit.

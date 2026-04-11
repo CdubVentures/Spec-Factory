@@ -8,6 +8,8 @@ import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
+import { usePublishedFields } from '../../../hooks/usePublishedFields.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { resolvePhaseModel } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
 import type { GlobalDraftSlice } from '../../llm-config/state/llmPhaseOverridesBridge.generated.ts';
@@ -106,7 +108,7 @@ function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   );
 }
 
-function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay }) {
+function SelectedStateCard({ display, isPublished }: { readonly display: SelectedStateDisplay; readonly isPublished: (fieldKey: string) => boolean }) {
   if (display.colors.length === 0 && display.editions.length === 0) return null;
 
   return (
@@ -115,16 +117,20 @@ function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay
         <span className="text-[11px] font-bold uppercase tracking-[0.08em] sf-text-muted">
           Selected State
         </span>
-        {display.ssotRunNumber > 0 && (
-          <Chip label={`SSOT \u00B7 Run #${display.ssotRunNumber}`} className="sf-chip-teal-strong" />
-        )}
+        <div className="flex items-center gap-3">
+          <PubLegend />
+          {display.ssotRunNumber > 0 && (
+            <Chip label={`SSOT \u00B7 Run #${display.ssotRunNumber}`} className="sf-chip-teal-strong" />
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Colors */}
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2 inline-flex items-center gap-1.5">
             Colors ({display.colors.length})
+            <PubMark published={isPublished('colors')} />
           </div>
           <div className="flex flex-wrap gap-1.5">
             {display.colors.map(pill => (
@@ -135,8 +141,9 @@ function SelectedStateCard({ display }: { readonly display: SelectedStateDisplay
 
         {/* Editions with paired colors */}
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2 inline-flex items-center gap-1.5">
             Editions ({display.editions.length})
+            <PubMark published={isPublished('editions')} />
           </div>
           {display.editions.length === 0 ? (
             <span className="text-[11px] sf-text-muted">None</span>
@@ -493,6 +500,7 @@ function useResolvedFinderModel(): ResolvedFinderModelResult {
 
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:finder:collapsed:${productId}`, true);
+  const { isPublished } = usePublishedFields(category, productId);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
   const runMut = useColorEditionFinderRunMutation(category, productId);
@@ -533,6 +541,16 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     [requestDeleteRun, isAnyDeletePending, providerRegistry],
   );
 
+  // WHY: Derive running state from the operations store (per-product), not from
+  // the mutation hook (per-component-instance). This way "Running" reflects
+  // the actual operation, survives navigation, and doesn't block other products.
+  // NOTE: These hooks MUST be before the early return to satisfy Rules of Hooks.
+  const ops = useOperationsStore((s) => s.operations);
+  const isRunningCef = useMemo(
+    () => [...ops.values()].some((o) => o.type === 'cef' && o.productId === productId && o.status === 'running'),
+    [ops, productId],
+  );
+
   if (!productId || !category) return null;
 
   // WHY: After deleting all runs, the GET returns 404 → isError. Treat as no data.
@@ -554,15 +572,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
     thinking: resolvedModel?.thinking ?? false,
     webSearch: resolvedModel?.webSearch ?? false,
   };
-
-  // WHY: Derive running state from the operations store (per-product), not from
-  // the mutation hook (per-component-instance). This way "Running" reflects
-  // the actual operation, survives navigation, and doesn't block other products.
-  const ops = useOperationsStore((s) => s.operations);
-  const isRunningCef = useMemo(
-    () => [...ops.values()].some((o) => o.type === 'cef' && o.productId === productId && o.status === 'running'),
-    [ops, productId],
-  );
 
   const runStatus = isRunningCef ? 'running'
     : runMut.isError ? 'error'
@@ -654,7 +663,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           )}
 
           {/* Selected State */}
-          <SelectedStateCard display={selectedState} />
+          <SelectedStateCard display={selectedState} isPublished={isPublished} />
 
           {/* Run History */}
           {runHistoryRows.length > 0 && (

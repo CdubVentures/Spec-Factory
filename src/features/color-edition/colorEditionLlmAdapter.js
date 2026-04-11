@@ -134,11 +134,14 @@ Color output rules:
 - colors[0] must be the default color shown on the official product page
 - Map marketing names in color_names (e.g. "light-blue": "Glacier Blue")
 - UNIQUE ATOMS REQUIRED: Every colorway must map to a different atom. Never duplicate atoms in the colors array. If two colorways would share an atom (e.g. "White" and "Frost White" both mapping to "white"), use the next-closest atom for the variant (e.g. "ivory" for Frost White). Each product SKU/colorway = one unique atom.
+- MASTER SUPERSET: The colors array must contain every unique atom for the product — all standard colorways AND all edition-exclusive colorways. If an edition introduces a color not sold as a standard variant, that atom still belongs in colors. Edition colors are always a subset of this master list.
 
 Edition output rules:
 - An edition is a named special/limited/collaboration version sold by the manufacturer
 - Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
-- Each edition needs display_name (official name) and colors array
+- Each edition needs display_name (official name) and a colors array describing the edition's actual color composition
+- The colors array lists each distinct color visible on the edition's product shell/body, ordered by visual dominance (most dominant first). Use 1–5 colors per edition. Most editions have 2–3 colors (e.g. a yellow edition with black accents = ["yellow", "black"]).
+- Every edition color atom must also appear in the master colors array
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
 Return JSON with these exact keys and shapes:

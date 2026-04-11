@@ -1,5 +1,11 @@
 # Base Model Contract Audit - 2026-04-04
 
+> **Purpose:** Preserve the 2026-04-04 audit record for the `base_model` / `variant` / `model` identity contract and keep it linked into the current LLM-first docs set.
+> **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../04-features/catalog-and-product-selection.md](../04-features/catalog-and-product-selection.md)
+> **Last validated:** 2026-04-10
+
+Historical record: proof results in this document reflect the 2026-04-04 audit run, not the 2026-04-10 repo-wide validation baseline.
+
 ## Contract
 
 This audit verifies the current product-identity contract across the app:
@@ -182,3 +188,17 @@ Status: validated.
 - `model` is treated as a derived full/display value
 - no in-scope suite was retired; all 34 reviewed suites were classified `KEEP`
 - targeted proof green, full suite green, direct runtime repros green, rebuilt artifacts updated
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `src/db/specDbSchema.js` | current schema still carries `base_model`, `model`, and `variant` fields |
+| source | `src/features/catalog/products/writeProductIdentity.js` | persisted product identity still writes `base_model`, `model`, and `variant` explicitly |
+| source | `docs/04-features/catalog-and-product-selection.md` | current feature docs still describe the product identity and product.json SSOT consistent with this audit |
+
+## Related Documents
+
+- [Catalog and Product Selection](../04-features/catalog-and-product-selection.md) - current-state product identity and CRUD flow.
+- [Data Model](../03-architecture/data-model.md) - current schema context for the identity fields audited here.
+- [Known Issues](../05-operations/known-issues.md) - current validation baseline, which is newer than this historical audit.

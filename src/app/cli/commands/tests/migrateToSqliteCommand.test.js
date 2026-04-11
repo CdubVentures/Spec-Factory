@@ -45,7 +45,6 @@ test('migrate-to-sqlite requires --category', async () => {
   const command = createMigrateToSqliteCommand({
     withSpecDb: mockWithSpecDb(createSpecDbStub()),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    now: () => 0,
   });
 
   await assert.rejects(
@@ -58,7 +57,6 @@ test('migrate-to-sqlite throws when SpecDb cannot be opened', async () => {
   const command = createMigrateToSqliteCommand({
     withSpecDb: mockWithSpecDb(null),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    now: () => 0,
   });
 
   await assert.rejects(
@@ -72,7 +70,6 @@ test('migrate-to-sqlite phase 1 is a no-op and closes SpecDb', async () => {
   const command = createMigrateToSqliteCommand({
     withSpecDb: mockWithSpecDb(specDb),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    now: () => 0,
   });
 
   const result = await command({}, createStorageStub(), { category: 'mouse', phase: '1' });
@@ -114,7 +111,6 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
   const command = createMigrateToSqliteCommand({
     withSpecDb: mockWithSpecDb(specDb),
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
-    now: () => 0,
   });
 
   const result = await command({}, storage, { category: 'mouse', phase: '2' });

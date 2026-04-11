@@ -3,7 +3,6 @@ import { OUTPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 export function createMigrateToSqliteCommand({
   withSpecDb,
   toPosixKey,
-  now = () => Date.now(),
 }) {
   return async function commandMigrateToSqlite(config, storage, args) {
     const category = String(args.category || '').trim();
@@ -58,45 +57,6 @@ export function createMigrateToSqliteCommand({
           }
         }
         results.phase2_billing = { status: 'imported', entries: imported, files: ledgerKeys.length };
-      }
-
-      if (!phase || phase === 4) {
-        let imported = 0;
-        const learningPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, 'profiles');
-        const keys = await storage.listKeys(learningPrefix);
-        for (const key of keys) {
-          if (!key.endsWith('.json')) continue;
-          try {
-            const profile = await storage.readJsonOrNull(key);
-            if (!profile) continue;
-            const profileId = profile.profile_id || key.split('/').pop()?.replace(/\.json$/, '') || '';
-            specDb.upsertLearningProfile({
-              profile_id: profileId,
-              category: profile.category || category,
-              brand: profile.brand || '',
-              model: profile.model || '',
-              variant: profile.variant || '',
-              runs_total: profile.runs_total || 0,
-              validated_runs: profile.validated_runs || 0,
-              validated: profile.validated ? 1 : 0,
-              unknown_field_rate: profile.unknown_field_rate || 0,
-              unknown_field_rate_avg: profile.unknown_field_rate_avg || 0,
-              parser_health_avg: profile.parser_health_avg || 0,
-              preferred_urls: JSON.stringify(profile.preferred_urls || []),
-              feedback_urls: JSON.stringify(profile.feedback_urls || []),
-              uncertain_fields: JSON.stringify(profile.uncertain_fields || []),
-              host_stats: JSON.stringify(profile.host_stats || []),
-              critical_fields_below: JSON.stringify(profile.critical_fields_below_pass_target || []),
-              last_run: JSON.stringify(profile.last_run || {}),
-              parser_health: JSON.stringify(profile.parser_health || {}),
-              updated_at: profile.updated_at || new Date().toISOString(),
-            });
-            imported += 1;
-          } catch {
-            // skip bad files
-          }
-        }
-        results.phase4_learning = { status: 'imported', profiles: imported };
       }
 
       if (!phase || phase === 8) {

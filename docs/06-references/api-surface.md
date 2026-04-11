@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-04-07
+> **Last validated:** 2026-04-10
 
 ## Global Notes
 
@@ -130,6 +130,17 @@
 | DELETE | `/api/v1/color-edition-finder/:category/:productId/runs/:runNumber` | delete one historical finder run | none | none | `{ ok: true, remaining_runs }` or `400/503` |
 | DELETE | `/api/v1/color-edition-finder/:category/:productId` | delete all finder state for one product | none | none | `{ ok: true }` or `503` |
 
+## Unit Registry Endpoints
+
+| Method | Path | Purpose | Auth | Request body | Response shape |
+|--------|------|---------|------|--------------|----------------|
+| GET | `/api/v1/unit-registry` | list all managed units | none | none | `{ units }` |
+| GET | `/api/v1/unit-registry/canonicals` | list canonical unit keys for lightweight pickers | none | none | `{ canonicals }` |
+| GET | `/api/v1/unit-registry/:canonical` | read one unit | none | none | `{ unit }` or `404 { error: 'Unit not found' }` |
+| POST | `/api/v1/unit-registry/sync` | force AppDb -> JSON mirror sync | none | none | `{ synced: true }` |
+| POST | `/api/v1/unit-registry` | create or update one unit | none | `{ canonical, label?, synonyms?, conversions? }` | `{ unit }` or `400 { error: 'canonical is required' }` |
+| DELETE | `/api/v1/unit-registry/:canonical` | delete one unit | none | none | `{ deleted: true, canonical }` or `404 { error: 'Unit not found' }` |
+
 ## Catalog And Brand Endpoints
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
@@ -192,6 +203,13 @@
 | GET | `/api/v1/spec-seeds?category=:category` | read per-category deterministic query templates | none | none | `{ category, seeds }` |
 | PUT | `/api/v1/spec-seeds?category=:category` | replace per-category deterministic query templates | none | `{ seeds: string[] }` or `string[]` | `{ category, seeds }` or `400 { error: 'invalid_spec_seeds', reason }` |
 
+## Publisher Endpoints
+
+| Method | Path | Purpose | Auth | Request body | Response shape |
+|--------|------|---------|------|--------------|----------------|
+| GET | `/api/v1/publisher/:category/candidates?page=:page&limit=:limit` | read paginated publisher candidate rows plus aggregate stats | none | none | `{ rows, total, page, limit, stats }` or `400/404` |
+| GET | `/api/v1/publisher/:category/stats` | read aggregate publisher candidate stats only | none | none | `{ total, resolved, pending, repaired, products }` or `400/404` |
+
 ## Review Endpoints
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
@@ -251,6 +269,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints (20 GET routes under `/runtime/`) |
 | source | `src/features/color-registry/api/colorRoutes.js` | global color registry CRUD endpoints |
 | source | `src/features/color-edition/api/colorEditionFinderRoutes.js` | color-edition-finder GET/POST/DELETE endpoints |
+| source | `src/features/unit-registry/api/unitRegistryRoutes.js` | unit registry CRUD and sync endpoints |
 | source | `src/features/catalog/api/catalogRoutes.js` | catalog/product endpoints (no `events` or `products/seed` handler exists) |
 | source | `src/features/catalog/api/brandRoutes.js` | brand CRUD endpoints including rename, seed, bulk, impact, delete |
 | source | `src/features/studio/api/studioRoutes.js` | studio endpoints (17 routes including field-key-order, tooltip-bank, artifacts, invalidate-cache) |
@@ -258,6 +277,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/indexing/api/queueBillingLearningRoutes.js` | queue/billing/learning endpoints |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy CRUD endpoints including DELETE |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed GET/PUT endpoints |
+| source | `src/features/publisher/api/publisherRoutes.js` | publisher audit endpoints |
 | source | `src/features/review/api/reviewRoutes.js` | review dispatcher (delegates to field, component, item mutation, component mutation, enum mutation handlers) |
 | source | `src/features/review/api/fieldReviewHandlers.js` | field review read routes (layout, product, products, products-index, candidates, suggest) |
 | source | `src/features/review/api/itemMutationRoutes.js` | scalar review mutation routes (override, manual-override, key-review-confirm, key-review-accept) |
