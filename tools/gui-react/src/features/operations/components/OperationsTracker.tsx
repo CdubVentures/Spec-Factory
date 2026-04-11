@@ -140,15 +140,17 @@ function OpCard({ op, onClick, onDismiss }: {
       role="button"
       tabIndex={0}
     >
-      {/* Dismiss X — visible on hover */}
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-sm text-[9px] sf-text-subtle opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-[rgb(var(--sf-color-surface-elevated-rgb))] transition-opacity z-10"
-        title="Dismiss"
-      >
-        &times;
-      </button>
+      {/* Dismiss badge — only for terminal ops, top-right corner */}
+      {op.status !== 'running' && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="absolute -top-[5px] -right-[5px] w-[13px] h-[13px] flex items-center justify-center rounded-full text-[7px] font-bold leading-none sf-text-subtle bg-[rgb(var(--sf-color-surface-elevated-rgb))] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.5)] opacity-0 group-hover:opacity-100 hover:text-[var(--sf-state-danger-fg)] hover:border-[var(--sf-state-danger-fg)] transition-all z-10"
+          title="Dismiss"
+        >
+          &times;
+        </button>
+      )}
 
       {/* Row 1: module chip + product label + elapsed */}
       <span className="flex items-center gap-1.5 min-w-0">
@@ -238,7 +240,7 @@ export function OperationsTracker() {
 
       {/* Card list or empty state */}
       {isOpen && (
-        <div className="flex-1 min-h-0 flex flex-col gap-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex-1 min-h-0 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden pt-0.5 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
           {sorted.length === 0 ? (
             <div className="flex items-center justify-center py-4 px-2">
               <span className="text-[10px] sf-text-subtle italic">No active operations</span>

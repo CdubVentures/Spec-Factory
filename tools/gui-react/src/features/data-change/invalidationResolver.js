@@ -130,6 +130,10 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['indexing', 'llm-config'],
     ['indexing', 'llm-metrics', CATEGORY_TOKEN],
   ]),
+  publisher: Object.freeze([
+    ['publisher', CATEGORY_TOKEN],
+    ['publisher', 'published', CATEGORY_TOKEN],
+  ]),
 });
 
 export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
@@ -145,6 +149,7 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'labels',
   'mapping',
   'product',
+  'publisher',
   'queue',
   'review',
   'review-layout',
@@ -200,6 +205,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'enum-override': ['enum', 'review'],
   'enum-rename': ['enum', 'review'],
   'enum-consistency': ['enum', 'review'],
+  'publisher-reconcile': ['publisher'],
 });
 
 const FALLBACK_QUERY_TEMPLATES = Object.freeze([

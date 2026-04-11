@@ -12,8 +12,27 @@ import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { resolveProviderForModel, parseModelKey } from '../state/llmProviderRegistryBridge.ts';
 import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
-import { CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
 import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
+
+/** Small lock icon shown next to disabled effort selects when the level is baked into the model name. */
+function LockedEffortIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-3.5 w-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-label="Effort locked by model name"
+      style={{ color: 'var(--sf-muted)' }}
+    >
+      <rect x="3" y="7" width="10" height="7" rx="1.5" />
+      <path d="M5 7V5a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}
 
 interface LlmPhaseSectionProps {
   phaseId: LlmPhaseId;
@@ -258,12 +277,12 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       )}
       {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && effectiveModelCapabilities.lockedEffort && (
         <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-          <span
-            className="sf-custom-select-badge"
-            style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
-          >
-            {effectiveModelCapabilities.lockedEffort}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <LockedEffortIcon />
+            <select className={inputCls} disabled value={effectiveModelCapabilities.lockedEffort}>
+              <option value={effectiveModelCapabilities.lockedEffort}>{effectiveModelCapabilities.lockedEffort}</option>
+            </select>
+          </div>
         </SettingRow>
       )}
       {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && !effectiveModelCapabilities.lockedEffort && effectiveModelCapabilities.thinkingEffortOptions.length > 1 && (
@@ -338,12 +357,12 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       )}
       {fallbackModelCapabilities.thinking && (phaseOverrides[overrideKey]?.fallbackThinking ?? false) && fallbackModelCapabilities.lockedEffort && (
         <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-          <span
-            className="sf-custom-select-badge"
-            style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
-          >
-            {fallbackModelCapabilities.lockedEffort}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <LockedEffortIcon />
+            <select className={inputCls} disabled value={fallbackModelCapabilities.lockedEffort}>
+              <option value={fallbackModelCapabilities.lockedEffort}>{fallbackModelCapabilities.lockedEffort}</option>
+            </select>
+          </div>
         </SettingRow>
       )}
       {fallbackModelCapabilities.thinking && (phaseOverrides[overrideKey]?.fallbackThinking ?? false) && !fallbackModelCapabilities.lockedEffort && fallbackModelCapabilities.thinkingEffortOptions.length > 1 && (
@@ -419,12 +438,12 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         )}
         {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && writerModelCapabilities.lockedEffort && (
           <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-            <span
-              className="sf-custom-select-badge"
-              style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
-            >
-              {writerModelCapabilities.lockedEffort}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <LockedEffortIcon />
+              <select className={inputCls} disabled value={writerModelCapabilities.lockedEffort}>
+                <option value={writerModelCapabilities.lockedEffort}>{writerModelCapabilities.lockedEffort}</option>
+              </select>
+            </div>
           </SettingRow>
         )}
         {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && !writerModelCapabilities.lockedEffort && writerModelCapabilities.thinkingEffortOptions.length > 1 && (

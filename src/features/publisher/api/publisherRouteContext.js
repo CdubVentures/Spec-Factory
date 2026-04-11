@@ -3,7 +3,7 @@ export function createPublisherRouteContext(options = {}) {
     throw new TypeError('options must be an object');
   }
 
-  const { jsonRes, getSpecDb } = options;
+  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = options;
 
-  return { jsonRes, getSpecDb };
+  return { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot };
 }

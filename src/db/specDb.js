@@ -836,5 +836,6 @@ export class SpecDb {
   markFieldCandidateResolved(pid, fk, val) { this._fieldCandidateStore.markResolved(pid, fk, val); }
   demoteResolvedCandidates(pid, fk) { this._fieldCandidateStore.demoteResolved(pid, fk); }
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
+  getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
 
 }

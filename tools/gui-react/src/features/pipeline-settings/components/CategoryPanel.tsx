@@ -11,6 +11,7 @@ import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 const TierHierarchyPanel = lazy(() => import('../sections/TierHierarchyPanel.tsx'));
 const VideoSectionPanel = lazy(() => import('./VideoSectionPanel.tsx').then((m) => ({ default: m.VideoSectionPanel })));
+const PublisherReconcileSection = lazy(() => import('../sections/PublisherReconcileSection.tsx'));
 
 export interface CategoryPanelProps {
   categoryId: SettingsCategoryId;
@@ -208,6 +209,10 @@ export function CategoryPanel({
                     onStringChange={onStringChange}
                     disabled={disabled}
                   />
+                </Suspense>
+              ) : activeSectionDef.customComponent === 'PublisherReconcile' ? (
+                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                  <PublisherReconcileSection />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'VideoRecording' ? (
                 <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>

@@ -32,6 +32,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     subtitle: 'Publish gates and quality controls',
     sections: Object.freeze([
       { id: 'publish-gate', label: 'Publisher', tip: 'Confidence threshold for auto-publishing candidates to product.json fields' },
+      { id: 'reconcile', label: 'Reconcile', tip: 'Preview and apply threshold changes to existing published values', customComponent: 'PublisherReconcile' },
     ]),
   },
   {

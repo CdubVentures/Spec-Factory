@@ -199,7 +199,8 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot: HELPER_ROOT,
       }),
       publisherRouteContext: createPublisherRouteContext({
-        jsonRes, getSpecDb,
+        jsonRes, readJsonBody, getSpecDb, broadcastWs, config,
+        productRoot: OUTPUT_ROOT,
       }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,

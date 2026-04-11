@@ -113,5 +113,11 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     );
   }
 
-  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats, markResolved, demoteResolved, getResolved };
+  function getDistinctProducts() {
+    return db.prepare(
+      'SELECT DISTINCT product_id FROM field_candidates WHERE category = ?'
+    ).all(category).map(r => r.product_id);
+  }
+
+  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts };
 }

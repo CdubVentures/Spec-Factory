@@ -9,6 +9,8 @@ import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
 import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
+import { productImageFinderResponseSchema } from '../../../product-image/productImageSchema.js';
+import { buildProductImageFinderPrompt } from '../../../product-image/productImageLlmAdapter.js';
 import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
 import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 
@@ -46,5 +48,16 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
       product: { brand: '{brand}', model: '{model}', category: '{category}' },
     }),
     response_schema: zodToLlmSchema(colorEditionFinderResponseSchema),
+  },
+  'image-finder': {
+    system_prompt: buildProductImageFinderPrompt({
+      product: { brand: '{brand}', model: '{model}' },
+      variantLabel: '{variant_label}',
+      variantType: 'color',
+      view1: '{view1}',
+      view2: '{view2}',
+      minWidth: 800,
+    }),
+    response_schema: zodToLlmSchema(productImageFinderResponseSchema),
   },
 });

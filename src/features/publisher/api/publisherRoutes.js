@@ -1,12 +1,19 @@
 /**
  * Publisher GUI routes.
  *
- * GET /publisher/:category/candidates?page=1&limit=100
- * GET /publisher/:category/stats
+ * GET  /publisher/:category/candidates?page=1&limit=100
+ * GET  /publisher/:category/stats
+ * GET  /publisher/:category/published/:productId
+ * GET  /publisher/:category/reconcile          (dry-run preview)
+ * POST /publisher/:category/reconcile          (apply reconciliation)
  */
 
+import { reconcileThreshold } from '../publish/reconcileThreshold.js';
+import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+
 export function registerPublisherRoutes(ctx) {
-  const { jsonRes, getSpecDb } = ctx;
+  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = ctx;
 
   return async function handlePublisherRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'publisher') return false;
@@ -35,6 +42,61 @@ export function registerPublisherRoutes(ctx) {
     if (parts[2] === 'stats' && method === 'GET') {
       const stats = specDb.getFieldCandidatesStats();
       jsonRes(res, 200, stats);
+      return true;
+    }
+
+    // GET /publisher/:category/reconcile (dry-run preview)
+    if (parts[2] === 'reconcile' && method === 'GET') {
+      const threshold = config?.publishConfidenceThreshold ?? 0.7;
+      const result = reconcileThreshold({
+        specDb, category, threshold,
+        productRoot: productRoot || '.workspace/products',
+        dryRun: true,
+      });
+      jsonRes(res, 200, { threshold, ...result });
+      return true;
+    }
+
+    // POST /publisher/:category/reconcile (apply)
+    if (parts[2] === 'reconcile' && method === 'POST') {
+      const threshold = config?.publishConfidenceThreshold ?? 0.7;
+      const root = productRoot || '.workspace/products';
+
+      let op = null;
+      try {
+        op = registerOperation({
+          type: 'publisher-reconcile',
+          category,
+          stages: ['Scanning', 'Evaluating', 'Complete'],
+          broadcastWs,
+        });
+      } catch { /* operations registry unavailable — proceed without progress */ }
+
+      try {
+        const result = reconcileThreshold({
+          specDb, category, threshold,
+          productRoot: root,
+          dryRun: false,
+          onStageAdvance: (stage) => {
+            if (op) updateStage({ id: op.id, stageName: stage });
+          },
+        });
+
+        if (op) completeOperation({ id: op.id });
+
+        if (broadcastWs) {
+          emitDataChange({
+            broadcastWs,
+            event: 'publisher-reconcile',
+            category,
+          });
+        }
+
+        jsonRes(res, 200, { operation_id: op?.id ?? null, result });
+      } catch (err) {
+        if (op) failOperation({ id: op.id, error: err.message });
+        jsonRes(res, 500, { error: 'reconciliation_failed', message: err.message });
+      }
       return true;
     }
 

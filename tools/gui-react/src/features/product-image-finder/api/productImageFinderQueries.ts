@@ -24,9 +24,10 @@ export function useProductImageFinderRunMutation(category: string, productId: st
     queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
   }, [queryClient, category, productId]);
 
-  return useMutation<ProductImageFinderRunResponse>({
-    mutationFn: () => api.post<ProductImageFinderRunResponse>(
+  return useMutation<ProductImageFinderRunResponse, Error, { variant_key?: string }>({
+    mutationFn: (body) => api.post<ProductImageFinderRunResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+      body,
     ),
     onSuccess: invalidate,
   });

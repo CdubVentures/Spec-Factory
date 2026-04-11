@@ -20,8 +20,10 @@ import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
  * @param {object} opts
  * @param {string} opts.filePrefix — e.g. 'color_edition' → reads/writes 'color_edition.json'
  * @param {Function} opts.emptySelected — () => default empty selected object for this finder
+ * @param {Function} [opts.recalculateSelected] — (validRuns) => selected object. Override for
+ *   modules that accumulate across runs instead of latest-wins (e.g. PIF).
  */
-export function createFinderJsonStore({ filePrefix, emptySelected }) {
+export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSelected }) {
   const fileName = `${filePrefix}.json`;
 
   function resolvePath(productId, productRoot) {
@@ -78,7 +80,9 @@ export function createFinderJsonStore({ filePrefix, emptySelected }) {
     return {
       product_id: productId || '',
       category: category || '',
-      selected: latestValid?.selected || emptySelected(),
+      selected: recalculateSelected
+        ? recalculateSelected(validRuns)
+        : (latestValid?.selected || emptySelected()),
       cooldown_until: latestValid?.cooldown_until || '',
       last_ran_at: overallLatest.ran_at || '',
       run_count: runs.length,
@@ -117,7 +121,13 @@ export function createFinderJsonStore({ filePrefix, emptySelected }) {
       product_id: existing.product_id || productId || '',
       category: existing.category || newDiscovery.category || '',
       // WHY: Rejected runs must not overwrite selected or cooldown.
-      selected: run.status === 'rejected' ? (existing.selected || emptySelected()) : runEntry.selected,
+      // WHY: recalculateSelected hook lets modules accumulate across runs
+      // instead of latest-wins (e.g. PIF unions images per variant).
+      selected: run.status === 'rejected'
+        ? (existing.selected || emptySelected())
+        : (recalculateSelected
+            ? recalculateSelected([...existingRuns, runEntry].filter(r => r.status !== 'rejected'))
+            : runEntry.selected),
       cooldown_until: run.status === 'rejected' ? (existing.cooldown_until || '') : (newDiscovery.cooldown_until || existing.cooldown_until || ''),
       last_ran_at: newDiscovery.last_ran_at || existing.last_ran_at || '',
       run_count: existingRuns.length + 1,
