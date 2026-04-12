@@ -281,21 +281,11 @@ export function createDeletionStore({ db, category: defaultCategory }) {
         totalDeleted += db.prepare(`DELETE FROM prompt_index WHERE run_id IN (${ph})`).run(...allRunIds).changes;
       }
 
-      // Phase 2 — Key review cascade
-      const krsIds = db.prepare('SELECT id FROM key_review_state WHERE item_identifier = ? AND category = ?').all(pid, cat).map((r) => r.id);
-      if (krsIds.length) {
-        const ph = placeholders(krsIds);
-        db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${ph}))`).run(...krsIds);
-        totalDeleted += db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${ph})`).run(...krsIds).changes;
-        totalDeleted += db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${ph})`).run(...krsIds).changes;
-        totalDeleted += db.prepare(`DELETE FROM key_review_state WHERE id IN (${ph})`).run(...krsIds).changes;
-      }
+      // Phase 2 — Key review cascade (retired in Phase 1b)
 
-      // Phase 4 — Field state
+      // Phase 4 — Item links
       totalDeleted += db.prepare('DELETE FROM item_list_links WHERE product_id = ? AND category = ?').run(pid, cat).changes;
       totalDeleted += db.prepare('DELETE FROM item_component_links WHERE product_id = ? AND category = ?').run(pid, cat).changes;
-      totalDeleted += db.prepare('DELETE FROM item_field_state WHERE product_id = ? AND category = ?').run(pid, cat).changes;
-      try { totalDeleted += db.prepare('DELETE FROM product_review_state WHERE product_id = ? AND category = ?').run(pid, cat).changes; } catch { /* table may not exist */ }
 
       // Phase 5 — Artifact tables
       const contentHashes = db.prepare('SELECT DISTINCT content_hash FROM crawl_sources WHERE product_id = ?').all(pid).map((r) => r.content_hash).filter(Boolean);

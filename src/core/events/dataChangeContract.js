@@ -44,6 +44,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'enum-override': ['enum', 'review'],
   'enum-rename': ['enum', 'review'],
   'enum-consistency': ['enum', 'review'],
+  'publisher-reconcile': ['publisher'],
 });
 
 const EVENT_DOMAIN_MAP = DATA_CHANGE_EVENT_DOMAIN_MAP;

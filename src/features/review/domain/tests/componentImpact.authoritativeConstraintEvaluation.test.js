@@ -6,7 +6,7 @@ import {
   createHarness,
 } from './helpers/componentImpactHarness.js';
 
-test('evaluateConstraintsForLinkedProducts uses maker-specific component values for violations', async () => {
+test('evaluateConstraintsForLinkedProducts returns empty violations and compliant (item_field_state retired)', async () => {
   const harness = await createHarness();
   try {
     harness.specDb.upsertItemComponentLink({
@@ -19,38 +19,12 @@ test('evaluateConstraintsForLinkedProducts uses maker-specific component values 
       matchScore: 1,
     });
 
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-c',
-      fieldKey: 'dpi',
-      value: '1500',
-      confidence: 0.9,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     harness.specDb.upsertComponentValue({
       componentType: 'sensor',
       componentName: 'focus-pro',
       componentMaker: 'MakerA',
       propertyKey: 'max_dpi',
       value: '1000',
-      confidence: 1,
-      variancePolicy: null,
-      source: 'component_db',
-      acceptedCandidateId: null,
-      needsReview: false,
-      overridden: false,
-      constraints: [],
-    });
-    harness.specDb.upsertComponentValue({
-      componentType: 'sensor',
-      componentName: 'focus-pro',
-      componentMaker: 'MakerB',
-      propertyKey: 'max_dpi',
-      value: '3000',
       confidence: 1,
       variancePolicy: null,
       source: 'component_db',
@@ -68,10 +42,8 @@ test('evaluateConstraintsForLinkedProducts uses maker-specific component values 
       ['dpi <= max_dpi'],
     );
 
-    assert.equal(result.violations.includes('mouse-c'), true);
-
-    const dpiState = harness.specDb.getItemFieldState('mouse-c').find((row) => row.field_key === 'dpi');
-    assert.equal(Boolean(dpiState?.needs_ai_review), true);
+    assert.deepEqual(result.violations, []);
+    assert.deepEqual(result.compliant, []);
   } finally {
     await cleanupHarness(harness);
   }

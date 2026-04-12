@@ -643,6 +643,99 @@ async function seedEnumSuggestionsFromFile(db, config) {
   }
 }
 
+function seedFieldCandidatesFromProducts(db) {
+  for (const [productId, product] of Object.entries(PRODUCTS)) {
+    const overrides = product.override || {};
+    for (const [fieldKey, candidates] of Object.entries(product.candidates || {})) {
+      const override = overrides[fieldKey];
+
+      // Sort by score desc to determine top candidate
+      const sorted = [...candidates].sort((a, b) => b.score - a.score);
+      const topCandidate = sorted[0];
+
+      for (const cand of candidates) {
+        let isResolved = false;
+        let metaExtra = {};
+        if (override?.override_source === 'candidate_selection' && override.candidate_id === cand.candidate_id) {
+          isResolved = true;
+          metaExtra = {
+            evidence: {
+              url: override.override_provenance?.url || '',
+              quote: override.override_provenance?.quote || '',
+            },
+          };
+        } else if (!override && cand === topCandidate) {
+          isResolved = true;
+        }
+        db.upsertFieldCandidate({
+          productId,
+          fieldKey,
+          value: cand.value,
+          confidence: cand.score,
+          sourceCount: 1,
+          sourcesJson: [{ source: cand.host, method: cand.method, tier: cand.tier }],
+          validationJson: {},
+          metadataJson: {
+            source: cand.host,
+            method: cand.method,
+            ...metaExtra,
+          },
+          status: isResolved ? 'resolved' : 'candidate',
+        });
+      }
+      // Seed manual override as a resolved field_candidate
+      if (override && override.override_source === 'manual_entry') {
+        db.upsertFieldCandidate({
+          productId,
+          fieldKey,
+          value: override.override_value,
+          confidence: 1.0,
+          sourceCount: 1,
+          sourcesJson: [{ source: 'user', method: 'manual_override' }],
+          validationJson: {},
+          metadataJson: {
+            source: 'manual_override',
+            method: 'manual_override',
+            source_timestamp: override.set_at || null,
+          },
+          status: 'resolved',
+        });
+      }
+    }
+  }
+}
+
+function seedCompiledRulesComponentDbs(db) {
+  const componentDbs = {};
+  const types = [
+    { type: 'sensor', items: SENSOR_ITEMS },
+    { type: 'switch', items: SWITCH_ITEMS },
+    { type: 'encoder', items: ENCODER_ITEMS },
+    { type: 'material', items: MATERIAL_ITEMS },
+  ];
+  for (const { type, items } of types) {
+    componentDbs[type] = {
+      component_type: type,
+      items: items.map(i => ({
+        name: i.name,
+        canonical_name: i.name,
+        maker: i.maker || '',
+        aliases: i.aliases || [],
+        links: i.links || [],
+        properties: i.properties || {},
+      })),
+    };
+  }
+  const existing = db.getCompiledRules() || {};
+  db.upsertCompiledRules(JSON.stringify({
+    ...existing,
+    component_dbs: componentDbs,
+    fields: existing.fields || Object.fromEntries(
+      Object.entries(FIELD_RULES_FIELDS).map(([k, v]) => [k, v])
+    ),
+  }));
+}
+
 async function withSeededSpecDb(config, run) {
   const { SpecDb } = await import('../../../../db/specDb.js');
   const { seedSpecDb } = await import('../../../../db/seed.js');
@@ -664,6 +757,9 @@ async function withSeededSpecDb(config, run) {
     });
     seedComponentReviewSuggestions(db, COMPONENT_REVIEW_SEED_ITEMS);
     await seedEnumSuggestionsFromFile(db, config);
+    seedFieldCandidatesFromProducts(db);
+    // Seed compiled_rules with component_dbs so reference candidates appear
+    seedCompiledRulesComponentDbs(db);
     return await run({ db, seedResult, fieldRules });
   } finally {
     try {

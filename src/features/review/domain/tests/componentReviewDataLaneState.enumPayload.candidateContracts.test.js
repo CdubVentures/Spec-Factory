@@ -24,17 +24,6 @@ test('enum payload synthesizes backing candidate when selected non-manual value 
       overridden: false,
       sourceTimestamp: '2026-02-18T00:00:00.000Z',
     });
-    specDb.upsertItemFieldState({
-      productId,
-      fieldKey: 'connection',
-      value: 'Bluetooth',
-      confidence: 0.6,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: true,
-      aiReviewComplete: false,
-    });
     specDb.syncItemListLinkForFieldValue({
       productId,
       fieldKey: 'connection',

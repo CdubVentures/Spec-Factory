@@ -169,7 +169,136 @@ export function registerProductImageFinderRoutes(ctx) {
       }
     }
 
-    // Delegate GET/DELETE to generic handler
+    // ── DELETE single image file ────────────────────────────────────
+    // DELETE /product-image-finder/:category/:productId/images/:filename
+    if (method === 'DELETE' && category && productId && parts[3] === 'images' && parts[4]) {
+      const filename = parts[4];
+      if (!/^[\w\-]+\.\w+$/.test(filename)) return jsonRes(res, 400, { error: 'invalid filename' });
+
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      const productRoot = defaultProductRoot();
+
+      // Delete file from disk
+      const filePath = path.join(productRoot, productId, 'images', filename);
+      try { fs.unlinkSync(filePath); } catch { /* file may already be gone */ }
+
+      // Remove from JSON store — strip image from all runs + recalculate selected
+      const existing = ctx.deleteProductImageFinderRun
+        ? null // we'll update via the store directly
+        : null;
+
+      // Read current JSON, strip the image entry from every run, rewrite
+      const { readProductImages, writeProductImages, recalculateProductImagesFromRuns } = await import('../productImageStore.js');
+      const doc = readProductImages({ productId, productRoot });
+      if (doc && Array.isArray(doc.runs)) {
+        for (const run of doc.runs) {
+          if (run.selected?.images) {
+            run.selected.images = run.selected.images.filter(img => img.filename !== filename);
+          }
+          if (run.response?.images) {
+            run.response.images = run.response.images.filter(img => img.filename !== filename);
+          }
+        }
+        // Recalculate selected from modified runs
+        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category);
+        writeProductImages({ productId, productRoot, data: recalculated });
+
+        // Update SQL summary + runs
+        const finderStore = specDb.getFinderStore('productImageFinder');
+        finderStore.upsert({
+          category,
+          product_id: productId,
+          images: recalculated.selected?.images?.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })) || [],
+          image_count: recalculated.selected?.images?.length || 0,
+          cooldown_until: recalculated.cooldown_until || '',
+          latest_ran_at: recalculated.last_ran_at || '',
+          run_count: recalculated.run_count || 0,
+        });
+        // Re-insert each modified run so SQL runs table reflects stripped images
+        for (const run of recalculated.runs || []) {
+          finderStore.insertRun({
+            category,
+            product_id: productId,
+            run_number: run.run_number,
+            ran_at: run.ran_at || '',
+            model: run.model || '',
+            fallback_used: run.fallback_used,
+            cooldown_until: run.cooldown_until || '',
+            selected: run.selected || {},
+            prompt: run.prompt || {},
+            response: run.response || {},
+          });
+        }
+      }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'product-image-finder-image-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, deletedImage: filename },
+      });
+
+      return jsonRes(res, 200, { ok: true, deleted: filename });
+    }
+
+    // ── DELETE run — also delete associated image files from disk ──
+    if (method === 'DELETE' && category && productId && parts[3] === 'runs' && parts[4]) {
+      const runNumber = Number(parts[4]);
+      const productRoot = defaultProductRoot();
+
+      // Read run images BEFORE the generic handler deletes the data
+      const { readProductImages } = await import('../productImageStore.js');
+      const doc = readProductImages({ productId, productRoot });
+      const run = doc?.runs?.find(r => r.run_number === runNumber);
+      const runImages = run?.selected?.images || [];
+
+      // Collect filenames still referenced by OTHER runs so we don't delete shared files
+      const survivingFilenames = new Set();
+      for (const r of (doc?.runs || [])) {
+        if (r.run_number === runNumber) continue;
+        for (const img of (r.selected?.images || [])) {
+          if (img.filename) survivingFilenames.add(img.filename);
+        }
+      }
+
+      // Delegate to generic handler (deletes data from JSON + SQL)
+      const result = await genericHandler(parts, params, method, req, res);
+
+      // Only delete image files that no other run references
+      const imagesDir = path.join(productRoot, productId, 'images');
+      for (const img of runImages) {
+        if (img.filename && !survivingFilenames.has(img.filename)) {
+          try { fs.unlinkSync(path.join(imagesDir, img.filename)); } catch { /* */ }
+        }
+      }
+
+      return result;
+    }
+
+    // ── DELETE all — also delete entire images directory ───────────
+    if (method === 'DELETE' && category && productId && !parts[3]) {
+      const productRoot = defaultProductRoot();
+      const imagesDir = path.join(productRoot, productId, 'images');
+
+      // Delegate to generic handler (deletes data from JSON + SQL)
+      const result = await genericHandler(parts, params, method, req, res);
+
+      // Now delete all image files
+      try {
+        const files = fs.readdirSync(imagesDir);
+        for (const file of files) {
+          try { fs.unlinkSync(path.join(imagesDir, file)); } catch { /* */ }
+        }
+        try { fs.rmdirSync(imagesDir); } catch { /* dir may have other files */ }
+      } catch { /* images dir may not exist */ }
+
+      return result;
+    }
+
+    // Delegate GET to generic handler
     return genericHandler(parts, params, method, req, res);
   };
 }

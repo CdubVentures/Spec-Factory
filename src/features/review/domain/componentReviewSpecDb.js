@@ -215,23 +215,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       }
       if (insertedSlots) {
         propRows = specDb.getComponentValuesWithMaker(componentType, itemName, itemMaker) || [];
-        const componentIdentifier = buildComponentIdentifier(componentType, itemName, itemMaker);
-        for (const cv of propRows) {
-          if (!cv?.id) continue;
-          const existing = specDb.getKeyReviewStateForComponentValue(cv.id);
-          if (existing) continue;
-          specDb.upsertKeyReviewState({
-            category: specDb.category,
-            targetKind: 'component_key',
-            componentIdentifier,
-            propertyKey: cv.property_key,
-            fieldKey: cv.property_key,
-            componentValueId: cv.id,
-            componentIdentityId: cv.component_identity_id ?? identity.id,
-            aiConfirmSharedStatus: cv.needs_review ? 'pending' : 'not_run',
-            userAcceptSharedStatus: cv.overridden ? 'accepted' : null,
-          });
-        }
       }
     }
     const itemAliases = aliasRows
@@ -250,20 +233,10 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       || refDbByName.get(String(itemName || '').toLowerCase())
       || null;
     const componentIdentifier = buildComponentIdentifier(componentType, itemName, itemMaker);
-    let nameKeyState = null;
-    let makerKeyState = null;
-    let componentKeyStateByProperty = new Map();
-    try {
-      const keyStates = specDb.getKeyReviewStatesForComponent(componentIdentifier) || [];
-      const byProperty = new Map(keyStates.map((state) => [String(state?.property_key || ''), state]));
-      componentKeyStateByProperty = byProperty;
-      nameKeyState = byProperty.get('__name') || null;
-      makerKeyState = byProperty.get('__maker') || null;
-    } catch {
-      nameKeyState = null;
-      makerKeyState = null;
-      componentKeyStateByProperty = new Map();
-    }
+    // Phase 1b: key_review_state is retired — use null/empty defaults
+    const nameKeyState = null;
+    const makerKeyState = null;
+    const componentKeyStateByProperty = new Map();
 
     // Build ref_* candidate helper for component DB reference data
     const buildRefCandidate = (id, rawValue, dbGeneratedAt) => rawValue != null && rawValue !== '' ? [{
@@ -462,7 +435,8 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
           if (!policy || policy === 'override_allowed') continue;
           const dbValue = prop.selected?.value;
           if (dbValue == null) continue;
-          const fieldStates = specDb.getItemFieldStateForProducts(productIds, [key]);
+          // Phase 1b: item_field_state is retired — use empty array default
+          const fieldStates = [];
           if (!fieldStates.length) continue;
           const entries = fieldStates.map(s => ({ product_id: s.product_id, value: s.value }));
           const batch = evaluateVarianceBatch(policy, dbValue, entries);

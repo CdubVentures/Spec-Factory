@@ -109,7 +109,7 @@ export function buildCategorySurfaces(steps) {
       label: 'Products',
       scope: 'category',
       dependsOn: ['components', 'lists'],
-      tables: ['item_field_state', 'item_component_links', 'item_list_links'],
+      tables: ['item_component_links', 'item_list_links'],
       before: null,
       execute: (ctx) => steps.seedProducts(ctx.db, ctx.config, ctx.category, ctx.fieldRules, ctx.fieldMeta),
       after: null,
@@ -128,21 +128,6 @@ export function buildCategorySurfaces(steps) {
       after: null,
       summarize: (result) => ({
         component_links_backfilled: result.backfilled,
-      }),
-    },
-    {
-      key: 'source_key_review',
-      label: 'Source & Key Review',
-      scope: 'category',
-      dependsOn: ['products', 'backfill_links'],
-      tables: ['key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'],
-      before: null,
-      execute: (ctx) => steps.seedSourceAndKeyReview(ctx.db, ctx.category, ctx.fieldMeta),
-      after: null,
-      summarize: (result) => ({
-        key_review_states_seeded: result.keyReviewStateCount,
-        key_review_audit_seeded: result.keyReviewAuditCount,
-        key_review_runs_seeded: result.keyReviewRunCount,
       }),
     },
   ];
@@ -208,21 +193,6 @@ export function buildReseedSurfaces(deps) {
       formatLog: (category, result) =>
         result.reseeded > 0
           ? `${category}: ${result.reseeded} LLM route rows re-seeded`
-          : '',
-    },
-    {
-      key: 'overrides',
-      label: 'Consolidated Overrides',
-      scope: 'reseed',
-      tables: ['item_field_state', 'product_review_state'],
-      shouldRun: null,
-      execute: (ctx) => deps.reseedOverridesFromJson({
-        specDb: ctx.db,
-        helperRoot: ctx.helperRoot,
-      }),
-      formatLog: (category, result) =>
-        result.reseeded
-          ? `${category}: overrides re-seeded (${result.productCount} products) — field_rules_signature invalidated for full re-seed`
           : '',
     },
     {

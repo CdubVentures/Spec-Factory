@@ -250,12 +250,7 @@ export function createEnumListStore({ db, category, stmts }) {
   function renameListValue(fieldKey, oldValue, newValue, timestamp) {
     const affected = new Set();
     const tx = db.transaction(() => {
-      const fieldStateRows = db
-        .prepare('SELECT DISTINCT product_id FROM item_field_state WHERE category = ? AND field_key = ? AND LOWER(TRIM(value)) = LOWER(TRIM(?))')
-        .all(category, fieldKey, oldValue);
-      for (const row of fieldStateRows) {
-        if (row?.product_id) affected.add(row.product_id);
-      }
+      // item_field_state retired in Phase 1b — affected products from list links only
 
       const oldRow = db
         .prepare('SELECT id FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
@@ -288,9 +283,7 @@ export function createEnumListStore({ db, category, stmts }) {
         .prepare('SELECT id FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
         .get(category, fieldKey, newValue);
 
-      db
-        .prepare('UPDATE item_field_state SET value = ?, updated_at = datetime(\'now\') WHERE category = ? AND field_key = ? AND LOWER(TRIM(value)) = LOWER(TRIM(?))')
-        .run(newValue, category, fieldKey, oldValue);
+      // item_field_state UPDATE retired in Phase 1b
 
       if (oldRow && newRow && Number(oldRow.id) !== Number(newRow.id)) {
         db

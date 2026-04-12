@@ -10,7 +10,6 @@ import {
   CONFIDENCE_COLOR_VALUES,
   REVIEW_CANDIDATE_KEYS,
   CANDIDATE_EVIDENCE_KEYS,
-  KEY_REVIEW_LANE_KEYS,
   PRODUCT_REVIEW_PAYLOAD_KEYS,
   PRODUCT_IDENTITY_KEYS,
   PRODUCT_METRICS_KEYS,
@@ -37,7 +36,7 @@ describe('reviewFieldContract', () => {
   it('FIELD_STATE_OPTIONAL_KEYS includes optional builder output keys', () => {
     const expected = [
       'source', 'method', 'tier', 'evidence_url', 'evidence_quote',
-      'slot_id', 'overridden', 'source_timestamp', 'keyReview',
+      'overridden', 'source_timestamp',
     ];
     for (const key of expected) {
       ok(FIELD_STATE_OPTIONAL_KEYS.includes(key), `missing optional: ${key}`);
@@ -68,12 +67,6 @@ describe('reviewFieldContract', () => {
     }
   });
 
-  it('KEY_REVIEW_LANE_KEYS includes id, primaryStatus, selectedCandidateId', () => {
-    for (const key of ['id', 'primaryStatus', 'selectedCandidateId']) {
-      ok(KEY_REVIEW_LANE_KEYS.includes(key), `missing: ${key}`);
-    }
-  });
-
   it('PRODUCT_REVIEW_PAYLOAD_KEYS includes product_id, fields, metrics', () => {
     for (const key of ['product_id', 'fields', 'metrics']) {
       ok(PRODUCT_REVIEW_PAYLOAD_KEYS.includes(key), `missing: ${key}`);
@@ -83,7 +76,7 @@ describe('reviewFieldContract', () => {
   it('no duplicate keys in any list', () => {
     const lists = [
       FIELD_STATE_KEYS, FIELD_STATE_OPTIONAL_KEYS, FIELD_STATE_SELECTED_KEYS,
-      REVIEW_CANDIDATE_KEYS, CANDIDATE_EVIDENCE_KEYS, KEY_REVIEW_LANE_KEYS,
+      REVIEW_CANDIDATE_KEYS, CANDIDATE_EVIDENCE_KEYS,
       PRODUCT_REVIEW_PAYLOAD_KEYS, PRODUCT_IDENTITY_KEYS, PRODUCT_METRICS_KEYS,
     ];
     for (const list of lists) {

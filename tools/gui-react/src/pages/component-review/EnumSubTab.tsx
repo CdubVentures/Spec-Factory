@@ -66,11 +66,7 @@ function hasActionablePending(item: EnumValueReviewItem): boolean {
     const candidateId = String(candidate?.candidate_id || '').trim();
     return Boolean(candidateId) && hasKnownValue(candidate?.value);
   });
-  return candidateRows.some((candidate) => {
-    if (candidate?.is_synthetic_selected) return false;
-    const sharedStatus = String(candidate?.shared_review_status || '').trim().toLowerCase();
-    return sharedStatus ? sharedStatus === 'pending' : true;
-  });
+  return candidateRows.some((candidate) => !candidate?.is_synthetic_selected);
 }
 
 function toPositiveId(value: unknown): number | null {
@@ -780,11 +776,7 @@ export function EnumSubTab({
                   const candidateId = String(candidate?.candidate_id || '').trim();
                   return Boolean(candidateId) && hasKnownValue(candidate?.value);
                 });
-                const pendingCandidates = candidates.filter((candidate) => {
-                  if (candidate?.is_synthetic_selected) return false;
-                  const sharedStatus = String(candidate?.shared_review_status || '').trim().toLowerCase();
-                  return !sharedStatus || sharedStatus === 'pending';
-                });
+                const pendingCandidates = candidates.filter((candidate) => !candidate?.is_synthetic_selected);
                 const matches = pendingCandidates
                   .map((candidate) => String(candidate?.candidate_id || '').trim())
                   .filter(Boolean);

@@ -311,54 +311,90 @@ describe('sessionCache', () => {
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
   });
 
-  it('compileStale is true when map was saved after compile', async () => {
+  it('compileStale is true when map_hash differs from source_map_hash', async () => {
     const deps = makeDeps({
-      manifest: { generated_at: '2026-02-19T12:00:00.000Z' },
-      mapMtimeIso: '2026-02-20T12:00:00.000Z',
+      sqlRow: {
+        map_json: JSON.stringify(MAP_DOC),
+        map_hash: 'current-hash',
+        updated_at: '2026-02-20T12:00:00.000Z',
+      },
+      compiledFields: COMPILED_FIELDS,
+      compiledOrder: COMPILED_ORDER,
     });
+    // compiled rules have no source_map_hash, so compileStale = true
     const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
 
     assert.equal(result.compileStale, true);
-    assert.equal(result.compiledAt, '2026-02-19T12:00:00.000Z');
-    assert.equal(result.mapSavedAt, '2026-02-20T12:00:00.000Z');
   });
 
-  it('compileStale is false when compile is newer than map save', async () => {
-    const deps = makeDeps({
-      manifest: { generated_at: '2026-02-21T12:00:00.000Z' },
-      mapMtimeIso: '2026-02-20T12:00:00.000Z',
+  it('compileStale is false when map_hash matches source_map_hash', async () => {
+    const baseDeps = makeDeps({
+      sqlRow: {
+        map_json: JSON.stringify(MAP_DOC),
+        map_hash: 'matching-hash',
+        updated_at: '2026-02-20T12:00:00.000Z',
+      },
     });
-    const cache = await createCache(deps);
+    // Override getSpecDb to inject source_map_hash into compiled rules
+    const getSpecDb = () => ({
+      ...baseDeps.getSpecDb(),
+      getCompiledRules: () => ({
+        fields: JSON.parse(JSON.stringify(COMPILED_FIELDS)),
+        field_order: [...COMPILED_ORDER],
+        key_migrations: null,
+        compiled_at: '2026-02-21T12:00:00.000Z',
+        source_map_hash: 'matching-hash',
+      }),
+    });
+    const cache = await createCache({ ...baseDeps, getSpecDb });
     const result = await cache.getSessionRules('mouse');
     assert.equal(result.compileStale, false);
   });
 
-  it('compileStale is false when SQL updated_at is bare UTC before compiled ISO string', async () => {
-    const deps = makeDeps({
-      manifest: { generated_at: '2026-03-31T18:31:23.683Z' },
+  it('compileStale is false when map_hash matches source_map_hash (bare UTC timestamps)', async () => {
+    const baseDeps = makeDeps({
       sqlRow: {
         map_json: JSON.stringify(MAP_DOC),
         map_hash: 'hash1',
         updated_at: '2026-03-31 18:22:56',
       },
     });
-    const cache = await createCache(deps);
+    const getSpecDb = () => ({
+      ...baseDeps.getSpecDb(),
+      getCompiledRules: () => ({
+        fields: JSON.parse(JSON.stringify(COMPILED_FIELDS)),
+        field_order: [...COMPILED_ORDER],
+        key_migrations: null,
+        compiled_at: '2026-03-31T18:31:23.683Z',
+        source_map_hash: 'hash1',
+      }),
+    });
+    const cache = await createCache({ ...baseDeps, getSpecDb });
     const result = await cache.getSessionRules('mouse');
     assert.equal(result.compileStale, false,
-      'bare SQLite datetime must be treated as UTC, not local time');
+      'matching hash means compiled artifacts are up-to-date');
   });
 
-  it('compileStale is true when SQL updated_at is bare UTC after compiled ISO string', async () => {
-    const deps = makeDeps({
-      manifest: { generated_at: '2026-03-31T18:00:00.000Z' },
+  it('compileStale is true when map_hash differs from source_map_hash (bare UTC timestamps)', async () => {
+    const baseDeps = makeDeps({
       sqlRow: {
         map_json: JSON.stringify(MAP_DOC),
-        map_hash: 'hash1',
+        map_hash: 'hash-after-edit',
         updated_at: '2026-03-31 18:22:56',
       },
     });
-    const cache = await createCache(deps);
+    const getSpecDb = () => ({
+      ...baseDeps.getSpecDb(),
+      getCompiledRules: () => ({
+        fields: JSON.parse(JSON.stringify(COMPILED_FIELDS)),
+        field_order: [...COMPILED_ORDER],
+        key_migrations: null,
+        compiled_at: '2026-03-31T18:00:00.000Z',
+        source_map_hash: 'old-hash',
+      }),
+    });
+    const cache = await createCache({ ...baseDeps, getSpecDb });
     const result = await cache.getSessionRules('mouse');
     assert.equal(result.compileStale, true);
   });

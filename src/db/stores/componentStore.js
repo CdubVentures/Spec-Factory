@@ -258,45 +258,7 @@ export function createComponentStore({ db, category, stmts }) {
         }
       }
 
-      const sourceIdentifier = `${source.component_type}::${source.canonical_name}::${source.maker}`;
-      const targetIdentifier = `${target.component_type}::${target.canonical_name}::${target.maker}`;
-
-      const sourceKrs = db.prepare(
-        "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_identifier = ?"
-      ).all(category, sourceIdentifier);
-
-      const STATUS_RANK = { confirmed: 3, accepted: 2, pending: 1 };
-      for (const sk of sourceKrs) {
-        const targetKrs = db.prepare(
-          "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_identifier = ? AND property_key = ?"
-        ).get(category, targetIdentifier, sk.property_key);
-
-        if (targetKrs) {
-          const sourceRank = STATUS_RANK[sk.ai_confirm_shared_status] || 0;
-          const targetRank = STATUS_RANK[targetKrs.ai_confirm_shared_status] || 0;
-          if (sourceRank > targetRank) {
-            db.prepare(`
-              UPDATE key_review_state
-              SET ai_confirm_shared_status = ?, ai_confirm_shared_confidence = ?,
-                  selected_value = COALESCE(?, selected_value),
-                  selected_candidate_id = COALESCE(?, selected_candidate_id),
-                  updated_at = datetime('now')
-              WHERE id = ?
-            `).run(
-              sk.ai_confirm_shared_status, sk.ai_confirm_shared_confidence,
-              sk.selected_value, sk.selected_candidate_id,
-              targetKrs.id
-            );
-          }
-          db.prepare('DELETE FROM key_review_state WHERE id = ?').run(sk.id);
-        } else {
-          db.prepare(`
-            UPDATE key_review_state
-            SET component_identifier = ?, component_identity_id = ?, updated_at = datetime('now')
-            WHERE id = ?
-          `).run(targetIdentifier, targetId, sk.id);
-        }
-      }
+      // Phase 1b: key_review_state table retired — no merge needed.
 
       db.prepare('DELETE FROM component_identity WHERE id = ? AND category = ?').run(sourceId, category);
     });

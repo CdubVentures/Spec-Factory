@@ -7,6 +7,7 @@
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { resolvePhaseModel } from '../../core/llm/client/routing.js';
+import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { stripCompositeKey } from '../../core/llm/routeResolver.js';
 import {
   buildColorEditionFinderPrompt,
@@ -137,6 +138,22 @@ export async function runColorEditionFinder({
     onModelResolved?.(info);
   };
 
+  // Resolve identity ambiguity from product family
+  let familyModelCount = 1;
+  let ambiguityLevel = 'easy';
+  try {
+    const ambiguitySnapshot = await resolveIdentityAmbiguitySnapshot({
+      config,
+      category: product.category,
+      identityLock: { brand: product.brand, base_model: product.base_model },
+      specDb,
+    });
+    familyModelCount = ambiguitySnapshot.family_model_count || 1;
+    ambiguityLevel = ambiguitySnapshot.ambiguity_level || 'easy';
+  } catch {
+    // Non-fatal — fall back to easy
+  }
+
   const allColors = appDb.listColors();
   const colorNames = allColors.map(c => c.name);
 
@@ -165,7 +182,7 @@ export async function runColorEditionFinder({
   // if both primary and fallback fail, the error propagates here.
   let response;
   try {
-    response = await callLlm({ colorNames, colors: allColors, product, previousRuns });
+    response = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel });
     onStageAdvance?.('Validate');
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {

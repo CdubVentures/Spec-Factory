@@ -17,6 +17,7 @@
  *   useResolvedFinderModel(phaseId) — LLM model resolution, parameterized by phase
  *   deriveCooldownState(result)     — cooldown from server result
  *   deriveFinderStatusChip(result)  — status chip from run count
+ *   formatAtomLabel(atom)           — titlecase raw color atoms for display
  *
  * Props sourced from finderModuleRegistry.js:
  *   chipLabel  ← moduleLabel   (e.g. "CEF", "PIF")
@@ -24,6 +25,16 @@
  *   phaseId    ← phase         (e.g. "colorFinder", "imageFinder")
  *
  * Collapse key convention: `indexing:<moduleType>:collapsed:${productId}`
+ * Section card key convention: `indexing:section:<moduleType>:<section>:${productId}`
+ *
+ * Section defaults: data sections (images, selected state) = open;
+ *                   control sections (variants) = closed;
+ *                   audit sections (run history) = closed.
+ *
+ * Run history pattern: manual <ModuleRunHistoryRow> components (flex row +
+ *   expand/collapse arrow), NOT DataTable. Inner rows use sf-surface-panel
+ *   inside the elevated FinderSectionCard. Expanded content uses
+ *   FinderRunPromptDetails for prompt/response sections.
  *
  * Canonical template: ProductImageFinderPanel.tsx
  */
@@ -37,7 +48,7 @@ export { DiscoverySummaryBar } from './DiscoverySummaryBar.tsx';
 export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';
 export { toneToChipClass, toneToValueClass } from './toneMappings.ts';
-export { deriveCooldownState, deriveFinderStatusChip } from './finderSelectors.ts';
+export { deriveCooldownState, deriveFinderStatusChip, formatAtomLabel } from './finderSelectors.ts';
 export { useResolvedFinderModel } from './useResolvedFinderModel.ts';
 export type { ResolvedFinderModel } from './useResolvedFinderModel.ts';
 export type { KpiCard, CooldownState, StatusChipData, RunDiscoveryLog, DeleteTarget } from './types.ts';

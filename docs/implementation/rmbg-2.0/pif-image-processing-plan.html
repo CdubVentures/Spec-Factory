@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIF Image Processing — RMBG 2.0 Integration Plan</title>
+<style>
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --surface-alt: #f4f6f8;
+    --border: #e2e6ea;
+    --text: #1a1d21;
+    --text-muted: #6b7280;
+    --text-subtle: #9ca3af;
+    --accent: #3b82f6;
+    --accent-light: #eff6ff;
+    --success: #10b981;
+    --success-light: #ecfdf5;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --orange: #f59e0b;
+    --orange-light: #fffbeb;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid var(--border);
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin: 0 4px;
+  }
+  .badge-accent { background: var(--accent-light); color: var(--accent); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+  .badge-orange { background: var(--orange-light); color: var(--orange); }
+
+  /* Sections */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 20px 0 10px;
+  }
+  .section p, .section li {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .section ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+  .section li { margin-bottom: 4px; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .flow-step {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-step .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .flow-step .detail {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--text-subtle);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* File tree */
+  .file-tree {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .file-tree .dir { color: var(--accent); font-weight: 600; }
+  .file-tree .file { color: var(--text-muted); }
+  .file-tree .note { color: var(--text-subtle); font-style: italic; }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  .compare-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .compare-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .callout-success {
+    border-left-color: var(--success);
+    background: var(--success-light);
+  }
+  .callout-orange {
+    border-left-color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  /* Code inline */
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-subtle);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>PIF Image Processing Pipeline</h1>
+    <p class="subtitle">RMBG 2.0 integration for automated background removal, trimming, and master file generation</p>
+    <span class="badge badge-accent">PIF</span>
+    <span class="badge badge-purple">RMBG 2.0</span>
+    <span class="badge badge-success">Automated</span>
+    <span class="badge badge-orange">Plan</span>
+  </div>
+
+  <!-- Section 1: Overview -->
+  <div class="section">
+    <h2><span class="num">1</span> Overview</h2>
+    <p>
+      Extend the Product Image Finder (PIF) post-download pipeline with automated background removal
+      and transparent-edge trimming. Every downloaded product image is processed into a clean, full-resolution
+      transparent PNG master file — ready for any downstream export or publishing pipeline.
+    </p>
+    <div class="callout">
+      <strong>Key principle:</strong> The PIF produces master files. Export/publishing (WebP families, Astro optimization,
+      Photoshop batch processing) is a separate concern handled later when the app is complete and product data
+      is ready for the website.
+    </div>
+  </div>
+
+  <!-- Section 2: Pipeline Flow -->
+  <div class="section">
+    <h2><span class="num">2</span> Pipeline Flow</h2>
+    <p>Each downloaded image goes through 4 stages before being saved as the final artifact:</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="label">Stage 1</div>
+        <div class="detail">Download</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Stage 2</div>
+        <div class="detail">Quality Gate</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Stage 3</div>
+        <div class="detail">Remove BG</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Stage 4</div>
+        <div class="detail">Trim</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Output</div>
+        <div class="detail">Master PNG</div>
+      </div>
+    </div>
+
+    <h3>Stage Details</h3>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Input</th>
+          <th>Action</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Download</strong></td>
+          <td>LLM-provided URL</td>
+          <td>HTTP GET with normalized URL + headers. CDN sizing params stripped. Accept header prefers original format (JPEG/PNG).</td>
+          <td>Raw image file (any format: JPEG, PNG, WebP, AVIF)</td>
+        </tr>
+        <tr>
+          <td><strong>Quality Gate</strong></td>
+          <td>Raw downloaded file</td>
+          <td>Read dimensions from file header. Check against <code>minWidth</code>, <code>minHeight</code>, <code>minFileSize</code>. Reject and delete if below thresholds.</td>
+          <td>Verified raw image (passes quality)</td>
+        </tr>
+        <tr>
+          <td><strong>Remove BG</strong></td>
+          <td>Verified raw image</td>
+          <td>Feed to RMBG 2.0 model. Produces 8-bit alpha matte with 256 transparency levels. Composite mask onto original to create transparent image.</td>
+          <td>Transparent image (alpha channel applied)</td>
+        </tr>
+        <tr>
+          <td><strong>Trim</strong></td>
+          <td>Transparent image</td>
+          <td>Detect bounding box of non-transparent pixels. Crop canvas to content bounds. No padding added (padding is an export concern).</td>
+          <td>Tight-cropped transparent image</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: File Storage -->
+  <div class="section">
+    <h2><span class="num">3</span> File Storage</h2>
+    <p>
+      Both original downloads and processed masters are kept. Originals serve as historical reference
+      and can be reprocessed if the model improves. The processed PNG is the display artifact.
+    </p>
+
+    <div class="file-tree">
+      <span class="dir">.workspace/products/{product_id}/images/</span><br>
+      &nbsp;&nbsp;<span class="dir">originals/</span> <span class="note">&larr; raw downloads preserved as-is</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">top-black.jpg</span> <span class="note">&larr; original JPEG from CDN</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">left-black.webp</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">angle-glacier-blue.jpg</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">top-glacier-blue.avif</span><br>
+      &nbsp;&nbsp;<span class="file">top-black.png</span> <span class="note">&larr; processed master (bg removed + trimmed)</span><br>
+      &nbsp;&nbsp;<span class="file">left-black.png</span><br>
+      &nbsp;&nbsp;<span class="file">angle-glacier-blue.png</span><br>
+      &nbsp;&nbsp;<span class="file">top-glacier-blue.png</span><br>
+    </div>
+
+    <h3>Naming Convention</h3>
+    <p>Aligned with the Photoshop cut-out pipeline (<code>webp-all-options.jsx</code> PRESET_BASENAMES):</p>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Pattern</th><th>Example</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>{view}-{variant_slug}.png</code></td>
+          <td><code>top-black.png</code></td>
+          <td>Color variant, raw atom</td>
+        </tr>
+        <tr>
+          <td><code>{view}-{variant_slug}.png</code></td>
+          <td><code>left-glacier-blue.png</code></td>
+          <td>Color variant, marketing name slugified</td>
+        </tr>
+        <tr>
+          <td><code>{view}-{variant_slug}.png</code></td>
+          <td><code>sangle-cod-bo6-edition.png</code></td>
+          <td>Edition variant</td>
+        </tr>
+        <tr>
+          <td><code>{view}-{variant_slug}-2.png</code></td>
+          <td><code>top-black-2.png</code></td>
+          <td>Duplicate view, second candidate</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Original Preservation</h3>
+    <ul>
+      <li>Raw downloads saved to <code>originals/</code> subdirectory with the same filename but original extension</li>
+      <li>Originals are never modified or reprocessed in place</li>
+      <li>If RMBG 2.0 model improves, originals can be batch-reprocessed to regenerate masters</li>
+      <li>Delete operations remove both the master and its corresponding original</li>
+    </ul>
+  </div>
+
+  <!-- Section 4: RMBG 2.0 Integration -->
+  <div class="section">
+    <h2><span class="num">4</span> RMBG 2.0 Model Integration</h2>
+
+    <h3>Model Details</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Property</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Model</td><td>RMBG 2.0 by Bria AI</td></tr>
+        <tr><td>Source</td><td>Hugging Face: <code>briaai/RMBG-2.0</code></td></tr>
+        <tr><td>License</td><td>CC BY-NC 4.0 (non-commercial / personal use)</td></tr>
+        <tr><td>Size</td><td>~176 MB (weights)</td></tr>
+        <tr><td>Type</td><td>Vision segmentation model (NOT an LLM)</td></tr>
+        <tr><td>Hardware</td><td>Runs on CPU (few seconds/image) or GPU (sub-second)</td></tr>
+        <tr><td>Input</td><td>Any standard image format (JPEG, PNG, WebP, AVIF)</td></tr>
+        <tr><td>Output</td><td>8-bit single-channel alpha matte (256 transparency levels)</td></tr>
+        <tr><td>Quality</td><td>90% accuracy benchmark — outperforms Photoshop automated removal (46%)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Runtime Approach</h3>
+    <ul>
+      <li><strong>Model loaded once</strong> at server boot or on first PIF run, then kept in memory</li>
+      <li><strong>Per-image processing</strong> is stateless — feed image in, get mask out</li>
+      <li><strong>No Python dependency required</strong> if using ONNX Runtime for Node.js (<code>onnxruntime-node</code>), or call a lightweight Python sidecar</li>
+      <li><strong>Fallback</strong>: if model is unavailable, save the raw download without processing (degrade gracefully, don't block the run)</li>
+    </ul>
+
+    <div class="callout-success callout">
+      <strong>Resource impact:</strong> This is a ~176 MB segmentation model, not an LLM. It processes one image at a time
+      using standard CPU inference. No GPU required. No tokens consumed. Runs alongside the existing server without
+      competing for LLM resources.
+    </div>
+  </div>
+
+  <!-- Section 5: Processing Logic -->
+  <div class="section">
+    <h2><span class="num">5</span> Processing Logic</h2>
+
+    <h3>Per-Image Processing (inside runSingleVariant)</h3>
+    <p>After a successful download passes the quality gate:</p>
+    <ol style="padding-left: 20px; margin: 12px 0;">
+      <li>Move the raw download to <code>originals/{filename}.{original_ext}</code></li>
+      <li>Load the raw image into the RMBG 2.0 model</li>
+      <li>Receive the alpha matte (grayscale mask)</li>
+      <li>Composite: apply the matte as the alpha channel on the original image</li>
+      <li>Trim: detect bounding box of non-transparent pixels, crop to content</li>
+      <li>Save as <code>{filename}.png</code> (lossless, full alpha precision)</li>
+      <li>Record both <code>filename</code> (master) and <code>original_filename</code> in the image entry</li>
+    </ol>
+
+    <h3>Error Handling</h3>
+    <ul>
+      <li><strong>Model not loaded:</strong> save raw download as the master file (skip bg removal). Log warning.</li>
+      <li><strong>BG removal fails on specific image:</strong> keep the raw download as master. Record <code>bg_removed: false</code> on the image entry.</li>
+      <li><strong>Trim produces empty canvas:</strong> model masked out everything. Keep the pre-trim transparent image. Record <code>trim_failed: true</code>.</li>
+    </ul>
+
+    <h3>Image Entry Schema Addition</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>original_filename</code></td><td>string</td><td>Raw download in <code>originals/</code> (e.g. <code>top-black.jpg</code>)</td></tr>
+        <tr><td><code>bg_removed</code></td><td>boolean</td><td>Whether RMBG 2.0 processing succeeded</td></tr>
+        <tr><td><code>original_format</code></td><td>string</td><td>Source format before conversion (jpeg, webp, avif, png)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 6: GUI — Before/After -->
+  <div class="section">
+    <h2><span class="num">6</span> GUI — Before / After Viewer</h2>
+    <p>
+      The PIF lightbox (full-screen image viewer) gains a scrollable before/after mode.
+      The gallery always shows the processed master. Clicking into the lightbox reveals both.
+    </p>
+
+    <h3>Lightbox Behavior</h3>
+    <ul>
+      <li><strong>Default view:</strong> processed master PNG (bg removed + trimmed) on a checkerboard transparency background</li>
+      <li><strong>Scroll or swipe:</strong> transitions to the original raw download (with background intact)</li>
+      <li><strong>Label overlay:</strong> "Processed" / "Original" badge in the corner so it's clear which you're viewing</li>
+      <li><strong>Both images accessible:</strong> source URL link and download link available for each version</li>
+    </ul>
+
+    <h3>Gallery Card</h3>
+    <ul>
+      <li>Thumbnail always shows the processed master</li>
+      <li>If <code>bg_removed: false</code>, show a small indicator that processing was skipped</li>
+      <li>Delete button removes both master and original from disk</li>
+    </ul>
+  </div>
+
+  <!-- Section 7: Dependencies -->
+  <div class="section">
+    <h2><span class="num">7</span> Dependencies</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Package</th><th>Purpose</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>onnxruntime-node</code></td>
+          <td>Run RMBG 2.0 ONNX model in Node.js</td>
+          <td>CPU inference, no Python needed. Alternative: Python sidecar with <code>torch</code> + <code>transformers</code>.</td>
+        </tr>
+        <tr>
+          <td><code>sharp</code></td>
+          <td>Image compositing, trim, PNG export</td>
+          <td>Already a common Node image library. Handles alpha compositing, crop-to-content, and lossless PNG save.</td>
+        </tr>
+        <tr>
+          <td>RMBG 2.0 weights</td>
+          <td>Model file (~176 MB)</td>
+          <td>Downloaded once to <code>.workspace/models/rmbg-2.0/</code>. Git-ignored. Auto-downloaded on first use.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout-orange callout">
+      <strong>Dependency approval required:</strong> Per CLAUDE.md rules, <code>onnxruntime-node</code> and <code>sharp</code>
+      (if not already present) need explicit human approval before adding to <code>package.json</code>.
+    </div>
+  </div>
+
+  <!-- Section 8: What This Doesn't Cover -->
+  <div class="section">
+    <h2><span class="num">8</span> Out of Scope (Future)</h2>
+    <p>These concerns are intentionally deferred:</p>
+    <ul>
+      <li><strong>WebP responsive family export</strong> — handled by the Photoshop <code>webp-all-options.jsx</code> script or a future Node-based exporter when the app is complete</li>
+      <li><strong>Astro image optimization</strong> — Astro's <code>&lt;Image&gt;</code> component handles responsive sizing at build time from the master PNG</li>
+      <li><strong>Padding / canvas extension</strong> — an export concern per view preset, not a PIF concern</li>
+      <li><strong>Batch reprocessing</strong> — re-running RMBG 2.0 on all originals when the model improves (simple to add later since originals are preserved)</li>
+      <li><strong>CDN upload</strong> — publishing processed images to a production CDN</li>
+    </ul>
+  </div>
+
+  <!-- Section 9: Implementation Order -->
+  <div class="section">
+    <h2><span class="num">9</span> Implementation Order</h2>
+    <ol style="padding-left: 20px; margin: 12px 0; line-height: 2.2;">
+      <li>Add <code>sharp</code> + <code>onnxruntime-node</code> dependencies (with approval)</li>
+      <li>Download RMBG 2.0 ONNX weights to <code>.workspace/models/</code></li>
+      <li>Build <code>imageProcessor</code> module: load model, remove bg, trim, save PNG</li>
+      <li>Wire into <code>runSingleVariant</code>: after quality gate, process each image</li>
+      <li>Update file storage: move raw downloads to <code>originals/</code>, save masters to <code>images/</code></li>
+      <li>Add <code>original_filename</code>, <code>bg_removed</code>, <code>original_format</code> to image entry schema</li>
+      <li>Update image serving route to serve both masters and originals</li>
+      <li>Update lightbox with before/after scroll viewer</li>
+      <li>Update delete handlers to clean up both master and original files</li>
+    </ol>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    PIF Image Processing Plan &mdash; RMBG 2.0 Integration &mdash; April 2026<br>
+    Spec Factory &mdash; Product Image Finder
+  </div>
+
+</div>
+</body>
+</html>

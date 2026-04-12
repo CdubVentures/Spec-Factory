@@ -35,17 +35,6 @@ test('enum payload hides pending pipeline values without linked products', async
       overridden: false,
       sourceTimestamp: '2026-02-18T00:00:00.000Z',
     });
-    specDb.upsertItemFieldState({
-      productId: linkedProductId,
-      fieldKey: 'connection',
-      value: 'Bluetooth',
-      confidence: 0.6,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: true,
-      aiReviewComplete: false,
-    });
     specDb.syncItemListLinkForFieldValue({
       productId: linkedProductId,
       fieldKey: 'connection',

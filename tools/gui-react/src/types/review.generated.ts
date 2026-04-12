@@ -6,6 +6,7 @@
 
 export interface FieldStateSelectedGen {
   value: unknown;
+  unit?: string | null;
   confidence: number;
   status: string;
   color: 'green' | 'yellow' | 'red' | 'gray';
@@ -25,6 +26,7 @@ export interface CandidateEvidenceGen {
 export interface ReviewCandidateGen {
   candidate_id: string;
   value: unknown;
+  unit?: string | null;
   score: number;
   source_id: string;
   source: string;
@@ -36,22 +38,6 @@ export interface ReviewCandidateGen {
   llm_extract_provider?: string | null;
   llm_validate_model?: string | null;
   llm_validate_provider?: string | null;
-  primary_review_status?: 'pending' | 'accepted' | 'rejected';
-  shared_review_status?: 'pending' | 'accepted' | 'rejected';
-  human_accepted?: boolean;
-}
-
-export interface KeyReviewLaneStateGen {
-  id: number;
-  selectedCandidateId?: string | null;
-  primaryStatus: string | null;
-  primaryConfidence: number | null;
-  sharedStatus: string | null;
-  sharedConfidence: number | null;
-  userAcceptPrimary: string | null;
-  userAcceptShared: string | null;
-  overridePrimary: boolean;
-  overrideShared: boolean;
 }
 
 export interface FieldStateGen {
@@ -67,10 +53,8 @@ export interface FieldStateGen {
   tier?: number | null;
   evidence_url?: string;
   evidence_quote?: string;
-  slot_id?: number | null;
   overridden?: boolean;
   source_timestamp?: string | null;
-  keyReview?: Record<string, unknown>;
 }
 
 export interface ProductIdentityGen {
@@ -131,5 +115,4 @@ export interface CandidateResponseGen {
   field: string;
   candidates: ReviewCandidateGen[];
   candidate_count: number;
-  keyReview: Record<string, unknown> | null;
 }

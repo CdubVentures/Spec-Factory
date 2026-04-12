@@ -4,39 +4,17 @@
 
 import { writeConsolidatedOverrides } from '../../../shared/consolidatedOverrides.js';
 
-// ── Shared: build per-product override envelope from SQL ─────────────────────
+// ── Shared: build per-product override envelope ─────────────────────
+// Phase 1b: product_review_state and getOverriddenFieldsForProduct are retired.
+// Returns safe defaults — less metadata, but structurally compatible.
 
-function buildProductOverridesFromSql(specDb, productId) {
-  const reviewState = specDb.getProductReviewState(productId);
-  const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
-
-  const overrides = {};
-  for (const row of overriddenRows) {
-    let provenance = null;
-    if (row.override_provenance) {
-      try { provenance = JSON.parse(row.override_provenance); } catch { /* keep null */ }
-    }
-
-    overrides[row.field_key] = {
-      field: row.field_key,
-      override_source: row.override_source || 'candidate_selection',
-      override_value: row.override_value || row.value || '',
-      override_reason: row.override_reason || null,
-      override_provenance: provenance,
-      overridden_by: row.overridden_by || null,
-      overridden_at: row.overridden_at || row.updated_at || null,
-      candidate_id: row.accepted_candidate_id || '',
-      value: row.override_value || row.value || '',
-      set_at: row.overridden_at || row.updated_at || null,
-    };
-  }
-
+function buildProductOverridesFromSql(_specDb, _productId) {
   return {
-    review_status: reviewState?.review_status || 'pending',
-    review_started_at: reviewState?.review_started_at || null,
-    reviewed_by: reviewState?.reviewed_by || null,
-    reviewed_at: reviewState?.reviewed_at || null,
-    overrides,
+    review_status: 'pending',
+    review_started_at: null,
+    reviewed_by: null,
+    reviewed_at: null,
+    overrides: {},
   };
 }
 
@@ -50,7 +28,8 @@ export function createExportOverridesCommand({ withSpecDb }) {
     }
 
     return withSpecDb(config, category, (specDb) => {
-      const productIds = specDb.listApprovedProductIds();
+      // Phase 1b: listApprovedProductIds retired — return empty product list
+      const productIds = [];
       const products = productIds.map((productId) => ({
         version: 1,
         category,
@@ -78,11 +57,8 @@ export function createMigrateOverridesCommand({ withSpecDb }) {
     }
 
     return withSpecDb(config, category, async (specDb) => {
-      // WHY: listProductIdsWithOverrides returns ALL products with overrides or review state,
-      // not just approved. This prevents losing in_progress/draft overrides during migration.
-      const productIds = typeof specDb.listProductIdsWithOverrides === 'function'
-        ? specDb.listProductIdsWithOverrides()
-        : specDb.listApprovedProductIds();
+      // Phase 1b: listApprovedProductIds / listProductIdsWithOverrides retired — empty list
+      const productIds = [];
 
       const products = {};
       for (const productId of productIds) {

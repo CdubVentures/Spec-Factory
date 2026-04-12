@@ -70,9 +70,6 @@ export const REVIEW_CANDIDATE_SHAPE = Object.freeze([
   { key: 'llm_extract_provider', coerce: 'string', nullable: true, optional: true },
   { key: 'llm_validate_model', coerce: 'string', nullable: true, optional: true },
   { key: 'llm_validate_provider', coerce: 'string', nullable: true, optional: true },
-  { key: 'primary_review_status', coerce: 'string', literals: ['pending', 'accepted', 'rejected'], optional: true },
-  { key: 'shared_review_status', coerce: 'string', literals: ['pending', 'accepted', 'rejected'], optional: true },
-  { key: 'human_accepted', coerce: 'bool', optional: true },
 ]);
 export const REVIEW_CANDIDATE_KEYS = Object.freeze(REVIEW_CANDIDATE_SHAPE.map(d => d.key));
 

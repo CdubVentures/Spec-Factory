@@ -21,6 +21,7 @@ import {
   useResolvedFinderModel,
   deriveCooldownState,
   deriveFinderStatusChip,
+  formatAtomLabel,
 } from '../../../shared/ui/finder/index.ts';
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
@@ -32,6 +33,7 @@ import {
   useProductImageFinderRunMutation,
   useDeleteProductImageFinderAllMutation,
   useDeleteProductImageFinderRunMutation,
+  useDeleteProductImageMutation,
 } from '../api/productImageFinderQueries.ts';
 import type { ProductImageEntry, ProductImageFinderRun, VariantInfo } from '../types.ts';
 
@@ -56,7 +58,7 @@ function imageServeUrl(category: string, productId: string, filename: string): s
  * Every entry in colors is a colorway. Search priority:
  *   1. Edition display name (if combo matches an edition)
  *   2. Marketing name (from color_names)
- *   3. Raw atom/combo (fallback)
+ *   3. Titlecased atom/combo (fallback)
  */
 function buildVariantList(cefData: {
   colors?: string[];
@@ -81,7 +83,7 @@ function buildVariantList(cefData: {
     } else {
       const name = colorNames[entry];
       const hasName = !!(name && name.toLowerCase() !== entry.toLowerCase());
-      variants.push({ key: `color:${entry}`, label: hasName ? name : entry, type: 'color' });
+      variants.push({ key: `color:${entry}`, label: hasName ? name : formatAtomLabel(entry), type: 'color' });
     }
   }
   return variants;
@@ -135,7 +137,8 @@ function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[]): 
   }
   for (const [key, imgs] of imageMap) {
     if (!variants.some(v => v.key === key) && imgs.length > 0) {
-      groups.push({ key, label: key, type: 'color', images: imgs });
+      const label = imgs[0].variant_label || formatAtomLabel(key.replace(/^(color|edition):/, ''));
+      groups.push({ key, label, type: key.startsWith('edition:') ? 'edition' : 'color', images: imgs });
     }
   }
   return groups;
@@ -229,11 +232,13 @@ function GalleryCard({
   category,
   productId,
   onOpen,
+  onDelete,
 }: {
   readonly img: GalleryImage;
   readonly category: string;
   readonly productId: string;
   readonly onOpen: () => void;
+  readonly onDelete: (filename: string) => void;
 }) {
   const [errored, setErrored] = useState(false);
   const src = img.filename ? imageServeUrl(category, productId, img.filename) : '';
@@ -294,6 +299,16 @@ function GalleryCard({
             {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}
           </a>
         )}
+        {img.filename && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(img.filename); }}
+            className="mt-0.5 text-[9px] sf-btn-ghost px-1 py-0.5 rounded self-start"
+            style={{ color: 'var(--sf-danger, #ef4444)' }}
+            title={`Delete ${img.filename}`}
+          >
+            delete
+          </button>
+        )}
       </div>
     </div>
   );
@@ -304,12 +319,10 @@ function GalleryCard({
 function VariantRow({
   variant,
   imageCount,
-  isRunning,
   onRun,
 }: {
   readonly variant: VariantInfo;
   readonly imageCount: number;
-  readonly isRunning: boolean;
   readonly onRun: () => void;
 }) {
   return (
@@ -328,10 +341,9 @@ function VariantRow({
       )}
       <button
         onClick={onRun}
-        disabled={isRunning}
-        className="shrink-0 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
+        className="shrink-0 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded sf-primary-button"
       >
-        {isRunning ? <Spinner className="h-3 w-3" /> : 'Run'}
+        Run
       </button>
     </div>
   );
@@ -353,18 +365,16 @@ function PifRunHistoryRow({
 
   return (
     <div className="sf-surface-panel rounded-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
-        >
-          <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
-            {'\u25B6'}
-          </span>
-          <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
-            #{run.run_number}
-          </span>
-        </button>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          {'\u25B6'}
+        </span>
+        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          #{run.run_number}
+        </span>
         <span className="font-mono text-[10px] sf-text-muted">{run.ran_at?.split('T')[0] ?? '--'}</span>
         {run.model && <Chip label={run.model} className="sf-chip-neutral" />}
         <span className="text-[10px] sf-text-subtle">
@@ -374,7 +384,7 @@ function PifRunHistoryRow({
         <Chip label={`${images.length} img`} className={images.length > 0 ? 'sf-chip-success' : 'sf-chip-neutral'} />
         {errors.length > 0 && <Chip label={`${errors.length} err`} className="sf-chip-danger" />}
         <button
-          onClick={() => onDelete(run.run_number)}
+          onClick={(e) => { e.stopPropagation(); onDelete(run.run_number); }}
           className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
         >
           Del
@@ -463,6 +473,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:pif:collapsed:${productId}`, true);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [lightboxImg, setLightboxImg] = useState<GalleryImage | null>(null);
+  const [expandedImageGroups, setExpandedImageGroups] = useState<Set<string>>(new Set());
 
   // LLM model for imageFinder phase (shared hook, parameterized by phase ID)
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('imageFinder');
@@ -475,6 +486,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const runMutation = useProductImageFinderRunMutation(category, productId);
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
+  const deleteImageMut = useDeleteProductImageMutation(category, productId);
 
   // Operations tracker
   const ops = useOperationsStore((s) => s.operations);
@@ -520,12 +532,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   }, [galleryImages]);
 
   const handleRunAll = useCallback(() => {
-    if (!isRunning && variants.length > 0) runMutation.mutate({});
-  }, [isRunning, runMutation, variants.length]);
+    if (variants.length > 0) runMutation.mutate({});
+  }, [runMutation, variants.length]);
 
   const handleRunVariant = useCallback((variantKey: string) => {
-    if (!isRunning) runMutation.mutate({ variant_key: variantKey });
-  }, [isRunning, runMutation]);
+    runMutation.mutate({ variant_key: variantKey });
+  }, [runMutation]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -607,38 +619,73 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           {/* Cooldown Strip */}
           {runCount > 0 && <FinderCooldownStrip cooldown={cooldown} />}
 
-          {/* All Images — grouped by variant, collapsible */}
+          {/* All Images — grouped by variant, each group collapsible */}
           {imageGroups.length > 0 && (
             <FinderSectionCard
               title="All Images"
-              count={`${imageCount} found`}
+              count={`${imageCount} across ${imageGroups.length} variant${imageGroups.length !== 1 ? 's' : ''}`}
               storeKey={`pif:images:${productId}`}
               defaultOpen
+              trailing={
+                <button
+                  onClick={() => {
+                    if (expandedImageGroups.size === imageGroups.length) {
+                      setExpandedImageGroups(new Set());
+                    } else {
+                      setExpandedImageGroups(new Set(imageGroups.map(g => g.key)));
+                    }
+                  }}
+                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button border sf-border-soft opacity-60 hover:opacity-100"
+                >
+                  {expandedImageGroups.size === imageGroups.length ? 'Collapse All' : 'Expand All'}
+                </button>
+              }
             >
               <div style={{ columns: 2, columnGap: '0.75rem' }}>
-                {imageGroups.map(group => (
-                  <div key={group.key} className="break-inside-avoid mb-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Chip
-                        label={group.type === 'edition' ? 'ED' : 'CLR'}
-                        className={group.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
-                      />
-                      <span className="text-[12px] font-semibold sf-text-primary">{group.label}</span>
-                      <span className="text-[10px] font-mono sf-text-subtle">{group.images.length} img</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {group.images.map((img, i) => (
-                        <GalleryCard
-                          key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
-                          img={img}
-                          category={category}
-                          productId={productId}
-                          onOpen={() => setLightboxImg(img)}
+                {imageGroups.map(group => {
+                  const isOpen = expandedImageGroups.has(group.key);
+                  return (
+                    <div key={group.key} className="break-inside-avoid mb-3 sf-surface-panel rounded-lg overflow-hidden">
+                      <div
+                        onClick={() => setExpandedImageGroups(prev => {
+                          const next = new Set(prev);
+                          if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
+                          return next;
+                        })}
+                        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none hover:opacity-80"
+                      >
+                        <span
+                          className="text-[10px] sf-text-muted shrink-0"
+                          style={{ transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}
+                        >
+                          {'\u25B6'}
+                        </span>
+                        <span className="text-[12px] font-semibold sf-text-primary truncate min-w-0 flex-1">
+                          {group.label}
+                        </span>
+                        <Chip
+                          label={group.type === 'edition' ? 'ED' : 'CLR'}
+                          className={group.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
                         />
-                      ))}
+                        <Chip label={`${group.images.length} img`} className="sf-chip-success" />
+                      </div>
+                      {isOpen && (
+                        <div className="px-3 pb-3 flex gap-2 flex-wrap">
+                          {group.images.map((img, i) => (
+                            <GalleryCard
+                              key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
+                              img={img}
+                              category={category}
+                              productId={productId}
+                              onOpen={() => setLightboxImg(img)}
+                              onDelete={(filename) => deleteImageMut.mutate(filename)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </FinderSectionCard>
           )}
@@ -649,15 +696,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
             count={`${variants.length} total`}
             storeKey={`pif:variants:${productId}`}
           >
-            <div className="space-y-1.5">
+            <div style={{ columns: 2, columnGap: '0.375rem' }}>
               {variants.map((v) => (
-                <VariantRow
-                  key={v.key}
-                  variant={v}
-                  imageCount={variantImageCounts.get(v.key) || 0}
-                  isRunning={isRunning}
-                  onRun={() => handleRunVariant(v.key)}
-                />
+                <div key={v.key} className="break-inside-avoid mb-1.5">
+                  <VariantRow
+                    variant={v}
+                    imageCount={variantImageCounts.get(v.key) || 0}
+                    onRun={() => handleRunVariant(v.key)}
+                  />
+                </div>
               ))}
             </div>
           </FinderSectionCard>

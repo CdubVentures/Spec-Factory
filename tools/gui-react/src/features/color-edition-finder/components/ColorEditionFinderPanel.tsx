@@ -261,18 +261,16 @@ function CefRunHistoryRow({
 
   return (
     <div className={`sf-surface-panel rounded-lg overflow-hidden${row.isLatest ? ' border-l-2 border-[var(--sf-token-accent-strong)]' : ''}`}>
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
-        >
-          <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
-            {'\u25B6'}
-          </span>
-          <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
-            #{row.runNumber}
-          </span>
-        </button>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          {'\u25B6'}
+        </span>
+        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          #{row.runNumber}
+        </span>
         <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
         {row.model && <Chip label={row.model} className="sf-chip-neutral" />}
         {row.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
@@ -291,7 +289,7 @@ function CefRunHistoryRow({
           </span>
         )}
         <button
-          onClick={() => onDelete(row.runNumber)}
+          onClick={(e) => { e.stopPropagation(); onDelete(row.runNumber); }}
           className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
         >
           Del

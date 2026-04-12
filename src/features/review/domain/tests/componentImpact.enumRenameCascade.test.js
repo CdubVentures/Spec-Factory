@@ -9,29 +9,6 @@ import {
 test('cascadeEnumChange honors preAffectedProductIds for rename cascades', async () => {
   const harness = await createHarness();
   try {
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-e',
-      fieldKey: 'connection',
-      value: 'Wireless',
-      confidence: 1,
-      source: 'known_values',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-f',
-      fieldKey: 'connection',
-      value: 'Wireless',
-      confidence: 1,
-      source: 'known_values',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     const result = await cascadeEnumChange({
       storage: harness.storage,
       outputRoot: harness.outputRoot,

@@ -12,7 +12,6 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { buildComponentIdentifier } from '../utils/componentIdentifier.js';
 import {
   isKnownSlotValue,
   normalizeSlotValueForShape,
@@ -772,44 +771,9 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
       if (!normalized) continue;
 
       const tx = db.db.transaction(() => {
-        // Step 4: Insert item_field_state from normalized + provenance + overrides
+        // Phase 1b: upsertItemFieldState removed — item_field_state table is retired.
         const fields = isObject(normalized.fields) ? normalized.fields : {};
         const overrideMap = isObject(overrides?.overrides) ? overrides.overrides : {};
-
-        for (const [fieldKey, rawValue] of Object.entries(fields)) {
-          const prov = isObject(provenance) ? provenance[fieldKey] : null;
-          const ovr = overrideMap[fieldKey];
-          const isOverridden = isObject(ovr);
-          const shape = fieldMeta[fieldKey]?.shape || 'scalar';
-
-          const value = isOverridden ? (ovr.value ?? ovr.override_value ?? rawValue) : rawValue;
-          const normalizedSlotValue = normalizeSlotValueForShape(value, shape).value;
-          const valueText = slotValueToText(normalizedSlotValue, shape);
-          const hasKnownSlot = isKnownSlotValue(normalizedSlotValue, shape);
-          const confidence = isOverridden ? 1.0 : (prov?.confidence ?? 0);
-          const source = isOverridden ? 'override' : 'pipeline';
-
-          const knownValue = hasKnownSlot;
-          db.upsertItemFieldState({
-            productId,
-            fieldKey,
-            value: valueText ?? null,
-            confidence,
-            source,
-            acceptedCandidateId: null,
-            overridden: isOverridden,
-            needsAiReview: !isOverridden && knownValue && confidence < 0.8,
-            aiReviewComplete: false,
-            ...(isOverridden ? {
-              overrideSource: ovr.override_source || 'candidate_selection',
-              overrideValue: ovr.override_value || ovr.value || valueText,
-              overrideReason: ovr.override_reason || null,
-              overrideProvenance: ovr.override_provenance ? JSON.stringify(ovr.override_provenance) : null,
-              overriddenBy: ovr.overridden_by || null,
-              overriddenAt: ovr.overridden_at || ovr.set_at || null,
-            } : {}),
-          });
-        }
 
         // Step 5: Insert item_component_links
         const componentDBs = fieldRules.componentDBs || {};
@@ -889,19 +853,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
       });
       tx();
 
-      // Step 8: Populate product_review_state from override file envelope
-      if (isObject(overrides)) {
-        const reviewStatus = normalizeToken(overrides.review_status || '');
-        if (reviewStatus) {
-          db.upsertProductReviewState({
-            productId,
-            reviewStatus,
-            reviewStartedAt: overrides.review_started_at || null,
-            reviewedBy: overrides.reviewed_by || null,
-            reviewedAt: overrides.reviewed_at || null,
-          });
-        }
-      }
+      // Phase 1b: upsertProductReviewState removed — product_review_state table is retired.
 
       productCount++;
     } catch (error) {
@@ -912,7 +864,8 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
   return { productCount, errors };
 }
 
-// ── Backfill item_component_links from item_field_state ──────────────────────
+// ── Backfill item_component_links from field_candidates ──────────────────────
+// Phase 1b: item_field_state retired. Uses field_candidates (resolved) instead.
 
 function backfillComponentLinks(db, fieldMeta, fieldRules) {
   const componentDBs = fieldRules.componentDBs || {};
@@ -940,17 +893,20 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
         }
       } catch { continue; }
 
-      // Find all item_field_state rows for this field that aren't already linked
-      const fieldRows = db.db.prepare(`
-        SELECT ifs.product_id, ifs.value
-        FROM item_field_state ifs
-        WHERE ifs.category = ? AND ifs.field_key = ?
-          AND ifs.value IS NOT NULL AND LOWER(TRIM(ifs.value)) NOT IN ('n/a', '')
-          AND NOT EXISTS (
-            SELECT 1 FROM item_component_links icl
-            WHERE icl.category = ifs.category AND icl.product_id = ifs.product_id AND icl.field_key = ifs.field_key
-          )
-      `).all(db.category, fieldKey);
+      // Find resolved field_candidates for this field that aren't already linked
+      let fieldRows = [];
+      try {
+        fieldRows = db.db.prepare(`
+          SELECT fc.product_id, fc.value
+          FROM field_candidates fc
+          WHERE fc.category = ? AND fc.field_key = ? AND fc.status = 'resolved'
+            AND fc.value IS NOT NULL AND LOWER(TRIM(fc.value)) NOT IN ('n/a', '')
+            AND NOT EXISTS (
+              SELECT 1 FROM item_component_links icl
+              WHERE icl.category = fc.category AND icl.product_id = fc.product_id AND icl.field_key = fc.field_key
+            )
+        `).all(db.category, fieldKey);
+      } catch { /* field_candidates may not be populated yet */ }
 
       for (const row of fieldRows) {
         const token = row.value.trim().toLowerCase();
@@ -975,220 +931,14 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
 }
 
 // ── Step 9: Source + Key Review backfill ──────────────────────────────────────
+// Phase 1b: key_review_state, item_field_state, and product_review_state tables
+// are retired. This function is now a no-op that returns zero counts.
 
-function seedSourceAndKeyReview(db, category, fieldMeta) {
-  let keyReviewStateCount = 0;
-  let keyReviewAuditCount = 0;
-  let keyReviewRunCount = 0;
-
-  const tx = db.db.transaction(() => {
-    const itemFieldStateRows = db.db.prepare(
-      'SELECT id, product_id, field_key FROM item_field_state WHERE category = ?'
-    ).all(db.category);
-    const itemFieldStateIdBySlot = new Map();
-    for (const row of itemFieldStateRows) {
-      itemFieldStateIdBySlot.set(`${row.product_id}::${row.field_key}`, row.id);
-    }
-
-    const enumListRows = db.db.prepare(
-      'SELECT id, field_key FROM enum_lists WHERE category = ?'
-    ).all(db.category);
-    const enumListIdByField = new Map();
-    for (const row of enumListRows) {
-      enumListIdByField.set(String(row.field_key || ''), row.id);
-    }
-
-    const listValueRows = db.db.prepare(
-      'SELECT id, list_id, field_key, value FROM list_values WHERE category = ?'
-    ).all(db.category);
-    const listValueIdByFieldValue = new Map();
-    for (const row of listValueRows) {
-      const valueToken = normalizeToken(row.value);
-      if (!valueToken) continue;
-      listValueIdByFieldValue.set(`${row.field_key}::${valueToken}`, row.id);
-    }
-
-    const componentLinkRows = db.db.prepare(
-      'SELECT product_id, field_key, component_type, component_name, component_maker FROM item_component_links WHERE category = ?'
-    ).all(db.category);
-    const componentLinkByProductType = new Map();
-    for (const row of componentLinkRows) {
-      const key = `${row.product_id}::${row.component_type || row.field_key || ''}`;
-      if (!componentLinkByProductType.has(key)) {
-        componentLinkByProductType.set(key, row);
-      }
-    }
-
-    const componentValueRows = db.db.prepare(
-      'SELECT id, component_type, component_name, component_maker, property_key FROM component_values WHERE category = ?'
-    ).all(db.category);
-    const componentValueIdBySlot = new Map();
-    for (const row of componentValueRows) {
-      componentValueIdBySlot.set(
-        `${row.component_type}::${row.component_name}::${row.component_maker || ''}::${row.property_key}`,
-        row.id
-      );
-    }
-
-    // 9b: item_field_state → key_review_state (grid_key)
-    const allFieldStates = db.db.prepare(
-      'SELECT * FROM item_field_state WHERE category = ?'
-    ).all(db.category);
-
-    // Pre-load llm_route_matrix for contract snapshots
-    const routes = db.db.prepare(
-      'SELECT * FROM llm_route_matrix WHERE category = ?'
-    ).all(db.category);
-    const fieldRoutes = routes.filter(r => r.scope === 'field');
-    const componentRoutes = routes.filter(r => r.scope === 'component');
-    const listRoutes = routes.filter(r => r.scope === 'list');
-
-    function findRoute(routeList) {
-      return routeList.length > 0 ? routeList[0] : null;
-    }
-
-    for (const ifs of allFieldStates) {
-      // Primary lane mapping
-      let aiConfirmPrimaryStatus = null;
-      if (ifs.needs_ai_review && !ifs.ai_review_complete) aiConfirmPrimaryStatus = 'pending';
-      else if (ifs.ai_review_complete) aiConfirmPrimaryStatus = 'confirmed';
-
-      let userAcceptPrimaryStatus = null;
-      if (ifs.overridden) userAcceptPrimaryStatus = 'accepted';
-
-      // Contract snapshot from route matrix
-      const route = findRoute(fieldRoutes);
-
-      db.upsertKeyReviewState({
-        category,
-        targetKind: 'grid_key',
-        itemIdentifier: ifs.product_id,
-        fieldKey: ifs.field_key,
-        itemFieldStateId: ifs.id,
-        requiredLevel: route?.required_level ?? null,
-        availability: route?.availability ?? null,
-        difficulty: route?.difficulty ?? null,
-        effort: route?.effort ?? null,
-        aiMode: route?.model_ladder_today ?? null,
-        evidencePolicy: route?.insufficient_evidence_action ?? null,
-        minEvidenceRefsEffective: route?.llm_output_min_evidence_refs_required ?? 1,
-        sendMode: route?.all_source_data ? 'all_source_data' : (route?.single_source_data ? 'single_source_data' : null),
-        selectedValue: ifs.value,
-        selectedCandidateId: ifs.accepted_candidate_id,
-        confidenceScore: ifs.confidence || 0,
-        aiConfirmPrimaryStatus,
-        userAcceptPrimaryStatus,
-      });
-      keyReviewStateCount++;
-    }
-
-    // 9c: component_values → key_review_state (component_key)
-    const allComponentValues = db.db.prepare(
-      'SELECT * FROM component_values WHERE category = ?'
-    ).all(db.category);
-
-    for (const cv of allComponentValues) {
-      let aiConfirmSharedStatus = null;
-      if (cv.overridden) {
-        // overridden → user accepted
-      } else if (cv.needs_review) {
-        aiConfirmSharedStatus = 'pending';
-      } else {
-        aiConfirmSharedStatus = 'not_run';
-      }
-
-      let userAcceptSharedStatus = null;
-      if (cv.overridden) userAcceptSharedStatus = 'accepted';
-
-      const componentIdentifier = buildComponentIdentifier(
-        cv.component_type,
-        cv.component_name,
-        cv.component_maker || ''
-      );
-      const route = findRoute(componentRoutes);
-
-      db.upsertKeyReviewState({
-        category,
-        targetKind: 'component_key',
-        componentIdentifier,
-        propertyKey: cv.property_key,
-        fieldKey: cv.property_key,
-        componentValueId: cv.id,
-        componentIdentityId: cv.component_identity_id ?? null,
-        requiredLevel: route?.required_level ?? null,
-        availability: route?.availability ?? null,
-        difficulty: route?.difficulty ?? null,
-        effort: route?.effort ?? null,
-        aiMode: route?.model_ladder_today ?? null,
-        evidencePolicy: route?.insufficient_evidence_action ?? null,
-        minEvidenceRefsEffective: route?.llm_output_min_evidence_refs_required ?? 1,
-        sendMode: route?.all_source_data ? 'all_source_data' : (route?.single_source_data ? 'single_source_data' : null),
-        componentSendMode: route?.component_values_send?.includes('prime') ? 'component_values_prime_sources' : 'component_values',
-        selectedValue: cv.value,
-        selectedCandidateId: cv.accepted_candidate_id,
-        confidenceScore: cv.confidence || 0,
-        aiConfirmSharedStatus,
-        userAcceptSharedStatus,
-      });
-      keyReviewStateCount++;
-    }
-
-    // 9d: list_values → key_review_state (enum_key)
-    const allListValues = db.db.prepare(
-      'SELECT * FROM list_values WHERE category = ?'
-    ).all(db.category);
-
-    for (const lv of allListValues) {
-      let aiConfirmSharedStatus = null;
-      if (lv.overridden) {
-        // overridden → user accepted
-      } else if (lv.needs_review) {
-        aiConfirmSharedStatus = 'pending';
-      } else if (lv.source === 'pipeline') {
-        aiConfirmSharedStatus = 'pending';
-      } else if (lv.source === 'known_values') {
-        aiConfirmSharedStatus = 'not_run';
-      } else {
-        aiConfirmSharedStatus = 'not_run';
-      }
-
-      let userAcceptSharedStatus = null;
-      if (lv.overridden) userAcceptSharedStatus = 'accepted';
-
-      const enumValueNorm = lv.normalized_value || String(lv.value || '').trim().toLowerCase();
-      const route = findRoute(listRoutes);
-
-      db.upsertKeyReviewState({
-        category,
-        targetKind: 'enum_key',
-        fieldKey: lv.field_key,
-        enumValueNorm: enumValueNorm,
-        listValueId: lv.id,
-        enumListId: lv.list_id ?? null,
-        requiredLevel: route?.required_level ?? null,
-        availability: route?.availability ?? null,
-        difficulty: route?.difficulty ?? null,
-        effort: route?.effort ?? null,
-        aiMode: route?.model_ladder_today ?? null,
-        evidencePolicy: route?.insufficient_evidence_action ?? null,
-        minEvidenceRefsEffective: route?.llm_output_min_evidence_refs_required ?? 1,
-        sendMode: route?.all_source_data ? 'all_source_data' : (route?.single_source_data ? 'single_source_data' : null),
-        listSendMode: route?.list_values_send?.includes('prime') ? 'list_values_prime_sources' : 'list_values',
-        selectedValue: lv.value,
-        selectedCandidateId: lv.accepted_candidate_id,
-        aiConfirmSharedStatus,
-        userAcceptSharedStatus,
-      });
-      keyReviewStateCount++;
-    }
-
-  });
-  tx();
-
+function seedSourceAndKeyReview(_db, _category, _fieldMeta) {
   return {
-    keyReviewStateCount,
-    keyReviewAuditCount,
-    keyReviewRunCount,
+    keyReviewStateCount: 0,
+    keyReviewAuditCount: 0,
+    keyReviewRunCount: 0,
   };
 }
 

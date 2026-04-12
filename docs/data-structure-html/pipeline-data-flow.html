@@ -289,7 +289,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
       <!-- SQL indicator -->
       <circle cx="624" cy="360" r="5" fill="#22c55e"/>
-      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (38 tables) + AppDb (6 tables) = 44 base tables</text>
+      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (31 tables) + AppDb (7 tables) = 38 base tables</text>
 
       <!-- File indicator -->
       <circle cx="624" cy="384" r="5" fill="#f59e0b"/>
@@ -385,7 +385,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <li><code>category_authority/{category}/_generated/parse_templates.json</code> &mdash; extraction templates</li>
           <li><code>category_authority/{category}/_generated/key_migrations.json</code> &mdash; field key migration maps</li>
           <li><code>category_authority/{category}/_generated/component_db/*.json</code> &mdash; category-specific component dictionaries (varies by category)</li>
-          <li><code>item_field_state</code>, <code>component_values</code>, <code>list_values</code> &mdash; current product state for gap analysis</li>
+          <li><code>field_candidates</code>, <code>component_values</code>, <code>list_values</code> &mdash; current product state for gap analysis</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -771,7 +771,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-sql">SQL Writes &mdash; Product State</div>
         <ul class="op-list sql">
-          <li><code>UPSERT item_field_state</code> &mdash; accepted field values</li>
+          <li><code>UPSERT field_candidates</code> &mdash; candidate field values (sole data path for review grid)</li>
           <li><code>UPSERT component_values</code> &mdash; component-specific field values</li>
           <li><code>UPSERT list_values</code> &mdash; list-type field values</li>
           <li><code>UPSERT item_component_links</code> &mdash; product-to-component associations</li>

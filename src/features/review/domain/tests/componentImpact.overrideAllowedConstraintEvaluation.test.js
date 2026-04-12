@@ -6,7 +6,7 @@ import {
   createHarness,
 } from './helpers/componentImpactHarness.js';
 
-test('cascadeComponentChange override_allowed still evaluates constraints', async () => {
+test('cascadeComponentChange override_allowed evaluates constraints returning empty results (item_field_state retired)', async () => {
   const harness = await createHarness();
   try {
     harness.specDb.upsertItemComponentLink({
@@ -34,18 +34,6 @@ test('cascadeComponentChange override_allowed still evaluates constraints', asyn
       constraints: [],
     });
 
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-oc',
-      fieldKey: 'dpi',
-      value: '40000',
-      confidence: 0.8,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     const result = await cascadeComponentChange({
       storage: harness.storage,
       outputRoot: harness.outputRoot,
@@ -61,7 +49,8 @@ test('cascadeComponentChange override_allowed still evaluates constraints', asyn
     });
 
     assert.equal(result.propagation?.action, 'stale_only');
-    assert.equal(Array.isArray(result.propagation?.constraint_violations), true);
+    assert.deepEqual(result.propagation?.constraint_violations, []);
+    assert.deepEqual(result.propagation?.constraint_compliant, []);
   } finally {
     await cleanupHarness(harness);
   }

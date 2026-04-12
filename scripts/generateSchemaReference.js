@@ -144,8 +144,7 @@ function parseMigrationColumns(src) {
 const storeMap = {
   component_identity: 'componentStore', component_aliases: 'componentStore', component_values: 'componentStore',
   enum_lists: 'enumListStore', list_values: 'enumListStore',
-  item_field_state: 'itemStateStore', item_component_links: 'itemStateStore', item_list_links: 'itemStateStore', product_review_state: 'itemStateStore',
-  key_review_state: 'keyReviewStore', key_review_runs: 'keyReviewStore', key_review_run_sources: 'keyReviewStore', key_review_audit: 'keyReviewStore',
+  item_component_links: 'itemStateStore', item_list_links: 'itemStateStore',
   products: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
   llm_route_matrix: 'llmRouteSourceStore',
   bridge_events: 'sourceIntelStore',
@@ -176,14 +175,12 @@ const persistenceMap = {
   // Deferred (review grid + partial rebuild)
   component_identity: 'deferred', component_aliases: 'deferred',
   component_values: 'deferred', enum_lists: 'deferred',
-  list_values: 'deferred', item_field_state: 'deferred',
+  list_values: 'deferred',
   item_component_links: 'deferred', item_list_links: 'deferred',
-  product_review_state: 'deferred', key_review_state: 'deferred',
   component_review_queue: 'deferred',
   // DB-only
   curation_suggestions: 'db-only', billing_entries: 'db-only',
-  bridge_events: 'db-only', key_review_runs: 'db-only',
-  key_review_run_sources: 'db-only', key_review_audit: 'db-only',
+  bridge_events: 'db-only',
   knob_snapshots: 'db-only', query_index: 'db-only',
   url_index: 'db-only', prompt_index: 'db-only',
   // System
@@ -234,18 +231,6 @@ const lifecycleMap = {
     'yes',
     'Current source files drive a fresh rebuild, but runtime enum/list review edits are SQL-first and not auto-exported.'
   ),
-  item_field_state: life(
-    'out/{cat}/{pid}/latest/normalized.json + out/{cat}/{pid}/latest/provenance.json + category_authority/{cat}/_overrides/overrides.json',
-    'partial',
-    'yes',
-    'Fresh rebuild reflects current durable files, but some live review/AI state is not fully durable and these files are not narrow boot hash-gated surfaces.'
-  ),
-  product_review_state: life(
-    'category_authority/{cat}/_overrides/overrides.json',
-    'yes',
-    'yes',
-    'Consolidated overrides are the durable source for product review state. Existing-DB boot reconcile is indirect, but a fresh rebuild honors current file contents.'
-  ),
   item_component_links: life(
     'Derived from latest/normalized.json + component seed surfaces',
     'partial',
@@ -283,30 +268,6 @@ const lifecycleMap = {
     'yes',
     'Current JSON rows are honored on fresh rebuild; empty rows reset to defaults.',
     'yes'
-  ),
-  key_review_state: life(
-    'Derived from rebuilt item/component/list tables',
-    'partial',
-    'yes',
-    'The current state shell is reconstructed from rebuilt durable surfaces, but run/source/audit history is not.'
-  ),
-  key_review_runs: life(
-    'none',
-    'no',
-    'na',
-    'AI run history is SQL-only today.'
-  ),
-  key_review_run_sources: life(
-    'none',
-    'no',
-    'na',
-    'AI source-packet history is SQL-only today.'
-  ),
-  key_review_audit: life(
-    'none',
-    'no',
-    'na',
-    'Audit trail is SQL-only today.'
   ),
   billing_entries: life(
     'none (legacy _billing/ledger/*.jsonl import only)',
@@ -496,10 +457,9 @@ const lifecycleMap = {
 const specDbGroups = [
   { label: 'Component Identity', tables: ['component_identity', 'component_aliases', 'component_values'] },
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
-  { label: 'Item State', tables: ['item_field_state', 'item_component_links', 'item_list_links', 'product_review_state'] },
+  { label: 'Item State', tables: ['item_component_links', 'item_list_links'] },
   { label: 'Catalog & Queue', tables: ['products', 'curation_suggestions', 'component_review_queue'] },
   { label: 'LLM Route Configuration', tables: ['llm_route_matrix'] },
-  { label: 'Key Review', tables: ['key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit'] },
   { label: 'Billing', tables: ['billing_entries'] },
   { label: 'Bridge Events', tables: ['bridge_events'] },
   { label: 'Runs & Artifacts', tables: ['runs', 'run_artifacts'] },
@@ -1174,7 +1134,6 @@ const cqrsCompliance = {
   // JSON-backed ext-dep — rebuild correct, external fs dependency
   source_screenshots: true, source_videos: true,
   // DB-only intentionally ephemeral (telemetry / runtime queues / audit trails)
-  key_review_runs: true, key_review_run_sources: true, key_review_audit: true,
   knob_snapshots: true, query_index: true, url_index: true, prompt_index: true,
   bridge_events: true, curation_suggestions: true,
   // DB-only ephemeral — audit cache, rebuilt on re-run
@@ -1184,8 +1143,7 @@ const cqrsCompliance = {
   // Deferred — not scoped, missing write-back paths
   component_identity: false, component_aliases: false, component_values: false,
   enum_lists: false, list_values: false,
-  item_field_state: false, item_component_links: false, item_list_links: false,
-  product_review_state: false, key_review_state: false,
+  item_component_links: false, item_list_links: false,
   component_review_queue: false,
   // DB-only with durability gap
   billing_entries: false,

@@ -169,14 +169,8 @@ export function deriveSelectedStateDisplay(
   const cands = result?.candidates;
 
   if (pub && pub.colors.length > 0) {
-    // Build display name map from candidate metadata
-    const colorNameMap: Record<string, string> = {};
-    for (const c of cands?.colors ?? []) {
-      const meta = c.metadata as Record<string, unknown>;
-      const names = meta?.color_names as Record<string, string> | undefined;
-      if (names) Object.assign(colorNameMap, names);
-    }
-
+    const colorNameMap = pub.color_names ?? {};
+    const editionDetailsMap = pub.edition_details ?? {};
     const defaultColor = pub.default_color || pub.colors[0] || '';
     const colorCands = cands?.colors ?? [];
     const editionCands = cands?.editions ?? [];
@@ -185,21 +179,11 @@ export function deriveSelectedStateDisplay(
       toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
     );
 
-    // Build edition blocks from candidate metadata
     const editions: EditionBlock[] = pub.editions.map(slug => {
-      const edCand = editionCands.find(c => {
-        let items: string[];
-        try { items = typeof c.value === 'string' ? JSON.parse(c.value) : []; }
-        catch { items = []; }
-        if (!Array.isArray(items)) items = [c.value as string];
-        return items.includes(slug);
-      });
-      const meta = (edCand?.metadata ?? {}) as Record<string, unknown>;
-      const edDetails = meta?.edition_details as Record<string, { display_name?: string; colors?: string[] }> | undefined;
-      const edMeta = edDetails?.[slug];
+      const edMeta = editionDetailsMap[slug];
       return {
         slug,
-        displayName: (edMeta?.display_name as string) || '',
+        displayName: edMeta?.display_name || '',
         pairedColors: (edMeta?.colors ?? []).map((name: string) =>
           toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
         ),

@@ -7,7 +7,7 @@ import {
   createHarness,
 } from './helpers/componentImpactHarness.js';
 
-test('cascadeComponentChange authoritative updates linked items only and ignores unlinked value matches', async () => {
+test('cascadeComponentChange authoritative returns value_pushed with empty updated list (link isolation, item_field_state retired)', async () => {
   const harness = await createHarness();
   try {
     harness.specDb.upsertItemComponentLink({
@@ -20,41 +20,7 @@ test('cascadeComponentChange authoritative updates linked items only and ignores
       matchScore: 1,
     });
 
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-linked-only',
-      fieldKey: 'max_dpi',
-      value: '26000',
-      confidence: 0.9,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-unlinked-only',
-      fieldKey: 'sensor',
-      value: 'PAW3950',
-      confidence: 0.7,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-unlinked-only',
-      fieldKey: 'max_dpi',
-      value: '27000',
-      confidence: 0.7,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
-    await cascadeComponentChange({
+    const result = await cascadeComponentChange({
       storage: harness.storage,
       outputRoot: harness.outputRoot,
       category: harness.category,
@@ -68,10 +34,8 @@ test('cascadeComponentChange authoritative updates linked items only and ignores
       specDb: harness.specDb,
     });
 
-    const linked = harness.specDb.getItemFieldState('mouse-linked-only').find((row) => row.field_key === 'max_dpi');
-    const unlinked = harness.specDb.getItemFieldState('mouse-unlinked-only').find((row) => row.field_key === 'max_dpi');
-    assert.equal(linked?.value, '35000');
-    assert.equal(unlinked?.value, '27000');
+    assert.equal(result.propagation?.action, 'value_pushed');
+    assert.deepEqual(result.propagation?.updated, []);
   } finally {
     await cleanupHarness(harness);
   }

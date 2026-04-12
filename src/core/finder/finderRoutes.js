@@ -30,6 +30,22 @@ function cleanProductJsonCandidates(productId, fieldKeys) {
   } catch { /* product.json may not exist */ }
 }
 
+function cleanProductJsonPublishedFields(productId, fieldKeys) {
+  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    if (!data.fields) return;
+    let changed = false;
+    for (const key of fieldKeys) {
+      if (data.fields[key]) { delete data.fields[key]; changed = true; }
+    }
+    if (changed) {
+      data.updated_at = new Date().toISOString();
+      fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
+    }
+  } catch { /* product.json may not exist */ }
+}
+
 /**
  * Source-aware candidate cleanup — strips a specific source type from candidates
  * instead of blanket-deleting all candidates for a field.
@@ -70,25 +86,43 @@ function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType) {
     }
   }
 
-  // Same for product.json candidates[]
+  // After stripping, check which fields have no candidates remaining.
+  // If a field lost all candidates, the published value in fields[] is stale — clear it.
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
   try {
     const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
-    if (!data.candidates) return;
     let changed = false;
-    for (const key of fieldKeys) {
-      if (!Array.isArray(data.candidates[key])) continue;
-      const filtered = [];
-      for (const entry of data.candidates[key]) {
-        if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
-        const remaining = entry.sources.filter(s => s.source !== sourceType);
-        if (remaining.length === 0) { changed = true; continue; } // drop entry
-        entry.sources = remaining;
-        filtered.push(entry);
-        changed = true;
+
+    // Clean product.json candidates[]
+    if (data.candidates) {
+      for (const key of fieldKeys) {
+        if (!Array.isArray(data.candidates[key])) continue;
+        const filtered = [];
+        for (const entry of data.candidates[key]) {
+          if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
+          const remaining = entry.sources.filter(s => s.source !== sourceType);
+          if (remaining.length === 0) { changed = true; continue; }
+          entry.sources = remaining;
+          filtered.push(entry);
+          changed = true;
+        }
+        data.candidates[key] = filtered;
       }
-      data.candidates[key] = filtered;
     }
+
+    // WHY: If no candidates remain for a field after source stripping, the published
+    // value in fields[] is stale (set_union would merge into it on next run).
+    // Clear it so the next publish starts fresh.
+    if (data.fields) {
+      for (const key of fieldKeys) {
+        const remaining = specDb.getFieldCandidatesByProductAndField(productId, key);
+        if (remaining.length === 0 && data.fields[key]) {
+          delete data.fields[key];
+          changed = true;
+        }
+      }
+    }
+
     if (changed) {
       data.updated_at = new Date().toISOString();
       fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
@@ -321,6 +355,8 @@ export function createFinderRouteHandler(finderConfig) {
             specDb.deleteFieldCandidatesByProductAndField(productId, key);
           }
           cleanProductJsonCandidates(productId, fieldKeys);
+          // WHY: Blanket delete removes all candidates — published fields[] are now stale.
+          cleanProductJsonPublishedFields(productId, fieldKeys);
         }
 
         emitDataChange({

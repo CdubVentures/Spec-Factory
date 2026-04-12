@@ -12,7 +12,6 @@ import {
   hasKnownValue,
   hasActionableCandidate,
   ensureEnumValueCandidateInvariant,
-  isSharedLanePending,
   shouldIncludeEnumValueEntry,
 } from './candidateInfrastructure.js';
 
@@ -32,16 +31,9 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
       const normalized = String(row.value).trim().toLowerCase();
       if (!normalized) continue;
 
-      const enumKeyState = specDb.getKeyReviewState({
-        category,
-        targetKind: 'enum_key',
-        fieldKey: field,
-        enumValueNorm: normalized,
-        listValueId: row.id ?? null,
-      });
       const basePending = Boolean(row.needs_review);
-      const isPending = isSharedLanePending(enumKeyState, basePending);
       const source = row.source || 'known_values';
+      const isPending = basePending || source === 'manual';
       const confidence = isPending ? 0.6 : 1.0;
       const color = isPending ? 'yellow' : 'green';
 
@@ -97,9 +89,7 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
         candidates,
         normalized_value: row.normalized_value || null,
         enum_policy: row.enum_policy || null,
-        accepted_candidate_id: String(enumKeyState?.selected_candidate_id || '').trim()
-          || row.accepted_candidate_id
-          || null,
+        accepted_candidate_id: row.accepted_candidate_id || null,
       };
 
       // SpecDb enrichment: linked products and additional candidates

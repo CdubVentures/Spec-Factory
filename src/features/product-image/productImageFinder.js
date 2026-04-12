@@ -27,7 +27,9 @@ import {
   resolveViewConfig,
   migrateFromLegacyViews,
   CANONICAL_VIEW_KEYS,
+  accumulateVariantDiscoveryLog,
 } from './productImageLlmAdapter.js';
+import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { configInt } from '../../shared/settingsAccessor.js';
@@ -96,18 +98,85 @@ export function readImageDimensions(filePath) {
 
 /* ── Download helpers ──────────────────────────────────────────────── */
 
+/**
+ * Normalize a URL before fetching.
+ *
+ * CDNs serve resized/compressed variants via URL params. The LLM often
+ * returns these CDN URLs which give us tiny thumbnails. Strip sizing
+ * params to request the original full-resolution source.
+ *
+ * Known patterns:
+ * - Best Buy: .jpg%3BmaxHeight%3D1920%3BmaxWidth%3D900 or .jpg;maxHeight=1920;maxWidth=900
+ * - Shopify (Corsair retail): ?width=1946 or _1946x.png
+ * - Cloudinary: /w_800,h_600/ or /f_auto,q_auto/
+ */
+function normalizeImageUrl(raw) {
+  let url = raw;
+
+  try {
+    const parsed = new URL(url);
+
+    // 1. Best Buy: strip semicolon-delimited sizing from pathname
+    //    .jpg;maxHeight=1920;maxWidth=900 → .jpg
+    //    Also handles encoded form: .jpg%3BmaxHeight%3D1920
+    let pathname = decodeURIComponent(parsed.pathname);
+    const semiIdx = pathname.search(/;(max|min)(Height|Width)=/i);
+    if (semiIdx > 0) {
+      pathname = pathname.slice(0, semiIdx);
+    }
+    parsed.pathname = pathname;
+
+    // 2. Shopify: strip width/height resize params, keep version
+    if (parsed.hostname.includes('shopify') || parsed.hostname.includes('retail.corsair')) {
+      parsed.searchParams.delete('width');
+      parsed.searchParams.delete('height');
+    }
+
+    // 3. Strip format-override params that force low-quality output
+    if (parsed.searchParams.get('format') === 'webp') {
+      parsed.searchParams.delete('format');
+    }
+
+    url = parsed.href;
+  } catch { /* use as-is */ }
+
+  return url;
+}
+
+const DOWNLOAD_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  // WHY: Do NOT advertise avif/webp — CDNs auto-convert and serve tiny compressed
+  // versions. Request the original format (usually JPEG/PNG) for maximum file size.
+  'Accept': 'image/png,image/jpeg,*/*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'identity',
+};
+
 function downloadFile(url, destPath) {
+  const normalizedUrl = normalizeImageUrl(url);
+  // Set Referer to the origin of the image URL (CDNs often check this)
+  let referer = '';
+  try { referer = new URL(normalizedUrl).origin + '/'; } catch { /* */ }
+  const headers = { ...DOWNLOAD_HEADERS, ...(referer ? { Referer: referer } : {}) };
+
   return new Promise((resolve) => {
-    const proto = url.startsWith('https') ? https : http;
-    const req = proto.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } }, (res) => {
+    const proto = normalizedUrl.startsWith('https') ? https : http;
+    const req = proto.get(normalizedUrl, { headers }, (res) => {
       if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-        return downloadFile(new URL(res.headers.location, url).href, destPath).then(resolve);
+        return downloadFile(new URL(res.headers.location, normalizedUrl).href, destPath).then(resolve);
       }
       if (res.statusCode !== 200) {
         res.resume();
         return resolve({ ok: false, error: `HTTP ${res.statusCode}` });
       }
       const contentType = res.headers['content-type'] || '';
+
+      // Guard: if the response isn't an image content-type, don't save it
+      if (contentType && !contentType.startsWith('image/')) {
+        res.resume();
+        return resolve({ ok: false, error: `not an image: ${contentType}` });
+      }
+
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       const stream = fs.createWriteStream(destPath);
       let bytes = 0;
@@ -195,7 +264,7 @@ export function buildVariantList({ colors = [], colorNames = {}, editions = {} }
 async function runSingleVariant({
   product, variant, viewConfig, minWidth, minHeight, minFileSize,
   callLlm, productRoot, specDb, actualModel, actualFallbackUsed,
-  logger, siblingsExcluded,
+  logger, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
 }) {
   let response;
   try {
@@ -205,6 +274,9 @@ async function runSingleVariant({
       variantType: variant.type,
       viewConfig, minWidth, minHeight,
       siblingsExcluded: siblingsExcluded || [],
+      familyModelCount: familyModelCount || 1,
+      ambiguityLevel: ambiguityLevel || 'easy',
+      previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
     });
   } catch (err) {
     logger?.error?.('pif_llm_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
@@ -353,6 +425,22 @@ export async function runProductImageFinder({
   const minHeight = parseInt(finderStore.getSetting('minHeight'), 10) || 600;
   const minFileSize = parseInt(finderStore.getSetting('minFileSize'), 10) || 50000;
 
+  // Resolve identity ambiguity from product family
+  let familyModelCount = 1;
+  let ambiguityLevel = 'easy';
+  try {
+    const ambiguitySnapshot = await resolveIdentityAmbiguitySnapshot({
+      config,
+      category: product.category,
+      identityLock: { brand: product.brand, base_model: product.base_model },
+      specDb,
+    });
+    familyModelCount = ambiguitySnapshot.family_model_count || 1;
+    ambiguityLevel = ambiguitySnapshot.ambiguity_level || 'easy';
+  } catch {
+    // Non-fatal — fall back to easy
+  }
+
   // Read CEF data — gate: must have colors
   const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
   let cefData;
@@ -388,6 +476,10 @@ export async function runProductImageFinder({
     return { images: [], rejected: true, rejections: [{ reason_code: 'unknown_variant', message: `Variant not found: ${variantKey}` }] };
   }
 
+  // Read previous PIF runs for discovery log feedback
+  const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+  const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
+
   // Build LLM caller
   const callLlm = _callLlmOverride
     ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
@@ -414,10 +506,13 @@ export async function runProductImageFinder({
       onVariantProgress?.(i, variants.length, variant.key);
 
       try {
+        // Accumulate discovery logs from previous runs for this specific variant
+        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key);
+
         const result = await runSingleVariant({
           product, variant, viewConfig, minWidth, minHeight, minFileSize,
           callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
-          siblingsExcluded,
+          siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
         });
 
         allImages.push(...result.images);
@@ -429,6 +524,7 @@ export async function runProductImageFinder({
         const systemPrompt = buildProductImageFinderPrompt({
           product, variantLabel: variant.label, variantType: variant.type,
           viewConfig, minWidth, minHeight, siblingsExcluded,
+          familyModelCount, ambiguityLevel, previousDiscovery,
         });
 
         const merged = mergeProductImageDiscovery({

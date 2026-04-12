@@ -91,11 +91,7 @@ function hasActionablePending(state: ComponentPropertyState | null | undefined):
     const candidateId = String(candidate?.candidate_id || '').trim();
     return Boolean(candidateId) && hasKnownValue(candidate?.value);
   });
-  return candidateRows.some((candidate) => {
-    if (candidate?.is_synthetic_selected) return false;
-    const sharedStatus = String(candidate?.shared_review_status || '').trim().toLowerCase();
-    return sharedStatus ? sharedStatus === 'pending' : true;
-  });
+  return candidateRows.some((candidate) => !candidate?.is_synthetic_selected);
 }
 
 function PropertyCard({
@@ -838,11 +834,7 @@ export function ComponentReviewDrawer({
       const candidateId = String(candidate?.candidate_id || '').trim();
       return Boolean(candidateId) && hasKnownValue(candidate?.value);
     });
-    const pendingCandidates = allCandidates.filter((candidate) => {
-      if (candidate?.is_synthetic_selected) return false;
-      const sharedStatus = String(candidate?.shared_review_status || '').trim().toLowerCase();
-      return !sharedStatus || sharedStatus === 'pending';
-    });
+    const pendingCandidates = allCandidates.filter((candidate) => !candidate?.is_synthetic_selected);
     return [...new Set(
       pendingCandidates
       .map((candidate) => String(candidate?.candidate_id || '').trim())

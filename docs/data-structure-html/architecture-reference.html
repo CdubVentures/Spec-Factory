@@ -258,9 +258,9 @@ svg text{font-family:var(--sans)}
   <div class="surface-head">
     <h2>Database Surfaces</h2>
     <span class="tag tag-cols">2 databases</span>
-    <span class="tag" style="background:var(--green-s);color:var(--green)">44 base tables</span>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">38 base tables</span>
   </div>
-  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). 44 tables total. Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
+  <p class="surface-desc">All mutable domain state lives in SQLite. Two database surfaces partition data by scope: per-category domain data (SpecDb) and global application data (AppDb). 38 tables total (6 legacy tables retired in Phase 1b). Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
 
   <table class="col-table" style="margin-bottom:24px">
     <thead><tr><th>Database</th><th>Scope</th><th>Path</th><th>Tables</th><th>Purpose</th></tr></thead>
@@ -271,14 +271,13 @@ svg text{font-family:var(--sans)}
   </table>
 
   <div class="domain-group">
-    <div class="domain-label">SpecDb &mdash; Tables by Domain (36 tables)</div>
+    <div class="domain-label">SpecDb &mdash; Tables by Domain (30 tables)</div>
     <table class="col-table">
       <thead><tr><th>Domain</th><th>Tables</th><th>Store Module</th></tr></thead>
       <tbody>
         <tr><td class="cn">Components</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">componentStore</td></tr>
         <tr><td class="cn">Enum Lists</td><td class="ct">enum_lists, list_values</td><td class="cc">enumListStore</td></tr>
-        <tr><td class="cn">Item State</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">itemStateStore</td></tr>
-        <tr><td class="cn">Key Review</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">keyReviewStore</td></tr>
+        <tr><td class="cn">Item State</td><td class="ct">item_component_links, item_list_links</td><td class="cc">itemStateStore</td></tr>
         <tr><td class="cn">Run Metadata</td><td class="ct">runs</td><td class="cc">runMetaStore</td></tr>
         <tr><td class="cn">Run Artifacts</td><td class="ct">run_artifacts</td><td class="cc">runArtifactStore</td></tr>
         <tr><td class="cn">Billing</td><td class="ct">billing_entries</td><td class="cc">billingStore</td></tr>
@@ -338,8 +337,8 @@ svg text{font-family:var(--sans)}
     <details class="card" data-search="product.json cross-run accumulator">
       <summary><span class="tname">product.json</span><span class="tags"><span class="tag tag-path">.workspace/products/{pid}/product.json</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
       <div class="card-body">
-        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Cross-run accumulator &mdash; grows after each run with field values, evidence, confidence scores. Created at product add time. SQL (products + item_field_state) is the SSOT; this file is the rebuild safety net.</p>
-        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/writeProductCheckpoint.js<br><strong>Mutable?</strong> Yes (grows after each run)<br><strong>In SQL?</strong> Yes &mdash; products, item_field_state</p>
+        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Cross-run accumulator &mdash; grows after each run with field values, evidence, confidence scores. Created at product add time. SQL (products + field_candidates) is the SSOT; this file is the rebuild safety net.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/writeProductCheckpoint.js<br><strong>Mutable?</strong> Yes (grows after each run)<br><strong>In SQL?</strong> Yes &mdash; products, field_candidates</p>
       </div>
     </details>
 
@@ -610,10 +609,9 @@ svg text{font-family:var(--sans)}
       <tr><td class="cn">enumListStore</td><td class="ct">enum_lists, list_values</td><td class="cc">2</td></tr>
       <tr><td class="cn">fieldKeyOrderStore</td><td class="ct">field_key_order</td><td class="cc">1</td></tr>
       <tr><td class="cn">fieldStudioMapStore</td><td class="ct">field_studio_map</td><td class="cc">1</td></tr>
-      <tr><td class="cn">itemStateStore</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">4</td></tr>
-      <tr><td class="cn">keyReviewStore</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">4</td></tr>
+      <tr><td class="cn">itemStateStore</td><td class="ct">item_component_links, item_list_links</td><td class="cc">2</td></tr>
       <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix</td><td class="cc">1</td></tr>
-      <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from item_field_state</td><td class="cc">Operational</td></tr>
+      <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from field_candidates</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">purgeStore</td><td class="ct" style="opacity:0.7">Cross-store: bulk category/product cleanup in referential integrity order</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">5</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>

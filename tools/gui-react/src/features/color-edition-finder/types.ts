@@ -76,11 +76,13 @@ export interface CefCandidateEntry {
   readonly submitted_at: string;
 }
 
-/** Published truth derived from resolved field_candidates. */
+/** Published truth from summary table + detail from latest run. */
 export interface CefPublishedState {
   readonly colors: readonly string[];
   readonly editions: readonly string[];
   readonly default_color: string;
+  readonly color_names?: Readonly<Record<string, string>>;
+  readonly edition_details?: Readonly<Record<string, { readonly display_name?: string; readonly colors?: readonly string[] }>>;
 }
 
 export interface ColorEditionFinderResult {

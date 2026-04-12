@@ -14,13 +14,11 @@ import { expandListLinkValues } from './specDbHelpers.js';
 import { applyMigrations } from './specDbMigrations.js';
 import { prepareStatements } from './specDbStatements.js';
 import {
-  cleanupLegacyIdentityFallbackRows as _cleanupLegacy,
   assertStrictIdentitySlotIntegrity as _assertIntegrity
 } from './specDbIntegrity.js';
 import { createItemStateStore } from './stores/itemStateStore.js';
 import { createComponentStore } from './stores/componentStore.js';
 import { createEnumListStore } from './stores/enumListStore.js';
-import { createKeyReviewStore } from './stores/keyReviewStore.js';
 import { createBillingStore } from './stores/billingStore.js';
 import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
@@ -54,7 +52,6 @@ export class SpecDb {
     this.category = category;
 
     applyMigrations(this.db);
-    this.cleanupLegacyIdentityFallbackRows();
     this.assertStrictIdentitySlotIntegrity();
 
 
@@ -67,17 +64,12 @@ export class SpecDb {
     this._enumListStore = createEnumListStore({
       db: this.db, category: this.category,
       stmts: { _upsertEnumList: this._upsertEnumList, _upsertListValue: this._upsertListValue },
-      deleteKeyReviewStateRowsByIds: (...args) => this._keyReviewStore.deleteKeyReviewStateRowsByIds(...args)
     });
     this._itemStateStore = createItemStateStore({
       db: this.db, category: this.category,
-      stmts: { _upsertItemFieldState: this._upsertItemFieldState, _upsertItemComponentLink: this._upsertItemComponentLink, _upsertItemListLink: this._upsertItemListLink },
+      stmts: { _upsertItemComponentLink: this._upsertItemComponentLink, _upsertItemListLink: this._upsertItemListLink },
       expandListLinkValues,
       getListValueByFieldAndValue: (...args) => this._enumListStore.getListValueByFieldAndValue(...args)
-    });
-    this._keyReviewStore = createKeyReviewStore({
-      db: this.db, category: this.category,
-      stmts: { _insertKeyReviewState: this._insertKeyReviewState, _insertKeyReviewRun: this._insertKeyReviewRun, _insertKeyReviewRunSource: this._insertKeyReviewRunSource, _insertKeyReviewAudit: this._insertKeyReviewAudit }
     });
     this._billingStore = createBillingStore({
       db: this.db,
@@ -195,10 +187,6 @@ export class SpecDb {
         _getFieldCandidatesStats: this._getFieldCandidatesStats,
       },
     });
-  }
-
-  cleanupLegacyIdentityFallbackRows() {
-    return _cleanupLegacy(this.db);
   }
 
   assertStrictIdentitySlotIntegrity() {
@@ -325,8 +313,6 @@ export class SpecDb {
   backfillEnumListIds() { this._enumListStore.backfillEnumListIds(); }
   hardenListValueOwnership() { this._enumListStore.hardenListValueOwnership(); }
 
-  backfillKeyReviewSlotIds() { return this._keyReviewStore.backfillKeyReviewSlotIds(); }
-
   ensureEnumList(fk, s) { return this._enumListStore.ensureEnumList(fk, s); }
   getEnumList(fk) { return this._enumListStore.getEnumList(fk); }
   getEnumListById(id) { return this._enumListStore.getEnumListById(id); }
@@ -336,13 +322,8 @@ export class SpecDb {
   getListValueByFieldAndValue(fk, v) { return this._enumListStore.getListValueByFieldAndValue(fk, v); }
   getListValueById(id) { return this._enumListStore.getListValueById(id); }
 
-  // --- Item state ---
+  // --- Item links ---
 
-  upsertItemFieldState(opts) { this._itemStateStore.upsertItemFieldState(opts); }
-  getItemFieldState(productId) { return this._itemStateStore.getItemFieldState(productId); }
-  getItemFieldStateById(id) { return this._itemStateStore.getItemFieldStateById(id); }
-  getItemFieldStateByProductAndField(pid, fk) { return this._itemStateStore.getItemFieldStateByProductAndField(pid, fk); }
-  markItemFieldStateReviewComplete(pid, fk) { this._itemStateStore.markItemFieldStateReviewComplete(pid, fk); }
   upsertItemComponentLink(opts) { this._itemStateStore.upsertItemComponentLink(opts); }
   upsertItemListLink(opts) { this._itemStateStore.upsertItemListLink(opts); }
   removeItemListLinksForField(productId, fieldKey) { this._itemStateStore.removeItemListLinksForField(productId, fieldKey); }
@@ -351,11 +332,10 @@ export class SpecDb {
   getItemListLinks(productId) { return this._itemStateStore.getItemListLinks(productId); }
   getProvenanceForProduct(cat, productId) { return this._provenanceStore.getProvenanceForProduct(cat ?? this.category, productId); }
   getNormalizedForProduct(productId) {
-    const rows = this.getItemFieldState(productId);
     const product = this.getProduct(productId);
     return {
       identity: { brand: product?.brand ?? '', base_model: product?.base_model ?? '', model: product?.model ?? '', variant: product?.variant ?? '' },
-      fields: Object.fromEntries(rows.filter(r => r.value != null).map(r => [r.field_key, r.value])),
+      fields: {},
     };
   }
   // WHY: Stubs for review grid pre-wiring. Will be backed by real data source later.
@@ -368,17 +348,8 @@ export class SpecDb {
   getCandidatesForComponentProperty() { return []; }
   getProductsByListValueId(id) { return this._itemStateStore.getProductsByListValueId(id); }
   getProductsForListValue(fk, v) { return this._itemStateStore.getProductsForListValue(fk, v); }
-  getProductsForFieldValue(fk, v) { return this._itemStateStore.getProductsForFieldValue(fk, v); }
   getCandidatesByListValue() { return []; }
   getCandidatesForFieldValue() { return []; }
-  getItemFieldStateForProducts(pids, fks) { return this._itemStateStore.getItemFieldStateForProducts(pids, fks); }
-  getDistinctItemFieldValues(fk) { return this._itemStateStore.getDistinctItemFieldValues(fk); }
-
-  // WHY: Phase E2 — product review state + override fields for SQL-based override reading
-  upsertProductReviewState(opts) { this._itemStateStore.upsertProductReviewState(opts); }
-  getProductReviewState(pid) { return this._itemStateStore.getProductReviewState(pid); }
-  listApprovedProductIds() { return this._itemStateStore.listApprovedProductIds(); }
-  getOverriddenFieldsForProduct(pid) { return this._itemStateStore.getOverriddenFieldsForProduct(pid); }
 
   getComponentTypeList() { return this._componentStore.getComponentTypeList(); }
   getPropertyColumnsForType(t) { return this._componentStore.getPropertyColumnsForType(t); }
@@ -399,9 +370,6 @@ export class SpecDb {
   updateComponentReviewStatusById(id, s) { this._componentStore.updateComponentReviewStatusById(id, s); }
   updateComponentValueNeedsReview(id, nr) { this._componentStore.updateComponentValueNeedsReview(id, nr); }
 
-  deleteKeyReviewStateRowsByIds(stateIds) { return this._keyReviewStore.deleteKeyReviewStateRowsByIds(stateIds); }
-
-  deleteKeyReviewStatesByTargetKinds(category, targetKinds) { return this._purgeStore.deleteKeyReviewStatesByTargetKinds(category, targetKinds); }
   purgeCategoryState(category) { return this._purgeStore.purgeCategoryState(category); }
   purgeProductReviewState(category, productId) { return this._purgeStore.purgeProductReviewState(category, productId); }
 
@@ -410,239 +378,21 @@ export class SpecDb {
   renameListValue(fieldKey, oldValue, newValue, timestamp) { return this._enumListStore.renameListValue(fieldKey, oldValue, newValue, timestamp); }
   renameListValueById(listValueId, newValue, timestamp) { return this._enumListStore.renameListValueById(listValueId, newValue, timestamp); }
 
-  /** Update item_field_state.value from oldValue to newValue for all matching products.
-   *  Returns the list of affected product_ids. */
-  renameFieldValueInItems(fk, oldV, newV) { return this._itemStateStore.renameFieldValueInItems(fk, oldV, newV); }
-  removeFieldValueFromItems(fk, v) { return this._itemStateStore.removeFieldValueFromItems(fk, v); }
   removeListLinks(fk, v) { this._itemStateStore.removeListLinks(fk, v); }
   updateItemComponentLinksByIdentity(t, on, om, nn, nm) { this._itemStateStore.updateItemComponentLinksByIdentity(t, on, om, nn, nm); }
-  getItemFieldStateIdByProductAndField(pid, fk) { return this._itemStateStore.getItemFieldStateIdByProductAndField(pid, fk); }
-  setItemFieldNeedsAiReview(id) { this._itemStateStore.setItemFieldNeedsAiReview(id); }
 
   // --- Component cascade helpers ---
 
-  /**
-   * For an authoritative component property, push the new value into every
-   * linked product's item_field_state row for that property key.
-   * Returns the list of affected product_ids.
-   */
   pushAuthoritativeValueToLinkedProducts(componentType, componentName, componentMaker, propertyKey, newValue) {
-    const linkRows = this.getProductsForComponent(componentType, componentName, componentMaker || '');
-    if (linkRows.length === 0) return [];
-    const productIds = linkRows.map(r => r.product_id);
-    const tx = this.db.transaction(() => {
-      for (const pid of productIds) {
-        this.db.prepare(`
-          INSERT INTO item_field_state (
-            category, product_id, field_key, value, confidence, source,
-            accepted_candidate_id, overridden, needs_ai_review, ai_review_complete
-          ) VALUES (?, ?, ?, ?, ?, 'component_db', NULL, 0, 0, 0)
-          ON CONFLICT(category, product_id, field_key) DO UPDATE SET
-            value = excluded.value,
-            confidence = excluded.confidence,
-            source = 'component_db',
-            accepted_candidate_id = NULL,
-            overridden = 0,
-            needs_ai_review = 0,
-            ai_review_complete = 0,
-            updated_at = datetime('now')
-        `).run(
-          this.category,
-          pid,
-          propertyKey,
-          newValue ?? null,
-          1.0
-        );
-      }
-    });
-    tx();
-    return productIds;
+    return [];
   }
 
-  /**
-   * For bound/range variance policies, evaluate each linked product's current
-   * value and set or clear needs_ai_review accordingly.
-   * Returns { violations: string[], compliant: string[] } (product_ids).
-   */
   evaluateAndFlagLinkedProducts(componentType, componentName, componentMaker, propertyKey, newComponentValue, variancePolicy) {
-    const linkRows = this.getProductsForComponent(componentType, componentName, componentMaker || '');
-    if (linkRows.length === 0) return { violations: [], compliant: [] };
-    const productIds = linkRows.map(r => r.product_id);
-    const fieldStates = this.getItemFieldStateForProducts(productIds, [propertyKey]);
-    // Build a lookup: product_id → current value
-    const valueMap = new Map();
-    for (const fs of fieldStates) {
-      valueMap.set(fs.product_id, fs.value);
-    }
-    const violations = [];
-    const compliant = [];
-    // Inline quick variance check (mirrors varianceEvaluator logic, avoids circular import)
-    const skipVals = new Set(['', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
-    const parseNum = (v) => {
-      if (v == null) return NaN;
-      const s = String(v).trim().replace(/,/g, '').replace(/\s+/g, '');
-      const c = s.replace(/[a-zA-Z%°]+$/, '');
-      return c ? Number(c) : NaN;
-    };
-    const isSkip = (v) => v == null || skipVals.has(String(v).trim().toLowerCase());
-    const dbStr = String(newComponentValue ?? '').trim();
-    const dbNum = parseNum(dbStr);
-    const tx = this.db.transaction(() => {
-      for (const pid of productIds) {
-        const prodVal = valueMap.get(pid);
-        // Skip if either side is unknown/missing
-        if (isSkip(newComponentValue) || isSkip(prodVal)) {
-          compliant.push(pid);
-          this.db.prepare(
-            'UPDATE item_field_state SET needs_ai_review = 0, updated_at = datetime(\'now\') WHERE category = ? AND product_id = ? AND field_key = ?'
-          ).run(this.category, pid, propertyKey);
-          continue;
-        }
-        const prodStr = String(prodVal).trim();
-        const prodNum = parseNum(prodStr);
-        let isViolation = false;
-        if (variancePolicy === 'upper_bound') {
-          if (!Number.isNaN(dbNum) && !Number.isNaN(prodNum)) {
-            isViolation = prodNum > dbNum;
-          }
-        } else if (variancePolicy === 'lower_bound') {
-          if (!Number.isNaN(dbNum) && !Number.isNaN(prodNum)) {
-            isViolation = prodNum < dbNum;
-          }
-        } else if (variancePolicy === 'range') {
-          if (!Number.isNaN(dbNum) && !Number.isNaN(prodNum)) {
-            const margin = Math.abs(dbNum) * 0.10;
-            isViolation = prodNum < (dbNum - margin) || prodNum > (dbNum + margin);
-          }
-        }
-        if (isViolation) {
-          violations.push(pid);
-          this.db.prepare(
-            'UPDATE item_field_state SET needs_ai_review = 1, updated_at = datetime(\'now\') WHERE category = ? AND product_id = ? AND field_key = ?'
-          ).run(this.category, pid, propertyKey);
-        } else {
-          compliant.push(pid);
-          this.db.prepare(
-            'UPDATE item_field_state SET needs_ai_review = 0, updated_at = datetime(\'now\') WHERE category = ? AND product_id = ? AND field_key = ?'
-          ).run(this.category, pid, propertyKey);
-        }
-      }
-    });
-    tx();
-    return { violations, compliant };
+    return { violations: [], compliant: [] };
   }
 
-  /**
-   * Re-evaluate constraint expressions for linked products after a component
-   * property changes. Flags products that violate any constraint with needs_ai_review=1.
-   * Returns { violations: string[], compliant: string[] } (product_ids).
-   */
   evaluateConstraintsForLinkedProducts(componentType, componentName, componentMaker, propertyKey, constraints) {
-    if (!Array.isArray(constraints) || constraints.length === 0) return { violations: [], compliant: [] };
-    const linkRows = this.getProductsForComponent(componentType, componentName, componentMaker || '');
-    if (linkRows.length === 0) return { violations: [], compliant: [] };
-    const productIds = linkRows.map(r => r.product_id);
-
-    // Get current component properties as a map
-    const compRows = this.getComponentValuesWithMaker(componentType, componentName, componentMaker || '');
-    const componentProps = {};
-    for (const row of compRows) {
-      componentProps[row.property_key] = row.value;
-    }
-
-    // For each product, get all field state values and evaluate constraints
-    const violations = [];
-    const compliant = [];
-    const tx = this.db.transaction(() => {
-      for (const pid of productIds) {
-        const fieldRows = this.db
-          .prepare('SELECT field_key, value FROM item_field_state WHERE category = ? AND product_id = ?')
-          .all(this.category, pid);
-        const productValues = {};
-        for (const fr of fieldRows) {
-          productValues[fr.field_key] = fr.value;
-        }
-
-        // Evaluate each constraint expression
-        let hasViolation = false;
-        for (const expr of constraints) {
-          if (!expr || typeof expr !== 'string') continue;
-          const result = this._evaluateConstraintExpr(expr, componentProps, productValues);
-          if (result !== null && !result) {
-            hasViolation = true;
-            break;
-          }
-        }
-
-        if (hasViolation) {
-          violations.push(pid);
-          this.db.prepare(
-            'UPDATE item_field_state SET needs_ai_review = 1, updated_at = datetime(\'now\') WHERE category = ? AND product_id = ? AND field_key = ?'
-          ).run(this.category, pid, propertyKey);
-        } else {
-          compliant.push(pid);
-          this.db.prepare(
-            'UPDATE item_field_state SET needs_ai_review = 0, updated_at = datetime(\'now\') WHERE category = ? AND product_id = ? AND field_key = ?'
-          ).run(this.category, pid, propertyKey);
-        }
-      }
-    });
-    tx();
-    return { violations, compliant };
-  }
-
-  /**
-   * Minimal inline constraint expression evaluator (avoids importing from engine/).
-   * Returns true=pass, false=fail, null=skip (unresolvable or unknown values).
-   */
-  _evaluateConstraintExpr(expr, componentProps, productValues) {
-    const ops = ['<=', '>=', '!=', '==', '<', '>'];
-    const trimmed = (expr || '').trim();
-    let parsed = null;
-    for (const op of ops) {
-      const idx = trimmed.indexOf(op);
-      if (idx > 0) {
-        const left = trimmed.slice(0, idx).trim();
-        const right = trimmed.slice(idx + op.length).trim();
-        if (left && right) { parsed = { left, op, right }; break; }
-      }
-    }
-    if (!parsed) return null;
-
-    const resolve = (name) => {
-      if (/^-?\d+(\.\d+)?$/.test(name)) return Number(name);
-      if (componentProps[name] !== undefined) return componentProps[name];
-      const norm = name.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
-      if (componentProps[norm] !== undefined) return componentProps[norm];
-      if (productValues[name] !== undefined) return productValues[name];
-      if (productValues[norm] !== undefined) return productValues[norm];
-      return undefined;
-    };
-
-    const leftVal = resolve(parsed.left);
-    const rightVal = resolve(parsed.right);
-    if (leftVal === undefined || rightVal === undefined) return null;
-    const skipSet = new Set(['unknown', 'n/a', '']);
-    if (skipSet.has(String(leftVal).toLowerCase().trim()) || skipSet.has(String(rightVal).toLowerCase().trim())) return null;
-
-    const toNum = (v) => { const n = Number(String(v).trim().replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
-    const ln = toNum(leftVal);
-    const rn = toNum(rightVal);
-    if (ln !== null && rn !== null) {
-      switch (parsed.op) {
-        case '<=': return ln <= rn; case '>=': return ln >= rn;
-        case '<': return ln < rn; case '>': return ln > rn;
-        case '==': return ln === rn; case '!=': return ln !== rn;
-      }
-    }
-    const ls = String(leftVal).toLowerCase().trim();
-    const rs = String(rightVal).toLowerCase().trim();
-    switch (parsed.op) {
-      case '<=': return ls <= rs; case '>=': return ls >= rs;
-      case '<': return ls < rs; case '>': return ls > rs;
-      case '==': return ls === rs; case '!=': return ls !== rs;
-    }
-    return null;
+    return { violations: [], compliant: [] };
   }
 
   // --- Product / Curation / Component Review ---
@@ -661,8 +411,6 @@ export class SpecDb {
   updateComponentReviewQueueMatchedComponent(cat, rid, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponent(cat, rid, v); }
   updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v); }
 
-  getProductsByFieldValue(fk, v) { return this._itemStateStore.getProductsByFieldValue(fk, v); }
-
   // --- LLM Route Matrix ---
 
   ensureDefaultLlmRouteMatrix() { this._llmRouteSourceStore.ensureDefaultLlmRouteMatrix(); }
@@ -670,34 +418,12 @@ export class SpecDb {
   saveLlmRouteMatrix(rows) { return this._llmRouteSourceStore.saveLlmRouteMatrix(rows); }
   resetLlmRouteMatrixToDefaults() { return this._llmRouteSourceStore.resetLlmRouteMatrixToDefaults(); }
 
-  // --- Key Review Methods ---
-
-  upsertKeyReviewState(row) { return this._keyReviewStore.upsertKeyReviewState(row); }
-  getKeyReviewState(opts) { return this._keyReviewStore.getKeyReviewState(opts); }
-  getKeyReviewStateById(id) { return this._keyReviewStore.getKeyReviewStateById(id); }
-  updateKeyReviewSelectedCandidate(opts) { this._keyReviewStore.updateKeyReviewSelectedCandidate(opts); }
-  getKeyReviewStatesForItem(id) { return this._keyReviewStore.getKeyReviewStatesForItem(id); }
-  getKeyReviewStatesForField(fk, tk) { return this._keyReviewStore.getKeyReviewStatesForField(fk, tk); }
-  getKeyReviewStatesForComponent(ci) { return this._keyReviewStore.getKeyReviewStatesForComponent(ci); }
-  getKeyReviewStatesForEnum(fk) { return this._keyReviewStore.getKeyReviewStatesForEnum(fk); }
-  updateKeyReviewAiConfirm(opts) { this._keyReviewStore.updateKeyReviewAiConfirm(opts); }
-  updateKeyReviewUserAccept(opts) { this._keyReviewStore.updateKeyReviewUserAccept(opts); }
-  updateKeyReviewOverrideAi(opts) { this._keyReviewStore.updateKeyReviewOverrideAi(opts); }
-  insertKeyReviewRun(opts) { return this._keyReviewStore.insertKeyReviewRun(opts); }
-  insertKeyReviewRunSource(opts) { this._keyReviewStore.insertKeyReviewRunSource(opts); }
-  insertKeyReviewAudit(opts) { this._keyReviewStore.insertKeyReviewAudit(opts); }
-
-  pruneOrphanCandidateReferences() { return { pruned: 0 }; }
-  getKeyReviewStateForComponentValue(cvId) { return this._keyReviewStore.getKeyReviewStateForComponentValue(cvId); }
-  updateKeyReviewComponentIdentifier(oldId, newId) { this._keyReviewStore.updateKeyReviewComponentIdentifier(oldId, newId); }
-
   counts() {
     const tables = [
       'component_values', 'component_identity',
-      'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
+      'component_aliases', 'enum_lists', 'list_values', 'item_component_links',
       'item_list_links', 'products',
       'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
-      'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries',
       'color_edition_finder',
       'color_edition_finder_runs'
@@ -718,8 +444,6 @@ export class SpecDb {
     if (ci.c > 0) return true;
     const lv = this.db.prepare('SELECT COUNT(*) as c FROM list_values WHERE category = ?').get(this.category);
     if (lv.c > 0) return true;
-    const ifs = this.db.prepare('SELECT COUNT(*) as c FROM item_field_state WHERE category = ?').get(this.category);
-    if (ifs.c > 0) return true;
     try {
       const prod = this.db.prepare('SELECT COUNT(*) as c FROM products WHERE category = ?').get(this.category);
       if (prod.c > 0) return true;

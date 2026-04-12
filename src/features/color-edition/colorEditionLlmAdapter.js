@@ -46,8 +46,10 @@ export function accumulateUrlsChecked(previousRuns) {
 
 /**
  * Build the known-inputs block for run N+1.
- * Extracts known_colors/known_color_names/known_editions from the latest
- * run's selected state, plus accumulated urls/domains from all runs.
+ * Accumulates colors, color_names, and editions across ALL non-rejected
+ * runs (not just the latest). Same growth pattern as URLs — a color
+ * found in run 1 stays visible even if run 2 missed it. The candidate
+ * gate is the safety net, not the prompt.
  *
  * @param {object[]} previousRuns
  * @returns {object} { knownColors, knownColorNames, knownEditions, urlsAlreadyChecked, domainsAlreadyChecked }
@@ -63,14 +65,35 @@ function buildKnownInputs(previousRuns) {
     };
   }
 
-  const latest = previousRuns[previousRuns.length - 1];
-  const sel = latest?.selected || {};
   const { urlsAlreadyChecked, domainsAlreadyChecked } = accumulateUrlsChecked(previousRuns);
 
+  // Union colors, color_names, editions across all non-rejected runs
+  const colorSet = new Set();
+  const colorNamesMap = {};
+  const editionSet = new Set();
+
+  for (const run of previousRuns) {
+    if (run.status === 'rejected') continue;
+    const sel = run.selected || {};
+
+    if (Array.isArray(sel.colors)) {
+      for (const c of sel.colors) colorSet.add(c);
+    }
+    if (sel.color_names && typeof sel.color_names === 'object') {
+      for (const [atom, name] of Object.entries(sel.color_names)) {
+        // Latest name wins per atom
+        colorNamesMap[atom] = name;
+      }
+    }
+    if (sel.editions && typeof sel.editions === 'object') {
+      for (const slug of Object.keys(sel.editions)) editionSet.add(slug);
+    }
+  }
+
   return {
-    knownColors: Array.isArray(sel.colors) ? sel.colors : [],
-    knownColorNames: (sel.color_names && typeof sel.color_names === 'object') ? sel.color_names : {},
-    knownEditions: sel.editions ? Object.keys(sel.editions) : [],
+    knownColors: [...colorSet],
+    knownColorNames: colorNamesMap,
+    knownEditions: [...editionSet],
     urlsAlreadyChecked,
     domainsAlreadyChecked,
   };
@@ -98,7 +121,7 @@ function buildPaletteLine(colors) {
  * @param {object[]} [opts.previousRuns] — compact history from prior runs
  * @returns {string} Complete system prompt
  */
-export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [] }) {
+export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy' }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
   const model = product.model || '';
@@ -126,6 +149,7 @@ ${knownSection}
 Research thoroughly. Check the manufacturer site, major retailers, press releases, and review sites. Look for standard colorways, limited editions, collaboration editions (game tie-ins, franchise partnerships), and regional exclusives. Do not stop after finding the first few — keep searching until you are confident you have found them all.
 
 Only include results for the exact "${brand} ${model}" product. If you encounter sibling models with different names, exclude them and list them in siblings_excluded. Only list siblings you actually found — do not invent them.
+${familyModelCount > 1 ? `\nIDENTITY WARNING: This product has ${familyModelCount} models in its family (ambiguity: ${ambiguityLevel}). Similar products exist under "${brand}" with overlapping names. Verify you are researching the exact "${product.model}" — check model numbers, product page titles, and URL slugs. Do not mix colors/editions from sibling models.\n` : ''}
 
 Color output rules:
 - Normalize to registered color atoms: ${palette}
@@ -162,6 +186,8 @@ export const COLOR_EDITION_FINDER_SPEC = {
     colors: domainArgs.colors,
     product: domainArgs.product,
     previousRuns: domainArgs.previousRuns || [],
+    familyModelCount: domainArgs.familyModelCount || 1,
+    ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
   }),
   jsonSchema: zodToLlmSchema(colorEditionFinderResponseSchema),
 };

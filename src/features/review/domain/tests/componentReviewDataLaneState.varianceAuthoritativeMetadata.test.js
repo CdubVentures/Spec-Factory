@@ -9,7 +9,7 @@ import {
   makeCategoryAuthorityConfig,
 } from '../../tests/helpers/componentReviewHarness.js';
 
-test('authoritative properties still flag variance violations in component payloads', async () => {
+test('authoritative properties expose variance_policy without violations (item_field_state retired)', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();
   try {
     specDb.upsertComponentIdentity({
@@ -42,18 +42,6 @@ test('authoritative properties still flag variance violations in component paylo
       matchType: 'exact',
       matchScore: 1,
     });
-    specDb.upsertItemFieldState({
-      productId: 'mouse-auth-test',
-      fieldKey: 'max_dpi',
-      value: '26000',
-      confidence: 0.8,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     const payload = await buildComponentReviewPayloads({
       config: makeCategoryAuthorityConfig(tempRoot),
       category: CATEGORY,
@@ -67,9 +55,6 @@ test('authoritative properties still flag variance violations in component paylo
     const prop = payload.items.find((item) => item.name === 'PAW3950')?.properties?.max_dpi;
     assert.ok(prop);
     assert.strictEqual(prop.variance_policy, 'authoritative');
-    assert.strictEqual(prop.reason_codes.includes('variance_violation'), true);
-    assert.ok(prop.variance_violations);
-    assert.strictEqual(prop.variance_violations.count, 1);
   } finally {
     await cleanupTempSpecDb(tempRoot, specDb);
   }

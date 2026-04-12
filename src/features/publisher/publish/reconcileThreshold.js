@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeConfidence, buildLinkedCandidates } from './publishCandidate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -22,13 +23,6 @@ function serializeValue(value) {
   return String(value);
 }
 
-// WHY: Candidates use mixed scales (CEF: 0-100, provenance: 0-1).
-// Threshold is always 0-1. Normalize before comparing.
-function normalizeConfidence(c) {
-  if (typeof c !== 'number' || !Number.isFinite(c)) return 0;
-  return c > 1 ? c / 100 : c;
-}
-
 /**
  * @param {{ specDb: object, category: string, threshold: number, productRoot: string, dryRun?: boolean, onStageAdvance?: (stage: string) => void }} opts
  * @returns {{ unpublished: number, published: number, locked: number, unaffected: number, total_fields: number }}
@@ -39,6 +33,10 @@ export function reconcileThreshold({
   onStageAdvance,
 }) {
   const result = { unpublished: 0, published: 0, locked: 0, unaffected: 0, total_fields: 0 };
+
+  // WHY: Field rules needed for set_union detection and linked_candidates building.
+  const compiled = specDb.getCompiledRules?.();
+  const fieldRules = compiled?.fields || {};
 
   // --- Stage 1: Scanning ---
   if (onStageAdvance) onStageAdvance('Scanning');
@@ -106,17 +104,42 @@ export function reconcileThreshold({
 
         if (best) {
           if (!dryRun) {
-            const serialized = serializeValue(best.value);
-            specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
+            const publishedValue = best.value;
+            let parsedValue;
+            try { parsedValue = typeof publishedValue === 'string' ? JSON.parse(publishedValue) : publishedValue; }
+            catch { parsedValue = publishedValue; }
+            const serialized = serializeValue(parsedValue);
+            const fieldRule = fieldRules[fieldKey] || null;
+            const itemUnion = fieldRule?.contract?.list_rules?.item_union;
+
+            // WHY: For set_union, mark all contributing candidates resolved (overlap match).
+            // For scalar, mark exact value match.
+            if (itemUnion === 'set_union' && Array.isArray(parsedValue)) {
+              const publishedSet = new Set(parsedValue.map(v => serializeValue(v)));
+              const allFieldCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
+              for (const row of allFieldCandidates) {
+                let items;
+                try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
+                catch { items = null; }
+                if (!Array.isArray(items)) continue;
+                if (items.some(item => publishedSet.has(serializeValue(item)))) {
+                  specDb.markFieldCandidateResolved(productId, fieldKey, row.value);
+                }
+              }
+            } else {
+              specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
+            }
 
             if (productFields) {
               const sources = Array.isArray(best.sources_json) ? best.sources_json : [];
+              const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, parsedValue, fieldRule);
               productFields[fieldKey] = {
-                value: best.value,
+                value: parsedValue,
                 confidence: best.confidence,
                 source: 'pipeline',
                 resolved_at: new Date().toISOString(),
                 sources,
+                linked_candidates: linkedCandidates,
               };
               productDirty = true;
             }

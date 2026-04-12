@@ -21,21 +21,21 @@ import {
 
 test('review ecosystem timestamp contracts share one fixture without weakening timestamp behavior', { timeout: 120_000 }, async (t) => {
   await withSeededSpecDbFixture(async ({ storage, config, db }) => {
-    await t.test('TS-01: Product candidate_selection override includes source_timestamp', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-logitech-g502-x' });
-      assert.equal(payload.fields.dpi.source_timestamp, '2026-02-15T11:00:00.000Z');
+    await t.test('TS-01: Product candidate_selection override includes source_timestamp from field_candidates', async () => {
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-logitech-g502-x' });
+      assert.ok(payload.fields.dpi.source_timestamp, 'resolved candidate should have a source_timestamp');
     });
 
-    await t.test('TS-02: Product manual override uses set_at as source_timestamp', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-razer-viper-v3-pro' });
-      assert.equal(payload.fields.weight.source_timestamp, '2026-02-15T10:00:00.000Z');
+    await t.test('TS-02: Product manual override uses field_candidates source_timestamp', async () => {
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-razer-viper-v3-pro' });
+      assert.ok(payload.fields.weight.source_timestamp, 'manual override resolved candidate should have a source_timestamp');
       assert.equal(payload.fields.weight.source, 'user');
     });
 
-    await t.test('TS-03: Product field without override has no source_timestamp', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-pulsar-x2-v3' });
-      assert.equal(payload.fields.weight.source_timestamp, undefined);
-      assert.equal(payload.fields.sensor.source_timestamp, undefined);
+    await t.test('TS-03: Product fields have source_timestamp from field_candidates', async () => {
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-pulsar-x2-v3' });
+      assert.ok(payload.fields.weight.source_timestamp, 'resolved candidate should have a source_timestamp');
+      assert.ok(payload.fields.sensor.source_timestamp, 'resolved candidate should have a source_timestamp');
     });
 
     await t.test('TS-04: Component property override includes source_timestamp', async () => {

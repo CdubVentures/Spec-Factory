@@ -2,9 +2,9 @@
  * Item Links store — extracted from SpecDb.
  * Owns: item_component_links, item_list_links tables.
  *
- * @param {{ db: import('better-sqlite3').Database, category: string, expandListLinkValues: Function, getListValueByFieldAndValue: Function }} deps
+ * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object, expandListLinkValues: Function, getListValueByFieldAndValue: Function }} deps
  */
-export function createItemStateStore({ db, category, expandListLinkValues, getListValueByFieldAndValue }) {
+export function createItemStateStore({ db, category, stmts, expandListLinkValues, getListValueByFieldAndValue }) {
   function upsertItemComponentLink({ productId, fieldKey, componentType, componentName, componentMaker, matchType, matchScore }) {
     stmts._upsertItemComponentLink.run({
       category,

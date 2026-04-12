@@ -42,18 +42,6 @@ test('override_allowed properties skip variance violations in component payloads
       matchType: 'exact',
       matchScore: 1,
     });
-    specDb.upsertItemFieldState({
-      productId: 'mouse-override-test',
-      fieldKey: 'max_dpi',
-      value: '26000',
-      confidence: 0.8,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     const payload = await buildComponentReviewPayloads({
       config: makeCategoryAuthorityConfig(tempRoot),
       category: CATEGORY,

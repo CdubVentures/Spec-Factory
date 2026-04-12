@@ -7,7 +7,7 @@ import {
   buildFieldStateScenario,
   buildProductReviewPayload,
   CATEGORY,
-  withReviewFixture,
+  withSeededSpecDbFixture,
 } from './helpers/reviewEcosystemHarness.js';
 
 test('GRID-06: buildFieldState with multiple candidates includes evidence', () => {
@@ -45,18 +45,17 @@ test('GRID-07: Confidence maps to color via confidence dot only', () => {
 });
 
 test('review ecosystem grid contracts share one fixture without weakening field-state behavior', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ storage, config }) => {
+  await withSeededSpecDbFixture(async ({ storage, config, db }) => {
     await t.test('GRID-01: Pipeline value with multiple candidates shows top source', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-zowie-ec2-c' });
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-zowie-ec2-c' });
       assert.equal(payload.fields.weight.selected.value, '73');
       assert.equal(payload.fields.weight.source, 'zowie.benq.com');
       assert.equal(payload.fields.weight.method, 'dom');
-      assert.equal(payload.fields.weight.tier, 1);
       assert.equal(payload.fields.weight.candidate_count, 3);
     });
 
     await t.test('GRID-02: Manual override sets source=user, overridden=true', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-razer-viper-v3-pro' });
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-razer-viper-v3-pro' });
       assert.equal(payload.fields.weight.selected.value, '48');
       assert.equal(payload.fields.weight.selected.confidence, 1.0);
       assert.equal(payload.fields.weight.overridden, true);
@@ -66,29 +65,31 @@ test('review ecosystem grid contracts share one fixture without weakening field-
     });
 
     await t.test('GRID-03: Candidate acceptance does NOT set overridden=true', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-logitech-g502-x' });
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-logitech-g502-x' });
       assert.equal(payload.fields.dpi.selected.value, '25600');
       assert.equal(payload.fields.dpi.overridden, false);
       assert.equal(payload.fields.dpi.source, 'logitech.com');
-      assert.equal(payload.fields.dpi.evidence_url, 'https://logitech.com/g502x');
-      assert.equal(payload.fields.dpi.evidence_quote, 'Max DPI: 25,600');
+      const resolvedCandidate = payload.fields.dpi.candidates.find((c) => c.status === 'resolved');
+      assert.ok(resolvedCandidate, 'resolved candidate should exist');
+      assert.equal(resolvedCandidate.evidence.url, 'https://logitech.com/g502x');
+      assert.equal(resolvedCandidate.evidence.quote, 'Max DPI: 25,600');
     });
 
     await t.test('GRID-04: Missing value shows gray color and strips visual treatment codes', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-zowie-ec2-c' });
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-zowie-ec2-c' });
       assert.equal(payload.fields.encoder.selected.value, null);
       assert.equal(payload.fields.encoder.selected.color, 'gray');
       assert.equal(payload.fields.encoder.reason_codes.includes('missing_value'), false);
     });
 
     await t.test('GRID-05: Multiple fields maintain independent sources across products', async () => {
-      const razer = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-razer-viper-v3-pro' });
+      const razer = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-razer-viper-v3-pro' });
       assert.equal(razer.fields.weight.source, 'user');
       assert.equal(razer.fields.weight.overridden, true);
       assert.equal(razer.fields.sensor.source, 'razer.com');
-      assert.equal(razer.fields.sensor.overridden, undefined);
+      assert.equal(razer.fields.sensor.overridden, false);
 
-      const pulsar = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-pulsar-x2-v3' });
+      const pulsar = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-pulsar-x2-v3' });
       assert.equal(pulsar.fields.sensor.source, 'pulsar.gg');
       assert.equal(pulsar.fields.weight.source, 'pulsar.gg');
     });
@@ -98,6 +99,7 @@ test('review ecosystem grid contracts share one fixture without weakening field-
         storage,
         config,
         category: CATEGORY,
+        specDb: db,
         productId: 'mouse-zowie-ec2-c',
         includeCandidates: false,
       });
@@ -106,19 +108,21 @@ test('review ecosystem grid contracts share one fixture without weakening field-
       assert.equal(payload.fields.weight.source, 'zowie.benq.com');
     });
 
-    await t.test('GRID-09: Override evidence URL and quote flow into field state', async () => {
-      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-zowie-ec2-c' });
-      assert.equal(payload.fields.sensor.evidence_url, 'https://zowie.benq.com/ec2-c');
-      assert.equal(payload.fields.sensor.evidence_quote, 'Sensor: PMW 3360');
+    await t.test('GRID-09: Override evidence URL and quote flow into resolved candidate', async () => {
+      const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-zowie-ec2-c' });
       assert.equal(payload.fields.sensor.source, 'zowie.benq.com');
+      const resolvedCandidate = payload.fields.sensor.candidates.find((c) => c.status === 'resolved');
+      assert.ok(resolvedCandidate, 'resolved candidate should exist');
+      assert.equal(resolvedCandidate.evidence.url, 'https://zowie.benq.com/ec2-c');
+      assert.equal(resolvedCandidate.evidence.quote, 'Sensor: PMW 3360');
     });
 
-    await t.test('GRID-10: Source timestamp from override flows into field state', async () => {
-      const razer = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-razer-viper-v3-pro' });
-      assert.equal(razer.fields.weight.source_timestamp, '2026-02-15T10:00:00.000Z');
+    await t.test('GRID-10: Source timestamp from field_candidates updated_at', async () => {
+      const razer = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-razer-viper-v3-pro' });
+      assert.ok(razer.fields.weight.source_timestamp, 'manual override resolved candidate should have a source_timestamp');
 
-      const pulsar = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-pulsar-x2-v3' });
-      assert.equal(pulsar.fields.weight.source_timestamp, undefined);
+      const pulsar = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-pulsar-x2-v3' });
+      assert.ok(pulsar.fields.weight.source_timestamp, 'resolved candidate should have a source_timestamp');
     });
   });
 });

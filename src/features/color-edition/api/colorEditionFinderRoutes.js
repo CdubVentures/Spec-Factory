@@ -33,8 +33,11 @@ export function registerColorEditionFinderRoutes(ctx) {
     candidateSourceType: 'cef',
 
     buildGetResponse: (row, selected, runs, onCooldown, { specDb, productId } = {}) => {
-      // WHY: Published truth comes from field_candidates, not CEF's `selected`.
-      // Per-item candidates with sources/confidence are the evidence chain.
+      // WHY: Published values come from the summary table (DB).
+      // Candidate rows are evidence (which sources submitted what), not the published truth.
+      const publishedColors = Array.isArray(row.colors) ? row.colors : [];
+      const publishedEditions = Array.isArray(row.editions) ? row.editions : [];
+
       const colorRows = specDb?.getFieldCandidatesByProductAndField?.(productId, 'colors') || [];
       const editionRows = specDb?.getFieldCandidatesByProductAndField?.(productId, 'editions') || [];
 
@@ -49,37 +52,6 @@ export function registerColorEditionFinderRoutes(ctx) {
         submitted_at: r.submitted_at,
       });
 
-      const resolvedColors = colorRows.filter(r => r.status === 'resolved');
-      const resolvedEditions = editionRows.filter(r => r.status === 'resolved');
-
-      // Derive published values from resolved candidates
-      // For set_union list fields: each resolved candidate's array value contributes items
-      const publishedColors = [];
-      const seenColors = new Set();
-      for (const r of resolvedColors) {
-        let items;
-        try { items = typeof r.value === 'string' ? JSON.parse(r.value) : r.value; }
-        catch { items = r.value != null ? [r.value] : []; }
-        const arr = Array.isArray(items) ? items : [items];
-        for (const c of arr) {
-          const key = String(c);
-          if (!seenColors.has(key)) { seenColors.add(key); publishedColors.push(c); }
-        }
-      }
-
-      const publishedEditions = [];
-      const seenEditions = new Set();
-      for (const r of resolvedEditions) {
-        let items;
-        try { items = typeof r.value === 'string' ? JSON.parse(r.value) : r.value; }
-        catch { items = r.value != null ? [r.value] : []; }
-        const arr = Array.isArray(items) ? items : [items];
-        for (const e of arr) {
-          const key = String(e);
-          if (!seenEditions.has(key)) { seenEditions.add(key); publishedEditions.push(e); }
-        }
-      }
-
       return {
         product_id: row.product_id,
         category: row.category,
@@ -87,11 +59,13 @@ export function registerColorEditionFinderRoutes(ctx) {
         on_cooldown: onCooldown,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
-        // Published truth from field_candidates
+        // Published values from summary table + detail from latest run
         published: {
           colors: publishedColors,
           editions: publishedEditions,
-          default_color: publishedColors[0] || '',
+          default_color: row.default_color || publishedColors[0] || '',
+          color_names: selected.color_names || {},
+          edition_details: selected.editions || {},
         },
         // All candidates with evidence chains, sorted by confidence desc
         candidates: {

@@ -20,18 +20,6 @@ test('enum list value ID helpers rename and delete through slot identifiers whil
       sourceTimestamp: new Date().toISOString(),
     });
 
-    harness.specDb.upsertItemFieldState({
-      productId: 'mouse-link-id-test',
-      fieldKey: 'connection',
-      value: '2.4GHz',
-      confidence: 1,
-      source: 'pipeline',
-      acceptedCandidateId: null,
-      overridden: false,
-      needsAiReview: false,
-      aiReviewComplete: false,
-    });
-
     harness.specDb.syncItemListLinkForFieldValue({
       productId: 'mouse-link-id-test',
       fieldKey: 'connection',
@@ -43,10 +31,6 @@ test('enum list value ID helpers rename and delete through slot identifiers whil
 
     const affected = harness.specDb.renameListValueById(oldRow.id, 'Wireless', new Date().toISOString());
     assert.equal(affected.includes('mouse-link-id-test'), true);
-
-    const fieldState = harness.specDb.getItemFieldState('mouse-link-id-test')
-      .find((row) => row.field_key === 'connection');
-    assert.equal(fieldState?.value, 'Wireless');
 
     const renamedRow = harness.specDb.getListValueByFieldAndValue('connection', 'Wireless');
     assert.equal(Boolean(renamedRow?.id), true);

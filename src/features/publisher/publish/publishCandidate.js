@@ -22,13 +22,20 @@ function serializeValue(value) {
   return String(value);
 }
 
+// WHY: Candidates use mixed scales (CEF: 0-100, provenance: 0-1).
+// Threshold is always 0-1. Normalize before comparing.
+export function normalizeConfidence(c) {
+  if (typeof c !== 'number' || !Number.isFinite(c)) return 0;
+  return c > 1 ? c / 100 : c;
+}
+
 /**
  * Build linked candidates — all candidate rows that match the published value.
  * For scalar/winner_only: exact serialization match.
  * For set_union: candidate's array shares at least one item with the published array.
  * Sorted by confidence descending.
  */
-function buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule) {
+export function buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule) {
   const allCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
   const itemUnion = fieldRule?.contract?.list_rules?.item_union;
   const publishedSerialized = serializeValue(publishedValue);
@@ -70,7 +77,7 @@ export function publishCandidate({
 }) {
   // --- Confidence gate ---
   const threshold = config?.publishConfidenceThreshold ?? 0.7;
-  if (confidence < threshold) {
+  if (normalizeConfidence(confidence) < threshold) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'below_threshold', confidence, threshold });
     return { status: 'below_threshold', confidence, threshold };
   }
@@ -110,9 +117,29 @@ export function publishCandidate({
   const now = new Date().toISOString();
   const sources = Array.isArray(candidateRow?.sources_json) ? candidateRow.sources_json : [];
 
-  // --- SQL: demote previous winner, mark this one resolved ---
+  // --- SQL: demote previous winners, mark contributing candidates resolved ---
   specDb.demoteResolvedCandidates(productId, fieldKey);
-  specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
+
+  const itemUnion = fieldRule?.contract?.list_rules?.item_union;
+  if (itemUnion === 'set_union' && Array.isArray(publishedValue)) {
+    // WHY: For set_union, the published array is a merge of multiple candidate rows.
+    // Each candidate whose array shares items with the published value contributed —
+    // mark all of them resolved, not just an exact serialization match.
+    const publishedSet = new Set(publishedValue.map(v => serializeValue(v)));
+    const allCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
+    for (const row of allCandidates) {
+      let items;
+      try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
+      catch { items = null; }
+      if (!Array.isArray(items)) continue;
+      if (items.some(item => publishedSet.has(serializeValue(item)))) {
+        specDb.markFieldCandidateResolved(productId, fieldKey, row.value);
+      }
+    }
+  } else {
+    specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
+  }
+
   persistPublishResult(specDb, productId, fieldKey, serialized, { status: 'published', published_at: now });
 
   // --- Build linked candidates (evidence chain) ---

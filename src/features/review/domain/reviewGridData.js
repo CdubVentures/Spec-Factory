@@ -419,6 +419,12 @@ export async function buildProductReviewPayload({
   const dbProduct = specDb?.getProduct(productId) || null;
   const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
 
+  // File-based fallback when specDb is not available.
+  let fileArtifacts = null;
+  if (!specDb && storage) {
+    try { fileArtifacts = await readLatestArtifacts(storage, category, productId); } catch { /* best effort */ }
+  }
+
   // Group candidates by field_key, track resolved (published) per field.
   const candidatesByField = new Map();
   const resolvedByField = new Map();
@@ -440,16 +446,31 @@ export async function buildProductReviewPayload({
     const resolvedRow = resolvedByField.get(field) || null;
     const isOverridden = resolvedRow?.metadata_json?.source === 'manual_override';
 
-    // Published value = resolved candidate.
-    const resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
+    // Published value = resolved candidate, or file-based fallback.
+    let resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
       ? resolvedRow.value : null;
-    const resolvedConfidence = resolvedRow
+
+    // File-based fallback: use normalized.json fields when specDb is unavailable.
+    if (resolvedValue == null && fileArtifacts) {
+      const normalizedFields = isObject(fileArtifacts.normalized?.fields)
+        ? fileArtifacts.normalized.fields : {};
+      const fileValue = normalizedFields[field];
+      if (fileValue != null && String(fileValue).trim() !== '') {
+        resolvedValue = fileValue;
+      }
+    }
+    let resolvedConfidence = resolvedRow
       ? Math.max(0, Math.min(1, toNumber(resolvedRow.confidence, 0)))
       : 0;
+    // File-based confidence fallback.
+    if (!resolvedRow && fileArtifacts) {
+      const fileProvenance = isObject(fileArtifacts.provenance?.[field]) ? fileArtifacts.provenance[field] : {};
+      resolvedConfidence = Math.max(0, Math.min(1, toNumber(fileProvenance.confidence, 0)));
+    }
     const hasValue = hasKnownValue(resolvedValue);
 
     // Map field_candidates rows → candidate shape.
-    const candidates = fieldCandidateRows.map((c) => {
+    let candidates = fieldCandidateRows.map((c) => {
       const meta = isObject(c.metadata_json) ? c.metadata_json : {};
       const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
       const firstSource = isObject(sources[0]) ? sources[0] : {};
@@ -471,7 +492,32 @@ export async function buildProductReviewPayload({
       };
     });
 
-    // Determine source/method from resolved candidate.
+    // File-based candidate fallback when specDb is unavailable.
+    if (candidates.length === 0 && fileArtifacts) {
+      const fileCandidates = toArray(fileArtifacts.candidates?.[field]);
+      const fileProvenance = isObject(fileArtifacts.provenance?.[field]) ? fileArtifacts.provenance[field] : {};
+      candidates = fileCandidates.map((c) => {
+        const evidence = candidateEvidenceFromRows(c, fileProvenance);
+        const sourceLabel = candidateSourceLabel(c, evidence);
+        return {
+          candidate_id: String(c.candidate_id || ''),
+          value: c.value,
+          score: Math.max(0, Math.min(1, toNumber(c.score, 0))),
+          source_id: String(c.source_id || c.host || ''),
+          source: sourceLabel,
+          tier: c.tier ?? null,
+          method: String(c.method || '').trim() || null,
+          status: 'candidate',
+          evidence: {
+            url: String(evidence.url || '').trim(),
+            quote: String(evidence.quote || '').trim(),
+            source_id: String(c.source_id || c.host || ''),
+          },
+        };
+      });
+    }
+
+    // Determine source/method from resolved candidate or file fallback.
     let source = '';
     let method = null;
     if (isOverridden) {
@@ -481,6 +527,11 @@ export async function buildProductReviewPayload({
       const st = String(resolvedRow.metadata_json?.source || '').trim();
       source = dbSourceLabel(st) || st;
       method = String(resolvedRow.metadata_json?.method || '').trim() || null;
+    } else if (fileArtifacts && candidates.length > 0) {
+      // Use top candidate from file fallback.
+      const topCandidate = candidates.reduce((best, c) => (c.score > (best?.score || 0) ? c : best), null);
+      source = topCandidate?.source || '';
+      method = topCandidate?.method || null;
     }
 
     const color = hasValue
@@ -499,7 +550,7 @@ export async function buildProductReviewPayload({
       },
       needs_review: needsReview,
       reason_codes: [],
-      candidate_count: fieldCandidateRows.length,
+      candidate_count: fieldCandidateRows.length || candidates.length,
       candidates: includeCandidates ? candidates : [],
       accepted_candidate_id: null,
       selected_candidate_id: null,
@@ -523,13 +574,19 @@ export async function buildProductReviewPayload({
     ? (totalFields - missingCount) / totalFields
     : 0;
 
+  // File-based identity fallback when specDb is not available.
+  let normalizedIdentity = {};
+  if (fileArtifacts) {
+    normalizedIdentity = isObject(fileArtifacts.normalized?.identity) ? fileArtifacts.normalized.identity : {};
+  }
+
   const catalogIdentity = isObject(catalogProduct) ? catalogProduct : {};
   const authoritativeIdentity = resolveAuthoritativeProductIdentity({
     productId,
     category,
     catalogProduct: catalogIdentity,
     dbProduct,
-    normalizedIdentity: {},
+    normalizedIdentity,
   });
 
   let updatedAt = nowIso();

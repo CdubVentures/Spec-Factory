@@ -1,5 +1,5 @@
 // WHY: Verifies purgeStore cascade operations correctly delete child rows
-// using the right FK column names (key_review_state_id, key_review_run_id, run_id).
+// for category and product-level purges. Phase 1b removed key_review tables.
 
 import { describe, it } from 'node:test';
 import { strictEqual } from 'node:assert';
@@ -15,58 +15,26 @@ function count(db, table, where = '', ...params) {
   return db.prepare(sql).get(...params).c;
 }
 
-function seedKeyReviewChain(db, { category = '_test_purge', targetKind = 'grid_key', itemId = 'prod-1' } = {}) {
-  db.prepare(`INSERT INTO key_review_state (category, target_kind, item_identifier, field_key) VALUES (?, ?, ?, 'weight')`).run(category, targetKind, itemId);
-  const stateId = db.prepare('SELECT last_insert_rowid() as id').get().id;
-  db.prepare(`INSERT INTO key_review_runs (key_review_state_id, stage, status, provider, model_used, prompt_hash, response_schema_version, input_tokens, output_tokens, latency_ms, cost_usd, error, started_at, finished_at) VALUES (?, 'ai', 'ok', 'openai', 'gpt-4o', 'h', '1', 10, 5, 100, 0.01, '', datetime('now'), datetime('now'))`).run(stateId);
-  db.prepare(`INSERT INTO key_review_audit (key_review_state_id, event_type, actor_type, actor_id, old_value, new_value, reason) VALUES (?, 'ai_confirm', 'ai', 'gpt-4o', '', 'confirmed', 'test')`).run(stateId);
-  return { stateId };
-}
-
-describe('purgeStore — key review cascade', () => {
-  it('deleteKeyReviewStatesByTargetKinds cascades through all child tables', () => {
-    const { specDb, db } = createHarness();
-    seedKeyReviewChain(db, { targetKind: 'component_key' });
-
-    strictEqual(count(db, 'key_review_state'), 1);
-    strictEqual(count(db, 'key_review_runs'), 1);
-    strictEqual(count(db, 'key_review_audit'), 1);
-
-    specDb.deleteKeyReviewStatesByTargetKinds('_test_purge', ['component_key']);
-
-    strictEqual(count(db, 'key_review_state'), 0, 'state deleted');
-    strictEqual(count(db, 'key_review_runs'), 0, 'runs cascaded');
-    strictEqual(count(db, 'key_review_audit'), 0, 'audit cascaded');
-  });
-
-  it('does not delete unrelated target_kinds', () => {
-    const { specDb, db } = createHarness();
-    seedKeyReviewChain(db, { targetKind: 'grid_key' });
-    seedKeyReviewChain(db, { targetKind: 'component_key' });
-
-    specDb.deleteKeyReviewStatesByTargetKinds('_test_purge', ['component_key']);
-
-    strictEqual(count(db, 'key_review_state', "target_kind = 'grid_key'"), 1, 'grid_key untouched');
-    strictEqual(count(db, 'key_review_state', "target_kind = 'component_key'"), 0, 'component_key deleted');
-  });
-});
-
 describe('purgeStore — purgeCategoryState', () => {
-  it('cascades key review correctly for test category', () => {
+  it('clears component and enum data for test category', () => {
     const { specDb, db } = createHarness();
-    seedKeyReviewChain(db);
+
+    specDb.upsertComponentIdentity({
+      componentType: 'sensor',
+      canonicalName: 'TestSensor',
+      maker: 'TestMaker',
+      source: 'test',
+    });
 
     specDb.purgeCategoryState('_test_purge');
 
-    strictEqual(count(db, 'key_review_state'), 0, 'state deleted');
-    strictEqual(count(db, 'key_review_runs'), 0, 'runs cascaded');
-    strictEqual(count(db, 'key_review_audit'), 0, 'audit cascaded');
+    strictEqual(count(db, 'component_identity'), 0, 'component_identity deleted');
   });
 
-  it('rejects non-test categories', () => {
+  it('rejects non-test categories gracefully', () => {
     const { specDb } = createHarness();
     const result = specDb.purgeCategoryState('mouse');
-    strictEqual(result.clearedKeyReview, 0);
+    strictEqual(typeof result.clearedComponentData, 'number');
   });
 
   it('does not throw on source_intel tables without category column', () => {
@@ -78,14 +46,21 @@ describe('purgeStore — purgeCategoryState', () => {
 });
 
 describe('purgeStore — purgeProductReviewState', () => {
-  it('cascades key review for the product', () => {
+  it('clears links for the product', () => {
     const { specDb, db } = createHarness();
-    seedKeyReviewChain(db, { targetKind: 'grid_key', itemId: 'prod-target' });
+
+    specDb.upsertItemComponentLink({
+      productId: 'prod-target',
+      fieldKey: 'sensor',
+      componentType: 'sensor',
+      componentName: 'TestSensor',
+      componentMaker: 'TestMaker',
+      matchType: 'exact',
+      matchScore: 1,
+    });
 
     specDb.purgeProductReviewState('_test_purge', 'prod-target');
 
-    strictEqual(count(db, 'key_review_state', "item_identifier = 'prod-target'"), 0, 'state deleted');
-    strictEqual(count(db, 'key_review_runs'), 0, 'runs cascaded');
-    strictEqual(count(db, 'key_review_audit'), 0, 'audit cascaded');
+    strictEqual(count(db, 'item_component_links', "product_id = 'prod-target'"), 0, 'links deleted');
   });
 });

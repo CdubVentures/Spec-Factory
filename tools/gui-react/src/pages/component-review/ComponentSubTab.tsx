@@ -51,11 +51,7 @@ function hasActionablePending(state?: ComponentReviewItem['name_tracked'] | Comp
     const candidateId = String(candidate?.candidate_id || '').trim();
     return Boolean(candidateId) && hasKnownValue(candidate?.value);
   });
-  return candidateRows.some((candidate) => {
-    if (candidate?.is_synthetic_selected) return false;
-    const sharedStatus = String(candidate?.shared_review_status || '').trim().toLowerCase();
-    return sharedStatus ? sharedStatus === 'pending' : true;
-  });
+  return candidateRows.some((candidate) => !candidate?.is_synthetic_selected);
 }
 
 /**

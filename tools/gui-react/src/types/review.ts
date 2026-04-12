@@ -52,9 +52,6 @@ export interface ReviewCandidate {
   llm_extract_provider?: string | null;
   llm_validate_model?: string | null;
   llm_validate_provider?: string | null;
-  primary_review_status?: 'pending' | 'accepted' | 'rejected';
-  shared_review_status?: 'pending' | 'accepted' | 'rejected';
-  human_accepted?: boolean;
 }
 
 export interface FieldState {

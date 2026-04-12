@@ -74,36 +74,6 @@ export function prepareStatements(db) {
         updated_at = datetime('now')
     `),
 
-    _upsertItemFieldState: db.prepare(`
-      INSERT INTO item_field_state (
-        category, product_id, field_key, value, unit, confidence, source,
-        accepted_candidate_id, overridden, needs_ai_review, ai_review_complete,
-        override_source, override_value, override_reason, override_provenance,
-        overridden_by, overridden_at
-      ) VALUES (
-        @category, @product_id, @field_key, @value, @unit, @confidence, @source,
-        @accepted_candidate_id, @overridden, @needs_ai_review, @ai_review_complete,
-        @override_source, @override_value, @override_reason, @override_provenance,
-        @overridden_by, @overridden_at
-      )
-      ON CONFLICT(category, product_id, field_key) DO UPDATE SET
-        value = excluded.value,
-        unit = COALESCE(excluded.unit, unit),
-        confidence = excluded.confidence,
-        source = excluded.source,
-        accepted_candidate_id = COALESCE(excluded.accepted_candidate_id, accepted_candidate_id),
-        overridden = excluded.overridden,
-        needs_ai_review = excluded.needs_ai_review,
-        ai_review_complete = excluded.ai_review_complete,
-        override_source = COALESCE(excluded.override_source, override_source),
-        override_value = COALESCE(excluded.override_value, override_value),
-        override_reason = COALESCE(excluded.override_reason, override_reason),
-        override_provenance = COALESCE(excluded.override_provenance, override_provenance),
-        overridden_by = COALESCE(excluded.overridden_by, overridden_by),
-        overridden_at = COALESCE(excluded.overridden_at, overridden_at),
-        updated_at = datetime('now')
-    `),
-
     _upsertItemComponentLink: db.prepare(`
       INSERT INTO item_component_links (
         category, product_id, field_key, component_type, component_name,
@@ -216,74 +186,6 @@ export function prepareStatements(db) {
         updated_at = datetime('now')
     `),
 
-
-    _insertKeyReviewState: db.prepare(`
-      INSERT INTO key_review_state (
-        category, target_kind, item_identifier, field_key, enum_value_norm,
-        component_identifier, property_key,
-        item_field_state_id, component_value_id, component_identity_id, list_value_id, enum_list_id,
-        required_level, availability, difficulty, effort, ai_mode, parse_template,
-        evidence_policy, min_evidence_refs_effective, min_distinct_sources_required,
-        send_mode, component_send_mode, list_send_mode,
-        selected_value, selected_candidate_id, confidence_score, confidence_level,
-        flagged_at, resolved_at,
-        ai_confirm_primary_status, ai_confirm_primary_confidence, ai_confirm_primary_at,
-        ai_confirm_primary_interrupted, ai_confirm_primary_error,
-        ai_confirm_shared_status, ai_confirm_shared_confidence, ai_confirm_shared_at,
-        ai_confirm_shared_interrupted, ai_confirm_shared_error,
-        user_accept_primary_status, user_accept_primary_at, user_accept_primary_by,
-        user_accept_shared_status, user_accept_shared_at, user_accept_shared_by,
-        user_override_ai_primary, user_override_ai_primary_at, user_override_ai_primary_reason,
-        user_override_ai_shared, user_override_ai_shared_at, user_override_ai_shared_reason
-      ) VALUES (
-        @category, @target_kind, @item_identifier, @field_key, @enum_value_norm,
-        @component_identifier, @property_key,
-        @item_field_state_id, @component_value_id, @component_identity_id, @list_value_id, @enum_list_id,
-        @required_level, @availability, @difficulty, @effort, @ai_mode, @parse_template,
-        @evidence_policy, @min_evidence_refs_effective, @min_distinct_sources_required,
-        @send_mode, @component_send_mode, @list_send_mode,
-        @selected_value, @selected_candidate_id, @confidence_score, @confidence_level,
-        @flagged_at, @resolved_at,
-        @ai_confirm_primary_status, @ai_confirm_primary_confidence, @ai_confirm_primary_at,
-        @ai_confirm_primary_interrupted, @ai_confirm_primary_error,
-        @ai_confirm_shared_status, @ai_confirm_shared_confidence, @ai_confirm_shared_at,
-        @ai_confirm_shared_interrupted, @ai_confirm_shared_error,
-        @user_accept_primary_status, @user_accept_primary_at, @user_accept_primary_by,
-        @user_accept_shared_status, @user_accept_shared_at, @user_accept_shared_by,
-        @user_override_ai_primary, @user_override_ai_primary_at, @user_override_ai_primary_reason,
-        @user_override_ai_shared, @user_override_ai_shared_at, @user_override_ai_shared_reason
-      )
-    `),
-
-    _insertKeyReviewRun: db.prepare(`
-      INSERT INTO key_review_runs (
-        key_review_state_id, stage, status, provider, model_used, prompt_hash,
-        response_schema_version, input_tokens, output_tokens, latency_ms,
-        cost_usd, error, started_at, finished_at
-      ) VALUES (
-        @key_review_state_id, @stage, @status, @provider, @model_used, @prompt_hash,
-        @response_schema_version, @input_tokens, @output_tokens, @latency_ms,
-        @cost_usd, @error, @started_at, @finished_at
-      )
-    `),
-
-    _insertKeyReviewRunSource: db.prepare(`
-      INSERT INTO key_review_run_sources (
-        key_review_run_id, assertion_id, packet_role, position
-      ) VALUES (
-        @key_review_run_id, @assertion_id, @packet_role, @position
-      )
-    `),
-
-    _insertKeyReviewAudit: db.prepare(`
-      INSERT INTO key_review_audit (
-        key_review_state_id, event_type, actor_type, actor_id,
-        old_value, new_value, reason
-      ) VALUES (
-        @key_review_state_id, @event_type, @actor_type, @actor_id,
-        @old_value, @new_value, @reason
-      )
-    `),
 
     _insertBillingEntry: db.prepare(`
       INSERT INTO billing_entries (
@@ -469,13 +371,8 @@ export function prepareStatements(db) {
     _getPromptIndexByCategory: db.prepare(`
       SELECT * FROM prompt_index WHERE category = ? ORDER BY ts DESC LIMIT ?
     `),
-    _getProvenanceForProduct: db.prepare(`
-      SELECT
-        ifs.field_key, ifs.value, ifs.confidence, ifs.source, ifs.accepted_candidate_id
-      FROM item_field_state ifs
-      WHERE ifs.category = ? AND ifs.product_id = ?
-      ORDER BY ifs.field_key
-    `),
+    // Stubbed — item_field_state retired in Phase 1b. Returns empty result set.
+    _getProvenanceForProduct: { all: () => [] },
 
     // URL crawl ledger
     _upsertUrlCrawlEntry: db.prepare(`

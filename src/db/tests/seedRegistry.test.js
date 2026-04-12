@@ -23,7 +23,6 @@ function makeStubSteps() {
       seedListValues: stub('seedListValues'),
       seedProducts: stub('seedProducts'),
       backfillComponentLinks: stub('backfillComponentLinks'),
-      seedSourceAndKeyReview: stub('seedSourceAndKeyReview'),
     },
     calls,
   };
@@ -36,11 +35,12 @@ function makeStubReseedDeps() {
     deps: {
       scanAndSeedCheckpoints: stub('scanAndSeedCheckpoints'),
       rebuildColorEditionFinderFromJson: stub('rebuildColorEditionFinderFromJson'),
+      rebuildProductImageFinderFromJson: stub('rebuildProductImageFinderFromJson'),
       rebuildLlmRouteMatrixFromJson: stub('rebuildLlmRouteMatrixFromJson'),
       reseedFieldKeyOrderFromJson: stub('reseedFieldKeyOrderFromJson'),
       reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
-      reseedOverridesFromJson: stub('reseedOverridesFromJson'),
       rebuildFieldCandidatesFromJson: stub('rebuildFieldCandidatesFromJson'),
+      rebuildPublishedFieldsFromJson: stub('rebuildPublishedFieldsFromJson'),
     },
     calls,
   };
@@ -126,10 +126,10 @@ describe('GLOBAL_SURFACES', () => {
 // ── buildCategorySurfaces ───────────────────────────────────────────────────
 
 describe('buildCategorySurfaces', () => {
-  it('returns exactly 6 entries', () => {
+  it('returns exactly 5 entries', () => {
     const { steps } = makeStubSteps();
     const surfaces = buildCategorySurfaces(steps);
-    assert.equal(surfaces.length, 6);
+    assert.equal(surfaces.length, 5);
   });
 
   it('every entry has scope "category" and required fields', () => {
@@ -147,7 +147,7 @@ describe('buildCategorySurfaces', () => {
 
   const expectedCategoryKeys = [
     'components', 'component_overrides', 'lists',
-    'products', 'backfill_links', 'source_key_review',
+    'products', 'backfill_links',
   ];
   it('contains all expected keys', () => {
     const { steps } = makeStubSteps();
@@ -161,7 +161,6 @@ describe('buildCategorySurfaces', () => {
     ['component_overrides', ['components']],
     ['products', ['components', 'lists']],
     ['backfill_links', ['products']],
-    ['source_key_review', ['products', 'backfill_links']],
   ];
   for (const [key, deps] of depEdges) {
     it(`${key} depends on ${deps.join(', ')}`, () => {
@@ -188,7 +187,6 @@ describe('buildCategorySurfaces', () => {
     ['lists', 'seedListValues', (ctx) => [ctx.db, ctx.fieldRules, ctx.config, ctx.category]],
     ['products', 'seedProducts', (ctx) => [ctx.db, ctx.config, ctx.category, ctx.fieldRules, ctx.fieldMeta]],
     ['backfill_links', 'backfillComponentLinks', (ctx) => [ctx.db, ctx.fieldMeta, ctx.fieldRules]],
-    ['source_key_review', 'seedSourceAndKeyReview', (ctx) => [ctx.db, ctx.category, ctx.fieldMeta]],
   ];
   for (const [surfaceKey, stepName, argsFn] of executeWiring) {
     it(`${surfaceKey}.execute calls steps.${stepName} with correct args`, () => {
@@ -223,7 +221,7 @@ describe('buildCategorySurfaces', () => {
   }
 
   // Table-driven: null hooks
-  const nullBeforeKeys = ['products', 'backfill_links', 'source_key_review'];
+  const nullBeforeKeys = ['products', 'backfill_links'];
   for (const key of nullBeforeKeys) {
     it(`${key}.before is null`, () => {
       const { steps } = makeStubSteps();
@@ -233,7 +231,7 @@ describe('buildCategorySurfaces', () => {
     });
   }
 
-  const nullAfterKeys = ['components', 'component_overrides', 'lists', 'products', 'backfill_links', 'source_key_review'];
+  const nullAfterKeys = ['components', 'component_overrides', 'lists', 'products', 'backfill_links'];
   for (const key of nullAfterKeys) {
     it(`${key}.after is null`, () => {
       const { steps } = makeStubSteps();
@@ -247,10 +245,10 @@ describe('buildCategorySurfaces', () => {
 // ── buildReseedSurfaces ─────────────────────────────────────────────────────
 
 describe('buildReseedSurfaces', () => {
-  it('returns exactly 6 entries', () => {
+  it('returns exactly 8 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 7);
+    assert.equal(surfaces.length, 8);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -263,7 +261,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map', 'field_candidates'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'llm_route_matrix', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
@@ -295,10 +293,10 @@ describe('buildReseedSurfaces', () => {
     assert.equal(entry.shouldRun({ indexLabRoot: null }), false);
   });
 
-  it('color_edition, llm_route_matrix, overrides, field_key_order, field_studio_map shouldRun is null', () => {
+  it('color_edition, product_images, llm_route_matrix, field_key_order, field_studio_map, field_candidates, published_fields shouldRun is null', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    for (const key of ['color_edition', 'llm_route_matrix', 'overrides', 'field_key_order', 'field_studio_map', 'field_candidates']) {
+    for (const key of ['color_edition', 'product_images', 'llm_route_matrix', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields']) {
       const entry = surfaces.find(s => s.key === key);
       assert.equal(entry.shouldRun, null, `${key} shouldRun`);
     }
@@ -363,7 +361,7 @@ describe('key uniqueness', () => {
     const keys = allSurfaces.map(s => s.key);
     const unique = new Set(keys);
     assert.equal(unique.size, keys.length, `duplicate keys found: ${keys.filter((k, i) => keys.indexOf(k) !== i)}`);
-    assert.equal(unique.size, 16, 'expected 16 total surfaces');
+    assert.equal(unique.size, keys.length, 'expected no duplicate surface keys');
   });
 });
 
@@ -383,8 +381,6 @@ describe('topologicalSort', () => {
     ['components', 'products'],
     ['lists', 'products'],
     ['products', 'backfill_links'],
-    ['products', 'source_key_review'],
-    ['backfill_links', 'source_key_review'],
   ];
   for (const [before, after] of orderingConstraints) {
     it(`${before} appears before ${after}`, () => {

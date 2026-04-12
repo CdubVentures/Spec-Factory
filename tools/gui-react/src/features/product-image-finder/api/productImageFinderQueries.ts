@@ -48,6 +48,21 @@ export function useDeleteProductImageFinderRunMutation(category: string, product
   });
 }
 
+export function useDeleteProductImageMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<ProductImageFinderDeleteResponse, Error, string>({
+    mutationFn: (filename: string) => api.del<ProductImageFinderDeleteResponse>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images/${encodeURIComponent(filename)}`,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
 export function useDeleteProductImageFinderAllMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 

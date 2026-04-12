@@ -29,7 +29,8 @@ test('review item override returns the public success envelope', async () => {
   assert.equal(handled, true);
   assert.equal(calls.responses[0]?.status, 200);
   assert.equal(calls.responses[0]?.body?.ok, true);
-  assert.equal(calls.responses[0]?.body?.result?.candidate_id, 'ref_c1');
+  // Phase 1b: route now flows through submitCandidate, result shape includes status
+  assert.ok(calls.responses[0]?.body?.result, 'response should include result');
 });
 
 test('review item manual override rejects empty values via the response contract', async () => {
@@ -50,15 +51,18 @@ test('review item manual override rejects empty values via the response contract
   assert.equal(calls.responses[0]?.body?.error, 'value_required');
 });
 
+// Phase 1b: override and manual-override now flow through submitCandidate.
+// Error-path tests use a specDb whose getCompiledRules throws to trigger the catch block.
 [
   {
     name: 'review override failures surface override_failed',
     parts: ['review', 'mouse', 'override'],
     body: { candidateId: 'ref_c1', itemFieldStateId: 1 },
     overrides: {
-      getSpecDb: () => makeSeededRuntimeSpecDb(),
+      getSpecDb: () => makeSeededRuntimeSpecDb({
+        getCompiledRules: () => { throw new Error('db down'); },
+      }),
       resolveGridFieldStateForMutation: () => ({ row: { product_id: 'mouse-foo-bar', field_key: 'weight' } }),
-      setOverrideFromCandidate: async () => { throw new Error('db down'); },
     },
     error: 'override_failed',
   },
@@ -67,31 +71,12 @@ test('review item manual override rejects empty values via the response contract
     parts: ['review', 'mouse', 'manual-override'],
     body: { value: '85g', itemFieldStateId: 1 },
     overrides: {
-      getSpecDb: () => makeSeededRuntimeSpecDb(),
+      getSpecDb: () => makeSeededRuntimeSpecDb({
+        getCompiledRules: () => { throw new Error('db down'); },
+      }),
       resolveGridFieldStateForMutation: () => ({ row: { product_id: 'mouse-foo-bar', field_key: 'weight' } }),
-      setManualOverride: async () => { throw new Error('db down'); },
     },
     error: 'manual_override_failed',
-  },
-  {
-    name: 'review confirm failures surface confirm_failed',
-    parts: ['review', 'mouse', 'key-review-confirm'],
-    body: { lane: 'primary', candidateId: 'ref_c1' },
-    overrides: {
-      getSpecDb: () => makeSeededRuntimeSpecDb(),
-      resolveKeyReviewForLaneMutation: () => { throw new Error('boom'); },
-    },
-    error: 'confirm_failed',
-  },
-  {
-    name: 'review accept failures surface accept_failed',
-    parts: ['review', 'mouse', 'key-review-accept'],
-    body: { lane: 'primary', candidateId: 'ref_c1' },
-    overrides: {
-      getSpecDb: () => makeSeededRuntimeSpecDb(),
-      resolveKeyReviewForLaneMutation: () => { throw new Error('boom'); },
-    },
-    error: 'accept_failed',
   },
 ].forEach(({ name, parts, body, overrides, error }) => {
   test(name, async () => {

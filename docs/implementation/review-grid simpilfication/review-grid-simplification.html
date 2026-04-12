@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Grid Simplification &mdash; Implementation Guide</title>
+<style>
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --border: #e1e4e8;
+    --border-light: #eef0f3;
+    --text: #24292e;
+    --text-muted: #586069;
+    --text-subtle: #8b949e;
+    --accent: #0366d6;
+    --accent-bg: #f1f8ff;
+    --green: #28a745;
+    --green-bg: #dcffe4;
+    --green-border: #b4e8c1;
+    --yellow: #dbab09;
+    --yellow-bg: #fffdef;
+    --yellow-border: #ffe58f;
+    --red: #d73a49;
+    --red-bg: #ffeef0;
+    --red-border: #fdaeb7;
+    --gray-bg: #f6f8fa;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; }
+  .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--gray-bg); padding: 0.15em 0.4em; border-radius: 4px; }
+  pre { font-family: var(--mono); font-size: 0.82em; background: var(--gray-bg); padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 0.75rem 0; border: 1px solid var(--border-light); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15em 0.55em;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge-done { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-next { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .badge-future { background: var(--gray-bg); color: var(--text-subtle); border: 1px solid var(--border); }
+  .badge-removed { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.88rem; }
+  th { background: var(--gray-bg); font-weight: 600; text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg); }
+
+  .stat-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    min-width: 140px;
+    flex: 1;
+  }
+  .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .timeline {
+    position: relative;
+    padding-left: 1.75rem;
+    margin: 1rem 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.35rem;
+    top: 0.45rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface);
+  }
+  .timeline-item.done::before { background: var(--green); border-color: var(--green); }
+  .timeline-item.next::before { background: var(--yellow); border-color: var(--yellow); }
+  .timeline-item.future::before { background: var(--surface); border-color: var(--text-subtle); }
+  .timeline-title { font-weight: 600; font-size: 0.95rem; }
+  .timeline-detail { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+  .file-list { font-size: 0.85rem; }
+  .file-list li { margin: 0.2rem 0; }
+  .deleted { text-decoration: line-through; color: var(--red); }
+  .stubbed { color: var(--yellow); }
+  .edited { color: var(--accent); }
+
+  hr { border: none; border-top: 1px solid var(--border-light); margin: 2rem 0; }
+  .footer { font-size: 0.78rem; color: var(--text-subtle); margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<h1>Review Grid Simplification</h1>
+<p class="subtitle">Implementation guide &mdash; what was done, what remains, and the target architecture.<br>Last updated: 2026-04-11</p>
+
+<!-- ─── BEFORE / AFTER ─── -->
+<h2>Before &amp; After</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+  <div class="card" style="border-left: 3px solid var(--red);">
+    <h3>Before (old model)</h3>
+    <ul style="font-size:0.88rem; padding-left:1.25rem;">
+      <li>8 tables serving the review grid</li>
+      <li>Accept / confirm / finalize workflow</li>
+      <li>AI primary + shared lane state tracking</li>
+      <li>Human accept step required</li>
+      <li>Flag inference from summary + key_review_state</li>
+      <li>17 bootstrap domain keys</li>
+      <li>Override files + JSON artifacts + DB writes</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left: 3px solid var(--green);">
+    <h3>After (new model)</h3>
+    <ul style="font-size:0.88rem; padding-left:1.25rem;">
+      <li><strong>2 tables only:</strong> <code>products</code> + <code>field_candidates</code></li>
+      <li>Pipeline validates &rarr; auto-publishes &rarr; done</li>
+      <li>No accept, no confirm, no flags</li>
+      <li>Resolved candidate = published value</li>
+      <li>6 bootstrap domain keys</li>
+      <li>2 user actions: override + AI review (future)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ─── STATS ─── -->
+<div class="stat-row">
+  <div class="stat"><div class="stat-value">6</div><div class="stat-label">Tables Removed</div></div>
+  <div class="stat"><div class="stat-value">11</div><div class="stat-label">Dead Functions Removed</div></div>
+  <div class="stat"><div class="stat-value">~50</div><div class="stat-label">Files Touched</div></div>
+  <div class="stat"><div class="stat-value">~20</div><div class="stat-label">Dead Test Files Deleted</div></div>
+  <div class="stat"><div class="stat-value">7731</div><div class="stat-label">Tests Passing</div></div>
+  <div class="stat"><div class="stat-value">11</div><div class="stat-label">Pre-existing Failures</div></div>
+</div>
+
+<!-- ─── TIMELINE ─── -->
+<h2>Implementation Timeline</h2>
+
+<div class="timeline">
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 1 &mdash; Remove dead domain functions from bootstrap <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Removed 11 dead functions from the bootstrap wiring chain (5 from <code>reviewGridStateRuntime</code>, 5 stubbed from <code>reviewCandidateRuntime</code>, 1 <code>propagateSharedLaneDecision</code>).
+      Deleted <code>reviewGridStateRuntime.js</code> entirely. Fixed <code>isMeaningfulValue</code> destructure bug in <code>reviewRoutes.js</code>.
+      Bootstrap domain keys: 17 &rarr; 6.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 1b &mdash; Remove 6 dead tables + stores + callers <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Removed tables: <code>item_field_state</code>, <code>product_review_state</code>, <code>key_review_state</code>,
+      <code>key_review_runs</code>, <code>key_review_run_sources</code>, <code>key_review_audit</code>.
+      Deleted <code>keyReviewStore.js</code>. Gutted dead methods from <code>itemStateStore.js</code> and <code>specDb.js</code>.
+      Cleaned ~9 domain callers, seed pipeline, integrity checks, purge/deletion stores.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Item 1 &mdash; Fix ecosystem test failures <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Fixed 7 new test failures (COMP-11, ENUM-03/06/07/09) by seeding <code>compiled_rules</code> component_dbs
+      in the test harness and adding source-based confidence logic for manual enum values.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Item 2 &mdash; Contract/type dead field cleanup <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Removed <code>primary_review_status</code>, <code>shared_review_status</code>, <code>human_accepted</code>
+      from backend contract, frontend types, and 3 component review TSX files. Regenerated codegen output.
+    </div>
+  </div>
+
+  <div class="timeline-item next">
+    <div class="timeline-title">Item 3 &mdash; Frontend cleanup <span class="badge badge-next">Next</span></div>
+    <div class="timeline-detail">
+      Simplify the review grid frontend. Remove dead imports, vestigial state, and unused wiring
+      now that the backend is clean. The grid only needs: products-index, candidates, override, manual-override.
+    </div>
+  </div>
+
+  <div class="timeline-item future">
+    <div class="timeline-title">Future &mdash; AI review backend wiring <span class="badge badge-future">Future</span></div>
+    <div class="timeline-detail">
+      Pre-wired "Run AI Review" buttons exist in the drawer UI. Backend endpoints not connected yet.
+      Per-source and all-source AI review flows to be implemented.
+    </div>
+  </div>
+</div>
+
+<!-- ─── TABLES REMOVED ─── -->
+<h2>Tables Removed</h2>
+
+<table>
+  <thead>
+    <tr><th>Table</th><th>Was</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>item_field_state</code></td><td>Per-product field values, overrides, AI review flags</td><td><span class="badge badge-removed">Removed</span></td></tr>
+    <tr><td><code>product_review_state</code></td><td>Product-level review workflow (pending/approved)</td><td><span class="badge badge-removed">Removed</span></td></tr>
+    <tr><td><code>key_review_state</code></td><td>AI/human lane decisions (accept/confirm per slot)</td><td><span class="badge badge-removed">Removed</span></td></tr>
+    <tr><td><code>key_review_runs</code></td><td>AI review execution logs</td><td><span class="badge badge-removed">Removed</span></td></tr>
+    <tr><td><code>key_review_run_sources</code></td><td>Source assertions for AI review runs</td><td><span class="badge badge-removed">Removed</span></td></tr>
+    <tr><td><code>key_review_audit</code></td><td>Review audit trail (accept/override events)</td><td><span class="badge badge-removed">Removed</span></td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.85rem; color:var(--text-muted);">
+  Existing <code>.sqlite</code> files may still contain these as orphaned tables. They are harmless and take no space in queries.
+  New databases created after this change will not have them.
+</p>
+
+<!-- ─── WHAT REMAINS ─── -->
+<h2>Review Grid Architecture (Current)</h2>
+
+<h3>Two tables, two actions</h3>
+<div class="card">
+  <table>
+    <thead><tr><th>Table</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>products</code></td><td>Every product per category (seeded from product.json)</td></tr>
+      <tr><td><code>field_candidates</code></td><td>All candidates, sources, confidence. <code>status='resolved'</code> = published value.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Data flow</h3>
+  <pre>Pipeline extracts value
+  &rarr; submitCandidate()
+  &rarr; validateField() rejects bad data at the gate
+  &rarr; if confidence meets threshold &rarr; publishCandidate() marks resolved
+  &rarr; Done. No human accept step.
+
+Override:
+  User picks candidate or types value
+  &rarr; submitCandidate() with confidence 1.0
+  &rarr; auto-publishes, cycles back to grid</pre>
+</div>
+
+<div class="card">
+  <h3>Grid cell states</h3>
+  <table>
+    <thead><tr><th>State</th><th>Meaning</th><th>Color</th></tr></thead>
+    <tbody>
+      <tr><td>Has resolved candidate</td><td>Published value, show confidence color</td><td style="color:var(--green);">green/yellow</td></tr>
+      <tr><td>No resolved candidate</td><td>Empty field, no data yet</td><td style="color:var(--text-subtle);">gray</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── FILES CHANGED ─── -->
+<h2>Key Files Changed</h2>
+
+<h3>Deleted</h3>
+<ul class="file-list">
+  <li><code class="deleted">src/features/review/domain/reviewGridStateRuntime.js</code> &mdash; all 5 grid state functions dead</li>
+  <li><code class="deleted">src/db/stores/keyReviewStore.js</code> &mdash; all 17 methods dead</li>
+  <li><code class="deleted">src/features/review/domain/keyReviewState.js</code> &mdash; stubbed to no-op (applySharedLaneState still imported)</li>
+  <li><code class="deleted">~20 test files</code> &mdash; dead lane/state/harness tests</li>
+</ul>
+
+<h3>Edited (backend)</h3>
+<ul class="file-list">
+  <li><code>src/db/specDbSchema.js</code> &mdash; 6 tables + 7 indexes removed</li>
+  <li><code>src/db/specDb.js</code> &mdash; ~30 dead delegation methods removed, 3 methods stubbed</li>
+  <li><code>src/db/stores/itemStateStore.js</code> &mdash; 17 dead methods removed, 11 alive (links only)</li>
+  <li><code>src/db/specDbStatements.js</code> &mdash; 5 dead prepared statements + 1 stubbed</li>
+  <li><code>src/db/specDbMigrations.js</code> &mdash; 11 dead ALTER TABLE + 8 dead indexes removed</li>
+  <li><code>src/app/api/bootstrap/createBootstrapDomainRuntimes.js</code> &mdash; 11 dead wiring removed</li>
+  <li><code>src/app/api/serverBootstrap.js</code> &mdash; domain array 17 &rarr; 6 keys</li>
+  <li><code>src/app/api/guiServerRuntime.js</code> &mdash; domain destructure 17 &rarr; 6 keys</li>
+  <li><code>src/features/review/api/reviewRoutes.js</code> &mdash; isMeaningfulValue bug fixed</li>
+  <li><code>src/features/review/api/componentMutationRoutes.js</code> &mdash; getKeyReviewState calls removed</li>
+  <li><code>src/features/review/api/enumMutationRoutes.js</code> &mdash; getKeyReviewState calls removed</li>
+  <li><code>src/features/review/domain/componentReviewSpecDb.js</code> &mdash; dead table annotations removed</li>
+  <li><code>src/features/review/domain/enumReviewData.js</code> &mdash; source-based confidence logic</li>
+  <li><code>src/features/review/contracts/reviewFieldContract.js</code> &mdash; 3 dead candidate fields removed</li>
+  <li><code>src/db/seed.js</code> &mdash; dead table writes removed</li>
+</ul>
+
+<h3>Edited (frontend)</h3>
+<ul class="file-list">
+  <li><code>tools/gui-react/src/types/review.ts</code> &mdash; 3 dead fields removed from ReviewCandidate</li>
+  <li><code>tools/gui-react/src/types/review.generated.ts</code> &mdash; regenerated from contract</li>
+  <li><code>tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx</code> &mdash; shared_review_status reads removed</li>
+  <li><code>tools/gui-react/src/pages/component-review/ComponentSubTab.tsx</code> &mdash; shared_review_status reads removed</li>
+  <li><code>tools/gui-react/src/pages/component-review/EnumSubTab.tsx</code> &mdash; shared_review_status reads removed</li>
+  <li><code>tools/gui-react/scripts/generateReviewTypes.js</code> &mdash; dead KEY_REVIEW_LANE_SHAPE import removed</li>
+</ul>
+
+<!-- ─── WHAT'S NEXT ─── -->
+<h2>What Remains</h2>
+
+<h3>Item 3: Frontend cleanup <span class="badge badge-next">Next</span></h3>
+<div class="card">
+  <p>The backend is clean. The frontend review grid (<code>ReviewPage.tsx</code>, <code>ReviewMatrix.tsx</code>) needs a simplification pass:</p>
+  <ul style="font-size:0.88rem; padding-left:1.25rem;">
+    <li>Remove any dead imports or vestigial state that referenced the old accept/confirm model</li>
+    <li>Verify the grid only fetches: <code>/products-index</code>, <code>/candidates/:pid/:field</code></li>
+    <li>Verify mutations only use: <code>/override</code>, <code>/manual-override</code></li>
+    <li>Remove the dead <code>/finalize</code> endpoint reference (noted in CLAUDE.md Known Active Drift)</li>
+    <li>Clean up the review store if it tracks dead state (accept/confirm flags)</li>
+  </ul>
+</div>
+
+<h3>Stale test files <span class="badge badge-future">Low priority</span></h3>
+<div class="card">
+  <p>These test files were flagged as already-stale but left alone (cosmetic dead stubs in mocks):</p>
+  <ul style="font-size:0.85rem; padding-left:1.25rem;">
+    <li><code>src/features/review/api/tests/fixtures/reviewMutationRouteBuilders.js</code></li>
+    <li><code>src/features/review/api/tests/reviewRoutesDataChangeContract.test.js</code></li>
+    <li><code>src/features/review/api/tests/reviewLaneContractApi.audit.md</code></li>
+  </ul>
+</div>
+
+<h3>Orphaned dead code in other features <span class="badge badge-future">Low priority</span></h3>
+<div class="card">
+  <ul style="font-size:0.85rem; padding-left:1.25rem;">
+    <li><code>applySharedLaneState</code> is stubbed to <code>return null</code> &mdash; still imported by 18 files.
+      Safe to remove all call sites in a follow-up pass.</li>
+    <li><code>overrideHelpers.js</code> / <code>overrideWorkflow.js</code> &mdash; override functions no longer write to DB.
+      The JSON SSOT path is still used but the DB sync path is dead.</li>
+    <li><code>exportOverridesCommand.js</code> &mdash; CLI command stubbed to return empty.
+      Either remove or rewire to read from <code>field_candidates</code>.</li>
+  </ul>
+</div>
+
+<h3>Future: AI review backend <span class="badge badge-future">Future</span></h3>
+<div class="card">
+  <p>Pre-wired "Run AI Review" buttons exist in the drawer UI (<code>CellDrawer.tsx</code>).
+    The backend endpoint is not connected. Implementation needs:</p>
+  <ul style="font-size:0.88rem; padding-left:1.25rem;">
+    <li>Per-source AI review: send single source data to LLM for validation</li>
+    <li>All-source AI review: send all candidates for cross-reference</li>
+    <li>Results flow through <code>submitCandidate()</code> &rarr; validates &rarr; auto-publishes</li>
+    <li>Uses <code>llm_route_matrix</code> for model/difficulty/effort routing</li>
+  </ul>
+</div>
+
+<hr>
+
+<!-- ─── VERIFICATION ─── -->
+<h2>Verification Status</h2>
+
+<table>
+  <thead><tr><th>Check</th><th>Result</th><th>Date</th></tr></thead>
+  <tbody>
+    <tr><td><code>npm run gui:build</code></td><td style="color:var(--green);">Pass</td><td>2026-04-11</td></tr>
+    <tr><td><code>npm test</code></td><td>7731 pass / 11 fail (all pre-existing)</td><td>2026-04-11</td></tr>
+    <tr><td>Schema reference regenerated</td><td>38 tables (was 44)</td><td>2026-04-11</td></tr>
+    <tr><td>Contract tests</td><td style="color:var(--green);">66/66 pass</td><td>2026-04-11</td></tr>
+    <tr><td>Ecosystem tests</td><td style="color:var(--green);">All pass (component + enum + grid)</td><td>2026-04-11</td></tr>
+    <tr><td>Bootstrap domain keys</td><td>6 (was 17)</td><td>2026-04-11</td></tr>
+    <tr><td>Total bootstrap keys</td><td>49 (was 60)</td><td>2026-04-11</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  Generated 2026-04-11. This document describes the review grid simplification work performed in Phases 1, 1b, Items 1&ndash;2.
+</div>
+
+</body>
+</html>

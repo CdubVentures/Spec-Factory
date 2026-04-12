@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SpecDb } from '../../db/specDb.js';
-import { buildComponentIdentifier } from '../componentIdentifier.js';
 
 const CATEGORY = 'mouse';
 
@@ -41,12 +40,6 @@ function getAliases(specDb, componentIdentityId) {
   return specDb.db.prepare(
     'SELECT * FROM component_aliases WHERE component_id = ?'
   ).all(componentIdentityId);
-}
-
-function getKeyReviewStates(specDb, componentIdentifier) {
-  return specDb.db.prepare(
-    'SELECT * FROM key_review_state WHERE category = ? AND component_identifier = ?'
-  ).all(CATEGORY, componentIdentifier);
 }
 
 function seedTwoIdentitiesWithCollision(specDb) {
@@ -122,44 +115,13 @@ function seedTwoIdentitiesWithCollision(specDb) {
   specDb.insertAlias(targetId, 'imx989', 'component_db');
   specDb.insertAlias(sourceId, 'imx 989', 'pipeline');
 
-  const targetIdentifier = buildComponentIdentifier('sensor', 'IMX989', 'Sony');
-  const sourceIdentifier = buildComponentIdentifier('sensor', 'IMX989', '');
-
-  specDb.upsertKeyReviewState({
-    category: CATEGORY,
-    targetKind: 'component_key',
-    fieldKey: 'sensor',
-    componentIdentifier: targetIdentifier,
-    componentIdentityId: targetId,
-    propertyKey: '__name',
-    aiConfirmSharedStatus: 'confirmed',
-  });
-  specDb.upsertKeyReviewState({
-    category: CATEGORY,
-    targetKind: 'component_key',
-    fieldKey: 'sensor',
-    componentIdentifier: sourceIdentifier,
-    componentIdentityId: sourceId,
-    propertyKey: '__name',
-    aiConfirmSharedStatus: 'pending',
-  });
-  specDb.upsertKeyReviewState({
-    category: CATEGORY,
-    targetKind: 'component_key',
-    fieldKey: 'sensor',
-    componentIdentifier: sourceIdentifier,
-    componentIdentityId: sourceId,
-    propertyKey: 'pixel_size',
-    aiConfirmSharedStatus: 'pending',
-  });
-
-  return { sourceId, targetId, sourceIdentifier, targetIdentifier };
+  return { sourceId, targetId };
 }
 
 test('G2/G6 — mergeComponentIdentities transfers links from source to target', async () => {
   const specDb = createSpecDb();
   try {
-    const { sourceId, targetId, targetIdentifier } = seedTwoIdentitiesWithCollision(specDb);
+    const { sourceId, targetId } = seedTwoIdentitiesWithCollision(specDb);
 
     specDb.mergeComponentIdentities({ sourceId, targetId });
 
@@ -211,32 +173,6 @@ test('G2/G6 — mergeComponentIdentities transfers aliases and removes source id
     const identities = getAllIdentities(specDb, 'sensor', 'IMX989');
     assert.equal(identities.length, 1, 'only one identity should remain');
     assert.equal(identities[0].maker, 'Sony', 'surviving identity is the target');
-  } finally {
-    await cleanupSpecDb(specDb);
-  }
-});
-
-test('G2/G6 — mergeComponentIdentities updates key_review_state to target identifier', async () => {
-  const specDb = createSpecDb();
-  try {
-    const { sourceId, targetId, sourceIdentifier, targetIdentifier } = seedTwoIdentitiesWithCollision(specDb);
-
-    specDb.mergeComponentIdentities({ sourceId, targetId });
-
-    const sourceStates = getKeyReviewStates(specDb, sourceIdentifier);
-    assert.equal(sourceStates.length, 0, 'no key_review_state rows should reference source identifier');
-
-    const targetStates = getKeyReviewStates(specDb, targetIdentifier);
-    assert.ok(targetStates.length >= 2, 'target should have merged key_review_state rows');
-
-    const nameState = targetStates.find((s) => s.property_key === '__name');
-    assert.ok(nameState, 'target should have __name key_review_state');
-    assert.equal(nameState.ai_confirm_shared_status, 'confirmed',
-      'more-progressed state (confirmed) should be kept when both exist');
-
-    const pixelState = targetStates.find((s) => s.property_key === 'pixel_size');
-    assert.ok(pixelState, 'source-only key_review_state should be transferred');
-    assert.equal(pixelState.component_identity_id, targetId, 'transferred state should reference target identity');
   } finally {
     await cleanupSpecDb(specDb);
   }

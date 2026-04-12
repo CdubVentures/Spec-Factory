@@ -192,40 +192,8 @@ export function latestKeys(storage, category, productId) {
 // ── File I/O ────────────────────────────────────────────────────────
 
 export async function readOverrideFile(filePath, { specDb = null, category = '', productId = '' } = {}) {
-  // WHY: Phase E2c — read from SQL when available, file fallback for backward compat
-  if (specDb && productId) {
-    try {
-      const reviewState = specDb.getProductReviewState(productId);
-      const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
-      if (reviewState || overriddenRows.length > 0) {
-        const overrides = {};
-        for (const row of overriddenRows) {
-          overrides[row.field_key] = {
-            field: row.field_key,
-            override_source: row.override_source || 'candidate_selection',
-            override_value: row.override_value || row.value || '',
-            override_reason: row.override_reason || null,
-            override_provenance: row.override_provenance ? JSON.parse(row.override_provenance) : null,
-            overridden_by: row.overridden_by || null,
-            overridden_at: row.overridden_at || row.updated_at || null,
-            candidate_id: row.accepted_candidate_id || '',
-            value: row.override_value || row.value || '',
-            set_at: row.overridden_at || row.updated_at || null
-          };
-        }
-        return {
-          version: 1,
-          category: category || reviewState?.category,
-          product_id: productId,
-          review_status: reviewState?.review_status || 'pending',
-          review_started_at: reviewState?.review_started_at || null,
-          reviewed_at: reviewState?.reviewed_at || null,
-          reviewed_by: reviewState?.reviewed_by || null,
-          overrides
-        };
-      }
-    } catch { /* SQL read failed — fall through to consolidated */ }
-  }
+  // Phase 1b: product_review_state / getOverriddenFieldsForProduct retired.
+  // Fall through directly to consolidated JSON (the durable SSOT).
   // WHY: Overlap 0d — fallback to consolidated JSON (handles edit→rebuild gap)
   try {
     const { readProductFromConsolidated } = await import('../../../shared/consolidatedOverrides.js');
