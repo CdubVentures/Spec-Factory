@@ -63,7 +63,6 @@ export function registerReviewRoutes(ctx) {
     buildComponentReviewLayout,
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
-    readLatestArtifacts,
     sessionCache,
     reviewLayoutByCategory,
     broadcastWs,

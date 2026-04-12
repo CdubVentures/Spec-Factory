@@ -231,13 +231,13 @@ const lifecycleMap = {
     'Current source files drive a fresh rebuild, but runtime enum/list review edits are SQL-first and not auto-exported.'
   ),
   item_component_links: life(
-    'Derived from latest/normalized.json + component seed surfaces',
+    'Derived from field_candidates (resolved) + component seed surfaces',
     'partial',
     'yes',
     'Fresh rebuild reflects current normalized output and component sources, but runtime component edits not mirrored to JSON still disappear.'
   ),
   item_list_links: life(
-    'Derived from latest/normalized.json + enum/list seed surfaces',
+    'Derived from field_candidates (resolved) + enum/list seed surfaces',
     'partial',
     'yes',
     'Fresh rebuild reflects current normalized output and enum/list sources, but runtime enum review edits not mirrored to JSON still disappear.'

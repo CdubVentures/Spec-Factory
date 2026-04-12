@@ -7,19 +7,18 @@ import {
 } from '../overrideWorkflow.js';
 import {
   createReviewOverrideHarness,
-  readLatestArtifacts,
   seedFieldRulesArtifacts,
   seedLatestArtifacts,
   seedReviewCandidates,
 } from './helpers/reviewOverrideHarness.js';
+import { readOverridePayload } from './helpers/reviewOverrideHarness.js';
 
-test('finalizeOverrides applies candidate overrides to latest artifacts', async (t) => {
+test('finalizeOverrides applies candidate overrides and reports applied fields', async (t) => {
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-finalize-apply',
   });
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
-  // WHY: Runtime engine reads compiled rules from specDb — seed them so type coercion works.
   specDb.upsertCompiledRules(JSON.stringify({
     fields: {
       weight: {
@@ -29,7 +28,7 @@ test('finalizeOverrides applies candidate overrides to latest artifacts', async 
     },
   }));
   await seedReviewCandidates(harness);
-  await seedLatestArtifacts(harness);
+  seedLatestArtifacts(harness);
   await setOverrideFromCandidate({
     storage,
     config,
@@ -48,11 +47,12 @@ test('finalizeOverrides applies candidate overrides to latest artifacts', async 
     specDb,
     applyOverrides: true,
   });
-  const { normalized, provenance, summary } = await readLatestArtifacts(harness);
 
   assert.equal(finalizeResult.applied, true);
   assert.equal(finalizeResult.applied_count, 1);
-  assert.equal(normalized.fields.weight, 59);
-  assert.equal(summary.field_reasoning.weight.unknown_reason, null);
-  assert.equal(provenance.weight.override.candidate_id, 'cand_1');
+  assert.deepEqual(finalizeResult.applied_fields, ['weight']);
+
+  const overrideDoc = await readOverridePayload(harness);
+  assert.equal(overrideDoc.review_status, 'approved');
+  assert.ok(overrideDoc.overrides.weight);
 });

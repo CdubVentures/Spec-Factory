@@ -281,4 +281,48 @@ describe('runCarouselLoop', () => {
     assert.equal(result.rejected, true);
     assert.equal(result.totalLlmCalls, 0);
   });
+
+  it('forced cycle: runs 1 call per budget view + 1 hero when already complete', async () => {
+    const pid = 'loop-forced';
+    writeCefData(pid, SIMPLE_CEF);
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '1',
+      heroEnabled: 'true',
+      heroCount: '1',
+      viewAttemptBudget: '3',
+      heroAttemptBudget: '2',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+
+    // First loop: fill everything (satisfaction=1, side-catches)
+    const { callLlm: fillLlm } = createMockLlm(['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'hero']);
+    await runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb, config: {}, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: fillLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    // Second loop: carousel already complete → forced cycle
+    const forcedCalls = [];
+    const forcedLlm = async (args) => {
+      forcedCalls.push(args);
+      return {
+        images: [{ view: 'top', url: `http://localhost:${serverPort}/forced-${forcedCalls.length}.png`, source_page: '', alt_text: '' }],
+        discovery_log: { urls_checked: [`http://forced-${forcedCalls.length}`], queries_run: [], notes: [] },
+      };
+    };
+
+    const result = await runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb, config: {}, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: forcedLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    // mouse budget = 6 views + 1 hero = 7 forced calls
+    assert.equal(result.rejected, false);
+    assert.equal(forcedCalls.length, 7, `expected 7 forced calls (6 views + 1 hero), got ${forcedCalls.length}`);
+    assert.equal(result.totalLlmCalls, 7);
+  });
 });

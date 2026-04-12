@@ -136,7 +136,7 @@
 <body>
 
 <h1>Review Grid Simplification</h1>
-<p class="subtitle">Implementation guide &mdash; completed work across all phases.<br>Last updated: 2026-04-11</p>
+<p class="subtitle">Implementation guide &mdash; completed work across all phases.<br>Last updated: 2026-04-12</p>
 
 <!-- ─── BEFORE / AFTER ─── -->
 <h2>Before &amp; After</h2>
@@ -172,10 +172,10 @@
 <!-- ─── STATS ─── -->
 <div class="stat-row">
   <div class="stat"><div class="stat-value">8</div><div class="stat-label">Tables Removed</div></div>
-  <div class="stat"><div class="stat-value">~20</div><div class="stat-label">Dead Functions Removed</div></div>
-  <div class="stat"><div class="stat-value">~80</div><div class="stat-label">Files Touched</div></div>
-  <div class="stat"><div class="stat-value">~25</div><div class="stat-label">Dead Test Files Deleted</div></div>
-  <div class="stat"><div class="stat-value">258</div><div class="stat-label">Review Tests Passing</div></div>
+  <div class="stat"><div class="stat-value">~40</div><div class="stat-label">Dead Functions Removed</div></div>
+  <div class="stat"><div class="stat-value">~120</div><div class="stat-label">Files Touched</div></div>
+  <div class="stat"><div class="stat-value">~35</div><div class="stat-label">Dead Files Deleted</div></div>
+  <div class="stat"><div class="stat-value">251</div><div class="stat-label">Review Tests Passing</div></div>
   <div class="stat"><div class="stat-value">883</div><div class="stat-label">Ghost Products Purged</div></div>
 </div>
 
@@ -237,19 +237,60 @@
     </div>
   </div>
 
-  <div class="timeline-item future">
-    <div class="timeline-title">Future &mdash; AI review backend wiring <span class="badge badge-future">Future</span></div>
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 6 &mdash; Stub cleanup sweep <span class="badge badge-done">Done</span></div>
     <div class="timeline-detail">
-      Pre-wired "Run AI Review" button exists in the drawer UI. Backend endpoint not connected yet.
+      Deleted <code>overridesReseed.js</code> (dead SQL), <code>keyReviewState.js</code> (no-op stub),
+      <code>queueWebSocket.js</code> (328 LOC dead WS server), <code>buildReviewQueue</code> + <code>writeCategoryReviewArtifacts</code> stubs.
+      Removed <code>applySharedLaneState</code> from entire mutation pipeline (~15 files).
+      Removed <code>DELETE FROM key_review_state</code> dead SQL from seed.js.
+      De-factoried <code>reviewCandidateRuntime.js</code> to direct exports.
+      Deleted CLI <code>queue</code> + <code>ws-queue</code> subcommands.
+      10 files deleted, ~38 files edited.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 7 &mdash; CellDrawer dead prop cleanup <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Removed 14 dead props from CellDrawer (entire primary-lane infrastructure).
+      Removed <code>pendingAIPrimary</code>, <code>pendingAI</code> from ReviewValueCell.
+      Renamed <code>pendingAIConfirmation</code> &rarr; <code>pendingAIShared</code> in component review consumers.
+      CellDrawer: 703 &rarr; ~430 LOC.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 8 &mdash; File-based fallback removal <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      Removed all <code>latest/normalized.json</code>, <code>provenance.json</code>, <code>candidates.json</code> fallback reads from
+      <code>buildProductReviewPayload()</code>. Always uses specDb. CLI <code>build</code> wrapped in <code>withSpecDb</code>.
+      3 tests rewritten from file fixtures to specDb ecosystem harness.
+    </div>
+  </div>
+
+  <div class="timeline-item done">
+    <div class="timeline-title">Phase 9 &mdash; Drawer target design convergence <span class="badge badge-done">Done</span></div>
+    <div class="timeline-detail">
+      "Current Value" &rarr; "Published Value". "Accepted" badge &rarr; "Published".
+      "Accept" button &rarr; "Override". AI Review button moved to bottom ("AI Review All Sources").
+      Added "Click any candidate to override" hint. Removed "Accepted" status banner.
     </div>
   </div>
 
   <div class="timeline-item future">
-    <div class="timeline-title">Future &mdash; CellDrawer dead prop cleanup <span class="badge badge-future">Future</span></div>
+    <div class="timeline-title">Next &mdash; Component review convergence <span class="badge badge-future">Next</span></div>
     <div class="timeline-detail">
-      CellDrawer still has ~14 dead props from the old two-lane accept/confirm model.
-      Component review still uses some (shared lane). Field review passes none of them.
-      See <code>drawer-target-design.html</code> for the target ~10 prop interface.
+      Retire confirm/accept/pending-AI from component review. Same override-only model as field review.
+      Authoritative values auto-propagate. Constraint violations auto-flag for AI review.
+      See <a href="component-review-convergence.html">component-review-convergence.html</a>.
+    </div>
+  </div>
+
+  <div class="timeline-item future">
+    <div class="timeline-title">Future &mdash; AI review backend <span class="badge badge-future">Future</span></div>
+    <div class="timeline-detail">
+      "AI Review All Sources" button placeholder exists. No local AI model yet. Backend wiring deferred.
     </div>
   </div>
 </div>
@@ -335,17 +376,21 @@ Override:
 <table>
   <thead><tr><th>Check</th><th>Result</th><th>Date</th></tr></thead>
   <tbody>
-    <tr><td><code>tsc --noEmit</code></td><td style="color:var(--green);">0 errors</td><td>2026-04-11</td></tr>
-    <tr><td>Review tests</td><td style="color:var(--green);">258 pass / 0 fail</td><td>2026-04-11</td></tr>
+    <tr><td><code>tsc --noEmit</code></td><td style="color:var(--green);">0 errors</td><td>2026-04-12</td></tr>
+    <tr><td>Review tests</td><td style="color:var(--green);">251 pass / 0 fail</td><td>2026-04-12</td></tr>
     <tr><td>Schema reference regenerated</td><td>29 spec + 7 app = 36 tables</td><td>2026-04-11</td></tr>
     <tr><td>Ghost products purged</td><td>1256 &rarr; 373 (883 duplicates removed)</td><td>2026-04-11</td></tr>
     <tr><td>Dedup bug fixed</td><td>specDb now passed to bulk + single POST</td><td>2026-04-11</td></tr>
     <tr><td>Contract fields removed</td><td>needs_review, reason_codes, flags gone from FIELD_STATE_SHAPE</td><td>2026-04-11</td></tr>
+    <tr><td>Stub cleanup (Phase 6)</td><td>10 files deleted, ~38 edited, 0 stale refs remain</td><td>2026-04-12</td></tr>
+    <tr><td>CellDrawer (Phase 7)</td><td>14 dead props removed, 703 &rarr; ~430 LOC</td><td>2026-04-12</td></tr>
+    <tr><td>File fallback (Phase 8)</td><td>All file reads removed from buildProductReviewPayload</td><td>2026-04-12</td></tr>
+    <tr><td>Drawer convergence (Phase 9)</td><td>Labels match target design, AI button at bottom</td><td>2026-04-12</td></tr>
   </tbody>
 </table>
 
 <div class="footer">
-  Generated 2026-04-11. This document covers all review grid simplification work: Phases 1, 1b, 2, 3, 4, 5.
+  Updated 2026-04-12. Covers Phases 1&ndash;9. Next: <a href="component-review-convergence.html">Component Review Convergence</a>.
 </div>
 
 </body>

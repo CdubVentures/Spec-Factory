@@ -17,7 +17,7 @@ test('setOverrideFromCandidate accepts synthetic candidates when candidateValue 
   });
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
-  await seedLatestArtifacts(harness);
+  seedLatestArtifacts(harness);
 
   const setResult = await setOverrideFromCandidate({
     storage,

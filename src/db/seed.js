@@ -7,7 +7,7 @@
  * Seed order respects FK dependencies:
  *   1. component_identity + component_aliases + component_values
  *   2. list_values
- *   3-6. Per-product: item_field_state, item_component_links, item_list_links
+ *   3-6. Per-product: item_component_links, item_list_links, field_candidates
  */
 
 import fs from 'node:fs/promises';
@@ -756,7 +756,6 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
       if (!normalized) continue;
 
       const tx = db.db.transaction(() => {
-        // Phase 1b: upsertItemFieldState removed — item_field_state table is retired.
         const fields = isObject(normalized.fields) ? normalized.fields : {};
         const overrideMap = isObject(overrides?.overrides) ? overrides.overrides : {};
 
@@ -850,7 +849,6 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
 }
 
 // ── Backfill item_component_links from field_candidates ──────────────────────
-// Phase 1b: item_field_state retired. Uses field_candidates (resolved) instead.
 
 function backfillComponentLinks(db, fieldMeta, fieldRules) {
   const componentDBs = fieldRules.componentDBs || {};

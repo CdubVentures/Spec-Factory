@@ -77,7 +77,6 @@ function createBuildCatalog(overrides = {}) {
         variant: catalogProduct.variant || '',
         brand_identifier: '',
       }],
-      getNormalizedForProduct: (pid) => pid === 'mouse-acme-orbit-x1' ? createNormalizedIdentity() : null,
     }),
     cleanVariant,
     ...overrides,
@@ -131,7 +130,6 @@ test('catalog builder falls back to pending defaults when no summary exists', as
         variant: '',
         brand_identifier: '',
       }],
-      getNormalizedForProduct: () => null,
     }),
   });
 

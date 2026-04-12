@@ -191,27 +191,6 @@ export async function buildReviewLayout({
   };
 }
 
-export async function readLatestArtifacts(storage, category, productId, specDb = null) {
-  // WHY: specDb is primary, file fallback for test harness + review pre-wire.
-  // Production has no latest/ files (no validation stage yet).
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const normalized = (specDb ? specDb.getNormalizedForProduct(productId) : null)
-    ?? (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
-  const provenance = (specDb ? (specDb.getProvenanceForProduct(category, productId) ?? null) : null)
-    ?? (await storage.readJsonOrNull(`${latestBase}/provenance.json`))
-    ?? {};
-  const summary = (specDb ? specDb.getSummaryForProduct(productId) : null)
-    ?? (await storage.readJsonOrNull(`${latestBase}/summary.json`));
-  const candidates = await storage.readJsonOrNull(`${latestBase}/candidates.json`);
-  return {
-    latestBase,
-    normalized: normalized || { identity: {}, fields: {} },
-    provenance: provenance || {},
-    summary: summary || {},
-    candidates: candidates || {}
-  };
-}
-
 
 export function buildFieldState({
   field,

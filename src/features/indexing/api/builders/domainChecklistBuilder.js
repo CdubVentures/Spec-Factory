@@ -64,11 +64,7 @@ export function createDomainChecklistBuilder({
     }
 
     if (!resolvedRunId && resolvedProductId) {
-      const latestBase = storage.resolveOutputKey(normalizedCategory, resolvedProductId, 'latest');
-      const latestSummary = specDb
-        ? specDb.getSummaryForProduct(resolvedProductId)
-        : (await storage.readJsonOrNull(`${latestBase}/summary.json`).catch(() => null));
-      resolvedRunId = String(latestSummary?.runId || '').trim();
+      resolvedRunId = '';
     }
 
     let events = [];
@@ -450,13 +446,11 @@ export function createDomainChecklistBuilder({
     };
 
     if (resolvedProductId) {
-      const latestBase = storage.resolveOutputKey(normalizedCategory, resolvedProductId, 'latest');
       const runBase = resolvedRunId
         ? storage.resolveOutputKey(normalizedCategory, resolvedProductId, 'runs', resolvedRunId)
         : null;
       const provenance =
-        (runBase && await storage.readJsonOrNull(`${runBase}/provenance/fields.provenance.json`).catch(() => null))
-        || await storage.readJsonOrNull(`${latestBase}/provenance.json`).catch(() => null);
+        (runBase && await storage.readJsonOrNull(`${runBase}/provenance/fields.provenance.json`).catch(() => null));
 
       const fieldMap = provenance && typeof provenance === 'object'
         ? (provenance.fields && typeof provenance.fields === 'object' ? provenance.fields : provenance)

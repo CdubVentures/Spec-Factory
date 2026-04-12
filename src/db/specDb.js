@@ -28,7 +28,6 @@ import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
-import { createProvenanceStore } from './stores/provenanceStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
@@ -122,10 +121,6 @@ export class SpecDb {
         _insertPromptIndexEntry: this._insertPromptIndexEntry,
         _getPromptIndexByCategory: this._getPromptIndexByCategory,
       }
-    });
-    this._provenanceStore = createProvenanceStore({
-      category: this.category,
-      stmts: { _getProvenanceForProduct: this._getProvenanceForProduct },
     });
     this._fieldStudioMapStore = createFieldStudioMapStore({
       stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap, _upsertCompiledRules: this._upsertCompiledRules },
@@ -330,18 +325,6 @@ export class SpecDb {
   syncItemListLinkForFieldValue(opts) { return this._itemStateStore.syncItemListLinkForFieldValue(opts); }
   getItemComponentLinks(productId) { return this._itemStateStore.getItemComponentLinks(productId); }
   getItemListLinks(productId) { return this._itemStateStore.getItemListLinks(productId); }
-  getProvenanceForProduct(cat, productId) { return this._provenanceStore.getProvenanceForProduct(cat ?? this.category, productId); }
-  getNormalizedForProduct(productId) {
-    const product = this.getProduct(productId);
-    return {
-      identity: { brand: product?.brand ?? '', base_model: product?.base_model ?? '', model: product?.model ?? '', variant: product?.variant ?? '' },
-      fields: {},
-    };
-  }
-  // WHY: Stubs for review grid pre-wiring. Will be backed by real data source later.
-  getSummaryForProduct() { return null; }
-  getTrafficLightForProduct() { return null; }
-
   // --- Reverse-Lookup Queries (component/enum review) ---
 
   getProductsForComponent(t, n, m) { return this._itemStateStore.getProductsForComponent(t, n, m); }

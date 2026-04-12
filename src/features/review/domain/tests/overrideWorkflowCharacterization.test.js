@@ -114,7 +114,7 @@ describe('characterization: finalizeOverrides', () => {
     const h = await createReviewOverrideHarness(t);
     await seedFieldRulesArtifacts(h);
     await seedReviewCandidates(h);
-    await seedLatestArtifacts(h);
+    seedLatestArtifacts(h);
 
     await setOverrideFromCandidate({
       storage: h.storage,
@@ -156,7 +156,7 @@ describe('characterization: finalizeOverrides', () => {
     const h = await createReviewOverrideHarness(t);
     await seedFieldRulesArtifacts(h);
     await seedReviewCandidates(h);
-    await seedLatestArtifacts(h);
+    seedLatestArtifacts(h);
 
     await setOverrideFromCandidate({
       storage: h.storage,

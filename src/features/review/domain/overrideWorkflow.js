@@ -21,7 +21,6 @@ import {
   removeFieldFromList,
   addFieldToList,
   reviewKeys,
-  latestKeys,
   findCandidateRows,
   buildCandidateOverrideEntry,
   buildCandidateMap,
@@ -421,13 +420,30 @@ export async function finalizeOverrides({
     };
   }
 
-  const latest = latestKeys(storage, category, productId);
-  const normalized = await storage.readJsonOrNull(latest.normalizedKey);
-  const provenance = await storage.readJsonOrNull(latest.provenanceKey);
-  const summary = await storage.readJsonOrNull(latest.summaryKey);
-  if (!normalized || !isObject(normalized.fields)) {
-    throw new Error(`latest normalized output not found: ${latest.normalizedKey}`);
+  // WHY: Build initial state from specDb (field_candidates + products table).
+  // latest/*.json files are retired — specDb is the sole source.
+  const dbProduct = specDb?.getProduct(productId);
+  if (!dbProduct) {
+    throw new Error(`Product not found for finalize: ${productId}`);
   }
+  const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
+  const resolvedByField = new Map();
+  for (const c of allCandidates) {
+    if (String(c.status || '').trim() === 'resolved') {
+      resolvedByField.set(normalizeField(c.field_key), c);
+    }
+  }
+  const normalized = {
+    identity: {
+      brand: dbProduct.brand ?? '',
+      model: dbProduct.model ?? '',
+      base_model: dbProduct.base_model ?? '',
+      variant: dbProduct.variant ?? '',
+    },
+    fields: Object.fromEntries([...resolvedByField].map(([k, c]) => [k, c.value ?? ''])),
+  };
+  const provenance = {};
+  const summary = {};
 
   if (!applyOverrides) {
     return {
@@ -571,7 +587,6 @@ export async function finalizeOverrides({
       override_path: consolidatedPath,
       override_count: overrideEntries.length,
       applied_count: appliedRows.length,
-      latest_keys: latest,
       runtime_gate: {
         applied: Boolean(runtimeGateResult.applied),
         failure_count: (runtimeGateResult.failures || []).length,
@@ -593,16 +608,6 @@ export async function finalizeOverrides({
     runtime_engine_warning_count: (runtimeGateResult.warnings || []).length
   };
 
-  // WHY: File writes kept for review pre-wire. Future: validation stage will replace
-  // file writes with DB → product.json update flow.
-  await Promise.all([
-    writeStorageJson(storage, latest.normalizedKey, nextNormalized),
-    writeStorageJson(storage, latest.provenanceKey, nextProvenance),
-    writeStorageJson(storage, latest.summaryKey, nextSummary)
-  ]);
-
-  // WHY: DB sync removed — will route through publisher pipeline. JSON writes above are the durable SSOT.
-
   const review = reviewKeys(storage, category, productId);
   const report = {
     version: 1,
@@ -619,7 +624,6 @@ export async function finalizeOverrides({
       failures: runtimeGateResult.failures || [],
       warnings: runtimeGateResult.warnings || []
     },
-    latest_keys: latest
   };
   await writeStorageJson(storage, review.finalizeReportKey, report);
   if (review.legacyReviewBase && review.legacyReviewBase !== review.reviewBase) {
@@ -657,7 +661,6 @@ export async function finalizeOverrides({
     override_path: consolidatedPath,
     override_count: overrideEntries.length,
     applied_count: appliedRows.length,
-    latest_keys: latest,
     finalize_report_key: review.finalizeReportKey,
     applied_fields: appliedRows.map((row) => row.field),
     runtime_gate: {

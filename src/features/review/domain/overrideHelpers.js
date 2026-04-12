@@ -177,16 +177,6 @@ export function reviewKeys(storage, category, productId) {
   };
 }
 
-export function latestKeys(storage, category, productId) {
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  return {
-    latestBase,
-    normalizedKey: `${latestBase}/normalized.json`,
-    provenanceKey: `${latestBase}/provenance.json`,
-    summaryKey: `${latestBase}/summary.json`
-  };
-}
-
 // ── File I/O ────────────────────────────────────────────────────────
 
 export async function readOverrideFile(filePath, { specDb = null, category = '', productId = '' } = {}) {

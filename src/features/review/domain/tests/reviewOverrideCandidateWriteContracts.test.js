@@ -18,7 +18,7 @@ test('setOverrideFromCandidate writes helper override entries from review candid
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
-  await seedLatestArtifacts(harness);
+  seedLatestArtifacts(harness);
 
   const setResult = await setOverrideFromCandidate({
     storage,

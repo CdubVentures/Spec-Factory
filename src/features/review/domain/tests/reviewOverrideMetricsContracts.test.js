@@ -21,7 +21,7 @@ test('buildReviewMetrics reports throughput and override ratios from finalized o
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
-  await seedLatestArtifacts(harness);
+  seedLatestArtifacts(harness);
   await seedReviewProductPayload(harness);
   await approveGreenOverrides({
     storage,

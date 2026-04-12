@@ -228,10 +228,6 @@ test('catalog routes: product detail resolves identity through specDb when catal
                 variant: 'Db Variant',
               }
             : null),
-          getProvenanceForProduct: () => ({}),
-          getNormalizedForProduct: () => ({ identity: {}, fields: {} }),
-          getSummaryForProduct: () => ({ confidence: 0.7 }),
-          getTrafficLightForProduct: () => null,
         }
       : null),
   }));

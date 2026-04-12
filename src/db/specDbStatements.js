@@ -371,9 +371,6 @@ export function prepareStatements(db) {
     _getPromptIndexByCategory: db.prepare(`
       SELECT * FROM prompt_index WHERE category = ? ORDER BY ts DESC LIMIT ?
     `),
-    // Stubbed — item_field_state retired in Phase 1b. Returns empty result set.
-    _getProvenanceForProduct: { all: () => [] },
-
     // URL crawl ledger
     _upsertUrlCrawlEntry: db.prepare(`
       INSERT INTO url_crawl_ledger (

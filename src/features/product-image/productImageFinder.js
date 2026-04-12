@@ -882,136 +882,159 @@ export async function runCarouselLoop({
   const allErrors = [];
   let totalLlmCalls = 0;
 
-  // Process variants sequentially for clean progress reporting
-  for (const variant of variants) {
-    const viewAttemptCounts = {};
-    let heroAttemptCount = 0;
+  // Shared: execute one LLM call, persist, report progress
+  async function executeOneCall({ variant, callMode, focusView, estimatedRemaining }) {
+    // Re-read fresh state from disk (discovery log accumulates across all calls)
+    const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+    const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
+    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key);
 
-    onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
+    const llmDeps = buildLlmCallDeps({
+      config, logger,
+      onPhaseChange: onStageAdvance ? (phase) => { if (phase === 'writer') onStageAdvance('Writer'); } : undefined,
+      onModelResolved: wrappedOnModelResolved,
+      onStreamChunk,
+    });
 
-    // Loop until carousel complete for this variant
-    while (true) {
-      // Re-read fresh state from disk after each persist
-      const pifDoc = readProductImages({ productId: product.product_id, productRoot });
-      const collectedImages = (pifDoc?.selected?.images || []).map((img) => ({
-        view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+    const callLlm = _callLlmOverride
+      ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
+      : callMode === 'hero'
+        ? createHeroImageFinderCallLlm(llmDeps)
+        : createProductImageFinderCallLlm(llmDeps);
+
+    let effectiveViewConfig = viewConfig;
+    if (callMode === 'view' && focusView) {
+      effectiveViewConfig = viewConfig.map((v) => ({
+        ...v,
+        priority: v.key === focusView,
       }));
-      const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
+    }
 
-      const strategy = evaluateCarousel({
-        collectedImages, viewBudget, satisfactionThreshold,
-        heroEnabled, heroCount, variantKey: variant.key,
-        viewAttemptBudget, viewAttemptCounts,
-        heroAttemptBudget, heroAttemptCount,
-      });
+    const result = await runSingleVariant({
+      product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
+      callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
+      siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
+      rmbgSession,
+      promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
+      mode: callMode,
+    });
 
-      if (strategy.isComplete) break;
+    allImages.push(...result.images);
+    allErrors.push(...result.errors);
+    totalLlmCalls++;
 
-      const currentMode = strategy.mode;
-      const focusView = strategy.focusView;
+    // Persist immediately
+    const ranAt = new Date().toISOString();
+    const selected = { images: result.images };
+    const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
+    const heroQuality = viewQualityMap.hero || {};
+    const promptArgs = callMode === 'hero'
+      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
+      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+    const systemPrompt = promptBuilder(promptArgs);
 
-      // Build LLM caller for this mode
-      const llmDeps = buildLlmCallDeps({
-        config, logger,
-        onPhaseChange: onStageAdvance ? (phase) => { if (phase === 'writer') onStageAdvance('Writer'); } : undefined,
-        onModelResolved: wrappedOnModelResolved,
-        onStreamChunk,
-      });
-
-      const callLlm = _callLlmOverride
-        ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
-        : currentMode === 'hero'
-          ? createHeroImageFinderCallLlm(llmDeps)
-          : createProductImageFinderCallLlm(llmDeps);
-
-      // Build focused viewConfig for view mode
-      let effectiveViewConfig = viewConfig;
-      if (currentMode === 'view' && focusView) {
-        effectiveViewConfig = viewConfig.map((v) => ({
-          ...v,
-          priority: v.key === focusView,
-        }));
-      }
-
-      const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key);
-
-      const result = await runSingleVariant({
-        product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
-        callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
-        siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
-        rmbgSession,
-        promptOverride: currentMode === 'hero' ? heroPromptOverride : viewPromptOverride,
-        mode: currentMode,
-      });
-
-      // Track attempts
-      if (currentMode === 'view' && focusView) {
-        viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;
-      } else if (currentMode === 'hero') {
-        heroAttemptCount++;
-      }
-
-      allImages.push(...result.images);
-      allErrors.push(...result.errors);
-      totalLlmCalls++;
-
-      // Persist immediately (same pattern as runProductImageFinder)
-      const ranAt = new Date().toISOString();
-      const selected = { images: result.images };
-      const promptBuilder = currentMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-      const heroQuality = viewQualityMap.hero || {};
-      const promptArgs = currentMode === 'hero'
-        ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-        : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
-      const systemPrompt = promptBuilder(promptArgs);
-
-      const merged = mergeProductImageDiscovery({
-        productId: product.product_id,
-        productRoot,
-        newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
-        run: {
-          model: actualModel,
-          fallback_used: actualFallbackUsed,
-          selected,
-          prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
-          response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
-        },
-      });
-
-      const store = specDb.getFinderStore('productImageFinder');
-      const latestRun = merged.runs[merged.runs.length - 1];
-      store.insertRun({
-        category: product.category,
-        product_id: product.product_id,
-        run_number: latestRun.run_number,
-        ran_at: ranAt,
+    const merged = mergeProductImageDiscovery({
+      productId: product.product_id,
+      productRoot,
+      newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
+      run: {
         model: actualModel,
         fallback_used: actualFallbackUsed,
-        cooldown_until: cooldownUntil,
         selected,
-        prompt: latestRun.prompt,
-        response: latestRun.response,
-      });
+        prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
+        response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
+      },
+    });
 
-      store.upsert({
-        category: product.category,
-        product_id: product.product_id,
-        images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-        image_count: merged.selected.images.length,
-        cooldown_until: cooldownUntil,
-        latest_ran_at: ranAt,
-        run_count: merged.run_count,
-      });
+    const store = specDb.getFinderStore('productImageFinder');
+    const latestRun = merged.runs[merged.runs.length - 1];
+    store.insertRun({
+      category: product.category,
+      product_id: product.product_id,
+      run_number: latestRun.run_number,
+      ran_at: ranAt,
+      model: actualModel,
+      fallback_used: actualFallbackUsed,
+      cooldown_until: cooldownUntil,
+      selected,
+      prompt: latestRun.prompt,
+      response: latestRun.response,
+    });
 
-      // Report progress
-      onLoopProgress?.({
-        callNumber: totalLlmCalls,
-        estimatedRemaining: strategy.estimatedCallsRemaining - 1,
-        variant: variant.key,
-        variantLabel: variant.label,
-        focusView,
-        mode: currentMode,
-      });
+    store.upsert({
+      category: product.category,
+      product_id: product.product_id,
+      images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
+      image_count: merged.selected.images.length,
+      cooldown_until: cooldownUntil,
+      latest_ran_at: ranAt,
+      run_count: merged.run_count,
+    });
+
+    onLoopProgress?.({
+      callNumber: totalLlmCalls,
+      estimatedRemaining: Math.max(0, estimatedRemaining - 1),
+      variant: variant.key,
+      variantLabel: variant.label,
+      focusView,
+      mode: callMode,
+    });
+  }
+
+  // Process variants sequentially for clean progress reporting
+  for (const variant of variants) {
+    onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
+
+    // Check if carousel is already complete for this variant
+    const initialDoc = readProductImages({ productId: product.product_id, productRoot });
+    const initialImages = (initialDoc?.selected?.images || []).map((img) => ({
+      view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+    }));
+    const initialStrategy = evaluateCarousel({
+      collectedImages: initialImages, viewBudget, satisfactionThreshold,
+      heroEnabled, heroCount, variantKey: variant.key,
+    });
+
+    if (initialStrategy.isComplete) {
+      // Forced cycle: 1 call per budget view + 1 hero call to accumulate more candidates
+      const forcedTotal = viewBudget.length + (heroEnabled ? 1 : 0);
+      for (const view of viewBudget) {
+        await executeOneCall({ variant, callMode: 'view', focusView: view, estimatedRemaining: forcedTotal - totalLlmCalls });
+      }
+      if (heroEnabled) {
+        await executeOneCall({ variant, callMode: 'hero', focusView: null, estimatedRemaining: 0 });
+      }
+    } else {
+      // Normal loop: views (focused) → heroes → done
+      const viewAttemptCounts = {};
+      let heroAttemptCount = 0;
+
+      while (true) {
+        const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+        const collectedImages = (pifDoc?.selected?.images || []).map((img) => ({
+          view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+        }));
+
+        const strategy = evaluateCarousel({
+          collectedImages, viewBudget, satisfactionThreshold,
+          heroEnabled, heroCount, variantKey: variant.key,
+          viewAttemptBudget, viewAttemptCounts,
+          heroAttemptBudget, heroAttemptCount,
+        });
+
+        if (strategy.isComplete) break;
+
+        const focusView = strategy.focusView;
+        const callMode = strategy.mode;
+
+        await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining });
+
+        if (callMode === 'view' && focusView) {
+          viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;
+        } else if (callMode === 'hero') {
+          heroAttemptCount++;
+        }
+      }
     }
   }
 

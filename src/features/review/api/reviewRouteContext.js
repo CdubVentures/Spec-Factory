@@ -1,7 +1,7 @@
 import {
   buildReviewLayout, buildProductReviewPayload,
   buildComponentReviewLayout, buildComponentReviewPayloads,
-  buildEnumReviewPayloads, readLatestArtifacts,
+  buildEnumReviewPayloads,
   findProductsReferencingComponent,
   cascadeComponentChange,
   cascadeEnumChange,
@@ -34,7 +34,7 @@ export function createReviewRouteContext(options = {}) {
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady, buildReviewLayout,
     buildProductReviewPayload, buildComponentReviewLayout,
     buildComponentReviewPayloads, buildEnumReviewPayloads,
-    readLatestArtifacts, sessionCache, reviewLayoutByCategory,
+    sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, findProductsReferencingComponent,
     invalidateFieldRulesCache,
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,

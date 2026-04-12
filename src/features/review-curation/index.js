@@ -5,8 +5,6 @@ export {
   buildEnumReviewPayloads,
   buildFieldLabelsMap,
   buildReviewLayout,
-  readLatestArtifacts,
-  buildFieldState,
   buildProductReviewPayload,
   writeProductReviewArtifacts,
   findProductsReferencingComponent,

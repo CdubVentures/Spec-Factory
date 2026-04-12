@@ -26,7 +26,6 @@ function makeReviewCtx(overrides = {}) {
     buildComponentReviewLayout: async () => ({ types: [] }),
     buildComponentReviewPayloads: async () => ({ items: [] }),
     buildEnumReviewPayloads: async () => ({ fields: [] }),
-    readLatestArtifacts: async () => ({}),
     sessionCache: {
       getSessionRules: async () => ({ draftFieldOrder: [], draftFields: {}, cleanFieldOrder: [] }),
       invalidateSessionCache: () => {},

@@ -12,10 +12,6 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
   - Item state: `getItemState`, `setItemState`
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
   - Key review: `getKeyReviewState`, `setKeyReviewState`
-  - Provenance: `getProvenanceForProduct(category, productId)` → flat `{ [fieldKey]: { value, confidence, host, evidence: [...] } }`
-  - Normalized: `getNormalizedForProduct(productId)` → `{ identity: { brand, base_model, model, variant }, fields: { [fieldKey]: value } }`
-  - Summary: `getSummaryForProduct(productId)` → stub (returns null, pre-wired for future data source)
-  - Traffic Light: `getTrafficLightForProduct(productId)` → stub (returns null, pre-wired for future data source)
   - Billing / source intel / product stores
   - `close()` — cleanup
 - `specDbSchema.js` → `SCHEMA` — DDL string for table/index creation
@@ -38,8 +34,8 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 ## Mutation Boundaries
 
 - SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 39 tables across domains: component_identity, enum/list, item_field_state, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs
-- 13 store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, provenanceStore
+- 39 tables across domains: component_identity, enum/list, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs, field_candidates
+- 12 store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, fieldCandidateStore
 - Write access is through `SpecDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

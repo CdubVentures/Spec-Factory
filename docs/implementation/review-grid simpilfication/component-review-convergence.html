@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Component Review Convergence &mdash; Unified Override Model</title>
+<style>
+  :root {
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --border: #d8dee4;
+    --border-light: #e8ecf0;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --text-subtle: #8b949e;
+    --accent: #0969da;
+    --green: #1a7f37;
+    --green-bg: #dafbe1;
+    --green-dot: #2da44e;
+    --yellow: #9a6700;
+    --yellow-bg: #fff8c5;
+    --red: #cf222e;
+    --red-bg: #ffebe9;
+    --purple: #8250df;
+    --purple-bg: #fbefff;
+    --purple-border: #d8b9ff;
+    --gray: #8b949e;
+    --gray-bg: #f0f3f6;
+    --mono: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --radius: 8px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 2rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2rem 0 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.4rem; }
+  h3 { font-size: 0.95rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; font-size: 0.88rem; color: var(--text-muted); }
+  code { font-family: var(--mono); font-size: 0.82em; background: var(--gray-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; font-size: 0.88rem; color: var(--text-muted); }
+  li { margin: 0.25rem 0; }
+
+  .callout { border-radius: var(--radius-sm); padding: 12px 16px; font-size: 0.85rem; margin: 1rem 0; }
+  .callout-warn { background: var(--yellow-bg); border: 1px solid #ffe58f; color: var(--yellow); }
+  .callout-info { background: #ddf4ff; border: 1px solid #54aeff44; color: #0550ae; }
+  .callout-success { background: var(--green-bg); border: 1px solid #4ac26b44; color: var(--green); }
+  .callout strong { font-weight: 600; }
+
+  .flow-container { display: flex; flex-direction: column; gap: 0; margin: 1.5rem 0; }
+  .flow-step {
+    background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+    padding: 14px 18px; position: relative;
+  }
+  .flow-step + .flow-step { margin-top: -1px; }
+  .flow-step:first-child { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+  .flow-step:last-child { border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+  .flow-step:only-child { border-radius: var(--radius-sm); }
+  .flow-label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 2px 8px; border-radius: 8px; display: inline-block; margin-bottom: 6px;
+  }
+  .flow-label-user { background: #ddf4ff; color: #0550ae; }
+  .flow-label-system { background: var(--purple-bg); color: var(--purple); }
+  .flow-label-auto { background: var(--green-bg); color: var(--green); }
+  .flow-label-gate { background: var(--yellow-bg); color: var(--yellow); }
+  .flow-title { font-weight: 600; font-size: 0.88rem; color: var(--text); }
+  .flow-desc { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+  .flow-arrow {
+    display: flex; justify-content: center; padding: 4px 0; color: var(--text-subtle); font-size: 0.9rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.82rem; }
+  th { text-align: left; padding: 8px 12px; background: var(--gray-bg); border: 1px solid var(--border-light); font-weight: 600; color: var(--text); }
+  td { padding: 8px 12px; border: 1px solid var(--border-light); color: var(--text-muted); vertical-align: top; }
+  .retired { text-decoration: line-through; color: var(--red); opacity: 0.7; }
+  .kept { color: var(--green); font-weight: 500; }
+  .badge-sm { display: inline-block; font-size: 0.6rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; text-transform: uppercase; }
+  .badge-dead { background: var(--red-bg); color: var(--red); }
+  .badge-alive { background: var(--green-bg); color: var(--green); }
+  .badge-change { background: var(--yellow-bg); color: var(--yellow); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+  .col-box { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 16px; }
+  .col-box h4 { font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; }
+  .col-box ul { font-size: 0.78rem; padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Component Review Convergence</h1>
+  <p class="sub">Unifying field review and component review under a single Override + Auto-Propagation model. No accept. No confirm. No manual intervention.</p>
+
+  <div class="callout callout-warn">
+    <strong>Core principle:</strong> Both field review and component review follow the same model &mdash;
+    the pipeline auto-publishes, the resolved candidate IS the published value.
+    The only user actions are <strong>override</strong> (click candidate or type value)
+    and <strong>AI review</strong> (future). Constraint violations trigger <strong>auto-review</strong>, not manual flags.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>1. Unified Interaction Model</h2>
+
+  <div class="two-col">
+    <div class="col-box">
+      <h4>Field Review Grid (already done)</h4>
+      <ul>
+        <li>Click cell &rarr; opens drawer</li>
+        <li>Click candidate &rarr; overrides published value</li>
+        <li>Type manual value &rarr; override</li>
+        <li>AI Review button (future placeholder)</li>
+        <li><span class="retired">Accept / Confirm / Flags / Keyboards</span></li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <h4>Component Review (target &mdash; to converge)</h4>
+      <ul>
+        <li>Click cell &rarr; opens drawer</li>
+        <li>Click candidate &rarr; overrides component value</li>
+        <li>Type manual value &rarr; override</li>
+        <li>AI Review button (future placeholder)</li>
+        <li><span class="retired">Accept / Confirm Shared / Pending AI badges</span></li>
+        <li class="kept">Auto-propagation on override (variance policies)</li>
+        <li class="kept">Auto-review on constraint violation</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>2. Override &rarr; Propagation Flow</h2>
+  <p>When a user overrides a component property value, the system auto-propagates based on the field rule's <code>variance_policy</code>. No human review step.</p>
+
+  <div class="flow-container">
+    <div class="flow-step">
+      <span class="flow-label flow-label-user">User Action</span>
+      <div class="flow-title">Override component property value</div>
+      <div class="flow-desc">Click candidate card or type manual value in component review drawer. Single mutation: <code>POST /review-components/{category}/component-override</code></div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-system">System</span>
+      <div class="flow-title">Write to <code>component_values</code> table</div>
+      <div class="flow-desc">SpecDb upserts the property value. Source = 'user' for manual, preserved source for candidate accept. <code>needs_review</code> set to <code>false</code>.</div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-system">System</span>
+      <div class="flow-title">Discover linked products</div>
+      <div class="flow-desc"><code>findProductsReferencingComponent()</code> queries <code>item_component_links</code> table. Returns all product IDs using this component.</div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-gate">Policy Gate</span>
+      <div class="flow-title">Evaluate <code>variance_policy</code></div>
+      <div class="flow-desc">Branch based on the property's variance policy from field rules:</div>
+    </div>
+  </div>
+
+  <!-- ═══ Policy branches ═══ -->
+  <div class="two-col">
+    <div class="col-box" style="border-left: 3px solid var(--green);">
+      <h4 style="color:var(--green);">Authoritative</h4>
+      <p style="font-size:0.78rem;">Component value IS the product value. No ambiguity.</p>
+      <ol style="font-size:0.78rem;">
+        <li><code>pushAuthoritativeValueToLinkedProducts()</code></li>
+        <li>All linked products receive the new value directly</li>
+        <li>Products' <code>field_candidates</code> updated with resolved status</li>
+        <li><strong>No review needed</strong> &mdash; authoritative is SSOT</li>
+      </ol>
+      <p style="font-size:0.75rem; color:var(--text-subtle); margin-top:8px;">
+        Example: Sensor &rarr; max_dpi. If PixArt says PAW3950 does 26000 DPI, all products using PAW3950 get max_dpi=26000.
+      </p>
+    </div>
+    <div class="col-box" style="border-left: 3px solid var(--yellow);">
+      <h4 style="color:var(--yellow);">Bounds / Range</h4>
+      <p style="font-size:0.78rem;">Component value constrains product value. Violations are possible.</p>
+      <ol style="font-size:0.78rem;">
+        <li><code>evaluateAndFlagLinkedProducts()</code></li>
+        <li>Each product checked: <code>upper_bound</code> (&le;), <code>lower_bound</code> (&ge;), <code>range</code> (&plusmn;10%)</li>
+        <li><strong>Compliant</strong> products &rarr; no action</li>
+        <li><strong>Violations</strong> &rarr; auto-flag for AI review</li>
+      </ol>
+      <p style="font-size:0.75rem; color:var(--text-subtle); margin-top:8px;">
+        Example: Sensor max_dpi=26000, product claims dpi=30000. Violation &rarr; auto-review.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══ Constraint evaluation ═══ -->
+  <div class="flow-container" style="margin-top:1rem;">
+    <div class="flow-step">
+      <span class="flow-label flow-label-gate">Constraint Gate</span>
+      <div class="flow-title">Evaluate cross-field constraints</div>
+      <div class="flow-desc">
+        If the property has <code>constraints</code> (e.g., <code>"dpi &lt;= max_dpi"</code>), evaluate against all linked products.
+        Constraint violations are merged with variance violations.
+      </div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-auto">Auto</span>
+      <div class="flow-title">Flag violations for auto-review</div>
+      <div class="flow-desc">
+        Products with variance or constraint violations are marked for AI review.
+        <strong>No manual intervention.</strong> The AI review system (future) will re-evaluate these products
+        and either confirm the value or suggest corrections.
+      </div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-system">System</span>
+      <div class="flow-title">Broadcast data-change event</div>
+      <div class="flow-desc">
+        WebSocket <code>data-change</code> event sent with affected product IDs + propagation summary.
+        UI refreshes automatically. Component review grid + field review grid both update.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>3. Variance Policy Reference</h2>
+
+  <table>
+    <tr>
+      <th>Policy</th>
+      <th>Behavior</th>
+      <th>On Override</th>
+      <th>Product Impact</th>
+    </tr>
+    <tr>
+      <td><code>authoritative</code></td>
+      <td>Component value = product value (SSOT)</td>
+      <td>Push value to all linked products</td>
+      <td>Values overwritten. No review.</td>
+    </tr>
+    <tr>
+      <td><code>upper_bound</code></td>
+      <td>Product value must be &le; component value</td>
+      <td>Evaluate all linked products</td>
+      <td>Violations flagged for auto-review</td>
+    </tr>
+    <tr>
+      <td><code>lower_bound</code></td>
+      <td>Product value must be &ge; component value</td>
+      <td>Evaluate all linked products</td>
+      <td>Violations flagged for auto-review</td>
+    </tr>
+    <tr>
+      <td><code>range</code></td>
+      <td>Product value within &plusmn;10% of component value</td>
+      <td>Evaluate all linked products</td>
+      <td>Violations flagged for auto-review</td>
+    </tr>
+    <tr>
+      <td><code>override_allowed</code></td>
+      <td>No constraint &mdash; any value permitted</td>
+      <td>No evaluation</td>
+      <td>Products marked stale (cache invalidation only)</td>
+    </tr>
+    <tr>
+      <td><code>null</code> (none)</td>
+      <td>No variance policy set</td>
+      <td>No evaluation</td>
+      <td>Products marked stale (cache invalidation only)</td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>4. What Gets Retired from Component Review</h2>
+
+  <table>
+    <tr>
+      <th>Concept</th>
+      <th>Status</th>
+      <th>Replacement</th>
+    </tr>
+    <tr>
+      <td><code>onConfirmShared</code></td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>No confirm step. Override IS the decision.</td>
+    </tr>
+    <tr>
+      <td><code>onConfirmSharedCandidate</code></td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Click candidate = override. Same as field review.</td>
+    </tr>
+    <tr>
+      <td><code>pendingAIShared</code> / <code>pendingSharedCandidateIds</code></td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>No pending-AI tracking. Auto-review handles flagged products.</td>
+    </tr>
+    <tr>
+      <td><code>isCurrentAccepted</code></td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Resolved candidate = published. "Published" badge, not "Accepted".</td>
+    </tr>
+    <tr>
+      <td><code>needs_review</code> flag on component values</td>
+      <td><span class="badge-sm badge-change">REPURPOSE</span></td>
+      <td>Set by system only (constraint/variance violations). Not set by user actions.</td>
+    </tr>
+    <tr>
+      <td><code>candidateUiContext</code> ('grid' vs 'shared')</td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Single context. Both surfaces use "Override" vocabulary.</td>
+    </tr>
+    <tr>
+      <td><code>showCandidateDebugIds</code></td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Remove from CellDrawer. Dev tools if needed.</td>
+    </tr>
+    <tr>
+      <td><code>component-key-review-confirm</code> endpoint</td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Only <code>component-override</code> endpoint survives.</td>
+    </tr>
+    <tr>
+      <td><code>confirmSharedLaneMut</code> mutation</td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Replaced by override mutation (same as field review).</td>
+    </tr>
+    <tr>
+      <td>Purple "AI Pending" dot/badge in grid cells</td>
+      <td><span class="badge-sm badge-dead">RETIRE</span></td>
+      <td>Standard traffic-light confidence colors only.</td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>5. How Review Grid &amp; Component Review Talk</h2>
+
+  <div class="callout callout-info">
+    <strong>Data flows one direction:</strong> Component &rarr; Products. Never the reverse.
+    The field review grid shows product-level data. The component review grid shows component-level data.
+    When a component value changes, the cascade updates products. Products never update components.
+  </div>
+
+  <h3>5a. Component Override &rarr; Product Update</h3>
+  <div class="flow-container">
+    <div class="flow-step">
+      <span class="flow-label flow-label-user">Component Review</span>
+      <div class="flow-title">User overrides sensor max_dpi = 26000</div>
+      <div class="flow-desc">Sensor PAW3950, property max_dpi, variance_policy: <code>authoritative</code></div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-auto">Cascade</span>
+      <div class="flow-title">Auto-push to 12 linked products</div>
+      <div class="flow-desc"><code>pushAuthoritativeValueToLinkedProducts()</code> writes max_dpi=26000 to all products using PAW3950</div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-system">Broadcast</span>
+      <div class="flow-title">data-change event &rarr; both grids refresh</div>
+      <div class="flow-desc">Field review grid sees updated max_dpi values. Component review grid sees updated propagation status.</div>
+    </div>
+  </div>
+
+  <h3>5b. Constraint Violation &rarr; Auto-Review</h3>
+  <div class="flow-container">
+    <div class="flow-step">
+      <span class="flow-label flow-label-user">Component Review</span>
+      <div class="flow-title">User overrides sensor max_dpi = 20000</div>
+      <div class="flow-desc">But product "Razer Viper V3 Pro" has dpi=35000. Constraint: <code>dpi &le; max_dpi</code></div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-gate">Constraint</span>
+      <div class="flow-title">Violation: 35000 &gt; 20000</div>
+      <div class="flow-desc"><code>evaluateConstraintsForLinkedProducts()</code> flags the Viper V3 Pro</div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-auto">Auto-Review</span>
+      <div class="flow-title">Product flagged for AI review</div>
+      <div class="flow-desc">No manual intervention. Future AI review system re-evaluates the product's dpi candidates and either confirms or suggests a correction.</div>
+    </div>
+    <div class="flow-arrow">&darr;</div>
+    <div class="flow-step">
+      <span class="flow-label flow-label-system">Broadcast</span>
+      <div class="flow-title">Both grids update</div>
+      <div class="flow-desc">Field review grid shows the product with a constraint-violation indicator. Component review shows propagation summary.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>6. Enum Review Convergence</h2>
+  <p>Enum review follows the same pattern. Enum values are component-level data. The user can:</p>
+  <ul>
+    <li><strong>Override</strong> an enum value (rename, select a different candidate)</li>
+    <li><strong>Add</strong> a new enum value</li>
+    <li><strong>Dismiss</strong> a suggested enum value</li>
+  </ul>
+  <p>No confirm step. No shared-lane. Changes cascade to products via <code>cascadeEnumChange()</code>.</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2>7. Implementation Scope</h2>
+
+  <h3>Backend (mutation routes)</h3>
+  <ul>
+    <li>Retire <code>component-key-review-confirm</code> endpoint</li>
+    <li>Simplify <code>component-override</code> &mdash; always set <code>needs_review: false</code> on override</li>
+    <li>Ensure <code>cascadeComponentChange()</code> sets <code>needs_review</code> on violated products (system-only flag)</li>
+  </ul>
+
+  <h3>CellDrawer (shared component)</h3>
+  <ul>
+    <li>Remove: <code>isCurrentAccepted</code>, <code>pendingAIShared</code>, <code>pendingSharedCandidateIds</code>, <code>onConfirmShared</code>, <code>onConfirmSharedCandidate</code>, <code>candidateUiContext</code>, <code>showCandidateDebugIds</code></li>
+    <li>All consumers use the same simplified interface: override + AI review (future)</li>
+    <li>Labels: "Published" (not "Accepted"), "Override" (not "Accept")</li>
+  </ul>
+
+  <h3>ComponentReviewDrawer / ComponentSubTab / EnumSubTab</h3>
+  <ul>
+    <li>Remove <code>confirmSharedLaneMut</code> mutation</li>
+    <li>Remove <code>pendingAIShared</code> / <code>pendingSharedCandidateIds</code> props</li>
+    <li>Remove purple "AI Pending" dot/badge logic</li>
+    <li>Override mutation = the only write action</li>
+    <li>Propagation summary shown after override (toast or inline status)</li>
+  </ul>
+
+  <h3>ReviewValueCell</h3>
+  <ul>
+    <li>Remove <code>pendingAIShared</code> prop entirely</li>
+    <li>Standard traffic-light colors only (green/yellow/red/gray)</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>End state:</strong> CellDrawer becomes a ~250 LOC component with 12 props.
+    One interaction model across all review surfaces.
+    Variance policies and constraints are system-managed, not user-managed.
+    AI review is the only future addition point.
+  </div>
+
+</div>
+</body>
+</html>

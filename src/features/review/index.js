@@ -6,8 +6,8 @@ export { createReviewRouteContext } from './api/reviewRouteContext.js';
 
 // Domain logic (canonical home — internalized from legacy src/review/)
 export {
-  buildFieldLabelsMap, buildReviewLayout, readLatestArtifacts,
-  buildFieldState, buildProductReviewPayload, writeProductReviewArtifacts,
+  buildFieldLabelsMap, buildReviewLayout,
+  buildProductReviewPayload, writeProductReviewArtifacts,
   resolveOverrideFilePath, readReviewArtifacts, setOverrideFromCandidate,
   setManualOverride, approveGreenOverrides, buildReviewMetrics, finalizeOverrides,
   resolvePropertyFieldMeta, buildComponentReviewLayout,

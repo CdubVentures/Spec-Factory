@@ -21,11 +21,9 @@ export async function runQaJudge({
     return { ok: false, error: `spec not found: ${specKey}` };
   }
 
-  const provenance = specDb
-    ? (specDb.getProvenanceForProduct(category, productId) ?? {})
-    : (await storage.readJsonOrNull(
-        storage.resolveOutputKey(category, productId, 'final', 'provenance.json')
-      ) || {});
+  const provenance = (await storage.readJsonOrNull(
+    storage.resolveOutputKey(category, productId, 'final', 'provenance.json')
+  )) || {};
 
   let engine = null;
   try {

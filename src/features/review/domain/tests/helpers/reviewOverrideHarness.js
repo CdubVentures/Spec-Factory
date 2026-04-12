@@ -124,47 +124,27 @@ export async function seedReviewCandidates(
   );
 }
 
-export async function seedLatestArtifacts({ storage, category, productId }) {
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  await storage.writeObject(
-    `${latestBase}/normalized.json`,
-    Buffer.from(JSON.stringify({
-      identity: {
-        brand: 'Razer',
-        model: 'Viper V3 Pro',
-      },
-      fields: {
-        weight: 'unk',
-      },
-    }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
-  await storage.writeObject(
-    `${latestBase}/provenance.json`,
-    Buffer.from(JSON.stringify({
-      weight: {
-        value: 'unk',
-        confidence: 0,
-      },
-    }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
-  await storage.writeObject(
-    `${latestBase}/summary.json`,
-    Buffer.from(JSON.stringify({
-      missing_required_fields: ['weight'],
-      fields_below_pass_target: ['weight'],
-      critical_fields_below_pass_target: ['weight'],
-      field_reasoning: {
-        weight: {
-          value: 'unk',
-          unknown_reason: 'not_found_after_search',
-          reasons: ['missing_required_field'],
-        },
-      },
-    }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
+export function seedLatestArtifacts({ specDb, category, productId }) {
+  // WHY: Seeds specDb instead of writing latest/*.json files (retired).
+  // Inserts a product + an unresolved candidate so finalizeOverrides has initial state.
+  specDb.upsertProduct({
+    product_id: productId,
+    category,
+    brand: 'Razer',
+    model: 'Viper V3 Pro',
+    base_model: '',
+    variant: '',
+  });
+  specDb.upsertFieldCandidate({
+    category,
+    product_id: productId,
+    field_key: 'weight',
+    value: 'unk',
+    confidence: 0,
+    status: 'candidate',
+    sources_json: [],
+    metadata_json: {},
+  });
 }
 
 export async function seedReviewProductPayload(
@@ -237,11 +217,3 @@ export async function readOverridePayload({ config, category, productId }) {
   return JSON.parse(await fs.readFile(overridePath, 'utf8'));
 }
 
-export async function readLatestArtifacts({ storage, category, productId }) {
-  const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  return {
-    normalized: await storage.readJson(`${latestBase}/normalized.json`),
-    provenance: await storage.readJson(`${latestBase}/provenance.json`),
-    summary: await storage.readJson(`${latestBase}/summary.json`),
-  };
-}

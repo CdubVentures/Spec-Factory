@@ -250,8 +250,6 @@ export function createEnumListStore({ db, category, stmts }) {
   function renameListValue(fieldKey, oldValue, newValue, timestamp) {
     const affected = new Set();
     const tx = db.transaction(() => {
-      // item_field_state retired in Phase 1b — affected products from list links only
-
       const oldRow = db
         .prepare('SELECT id FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
         .get(category, fieldKey, oldValue);
@@ -282,8 +280,6 @@ export function createEnumListStore({ db, category, stmts }) {
       const newRow = db
         .prepare('SELECT id FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
         .get(category, fieldKey, newValue);
-
-      // item_field_state UPDATE retired in Phase 1b
 
       if (oldRow && newRow && Number(oldRow.id) !== Number(newRow.id)) {
         db

@@ -18,7 +18,7 @@ test('approveGreenOverrides writes candidate overrides only for green known fiel
   const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
-  await seedLatestArtifacts(harness);
+  seedLatestArtifacts(harness);
   await seedReviewProductPayload(harness, {
     dpi: {
       selected: {

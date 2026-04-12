@@ -20,8 +20,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       // Field state
       db.prepare('DELETE FROM item_list_links WHERE category = ?').run(cat);
       db.prepare('DELETE FROM item_component_links WHERE category = ?').run(cat);
-      // item_field_state retired in Phase 1b
-
       // Components
       db.prepare(`DELETE FROM component_aliases WHERE component_id IN (SELECT id FROM component_identity WHERE category = ?)`).run(cat);
       clearedComponentData += db.prepare('DELETE FROM component_values WHERE category = ?').run(cat).changes;
@@ -58,7 +56,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     const tx = db.transaction(() => {
       deletedLinks = db.prepare('DELETE FROM item_list_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;
       deletedLinks += db.prepare('DELETE FROM item_component_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;
-      // item_field_state retired in Phase 1b
     });
     tx();
 

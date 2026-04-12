@@ -48,7 +48,7 @@
   .tag-purple { background: var(--purple-bg); color: var(--purple); }
   .tag-teal { background: var(--teal-bg); color: var(--teal); }
   .tag-red { background: var(--red-bg); color: var(--red); }
-  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
   .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
   .detail-grid dd { color: var(--text); }
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
@@ -81,7 +81,7 @@
 
 <div class="header">
   <h1>Product Image Finder (PIF) Reference</h1>
-  <p>Downloads high-resolution product images per color variant and edition via LLM web search</p>
+  <p>Carousel-based image discovery with per-view LLM search, hero images, and cumulative learning</p>
 </div>
 
 <div class="container">
@@ -90,27 +90,31 @@
 <div class="section-title"><span class="num">1</span> Overview</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--accent-light);">CEF-Dependent Image Discovery</div>
+  <div class="card-header" style="background:var(--accent-light);">Carousel Loop Architecture</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      The Product Image Finder discovers and downloads product images for each colorway defined by the
-      Color &amp; Edition Finder (CEF). It uses a web-search LLM to locate high-resolution product photos,
-      firing all variant searches concurrently with a 1-second stagger between launches.
+      PIF discovers and downloads product images for each colorway defined by the Color &amp; Edition Finder (CEF).
+      A single <strong>Loop</strong> action autonomously fills the carousel: focused view searches first, then hero images, then done.
+      Each LLM call targets one view at a time, but side-catches from other views are always kept.
+      Discovery learning accumulates across all calls so repeated loops find new sources.
     </p>
     <div class="flow-row">
       <div class="flow-box flow-neutral">CEF Data<br><small>colors + editions</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-accent">Build Search List<br><small>per variant</small></div>
+      <div class="flow-box flow-accent">Evaluate Carousel<br><small>per variant</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-teal">LLM Web Search<br><small>staggered parallel</small></div>
+      <div class="flow-box flow-teal">Focused LLM Search<br><small>1 view at a time</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-pass">Download + Quality Gate<br><small>flag, don't delete</small></div>
+      <div class="flow-box flow-pass">Download + Quality Gate<br><small>per-view thresholds</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair">RMBG 2.0<br><small>bg removal</small></div>
     </div>
     <dl class="detail-grid">
-      <dt>Dependency</dt><dd>Requires CEF (Color &amp; Edition Finder) data to build the variant search list</dd>
-      <dt>Concurrency</dt><dd>All variants fired concurrently with 1-second stagger between launches</dd>
-      <dt>Output</dt><dd>Gallery of all downloaded images with quality flags per image</dd>
-      <dt>Quality gate</dt><dd>Flag-based (<code>quality_pass: true/false</code>). All images are kept regardless of quality.</dd>
+      <dt>Dependency</dt><dd>Requires CEF data to build the variant search list</dd>
+      <dt>Loop lifecycle</dt><dd>Views (focused, one at a time by priority) &rarr; heroes &rarr; done. Server owns the full lifecycle.</dd>
+      <dt>Side-catches</dt><dd>All 8 canonical views are in every prompt. Images for non-focus views are kept if the LLM returns them.</dd>
+      <dt>Accumulation</dt><dd>All images from all runs are kept. No dedup by view &mdash; filenames are unique via <code>-N</code> suffix.</dd>
+      <dt>Learning</dt><dd>Discovery log (URLs checked, queries run) accumulates per variant across all calls. Each call gets "do not repeat" context.</dd>
     </dl>
   </div>
 </div>
@@ -123,14 +127,13 @@
   <div class="card-body">
     <p style="margin-bottom:12px;">
       PIF builds its search list from CEF's <code>colors</code> array. Each entry becomes a search target.
-      The search label is resolved using a strict priority chain &mdash; never searching raw atoms when a
-      better name exists.
+      The search label is resolved using a strict priority chain.
     </p>
     <ul class="priority-list">
       <li class="active">
         <strong>Priority 1: Edition display name</strong> &mdash;
         If a combo entry matches an edition, search by edition name.
-        <br>Example: <code>"Call of Duty Black Ops 6 Edition"</code> instead of the underlying color atom.
+        <br>Example: <code>"Call of Duty Black Ops 6 Edition"</code>
       </li>
       <li class="active">
         <strong>Priority 2: Marketing color name</strong> &mdash;
@@ -143,11 +146,6 @@
         <br>Example: <code>"black"</code>.
       </li>
     </ul>
-    <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Source</dt><dd>CEF <code>colors</code> array &mdash; each entry is one search target</dd>
-      <dt>Rule</dt><dd>Never search raw atoms when a better name (edition or color_name) exists</dd>
-      <dt>Combo detection</dt><dd>If a combo entry matches an edition, the edition display name takes full priority</dd>
-    </dl>
   </div>
 </div>
 
@@ -155,81 +153,225 @@
 <div class="section-title"><span class="num">3</span> Identity</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--teal-bg);">Exact Product Matching</div>
+  <div class="card-header" style="background:var(--teal-bg);">Ambiguity-Scaled Identity Matching</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      PIF constructs a precise identity block for the LLM search prompt so the correct product is found
-      and sibling models are excluded.
+      PIF constructs identity context that scales with product family ambiguity.
+      The prompt intensity increases based on how many similar models exist.
     </p>
-    <dl class="detail-grid">
-      <dt>Identity fields</dt><dd><code>base_model</code> + <code>variant</code> for exact product matching</dd>
-      <dt>Sibling exclusion</dt><dd>Reads <code>siblings_excluded</code> from CEF data &mdash; tells the LLM which related products to skip</dd>
-      <dt>Prompt strategy</dt><dd>The prompt states the EXACT product identity and lists known siblings that must not be confused with the target</dd>
-    </dl>
-  </div>
-</div>
-
-<!-- 4. Image Quality -->
-<div class="section-title"><span class="num">4</span> Image Quality</div>
-
-<div class="card">
-  <div class="card-header" style="background:var(--green-bg);">Per-Category Quality Settings</div>
-  <div class="card-body">
     <table>
-      <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+      <thead><tr><th>Ambiguity</th><th>Family Size</th><th>Prompt Behavior</th></tr></thead>
       <tbody>
-        <tr><td><code>view1</code></td><td><code>"top"</code></td><td>Primary view angle for product image</td></tr>
-        <tr><td><code>view2</code></td><td><code>"left"</code></td><td>Secondary view angle for product image</td></tr>
-        <tr><td><code>minWidth</code></td><td><code>800px</code></td><td>Minimum acceptable image width in pixels</td></tr>
-        <tr><td><code>minHeight</code></td><td><code>600px</code></td><td>Minimum acceptable image height in pixels</td></tr>
-        <tr><td><code>minFileSize</code></td><td><code>50KB</code> (50,000 bytes)</td><td>Minimum acceptable file size to filter thumbnails</td></tr>
+        <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching</td></tr>
+        <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block: verify exact model name in URLs and page titles</td></tr>
+        <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block: triple-check every image, skip if unconfirmed</td></tr>
       </tbody>
     </table>
     <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Quality gate</dt><dd>Flag-based only &mdash; <code>quality_pass: true/false</code>. All images are kept regardless of result.</dd>
-      <dt>Not a hard delete</dt><dd>Images that fail quality checks are flagged, never removed. Users decide what to keep.</dd>
-      <dt>Dimension reading</dt><dd>Post-download: reads image dimensions from file headers (PNG, JPEG, WebP, GIF)</dd>
+      <dt>Sibling exclusion</dt><dd>Known sibling model names listed in prompt as "do NOT return images of these"</dd>
+      <dt>Source</dt><dd>Family model count and ambiguity level from <code>resolveIdentityAmbiguitySnapshot</code></dd>
     </dl>
   </div>
 </div>
 
-<!-- 5. Multi-Image Search -->
-<div class="section-title"><span class="num">5</span> Multi-Image Search</div>
+<!-- 4. View System -->
+<div class="section-title"><span class="num">4</span> 8-View System</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--orange-bg);">Candidate Ranking and Gallery Tagging</div>
+  <div class="card-header" style="background:var(--accent-light);">Canonical View Vocabulary</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      The search prompt asks the LLM for up to 3 candidate images per view, ranked by quality.
-      All downloads appear in the gallery tagged by run number. Images that fail the quality gate
-      receive visual indicators but are never deleted.
+      Every prompt includes all 8 canonical views with full descriptions. The <strong>view budget</strong> controls which views are actively
+      targeted. Views outside the budget are still accepted as side-catches.
     </p>
-    <div class="two-col">
-      <div>
-        <dl class="detail-grid" style="margin-top:0;">
-          <dt>Candidates</dt><dd>Up to 3 per view, ranked by quality</dd>
-          <dt>Tagging</dt><dd>Every image tagged with its run number</dd>
-          <dt>Gallery</dt><dd>All downloads from all runs shown together</dd>
-        </dl>
-      </div>
-      <div>
-        <dl class="detail-grid" style="margin-top:0;">
-          <dt>Quality fail</dt><dd><span class="tag tag-red">LOW</span> badge + red border</dd>
-          <dt>Quality pass</dt><dd>Normal display, no extra badge</dd>
-          <dt>Deletion</dt><dd>Never. All images preserved.</dd>
-        </dl>
-      </div>
-    </div>
+    <table>
+      <thead><tr><th>View Key</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>top</code></td><td>Bird's-eye shot directly from above</td></tr>
+        <tr><td><code>bottom</code></td><td>Underside/belly view showing base</td></tr>
+        <tr><td><code>left</code></td><td>Strict side profile from the left at eye level</td></tr>
+        <tr><td><code>right</code></td><td>Strict side profile from the right</td></tr>
+        <tr><td><code>front</code></td><td>Head-on front view</td></tr>
+        <tr><td><code>rear</code></td><td>Head-on rear view</td></tr>
+        <tr><td><code>sangle</code></td><td>Front/side 3/4 angle (S-Angle)</td></tr>
+        <tr><td><code>angle</code></td><td>Rear/top 3/4 angle</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
-<!-- 6. RMBG 2.0 Image Processing -->
-<div class="section-title"><span class="num">6</span> RMBG 2.0 Image Processing</div>
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Per-Category View Budgets</div>
+  <div class="card-body">
+    <p style="margin-bottom:8px;">The view budget defines which views the LLM is asked to focus on. Views outside the budget are still accepted if the LLM returns them.</p>
+    <table>
+      <thead><tr><th>Category</th><th>Budget Views</th></tr></thead>
+      <tbody>
+        <tr><td>Mouse</td><td><code>top, left, angle, sangle, front, bottom</code> (6)</td></tr>
+        <tr><td>Keyboard</td><td><code>top, left, angle, sangle</code> (4)</td></tr>
+        <tr><td>Monitor</td><td><code>front, angle, rear, left</code> (4)</td></tr>
+        <tr><td>Mousepad</td><td><code>top, angle</code> (2)</td></tr>
+        <tr><td>Generic</td><td><code>top, left, angle</code> (3)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Per-View Quality Thresholds</div>
+  <div class="card-body">
+    <p style="margin-bottom:8px;">
+      Each view has its own minimum dimensions based on product shape from that angle.
+      The "long" dimension is always &ge; 600px. The "short" axis reflects the product's natural proportions.
+    </p>
+    <table>
+      <thead><tr><th>View</th><th>Mouse</th><th>Keyboard</th><th>Monitor</th></tr></thead>
+      <tbody>
+        <tr><td><code>top</code></td><td>300w &times; 600h</td><td>600w &times; 250h</td><td>600w &times; 250h</td></tr>
+        <tr><td><code>left</code></td><td>600w &times; 300h</td><td>600w &times; 250h</td><td>250w &times; 600h</td></tr>
+        <tr><td><code>angle</code></td><td>600w &times; 350h</td><td>600w &times; 300h</td><td>600w &times; 350h</td></tr>
+        <tr><td><code>hero</code></td><td>600w &times; 400h</td><td>600w &times; 400h</td><td>600w &times; 400h</td></tr>
+      </tbody>
+    </table>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Dimension check</dt><dd>Primary gate &mdash; reads dimensions from file headers (PNG, JPEG, WebP, GIF)</dd>
+      <dt>File size fallback</dt><dd>Only used when dimensions can't be read (default 30KB min)</dd>
+      <dt>Gate behavior</dt><dd>Below-threshold images are rejected and deleted from disk</dd>
+      <dt>Per-view in prompt</dt><dd>Each view's min dimensions are printed in the prompt so the LLM knows what to find</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 5. Carousel Loop -->
+<div class="section-title"><span class="num">5</span> Carousel Loop</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Loop State Machine</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      The carousel loop is a server-side orchestrator that processes one variant at a time, sequentially.
+      For each variant it evaluates the carousel state and decides what to do next.
+    </p>
+    <div class="flow-row" style="flex-wrap:nowrap;">
+      <div class="flow-box flow-accent" style="min-width:120px;">Evaluate<br><small>carousel state</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal" style="min-width:120px;">Focus View<br><small>highest priority</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass" style="min-width:120px;">LLM Call<br><small>download + gate</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair" style="min-width:120px;">Re-evaluate<br><small>loop or next</small></div>
+    </div>
+    <dl class="detail-grid">
+      <dt>Per-view focus</dt><dd>Each LLM call has ONE unsatisfied view as priority. All 8 views remain in the prompt for side-catches.</dd>
+      <dt>Satisfaction</dt><dd>A view is "satisfied" when it has <code>&ge; satisfactionThreshold</code> quality-passing images (default: 3)</dd>
+      <dt>Budget exhaustion</dt><dd>A view is "exhausted" when it has used <code>&ge; viewAttemptBudget</code> LLM calls without reaching satisfaction (default: 5)</dd>
+      <dt>View done</dt><dd>Satisfied OR exhausted. Move to next unsatisfied view in budget priority order.</dd>
+      <dt>Mode transitions</dt><dd>Unsatisfied views remain &rarr; <code>view</code> mode. All views done &rarr; <code>hero</code> mode. Hero done &rarr; <code>complete</code>.</dd>
+      <dt>Variants</dt><dd>Processed sequentially (not concurrent) for clean progress reporting</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Forced Cycle (Re-loop When Complete)</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      When the carousel is already complete and the user hits Loop again, PIF runs a <strong>forced cycle</strong>:
+      one LLM call per budget view + one hero call. This accumulates more image candidates using fresh discovery
+      context (the learning log ensures new sources are searched).
+    </p>
+    <dl class="detail-grid">
+      <dt>Trigger</dt><dd>Loop starts and <code>evaluateCarousel</code> returns <code>isComplete: true</code> on first check</dd>
+      <dt>Behavior</dt><dd>1 call per budget view (focused prompt) + 1 hero call. No satisfaction checking.</dd>
+      <dt>Learning</dt><dd>Discovery log still accumulates &mdash; each forced cycle finds new sources the LLM hasn't tried</dd>
+      <dt>Purpose</dt><dd>Build a richer candidate pool for a future evaluator phase that picks the best images</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Concurrent Single Runs</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      View and Hero buttons fire individual single-run LLM calls independently of any running loop.
+      They are never locked &mdash; the user can fire as many as they want.
+    </p>
+    <dl class="detail-grid">
+      <dt>View button</dt><dd>Single LLM call with view prompt for one variant. Never disabled.</dd>
+      <dt>Hero button</dt><dd>Single LLM call with hero prompt for one variant. Never disabled.</dd>
+      <dt>Loop interaction</dt><dd>If single runs fill the carousel while a loop is running, the loop's next iteration re-reads disk, sees complete, and exits cleanly.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 6. Hero Search -->
+<div class="section-title"><span class="num">6</span> Hero Image Search</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Separate Prompt, Separate Intent</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      Hero search uses a completely different LLM prompt than view search. It targets promotional,
+      marketing, and official render images &mdash; not standard product photography angles.
+    </p>
+    <div class="two-col">
+      <div>
+        <p style="font-size:12px; font-weight:600; color:var(--green); text-transform:uppercase; margin-bottom:6px;">Hero targets</p>
+        <ul style="font-size:13px; padding-left:18px; margin:0;">
+          <li>Official brand hero images</li>
+          <li>Marketing renders and press shots</li>
+          <li>Box art and packaging imagery</li>
+          <li>Dramatic lighting / branded backgrounds</li>
+          <li>Press kit and launch imagery</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:12px; font-weight:600; color:var(--red); text-transform:uppercase; margin-bottom:6px;">Hero excludes</p>
+        <ul style="font-size:13px; padding-left:18px; margin:0;">
+          <li>White-background product shots (those are "views")</li>
+          <li>User photos and unboxing</li>
+          <li>Generic banners and logos</li>
+          <li>Small thumbnails</li>
+        </ul>
+      </div>
+    </div>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>View name</dt><dd>All hero images use <code>view: "hero"</code></dd>
+      <dt>Quality thresholds</dt><dd>Uses <code>viewQualityMap.hero</code> minimums (not <code>.top</code>)</dd>
+      <dt>Attempt budget</dt><dd><code>heroAttemptBudget</code> (default: 3 calls per variant)</dd>
+      <dt>Target count</dt><dd><code>heroCount</code> (default: 3 images per variant)</dd>
+      <dt>Disableable</dt><dd><code>heroEnabled: false</code> skips hero phase entirely</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 7. Discovery Learning -->
+<div class="section-title"><span class="num">7</span> Discovery Learning</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Cumulative Per-Variant Learning</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      Every LLM call returns a <code>discovery_log</code> with URLs checked, queries run, and notes.
+      These are accumulated per variant across all runs. Subsequent calls receive the full history
+      so the LLM searches new sources instead of repeating prior work.
+    </p>
+    <dl class="detail-grid">
+      <dt>Accumulation</dt><dd><code>accumulateVariantDiscoveryLog()</code> unions all prior <code>urls_checked</code> and <code>queries_run</code> for the specific variant</dd>
+      <dt>Prompt injection</dt><dd>"Previous searches for this variant (do not repeat &mdash; find NEW sources)"</dd>
+      <dt>Scope</dt><dd>Per variant key (e.g. <code>color:black</code>). Different variants have independent discovery histories.</dd>
+      <dt>Persistence</dt><dd>Stored in each run's <code>response.discovery_log</code> in the JSON store</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 8. RMBG 2.0 -->
+<div class="section-title"><span class="num">8</span> RMBG 2.0 Image Processing</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--green-bg);">Post-Download Processing Pipeline</div>
   <div class="card-body">
-    <p style="margin-bottom:12px;">Every downloaded image that passes the quality gate is processed through an automated background removal pipeline. Originals are always preserved for reprocessing.</p>
+    <p style="margin-bottom:12px;">Every downloaded image that passes the quality gate is processed through automated background removal. Originals are always preserved.</p>
     <div class="flow-row" style="margin:12px 0; justify-content:flex-start;">
       <span class="tag tag-accent">Download</span>
       <span style="color:var(--text-muted);">&rarr;</span>
@@ -243,11 +385,10 @@
     </div>
     <dl class="detail-grid">
       <dt>Model</dt><dd>RMBG 2.0 by Bria AI (ONNX, ~366 MB <code>model_int8.onnx</code>)</dd>
-      <dt>Location</dt><dd><code>.workspace/models/rmbg-2.0/</code> (git-ignored, auto-downloaded with <code>HF_TOKEN</code>)</dd>
-      <dt>Type</dt><dd>Vision segmentation (NOT an LLM) &mdash; CPU inference, few seconds per image</dd>
-      <dt>License</dt><dd>CC BY-NC 4.0 (non-commercial / personal use)</dd>
-      <dt>Input</dt><dd>Any image format sharp supports &mdash; resized to 1024&times;1024 for inference</dd>
+      <dt>Location</dt><dd><code>.workspace/models/rmbg-2.0/</code></dd>
+      <dt>Type</dt><dd>Vision segmentation (NOT an LLM) &mdash; CPU inference</dd>
       <dt>Output</dt><dd>Alpha matte composited onto original &rarr; transparent-edge trimmed &rarr; lossless PNG</dd>
+      <dt>Degradation</dt><dd>If model unavailable, raw download saved as PNG without bg removal (<code>bg_removed: false</code>)</dd>
     </dl>
   </div>
 </div>
@@ -257,153 +398,146 @@
   <div class="card-body">
     <pre style="background:var(--surface-alt); padding:12px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto;">.workspace/products/{pid}/images/
   top-black.png              &larr; processed master (transparent, trimmed)
-  left-glacier-blue.png
+  top-black-2.png            &larr; second image for same view (loop run)
+  top-black-3.png            &larr; third image (forced cycle)
+  hero-black.png
   originals/                 &larr; raw downloads preserved as-is
     top-black.jpg
-    left-glacier-blue.webp</pre>
-    <table style="margin-top:12px;">
-      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr><td><code>original_filename</code></td><td>string</td><td>Raw download in <code>originals/</code> (e.g. <code>top-black.jpg</code>)</td></tr>
-        <tr><td><code>bg_removed</code></td><td>boolean</td><td>Whether RMBG 2.0 processing succeeded</td></tr>
-        <tr><td><code>original_format</code></td><td>string</td><td>Source format before conversion (jpg, webp, png, avif)</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header" style="background:var(--orange-bg);">Graceful Degradation</div>
-  <div class="card-body">
-    <table>
-      <thead><tr><th>Scenario</th><th>Behavior</th><th>Flags</th></tr></thead>
-      <tbody>
-        <tr><td>Model not downloaded</td><td>Raw download converted to PNG as master</td><td><code>bg_removed: false</code></td></tr>
-        <tr><td>ONNX inference fails</td><td>Same &mdash; raw saved as PNG fallback</td><td><code>bg_removed: false</code></td></tr>
-        <tr><td>Trim produces empty canvas</td><td>Pre-trim transparent image kept</td><td><code>bg_removed: true, trim_failed: true</code></td></tr>
-      </tbody>
-    </table>
-    <p style="margin-top:8px; font-size:13px; color:var(--text-muted);">
-      Processing never blocks the run. If RMBG is unavailable, PIF continues to function exactly as before &mdash; images are just saved without background removal.
-    </p>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header" style="background:var(--red-bg);">Concurrency &amp; Remaining Work</div>
-  <div class="card-body">
-    <p style="margin-bottom:8px; font-weight:600;">Current state: no inference queue</p>
-    <p style="font-size:13.5px; margin-bottom:8px;">
-      PIF fires variants concurrently (1s stagger). Each variant's images are processed sequentially within its runner, but
-      multiple variants can hit RMBG inference simultaneously. With many concurrent variants, this causes CPU contention
-      and memory spikes (~500MB+ per concurrent inference).
-    </p>
-    <p style="font-size:13px; font-weight:600; color:var(--red); margin-bottom:4px;">Needed: processing semaphore</p>
-    <p style="font-size:13.5px;">
-      Add a mutex/semaphore around <code>session.run()</code> in <code>imageProcessor.js</code> so ONNX inference
-      runs one image at a time regardless of how many variants are processing concurrently. Downloads and quality gates
-      can remain parallel &mdash; only the inference step needs serialization. The &ldquo;Process All&rdquo; GUI button already
-      serializes (sequential <code>mutateAsync</code> calls), but the PIF run pipeline does not.
-    </p>
-  </div>
-</div>
-
-<!-- 7. Image Serving -->
-<div class="section-title"><span class="num">7</span> Image Serving</div>
-
-<div class="card">
-  <div class="card-header" style="background:var(--accent-light);">Static File Serving Endpoints</div>
-  <div class="card-body">
-    <dl class="detail-grid">
-      <dt>Masters</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/:filename</code></dd>
-      <dt>Originals</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/originals/:filename</code></dd>
-      <dt>Storage</dt><dd><code>.workspace/products/{pid}/images/</code> (masters) and <code>images/originals/</code> (raw downloads)</dd>
-      <dt>MIME types</dt><dd>Proper Content-Type headers for PNG, JPEG, WebP, GIF, AVIF</dd>
-      <dt>Caching</dt><dd>24-hour cache (<code>Cache-Control: max-age=86400</code>)</dd>
-      <dt>Backfill</dt><dd>Dimensions backfilled on GET for older images that lack stored dimension metadata</dd>
-      <dt>Process</dt><dd><code>POST /api/v1/product-image-finder/:category/:productId/images/:filename/process</code> &mdash; runs RMBG on a single image, updates JSON + SQL</dd>
-      <dt>Delete</dt><dd>Deleting a master also removes its corresponding original from <code>originals/</code></dd>
+    top-black-2.webp</pre>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Filename format</dt><dd><code>{view}-{variant_slug}{-N}{ext}</code> &mdash; dedup suffix auto-increments from existing files on disk</dd>
+      <dt>Cross-run safety</dt><dd><code>viewCounts</code> pre-seeded by scanning existing files, preventing overwrites across loop runs</dd>
     </dl>
   </div>
 </div>
 
-<!-- 8. Architecture -->
-<div class="section-title"><span class="num">8</span> Architecture</div>
+<!-- 9. Settings Reference -->
+<div class="section-title"><span class="num">9</span> Settings Reference</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--surface-alt);">Module Architecture Detail</div>
+  <div class="card-header" style="background:var(--accent-light);">Per-Category PIF Settings</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>viewConfig</code></td><td><em>empty</em></td><td>JSON array of view objects with priority flags. Empty = category defaults.</td></tr>
+        <tr><td><code>viewBudget</code></td><td><em>empty</em></td><td>JSON array of view keys to actively search. Empty = category defaults.</td></tr>
+        <tr><td><code>viewQualityConfig</code></td><td><em>empty</em></td><td>JSON per-view quality overrides <code>{ top: { minWidth, minHeight } }</code>. Empty = category defaults.</td></tr>
+        <tr><td><code>minWidth</code></td><td><code>800</code></td><td>Global fallback minimum width (used when no per-view config)</td></tr>
+        <tr><td><code>minHeight</code></td><td><code>600</code></td><td>Global fallback minimum height</td></tr>
+        <tr><td><code>minFileSize</code></td><td><code>50000</code></td><td>Fallback file size gate (bytes) when dimensions unreadable</td></tr>
+        <tr><td><code>satisfactionThreshold</code></td><td><code>3</code></td><td>Quality images per view to consider that view "satisfied"</td></tr>
+        <tr><td><code>viewAttemptBudget</code></td><td><code>5</code></td><td>Max LLM calls per view before moving on (exhaustion)</td></tr>
+        <tr><td><code>heroEnabled</code></td><td><code>true</code></td><td>Whether hero search phase is active</td></tr>
+        <tr><td><code>heroCount</code></td><td><code>3</code></td><td>Target hero images per variant</td></tr>
+        <tr><td><code>heroAttemptBudget</code></td><td><code>3</code></td><td>Max hero LLM calls per variant</td></tr>
+        <tr><td><code>viewPromptOverride</code></td><td><em>empty</em></td><td>Custom view prompt instructions (replaces default template)</td></tr>
+        <tr><td><code>heroPromptOverride</code></td><td><em>empty</em></td><td>Custom hero prompt instructions (replaces default template)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 10. Image Serving -->
+<div class="section-title"><span class="num">10</span> API Endpoints</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Routes</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid</code></td><td>Full product state: images, runs, carousel progress</td></tr>
+        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid</code></td><td>Single LLM run (body: <code>{ variant_key?, mode? }</code>)</td></tr>
+        <tr><td><span class="tag tag-purple">POST</span></td><td><code>/:cat/:pid/loop</code></td><td>Carousel loop (body: <code>{ variant_key? }</code>). Views &rarr; heroes &rarr; done.</td></tr>
+        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid/images/:file/process</code></td><td>Run RMBG on a single image</td></tr>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/:file</code></td><td>Serve master image</td></tr>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/originals/:file</code></td><td>Serve original download</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/images/:file</code></td><td>Delete single image (master + original)</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/runs/:n</code></td><td>Delete single run + associated images</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid</code></td><td>Delete all runs + all images</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 11. Architecture -->
+<div class="section-title"><span class="num">11</span> Architecture</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Module Architecture</div>
   <div class="card-body">
     <dl class="detail-grid" style="grid-template-columns: 180px 1fr;">
       <dt>Module ID</dt><dd><code>productImageFinder</code></dd>
       <dt>Phase</dt><dd><code>imageFinder</code></dd>
-      <dt>Route</dt><dd><code>/api/v1/product-image-finder/:category/:productId</code></dd>
+      <dt>Route prefix</dt><dd><code>product-image-finder</code></dd>
       <dt>DB Tables</dt><dd><code>product_image_finder</code> + <code>_runs</code> + <code>_settings</code></dd>
       <dt>JSON Store</dt><dd><code>.workspace/products/{pid}/product_images.json</code></dd>
       <dt>Cooldown</dt><dd>30 days</dd>
-      <dt>Accumulation</dt><dd>Per-variant latest-wins; all variants preserved across runs</dd>
-      <dt>Concurrency</dt><dd>Staggered parallel (1-second delay between launches); each variant persisted on completion</dd>
+      <dt>Accumulation</dt><dd>All images from all non-rejected runs. No per-view dedup &mdash; filenames are unique.</dd>
+      <dt>Loop orchestrator</dt><dd><code>runCarouselLoop()</code> &mdash; sequential per variant, re-reads disk after each call</dd>
+      <dt>Strategy engine</dt><dd><code>evaluateCarousel()</code> &mdash; pure function, attempt tracking, focus view selection</dd>
     </dl>
   </div>
 </div>
 
-<!-- 9. GUI Panel -->
-<div class="section-title"><span class="num">9</span> GUI Panel</div>
+<!-- 12. GUI Panel -->
+<div class="section-title"><span class="num">12</span> GUI Panel</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--purple-bg);">Panel Layout and Interactions</div>
+  <div class="card-header" style="background:var(--purple-bg);">Panel Layout</div>
   <div class="card-body">
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Header</p>
+    <p style="font-size:13.5px; margin-bottom:16px;">
+      Model badge + <strong>Loop</strong> button (triggers <code>POST /loop</code> for all variants).
+      Progress reported via WebSocket through the Operations Tracker sidebar.
+    </p>
 
     <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">KPI Cards</p>
     <div class="flow-row" style="margin:8px 0 20px; justify-content:flex-start;">
       <div class="flow-box flow-accent" style="min-width:100px; border-width:1px;">Images<br><small>total count</small></div>
       <div class="flow-box flow-teal" style="min-width:100px; border-width:1px;">Variants<br><small>color targets</small></div>
       <div class="flow-box flow-repair" style="min-width:100px; border-width:1px;">Runs<br><small>search count</small></div>
-      <div class="flow-box flow-neutral" style="min-width:100px; border-width:1px;">Cooldown<br><small>days remaining</small></div>
+      <div class="flow-box flow-pass" style="min-width:100px; border-width:1px;">Carousel<br><small>views filled/total</small></div>
     </div>
 
-    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Variant Grid</p>
-    <p style="font-size:13.5px; margin-bottom:16px;">
-      CLR/ED chips for each variant with the resolved search label displayed.
-      Chips indicate which resolution priority was used (edition name, color name, or raw atom).
-    </p>
-
-    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">All Images Gallery</p>
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Per-Variant Row</p>
     <p style="font-size:13.5px; margin-bottom:6px;">
-      Every image from every run displayed together, tagged with run number.
-      Quality failures shown with <span class="tag tag-red">LOW</span> badge and red border.
-      Unprocessed images (no RMBG) shown with <span class="tag tag-accent">RAW</span> chip.
+      Each variant shows: type chip (CLR/ED), label, image count, carousel progress, and three buttons:
     </p>
-    <dl class="detail-grid" style="margin-bottom:16px;">
-      <dt>Click action</dt><dd>Opens full-size lightbox &mdash; side-by-side: processed (checkerboard bg) on left, original on right. Single image if no original.</dd>
-      <dt>Process button</dt><dd>Per-card &ldquo;process&rdquo; button on unprocessed images. Runs RMBG on that image, updates thumbnail + JSON + SQL in-place.</dd>
-      <dt>Process All</dt><dd>Section-level button processes every unprocessed image sequentially. Shows <code>Processing 3/7...</code> progress. Disappears when all images are processed.</dd>
-      <dt>Dismiss</dt><dd>Press Escape or click outside to close lightbox</dd>
+    <div class="flow-row" style="justify-content:flex-start; margin:8px 0 16px;">
+      <div class="flow-box flow-accent" style="min-width:60px; padding:6px 14px; border-width:1px; font-size:12px;">View</div>
+      <div class="flow-box flow-accent" style="min-width:60px; padding:6px 14px; border-width:1px; font-size:12px;">Hero</div>
+      <div class="flow-box flow-repair" style="min-width:60px; padding:6px 14px; border-width:1px; font-size:12px;">Loop</div>
+    </div>
+    <dl class="detail-grid">
+      <dt>View</dt><dd>Single view-mode LLM call for this variant. Never locked.</dd>
+      <dt>Hero</dt><dd>Single hero-mode LLM call for this variant. Never locked. Hidden when <code>heroEnabled: false</code>.</dd>
+      <dt>Loop</dt><dd>Full carousel loop for this variant. Disabled only when a loop is already pending.</dd>
+      <dt>Progress</dt><dd>Carousel progress label: <code>2/6 views &middot; 1/3 heroes</code></dd>
     </dl>
 
-    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Run History</p>
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; margin-top:16px;">All Images Gallery</p>
     <p style="font-size:13.5px; margin-bottom:6px;">
-      Expandable with chevron toggle. Each run entry contains:
+      Every image from every run displayed grouped by variant. Click for full-size lightbox with original comparison.
     </p>
-    <table style="margin-top:0;">
-      <thead><tr><th>Section</th><th>Content</th></tr></thead>
-      <tbody>
-        <tr><td>Discovery log</td><td>URLs found, download status per candidate</td></tr>
-        <tr><td>Download errors</td><td>Failed URLs with error details</td></tr>
-        <tr><td>System prompt</td><td>Full system prompt sent to LLM</td></tr>
-        <tr><td>User message</td><td>Product identity + variant search message</td></tr>
-        <tr><td>LLM response</td><td>Raw LLM response with candidate URLs and reasoning</td></tr>
-      </tbody>
-    </table>
-
-    <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Footer</dt><dd>Model badge + run count (shared <code>FinderPanelFooter</code> component)</dd>
+    <dl class="detail-grid">
+      <dt>Process button</dt><dd>Per-image RMBG processing. "Process All" for batch.</dd>
+      <dt>Delete button</dt><dd>Per-image deletion (master + original).</dd>
+      <dt>Quality badges</dt><dd><span class="tag tag-red">LOW</span> for failed quality gate. <span class="tag tag-accent">RAW</span> for unprocessed.</dd>
     </dl>
+
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; margin-top:16px;">Run History</p>
+    <p style="font-size:13.5px;">
+      Expandable per-run rows with discovery log, download errors, system prompt, user message, and LLM response.
+    </p>
   </div>
 </div>
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from source &mdash; Spec Factory Product Image Finder (PIF)<br>
-  CEF-dependent &bull; staggered parallel &bull; RMBG 2.0 background removal &bull; per-variant latest-wins accumulation
+  Carousel loop &bull; per-view focus &bull; cumulative learning &bull; RMBG 2.0 &bull; 8-view vocabulary
 </div>
 
 </div>
