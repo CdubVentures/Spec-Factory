@@ -123,6 +123,8 @@ export async function runColorEditionFinder({
   onStageAdvance = null,
   onModelResolved = null,
   onStreamChunk = null,
+  onQueueWait = null,
+  onLlmCallComplete = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
   const configModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
@@ -175,7 +177,30 @@ export async function runColorEditionFinder({
       } : undefined,
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
+      onQueueWait,
     }));
+
+  // Capture prompt snapshot BEFORE call so the operations modal shows it immediately
+  const systemPrompt = buildColorEditionFinderPrompt({
+    colorNames,
+    colors: allColors,
+    product,
+    previousRuns,
+  });
+  const userMessage = JSON.stringify({
+    brand: product.brand || '',
+    base_model: product.base_model || '',
+    model: product.model || '',
+    variant: product.variant || '',
+  });
+  const cefStartedAt = new Date().toISOString();
+  const cefStartMs = Date.now();
+
+  onLlmCallComplete?.({
+    prompt: { system: systemPrompt, user: userMessage },
+    response: null,
+    model: actualModel,
+  });
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
   // primary→fallback internally. A single try/catch is sufficient —
@@ -321,18 +346,11 @@ export async function runColorEditionFinder({
   const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const ranAt = now.toISOString();
 
-  // Capture prompt snapshot
-  const systemPrompt = buildColorEditionFinderPrompt({
-    colorNames,
-    colors: allColors,
-    product,
-    previousRuns,
-  });
-  const userMessage = JSON.stringify({
-    brand: product.brand || '',
-    base_model: product.base_model || '',
-    model: product.model || '',
-    variant: product.variant || '',
+  // Update operations tracker with response (smart update — fills in the pending entry)
+  onLlmCallComplete?.({
+    prompt: { system: systemPrompt, user: userMessage },
+    response: storedResponse,
+    model: actualModel,
   });
 
   // Merge into JSON (durable memory — write first)
@@ -345,6 +363,8 @@ export async function runColorEditionFinder({
       last_ran_at: ranAt,
     },
     run: {
+      started_at: cefStartedAt,
+      duration_ms: Date.now() - cefStartMs,
       model: actualModel,
       fallback_used: actualFallbackUsed,
       selected,

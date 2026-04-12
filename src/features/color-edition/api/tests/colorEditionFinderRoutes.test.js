@@ -128,7 +128,7 @@ describe('colorEditionFinderRoutes', () => {
   });
 
   describe('POST /color-edition-finder/:category/:productId', () => {
-    it('triggers finder and returns result with editions object', async () => {
+    it('triggers finder and returns 202 with operationId', async () => {
       let runCalled = false;
       const runFn = async () => {
         runCalled = true;
@@ -138,12 +138,9 @@ describe('colorEditionFinderRoutes', () => {
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'POST', {}, {});
       assert.equal(result, true);
-      assert.ok(runCalled);
-      assert.equal(calls[0].status, 200);
+      assert.equal(calls[0].status, 202);
       assert.equal(calls[0].body.ok, true);
-      assert.deepEqual(calls[0].body.colors, ['black', 'white']);
-      assert.ok(calls[0].body.editions);
-      assert.equal(calls[0].body.default_color, 'black');
+      assert.ok(calls[0].body.operationId, 'response must include operationId');
     });
   });
 

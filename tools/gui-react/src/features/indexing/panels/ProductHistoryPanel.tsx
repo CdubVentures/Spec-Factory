@@ -515,7 +515,6 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
           {collapsed ? '+' : '-'}
         </button>
         <span className="text-[15px] font-bold sf-text-primary">Run History</span>
-        <span className="font-mono text-[11px] sf-text-muted">{productId}</span>
         <Tip text="Pipeline history: searches, triage, crawl outcomes, and errors across all runs." />
       </div>
 

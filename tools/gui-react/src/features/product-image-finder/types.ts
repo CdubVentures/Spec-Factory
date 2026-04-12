@@ -27,6 +27,14 @@ export interface ProductImageFinderRun {
   ran_at: string;
   model: string;
   fallback_used: boolean;
+  /** Run mode: 'view' for angle-based, 'hero' for studio product shots. Absent on legacy runs. */
+  mode?: 'view' | 'hero';
+  /** Shared ID across all runs in a single loop invocation. Absent on non-loop runs. */
+  loop_id?: string | null;
+  /** ISO timestamp when the run started. Absent on legacy runs. */
+  started_at?: string | null;
+  /** Total run duration in milliseconds. Absent on legacy runs. */
+  duration_ms?: number | null;
   selected: { images: ProductImageEntry[] };
   prompt: { system: string; user: string };
   response: {
@@ -35,6 +43,14 @@ export interface ProductImageFinderRun {
     discovery_log: { urls_checked: string[]; queries_run: string[]; notes: string[] };
     variant_key: string;
     variant_label: string;
+    /** Run mode (duplicated from run level for SQL blob access). */
+    mode?: 'view' | 'hero';
+    /** Loop ID (duplicated from run level for SQL blob access). */
+    loop_id?: string | null;
+    /** Started at (duplicated from run level for SQL blob access). */
+    started_at?: string | null;
+    /** Duration ms (duplicated from run level for SQL blob access). */
+    duration_ms?: number | null;
   };
 }
 
@@ -77,6 +93,12 @@ export interface ProductImageFinderResult {
   runs: ProductImageFinderRun[];
   carouselProgress?: Record<string, CarouselProgress>;
   carouselSettings?: CarouselSettings;
+}
+
+/** 202 Accepted response — returned immediately by fire-and-forget POST handlers. */
+export interface AcceptedResponse {
+  ok: true;
+  operationId: string;
 }
 
 export interface ProductImageFinderRunResponse {

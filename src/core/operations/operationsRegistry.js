@@ -28,7 +28,10 @@ const EVICTION_DELAY_MS = 60_000;
 
 function broadcast(operation, action = 'upsert') {
   if (!_broadcastWs) return;
-  _broadcastWs('operations', { action, operation: action === 'remove' ? undefined : { ...operation }, id: operation.id });
+  // WHY: llmCalls can be large; they have their own 'llm-call-append' broadcast.
+  // Exclude from regular upsert to keep per-update messages small.
+  const { llmCalls, ...opWithoutCalls } = operation;
+  _broadcastWs('operations', { action, operation: action === 'remove' ? undefined : { ...opWithoutCalls }, id: operation.id });
 }
 
 function broadcastRemove(id) {
@@ -59,15 +62,17 @@ export function initOperationsRegistry({ broadcastWs }) {
 /**
  * Register a new operation. Returns { id }.
  */
-export function registerOperation({ type, category, productId, productLabel, stages }) {
+export function registerOperation({ type, subType, category, productId, productLabel, variantKey, stages }) {
   if (!type) throw new Error('type is required');
   const id = crypto.randomUUID();
   const operation = {
     id,
     type,
+    subType: subType || '',
     category: category || '',
     productId: productId || '',
     productLabel: productLabel || '',
+    variantKey: variantKey || '',
     stages: Array.isArray(stages) ? stages : [],
     currentStageIndex: 0,
     status: 'running',
@@ -76,6 +81,8 @@ export function registerOperation({ type, category, productId, productLabel, sta
     endedAt: null,
     error: null,
     modelInfo: null,
+    progressText: '',
+    llmCalls: [],
   };
   ops.set(id, operation);
   broadcast(operation);
@@ -97,6 +104,76 @@ export function updateStage({ id, stageIndex, stageName }) {
     if (idx >= 0) op.currentStageIndex = idx;
   }
   broadcast(op);
+}
+
+/**
+ * Record lab queue wait time on a running operation.
+ * Called when an LLM call exits the dispatch queue and starts executing.
+ */
+export function updateQueueDelay({ id, queueDelayMs }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  op.queueDelayMs = typeof queueDelayMs === 'number' ? queueDelayMs : 0;
+  broadcast(op);
+}
+
+/**
+ * Set free-form progress text on a running operation.
+ * Overwrites previous text. No-ops on nonexistent or terminal ops.
+ */
+export function updateProgressText({ id, text }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  op.progressText = typeof text === 'string' ? text : '';
+  broadcast(op);
+}
+
+/**
+ * Set structured loop progress on a running operation.
+ * Used by carousel loops to provide rich data for grid rendering.
+ * No-ops on nonexistent or terminal ops.
+ */
+export function updateLoopProgress({ id, loopProgress }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  op.loopProgress = loopProgress && typeof loopProgress === 'object' ? loopProgress : null;
+  broadcast(op);
+}
+
+/**
+ * Append or update an LLM call record on a running operation.
+ *
+ * Smart behavior:
+ * - If the last call has response === null and the new call has a response,
+ *   it UPDATES the last entry (prompt was sent before call, response arrived).
+ * - Otherwise, it APPENDS a new entry.
+ *
+ * This lets finders fire the callback twice per LLM call:
+ *   1. Before call: { prompt, response: null } → prompt visible immediately
+ *   2. After call:  { prompt, response: {...} } → fills in response
+ */
+export function appendLlmCall({ id, call }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  if (!op.llmCalls) op.llmCalls = [];
+
+  // Update last entry if it's a pending prompt awaiting response
+  const last = op.llmCalls[op.llmCalls.length - 1];
+  if (last && last.response === null && call.response != null) {
+    const updated = { ...last, response: call.response, timestamp: new Date().toISOString() };
+    op.llmCalls[op.llmCalls.length - 1] = updated;
+    if (_broadcastWs) {
+      _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
+    }
+    return;
+  }
+
+  // Append new call
+  const indexed = { ...call, callIndex: op.llmCalls.length, timestamp: new Date().toISOString() };
+  op.llmCalls.push(indexed);
+  if (_broadcastWs) {
+    _broadcastWs('operations', { action: 'llm-call-append', id, call: indexed });
+  }
 }
 
 /**

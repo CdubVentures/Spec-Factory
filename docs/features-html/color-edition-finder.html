@@ -51,6 +51,9 @@
   .tag-both { background: var(--purple-bg); color: var(--purple); }
   .tag-teal { background: var(--teal-bg); color: var(--teal); }
   .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
   .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
   .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
   .detail-grid dd { color: var(--text); }
@@ -69,6 +72,7 @@
   .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
   .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
   .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
   pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
   .rule-list { list-style: none; padding: 0; margin: 0; }
   .rule-list li { padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13.5px; display: flex; align-items: flex-start; gap: 8px; }
@@ -78,25 +82,27 @@
   .rule-icon-red { background: var(--red); }
   .rule-icon-orange { background: var(--orange); }
   .rule-icon-accent { background: var(--accent); }
+  .file-tree { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre; overflow-x: auto; }
+  .file-tree .comment { color: var(--text-muted); }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Color &amp; Edition Finder (CEF) Reference</h1>
-  <p>Discovers standard colorways, marketing names, and special editions for each product via LLM web search</p>
+  <p>Discovers standard colorways, marketing names, and special editions via LLM web search with candidate validation</p>
 </div>
 
 <div class="container">
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- 1. Overview -->
 <div class="section-title"><span class="num">1</span> Overview</div>
 
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">What CEF Does</div>
 <div class="card-body">
   <p>The Color &amp; Edition Finder discovers <strong>every color variant and special edition</strong> for a given product. It uses an LLM-driven web search to find all standard colorways, multi-color combos, marketing color names, and named special/limited/collaboration editions.</p>
-  <p>CEF produces a normalized, deduplicated color inventory and an edition map, each keyed to the product's base model and variant identity.</p>
+  <p>After LLM discovery, results pass through a <strong>candidate validation gate</strong> (Field Studio rules) before being accepted. Validated results are submitted as candidates to the Publisher pipeline.</p>
   <p><strong>Gate:</strong> CEF only runs when Field Studio has <code>colors</code> and/or <code>editions</code> enabled for the category. If neither field is enabled, the module is skipped entirely.</p>
 </div>
 </div>
@@ -106,16 +112,18 @@
   <span class="flow-arrow">&rarr;</span>
   <div class="flow-box flow-teal">LLM Web Search</div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-repair">Normalize &amp; Validate</div>
+  <div class="flow-box flow-repair">Candidate Gate<br><small>validate + repair</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-pass">Store Results</div>
+  <div class="flow-box flow-pass">Submit Candidates<br><small>colors + editions</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-accent">Persist<br><small>JSON + SQL</small></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- 2. Data Model -->
 <div class="section-title"><span class="num">2</span> Data Model</div>
 
 <div class="card">
-<div class="card-header" style="background:var(--accent-light);">CEF Output Schema</div>
+<div class="card-header" style="background:var(--accent-light);">CEF LLM Response Schema (Zod-validated)</div>
 <div class="card-body">
 <table>
 <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
@@ -128,7 +136,7 @@
   <tr>
     <td><code>color_names</code></td>
     <td>Record&lt;string, string&gt;</td>
-    <td>Map of atom &rarr; marketing name. <strong>Required</strong> when the atom differs from the manufacturer's name (e.g. <code>"dark-gray": "Storm Gray"</code>). Omit when atom IS the name (e.g. <code>"black"</code>).</td>
+    <td>Map of atom &rarr; marketing name. <strong>Required</strong> when the atom differs from the manufacturer's name (e.g. <code>"dark-gray": "Storm Gray"</code>).</td>
   </tr>
   <tr>
     <td><code>editions</code></td>
@@ -138,7 +146,7 @@
   <tr>
     <td><code>default_color</code></td>
     <td>string</td>
-    <td>First color in the <code>colors</code> array. Default colorway shown on the product page.</td>
+    <td>Must equal <code>colors[0]</code>. The default colorway shown on the product page.</td>
   </tr>
   <tr>
     <td><code>siblings_excluded</code></td>
@@ -147,15 +155,43 @@
   </tr>
   <tr>
     <td><code>discovery_log</code></td>
-    <td>string[]</td>
-    <td>Audit trail of search decisions, normalizations, and exclusions.</td>
+    <td>object</td>
+    <td>Structured audit trail with <code>confirmed_from_known</code>, <code>added_new</code>, <code>rejected_from_known</code> (string arrays), plus <code>urls_checked</code> and <code>queries_run</code> (string arrays).</td>
   </tr>
 </tbody>
 </table>
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Discovery Log Structure (structured object, not string[])</div>
+<div class="card-body">
+<pre class="json-block">{
+  "discovery_log": {
+    "confirmed_from_known": ["black", "white"],
+    "added_new": ["dark-gray+black+orange"],
+    "rejected_from_known": [],
+    "urls_checked": [
+      "https://example.com/product-page",
+      "https://example.com/colors"
+    ],
+    "queries_run": [
+      "DeathAdder V3 colorways 2024",
+      "DeathAdder V3 limited edition"
+    ]
+  }
+}</pre>
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt>confirmed_from_known</dt><dd>Colors/editions from prior runs that the LLM re-confirmed this run</dd>
+    <dt>added_new</dt><dd>Newly discovered colors/editions not seen in prior runs</dd>
+    <dt>rejected_from_known</dt><dd>Previously known items the LLM determined are incorrect</dd>
+    <dt>urls_checked</dt><dd>All URLs the LLM visited during search (accumulated across runs)</dd>
+    <dt>queries_run</dt><dd>All search queries the LLM executed (accumulated across runs)</dd>
+  </dl>
+</div>
+</div>
+
+<!-- 3. Color Rules -->
 <div class="section-title"><span class="num">3</span> Color Rules</div>
 
 <div class="two-col">
@@ -167,6 +203,7 @@
   <li><span class="rule-icon rule-icon-green">2</span> Multi-color combos: join atoms with <code>+</code> in dominant-to-accent order (e.g. <code>"dark-gray+black+orange"</code>).</li>
   <li><span class="rule-icon rule-icon-green">3</span> Marketing names are <strong>required</strong> in <code>color_names</code> when the atom does not match the manufacturer's real name.</li>
   <li><span class="rule-icon rule-icon-green">4</span> Every entry in <code>colors</code> must be unique &mdash; no duplicate atoms or combos.</li>
+  <li><span class="rule-icon rule-icon-green">5</span> <code>default_color</code> must exactly equal <code>colors[0]</code>.</li>
 </ul>
 </div>
 </div>
@@ -183,7 +220,7 @@
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- 4. Edition Rules -->
 <div class="section-title"><span class="num">4</span> Edition Rules</div>
 
 <div class="two-col">
@@ -194,7 +231,7 @@
   <li><span class="rule-icon rule-icon-accent">1</span> Named special, limited, or collaboration versions of the product (e.g. "Faker Edition", "Neon Rider").</li>
   <li><span class="rule-icon rule-icon-accent">2</span> Slug must be kebab-case (e.g. <code>faker-edition</code>).</li>
   <li><span class="rule-icon rule-icon-accent">3</span> Colors expressed as a single <code>"+"</code>-joined combo entry (e.g. <code>"dark-gray+black+orange"</code>).</li>
-  <li><span class="rule-icon rule-icon-accent">4</span> The edition's combo <strong>must also appear</strong> in the master <code>colors</code> array.</li>
+  <li><span class="rule-icon rule-icon-accent">4</span> The edition's combo <strong>must also appear</strong> in the master <code>colors</code> array (enforced by <code>mergeEditionColorsInto</code>).</li>
 </ul>
 </div>
 </div>
@@ -212,57 +249,444 @@
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">5</span> Identity</div>
+<!-- 5. Identity -->
+<div class="section-title"><span class="num">5</span> Identity &amp; Disambiguation</div>
 
 <div class="card">
-<div class="card-header" style="background:var(--accent-light);">Product Identity &amp; Disambiguation</div>
+<div class="card-header" style="background:var(--accent-light);">Product Identity &amp; Ambiguity Scaling</div>
 <div class="card-body">
 <ul class="rule-list">
   <li><span class="rule-icon rule-icon-accent">1</span> <strong>base_model + variant:</strong> CEF uses both fields together to identify the exact product. A "DeathAdder V3" (wired) and "DeathAdder V3 Pro" (wireless) are separate products with separate color inventories.</li>
-  <li><span class="rule-icon rule-icon-accent">2</span> <strong>Sibling exclusion:</strong> When LLM search returns colors for related but different models, those siblings are excluded and logged in <code>siblings_excluded</code>. Only the exact product's colors are kept.</li>
-  <li><span class="rule-icon rule-icon-accent">3</span> <strong>Family count / ambiguity:</strong> CEF is aware of how many siblings exist in the same family. High sibling counts increase ambiguity risk, so the module logs additional disambiguation context in <code>discovery_log</code>.</li>
+  <li><span class="rule-icon rule-icon-accent">2</span> <strong>Sibling exclusion:</strong> When LLM search returns colors for related but different models, those siblings are excluded and logged in <code>siblings_excluded</code>.</li>
+  <li><span class="rule-icon rule-icon-accent">3</span> <strong>Family count / ambiguity:</strong> CEF reads <code>familyModelCount</code> and <code>ambiguityLevel</code> from <code>resolveIdentityAmbiguitySnapshot</code>. High sibling counts trigger stronger IDENTITY WARNING blocks in the prompt.</li>
 </ul>
+  <table style="margin-top:12px;">
+    <thead><tr><th>Ambiguity</th><th>Family Size</th><th>Prompt Behavior</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching</td></tr>
+      <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block: verify exact model in URLs and page titles</td></tr>
+      <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block: triple-check, skip if unconfirmed</td></tr>
+    </tbody>
+  </table>
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">6</span> Architecture</div>
+<!-- 6. Candidate Gate -->
+<div class="section-title"><span class="num">6</span> Candidate Validation Gate</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">All-or-Nothing Validation Pipeline</div>
+<div class="card-body">
+  <p>After the LLM returns results, CEF runs an all-or-nothing validation gate using Field Studio compiled rules. If any field has hard rejections, the <strong>entire run is rejected</strong> &mdash; no partial writes.</p>
+
+  <div class="flow-row" style="margin:16px 0;">
+    <div class="flow-box flow-accent" style="min-width:110px;">Step 1<br><small>validate colors</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-repair" style="min-width:110px;">Step 2<br><small>build repair map</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-teal" style="min-width:110px;">Step 3<br><small>reconcile editions</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-accent" style="min-width:110px;">Step 4<br><small>validate editions</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-pass" style="min-width:110px;">Step 5<br><small>submit candidates</small></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>On Failure</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Validate colors</strong></td>
+        <td>Run <code>validateField({ field: 'colors', items })</code> against compiled rules</td>
+        <td>Hard rejects &rarr; <code>storeFailureAndReturn()</code> &mdash; entire run rejected</td>
+      </tr>
+      <tr>
+        <td><strong>2. Build repair map</strong></td>
+        <td>Collect all <code>repair</code> actions from validation (atom renames/remaps)</td>
+        <td>N/A &mdash; repairs are applied silently</td>
+      </tr>
+      <tr>
+        <td><strong>3. Reconcile editions</strong></td>
+        <td><code>reconcileEditionColors(editions, repairMap)</code> &mdash; apply repair mapping to edition color arrays</td>
+        <td>N/A</td>
+      </tr>
+      <tr>
+        <td><strong>4. Validate editions</strong></td>
+        <td>Run <code>validateField({ field: 'editions', items: slugs })</code></td>
+        <td>Hard rejects &rarr; <code>storeFailureAndReturn()</code> &mdash; entire run rejected</td>
+      </tr>
+      <tr>
+        <td><strong>4b. Merge edition colors</strong></td>
+        <td><code>mergeEditionColorsInto(colors, editions)</code> &mdash; idempotently add edition-exclusive combos to master colors array</td>
+        <td>N/A</td>
+      </tr>
+      <tr>
+        <td><strong>5. Submit candidates</strong></td>
+        <td><code>submitCandidate()</code> for both <code>colors</code> and <code>editions</code> fields with source metadata <code>{ source: 'cef', model, run_id, run_number }</code></td>
+        <td>N/A &mdash; all validations passed</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Rejected Run Handling</div>
+<div class="card-body">
+  <dl class="detail-grid">
+    <dt>Storage</dt><dd>Rejected runs persisted to JSON with <code>response.status: 'rejected'</code>, <code>response.raw</code> (original LLM output), <code>response.rejections[]</code></dd>
+    <dt>SQL</dt><dd>Run row inserted to SQL with same rejection structure for frontend display</dd>
+    <dt>Candidates</dt><dd>No candidates written &mdash; zero data touches the publisher</dd>
+    <dt>Cooldown</dt><dd>No cooldown set on rejected runs</dd>
+    <dt>Run number</dt><dd>Still incremented (prevents run_number collisions)</dd>
+    <dt>Selected</dt><dd>Not updated &mdash; previous successful run's data preserved</dd>
+  </dl>
+</div>
+</div>
+
+<!-- 7. Run Lifecycle -->
+<div class="section-title"><span class="num">7</span> Run Lifecycle &amp; Multi-Run Learning</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Cumulative Knowledge Across Runs</div>
+<div class="card-body">
+  <p>Each CEF run builds on prior runs. The <code>buildKnownInputs(previousRuns)</code> function accumulates all discovery from prior non-rejected runs and feeds it into the next prompt as "known inputs".</p>
+  <dl class="detail-grid">
+    <dt>knownColors</dt><dd>Union of all <code>colors</code> from prior non-rejected runs (growth pattern: once found, stays visible)</dd>
+    <dt>knownColorNames</dt><dd>Latest name per atom across all runs</dd>
+    <dt>knownEditions</dt><dd>Union of all edition slugs across all runs</dd>
+    <dt>urlsAlreadyChecked</dt><dd>Union of all <code>discovery_log.urls_checked</code> across all runs</dd>
+    <dt>domainsAlreadyChecked</dt><dd>Domain-level dedup of checked URLs</dd>
+  </dl>
+  <p style="margin-top:12px;">The LLM receives all known inputs in a "KNOWN INPUTS" section of the system prompt. It must confirm or reject each known item and discover NEW items the prior runs missed.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Selected State (Latest-Wins)</div>
+<div class="card-body">
+  <dl class="detail-grid">
+    <dt>Rule</dt><dd><code>selected</code> always reflects the latest non-rejected run's output (latest-wins semantics)</dd>
+    <dt>Recalculation</dt><dd>On run delete, <code>recalculateCumulativeFromRuns()</code> recomputes selected from remaining runs</dd>
+    <dt>Empty state</dt><dd>If all runs deleted, selected reverts to <code>{ colors: [], editions: {}, default_color: '' }</code></dd>
+    <dt>Run number</dt><dd>Monotonic high-water mark &mdash; never reused even after deletes</dd>
+    <dt>Cooldown</dt><dd>30 days from most recent successful run</dd>
+  </dl>
+</div>
+</div>
+
+<!-- 8. Orchestrator Data Flow -->
+<div class="section-title"><span class="num">8</span> Orchestrator Data Flow</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">runColorEditionFinder() &mdash; Step-by-Step</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>#</th><th>Phase</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Setup</strong></td><td>Resolve model via <code>resolvePhaseModel(config, 'colorFinder')</code>. Read existing runs for historical context. Resolve identity ambiguity snapshot.</td></tr>
+      <tr><td>2</td><td><strong>Prompt Build</strong></td><td><code>buildColorEditionFinderPrompt()</code> constructs system prompt with product identity, known inputs from prior runs, color/edition output rules, and identity warning blocks.</td></tr>
+      <tr><td>3</td><td><strong>LLM Call</strong></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
+      <tr><td>4</td><td><strong>Candidate Gate</strong></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
+      <tr><td>5</td><td><strong>JSON Persist</strong></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
+      <tr><td>6</td><td><strong>SQL Persist</strong></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
+      <tr><td>7</td><td><strong>Return</strong></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- 9. API Endpoints -->
+<div class="section-title"><span class="num">9</span> API Endpoints</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">REST Routes (prefix: <code>/color-edition-finder</code>)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag tag-green">GET</span></td>
+        <td><code>/:category</code></td>
+        <td>List all products in category with CEF summary state</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-green">GET</span></td>
+        <td><code>/:category/:productId</code></td>
+        <td>Full product state: published fields, candidates, runs, cooldown</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-accent">POST</span></td>
+        <td><code>/:category/:productId</code></td>
+        <td>Trigger CEF run. Returns 202 immediately (fire-and-forget). Body: <code>{}</code></td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">DELETE</span></td>
+        <td><code>/:category/:productId/runs/:runNumber</code></td>
+        <td>Delete single run. Recalculates selected from remaining runs.</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">DELETE</span></td>
+        <td><code>/:category/:productId</code></td>
+        <td>Delete all runs + JSON file. Strips CEF candidates from publisher.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">GET Response Shape</div>
+<div class="card-body">
+<pre class="json-block">{
+  "product_id": "razer-deathadder-v3",
+  "category": "mouse",
+  "cooldown_until": "2024-05-12T...",
+  "on_cooldown": true,
+  "run_count": 2,
+  "last_ran_at": "2024-04-12T...",
+
+  "published": {
+    "colors": ["black", "white", "dark-gray+black+orange"],
+    "editions": ["faker-edition", "neon-rider"],
+    "default_color": "black",
+    "color_names": { "dark-gray": "Storm Gray" },
+    "edition_details": {
+      "faker-edition": { "display_name": "Faker Edition", "colors": ["dark-gray+black+orange"] }
+    }
+  },
+
+  "candidates": {
+    "colors": [
+      { "value": "black", "source": "cef", "source_count": 2, "status": "accepted" }
+    ],
+    "editions": [
+      { "value": "faker-edition", "source": "cef", "source_count": 1, "status": "accepted" }
+    ]
+  },
+
+  "runs": [
+    {
+      "run_number": 1,
+      "ran_at": "2024-04-12T...",
+      "model": "claude-sonnet-4-20250514",
+      "fallback_used": false,
+      "cooldown_until": "2024-05-12T...",
+      "selected": { "colors": [...], "editions": {...}, "default_color": "black" },
+      "prompt": { "system": "...", "user": "..." },
+      "response": { "colors": [...], "editions": {...}, "discovery_log": {...} }
+    }
+  ]
+}</pre>
+</div>
+</div>
+
+<!-- 10. Fire-and-Forget + Operations -->
+<div class="section-title"><span class="num">10</span> Fire-and-Forget &amp; Operations Tracker</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Async Execution Pattern</div>
+<div class="card-body">
+  <p>CEF POST runs asynchronously using the <code>fireAndForget</code> helper from <code>src/core/operations/fireAndForget.js</code>.</p>
+  <div class="flow-row" style="margin:16px 0;">
+    <div class="flow-box flow-accent" style="min-width:110px;">POST<br><small>client sends</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-neutral" style="min-width:110px;">Register Op<br><small>in-memory</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-pass" style="min-width:110px;">202 Accepted<br><small>{ operationId }</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-teal" style="min-width:110px;">Async Work<br><small>LLM + validate</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-repair" style="min-width:110px;">WS Broadcast<br><small>data-change</small></div>
+  </div>
+  <dl class="detail-grid">
+    <dt>Operation type</dt><dd><code>'cef'</code></dd>
+    <dt>Stages</dt><dd><code>['Research', 'Writer', 'Validate']</code> (two-phase) or <code>['LLM', 'Validate']</code></dd>
+    <dt>Stream</dt><dd>LLM reasoning tokens streamed via WS <code>'llm-stream'</code> channel to Operations Tracker</dd>
+    <dt>Completion</dt><dd>Operation completed/failed &rarr; <code>data-change</code> event broadcast &rarr; frontend query invalidation</dd>
+    <dt>Rejected runs</dt><dd>Operation marked as failed; data-change event still emitted (so UI shows rejection)</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--orange-bg);">Data-Change Events</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Event</th><th>Extra Domains Invalidated</th><th>Trigger</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>color-edition-finder-run</code></td>
+        <td><span class="tag tag-teal">color-registry</span></td>
+        <td>Run completes (success or rejection)</td>
+      </tr>
+      <tr>
+        <td><code>color-edition-finder-run-deleted</code></td>
+        <td>&mdash;</td>
+        <td>Single run deleted</td>
+      </tr>
+      <tr>
+        <td><code>color-edition-finder-deleted</code></td>
+        <td>&mdash;</td>
+        <td>All runs + JSON deleted</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key:</strong> CEF run events invalidate the <code>color-registry</code> domain because new colors may have been discovered.</p>
+</div>
+</div>
+
+<!-- 11. Architecture -->
+<div class="section-title"><span class="num">11</span> Architecture</div>
 
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">Module Details</div>
 <div class="card-body">
-<dl class="detail-grid">
+<dl class="detail-grid" style="grid-template-columns: 170px 1fr;">
   <dt>Module ID</dt>
   <dd><code>colorEditionFinder</code></dd>
+  <dt>Module Type</dt>
+  <dd><code>cef</code></dd>
   <dt>Phase</dt>
   <dd><code>colorFinder</code></dd>
-  <dt>Route</dt>
-  <dd><code>/api/v1/color-edition-finder/:category/:productId</code></dd>
+  <dt>Route Prefix</dt>
+  <dd><code>/color-edition-finder/:category/:productId</code></dd>
+  <dt>Chip Style</dt>
+  <dd><code>sf-chip-accent</code></dd>
+  <dt>Field Keys</dt>
+  <dd><code>['colors', 'editions']</code></dd>
   <dt>DB Tables</dt>
-  <dd><code>color_edition_finder</code>, <code>color_edition_finder_runs</code>, <code>color_edition_finder_settings</code></dd>
+  <dd><code>color_edition_finder</code> (summary), <code>color_edition_finder_runs</code> (history)</dd>
   <dt>JSON Store</dt>
   <dd><code>.workspace/products/{pid}/color_edition.json</code></dd>
   <dt>Cooldown</dt>
-  <dd>30 days</dd>
-  <dt>Field Gate</dt>
-  <dd><span class="tag tag-teal">colors</span> <span class="tag tag-teal">editions</span></dd>
+  <dd>30 days (successful runs only)</dd>
+  <dt>Candidate Source</dt>
+  <dd><code>cef</code> (stripped on delete-all)</dd>
+  <dt>Accumulation</dt>
+  <dd>Latest-wins for selected (default <code>finderJsonStore</code> behavior)</dd>
 </dl>
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">7</span> Example Output</div>
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Dual-State Architecture</div>
+<div class="card-body">
+  <dl class="detail-grid" style="grid-template-columns: 130px 1fr;">
+    <dt>JSON (SSOT)</dt><dd><code>.workspace/products/{pid}/color_edition.json</code> &mdash; durable memory, audit trail, recovery source. Contains <code>selected</code>, all <code>runs[]</code> with prompt/response, <code>next_run_number</code>.</dd>
+    <dt>SQL (projection)</dt><dd>Summary table: <code>product_id, category, colors (JSON), editions (JSON), default_color, cooldown_until, latest_ran_at, run_count</code>. Runs table: <code>run_number, ran_at, model, fallback_used, selected_json, prompt_json, response_json</code>.</dd>
+    <dt>Rebuild</dt><dd><code>rebuildColorEditionFinderFromJson()</code> scans all product dirs, repopulates SQL from JSON. Supports "Deleted-DB Rebuild" contract.</dd>
+  </dl>
+</div>
+</div>
+
+<!-- 12. Shared Infrastructure -->
+<div class="section-title"><span class="num">12</span> Shared Infrastructure Dependencies</div>
 
 <div class="card">
-<div class="card-header" style="background:var(--green-bg);">Sample CEF Response &mdash; 4 standard colors + 2 editions</div>
+<div class="card-header" style="background:var(--accent-light);">Backend Shared Modules</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Module</th><th>Location</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>finderModuleRegistry</code></td><td><code>src/core/finder/</code></td><td>CEF registered as O(1) entry. Drives DDL, routes, operations labels, data-change events.</td></tr>
+      <tr><td><code>finderJsonStore</code></td><td><code>src/core/finder/</code></td><td>Generic JSON store factory. CEF uses default latest-wins semantics.</td></tr>
+      <tr><td><code>finderSqlStore</code></td><td><code>src/core/finder/</code></td><td>Generic SQL store factory for summary + runs tables.</td></tr>
+      <tr><td><code>createFinderRouteHandler</code></td><td><code>src/core/finder/finderRoutes.js</code></td><td>Generic 5-endpoint route handler (GET list, GET one, POST run, DELETE run, DELETE all).</td></tr>
+      <tr><td><code>fireAndForget</code></td><td><code>src/core/operations/fireAndForget.js</code></td><td>202 Accepted pattern + async background work + data-change emit.</td></tr>
+      <tr><td><code>operationsRegistry</code></td><td><code>src/core/operations/</code></td><td>In-memory operation tracker with WS broadcasts.</td></tr>
+      <tr><td><code>dataChangeContract</code></td><td><code>src/core/events/</code></td><td>Data-change event broadcast + domain mapping.</td></tr>
+      <tr><td><code>buildLlmCallDeps</code></td><td><code>src/core/llm/</code></td><td>Assembles LLM call dependencies (routing, streaming, callbacks).</td></tr>
+      <tr><td><code>createPhaseCallLlm</code></td><td><code>src/features/indexing/pipeline/shared/</code></td><td>Generic phase adapter: <code>(deps, SPEC, mapArgs) &rarr; callLlm(domainArgs)</code>.</td></tr>
+      <tr><td><code>Publisher</code></td><td><code>src/features/publisher/</code></td><td><code>submitCandidate()</code> and <code>validateField()</code> for candidate gate.</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">Frontend Shared Components</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Component / Hook</th><th>Location</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>FinderPanelHeader</code></td><td><code>shared/ui/finder/</code></td><td>Collapse toggle, title, status chip, model badge, run button</td></tr>
+      <tr><td><code>FinderKpiCard</code></td><td><code>shared/ui/finder/</code></td><td>Metric cards (Colors, Editions, Default Color, Runs, Cooldown)</td></tr>
+      <tr><td><code>FinderCooldownStrip</code></td><td><code>shared/ui/finder/</code></td><td>30-day cooldown progress bar</td></tr>
+      <tr><td><code>FinderPanelFooter</code></td><td><code>shared/ui/finder/</code></td><td>Last run date, model badge, run count</td></tr>
+      <tr><td><code>FinderDeleteConfirmModal</code></td><td><code>shared/ui/finder/</code></td><td>Delete confirmation (run or all)</td></tr>
+      <tr><td><code>FinderSectionCard</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible section card for run history, selected state</td></tr>
+      <tr><td><code>FinderRunPromptDetails</code></td><td><code>shared/ui/finder/</code></td><td>Expandable prompt/response viewer</td></tr>
+      <tr><td><code>FinderRunTimestamp</code></td><td><code>shared/ui/finder/</code></td><td>PST time + duration</td></tr>
+      <tr><td><code>DiscoverySummaryBar</code></td><td><code>shared/ui/finder/</code></td><td>Discovery log summary (confirmed, new, rejected, urls, queries)</td></tr>
+      <tr><td><code>useResolvedFinderModel</code></td><td><code>shared/ui/finder/</code></td><td>Resolve LLM model + access mode for phase</td></tr>
+      <tr><td><code>deriveCooldownState</code></td><td><code>shared/ui/finder/</code></td><td>Pure function: calculates days remaining, progress, eligibility</td></tr>
+      <tr><td><code>deriveFinderStatusChip</code></td><td><code>shared/ui/finder/</code></td><td>Pure function: "Not Run" vs "Run N"</td></tr>
+      <tr><td><code>formatAtomLabel</code></td><td><code>shared/ui/finder/</code></td><td>Titlecase raw color atoms</td></tr>
+      <tr><td><code>useFireAndForget</code></td><td><code>features/operations/hooks/</code></td><td>Optimistic insert + POST + stub lifecycle</td></tr>
+      <tr><td><code>useOperationsStore</code></td><td><code>features/operations/state/</code></td><td>Zustand store: track running/done/error operations</td></tr>
+      <tr><td><code>usePersistedToggle</code></td><td><code>shared hooks</code></td><td>Persist collapsed/expanded panel state</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- 13. Frontend Panel -->
+<div class="section-title"><span class="num">13</span> Frontend Panel Architecture</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">ColorEditionFinderPanel Layout</div>
+<div class="card-body">
+  <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Header</p>
+  <p style="margin-bottom:16px;">
+    <code>FinderPanelHeader</code> with collapse toggle, "CEF" chip (<code>sf-chip-accent</code>), status chip, model badge (access mode + capabilities), and Run button. Run button disabled while operation is running.
+  </p>
+
+  <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">KPI Grid (5 cards)</p>
+  <div class="flow-row" style="margin:8px 0 20px; justify-content:flex-start;">
+    <div class="flow-box flow-accent" style="min-width:90px; border-width:1px; font-size:12px;">Colors<br><small>count</small></div>
+    <div class="flow-box flow-teal" style="min-width:90px; border-width:1px; font-size:12px;">Editions<br><small>count</small></div>
+    <div class="flow-box flow-pass" style="min-width:90px; border-width:1px; font-size:12px;">Default<br><small>color name</small></div>
+    <div class="flow-box flow-repair" style="min-width:90px; border-width:1px; font-size:12px;">Runs<br><small>total count</small></div>
+    <div class="flow-box flow-neutral" style="min-width:90px; border-width:1px; font-size:12px;">Cooldown<br><small>days or Ready</small></div>
+  </div>
+
+  <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Selected State Card</p>
+  <p style="margin-bottom:6px;">Shows published colors (with hex swatches from color registry, multi-color gradient support) and editions (with paired color pills). Source count badges from candidate entries. Published indicator when fields are in Field Studio.</p>
+
+  <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; margin-top:16px;">Run History</p>
+  <p style="margin-bottom:6px;">Collapsible section with expandable per-run rows. Each row shows: run number, model, timestamp + duration, rejection status, discovery details (confirmed/new/rejected counts + URL/query lists), and expandable prompt/response viewer. Latest run highlighted with accent border.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Pure Selectors (colorEditionFinderSelectors.ts)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Selector</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td><code>deriveFinderKpiCards(result)</code></td><td>5 KPI card objects with values + tones</td></tr>
+      <tr><td><code>deriveCooldownState(result)</code></td><td>onCooldown, daysRemaining, progressPct, label, eligibleDate</td></tr>
+      <tr><td><code>deriveFinderStatusChip(result)</code></td><td>"Not Run" vs "Run N"</td></tr>
+      <tr><td><code>deriveSelectedStateDisplay(result, colorRegistry)</code></td><td>ColorPill[] with hex lookup, EditionBlock[] with paired colors, ssotRunNumber, defaultColorHex</td></tr>
+      <tr><td><code>deriveRunHistoryRows(result)</code></td><td>RunHistoryRow[] sorted desc with discovery log, rejection summary, prompt/response strings</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- 14. Example Output -->
+<div class="section-title"><span class="num">14</span> Example Output</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Sample CEF LLM Response &mdash; 4 standard colors + 2 editions</div>
 <div class="card-body">
 <pre class="json-block">{
   "colors": [
     "black",
     "white",
     "red",
-    "dark-gray+black+orange"
+    "dark-gray+black+orange",
+    "black+green+pink"
   ],
   "color_names": {
     "dark-gray": "Storm Gray"
@@ -282,15 +706,26 @@
     "DeathAdder V3 Pro",
     "DeathAdder V3 HyperSpeed"
   ],
-  "discovery_log": [
-    "Found 6 colorways on manufacturer page",
-    "Excluded 2 sibling models (Pro, HyperSpeed)",
-    "Normalized 'Storm Gray' -&gt; atom 'dark-gray'",
-    "Faker Edition combo added to master colors list",
-    "Neon Rider combo 'black+green+pink' added to master colors list"
-  ]
+  "discovery_log": {
+    "confirmed_from_known": ["black", "white"],
+    "added_new": ["red", "dark-gray+black+orange", "black+green+pink"],
+    "rejected_from_known": [],
+    "urls_checked": [
+      "https://www.razer.com/gaming-mice/razer-deathadder-v3",
+      "https://www.rtings.com/mouse/reviews/razer/deathadder-v3"
+    ],
+    "queries_run": [
+      "Razer DeathAdder V3 all colorways 2024",
+      "Razer DeathAdder V3 limited edition colors"
+    ]
+  }
 }</pre>
 </div>
+</div>
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Generated from live source audit &mdash; Spec Factory Color &amp; Edition Finder (CEF)<br>
+  LLM discovery &bull; candidate validation gate &bull; publisher integration &bull; cumulative learning &bull; dual-state persistence
 </div>
 
 </div>

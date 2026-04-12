@@ -300,6 +300,7 @@ async function runSingleVariant({
   rmbgSession = null,
   promptOverride = '',
   mode = 'view',
+  onPhaseChange = null,
 }) {
   // WHY: hero mode needs hero-specific quality thresholds in the prompt,
   // not the top-view thresholds. The quality gate at download time already
@@ -330,6 +331,7 @@ async function runSingleVariant({
   }
 
   const llmImages = Array.isArray(response?.images) ? response.images : [];
+  onPhaseChange?.('Download');
   const imagesDir = path.join(productRoot, product.product_id, 'images');
   const downloaded = [];
   const errors = [];
@@ -398,7 +400,11 @@ async function runSingleVariant({
           continue;
         }
 
-        // RMBG post-processing: move raw to originals/, process to master PNG
+        // WHY: Hero images are contextual/lifestyle shots where the background
+        // is intentional. RMBG would destroy the scene. Skip bg removal entirely.
+        const skipRmbg = view === 'hero';
+
+        onPhaseChange?.('Processing');
         const originalExt = path.extname(finalFilename).toLowerCase().replace('.', '');
         const originalsDir = path.join(imagesDir, 'originals');
         fs.mkdirSync(originalsDir, { recursive: true });
@@ -411,7 +417,7 @@ async function runSingleVariant({
         const procResult = await processImage({
           inputPath: originalPath,
           outputPath: masterPath,
-          session: rmbgSession,
+          session: skipRmbg ? null : rmbgSession,
         });
 
         // Update metadata from processed result
@@ -477,6 +483,8 @@ export async function runProductImageFinder({
   onStageAdvance = null,
   onModelResolved = null,
   onStreamChunk = null,
+  onQueueWait = null,
+  onLlmCallComplete = null,
   onVariantProgress = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
@@ -592,6 +600,7 @@ export async function runProductImageFinder({
     onPhaseChange: onStageAdvance ? (phase) => { if (phase === 'writer') onStageAdvance('Writer'); } : undefined,
     onModelResolved: wrappedOnModelResolved,
     onStreamChunk,
+    onQueueWait,
   });
   const callLlm = _callLlmOverride
     ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
@@ -616,6 +625,7 @@ export async function runProductImageFinder({
   // Fire all variants concurrently with 1s stagger
   const now = new Date();
   const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const ranAt = now.toISOString();
   const STAGGER_MS = 1000;
 
   // Fire all variants with 1s stagger, persist each as it completes
@@ -655,6 +665,26 @@ export async function runProductImageFinder({
           }
         }
 
+        // Build prompt BEFORE call so operations modal shows it immediately
+        const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
+        const heroQuality = viewQualityMap.hero || {};
+        const promptArgs = mode === 'hero'
+          ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
+          : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+        const systemPrompt = promptBuilder(promptArgs);
+        const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
+
+        const variantStartedAt = new Date().toISOString();
+        const variantStartMs = Date.now();
+
+        onLlmCallComplete?.({
+          prompt: { system: systemPrompt, user: userMsg },
+          response: null,
+          model: actualModel,
+          variant: variant.label,
+          mode,
+        });
+
         const result = await runSingleVariant({
           product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
           callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
@@ -662,31 +692,39 @@ export async function runProductImageFinder({
           rmbgSession,
           promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
           mode,
+          onPhaseChange: onStageAdvance,
         });
+
+        const variantDurationMs = Date.now() - variantStartMs;
 
         allImages.push(...result.images);
         allErrors.push(...result.errors);
 
-        // Persist immediately on completion
-        const ranAt = new Date().toISOString();
         const selected = { images: result.images };
-        const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-        const heroQuality = viewQualityMap.hero || {};
-        const promptArgs = mode === 'hero'
-          ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-          : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
-        const systemPrompt = promptBuilder(promptArgs);
+        const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label };
+
+        // Smart update — fills response into the pending prompt entry
+        onLlmCallComplete?.({
+          prompt: { system: systemPrompt, user: userMsg },
+          response: responsePayload,
+          model: actualModel,
+          variant: variant.label,
+          mode,
+        });
 
         const merged = mergeProductImageDiscovery({
           productId: product.product_id,
           productRoot,
           newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
           run: {
+            mode,
+            started_at: variantStartedAt,
+            duration_ms: variantDurationMs,
             model: actualModel,
             fallback_used: actualFallbackUsed,
             selected,
-            prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
-            response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
+            prompt: { system: systemPrompt, user: userMsg },
+            response: responsePayload,
           },
         });
 
@@ -760,7 +798,7 @@ export async function runProductImageFinder({
  *
  * @param {object} opts
  * @param {string} [opts.variantKey] — single variant, or null for all
- * @param {Function} [opts.onLoopProgress] — ({ callNumber, estimatedRemaining, variant, focusView, mode }) => void
+ * @param {Function} [opts.onLoopProgress] — ({ callNumber, estimatedRemaining, variant, variantLabel, focusView, mode, variantIndex, variantTotal, carouselProgress }) => void
  */
 export async function runCarouselLoop({
   product,
@@ -775,9 +813,12 @@ export async function runCarouselLoop({
   onStageAdvance = null,
   onModelResolved = null,
   onStreamChunk = null,
+  onQueueWait = null,
+  onLlmCallComplete = null,
   onLoopProgress = null,
 }) {
   productRoot = productRoot || defaultProductRoot();
+  const loopId = `loop-${Date.now()}`;
   const configModel = resolvePhaseModel(config, 'imageFinder') || String(config.llmModelPlan || 'unknown');
   let actualModel = stripCompositeKey(configModel);
   let actualFallbackUsed = false;
@@ -877,13 +918,24 @@ export async function runCarouselLoop({
 
   const now = new Date();
   const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const ranAt = now.toISOString();
 
   const allImages = [];
   const allErrors = [];
   let totalLlmCalls = 0;
 
   // Shared: execute one LLM call, persist, report progress
-  async function executeOneCall({ variant, callMode, focusView, estimatedRemaining }) {
+  async function executeOneCall({ variant, callMode, focusView, estimatedRemaining, variantIndex, variantTotal }) {
+    // WHY: Cycle stage back to Discovery on each new call so the sidebar
+    // pipeline animates Discovery → Download → Processing → (next call) Discovery → ...
+    onStageAdvance?.('Discovery');
+
+    // WHY: Inject a separator into the LLM stream so the live output panel
+    // shows clear boundaries between calls (variant, mode, target view).
+    const target = callMode === 'hero' ? 'hero' : (focusView || '?');
+    const separator = totalLlmCalls > 0 ? '\n\n' : '';
+    onStreamChunk?.({ content: `${separator}── call ${totalLlmCalls + 1} · ${variant.label} · ${callMode}: ${target} ──\n` });
+
     // Re-read fresh state from disk (discovery log accumulates across all calls)
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
@@ -894,6 +946,7 @@ export async function runCarouselLoop({
       onPhaseChange: onStageAdvance ? (phase) => { if (phase === 'writer') onStageAdvance('Writer'); } : undefined,
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
+      onQueueWait,
     });
 
     const callLlm = _callLlmOverride
@@ -910,6 +963,26 @@ export async function runCarouselLoop({
       }));
     }
 
+    // Build prompt BEFORE call so operations modal shows it immediately
+    const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
+    const heroQuality = viewQualityMap.hero || {};
+    const promptArgs = callMode === 'hero'
+      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
+      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+    const systemPrompt = promptBuilder(promptArgs);
+    const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
+
+    const callStartedAt = new Date().toISOString();
+    const callStartMs = Date.now();
+
+    onLlmCallComplete?.({
+      prompt: { system: systemPrompt, user: userMsg },
+      response: null,
+      model: actualModel,
+      variant: variant.label,
+      mode: callMode,
+    });
+
     const result = await runSingleVariant({
       product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
       callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
@@ -917,32 +990,48 @@ export async function runCarouselLoop({
       rmbgSession,
       promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
       mode: callMode,
+      onPhaseChange: onStageAdvance,
     });
+
+    const callDurationMs = Date.now() - callStartMs;
 
     allImages.push(...result.images);
     allErrors.push(...result.errors);
     totalLlmCalls++;
 
-    // Persist immediately
-    const ranAt = new Date().toISOString();
+    // WHY: Inject call result summary into the stream so the live output
+    // panel shows what images were found and any errors per call.
+    const imgViews = result.images.map(i => i.view).join(', ');
+    const errCount = result.errors.length;
+    const summary = `\n── ${result.images.length} image${result.images.length !== 1 ? 's' : ''} found${imgViews ? ` (${imgViews})` : ''}${errCount ? ` · ${errCount} error${errCount !== 1 ? 's' : ''}` : ''} ──\n`;
+    onStreamChunk?.({ content: summary });
+
     const selected = { images: result.images };
-    const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-    const heroQuality = viewQualityMap.hero || {};
-    const promptArgs = callMode === 'hero'
-      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
-    const systemPrompt = promptBuilder(promptArgs);
+    const responsePayload = { mode: callMode, loop_id: loopId, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label };
+
+    // Smart update — fills response into the pending prompt entry
+    onLlmCallComplete?.({
+      prompt: { system: systemPrompt, user: userMsg },
+      response: responsePayload,
+      model: actualModel,
+      variant: variant.label,
+      mode: callMode,
+    });
 
     const merged = mergeProductImageDiscovery({
       productId: product.product_id,
       productRoot,
       newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
       run: {
+        mode: callMode,
+        loop_id: loopId,
+        started_at: callStartedAt,
+        duration_ms: callDurationMs,
         model: actualModel,
         fallback_used: actualFallbackUsed,
         selected,
-        prompt: { system: systemPrompt, user: JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key }) },
-        response: { images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label },
+        prompt: { system: systemPrompt, user: userMsg },
+        response: responsePayload,
       },
     });
 
@@ -971,6 +1060,15 @@ export async function runCarouselLoop({
       run_count: merged.run_count,
     });
 
+    // WHY: Re-evaluate carousel AFTER persist to get accurate post-call progress
+    const postCallImages = merged.selected.images.map(img => ({
+      view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+    }));
+    const postCallStrategy = evaluateCarousel({
+      collectedImages: postCallImages, viewBudget, satisfactionThreshold,
+      heroEnabled, heroCount, variantKey: variant.key,
+    });
+
     onLoopProgress?.({
       callNumber: totalLlmCalls,
       estimatedRemaining: Math.max(0, estimatedRemaining - 1),
@@ -978,12 +1076,15 @@ export async function runCarouselLoop({
       variantLabel: variant.label,
       focusView,
       mode: callMode,
+      variantIndex: variantIndex ?? 0,
+      variantTotal: variantTotal ?? 1,
+      carouselProgress: postCallStrategy.carouselProgress,
     });
   }
 
   // Process variants sequentially for clean progress reporting
-  for (const variant of variants) {
-    onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
+  for (let vi = 0; vi < variants.length; vi++) {
+    const variant = variants[vi];
 
     // Check if carousel is already complete for this variant
     const initialDoc = readProductImages({ productId: product.product_id, productRoot });
@@ -995,14 +1096,28 @@ export async function runCarouselLoop({
       heroEnabled, heroCount, variantKey: variant.key,
     });
 
+    // WHY: Emit initial progress before first call so the sidebar shows
+    // carousel state immediately, not only after call 1 finishes.
+    onLoopProgress?.({
+      callNumber: totalLlmCalls,
+      estimatedRemaining: initialStrategy.estimatedCallsRemaining,
+      variant: variant.key,
+      variantLabel: variant.label,
+      focusView: initialStrategy.focusView,
+      mode: initialStrategy.mode,
+      variantIndex: vi,
+      variantTotal: variants.length,
+      carouselProgress: initialStrategy.carouselProgress,
+    });
+
     if (initialStrategy.isComplete) {
       // Forced cycle: 1 call per budget view + 1 hero call to accumulate more candidates
       const forcedTotal = viewBudget.length + (heroEnabled ? 1 : 0);
       for (const view of viewBudget) {
-        await executeOneCall({ variant, callMode: 'view', focusView: view, estimatedRemaining: forcedTotal - totalLlmCalls });
+        await executeOneCall({ variant, callMode: 'view', focusView: view, estimatedRemaining: forcedTotal - totalLlmCalls, variantIndex: vi, variantTotal: variants.length });
       }
       if (heroEnabled) {
-        await executeOneCall({ variant, callMode: 'hero', focusView: null, estimatedRemaining: 0 });
+        await executeOneCall({ variant, callMode: 'hero', focusView: null, estimatedRemaining: 0, variantIndex: vi, variantTotal: variants.length });
       }
     } else {
       // Normal loop: views (focused) → heroes → done
@@ -1027,7 +1142,7 @@ export async function runCarouselLoop({
         const focusView = strategy.focusView;
         const callMode = strategy.mode;
 
-        await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining });
+        await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining, variantIndex: vi, variantTotal: variants.length });
 
         if (callMode === 'view' && focusView) {
           viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;

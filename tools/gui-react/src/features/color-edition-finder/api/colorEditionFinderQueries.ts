@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { api } from '../../../api/client.ts';
 import type {
   ColorEditionFinderResult,
-  ColorEditionFinderRunResponse,
+  AcceptedResponse,
   ColorEditionFinderDeleteRunResponse,
   ColorEditionFinderDeleteAllResponse,
 } from '../types.ts';
@@ -18,19 +18,13 @@ export function useColorEditionFinderQuery(category: string, productId: string) 
   });
 }
 
+// WHY: No onSuccess invalidation — 202 means work is queued, not complete.
+// WS data-change events invalidate queries when background work finishes.
 export function useColorEditionFinderRunMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['color-edition-finder', category, productId] });
-    queryClient.invalidateQueries({ queryKey: ['colors'] });
-  }, [queryClient, category, productId]);
-
-  return useMutation<ColorEditionFinderRunResponse>({
-    mutationFn: () => api.post<ColorEditionFinderRunResponse>(
+  return useMutation<AcceptedResponse>({
+    mutationFn: () => api.post<AcceptedResponse>(
       `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
-    onSuccess: invalidate,
   });
 }
 

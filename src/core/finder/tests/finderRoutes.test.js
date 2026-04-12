@@ -103,25 +103,25 @@ describe('createFinderRouteHandler — generic', () => {
 
   // ── POST trigger ──────────────────────────────────────────────────
 
-  it('POST triggers finder and returns 200', async () => {
-    let called = false;
+  it('POST triggers finder and returns 202 with operationId', async () => {
     const { ctx, calls } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig({
-      runFinder: async () => { called = true; return { rejected: false }; },
+      runFinder: async () => ({ rejected: false }),
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
-    assert.ok(called);
-    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].status, 202);
     assert.equal(calls[0].body.ok, true);
+    assert.ok(calls[0].body.operationId, 'response must include operationId');
   });
 
-  it('POST returns rejected result as 200 with ok:true', async () => {
+  it('POST returns 202 even for rejected results', async () => {
     const { ctx, calls } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig({
       runFinder: async () => ({ rejected: true, rejections: [{ reason_code: 'test' }] }),
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
-    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].status, 202);
+    assert.ok(calls[0].body.operationId);
   });
 
   // ── DELETE single run ─────────────────────────────────────────────

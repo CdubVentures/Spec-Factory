@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../../../core/operations/index.js';
+import { registerOperation, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { readImageDimensions, buildVariantList, imageStem } from '../productImageFinder.js';
@@ -194,12 +194,25 @@ export function registerProductImageFinderRoutes(ctx) {
         return jsonRes(res, 404, { error: 'image not found' });
       }
 
+      // Register operation for sidebar visibility
+      const specDb = getSpecDb(category);
+      const productRow = specDb?.getProduct?.(productId);
+      const op = registerOperation({
+        type: 'pif',
+        subType: 'process',
+        category,
+        productId,
+        productLabel: productRow ? `${productRow.brand || ''} ${productRow.model || ''}`.trim() : productId,
+        stages: ['Processing'],
+      });
+
       // Process
       const masterFilename = stemPng;
       const masterOut = path.join(imagesDir, masterFilename);
       const result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
 
       if (!result.ok) {
+        failOperation({ id: op.id, error: result.error || 'processing failed' });
         return jsonRes(res, 500, { error: 'processing failed', details: result.error });
       }
 
@@ -280,6 +293,8 @@ export function registerProductImageFinderRoutes(ctx) {
         }
       }
 
+      completeOperation({ id: op.id });
+
       emitDataChange({
         broadcastWs,
         event: 'product-image-finder-image-processed',
@@ -289,6 +304,156 @@ export function registerProductImageFinderRoutes(ctx) {
       });
 
       return jsonRes(res, 200, { ok: true, ...result, filename: masterFilename, original_filename: originalFilename });
+    }
+
+    // ── Process all unprocessed images (batch RMBG) ─────────────────
+    // POST /product-image-finder/:category/:productId/process-all
+    if (method === 'POST' && category && productId && parts[3] === 'process-all' && !parts[4]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      const productRow = specDb.getProduct(productId);
+      if (!productRow) return jsonRes(res, 404, { error: 'product not found' });
+
+      const productRoot = defaultProductRoot();
+      const imagesDir = path.join(productRoot, productId, 'images');
+      const originalsDir = path.join(imagesDir, 'originals');
+
+      const { processImage, loadModel } = await import('../imageProcessor.js');
+      const { ensureModelReady } = await import('../modelDownloader.js');
+      const { readProductImages, writeProductImages, recalculateProductImagesFromRuns } = await import('../productImageStore.js');
+
+      // Find unprocessed images
+      const doc = readProductImages({ productId, productRoot });
+      const unprocessed = [];
+      if (doc?.runs) {
+        for (const run of doc.runs) {
+          for (const img of (run.selected?.images || [])) {
+            if (!img.bg_removed && img.filename) unprocessed.push(img);
+          }
+        }
+      }
+
+      if (unprocessed.length === 0) {
+        return jsonRes(res, 200, { ok: true, processed: 0, message: 'no unprocessed images' });
+      }
+
+      // Load model
+      const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
+      const modelStatus = await ensureModelReady({ modelDir });
+      if (!modelStatus.ready) {
+        return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
+      }
+      const session = await loadModel({ modelDir });
+      if (!session) {
+        return jsonRes(res, 503, { error: 'Failed to load RMBG model' });
+      }
+
+      // Register operation
+      const op = registerOperation({
+        type: 'pif',
+        subType: 'process',
+        category,
+        productId,
+        productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+        stages: ['Processing', 'Complete'],
+      });
+
+      const total = unprocessed.length;
+
+      return fireAndForget({
+        res,
+        jsonRes,
+        op,
+        broadcastWs,
+        emitArgs: {
+          event: 'product-image-finder-batch-processed',
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId },
+        },
+        asyncWork: async () => {
+          let processed = 0;
+
+          for (const img of unprocessed) {
+            // Resolve source: originals/ first, then master on disk
+            let sourcePath;
+            if (img.original_filename && fs.existsSync(path.join(originalsDir, img.original_filename))) {
+              sourcePath = path.join(originalsDir, img.original_filename);
+            } else if (fs.existsSync(path.join(imagesDir, img.filename))) {
+              // Master on disk, copy to originals for preservation
+              fs.mkdirSync(originalsDir, { recursive: true });
+              const origName = img.filename;
+              sourcePath = path.join(originalsDir, origName);
+              fs.copyFileSync(path.join(imagesDir, img.filename), sourcePath);
+              img.original_filename = origName;
+            } else {
+              continue; // image file missing, skip
+            }
+
+            const masterFilename = img.filename.replace(/\.\w+$/, '.png');
+            const masterOut = path.join(imagesDir, masterFilename);
+            const result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
+
+            if (result.ok) {
+              const originalFormat = path.extname(img.original_filename || img.filename).toLowerCase().replace('.', '');
+              img.filename = masterFilename;
+              img.bg_removed = result.bg_removed;
+              img.original_format = originalFormat;
+              img.bytes = result.bytes;
+              img.width = result.width;
+              img.height = result.height;
+              processed++;
+            }
+
+            updateProgressText({ id: op.id, text: `${processed}/${total} images` });
+          }
+
+          // Persist updated JSON + SQL
+          if (processed > 0 && doc?.runs) {
+            // Propagate updated fields into all run entries
+            for (const run of doc.runs) {
+              for (const img of (run.selected?.images || [])) {
+                const match = unprocessed.find(u => u.filename === img.filename || u.filename === img.filename.replace(/\.\w+$/, '.png'));
+                if (match && match.bg_removed) Object.assign(img, { filename: match.filename, bg_removed: match.bg_removed, original_format: match.original_format, original_filename: match.original_filename, bytes: match.bytes, width: match.width, height: match.height });
+              }
+              for (const img of (run.response?.images || [])) {
+                const match = unprocessed.find(u => u.filename === img.filename || u.filename === img.filename.replace(/\.\w+$/, '.png'));
+                if (match && match.bg_removed) Object.assign(img, { filename: match.filename, bg_removed: match.bg_removed, original_format: match.original_format, original_filename: match.original_filename });
+              }
+            }
+
+            const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category);
+            writeProductImages({ productId, productRoot, data: recalculated });
+
+            const finderStore = specDb.getFinderStore('productImageFinder');
+            finderStore.upsert({
+              category,
+              product_id: productId,
+              images: recalculated.selected?.images?.map(i => ({ view: i.view, filename: i.filename, variant_key: i.variant_key })) || [],
+              image_count: recalculated.selected?.images?.length || 0,
+              cooldown_until: recalculated.cooldown_until || '',
+              latest_ran_at: recalculated.last_ran_at || '',
+              run_count: recalculated.run_count || 0,
+            });
+            for (const run of recalculated.runs || []) {
+              finderStore.insertRun({
+                category, product_id: productId,
+                run_number: run.run_number, ran_at: run.ran_at || '',
+                model: run.model || '', fallback_used: run.fallback_used,
+                cooldown_until: run.cooldown_until || '',
+                selected: run.selected || {}, prompt: run.prompt || {}, response: run.response || {},
+              });
+            }
+          }
+
+          updateStage({ id: op.id, stageName: 'Complete' });
+          return { ok: true, processed, total };
+        },
+        completeOperation,
+        failOperation,
+        emitDataChange,
+      });
     }
 
     // ── Loop: autonomous carousel fill (views → heroes → done) ─────
@@ -305,56 +470,82 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || null;
+        const finderStore = specDb.getFinderStore?.('productImageFinder');
+        const loopThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
+        const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
+        const heroAttemptBudget = parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3;
 
         op = registerOperation({
           type: 'pif',
+          subType: 'loop',
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
-          stages: ['Initializing', 'Looping', 'Complete'],
+          variantKey: variantKey || '',
+          stages: ['Discovery', 'Download', 'Processing', 'Complete'],
         });
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
 
-        const result = await ctx.runCarouselLoop({
-          product: {
-            product_id: productId,
-            category,
-            brand: productRow.brand || '',
-            model: productRow.model || '',
-            base_model: productRow.base_model || '',
-            variant: productRow.variant || '',
-          },
-          appDb,
-          specDb,
-          config,
-          logger: logger || null,
-          variantKey,
-          onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-          onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-          onStreamChunk: ({ content }) => { if (content) batcher.push(content); },
-          onLoopProgress: ({ callNumber, estimatedRemaining, variantLabel, focusView, mode }) => {
-            const target = mode === 'hero' ? 'hero' : (focusView || '?');
-            updateStage({ id: op.id, stageName: `${variantLabel}: call ${callNumber} / ~${Math.max(0, estimatedRemaining)} remaining (${target})` });
-          },
-        });
-
-        batcher.dispose();
-
-        if (result.rejected) {
-          failOperation({ id: op.id, error: result.rejections?.[0]?.message || 'Rejected' });
-        } else {
-          completeOperation({ id: op.id });
-        }
-
-        emitDataChange({
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
           broadcastWs,
-          event: 'product-image-finder-loop',
-          category,
-          entities: { productIds: [productId] },
-          meta: { imagesDownloaded: result.images?.length || 0, totalLlmCalls: result.totalLlmCalls || 0 },
+          emitArgs: {
+            event: 'product-image-finder-loop',
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => ctx.runCarouselLoop({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
+            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            onLoopProgress: ({ callNumber, estimatedRemaining, variantLabel, focusView, mode, variantIndex, variantTotal, carouselProgress }) => {
+              updateLoopProgress({
+                id: op.id,
+                loopProgress: {
+                  variantLabel,
+                  variantIndex: variantIndex ?? 0,
+                  variantTotal: variantTotal ?? 1,
+                  callNumber,
+                  estimatedRemaining: Math.max(0, estimatedRemaining),
+                  mode,
+                  focusView: focusView || null,
+                  views: carouselProgress?.viewDetails
+                    ? Object.entries(carouselProgress.viewDetails).map(([view, d]) => ({
+                      view, count: d.count, target: loopThreshold, satisfied: d.satisfied, exhausted: d.exhausted,
+                      attempts: d.attempts ?? 0, attemptBudget: viewAttemptBudget,
+                    }))
+                    : [],
+                  hero: carouselProgress?.heroTarget > 0
+                    ? { count: carouselProgress.heroCount, target: carouselProgress.heroTarget, satisfied: carouselProgress.heroSatisfied, exhausted: carouselProgress.heroExhausted,
+                        attempts: carouselProgress.heroAttempts ?? 0, attemptBudget: heroAttemptBudget }
+                    : null,
+                },
+              });
+            },
+          }),
+          completeOperation,
+          failOperation,
+          emitDataChange,
         });
-
-        return jsonRes(res, 200, { ok: true, ...result });
       } catch (err) {
         if (batcher) batcher.dispose();
         if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
@@ -378,53 +569,55 @@ export function registerProductImageFinderRoutes(ctx) {
         const variantKey = body?.variant_key || null;
         const mode = body?.mode === 'hero' ? 'hero' : 'view';
 
-        const stages = ['Discovery', 'Download', 'Complete'];
+        const stages = ['Discovery', 'Download', 'Processing', 'Complete'];
         op = registerOperation({
           type: 'pif',
+          subType: mode,
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          variantKey: variantKey || '',
           stages,
         });
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
 
-        const result = await ctx.runProductImageFinder({
-          product: {
-            product_id: productId,
-            category,
-            brand: productRow.brand || '',
-            model: productRow.model || '',
-            base_model: productRow.base_model || '',
-            variant: productRow.variant || '',
-          },
-          appDb,
-          specDb,
-          config,
-          logger: logger || null,
-          variantKey,
-          mode,
-          onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-          onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-          onStreamChunk: ({ content }) => { if (content) batcher.push(content); },
-        });
-
-        batcher.dispose();
-
-        if (result.rejected) {
-          failOperation({ id: op.id, error: result.rejections?.[0]?.message || 'Rejected' });
-        } else {
-          completeOperation({ id: op.id });
-        }
-
-        emitDataChange({
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
           broadcastWs,
-          event: 'product-image-finder-run',
-          category,
-          entities: { productIds: [productId] },
-          meta: { imagesDownloaded: result.images?.length || 0, variantsProcessed: result.variants_processed || 0 },
+          emitArgs: {
+            event: 'product-image-finder-run',
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => ctx.runProductImageFinder({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
+            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            mode,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+          }),
+          completeOperation,
+          failOperation,
+          emitDataChange,
         });
-
-        return jsonRes(res, 200, { ok: true, ...result });
       } catch (err) {
         if (batcher) batcher.dispose();
         if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });

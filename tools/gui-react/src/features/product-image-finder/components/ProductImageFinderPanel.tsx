@@ -17,6 +17,7 @@ import {
   FinderPanelFooter,
   FinderDeleteConfirmModal,
   FinderRunPromptDetails,
+  FinderRunTimestamp,
   FinderSectionCard,
   useResolvedFinderModel,
   deriveCooldownState,
@@ -26,16 +27,19 @@ import {
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
+import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../../api/client.ts';
 import { useColorEditionFinderQuery } from '../../color-edition-finder/api/colorEditionFinderQueries.ts';
+import type { ColorRegistryEntry } from '../../color-edition-finder/types.ts';
 import {
   useProductImageFinderQuery,
-  useProductImageFinderRunMutation,
-  useProductImageFinderLoopMutation,
   useDeleteProductImageFinderAllMutation,
   useDeleteProductImageFinderRunMutation,
   useDeleteProductImageMutation,
   useProcessProductImageMutation,
+  useProcessAllProductImagesMutation,
 } from '../api/productImageFinderQueries.ts';
 import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress } from '../types.ts';
 
@@ -58,6 +62,95 @@ function imageServeUrl(category: string, productId: string, filename: string): s
 
 function originalImageServeUrl(category: string, productId: string, filename: string): string {
   return `/api/v1/product-image-finder/${category}/${productId}/images/originals/${encodeURIComponent(filename)}`;
+}
+
+/* ── Color swatch (shared pattern from CEF) ──────────────────────── */
+
+function colorCircleStyle(hexParts: readonly string[]): React.CSSProperties {
+  const colors = hexParts.filter(Boolean);
+  if (colors.length === 0) return { backgroundColor: 'var(--sf-text-muted)' };
+  if (colors.length === 1) return { backgroundColor: colors[0] };
+  if (colors.length === 2) {
+    return { background: `linear-gradient(45deg, ${colors[0]} 50%, ${colors[1]} 50%)` };
+  }
+  const angle = 360 / colors.length;
+  const stops = colors.map((c, i) => `${c} ${i * angle}deg ${(i + 1) * angle}deg`);
+  const from = colors.length === 3 ? 240 : (270 - angle / 2);
+  return { background: `conic-gradient(from ${from}deg, ${stops.join(', ')})` };
+}
+
+function ColorSwatch({ hexParts, size = 'sm' }: { readonly hexParts: readonly string[]; readonly size?: 'sm' | 'md' }) {
+  const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+  return (
+    <span
+      className={`inline-block ${sizeClass} rounded-sm border sf-border-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] shrink-0`}
+      style={colorCircleStyle(hexParts)}
+    />
+  );
+}
+
+/** Convert hex (#rrggbb) to rgba at given opacity. */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/** Check if a hex color is very light (luminance > 0.85). */
+function isLightColor(hex: string): boolean {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16) / 255;
+  const g = parseInt(h.substring(2, 4), 16) / 255;
+  const b = parseInt(h.substring(4, 6), 16) / 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 0.85;
+}
+
+/** Per-color border stop: light colors get a dark fallback so they stay visible. */
+function borderStopColor(hex: string): string {
+  return isLightColor(hex) ? 'rgba(0,0,0,0.2)' : hexToRgba(hex, 0.45);
+}
+
+/** Build a light-tinted background + color-matched border style from hex parts. */
+function variantBadgeBgStyle(hexParts: readonly string[]): React.CSSProperties {
+  const colors = hexParts.filter(Boolean);
+  if (colors.length === 0) return {};
+
+  if (colors.length === 1) {
+    return { backgroundColor: hexToRgba(colors[0], 0.15), border: `1px solid ${borderStopColor(colors[0])}` };
+  }
+
+  // Multi-color border via border-image — each stop checked individually
+  const bgStops = colors.map((c) => hexToRgba(c, 0.15));
+  const borderStops = colors.map(borderStopColor);
+  const pct = 100 / colors.length;
+  const bgCss = colors.map((_, i) => `${bgStops[i]} ${i * pct}% ${(i + 1) * pct}%`);
+  const borderCss = borderStops.map((s, i) => `${s} ${i * pct}% ${(i + 1) * pct}%`);
+
+  return {
+    background: `linear-gradient(90deg, ${bgCss.join(', ')})`,
+    border: '1px solid transparent',
+    borderImage: `linear-gradient(90deg, ${borderCss.join(', ')}) 1`,
+  };
+}
+
+/**
+ * Resolve color atoms from a variant_key, looking up edition colors from CEF.
+ * - "color:black+red" → ["black", "red"]
+ * - "edition:cod-bo6-edition" → looks up edition's colors combo → ["dark-gray", "black", "orange"]
+ */
+function resolveVariantColorAtoms(
+  variantKey: string,
+  editions: Record<string, { display_name?: string; colors?: string[] }>,
+): string[] {
+  if (variantKey.startsWith('edition:')) {
+    const slug = variantKey.replace('edition:', '');
+    const ed = editions[slug];
+    const combo = ed?.colors?.[0] || '';
+    return combo.split('+').filter(Boolean);
+  }
+  return variantKey.replace(/^color:/, '').split('+').filter(Boolean);
 }
 
 /**
@@ -126,8 +219,29 @@ interface ImageGroup {
   images: GalleryImage[];
 }
 
+/** Sort images by view type (grouped), then by pixel area descending within each type. */
+/** Per-category view priority order. Hero always sorts last. */
+const VIEW_PRIORITY_ORDER: Record<string, string[]> = {
+  mouse:    ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'right', 'rear', 'hero'],
+  keyboard: ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'right', 'rear', 'hero'],
+  monitor:  ['front', 'angle', 'rear', 'left', 'right', 'top', 'bottom', 'sangle', 'hero'],
+  mousepad: ['top', 'angle', 'left', 'front', 'bottom', 'right', 'rear', 'sangle', 'hero'],
+};
+const GENERIC_VIEW_ORDER = ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'right', 'rear', 'hero'];
+
+function sortByPriorityAndSize(images: GalleryImage[], category: string): GalleryImage[] {
+  const order = VIEW_PRIORITY_ORDER[category] || GENERIC_VIEW_ORDER;
+  const idx = new Map(order.map((v, i) => [v, i]));
+  return [...images].sort((a, b) => {
+    const ai = idx.get(a.view) ?? 99;
+    const bi = idx.get(b.view) ?? 99;
+    if (ai !== bi) return ai - bi;
+    return (b.width * b.height) - (a.width * a.height);
+  });
+}
+
 /** Group gallery images by variant key, preserving variant order from CEF. */
-function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[]): ImageGroup[] {
+function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[], category: string): ImageGroup[] {
   const imageMap = new Map<string, GalleryImage[]>();
   for (const img of images) {
     const key = img.variant_key || '';
@@ -138,13 +252,13 @@ function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[]): 
   for (const v of variants) {
     const imgs = imageMap.get(v.key);
     if (imgs && imgs.length > 0) {
-      groups.push({ key: v.key, label: v.label, type: v.type, images: imgs });
+      groups.push({ key: v.key, label: v.label, type: v.type, images: sortByPriorityAndSize(imgs, category) });
     }
   }
   for (const [key, imgs] of imageMap) {
     if (!variants.some(v => v.key === key) && imgs.length > 0) {
       const label = imgs[0].variant_label || formatAtomLabel(key.replace(/^(color|edition):/, ''));
-      groups.push({ key, label, type: key.startsWith('edition:') ? 'edition' : 'color', images: imgs });
+      groups.push({ key, label, type: key.startsWith('edition:') ? 'edition' : 'color', images: sortByPriorityAndSize(imgs, category) });
     }
   }
   return groups;
@@ -198,8 +312,8 @@ function ImageLightbox({
         {'\u2715'}
       </button>
 
-      {/* Image area — side by side when original exists, single when not */}
-      {hasOriginal ? (
+      {/* Image area — side by side only when bg was actually removed */}
+      {hasOriginal && img.bg_removed ? (
         <div
           className="flex-1 flex items-center justify-center w-full p-6 gap-4"
           onClick={(e) => e.stopPropagation()}
@@ -316,13 +430,7 @@ function GalleryCard({
             {img.view}
           </span>
         )}
-        {/* Run number badge — small circle, bottom-right */}
-        <span
-          className="absolute bottom-1 right-1 flex items-center justify-center rounded-full text-[8px] font-bold font-mono leading-none text-white pointer-events-none"
-          style={{ width: 16, height: 16, backgroundColor: 'var(--sf-accent, #4263eb)' }}
-        >
-          {img.run_number}
-        </span>
+        {/* Run number badge — bottom-right */}
       </button>
 
       {/* Meta */}
@@ -374,6 +482,13 @@ function GalleryCard({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Run number — bottom of card */}
+      <div className="px-2.5 py-1 border-t sf-border-soft text-center">
+        <span className="text-[8px] font-mono sf-text-muted">
+          run {img.run_number}
+        </span>
       </div>
     </div>
   );
@@ -451,19 +566,90 @@ function VariantRow({
   );
 }
 
+/* ── Run History helpers ────────────────────────────────────────── */
+
+/** Resolve run mode from top-level or response blob (SQL path). */
+function resolveRunMode(run: ProductImageFinderRun): 'view' | 'hero' | null {
+  return run.mode || run.response?.mode || null;
+}
+
+/** Resolve loop_id from top-level or response blob. */
+function resolveLoopId(run: ProductImageFinderRun): string | null {
+  return run.loop_id || run.response?.loop_id || null;
+}
+
+/** Build the mode badge label: VIEW, HERO, LOOP VIEW, LOOP HERO. */
+function buildModeBadge(run: ProductImageFinderRun): { label: string; className: string } | null {
+  const mode = resolveRunMode(run);
+  if (!mode) return null;
+  const isLoop = Boolean(resolveLoopId(run));
+  const label = isLoop ? `LOOP ${mode.toUpperCase()}` : mode.toUpperCase();
+  const className = mode === 'hero' ? 'sf-chip-accent' : 'sf-chip-info';
+  return { label, className };
+}
+
+interface RunGroup {
+  type: 'single' | 'loop';
+  loopId?: string;
+  runs: ProductImageFinderRun[];
+}
+
+/** Group runs by loop_id. Non-loop runs become single-run groups. */
+function groupRunsByLoop(runs: ProductImageFinderRun[]): RunGroup[] {
+  const groups: RunGroup[] = [];
+  const loopMap = new Map<string, ProductImageFinderRun[]>();
+  const order: Array<{ type: 'single'; run: ProductImageFinderRun } | { type: 'loop'; loopId: string }> = [];
+  const seenLoops = new Set<string>();
+
+  for (const run of runs) {
+    const lid = resolveLoopId(run);
+    if (lid) {
+      if (!loopMap.has(lid)) loopMap.set(lid, []);
+      loopMap.get(lid)!.push(run);
+      if (!seenLoops.has(lid)) {
+        seenLoops.add(lid);
+        order.push({ type: 'loop', loopId: lid });
+      }
+    } else {
+      order.push({ type: 'single', run });
+    }
+  }
+
+  for (const entry of order) {
+    if (entry.type === 'single') {
+      groups.push({ type: 'single', runs: [entry.run] });
+    } else {
+      groups.push({ type: 'loop', loopId: entry.loopId, runs: loopMap.get(entry.loopId)! });
+    }
+  }
+
+  return groups;
+}
+
 /* ── Run History Row ─────────────────────────────────────────────── */
 
 function PifRunHistoryRow({
   run,
+  hexMap,
+  editions,
   onDelete,
 }: {
   readonly run: ProductImageFinderRun;
+  readonly hexMap: Map<string, string>;
+  readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
   readonly onDelete: (runNumber: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const images = run.selected?.images || [];
   const errors = run.response?.download_errors || [];
   const log = run.response?.discovery_log;
+  const badge = buildModeBadge(run);
+
+  // Resolve variant color atoms → hex for swatch (editions look up their combo)
+  const variantKey = run.response?.variant_key || '';
+  const variantLabel = run.response?.variant_label || run.response?.variant_key || '--';
+  const colorAtoms = resolveVariantColorAtoms(variantKey, editions);
+  const hexParts = colorAtoms.map(a => hexMap.get(a.trim()) || '');
 
   return (
     <div className="sf-surface-panel rounded-lg overflow-hidden">
@@ -478,10 +664,19 @@ function PifRunHistoryRow({
           #{run.run_number}
         </span>
         <span className="font-mono text-[10px] sf-text-muted">{run.ran_at?.split('T')[0] ?? '--'}</span>
+        <FinderRunTimestamp
+          startedAt={run.started_at || run.response?.started_at}
+          durationMs={run.duration_ms ?? run.response?.duration_ms}
+        />
         {run.model && <Chip label={run.model} className="sf-chip-neutral" />}
-        <span className="text-[10px] sf-text-subtle">
-          {run.response?.variant_label || run.response?.variant_key || '--'}
+        <span
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
+          style={variantBadgeBgStyle(hexParts)}
+        >
+          <ColorSwatch hexParts={hexParts} />
+          {variantLabel}
         </span>
+        {badge && <Chip label={badge.label} className={badge.className} />}
         <div className="flex-1" />
         <Chip label={`${images.length} img`} className={images.length > 0 ? 'sf-chip-success' : 'sf-chip-neutral'} />
         {errors.length > 0 && <Chip label={`${errors.length} err`} className="sf-chip-danger" />}
@@ -564,6 +759,83 @@ function PifRunHistoryRow({
   );
 }
 
+/* ── Loop Group (collapsible wrapper for loop runs) ──────────────── */
+
+function PifLoopGroup({
+  group,
+  hexMap,
+  editions,
+  onDeleteRun,
+}: {
+  readonly group: RunGroup;
+  readonly hexMap: Map<string, string>;
+  readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
+  readonly onDeleteRun: (runNumber: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const totalImages = group.runs.reduce((sum, r) => sum + (r.selected?.images?.length || 0), 0);
+  const totalErrors = group.runs.reduce((sum, r) => sum + (r.response?.download_errors?.length || 0), 0);
+  const runNumbers = group.runs.map(r => r.run_number);
+  const rangeLabel = runNumbers.length > 0
+    ? `#${runNumbers[0]}\u2013#${runNumbers[runNumbers.length - 1]}`
+    : '';
+  const date = group.runs[0]?.ran_at?.split('T')[0] ?? '--';
+
+  // Resolve variant from first run in the loop
+  const firstRun = group.runs[0];
+  const variantKey = firstRun?.response?.variant_key || '';
+  const variantLabel = firstRun?.response?.variant_label || variantKey.replace(/^(color|edition):/, '') || '--';
+  const colorAtoms = resolveVariantColorAtoms(variantKey, editions);
+  const hexParts = colorAtoms.map(a => hexMap.get(a.trim()) || '');
+
+  return (
+    <div className="sf-surface-elevated rounded-lg overflow-hidden border sf-border-soft">
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          {'\u25B6'}
+        </span>
+        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          {rangeLabel}
+        </span>
+        <span className="font-mono text-[10px] sf-text-muted">{date}</span>
+        <FinderRunTimestamp
+          startedAt={firstRun?.started_at || firstRun?.response?.started_at}
+          durationMs={firstRun?.duration_ms ?? firstRun?.response?.duration_ms}
+        />
+        {firstRun?.model && <Chip label={firstRun.model} className="sf-chip-neutral" />}
+        <span
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
+          style={variantBadgeBgStyle(hexParts)}
+        >
+          <ColorSwatch hexParts={hexParts} />
+          {variantLabel}
+        </span>
+        <Chip label={`LOOP \u00B7 ${group.runs.length} calls`} className="sf-chip-accent" />
+        <div className="flex-1" />
+        <Chip label={`${totalImages} img`} className={totalImages > 0 ? 'sf-chip-success' : 'sf-chip-neutral'} />
+        {totalErrors > 0 && <Chip label={`${totalErrors} err`} className="sf-chip-danger" />}
+      </div>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 border-t sf-border-soft space-y-1.5">
+          {group.runs.map((run) => (
+            <PifRunHistoryRow
+              key={run.run_number}
+              run={run}
+              hexMap={hexMap}
+              editions={editions}
+              onDelete={onDeleteRun}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main Panel ──────────────────────────────────────────────────── */
 
 interface ProductImageFinderPanelProps {
@@ -580,8 +852,22 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   // LLM model for imageFinder phase (shared hook, parameterized by phase ID)
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('imageFinder');
 
+  // Color registry for hex lookup in run history badges
+  const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
+    queryKey: ['colors'],
+    queryFn: () => api.get<ColorRegistryEntry[]>('/colors'),
+  });
+  const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
+
   // CEF data — gate dependency
   const { data: cefData, isError: cefError } = useColorEditionFinderQuery(category, productId);
+
+  // Editions map for resolving edition variant_key → color atoms
+  const editions = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sel = (cefData?.selected ?? cefData) as any;
+    return (sel?.editions ?? sel?.edition_details ?? {}) as Record<string, { display_name?: string; colors?: string[] }>;
+  }, [cefData]);
 
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
@@ -590,6 +876,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
+  const processAllMut = useProcessAllProductImagesMutation(category, productId);
   const [processingFilename, setProcessingFilename] = useState<string | null>(null);
   const [processError, setProcessError] = useState<string | null>(null);
 
@@ -605,8 +892,17 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     });
   }, [processImageMut]);
 
-  // Operations tracker
+  // Operations tracker — only Loop locks per-variant; View/Hero are spammable
   const ops = useOperationsStore((s) => s.operations);
+  const loopingVariants = useMemo(() => {
+    const set = new Set<string>();
+    for (const o of ops.values()) {
+      if (o.type === 'pif' && o.productId === productId && o.status === 'running' && o.variantKey && o.subType === 'loop') {
+        set.add(o.variantKey);
+      }
+    }
+    return set;
+  }, [ops, productId]);
   const isRunning = useMemo(
     () => [...ops.values()].some((o) => o.type === 'pif' && o.productId === productId && o.status === 'running'),
     [ops, productId],
@@ -636,35 +932,21 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     [galleryImages],
   );
 
-  const [isProcessingAll, setIsProcessingAll] = useState(false);
-  const [processAllProgress, setProcessAllProgress] = useState({ done: 0, total: 0 });
+  const isProcessingAll = processAllMut.isPending;
 
   const handleProcessAll = useCallback(async () => {
-    const toProcess = unprocessedImages;
-    if (toProcess.length === 0) return;
-    setIsProcessingAll(true);
+    if (unprocessedImages.length === 0) return;
     setProcessError(null);
-    setProcessAllProgress({ done: 0, total: toProcess.length });
-
-    for (let i = 0; i < toProcess.length; i++) {
-      const img = toProcess[i];
-      setProcessingFilename(img.filename);
-      setProcessAllProgress({ done: i, total: toProcess.length });
-      try {
-        await processImageMut.mutateAsync(img.filename);
-      } catch (err) {
-        setProcessError(`Failed on ${img.filename}: ${err instanceof Error ? err.message : String(err)}`);
-      }
+    try {
+      await processAllMut.mutateAsync(undefined);
+    } catch (err) {
+      setProcessError(`Batch processing failed: ${err instanceof Error ? err.message : String(err)}`);
     }
-
-    setProcessingFilename(null);
-    setIsProcessingAll(false);
-    setProcessAllProgress({ done: toProcess.length, total: toProcess.length });
-  }, [unprocessedImages, processImageMut]);
+  }, [unprocessedImages.length, processAllMut]);
 
   // Images grouped by variant (preserves CEF variant order)
   const imageGroups = useMemo(
-    () => groupImagesByVariant(galleryImages, variants),
+    () => groupImagesByVariant(galleryImages, variants, category),
     [galleryImages, variants],
   );
 
@@ -679,27 +961,32 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     return map;
   }, [galleryImages]);
 
-  // ── Single-run handlers (for testing individual variants) ────────
-  const runMutation = useProductImageFinderRunMutation(category, productId);
+  // ── Fire-and-forget (each call is independent — safe to spam) ──
+  const fire = useFireAndForget({ type: 'pif', category, productId });
+  const pifRunUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
+  const pifLoopUrl = `${pifRunUrl}/loop`;
 
   const handleRunVariantView = useCallback((variantKey: string) => {
-    runMutation.mutate({ variant_key: variantKey, mode: 'view' });
-  }, [runMutation]);
+    fire(pifRunUrl, { variant_key: variantKey, mode: 'view' }, { subType: 'view', variantKey });
+  }, [fire, pifRunUrl]);
 
   const handleRunVariantHero = useCallback((variantKey: string) => {
-    runMutation.mutate({ variant_key: variantKey, mode: 'hero' });
-  }, [runMutation]);
-
-  // ── Loop handler (server-side carousel: views → heroes → done) ──
-  const loopMutation = useProductImageFinderLoopMutation(category, productId);
+    fire(pifRunUrl, { variant_key: variantKey, mode: 'hero' }, { subType: 'hero', variantKey });
+  }, [fire, pifRunUrl]);
 
   const handleLoopAll = useCallback(() => {
-    loopMutation.mutate({});
-  }, [loopMutation]);
+    for (const v of variants) {
+      if (!loopingVariants.has(v.key)) {
+        fire(pifLoopUrl, { variant_key: v.key }, { subType: 'loop', variantKey: v.key });
+      }
+    }
+  }, [fire, pifLoopUrl, variants, loopingVariants]);
 
   const handleLoopVariant = useCallback((variantKey: string) => {
-    loopMutation.mutate({ variant_key: variantKey });
-  }, [loopMutation]);
+    if (!loopingVariants.has(variantKey)) {
+      fire(pifLoopUrl, { variant_key: variantKey }, { subType: 'loop', variantKey });
+    }
+  }, [fire, pifLoopUrl, loopingVariants]);
 
   const heroEnabled = pifData?.carouselSettings?.heroEnabled ?? true;
 
@@ -762,25 +1049,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         title="Product Image Finder"
         tip="Finds and downloads high-resolution product images per color variant and edition. Requires CEF data."
         isRunning={isRunning}
-        runDisabled={!hasCefData}
+        runDisabled={!hasCefData || (variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)))}
+        runLabel="Loop"
         onRun={handleLoopAll}
-        actionSlot={
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-              <ModelBadgeGroup {...badgeProps} />
-              {modelDisplay}
-            </span>
-            <button
-              onClick={handleLoopAll}
-              disabled={loopMutation.isPending || !hasCefData}
-              className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Loop: views then heroes until carousel complete for all variants"
-            >
-              Loop
-            </button>
-          </div>
-        }
-      />
+      >
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
+          <ModelBadgeGroup {...badgeProps} />
+          {modelDisplay}
+        </span>
+      </FinderPanelHeader>
 
       {/* Body */}
       {collapsed ? null : !hasCefData ? (
@@ -823,7 +1100,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       }}
                     >
                       {isProcessingAll
-                        ? `Processing ${processAllProgress.done + 1}/${processAllProgress.total}...`
+                        ? 'Processing...'
                         : `Process All (${unprocessedImages.length})`}
                     </button>
                   )}
@@ -871,19 +1148,21 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                         <Chip label={`${group.images.length} img`} className="sf-chip-success" />
                       </div>
                       {isOpen && (
-                        <div className="px-3 pb-3 flex gap-2 flex-wrap">
-                          {group.images.map((img, i) => (
-                            <GalleryCard
-                              key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
-                              img={img}
-                              category={category}
-                              productId={productId}
-                              onOpen={() => setLightboxImg(img)}
-                              onDelete={(filename) => deleteImageMut.mutate(filename)}
-                              onProcess={handleProcessImage}
-                              isProcessing={processingFilename === img.filename}
-                            />
-                          ))}
+                        <div className="px-3 pb-3">
+                          <div className="flex gap-2 flex-wrap">
+                            {group.images.map((img, i) => (
+                              <GalleryCard
+                                key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
+                                img={img}
+                                category={category}
+                                productId={productId}
+                                onOpen={() => setLightboxImg(img)}
+                                onDelete={(filename) => deleteImageMut.mutate(filename)}
+                                onProcess={handleProcessImage}
+                                isProcessing={processingFilename === img.filename}
+                              />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -907,7 +1186,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     imageCount={variantImageCounts.get(v.key) || 0}
                     progress={carouselProgressMap[v.key]}
                     heroEnabled={heroEnabled}
-                    loopBusy={loopMutation.isPending}
+                    loopBusy={loopingVariants.has(v.key)}
                     onRunView={() => handleRunVariantView(v.key)}
                     onRunHero={() => handleRunVariantHero(v.key)}
                     onLoop={() => handleLoopVariant(v.key)}
@@ -934,23 +1213,29 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               }
             >
               <div className="space-y-1.5">
-                {[...runs].reverse().map((run) => (
-                  <PifRunHistoryRow
-                    key={run.run_number}
-                    run={run}
-                    onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
-                  />
+                {groupRunsByLoop([...runs].reverse()).map((group, gi) => (
+                  group.type === 'loop' ? (
+                    <PifLoopGroup
+                      key={group.loopId ?? gi}
+                      group={group}
+                      hexMap={hexMap}
+                      editions={editions}
+                      onDeleteRun={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                    />
+                  ) : (
+                    <PifRunHistoryRow
+                      key={group.runs[0].run_number}
+                      run={group.runs[0]}
+                      hexMap={hexMap}
+                      editions={editions}
+                      onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                    />
+                  )
                 ))}
               </div>
             </FinderSectionCard>
           )}
 
-          {/* Error display */}
-          {(runMutation.isError || loopMutation.isError) && (
-            <div className="sf-callout sf-callout-danger px-3 py-2 rounded sf-text-caption">
-              {String(runMutation.error || loopMutation.error)}
-            </div>
-          )}
           {processError && (
             <div className="sf-callout sf-callout-danger px-3 py-2 rounded sf-text-caption cursor-pointer" onClick={() => setProcessError(null)}>
               {processError}

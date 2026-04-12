@@ -66,6 +66,15 @@ export const FINDER_MODULES = Object.freeze([
     panelFeaturePath: 'color-edition-finder',
     panelExport: 'ColorEditionFinderPanel',
 
+    // Data-change events: suffix → extra domains beyond routePrefix.
+    // Standard 3 (run, run-deleted, deleted) always included.
+    // WHY: color-registry because CEF discovers new colors.
+    dataChangeEvents: {
+      'run': ['color-registry'],
+      'run-deleted': [],
+      'deleted': [],
+    },
+
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'Color & Edition Finder',
     settingsSubtitle: 'CEF module settings',
@@ -137,6 +146,18 @@ export const FINDER_MODULES = Object.freeze([
     panelFeaturePath: 'product-image-finder',
     panelExport: 'ProductImageFinderPanel',
 
+    // Data-change events: suffix → extra domains beyond routePrefix.
+    // Standard 3 (run, run-deleted, deleted) always included.
+    dataChangeEvents: {
+      'run': [],
+      'run-deleted': [],
+      'deleted': [],
+      'loop': [],
+      'image-processed': [],
+      'image-deleted': [],
+      'batch-processed': [],
+    },
+
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'Product Image Finder',
     settingsSubtitle: 'PIF module settings',
@@ -152,4 +173,32 @@ export const FINDER_MODULE_MAP = Object.freeze(
 // WHY: O(1) lookup by routePrefix for route matching
 export const FINDER_MODULE_BY_PREFIX = Object.freeze(
   Object.fromEntries(FINDER_MODULES.map(m => [m.routePrefix, m]))
+);
+
+/**
+ * Derived data-change event → domain map for all finder modules.
+ * Each event key is `${routePrefix}-${suffix}`, domains always include routePrefix.
+ *
+ * Consumed by:
+ * - Backend: dataChangeContract.js (spread into DATA_CHANGE_EVENT_DOMAIN_MAP)
+ * - Frontend: invalidationResolver.js (spread into DATA_CHANGE_EVENT_DOMAIN_FALLBACK)
+ */
+export const FINDER_DATA_CHANGE_EVENTS = Object.freeze(
+  Object.fromEntries(
+    FINDER_MODULES.flatMap((mod) => {
+      const events = mod.dataChangeEvents || {};
+      return Object.entries(events).map(([suffix, extraDomains]) => [
+        `${mod.routePrefix}-${suffix}`,
+        [mod.routePrefix, ...(Array.isArray(extraDomains) ? extraDomains : [])],
+      ]);
+    }),
+  ),
+);
+
+/**
+ * Derived set of data-change domains for all finder modules.
+ * Each module's routePrefix is a domain.
+ */
+export const FINDER_DATA_CHANGE_DOMAINS = Object.freeze(
+  FINDER_MODULES.map((mod) => mod.routePrefix),
 );

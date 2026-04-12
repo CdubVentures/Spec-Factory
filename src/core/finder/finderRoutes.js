@@ -9,7 +9,7 @@
  */
 
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { registerOperation, updateStage, updateModelInfo, completeOperation, failOperation } from '../operations/index.js';
+import { registerOperation, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, fireAndForget } from '../operations/index.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import fs from 'node:fs';
@@ -248,41 +248,40 @@ export function createFinderRouteHandler(finderConfig) {
 
           batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
 
-          const result = await runFinder({
-            product: {
-              product_id: productId,
-              category,
-              brand: productRow.brand || '',
-              model: productRow.model || '',
-              variant: productRow.variant || '',
-            },
-            appDb,
-            specDb,
-            config,
-            logger: logger || null,
-            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-            onStreamChunk: ({ content }) => { if (content) batcher.push(content); },
-          });
-
-          batcher.dispose();
-
-          if (result.rejected) {
-            const reason = result.rejections?.[0]?.reason_code === 'llm_error' ? 'LLM call failed' : 'Validation rejected';
-            failOperation({ id: op.id, error: reason });
-          } else {
-            completeOperation({ id: op.id });
-          }
-
-          emitDataChange({
+          return fireAndForget({
+            res,
+            jsonRes,
+            op,
+            batcher,
             broadcastWs,
-            event: `${routePrefix}-run`,
-            category,
-            entities: { productIds: [productId] },
-            meta: buildResultMeta ? buildResultMeta(result) : { productId },
+            emitArgs: {
+              event: `${routePrefix}-run`,
+              category,
+              entities: { productIds: [productId] },
+              meta: { productId },
+            },
+            asyncWork: () => runFinder({
+              product: {
+                product_id: productId,
+                category,
+                brand: productRow.brand || '',
+                model: productRow.model || '',
+                variant: productRow.variant || '',
+              },
+              appDb,
+              specDb,
+              config,
+              logger: logger || null,
+              onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+              onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+              onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+              onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+              onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            }),
+            completeOperation,
+            failOperation,
+            emitDataChange,
           });
-
-          return jsonRes(res, 200, { ok: true, ...result });
         } catch (err) {
           if (batcher) batcher.dispose();
           if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });

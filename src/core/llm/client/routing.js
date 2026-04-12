@@ -489,6 +489,7 @@ export async function callLlmWithRouting({
   onPhaseChange,
   onModelResolved,
   onStreamChunk,
+  onQueueWait,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const primary = resolveLlmRoute(config, {
@@ -561,9 +562,15 @@ export async function callLlmWithRouting({
   const labQueueDelayMs = configInt(config, 'llmLabQueueDelayMs');
   const wrapLabQueue = (route, callFn) => {
     const isLab = route?._registryEntry?.accessMode === 'lab';
-    return (isLab && labQueueDelayMs > 0)
-      ? enqueueLabCall(callFn, labQueueDelayMs)
-      : callFn();
+    if (isLab && labQueueDelayMs > 0) {
+      const enqueueAt = Date.now();
+      return enqueueLabCall(() => {
+        const waitMs = Date.now() - enqueueAt;
+        onQueueWait?.(waitMs);
+        return callFn();
+      }, labQueueDelayMs);
+    }
+    return callFn();
   };
 
   logger?.info?.('llm_route_selected', {

@@ -46,6 +46,8 @@ export interface RunHistoryRow {
   readonly isLatest: boolean;
   readonly validationStatus: 'valid' | 'rejected';
   readonly rejectionSummary: string;
+  readonly startedAt: string;
+  readonly durationMs: number | null;
   readonly selected: ColorEditionFinderSelected;
   readonly systemPrompt: string;
   readonly userMessage: string;
@@ -269,6 +271,8 @@ export function deriveRunHistoryRows(
         isLatest: run.run_number === maxRunNumber,
         validationStatus: isRejected ? 'rejected' as const : 'valid' as const,
         rejectionSummary,
+        startedAt: run.started_at ?? '',
+        durationMs: run.duration_ms ?? null,
         selected: run.selected,
         systemPrompt: run.prompt?.system ?? '',
         userMessage: run.prompt?.user ?? '',

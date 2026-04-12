@@ -46,6 +46,7 @@ export { FinderPanelFooter } from './FinderPanelFooter.tsx';
 export { FinderDeleteConfirmModal } from './FinderDeleteConfirmModal.tsx';
 export { DiscoverySummaryBar } from './DiscoverySummaryBar.tsx';
 export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
+export { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';
 export { toneToChipClass, toneToValueClass } from './toneMappings.ts';
 export { deriveCooldownState, deriveFinderStatusChip, formatAtomLabel } from './finderSelectors.ts';

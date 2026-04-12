@@ -456,28 +456,29 @@ ${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.strin
 ` : '';
 
   // Use custom override or built-in instructions
-  const instructions = promptOverride || `Find clean, high-quality studio product shots for: ${brand} ${model} — ${variantDesc}
+  const instructions = promptOverride || `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
 
-You are looking for the kind of image a manufacturer releases for retailers and press kits — a clean studio photograph or official render where the product is the clear subject.
+You are looking for images that show this product IN CONTEXT — placed on a desk, in a gaming setup, on a workspace surface, or in any real-world environment. The background and setting are intentional and valuable. These are NOT cutout/studio shots.
 
 WHAT MAKES A GOOD HERO IMAGE:
-- Clean studio product photography with a neutral background — dark, light, gradient, or simple surface all fine (NOT white-background cutouts — those are "view" images)
-- Product is the sole focal point — may sit on a desk or surface but nothing competes for attention
-- Official manufacturer product gallery images, press kit photos, or authorized retailer gallery images
-- High-resolution, landscape-oriented (will be cropped to 16:9 later)
-- Moody or dramatic lighting is fine as long as the product is clearly visible and unobstructed
+- Product placed in a real environment — desk setup, gaming station, workspace, lifestyle setting
+- The environment/background is part of the image's value (moody lighting, RGB glow, natural surfaces)
+- Other peripherals may be visible (keyboard, monitor, mousepad) as long as the target product is clearly identifiable in the scene
+- Official manufacturer lifestyle photography, Amazon A+ lifestyle content, press kit contextual shots
+- High-resolution, landscape-oriented preferred (will be cropped to 16:9 later)
+- Dramatic or atmospheric lighting that shows the product in its intended environment
 
 HARD REJECTS — do NOT return any image that has:
+- White or plain background studio cutouts — those are "view" images, NOT heroes
+- Product isolated on a solid/gradient background with no environment context
 - Text overlays, watermarks, logos, price tags, or advertising copy of any kind
 - Busy promotional banners, box art, or marketing collateral with graphics/text
-- Editorial photos from review sites (TechRadar, Tom's Hardware, RTINGS, Gamer Nexus, etc.) — these are copyrighted
 - User photos, unboxing images, or screenshots
-- Product shown in-use (hands gripping it, mid-gameplay) — lifestyle shots are NOT heroes
-- Multiple products in frame competing for attention
+- The product too small or not clearly identifiable in the scene
 - Generic category banners or brand-only imagery
 - Small thumbnails or low-resolution images
 
-QUALITY OVER QUANTITY: Return ONLY images you are confident meet ALL criteria above. It is far better to return 0 images than to return a single bad one. If you cannot find a clean studio shot meeting every requirement, return an empty images array.
+QUALITY OVER QUANTITY: Return ONLY images you are confident meet ALL criteria above. It is far better to return 0 images than to return a single bad one. If you cannot find a contextual lifestyle shot meeting every requirement, return an empty images array.
 
 Image requirements:
 - Minimum resolution: ${minWidth}px wide, ${minHeight}px tall — bigger is always better
@@ -485,10 +486,10 @@ Image requirements:
 - Must show the EXACT product: ${brand} ${model} in ${variantDesc}
 
 Allowed sources (in priority order):
-1. Manufacturer's official product page gallery for this ${variantType === 'edition' ? 'edition' : 'color'}
-2. Manufacturer's press/media page or press kit downloads
-3. Authorized retailer product galleries (Amazon, Best Buy) — these images are manufacturer-supplied
-Do NOT use images from editorial review sites — even if the photo looks clean, it is copyrighted editorial content.`;
+1. Manufacturer's official product page lifestyle/gallery images for this ${variantType === 'edition' ? 'edition' : 'color'}
+2. Manufacturer's press/media page or press kit lifestyle photography
+3. Authorized retailer product galleries (Amazon A+ content, Best Buy) — lifestyle images showing the product in context
+Do NOT use images from editorial review sites — even if the photo looks contextual, it is copyrighted editorial content.`;
 
   return `${instructions}
 

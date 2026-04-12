@@ -3,6 +3,11 @@ import {
   collectDataChangeDomains,
 } from './domainScope.js';
 import { collectDataChangeCategories } from './categoryScope.js';
+import {
+  FINDER_DATA_CHANGE_EVENTS,
+  FINDER_DATA_CHANGE_DOMAINS,
+  FINDER_MODULES,
+} from '../../../../../src/core/finder/finderModuleRegistry.js';
 
 const CATEGORY_TOKEN = ':category';
 
@@ -103,9 +108,13 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   'color-registry': Object.freeze([
     ['colors'],
   ]),
-  'color-edition-finder': Object.freeze([
-    ['color-edition-finder', CATEGORY_TOKEN],
-  ]),
+  // WHY: Finder domains derived from FINDER_MODULES registry (O(1) scaling).
+  ...Object.fromEntries(
+    FINDER_MODULES.map((mod) => [
+      mod.routePrefix,
+      Object.freeze([[mod.routePrefix, CATEGORY_TOKEN]]),
+    ]),
+  ),
   categories: Object.freeze([
     ['categories'],
     ['categories-real'],
@@ -140,7 +149,7 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'brand',
   'catalog',
   'categories',
-  'color-edition-finder',
+  ...FINDER_DATA_CHANGE_DOMAINS,
   'color-registry',
   'component',
   'enum',
@@ -161,7 +170,9 @@ export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
   'suggestions',
 ]);
 
+// WHY: Finder events derived from FINDER_MODULES registry (O(1) scaling).
 export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
+  ...FINDER_DATA_CHANGE_EVENTS,
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
   'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
@@ -177,9 +188,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'color-add': ['color-registry'],
   'color-update': ['color-registry'],
   'color-delete': ['color-registry'],
-  'color-edition-finder-run': ['color-edition-finder'],
-  'color-edition-finder-run-deleted': ['color-edition-finder'],
-  'color-edition-finder-deleted': ['color-edition-finder'],
   'llm-settings-updated': ['settings', 'indexing'],
   'llm-settings-reset': ['settings', 'indexing'],
   'runtime-settings-updated': ['settings', 'indexing'],

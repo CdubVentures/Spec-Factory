@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import type { Operation } from '../state/operationsStore.ts';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import type { Operation, LlmCallRecord } from '../state/operationsStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import {
@@ -26,6 +26,41 @@ const MODULE_LABELS: Readonly<Record<string, string>> = {
 };
 
 /* ── Helpers ─────────────────────────────────────────────────── */
+
+/** Split stream text into segments: { type: 'think' | 'text', text } */
+function parseStreamSegments(raw: string): Array<{ type: 'think' | 'text'; text: string }> {
+  const segments: Array<{ type: 'think' | 'text'; text: string }> = [];
+  let remaining = raw;
+  const re = /<think>([\s\S]*?)<\/think>/gi;
+  let match: RegExpExecArray | null;
+  let lastIndex = 0;
+  while ((match = re.exec(remaining)) !== null) {
+    if (match.index > lastIndex) {
+      const before = remaining.slice(lastIndex, match.index).trim();
+      if (before) segments.push({ type: 'text', text: before });
+    }
+    if (match[1].trim()) segments.push({ type: 'think', text: match[1].trim() });
+    lastIndex = re.lastIndex;
+  }
+  const tail = remaining.slice(lastIndex);
+  // Check for trailing incomplete <think> (still streaming)
+  const openIdx = tail.lastIndexOf('<think>');
+  if (openIdx >= 0) {
+    const before = tail.slice(0, openIdx).trim();
+    if (before) segments.push({ type: 'text', text: before });
+    const thinkContent = tail.slice(openIdx + 7).trim();
+    if (thinkContent) segments.push({ type: 'think', text: thinkContent });
+  } else {
+    const trimmed = tail.trim();
+    if (trimmed) segments.push({ type: 'text', text: trimmed });
+  }
+  return segments;
+}
+
+/** True if stream has any non-empty content (thinking or answer). */
+function hasStreamContent(raw: string): boolean {
+  return raw.replace(/<\/?think>/gi, '').trim().length > 0;
+}
 
 function formatElapsed(startedAt: string, endedAt: string | null): string {
   const end = endedAt ? new Date(endedAt).getTime() : Date.now();
@@ -74,6 +109,141 @@ function DetailStagePipeline({ stages, currentIndex, status }: {
   );
 }
 
+/* ── Collapsible pre block ─────────────────────────────────── */
+
+function CollapsiblePre({ label, text }: { readonly label: string; readonly text: string }) {
+  const [open, setOpen] = useState(false);
+  if (!text) return null;
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.04em] cursor-pointer select-none hover:opacity-80"
+      >
+        <span style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block', fontSize: '8px' }}>
+          {'\u25B6'}
+        </span>
+        {label}
+        <span className="font-normal normal-case tracking-normal sf-text-muted">
+          ({text.length > 1000 ? `${Math.round(text.length / 1000)}k chars` : `${text.length} chars`})
+        </span>
+      </button>
+      {open && (
+        <pre
+          className="mt-1 max-h-[30vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-2 text-[10px] leading-relaxed font-mono sf-text-subtle bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          {text}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+/* ── Discovery log renderer ────────────────────────────────── */
+
+function DiscoveryLogSection({ log }: { readonly log: Record<string, unknown> }) {
+  const entries = Object.entries(log).filter(([, v]) => {
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === 'string') return v.length > 0;
+    return v != null;
+  });
+  if (entries.length === 0) return null;
+  return (
+    <div>
+      <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.04em] mb-1">Discovery Log</div>
+      <div className="space-y-1">
+        {entries.map(([key, value]) => (
+          <div key={key} className="text-[10px] font-mono sf-text-subtle">
+            <span className="sf-text-muted">{key}:</span>{' '}
+            {Array.isArray(value) ? (
+              <span>{value.length} items{value.length <= 8 ? ` — ${value.join(', ')}` : ''}</span>
+            ) : (
+              <span>{String(value)}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Single LLM call row ───────────────────────────────────── */
+
+function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
+  const [expanded, setExpanded] = useState(false);
+  const isPending = call.response === null || call.response === undefined;
+  const responseStr = isPending ? '' : (typeof call.response === 'string' ? call.response : JSON.stringify(call.response, null, 2));
+  const discoveryLog = (!isPending && call.response && typeof call.response === 'object' && 'discovery_log' in call.response)
+    ? (call.response as Record<string, unknown>).discovery_log as Record<string, unknown> | null
+    : null;
+  const time = call.timestamp ? new Date(call.timestamp).toLocaleTimeString() : '';
+
+  return (
+    <div className="rounded-sm border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 cursor-pointer select-none hover:opacity-80 bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.5)]"
+      >
+        <span style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block', fontSize: '8px' }} className="sf-text-muted shrink-0">
+          {'\u25B6'}
+        </span>
+        <span className="text-[11px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          Call #{call.callIndex + 1}
+        </span>
+        {call.model && (
+          <span className="text-[9px] font-mono sf-text-muted">{call.model}</span>
+        )}
+        {call.variant && (
+          <span className="text-[9px] font-mono sf-text-subtle">{call.variant}</span>
+        )}
+        {call.mode && (
+          <span className="inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase rounded-[2px] border border-current leading-[1.5] sf-chip-info">
+            {call.mode}
+          </span>
+        )}
+        <span className="flex-1" />
+        {isPending && (
+          <span className="text-[8px] font-bold uppercase tracking-wide text-[rgb(var(--sf-color-accent-strong-rgb))] animate-pulse">
+            Awaiting response...
+          </span>
+        )}
+        {time && <span className="text-[9px] font-mono sf-text-muted">{time}</span>}
+      </button>
+      {expanded && (
+        <div className="px-2.5 py-2 space-y-2 border-t border-[rgb(var(--sf-color-border-subtle-rgb)/0.15)]">
+          <CollapsiblePre label="System Prompt" text={call.prompt.system} />
+          <CollapsiblePre label="User Message" text={call.prompt.user} />
+          {isPending
+            ? <div className="text-[10px] sf-text-subtle italic">Response pending...</div>
+            : <CollapsiblePre label="LLM Response" text={responseStr} />
+          }
+          {discoveryLog && <DiscoveryLogSection log={discoveryLog} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── LLM Calls section ─────────────────────────────────────── */
+
+function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecord> }) {
+  return (
+    <section>
+      <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
+        LLM Calls ({calls.length})
+      </div>
+      <div className="space-y-1.5 max-h-[50vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+        {calls.map((call) => (
+          <LlmCallRow key={call.callIndex} call={call} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── Modal ───────────────────────────────────────────────────── */
 
 interface Props {
@@ -100,14 +270,17 @@ export function OperationDetailModal({ op, onClose }: Props) {
   }, [op.status]);
 
   /* ── Auto-scroll stream ───────────────────────────────────── */
-  const streamRef = useRef<HTMLPreElement>(null);
+  const streamRef = useRef<HTMLDivElement>(null);
+  const streamSegments = useMemo(() => parseStreamSegments(op.streamText), [op.streamText]);
+  const hasContent = useMemo(() => hasStreamContent(op.streamText), [op.streamText]);
   useEffect(() => {
     if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight;
-  }, [op.streamText]);
+  }, [streamSegments]);
 
   /* ── Derived ──────────────────────────────────────────────── */
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
-  const chipLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
+  const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
+  const chipLabel = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
   const isRunning = op.status === 'running';
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
@@ -171,6 +344,16 @@ export function OperationDetailModal({ op, onClose }: Props) {
             />
           </section>
 
+          {/* Progress text */}
+          {op.progressText && (
+            <section>
+              <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-1">
+                Progress
+              </div>
+              <div className="text-[11px] sf-text-primary font-mono">{op.progressText}</div>
+            </section>
+          )}
+
           {/* Model info */}
           {op.modelInfo && (
             <section>
@@ -214,20 +397,33 @@ export function OperationDetailModal({ op, onClose }: Props) {
             <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
               {isRunning ? 'Live Output' : 'Output'}
             </div>
-            <pre
+            <div
               ref={streamRef}
-              className="min-h-[80px] max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-3 text-[11px] leading-relaxed font-mono sf-text-subtle bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]"
+              className="min-h-[80px] max-h-[40vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-3 text-[11px] leading-relaxed font-mono sf-text-primary bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]"
               style={{ scrollbarWidth: 'thin' }}
             >
-              {op.streamText || (
+              {hasContent ? (
+                streamSegments.map((seg, i) =>
+                  seg.type === 'think' ? (
+                    <span key={i} className="opacity-40 italic">{seg.text}</span>
+                  ) : (
+                    <span key={i}>{seg.text}</span>
+                  ),
+                )
+              ) : (
                 isRunning
                   ? 'Waiting for output\u2026'
                   : isDone
                     ? 'Operation completed successfully.'
                     : ''
               )}
-            </pre>
+            </div>
           </section>
+
+          {/* LLM Calls */}
+          {op.llmCalls.length > 0 && (
+            <LlmCallsSection calls={op.llmCalls} />
+          )}
 
           {/* Timestamps */}
           <section className="text-[10px] sf-text-subtle flex items-center gap-4 pt-1 border-t border-[rgb(var(--sf-color-border-subtle-rgb)/0.15)]">

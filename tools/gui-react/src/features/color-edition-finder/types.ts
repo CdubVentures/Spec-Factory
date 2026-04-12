@@ -40,6 +40,8 @@ export interface ColorEditionFinderRunEntry {
   readonly model: string;
   readonly fallback_used: boolean;
   readonly cooldown_until: string;
+  readonly started_at?: string;
+  readonly duration_ms?: number | null;
   readonly selected: ColorEditionFinderSelected;
   readonly prompt: { readonly system: string; readonly user: string };
   // WHY: Successful runs store ColorEditionFinderSelected; rejected runs store
@@ -106,6 +108,12 @@ export interface ColorEditionFinderResult {
   readonly selected: ColorEditionFinderSelected;
   readonly color_details: Readonly<Record<string, ColorEditionFinderColorDetail>>;
   readonly edition_details: Readonly<Record<string, ColorEditionFinderEditionDetail>>;
+}
+
+/** 202 Accepted response — returned immediately by fire-and-forget POST handlers. */
+export interface AcceptedResponse {
+  readonly ok: true;
+  readonly operationId: string;
 }
 
 export interface ColorEditionFinderRunResponse {

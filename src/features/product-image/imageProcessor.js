@@ -93,6 +93,58 @@ function _tryDrain() {
   }
 }
 
+/* ── Alpha-skip: detect images that are already cutouts ──────────── */
+
+// WHY: some source images (WebP, PNG, AVIF) already have transparent
+// backgrounds. Running RMBG on these produces a worse alpha mask than
+// the original. We detect existing transparency cheaply (64x64 downsample)
+// and skip inference entirely — just trim + save as PNG.
+const ALPHA_SKIP_SAMPLE_SIZE = 64;
+const ALPHA_SKIP_THRESHOLD = 0.05; // >5% transparent pixels = already a cutout
+
+async function hasExistingTransparency(inputPath) {
+  const meta = await sharp(inputPath).metadata();
+  if (!meta.hasAlpha) return false;
+
+  // Downsample to tiny size for fast pixel scan
+  const { data } = await sharp(inputPath)
+    .resize(ALPHA_SKIP_SAMPLE_SIZE, ALPHA_SKIP_SAMPLE_SIZE, { fit: 'fill' })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const pixels = ALPHA_SKIP_SAMPLE_SIZE * ALPHA_SKIP_SAMPLE_SIZE;
+  let transparentCount = 0;
+  for (let i = 0; i < pixels; i++) {
+    if (data[i * 4 + 3] < 10) transparentCount++;
+  }
+
+  return transparentCount / pixels > ALPHA_SKIP_THRESHOLD;
+}
+
+/* ── Trim existing cutout (no RMBG) ──────────────────────────────── */
+
+async function trimExistingCutout(inputPath, outputPath) {
+  const meta = await sharp(inputPath).metadata();
+  const w = meta.width;
+  const h = meta.height;
+
+  const rgba = await sharp(inputPath).ensureAlpha().raw().toBuffer();
+  const bbox = findAlphaBoundingBox(rgba, w, h);
+
+  if (!bbox) {
+    const info = await sharp(inputPath).png().toFile(outputPath);
+    return { ok: true, bg_removed: true, trim_failed: true, width: info.width, height: info.height, bytes: info.size };
+  }
+
+  const info = await sharp(rgba, { raw: { width: w, height: h, channels: 4 } })
+    .extract(bbox)
+    .png()
+    .toFile(outputPath);
+
+  return { ok: true, bg_removed: true, trim_failed: false, width: info.width, height: info.height, bytes: info.size };
+}
+
 /* ── Image processing pipeline ───────────────────────────────────── */
 
 /**
@@ -116,6 +168,11 @@ export async function processImage({ inputPath, outputPath, session = null }) {
     // No session → fallback: just convert to PNG (bypasses queue — no ONNX)
     if (!session) {
       return await convertToPng(inputPath, outputPath);
+    }
+
+    // Already a cutout → skip RMBG, just trim + save PNG
+    if (await hasExistingTransparency(inputPath)) {
+      return await trimExistingCutout(inputPath, outputPath);
     }
 
     // Full pipeline: infer → composite → trim → save (queued)

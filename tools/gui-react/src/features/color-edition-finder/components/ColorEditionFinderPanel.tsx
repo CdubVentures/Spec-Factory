@@ -12,6 +12,7 @@ import {
   FinderDeleteConfirmModal,
   DiscoverySummaryBar,
   FinderRunPromptDetails,
+  FinderRunTimestamp,
   FinderSectionCard,
   useResolvedFinderModel,
   deriveCooldownState,
@@ -23,7 +24,6 @@ import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePublishedFields } from '../../../hooks/usePublishedFields.ts';
 import {
   useColorEditionFinderQuery,
-  useColorEditionFinderRunMutation,
   useDeleteColorEditionFinderRunMutation,
   useDeleteColorEditionFinderAllMutation,
 } from '../api/colorEditionFinderQueries.ts';
@@ -35,6 +35,7 @@ import {
 import type { RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
+import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 
 /* ── Color circle (mirrors site's getCircleStyle gradient logic) ──── */
 
@@ -272,6 +273,7 @@ function CefRunHistoryRow({
           #{row.runNumber}
         </span>
         <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
+        <FinderRunTimestamp startedAt={row.startedAt} durationMs={row.durationMs} />
         {row.model && <Chip label={row.model} className="sf-chip-neutral" />}
         {row.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
         <Chip label={`${row.colorCount} colors`} className="sf-chip-accent" />
@@ -355,7 +357,8 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const { isPublished } = usePublishedFields(category, productId);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
-  const runMut = useColorEditionFinderRunMutation(category, productId);
+  const fire = useFireAndForget({ type: 'cef', category, productId });
+  const cefRunUrl = `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('colorFinder');
@@ -391,9 +394,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   if (!productId || !category) return null;
 
   const effectiveResult = isError ? null : result;
-  const statusChip = runMut.isError
-    ? { label: 'Failed', tone: 'danger' }
-    : deriveFinderStatusChip(effectiveResult);
+  const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);
   const cooldown = deriveCooldownState(effectiveResult);
   const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry);
@@ -415,7 +416,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         title="Color & Edition Finder"
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
-        onRun={() => runMut.mutate()}
+        onRun={() => fire(cefRunUrl, {})}
       >
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
           <ModelBadgeGroup {...badgeProps} />

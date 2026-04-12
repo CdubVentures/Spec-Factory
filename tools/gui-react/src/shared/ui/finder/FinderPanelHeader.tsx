@@ -14,11 +14,13 @@ interface FinderPanelHeaderProps {
   statusChip?: StatusChipData;
   tip: string;
   isRunning: boolean;
+  /** True while the POST is in-flight (~50ms). Disables the button during send. */
+  sendBusy?: boolean;
   /** Disable the run button (e.g. missing prerequisite data) */
   runDisabled?: boolean;
   runLabel?: string;
   onRun: () => void;
-  /** Extra elements between tip and Run button */
+  /** Extra elements between tip and status/running badge */
   children?: ReactNode;
   /** When provided, replaces the default Run button entirely */
   actionSlot?: ReactNode;
@@ -33,6 +35,7 @@ export function FinderPanelHeader({
   statusChip,
   tip,
   isRunning,
+  sendBusy = false,
   runDisabled = false,
   runLabel = 'Run Now',
   onRun,
@@ -50,25 +53,25 @@ export function FinderPanelHeader({
       </button>
       <span className="text-[15px] font-bold sf-text-primary">{title}</span>
 
+      {chipLabel && <Chip label={chipLabel} className={chipClass} />}
+      <Tip text={tip} />
+
+      {children}
+
       {isRunning ? (
         <Chip label="Running" className="sf-chip-purple animate-pulse" />
       ) : statusChip ? (
         <Chip label={statusChip.label} className={toneToChipClass(statusChip.tone)} />
       ) : null}
 
-      {chipLabel && <Chip label={chipLabel} className={chipClass} />}
-      <Tip text={tip} />
-
-      {children}
-
       {actionSlot ?? (
         <button
           onClick={(e) => { e.stopPropagation(); onRun(); }}
-          disabled={isRunning || runDisabled}
+          disabled={sendBusy || runDisabled}
           className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
         >
-          {isRunning ? (
-            <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Running...</span>
+          {sendBusy ? (
+            <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Sending...</span>
           ) : runLabel}
         </button>
       )}

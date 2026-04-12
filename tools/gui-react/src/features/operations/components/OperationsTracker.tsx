@@ -93,13 +93,78 @@ function StagePipeline({ stages, currentIndex, status }: {
   );
 }
 
+/* ── Loop progress grid ──────────────────────────────────────────── */
+
+function LoopProgressGrid({ lp }: { readonly lp: NonNullable<Operation['loopProgress']> }) {
+  const variantPos = lp.variantTotal > 1 ? ` (${lp.variantIndex + 1}/${lp.variantTotal})` : '';
+  const target = lp.mode === 'hero' ? 'hero' : (lp.focusView || '\u2013');
+
+  // Merge views + hero into one grid
+  const cells: Array<{ label: string; count: number; target: number; attempts: number; attemptBudget: number; done: boolean; fail: boolean; active: boolean }> = [];
+  for (const v of lp.views) {
+    cells.push({ label: v.view, count: v.count, target: v.target, attempts: v.attempts, attemptBudget: v.attemptBudget, done: v.satisfied, fail: v.exhausted, active: lp.mode === 'view' && lp.focusView === v.view });
+  }
+  if (lp.hero) {
+    cells.push({ label: 'hero', count: lp.hero.count, target: lp.hero.target, attempts: lp.hero.attempts, attemptBudget: lp.hero.attemptBudget, done: lp.hero.satisfied, fail: lp.hero.exhausted, active: lp.mode === 'hero' });
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* Header row */}
+      <span className="text-[9px] font-mono sf-text-subtle leading-[1.3]">
+        {lp.variantLabel}{variantPos} {'\u00B7'} call {lp.callNumber} {'\u00B7'} {lp.mode}: {target} {'\u00B7'} ~{lp.estimatedRemaining} left
+      </span>
+      {/* View grid */}
+      <span className="grid gap-x-1.5 gap-y-0" style={{ gridTemplateColumns: `repeat(${Math.min(cells.length, 3)}, 1fr)` }}>
+        {cells.map((c) => {
+          const icon = c.done ? '\u2713' : c.fail ? '\u2717' : c.active ? '\u25B8' : ' ';
+          const cls = c.done
+            ? 'sf-text-success'
+            : c.fail
+              ? 'text-[var(--sf-state-danger-fg)] opacity-50'
+              : c.active
+                ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
+                : 'sf-text-subtle opacity-60';
+          return (
+            <span key={c.label} className={`text-[8px] font-mono font-semibold leading-[1.6] ${cls}`}>
+              {icon} {c.label} {c.count}/{c.target}
+              <span className="opacity-50 font-normal"> ({c.attempts}/{c.attemptBudget})</span>
+            </span>
+          );
+        })}
+      </span>
+    </div>
+  );
+}
+
+/* ── Stream text helpers ──────────────────────────────────────────── */
+
+function stripThinkingTags(text: string): string {
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  const openIdx = cleaned.lastIndexOf('<think>');
+  if (openIdx >= 0 && cleaned.indexOf('</think>', openIdx) === -1) {
+    cleaned = cleaned.slice(0, openIdx);
+  }
+  return cleaned.trim();
+}
+
+/** True if stream has <think> content but no answer text yet. */
+function isOnlyThinking(text: string): boolean {
+  if (!text.includes('<think>')) return false;
+  return stripThinkingTags(text).length === 0;
+}
+
 /* ── Streaming text panel ─────────────────────────────────────────── */
 
 function StreamPanel({ text }: { readonly text: string }) {
   const ref = useRef<HTMLPreElement>(null);
+  const cleaned = useMemo(() => stripThinkingTags(text), [text]);
+  const thinking = useMemo(() => isOnlyThinking(text), [text]);
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
-  }, [text]);
+  }, [cleaned, thinking]);
+
+  if (!cleaned && !thinking) return null;
 
   return (
     <pre
@@ -107,7 +172,7 @@ function StreamPanel({ text }: { readonly text: string }) {
       className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded-sm p-1.5 text-[10px] font-mono sf-text-subtle bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]"
       style={{ scrollbarWidth: 'thin' }}
     >
-      {text}
+      {cleaned || <span className="italic opacity-50 animate-pulse">Reasoning...</span>}
     </pre>
   );
 }
@@ -120,7 +185,8 @@ function OpCard({ op, onClick, onDismiss }: {
   readonly onDismiss: (e: React.MouseEvent) => void;
 }) {
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
-  const label = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
+  const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
+  const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
 
@@ -159,17 +225,34 @@ function OpCard({ op, onClick, onDismiss }: {
         <span className="text-[11px] font-medium sf-text-primary truncate min-w-0 flex-1 text-left">
           {op.productLabel}
         </span>
-        <span className={`text-[9px] font-mono shrink-0 ${
-          op.status === 'running' ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
-          : op.status === 'error' ? 'text-[var(--sf-state-danger-fg)]'
-          : 'sf-text-success'
-        }`}>
-          {op.status === 'done' ? 'done' : op.status === 'error' ? 'failed' : formatElapsed(op.startedAt, op.endedAt)}
+        <span className="flex flex-col items-end shrink-0">
+          <span className={`text-[9px] font-mono ${
+            op.status === 'running' ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
+            : op.status === 'error' ? 'text-[var(--sf-state-danger-fg)]'
+            : 'sf-text-success'
+          }`}>
+            {op.status === 'done' ? 'done' : op.status === 'error' ? 'failed' : formatElapsed(op.startedAt, op.endedAt)}
+          </span>
+          {op.queueDelayMs != null && op.queueDelayMs > 0 && (
+            <span className="text-[6px] font-mono sf-text-subtle leading-none">q {op.queueDelayMs >= 1000 ? `${(op.queueDelayMs / 1000).toFixed(1)}s` : `${op.queueDelayMs}ms`}</span>
+          )}
         </span>
       </span>
 
       {/* Row 2–3: stage pipeline grid */}
       <StagePipeline stages={op.stages} currentIndex={op.currentStageIndex} status={op.status} />
+
+      {/* Loop progress grid (structured) or fallback progress text */}
+      {op.loopProgress ? (
+        <LoopProgressGrid lp={op.loopProgress} />
+      ) : op.progressText ? (
+        <span className="text-[9px] font-mono sf-text-subtle whitespace-pre-wrap leading-[1.4]">{op.progressText}</span>
+      ) : null}
+
+      {/* Live stream preview — only while running and has content */}
+      {op.status === 'running' && op.streamText && (
+        <StreamPanel text={op.streamText} />
+      )}
     </div>
   );
 }

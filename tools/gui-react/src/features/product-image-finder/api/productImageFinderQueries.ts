@@ -3,8 +3,7 @@ import { useCallback } from 'react';
 import { api } from '../../../api/client.ts';
 import type {
   ProductImageFinderResult,
-  ProductImageFinderRunResponse,
-  ProductImageFinderLoopResponse,
+  AcceptedResponse,
   ProductImageFinderDeleteResponse,
 } from '../types.ts';
 
@@ -18,35 +17,25 @@ export function useProductImageFinderQuery(category: string, productId: string) 
   });
 }
 
+// WHY: No onSuccess invalidation — 202 means work is queued, not complete.
+// WS data-change events invalidate queries when background work finishes.
 export function useProductImageFinderRunMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
-  }, [queryClient, category, productId]);
-
-  return useMutation<ProductImageFinderRunResponse, Error, { variant_key?: string; mode?: 'view' | 'hero' }>({
-    mutationFn: (body) => api.post<ProductImageFinderRunResponse>(
+  return useMutation<AcceptedResponse, Error, { variant_key?: string; mode?: 'view' | 'hero' }>({
+    mutationFn: (body) => api.post<AcceptedResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
       body,
     ),
-    onSuccess: invalidate,
   });
 }
 
+// WHY: No onSuccess invalidation — 202 means work is queued, not complete.
+// WS data-change events invalidate queries when background work finishes.
 export function useProductImageFinderLoopMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
-  }, [queryClient, category, productId]);
-
-  return useMutation<ProductImageFinderLoopResponse, Error, { variant_key?: string }>({
-    mutationFn: (body) => api.post<ProductImageFinderLoopResponse>(
+  return useMutation<AcceptedResponse, Error, { variant_key?: string }>({
+    mutationFn: (body) => api.post<AcceptedResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/loop`,
       body,
     ),
-    onSuccess: invalidate,
   });
 }
 
@@ -95,6 +84,16 @@ export function useProcessProductImageMutation(category: string, productId: stri
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images/${encodeURIComponent(filename)}/process`,
     ),
     onSuccess: invalidate,
+  });
+}
+
+// WHY: No onSuccess invalidation — 202 means work is queued, not complete.
+// WS data-change events invalidate queries when background work finishes.
+export function useProcessAllProductImagesMutation(category: string, productId: string) {
+  return useMutation<AcceptedResponse, Error>({
+    mutationFn: () => api.post<AcceptedResponse>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/process-all`,
+    ),
   });
 }
 

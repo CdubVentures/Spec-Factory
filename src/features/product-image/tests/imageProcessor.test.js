@@ -205,6 +205,145 @@ describe('processImage', () => {
   });
 });
 
+/* ── Alpha-skip: already-transparent images bypass RMBG ──────────── */
+
+describe('alpha-skip: images with existing transparency bypass RMBG', () => {
+  let inputWebpAlpha;
+  let inputPngAlpha;
+  let inputAvifAlpha;
+  let inputPngOpaqueAlpha; // has alpha channel but all pixels are opaque
+
+  before(async () => {
+    // Create a 200x200 image with a "product" (opaque center) on transparent bg
+    // Center 100x100 is opaque red, edges are transparent
+    const w = 200, h = 200;
+    const rgba = Buffer.alloc(w * h * 4, 0); // all transparent
+    for (let y = 50; y < 150; y++) {
+      for (let x = 50; x < 150; x++) {
+        const idx = (y * w + x) * 4;
+        rgba[idx] = 255;     // R
+        rgba[idx + 1] = 0;   // G
+        rgba[idx + 2] = 0;   // B
+        rgba[idx + 3] = 255; // A — opaque
+      }
+    }
+
+    inputWebpAlpha = path.join(INPUT_DIR, 'cutout.webp');
+    inputPngAlpha = path.join(INPUT_DIR, 'cutout.png');
+    inputAvifAlpha = path.join(INPUT_DIR, 'cutout.avif');
+    inputPngOpaqueAlpha = path.join(INPUT_DIR, 'opaque-with-alpha.png');
+
+    await sharp(rgba, { raw: { width: w, height: h, channels: 4 } })
+      .webp({ lossless: true }).toFile(inputWebpAlpha);
+    await sharp(rgba, { raw: { width: w, height: h, channels: 4 } })
+      .png().toFile(inputPngAlpha);
+    await sharp(rgba, { raw: { width: w, height: h, channels: 4 } })
+      .avif({ lossless: true }).toFile(inputAvifAlpha);
+
+    // Fully opaque image saved as PNG with alpha channel (alpha=255 everywhere)
+    const opaqueRgba = Buffer.alloc(w * h * 4);
+    for (let i = 0; i < w * h; i++) {
+      opaqueRgba[i * 4] = (Math.random() * 255) | 0;
+      opaqueRgba[i * 4 + 1] = (Math.random() * 255) | 0;
+      opaqueRgba[i * 4 + 2] = (Math.random() * 255) | 0;
+      opaqueRgba[i * 4 + 3] = 255; // fully opaque
+    }
+    await sharp(opaqueRgba, { raw: { width: w, height: h, channels: 4 } })
+      .png().toFile(inputPngOpaqueAlpha);
+  });
+
+  function createTrackingSession(mode = 'opaque') {
+    const base = createMockSession(mode);
+    const tracker = {
+      ...base,
+      called: false,
+      run: async (...args) => {
+        tracker.called = true;
+        return base.run(...args);
+      },
+    };
+    return tracker;
+  }
+
+  it('WebP with transparency: skips RMBG, session.run never called', async () => {
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'alpha-skip-webp.png');
+    const result = await processImage({ inputPath: inputWebpAlpha, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, false, 'session.run should NOT be called');
+    assert.ok(fs.existsSync(outputPath));
+    const meta = await sharp(outputPath).metadata();
+    assert.equal(meta.format, 'png');
+    assert.equal(meta.channels, 4);
+  });
+
+  it('PNG with transparency: skips RMBG, trims to content', async () => {
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'alpha-skip-png.png');
+    const result = await processImage({ inputPath: inputPngAlpha, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, false, 'session.run should NOT be called');
+    // Trimmed to the 100x100 opaque center
+    assert.equal(result.width, 100);
+    assert.equal(result.height, 100);
+  });
+
+  it('AVIF with transparency: skips RMBG', async () => {
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'alpha-skip-avif.png');
+    const result = await processImage({ inputPath: inputAvifAlpha, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, false, 'session.run should NOT be called');
+  });
+
+  it('JPEG (no alpha possible): still runs RMBG', async () => {
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'alpha-skip-jpg.png');
+    const result = await processImage({ inputPath: inputJpg, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, true, 'session.run SHOULD be called for JPEG');
+  });
+
+  it('PNG with alpha channel but all-opaque pixels: still runs RMBG', async () => {
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'alpha-skip-opaque.png');
+    const result = await processImage({ inputPath: inputPngOpaqueAlpha, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, true, 'session.run SHOULD be called — alpha channel exists but no real transparency');
+  });
+
+  // Proof test: the actual M75 image that was damaged by RMBG
+  it('real M75 top-black WebP (already a cutout): skips RMBG, preserves quality', async () => {
+    const m75Path = path.resolve('.workspace/products/mouse-b794700f/images/originals/top-black-4.webp');
+    if (!fs.existsSync(m75Path)) {
+      // Skip if workspace image not present (CI)
+      return;
+    }
+
+    const session = createTrackingSession();
+    const outputPath = path.join(OUTPUT_DIR, 'm75-alpha-skip.png');
+    const result = await processImage({ inputPath: m75Path, outputPath, session });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.bg_removed, true);
+    assert.equal(session.called, false, 'M75 already has transparent bg — RMBG should be skipped');
+    assert.equal(result.trim_failed, false);
+    // Should preserve close to original dimensions (just trim padding)
+    assert.ok(result.width > 400, `width ${result.width} should be close to original`);
+    assert.ok(result.height > 800, `height ${result.height} should be close to original`);
+  });
+});
+
 /* ── loadModel / isModelLoaded / releaseModel ────────────────────── */
 
 describe('model lifecycle', () => {

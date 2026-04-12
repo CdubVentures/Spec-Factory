@@ -68,9 +68,18 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       appendIndexLabEvents(data as IndexLabEvent[]);
     }
     if (channel === 'operations' && data && typeof data === 'object') {
-      const msg = data as { action?: string; operation?: Operation; id?: string };
+      const msg = data as { action?: string; operation?: Operation; id?: string; call?: unknown };
       if (msg.action === 'upsert' && msg.operation) useOperationsStore.getState().upsert(msg.operation);
       if (msg.action === 'remove' && msg.id) useOperationsStore.getState().remove(msg.id);
+      if (msg.action === 'llm-call-append' && msg.id && msg.call) {
+        useOperationsStore.getState().appendLlmCall(msg.id, msg.call as import('../../../features/operations/state/operationsStore.ts').LlmCallRecord);
+      }
+      if (msg.action === 'llm-call-update' && msg.id && msg.call != null) {
+        const call = msg.call as import('../../../features/operations/state/operationsStore.ts').LlmCallRecord & { callIndex?: number };
+        if (call.callIndex != null) {
+          useOperationsStore.getState().updateLlmCall(msg.id, call.callIndex, call);
+        }
+      }
     }
     if (channel === 'llm-stream' && data && typeof data === 'object') {
       const msg = data as { operationId?: string; text?: string };

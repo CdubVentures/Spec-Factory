@@ -41,6 +41,8 @@
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
   .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
   .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   .tag-green { background: var(--green-bg); color: var(--green); }
   .tag-orange { background: var(--orange-bg); color: var(--orange); }
@@ -75,13 +77,14 @@
   .priority-list li.active strong { color: var(--green); }
   .priority-list li.fallback { border-left-color: var(--orange); }
   .priority-list li.fallback strong { color: var(--orange); }
+  pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Product Image Finder (PIF) Reference</h1>
-  <p>Carousel-based image discovery with per-view LLM search, hero images, and cumulative learning</p>
+  <p>Carousel-based image discovery with per-view LLM search, hero images, RMBG 2.0, and cumulative learning</p>
 </div>
 
 <div class="container">
@@ -113,8 +116,9 @@
       <dt>Dependency</dt><dd>Requires CEF data to build the variant search list</dd>
       <dt>Loop lifecycle</dt><dd>Views (focused, one at a time by priority) &rarr; heroes &rarr; done. Server owns the full lifecycle.</dd>
       <dt>Side-catches</dt><dd>All 8 canonical views are in every prompt. Images for non-focus views are kept if the LLM returns them.</dd>
-      <dt>Accumulation</dt><dd>All images from all runs are kept. No dedup by view &mdash; filenames are unique via <code>-N</code> suffix.</dd>
+      <dt>Accumulation</dt><dd>All images from all runs are kept (overrides default latest-wins). Filenames unique via <code>-N</code> suffix.</dd>
       <dt>Learning</dt><dd>Discovery log (URLs checked, queries run) accumulates per variant across all calls. Each call gets "do not repeat" context.</dd>
+      <dt>Variant stagger</dt><dd>Multiple variants fire with 1-second stagger to spread load.</dd>
     </dl>
   </div>
 </div>
@@ -126,7 +130,7 @@
   <div class="card-header" style="background:var(--purple-bg);">Search Target Resolution from CEF Data</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      PIF builds its search list from CEF's <code>colors</code> array. Each entry becomes a search target.
+      PIF builds its search list from CEF's <code>colors</code> array via <code>buildVariantList({ colors, colorNames, editions })</code>. Each entry becomes a search target.
       The search label is resolved using a strict priority chain.
     </p>
     <ul class="priority-list">
@@ -146,6 +150,10 @@
         <br>Example: <code>"black"</code>.
       </li>
     </ul>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Variant key format</dt><dd><code>color:{atom}</code> for standard colors, <code>edition:{slug}</code> for editions</dd>
+      <dt>Variant type</dt><dd><code>"color"</code> or <code>"edition"</code> &mdash; used for chip styling (CLR/ED)</dd>
+    </dl>
   </div>
 </div>
 
@@ -168,7 +176,7 @@
       </tbody>
     </table>
     <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Sibling exclusion</dt><dd>Known sibling model names listed in prompt as "do NOT return images of these"</dd>
+      <dt>Sibling exclusion</dt><dd>Known sibling model names (from CEF <code>siblings_excluded</code>) listed in prompt as "do NOT return images of these"</dd>
       <dt>Source</dt><dd>Family model count and ambiguity level from <code>resolveIdentityAmbiguitySnapshot</code></dd>
     </dl>
   </div>
@@ -182,7 +190,7 @@
   <div class="card-body">
     <p style="margin-bottom:12px;">
       Every prompt includes all 8 canonical views with full descriptions. The <strong>view budget</strong> controls which views are actively
-      targeted. Views outside the budget are still accepted as side-catches.
+      targeted. Views outside the budget are still accepted as side-catches. View descriptions are <strong>per-category</strong> (e.g. mouse "top" = bird's-eye, keyboard "top" = full layout overhead).
     </p>
     <table>
       <thead><tr><th>View Key</th><th>Description</th></tr></thead>
@@ -214,6 +222,12 @@
         <tr><td>Generic</td><td><code>top, left, angle</code> (3)</td></tr>
       </tbody>
     </table>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Override</dt><dd><code>viewBudget</code> setting (JSON array) overrides category defaults per-category</dd>
+      <dt>Resolution</dt><dd><code>resolveViewBudget(viewBudgetSetting, category)</code> &mdash; parse JSON or fallback to <code>CATEGORY_VIEW_BUDGET_DEFAULTS</code></dd>
+      <dt>Config</dt><dd><code>resolveViewConfig(viewConfigSetting, category)</code> &mdash; ensures all 8 canonical views present; fills missing with category defaults</dd>
+      <dt>Legacy</dt><dd><code>migrateFromLegacyViews(view1, view2, category)</code> migrates old view1/view2 settings</dd>
+    </dl>
   </div>
 </div>
 
@@ -234,10 +248,12 @@
       </tbody>
     </table>
     <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Dimension check</dt><dd>Primary gate &mdash; reads dimensions from file headers (PNG, JPEG, WebP, GIF)</dd>
+      <dt>Dimension check</dt><dd>Primary gate &mdash; <code>readImageDimensions()</code> reads from file headers (PNG, JPEG, WebP, GIF)</dd>
       <dt>File size fallback</dt><dd>Only used when dimensions can't be read (default 30KB min)</dd>
       <dt>Gate behavior</dt><dd>Below-threshold images are rejected and deleted from disk</dd>
       <dt>Per-view in prompt</dt><dd>Each view's min dimensions are printed in the prompt so the LLM knows what to find</dd>
+      <dt>Override</dt><dd><code>viewQualityConfig</code> setting (JSON) overrides category defaults. Resolved by <code>resolveViewQualityConfig()</code></dd>
+      <dt>Generic fallback</dt><dd><code>GENERIC_VIEW_QUALITY_DEFAULT</code> = 600w &times; 400h when no category-specific defaults exist</dd>
     </dl>
   </div>
 </div>
@@ -249,8 +265,8 @@
   <div class="card-header" style="background:var(--purple-bg);">Loop State Machine</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      The carousel loop is a server-side orchestrator that processes one variant at a time, sequentially.
-      For each variant it evaluates the carousel state and decides what to do next.
+      The carousel loop is a server-side orchestrator (<code>runCarouselLoop()</code>) that processes one variant at a time, sequentially.
+      For each variant it calls <code>evaluateCarousel()</code> (pure function) to decide what to do next.
     </p>
     <div class="flow-row" style="flex-wrap:nowrap;">
       <div class="flow-box flow-accent" style="min-width:120px;">Evaluate<br><small>carousel state</small></div>
@@ -268,7 +284,38 @@
       <dt>View done</dt><dd>Satisfied OR exhausted. Move to next unsatisfied view in budget priority order.</dd>
       <dt>Mode transitions</dt><dd>Unsatisfied views remain &rarr; <code>view</code> mode. All views done &rarr; <code>hero</code> mode. Hero done &rarr; <code>complete</code>.</dd>
       <dt>Variants</dt><dd>Processed sequentially (not concurrent) for clean progress reporting</dd>
+      <dt>Estimation</dt><dd><code>estimatedCallsRemaining</code> computed from remaining attempts &times; images needed per view/hero</dd>
     </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">evaluateCarousel() &mdash; Pure Strategy Function</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">Pure function that takes collected images + budgets and returns the next action.</p>
+    <table>
+      <thead><tr><th>Input</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>collectedImages</code></td><td>array</td><td>All images already on disk for this variant</td></tr>
+        <tr><td><code>viewBudget</code></td><td>array</td><td>Ordered list of views to target</td></tr>
+        <tr><td><code>satisfactionThreshold</code></td><td>int</td><td>Images per view to be satisfied</td></tr>
+        <tr><td><code>heroEnabled</code></td><td>boolean</td><td>Whether hero phase is active</td></tr>
+        <tr><td><code>heroCount</code></td><td>int</td><td>Target hero image count</td></tr>
+        <tr><td><code>variantKey</code></td><td>string</td><td>Current variant identifier</td></tr>
+        <tr><td><code>viewAttemptBudget / heroAttemptBudget</code></td><td>int</td><td>Max attempts per view/hero</td></tr>
+      </tbody>
+    </table>
+    <table style="margin-top:12px;">
+      <thead><tr><th>Output</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>mode</code></td><td>string</td><td><code>'view'</code>, <code>'hero'</code>, or <code>'complete'</code></td></tr>
+        <tr><td><code>focusView</code></td><td>string|null</td><td>Highest-priority actionable (unsatisfied &amp; non-exhausted) view</td></tr>
+        <tr><td><code>viewsToSearch</code></td><td>array</td><td>Views to include in this call's prompt</td></tr>
+        <tr><td><code>carouselProgress</code></td><td>object</td><td>Per-view satisfaction + attempt counts</td></tr>
+        <tr><td><code>isComplete</code></td><td>boolean</td><td>All views + heroes satisfied or exhausted</td></tr>
+        <tr><td><code>estimatedCallsRemaining</code></td><td>int</td><td>Estimated LLM calls remaining to fill carousel</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -311,7 +358,7 @@
   <div class="card-header" style="background:var(--teal-bg);">Separate Prompt, Separate Intent</div>
   <div class="card-body">
     <p style="margin-bottom:12px;">
-      Hero search uses a completely different LLM prompt than view search. It targets promotional,
+      Hero search uses a completely different LLM prompt (<code>buildHeroImageFinderPrompt</code>) than view search. It targets promotional,
       marketing, and official render images &mdash; not standard product photography angles.
     </p>
     <div class="two-col">
@@ -341,6 +388,8 @@
       <dt>Attempt budget</dt><dd><code>heroAttemptBudget</code> (default: 3 calls per variant)</dd>
       <dt>Target count</dt><dd><code>heroCount</code> (default: 3 images per variant)</dd>
       <dt>Disableable</dt><dd><code>heroEnabled: false</code> skips hero phase entirely</dd>
+      <dt>RMBG</dt><dd>Hero images are <strong>never</strong> background-removed (they have intentional backgrounds)</dd>
+      <dt>LLM spec</dt><dd><code>HERO_IMAGE_FINDER_SPEC</code> &mdash; phase: <code>imageFinder</code>, reason: <code>hero_image_finding</code></dd>
     </dl>
   </div>
 </div>
@@ -357,11 +406,32 @@
       so the LLM searches new sources instead of repeating prior work.
     </p>
     <dl class="detail-grid">
-      <dt>Accumulation</dt><dd><code>accumulateVariantDiscoveryLog()</code> unions all prior <code>urls_checked</code> and <code>queries_run</code> for the specific variant</dd>
+      <dt>Accumulation</dt><dd><code>accumulateVariantDiscoveryLog(previousRuns, variantKey)</code> unions all prior <code>urls_checked</code> and <code>queries_run</code> for the specific variant</dd>
       <dt>Prompt injection</dt><dd>"Previous searches for this variant (do not repeat &mdash; find NEW sources)"</dd>
       <dt>Scope</dt><dd>Per variant key (e.g. <code>color:black</code>). Different variants have independent discovery histories.</dd>
       <dt>Persistence</dt><dd>Stored in each run's <code>response.discovery_log</code> in the JSON store</dd>
     </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">LLM Response Schema (Zod-validated)</div>
+  <div class="card-body">
+<pre class="json-block">{
+  "images": [
+    {
+      "view": "top",       // enum: top, bottom, left, right, front, rear, sangle, angle, hero
+      "url": "https://...",
+      "source_page": "https://...",
+      "alt_text": "Razer DeathAdder V3 top view"
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": ["https://..."],
+    "queries_run": ["Razer DeathAdder V3 top view high res"],
+    "notes": ["Found official product page with 6 angles"]
+  }
+}</pre>
   </div>
 </div>
 
@@ -377,18 +447,36 @@
       <span style="color:var(--text-muted);">&rarr;</span>
       <span class="tag tag-orange">Quality Gate</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span class="tag tag-green">RMBG 2.0</span>
+      <span class="tag tag-green">Resize 1024x1024</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span class="tag tag-teal">Trim</span>
+      <span class="tag tag-purple">ONNX Inference</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span class="tag tag-purple">Master PNG</span>
+      <span class="tag tag-teal">Alpha Composite</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-accent">Trim Edges</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-green">Master PNG</span>
     </div>
     <dl class="detail-grid">
       <dt>Model</dt><dd>RMBG 2.0 by Bria AI (ONNX, ~366 MB <code>model_int8.onnx</code>)</dd>
       <dt>Location</dt><dd><code>.workspace/models/rmbg-2.0/</code></dd>
-      <dt>Type</dt><dd>Vision segmentation (NOT an LLM) &mdash; CPU inference</dd>
-      <dt>Output</dt><dd>Alpha matte composited onto original &rarr; transparent-edge trimmed &rarr; lossless PNG</dd>
-      <dt>Degradation</dt><dd>If model unavailable, raw download saved as PNG without bg removal (<code>bg_removed: false</code>)</dd>
+      <dt>Type</dt><dd>Vision segmentation (NOT an LLM) &mdash; CPU inference via onnxruntime-node</dd>
+      <dt>Pipeline</dt><dd>Load image &rarr; resize to 1024&times;1024 &rarr; ONNX inference &rarr; generate alpha matte &rarr; composite onto original &rarr; trim transparent edges &rarr; save PNG</dd>
+      <dt>Output metadata</dt><dd><code>{ ok, bytes, width, height, bg_removed, trim_failed }</code></dd>
+      <dt>Degradation</dt><dd>If model unavailable or ONNX throws: raw download saved as PNG without bg removal (<code>bg_removed: false</code>). If trim produces empty canvas: keep pre-trim, flag <code>trim_failed: true</code>.</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Concurrency Model</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Auto-detection</dt><dd>10% of system RAM / 500 MB per slot, capped at CPU core count</dd>
+      <dt>Override</dt><dd><code>rmbgConcurrency</code> setting (per-category) or <code>setInferenceConcurrency(n)</code> programmatic override</dd>
+      <dt>Queue</dt><dd>Queue-based limiter &mdash; excess requests wait for a slot rather than failing</dd>
+      <dt>Lifecycle</dt><dd><code>loadModel()</code> (lazy singleton), <code>isModelLoaded()</code>, <code>releaseModel()</code></dd>
+      <dt>Model download</dt><dd><code>ensureModelReady()</code> &mdash; requires <code>HF_TOKEN</code> env var (HuggingFace gated model). Atomic download (write to .tmp, rename on completion).</dd>
     </dl>
   </div>
 </div>
@@ -400,19 +488,111 @@
   top-black.png              &larr; processed master (transparent, trimmed)
   top-black-2.png            &larr; second image for same view (loop run)
   top-black-3.png            &larr; third image (forced cycle)
-  hero-black.png
+  hero-black.png             &larr; hero image (NOT bg-removed)
   originals/                 &larr; raw downloads preserved as-is
     top-black.jpg
     top-black-2.webp</pre>
     <dl class="detail-grid" style="margin-top:12px;">
       <dt>Filename format</dt><dd><code>{view}-{variant_slug}{-N}{ext}</code> &mdash; dedup suffix auto-increments from existing files on disk</dd>
-      <dt>Cross-run safety</dt><dd><code>viewCounts</code> pre-seeded by scanning existing files, preventing overwrites across loop runs</dd>
+      <dt>Cross-run safety</dt><dd><code>maxDedupN(prefix, filenames)</code> pre-seeds by scanning existing files, preventing overwrites across loop runs</dd>
+      <dt>Stem extraction</dt><dd><code>imageStem(filename)</code> extracts base name without extension for cross-format matching</dd>
     </dl>
   </div>
 </div>
 
-<!-- 9. Settings Reference -->
-<div class="section-title"><span class="num">9</span> Settings Reference</div>
+<!-- 9. Accumulation (overrides default) -->
+<div class="section-title"><span class="num">9</span> Accumulation Model (Override)</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">All-Runs Union (Not Latest-Wins)</div>
+  <div class="card-body">
+    <p>PIF <strong>overrides</strong> the default <code>finderJsonStore</code> latest-wins behavior. Instead, <code>recalculateSelected</code> unions images across ALL non-rejected runs per variant.</p>
+    <dl class="detail-grid">
+      <dt>Rationale</dt><dd>Each variant run adds unique images. Filenames use -N suffix so no manual dedup needed. Carousel strategy uses full image set to determine satisfaction.</dd>
+      <dt>Contrast with CEF</dt><dd>CEF uses default latest-wins (most recent non-rejected run's output is selected). PIF accumulates everything.</dd>
+      <dt>On run delete</dt><dd>Recalculates from remaining runs &mdash; images from the deleted run are removed from selected aggregate.</dd>
+      <dt>Store factory</dt><dd><code>createFinderJsonStore({ filePrefix: 'product_images', emptySelected: () => ({ images: [] }), recalculateSelected: customUnion })</code></dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 10. Fire-and-Forget + Operations -->
+<div class="section-title"><span class="num">10</span> Fire-and-Forget &amp; Operations Tracker</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Async Execution Pattern</div>
+  <div class="card-body">
+    <p>All PIF POST endpoints (single run, loop, process, process-all) use the <code>fireAndForget</code> helper from <code>src/core/operations/fireAndForget.js</code>.</p>
+    <div class="flow-row" style="margin:16px 0;">
+      <div class="flow-box flow-accent" style="min-width:110px;">POST<br><small>client sends</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-neutral" style="min-width:110px;">Register Op<br><small>in-memory</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass" style="min-width:110px;">202 Accepted<br><small>{ operationId }</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal" style="min-width:110px;">Async Work<br><small>LLM + download</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair" style="min-width:110px;">WS Broadcast<br><small>data-change</small></div>
+    </div>
+    <dl class="detail-grid">
+      <dt>Operation type</dt><dd><code>'pif'</code> (single run/loop) or <code>'pif'</code> with subType</dd>
+      <dt>Stages</dt><dd>Varies: <code>['LLM', 'Download', 'Process']</code> for single run; loop has dynamic stages</dd>
+      <dt>Stream</dt><dd>LLM reasoning tokens streamed via WS <code>'llm-stream'</code> channel</dd>
+      <dt>Loop progress</dt><dd><code>updateLoopProgress({ id, loopProgress })</code> &mdash; structured carousel grid state broadcast to frontend</dd>
+      <dt>Completion</dt><dd>Operation completed/failed &rarr; data-change event &rarr; frontend query invalidation</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Data-Change Events</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Event</th><th>Extra Domains</th><th>Trigger</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>product-image-finder-run</code></td>
+          <td>&mdash;</td>
+          <td>Single LLM run completes</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-loop</code></td>
+          <td>&mdash;</td>
+          <td>Carousel loop completes (all variants done)</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-image-processed</code></td>
+          <td>&mdash;</td>
+          <td>Single image RMBG processing completes</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-batch-processed</code></td>
+          <td>&mdash;</td>
+          <td>Batch RMBG process-all completes</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-image-deleted</code></td>
+          <td>&mdash;</td>
+          <td>Single image deleted</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-run-deleted</code></td>
+          <td>&mdash;</td>
+          <td>Single run deleted</td>
+        </tr>
+        <tr>
+          <td><code>product-image-finder-deleted</code></td>
+          <td>&mdash;</td>
+          <td>All runs + images deleted</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;"><strong>Note:</strong> Unlike CEF, PIF events do not add extra invalidation domains (images are artifacts, not spec fields).</p>
+  </div>
+</div>
+
+<!-- 11. Settings Reference -->
+<div class="section-title"><span class="num">11</span> Settings Reference</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--accent-light);">Per-Category PIF Settings</div>
@@ -426,6 +606,7 @@
         <tr><td><code>minWidth</code></td><td><code>800</code></td><td>Global fallback minimum width (used when no per-view config)</td></tr>
         <tr><td><code>minHeight</code></td><td><code>600</code></td><td>Global fallback minimum height</td></tr>
         <tr><td><code>minFileSize</code></td><td><code>50000</code></td><td>Fallback file size gate (bytes) when dimensions unreadable</td></tr>
+        <tr><td><code>rmbgConcurrency</code></td><td><em>auto</em></td><td>Override RMBG inference slot count (auto = 10% RAM / 500MB, capped at CPU cores)</td></tr>
         <tr><td><code>satisfactionThreshold</code></td><td><code>3</code></td><td>Quality images per view to consider that view "satisfied"</td></tr>
         <tr><td><code>viewAttemptBudget</code></td><td><code>5</code></td><td>Max LLM calls per view before moving on (exhaustion)</td></tr>
         <tr><td><code>heroEnabled</code></td><td><code>true</code></td><td>Whether hero search phase is active</td></tr>
@@ -438,54 +619,147 @@
   </div>
 </div>
 
-<!-- 10. Image Serving -->
-<div class="section-title"><span class="num">10</span> API Endpoints</div>
+<!-- 12. API Endpoints -->
+<div class="section-title"><span class="num">12</span> API Endpoints</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--surface-alt);">Routes</div>
+  <div class="card-header" style="background:var(--surface-alt);">REST Routes (prefix: <code>/product-image-finder</code>)</div>
   <div class="card-body">
     <table>
-      <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+      <thead><tr><th>Method</th><th>Endpoint</th><th>Response</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid</code></td><td>Full product state: images, runs, carousel progress</td></tr>
-        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid</code></td><td>Single LLM run (body: <code>{ variant_key?, mode? }</code>)</td></tr>
-        <tr><td><span class="tag tag-purple">POST</span></td><td><code>/:cat/:pid/loop</code></td><td>Carousel loop (body: <code>{ variant_key? }</code>). Views &rarr; heroes &rarr; done.</td></tr>
-        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid/images/:file/process</code></td><td>Run RMBG on a single image</td></tr>
-        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/:file</code></td><td>Serve master image</td></tr>
-        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/originals/:file</code></td><td>Serve original download</td></tr>
-        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/images/:file</code></td><td>Delete single image (master + original)</td></tr>
-        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/runs/:n</code></td><td>Delete single run + associated images</td></tr>
-        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid</code></td><td>Delete all runs + all images</td></tr>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid</code></td><td>200</td><td>Full product state: images (with backfilled dimensions), runs, carousel progress per variant</td></tr>
+        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid</code></td><td>202</td><td>Single LLM run (body: <code>{ variant_key?, mode? }</code>). Fire-and-forget.</td></tr>
+        <tr><td><span class="tag tag-purple">POST</span></td><td><code>/:cat/:pid/loop</code></td><td>202</td><td>Carousel loop (body: <code>{ variant_key? }</code>). Views &rarr; heroes &rarr; done. Fire-and-forget.</td></tr>
+        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid/images/:file/process</code></td><td>202</td><td>Run RMBG on a single image. Fire-and-forget.</td></tr>
+        <tr><td><span class="tag tag-accent">POST</span></td><td><code>/:cat/:pid/process-all</code></td><td>202</td><td>Run RMBG on all unprocessed images. Fire-and-forget batch.</td></tr>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/:file</code></td><td>200</td><td>Serve master PNG image (Content-Type: image/png)</td></tr>
+        <tr><td><span class="tag tag-green">GET</span></td><td><code>/:cat/:pid/images/originals/:file</code></td><td>200</td><td>Serve original downloaded file (original Content-Type)</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/images/:file</code></td><td>200</td><td>Delete single image (master + original from disk)</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid/runs/:n</code></td><td>200</td><td>Delete single run + associated images. Recalculates selected.</td></tr>
+        <tr><td><span class="tag tag-red">DELETE</span></td><td><code>/:cat/:pid</code></td><td>200</td><td>Delete all runs + all images + JSON file</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- 11. Architecture -->
-<div class="section-title"><span class="num">11</span> Architecture</div>
+<!-- 13. Architecture -->
+<div class="section-title"><span class="num">13</span> Architecture</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--surface-alt);">Module Architecture</div>
+  <div class="card-header" style="background:var(--surface-alt);">Module Details</div>
   <div class="card-body">
     <dl class="detail-grid" style="grid-template-columns: 180px 1fr;">
       <dt>Module ID</dt><dd><code>productImageFinder</code></dd>
+      <dt>Module Type</dt><dd><code>pif</code></dd>
       <dt>Phase</dt><dd><code>imageFinder</code></dd>
       <dt>Route prefix</dt><dd><code>product-image-finder</code></dd>
-      <dt>DB Tables</dt><dd><code>product_image_finder</code> + <code>_runs</code> + <code>_settings</code></dd>
+      <dt>Chip Style</dt><dd><code>sf-chip-info</code></dd>
+      <dt>Field Keys</dt><dd><code>[]</code> (PIF doesn't populate field candidates)</dd>
+      <dt>DB Tables</dt><dd><code>product_image_finder</code> (summary) + <code>_runs</code> (history) + <code>_settings</code> (per-category config)</dd>
       <dt>JSON Store</dt><dd><code>.workspace/products/{pid}/product_images.json</code></dd>
       <dt>Cooldown</dt><dd>30 days</dd>
-      <dt>Accumulation</dt><dd>All images from all non-rejected runs. No per-view dedup &mdash; filenames are unique.</dd>
+      <dt>Accumulation</dt><dd>All images from all non-rejected runs. Overrides default latest-wins with custom union.</dd>
       <dt>Loop orchestrator</dt><dd><code>runCarouselLoop()</code> &mdash; sequential per variant, re-reads disk after each call</dd>
       <dt>Strategy engine</dt><dd><code>evaluateCarousel()</code> &mdash; pure function, attempt tracking, focus view selection</dd>
     </dl>
   </div>
 </div>
 
-<!-- 12. GUI Panel -->
-<div class="section-title"><span class="num">12</span> GUI Panel</div>
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Dual-State Architecture</div>
+  <div class="card-body">
+    <dl class="detail-grid" style="grid-template-columns: 130px 1fr;">
+      <dt>JSON (SSOT)</dt><dd><code>.workspace/products/{pid}/product_images.json</code> &mdash; durable memory, audit trail. Contains <code>selected</code> (accumulated images), all <code>runs[]</code> with prompt/response, <code>next_run_number</code>.</dd>
+      <dt>SQL (projection)</dt><dd>Summary table: <code>product_id, category, images (JSON), image_count, cooldown_until, latest_ran_at, run_count</code>. Runs table: <code>run_number, ran_at, model, fallback_used, selected_json, prompt_json, response_json</code>.</dd>
+      <dt>Rebuild</dt><dd>SQL projection rebuilt from JSON store on DB deletion (Deleted-DB Rebuild contract).</dd>
+      <dt>Image files</dt><dd>Master PNGs + originals stored on disk separately from JSON/SQL. JSON tracks metadata; disk holds bytes.</dd>
+    </dl>
+  </div>
+</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--purple-bg);">Panel Layout</div>
+  <div class="card-header" style="background:var(--accent-light);">LLM Phase Specs</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Spec</th><th>Phase</th><th>Reason</th><th>Role</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>PRODUCT_IMAGE_FINDER_SPEC</code></td>
+          <td><code>imageFinder</code></td>
+          <td><code>product_image_finding</code></td>
+          <td><code>triage</code></td>
+          <td>Standard view-based image search</td>
+        </tr>
+        <tr>
+          <td><code>HERO_IMAGE_FINDER_SPEC</code></td>
+          <td><code>imageFinder</code></td>
+          <td><code>hero_image_finding</code></td>
+          <td><code>triage</code></td>
+          <td>Hero/promotional image search (separate prompt)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 14. Shared Infrastructure -->
+<div class="section-title"><span class="num">14</span> Shared Infrastructure Dependencies</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Backend Shared Modules</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Module</th><th>Location</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td><code>finderModuleRegistry</code></td><td><code>src/core/finder/</code></td><td>PIF registered as O(1) entry. Drives DDL, routes, operations labels, data-change events, settings defaults.</td></tr>
+        <tr><td><code>finderJsonStore</code></td><td><code>src/core/finder/</code></td><td>Generic JSON store factory. PIF overrides <code>recalculateSelected</code> for accumulation.</td></tr>
+        <tr><td><code>finderSqlStore</code></td><td><code>src/core/finder/</code></td><td>Generic SQL store factory for summary + runs + settings tables.</td></tr>
+        <tr><td><code>createFinderRouteHandler</code></td><td><code>src/core/finder/finderRoutes.js</code></td><td>Generic route handler for GET/POST/DELETE. PIF adds custom routes for images, loop, process.</td></tr>
+        <tr><td><code>fireAndForget</code></td><td><code>src/core/operations/fireAndForget.js</code></td><td>202 Accepted pattern + async background work + data-change emit.</td></tr>
+        <tr><td><code>operationsRegistry</code></td><td><code>src/core/operations/</code></td><td>In-memory operation tracker with WS broadcasts. PIF uses <code>updateLoopProgress</code> for carousel state.</td></tr>
+        <tr><td><code>dataChangeContract</code></td><td><code>src/core/events/</code></td><td>Data-change event broadcast. PIF has 7 event types (more than any other module).</td></tr>
+        <tr><td><code>buildLlmCallDeps</code></td><td><code>src/core/llm/</code></td><td>Assembles LLM call dependencies.</td></tr>
+        <tr><td><code>createPhaseCallLlm</code></td><td><code>src/features/indexing/pipeline/shared/</code></td><td>Generic phase adapter. PIF creates two callers: view + hero.</td></tr>
+        <tr><td><code>streamBatcher</code></td><td><code>src/core/llm/</code></td><td>Batches LLM stream deltas for efficient WS broadcast.</td></tr>
+        <tr><td><code>identityHelpers</code></td><td><code>src/features/indexing/orchestration/shared/</code></td><td><code>resolveIdentityAmbiguitySnapshot()</code> for family context.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Frontend Shared Components</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Component / Hook</th><th>Location</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td><code>FinderPanelHeader</code></td><td><code>shared/ui/finder/</code></td><td>Collapse toggle, title, "PIF" chip (<code>sf-chip-info</code>), status chip, model badge, Loop button</td></tr>
+        <tr><td><code>FinderKpiCard</code></td><td><code>shared/ui/finder/</code></td><td>Metric cards (Images, Variants, Runs, Carousel progress)</td></tr>
+        <tr><td><code>FinderCooldownStrip</code></td><td><code>shared/ui/finder/</code></td><td>30-day cooldown progress bar</td></tr>
+        <tr><td><code>FinderPanelFooter</code></td><td><code>shared/ui/finder/</code></td><td>Last run date, model badge, run count</td></tr>
+        <tr><td><code>FinderDeleteConfirmModal</code></td><td><code>shared/ui/finder/</code></td><td>Delete confirmation (run, image, or all)</td></tr>
+        <tr><td><code>FinderSectionCard</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible section card for run history, gallery</td></tr>
+        <tr><td><code>FinderRunPromptDetails</code></td><td><code>shared/ui/finder/</code></td><td>Expandable prompt/response viewer per run</td></tr>
+        <tr><td><code>FinderRunTimestamp</code></td><td><code>shared/ui/finder/</code></td><td>PST time + duration</td></tr>
+        <tr><td><code>useResolvedFinderModel</code></td><td><code>shared/ui/finder/</code></td><td>Resolve LLM model + access mode for imageFinder phase</td></tr>
+        <tr><td><code>deriveCooldownState</code></td><td><code>shared/ui/finder/</code></td><td>Pure function cooldown state</td></tr>
+        <tr><td><code>deriveFinderStatusChip</code></td><td><code>shared/ui/finder/</code></td><td>Pure function status chip</td></tr>
+        <tr><td><code>formatAtomLabel</code></td><td><code>shared/ui/finder/</code></td><td>Titlecase raw color atoms for variant labels</td></tr>
+        <tr><td><code>useFireAndForget</code></td><td><code>features/operations/hooks/</code></td><td>Optimistic insert + POST + stub lifecycle. Used for run, loop, and process.</td></tr>
+        <tr><td><code>useOperationsStore</code></td><td><code>features/operations/state/</code></td><td>Zustand store: track running operations, check if loop is pending</td></tr>
+        <tr><td><code>usePersistedToggle</code></td><td><code>shared hooks</code></td><td>Persist collapsed/expanded panel state</td></tr>
+        <tr><td><code>useColorEditionFinderQuery</code></td><td><code>features/color-edition-finder/</code></td><td>Cross-feature: reads CEF data to build variant list and color swatches</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 15. GUI Panel -->
+<div class="section-title"><span class="num">15</span> Frontend Panel Architecture</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">ProductImageFinderPanel Layout</div>
   <div class="card-body">
 
     <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Header</p>
@@ -502,9 +776,14 @@
       <div class="flow-box flow-pass" style="min-width:100px; border-width:1px;">Carousel<br><small>views filled/total</small></div>
     </div>
 
+    <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">CEF Gate</p>
+    <p style="font-size:13.5px; margin-bottom:16px;">
+      Panel requires CEF data before PIF can run. Reads colors from <code>useColorEditionFinderQuery</code> to build variant list and color swatches (multi-color gradient support).
+    </p>
+
     <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Per-Variant Row</p>
     <p style="font-size:13.5px; margin-bottom:6px;">
-      Each variant shows: type chip (CLR/ED), label, image count, carousel progress, and three buttons:
+      Each variant shows: type chip (CLR/ED), label with color swatch, image count, carousel progress, and three buttons:
     </p>
     <div class="flow-row" style="justify-content:flex-start; margin:8px 0 16px;">
       <div class="flow-box flow-accent" style="min-width:60px; padding:6px 14px; border-width:1px; font-size:12px;">View</div>
@@ -516,16 +795,18 @@
       <dt>Hero</dt><dd>Single hero-mode LLM call for this variant. Never locked. Hidden when <code>heroEnabled: false</code>.</dd>
       <dt>Loop</dt><dd>Full carousel loop for this variant. Disabled only when a loop is already pending.</dd>
       <dt>Progress</dt><dd>Carousel progress label: <code>2/6 views &middot; 1/3 heroes</code></dd>
+      <dt>Color swatches</dt><dd>Multi-color gradient for combo variants (e.g. <code>dark-gray+black+orange</code> shows 3-color gradient circle)</dd>
     </dl>
 
     <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; margin-top:16px;">All Images Gallery</p>
     <p style="font-size:13.5px; margin-bottom:6px;">
-      Every image from every run displayed grouped by variant. Click for full-size lightbox with original comparison.
+      Every image from every run displayed, organized by <code>groupImagesByVariant()</code> (CEF color order) and sorted within by <code>sortByTypeAndSize()</code> (view type, then pixel area). Click for full-size lightbox with original comparison.
     </p>
     <dl class="detail-grid">
       <dt>Process button</dt><dd>Per-image RMBG processing. "Process All" for batch.</dd>
       <dt>Delete button</dt><dd>Per-image deletion (master + original).</dd>
       <dt>Quality badges</dt><dd><span class="tag tag-red">LOW</span> for failed quality gate. <span class="tag tag-accent">RAW</span> for unprocessed.</dd>
+      <dt>Dimension display</dt><dd><code>formatDims(w, h)</code> + <code>formatBytes(bytes)</code> on each thumbnail</dd>
     </dl>
 
     <p style="font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; margin-top:16px;">Run History</p>
@@ -535,9 +816,40 @@
   </div>
 </div>
 
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Frontend Type Contracts (types.ts)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Type</th><th>Key Fields</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>ProductImageEntry</code></td>
+          <td><code>view, filename, url, source_page, alt_text, bytes, width, height, quality_pass, variant_key, variant_label, variant_type, downloaded_at, original_filename?, bg_removed?, original_format?, trim_failed?</code></td>
+        </tr>
+        <tr>
+          <td><code>ProductImageFinderRun</code></td>
+          <td><code>run_number, ran_at, model, fallback_used, mode?, loop_id?, started_at?, duration_ms?, selected, prompt, response</code></td>
+        </tr>
+        <tr>
+          <td><code>CarouselProgress</code></td>
+          <td>Per-variant carousel state: views filled, heroes collected, attempt counts</td>
+        </tr>
+        <tr>
+          <td><code>ProductImageFinderResult</code></td>
+          <td>GET response: <code>images, image_count, cooldown, run_count, selected, runs, carouselProgress</code></td>
+        </tr>
+        <tr>
+          <td><code>VariantInfo</code></td>
+          <td><code>key, label, type</code> &mdash; variant metadata derived from CEF</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Generated from source &mdash; Spec Factory Product Image Finder (PIF)<br>
-  Carousel loop &bull; per-view focus &bull; cumulative learning &bull; RMBG 2.0 &bull; 8-view vocabulary
+  Generated from live source audit &mdash; Spec Factory Product Image Finder (PIF)<br>
+  Carousel loop &bull; per-view focus &bull; cumulative learning &bull; RMBG 2.0 &bull; 8-view vocabulary &bull; fire-and-forget &bull; 7 data-change events
 </div>
 
 </div>
