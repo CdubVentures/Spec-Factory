@@ -386,6 +386,7 @@ function GalleryCard({
   img,
   category,
   productId,
+  hexParts,
   onOpen,
   onDelete,
   onProcess,
@@ -394,6 +395,7 @@ function GalleryCard({
   readonly img: GalleryImage;
   readonly category: string;
   readonly productId: string;
+  readonly hexParts: readonly string[];
   readonly onOpen: () => void;
   readonly onDelete: (filename: string) => void;
   readonly onProcess: (filename: string) => void;
@@ -436,6 +438,7 @@ function GalleryCard({
       {/* Meta */}
       <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
         <div className="flex items-center gap-1.5">
+          <ColorSwatch hexParts={hexParts} />
           <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">{img.view}</span>
           {!passesQuality && <Chip label="low" className="sf-chip-danger" />}
           {img.bg_removed === false && img.original_filename && <Chip label="RAW" className="sf-chip-neutral" />}
@@ -481,14 +484,15 @@ function GalleryCard({
               delete
             </button>
           )}
+          <div className="flex-1" />
+          <span
+            className="flex items-center justify-center rounded-full font-mono pointer-events-none"
+            style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
+            title={`Run ${img.run_number}`}
+          >
+            {img.run_number}
+          </span>
         </div>
-      </div>
-
-      {/* Run number — bottom of card */}
-      <div className="px-2.5 py-1 border-t sf-border-soft text-center">
-        <span className="text-[8px] font-mono sf-text-muted">
-          run {img.run_number}
-        </span>
       </div>
     </div>
   );
@@ -1122,6 +1126,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               <div style={{ columns: 2, columnGap: '0.75rem' }}>
                 {imageGroups.map(group => {
                   const isOpen = expandedImageGroups.has(group.key);
+                  const groupColorAtoms = resolveVariantColorAtoms(group.key, editions);
+                  const groupHexParts = groupColorAtoms.map(a => hexMap.get(a.trim()) || '');
                   return (
                     <div key={group.key} className="break-inside-avoid mb-3 sf-surface-panel rounded-lg overflow-hidden">
                       <div
@@ -1156,6 +1162,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                                 img={img}
                                 category={category}
                                 productId={productId}
+                                hexParts={groupHexParts}
                                 onOpen={() => setLightboxImg(img)}
                                 onDelete={(filename) => deleteImageMut.mutate(filename)}
                                 onProcess={handleProcessImage}
