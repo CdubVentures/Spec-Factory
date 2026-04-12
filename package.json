@@ -39,6 +39,7 @@
     "chokidar": "^4.0.3",
     "crawlee": "^3.16.0",
     "jsdom": "^28.1.0",
+    "onnxruntime-node": "^1.24.3",
     "pdf-parse": "^1.1.4",
     "playwright": "^1.58.2",
     "playwright-autoconsent": "^1.0.4",

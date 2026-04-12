@@ -114,8 +114,6 @@ export function reviewKeys(storage, category, productId) {
     legacyReviewBase,
     candidatesKey: `${reviewBase}/candidates.json`,
     legacyCandidatesKey: `${legacyReviewBase}/candidates.json`,
-    reviewQueueKey: `${reviewBase}/review_queue.json`,
-    legacyReviewQueueKey: `${legacyReviewBase}/review_queue.json`,
     productKey: `${reviewBase}/product.json`,
     legacyProductKey: `${legacyReviewBase}/product.json`
   };
@@ -139,45 +137,6 @@ export function normalizeFieldContract(rule = {}) {
     enum_source: enu?.source || null,
     min_evidence_refs: toInt(evidence.min_evidence_refs, 1),
   };
-}
-
-// ── Flag Inference ──────────────────────────────────────────────────
-
-export const REAL_FLAG_CODES = new Set([
-  'variance_violation',
-  'constraint_conflict',
-  'compound_range_conflict',
-  'dependency_missing',
-  'new_component',
-  'new_enum_value',
-  'below_min_evidence',
-]);
-
-export function inferFlags({ reasonCodes = [], fieldRule = {}, candidates = [], acceptedCandidateId = null, overridden = false, evidenceSourceCount = null }) {
-  const flags = [];
-  for (const code of reasonCodes) {
-    if (REAL_FLAG_CODES.has(code)) flags.push(code);
-  }
-  const minRefs = toInt(fieldRule.min_evidence_refs, 1);
-  if (minRefs > 1 && !overridden) {
-    // WHY: Synthetic candidates are placeholders for the selected value, not independent evidence.
-    // Only real candidates from distinct sources count toward the evidence requirement.
-    const realCandidates = toArray(candidates).filter(c => !c.is_synthetic_selected);
-    const distinctSources = new Set(
-      realCandidates
-        .map(c => String(c.source_id || c.source_host || c.host || '').trim().toLowerCase())
-        .filter(Boolean)
-    );
-    // WHY: In specDb mode, real candidates may not exist but the summary field_reasoning
-    // preserves the original source count from the pipeline run. Use that as fallback.
-    const effectiveSourceCount = distinctSources.size > 0
-      ? distinctSources.size
-      : toInt(evidenceSourceCount, 0);
-    if (effectiveSourceCount > 0 && effectiveSourceCount < minRefs) {
-      flags.push('below_min_evidence');
-    }
-  }
-  return [...new Set(flags)];
 }
 
 // ── Storage Write ───────────────────────────────────────────────────
@@ -232,35 +191,6 @@ export function candidateScore(candidate = {}, provenanceRow = {}) {
   return candidate.approvedDomain ? 0.8 : 0.5;
 }
 
-export function inferReasonCodes({
-  field,
-  selectedValue,
-  selectedConfidence,
-  summary,
-  hasConflict = false,
-  hasCompoundConflict = false
-}) {
-  const reasons = [];
-  const below = new Set(toArray(summary.fields_below_pass_target).map((item) => normalizeField(item)));
-  const criticalBelow = new Set(toArray(summary.critical_fields_below_pass_target).map((item) => normalizeField(item)));
-  const missingRequired = new Set(toArray(summary.missing_required_fields).map((item) => normalizeField(item)));
-  const normalizedField = normalizeField(field);
-  const fieldReasoning = isObject(summary.field_reasoning?.[field])
-    ? summary.field_reasoning[field]
-    : (isObject(summary.field_reasoning?.[normalizedField]) ? summary.field_reasoning[normalizedField] : {});
-
-  if (hasCompoundConflict) {
-    reasons.push('compound_range_conflict');
-  } else if (hasConflict) {
-    reasons.push('constraint_conflict');
-  }
-  const unknownReason = String(fieldReasoning.unknown_reason || '').trim();
-  if (unknownReason) {
-    reasons.push(unknownReason);
-  }
-  return [...new Set(reasons)];
-}
-
 // ── Source Labels ───────────────────────────────────────────────────
 
 export function dbSourceLabel(source) {
@@ -303,21 +233,3 @@ export function candidateSourceLabel(candidate = {}, evidence = {}) {
   return extractHostFromUrl(evidenceUrl);
 }
 
-// ── Queue Scoring ───────────────────────────────────────────────────
-
-// parseDateMs consolidated into reviewNormalization.js — import from there
-
-export function urgencyScore(row = {}) {
-  const flags = toInt(row.flags, 0);
-  const confidence = toNumber(row.confidence, 0);
-  const coverage = toNumber(row.coverage, 0);
-  let score = flags * 100;
-  score += Math.max(0, (0.9 - confidence) * 40);
-  if (coverage < 0.85) {
-    score += 10;
-  }
-  if (normalizeToken(row.status) === 'needs_manual') {
-    score += 20;
-  }
-  return score;
-}

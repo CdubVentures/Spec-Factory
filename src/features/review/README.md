@@ -18,11 +18,11 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 ## Public API (The Contract)
 - `src/features/review/index.js` exports:
   - `registerReviewRoutes`, `createReviewRouteContext` (HTTP surface)
-  - Grid assembly: `buildFieldLabelsMap`, `buildReviewLayout`, `readLatestArtifacts`, `buildFieldState`, `buildProductReviewPayload`, `writeProductReviewArtifacts`, `buildReviewQueue`, `writeCategoryReviewArtifacts`
+  - Grid assembly: `buildFieldLabelsMap`, `buildReviewLayout`, `readLatestArtifacts`, `buildFieldState`, `buildProductReviewPayload`, `writeProductReviewArtifacts`
   - Overrides: `resolveOverrideFilePath`, `readReviewArtifacts`, `setOverrideFromCandidate`, `setManualOverride`, `approveGreenOverrides`, `buildReviewMetrics`, `finalizeOverrides`
   - Component/enum review: `resolvePropertyFieldMeta`, `buildComponentReviewLayout`, `buildComponentReviewPayloads`, `buildEnumReviewPayloads`
   - Cascade impact: `findProductsReferencingComponent`, `cascadeComponentChange`, `cascadeEnumChange`
-  - Utilities: `normalizeFieldKey`, `applySharedLaneState`, `confidenceColor`, `runQaJudge`, `startReviewQueueWebSocket`, `appendReviewSuggestion`, `evaluateVariance`, `evaluateVarianceBatch`
+  - Utilities: `normalizeFieldKey`, `confidenceColor`, `runQaJudge`, `evaluateVariance`, `evaluateVarianceBatch`
 - Consumers must import from `index.js`, not from internal paths.
 
 ### Services (domain logic, stateless exports)

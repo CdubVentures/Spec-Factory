@@ -194,7 +194,7 @@ function ValueRow({
           className="flex-1 min-w-0"
           valueMaxChars={linkedCount > 0 ? 36 : 48}
           showConfidence
-          pendingAI={isPipelineReview}
+          pendingAIShared={isPipelineReview}
           showLinkedProductBadge={debugLinkedProducts}
           linkedProductCount={linkedCount}
         />
@@ -805,7 +805,7 @@ export function EnumSubTab({
                 }}
                 badges={drawerBadges}
                 isCurrentAccepted={isAccepted}
-                pendingAIConfirmation={hasSharedPending}
+                pendingAIShared={hasSharedPending}
                 pendingSharedCandidateIds={pendingSharedCandidateIds}
                 candidateUiContext="shared"
                 showCandidateDebugIds={debugLinkedProducts}

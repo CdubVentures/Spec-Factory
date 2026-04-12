@@ -118,18 +118,15 @@ test('normalizeCandidate validates url fields and resolves component_ref aliases
   }
 });
 
-test('normalizeCandidate reports curation signal for open enums', async () => {
+test('normalizeCandidate accepts open enum values', async () => {
   const fixture = await createAdvancedEngineFixtureRoot();
   try {
     const engine = await FieldRulesEngine.create('mouse', {
       config: { categoryAuthorityRoot: fixture.helperRoot }
     });
-    const curationQueue = [];
-    const row = engine.normalizeCandidate('coating', 'satin microtexture', { curationQueue });
+    const row = engine.normalizeCandidate('coating', 'satin microtexture', {});
     assert.equal(row.ok, true);
     assert.equal(row.normalized, 'satin microtexture');
-    assert.equal(curationQueue.length, 1);
-    assert.equal(curationQueue[0].field_key, 'coating');
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }

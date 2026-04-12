@@ -887,7 +887,7 @@ export function ComponentReviewDrawer({
         }}
         badges={badges}
         isCurrentAccepted={isAccepted}
-        pendingAIConfirmation={hasSharedPending}
+        pendingAIShared={hasSharedPending}
         pendingSharedCandidateIds={pendingSharedCandidateIds}
         candidateUiContext="shared"
         showCandidateDebugIds={debugLinkedProducts}
@@ -1015,7 +1015,7 @@ export function ComponentReviewDrawer({
         }}
         badges={badges}
         isCurrentAccepted={isAccepted}
-        pendingAIConfirmation={hasSharedPending}
+        pendingAIShared={hasSharedPending}
         pendingSharedCandidateIds={pendingSharedCandidateIds}
         candidateUiContext="shared"
         showCandidateDebugIds={debugLinkedProducts}

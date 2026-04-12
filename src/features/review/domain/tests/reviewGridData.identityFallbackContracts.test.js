@@ -1,73 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 
 import {
   buildProductReviewPayload,
-  buildReviewQueue,
-  makeStorage,
-  seedCategoryArtifacts,
-  seedLatestArtifacts,
-  seedQueueState,
-} from './helpers/reviewGridDataHarness.js';
+  CATEGORY,
+  withSeededSpecDbFixture,
+} from '../../tests/helpers/reviewEcosystemHarness.js';
 
-// WHY: Product IDs are opaque hex tokens. inferIdentityFromProductId was gutted
-// (always returns empty). Identity comes from catalog/specDb, not from the ID string.
-test('review payload returns empty identity when catalog and db have no identity data', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-identity-fallback-'));
-  const storage = makeStorage(tempRoot);
-  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
-  const category = 'mouse';
-  const productId = 'mouse-a1b2c3d4';
-
-  try {
-    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
-    await seedLatestArtifacts(storage, category, productId, {
-      identity: {},
-    });
-
+test('review payload returns empty identity when catalog and db have no identity data', { timeout: 30_000 }, async () => {
+  await withSeededSpecDbFixture(async ({ storage, config, db }) => {
     const payload = await buildProductReviewPayload({
       storage,
       config,
-      category,
-      productId,
+      category: CATEGORY,
+      productId: 'mouse-nonexistent-product',
+      specDb: db,
       includeCandidates: false,
     });
     assert.equal(payload.identity.brand, '');
     assert.equal(payload.identity.base_model, '');
     assert.equal(payload.identity.model, '');
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+  });
 });
 
-test('review payload uses catalog identity when available', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-identity-catalog-'));
-  const storage = makeStorage(tempRoot);
-  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
-  const category = 'mouse';
-  const productId = 'mouse-a1b2c3d4';
-
-  try {
-    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
-    await seedLatestArtifacts(storage, category, productId, {
-      identity: { brand: 'Acer', base_model: 'Cestus', model: 'Cestus 310', variant: '310' },
-    });
-
+test('review payload uses catalog identity when available', { timeout: 30_000 }, async () => {
+  await withSeededSpecDbFixture(async ({ storage, config, db }) => {
     const payload = await buildProductReviewPayload({
       storage,
       config,
-      category,
-      productId,
+      category: CATEGORY,
+      productId: 'mouse-razer-viper-v3-pro',
+      specDb: db,
+      catalogProduct: { brand: 'Razer', base_model: 'Viper V3 Pro', model: 'Viper V3 Pro', variant: '' },
       includeCandidates: false,
     });
-    assert.equal(payload.identity.brand, 'Acer');
-    assert.equal(payload.identity.base_model, 'Cestus');
-    assert.equal(payload.identity.model, 'Cestus 310');
-    assert.equal(payload.identity.variant, '310');
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+    assert.equal(payload.identity.brand, 'Razer');
+    assert.equal(payload.identity.base_model, 'Viper V3 Pro');
+    assert.equal(payload.identity.model, 'Viper V3 Pro');
+  });
 });

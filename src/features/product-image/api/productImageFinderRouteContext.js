@@ -2,7 +2,7 @@
  * Product Image Finder — route context injection.
  */
 
-import { runProductImageFinder } from '../productImageFinder.js';
+import { runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { deleteProductImageFinderRun, deleteProductImageFinderAll } from '../productImageStore.js';
 
 export function createProductImageFinderRouteContext(options = {}) {
@@ -14,7 +14,7 @@ export function createProductImageFinderRouteContext(options = {}) {
 
   return {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    logger, runProductImageFinder,
+    logger, runProductImageFinder, runCarouselLoop,
     deleteProductImageFinderRun, deleteProductImageFinderAll,
   };
 }

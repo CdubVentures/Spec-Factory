@@ -258,8 +258,6 @@ export function createComponentStore({ db, category, stmts }) {
         }
       }
 
-      // Phase 1b: key_review_state table retired — no merge needed.
-
       db.prepare('DELETE FROM component_identity WHERE id = ? AND category = ?').run(sourceId, category);
     });
     tx();

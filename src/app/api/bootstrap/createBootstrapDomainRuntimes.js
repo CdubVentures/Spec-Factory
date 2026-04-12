@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createReviewCandidateRuntime } from '../../../features/review/domain/reviewCandidateRuntime.js';
+import { normalizeLower, isMeaningfulValue, candidateLooksReference } from '../../../features/review/domain/reviewCandidateRuntime.js';
 import {
   createCatalogBuilder,
   createCompiledComponentDbPatcher,
@@ -10,14 +10,6 @@ import { safeReadJson, listFiles } from '../../../shared/fileHelpers.js';
 export function createBootstrapDomainRuntimes({
   config, HELPER_ROOT, storage, getSpecDb, cleanVariant,
 }) {
-  const {
-    normalizeLower,
-    isMeaningfulValue,
-    candidateLooksReference,
-    remapPendingComponentReviewItemsForNameChange,
-  } = createReviewCandidateRuntime({
-    getSpecDb,
-  });
 
   // ── Catalog builder (SQL-first: reads from specDb products + queue tables) ──
   const buildCatalog = createCatalogBuilder({
@@ -38,7 +30,6 @@ export function createBootstrapDomainRuntimes({
   return {
     // Review candidate
     normalizeLower, isMeaningfulValue, candidateLooksReference,
-    remapPendingComponentReviewItemsForNameChange,
     // Catalog
     buildCatalog, patchCompiledComponentDb,
   };

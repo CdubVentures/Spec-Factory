@@ -71,7 +71,6 @@ export function buildCategorySurfaces(steps) {
         removed_value_rows: beforeResult?.removed_value_rows ?? 0,
         removed_alias_rows: beforeResult?.removed_alias_rows ?? 0,
         removed_item_component_link_rows: beforeResult?.removed_item_component_link_rows ?? 0,
-        removed_key_review_rows: beforeResult?.removed_key_review_rows ?? 0,
       }),
     },
     {

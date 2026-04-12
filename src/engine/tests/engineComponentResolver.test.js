@@ -96,7 +96,7 @@ test('resolveComponentRef auto-accepts when combined score >= auto_accept_score'
 
 test('resolveComponentRef flags for review when score >= flag_review_score but < auto_accept', () => {
   const attempts = [];
-  const context = { componentReviewQueue: [] };
+  const context = {};
   const result = resolveComponentRef('PAW3300', {
     rule: { component_db_ref: 'sensor' },
     fieldKey: 'sensor',
@@ -114,15 +114,13 @@ test('resolveComponentRef flags for review when score >= flag_review_score but <
   assert.equal(result.ok, true);
   assert.equal(result.value, 'PAW3395');
   assert.ok(attempts.some(a => a.startsWith('component:flagged_review')));
-  assert.equal(context.componentReviewQueue.length, 1);
-  assert.equal(context.componentReviewQueue[0].match_type, 'fuzzy_flagged');
 });
 
 // ── resolveComponentRef: new component suggestion ─────────────────────────────
 
 test('resolveComponentRef suggests new component when allow_new_components is true', () => {
   const attempts = [];
-  const context = { componentReviewQueue: [], curationQueue: [] };
+  const context = {};
   const result = resolveComponentRef('HERO X2', {
     rule: {
       component_db_ref: 'sensor',
@@ -139,10 +137,6 @@ test('resolveComponentRef suggests new component when allow_new_components is tr
   assert.equal(result.ok, true);
   assert.equal(result.value, 'HERO X2');
   assert.ok(attempts.includes('component:new_suggestion_flagged'));
-  assert.equal(context.componentReviewQueue.length, 1);
-  assert.equal(context.componentReviewQueue[0].match_type, 'new_component');
-  assert.equal(context.curationQueue.length, 1);
-  assert.equal(context.curationQueue[0].suggestion_type, 'new_component');
 });
 
 // ── resolveComponentRef: rejection (no match, not allowed) ────────────────────

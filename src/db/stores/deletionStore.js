@@ -73,9 +73,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM query_index WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM url_index WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM prompt_index WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE run_id = ?').run(rid).changes;
-      totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE run_id = ?').run(rid).changes;
-
       // Phase 4 — Artifact tables
       const contentHashes = db.prepare('SELECT content_hash FROM crawl_sources WHERE run_id = ?').all(rid).map((r) => r.content_hash).filter(Boolean);
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE run_id = ?').run(rid).changes;
@@ -268,8 +265,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       // Phase 1 — Leaf/telemetry tables
       totalDeleted += db.prepare('DELETE FROM billing_entries WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_index WHERE product_id = ?').run(pid).changes;
-      totalDeleted += db.prepare('DELETE FROM curation_suggestions WHERE product_id = ?').run(pid).changes;
-      totalDeleted += db.prepare('DELETE FROM component_review_queue WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_cooldowns WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE product_id = ?').run(pid).changes;
 

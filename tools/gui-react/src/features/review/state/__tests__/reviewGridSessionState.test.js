@@ -14,14 +14,12 @@ test('parseReviewGridSessionState returns safe defaults for invalid payloads', a
 
   assert.deepEqual(parseReviewGridSessionState(null), {
     sortMode: 'brand',
-    showOnlyFlagged: false,
     brandFilterMode: 'all',
     selectedBrands: [],
   });
 
   assert.deepEqual(parseReviewGridSessionState('broken-json'), {
     sortMode: 'brand',
-    showOnlyFlagged: false,
     brandFilterMode: 'all',
     selectedBrands: [],
   });
@@ -32,14 +30,12 @@ test('parseReviewGridSessionState sanitizes unknown mode values', async () => {
 
   const parsed = parseReviewGridSessionState(JSON.stringify({
     sortMode: 'unsupported',
-    showOnlyFlagged: true,
     brandFilterMode: 'custom',
     selectedBrands: ['Razer', '', 10, 'Pulsar', 'Razer'],
   }));
 
   assert.deepEqual(parsed, {
     sortMode: 'brand',
-    showOnlyFlagged: true,
     brandFilterMode: 'custom',
     selectedBrands: ['Razer', 'Pulsar'],
   });
@@ -58,8 +54,7 @@ test('read/write review grid session state round-trips via localStorage', async 
 
   withWindowStub({ localStorage, sessionStorage }, () => {
     writeReviewGridSessionState('mouse', {
-      sortMode: 'flags',
-      showOnlyFlagged: true,
+      sortMode: 'confidence',
       brandFilterMode: 'custom',
       selectedBrands: ['Logitech', 'Razer'],
     });
@@ -71,8 +66,7 @@ test('read/write review grid session state round-trips via localStorage', async 
 
   const loaded = withWindowStub({ localStorage, sessionStorage }, () => readReviewGridSessionState('mouse'));
   assert.deepEqual(loaded, {
-    sortMode: 'flags',
-    showOnlyFlagged: true,
+    sortMode: 'confidence',
     brandFilterMode: 'custom',
     selectedBrands: ['Logitech', 'Razer'],
   });

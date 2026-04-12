@@ -155,6 +155,7 @@ Color output rules:
 - Normalize to registered color atoms: ${palette}
 - Lowercase, modifier-first ("light-blue" not "blue-light"), normalize "grey" to "gray"
 - Multi-color shells: atoms joined by "+" in dominant order ("black+red")
+- Standard colorways should almost always be a SINGLE atom matching how retailers list the product. Reserve "+" for when the product is genuinely marketed as a named multi-color variant (e.g. "Frost White" = "white+silver"). Minor accents (trim, scroll wheels, logos, RGB lighting) do not warrant "+". Use color_names for the full marketing name instead (e.g. "black": "Translucent Black and Silver"). Editions typically ARE multi-color — a Cyberpunk edition with a black body, red accents, and yellow highlights = "black+red+yellow" is correct.
 - colors[0] must be the default color shown on the official product page
 - Map marketing names in color_names (e.g. "light-blue": "Glacier Blue"). REQUIRED when the atom is not an exact match for the manufacturer's color name. If the manufacturer calls it "Navy Sky Blue" and you normalize to "light-blue", you MUST record "light-blue": "Navy Sky Blue". Only omit the color_names entry when the atom IS the exact name (e.g. "black" = "Black").
 - UNIQUE ENTRIES REQUIRED: Every colorway must have a unique entry in the colors array. Single-color products use a single atom ("black"). Multi-color products use atoms joined by "+" in dominant order ("dark-gray+black+orange"). No duplicates.

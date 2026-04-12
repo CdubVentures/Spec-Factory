@@ -173,8 +173,6 @@ export function reviewKeys(storage, category, productId) {
     legacyReviewBase,
     candidatesKey: `${reviewBase}/candidates.json`,
     legacyCandidatesKey: `${legacyReviewBase}/candidates.json`,
-    reviewQueueKey: `${reviewBase}/review_queue.json`,
-    legacyReviewQueueKey: `${legacyReviewBase}/review_queue.json`,
     finalizeReportKey: `${reviewBase}/finalize_report.json`
   };
 }

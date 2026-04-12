@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
-import { useProductStore } from '../state/productStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
@@ -25,9 +24,6 @@ import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 export function ProductManager() {
   const category = useUiStore((s) => s.category);
   const queryClient = useQueryClient();
-  const selectedProductId = useProductStore((s) => s.selectedProductId);
-  const setSelectedProduct = useProductStore((s) => s.setSelectedProduct);
-
   // Drawer state
   const [drawerOpen, , setDrawerOpen] = usePersistedToggle(`catalog:products:drawerOpen:${category}`, false);
   const [persistedSelectedProduct, setPersistedSelectedProduct] = usePersistedTab<string>(
@@ -100,10 +96,9 @@ export function ProductManager() {
 
   const deleteMut = useMutation({
     mutationFn: (pid: string) => api.del<MutationResult>(`/catalog/${category}/products/${pid}`),
-    onSuccess: (_data, pid) => {
+    onSuccess: () => {
       invalidate();
       closeDrawer();
-      if (pid === selectedProductId) setSelectedProduct('');
     },
   });
 
@@ -137,7 +132,6 @@ export function ProductManager() {
   function openEdit(product: CatalogProduct) {
     hydratedEditPidRef.current = product.productId;
     setEditPid(product.productId);
-    setSelectedProduct(product.productId, product.brand, product.base_model, product.variant);
     setFormBrand(product.brand);
     setFormModel(product.base_model);
     setFormVariant(product.variant || '');

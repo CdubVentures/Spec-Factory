@@ -55,6 +55,7 @@ export interface RuntimeSettingDefaults {
   llmReasoningBudget: number;
   llmReasoningFallbackModel: string;
   llmReasoningMode: boolean;
+  llmLabQueueDelayMs: number;
   llmTimeoutMs: number;
   localInputRoot: string;
   localOutputRoot: string;
@@ -62,6 +63,7 @@ export interface RuntimeSettingDefaults {
   openaiApiKey: string;
   enumConsistencyMode: boolean;
   pipelineSchemaEnforcementMode: string;
+  publishConfidenceThreshold: number;
   runtimeControlFile: string;
   runtimeScreencastEnabled: boolean;
   searchEngines: string;
@@ -71,6 +73,7 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
+  pifMinWidth: number;
   tierHierarchyOrder: string;
   keySearchEnrichmentOrder: string;
   needsetGroupQueryTermsCap: number;

@@ -472,12 +472,6 @@ async function seedProductOverride(helperRoot, category, productId, overrides) {
   await writeJson(overridePath, { product_id: productId, overrides });
 }
 
-function seedComponentReviewSuggestions(specDb, items) {
-  for (const item of items) {
-    specDb.upsertComponentReviewItem(item);
-  }
-}
-
 async function seedLatestArtifacts(storage, category, productId, product) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   await storage.writeObject(`${latestBase}/normalized.json`, Buffer.from(JSON.stringify({
@@ -554,14 +548,6 @@ export async function createFullFixture(tempRoot) {
   return { storage, config };
 }
 
-const COMPONENT_REVIEW_SEED_ITEMS = [
-  { review_id: 'crq-sensor-paw3950-razer', component_type: 'sensor', matched_component: 'PAW3950', product_id: 'mouse-razer-viper-v3-pro', status: 'pending_ai', raw_query: 'PAW3950', match_type: 'exact', combined_score: 0.95, product_attributes: { dpi_max: '35000', sensor_brand: 'PixArt' }, created_at: '2026-02-15T10:00:00.000Z' },
-  { review_id: 'crq-sensor-paw3950-pulsar', component_type: 'sensor', matched_component: 'PAW3950', product_id: 'mouse-pulsar-x2-v3', status: 'pending_ai', raw_query: 'PAW3950', match_type: 'exact', combined_score: 0.92, product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' }, created_at: '2026-02-15T11:00:00.000Z' },
-  { review_id: 'crq-switch-kailh-pulsar', component_type: 'switch', matched_component: 'Kailh GM 8.0', product_id: 'mouse-pulsar-x2-v3', status: 'pending_ai', raw_query: 'Kailh GM8.0', match_type: 'exact', combined_score: 0.88, product_attributes: { switch_brand: 'Kailh' }, created_at: '2026-02-15T10:00:00.000Z' },
-  { review_id: 'crq-switch-kailh-endgame', component_type: 'switch', matched_component: 'Kailh GM 8.0', product_id: 'mouse-endgame-gear-op1we', status: 'pending_ai', raw_query: 'Kailh GM8.0', match_type: 'exact', combined_score: 0.86, product_attributes: { switch_brand: 'Kailh' }, created_at: '2026-02-15T12:00:00.000Z' },
-  { review_id: 'crq-sensor-hero26k-logi', component_type: 'sensor', matched_component: 'HERO26K', product_id: 'mouse-logitech-g502-x', status: 'pending_ai', raw_query: 'HERO26K', match_type: 'exact', combined_score: 0.95, product_attributes: { dpi_max: '25600', sensor_brand: 'Logitech' }, created_at: '2026-02-15T10:00:00.000Z' },
-];
-
 function registerReviewFixtureTemplateCleanup() {
   if (reviewFixtureTemplateCleanupRegistered) return;
   reviewFixtureTemplateCleanupRegistered = true;
@@ -610,38 +596,6 @@ async function cloneFullFixture(tempRoot) {
   };
 }
 
-// WHY: bridge for tests that seed enum suggestions via JSON file before specDb exists.
-// Replicates the removed seedCurationSuggestions() + collectListSeedRows() from seed.js.
-// Seeds to both curation_suggestions AND list_values (pending only) then re-runs
-// list reconciliation so the seeded state matches production behavior.
-async function seedEnumSuggestionsFromFile(db, config) {
-  const { seedSpecDb: _unused, ...rest } = await import('../../../../db/seed.js');
-  const suggestionsPath = path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'enums.json');
-  let doc;
-  try { doc = JSON.parse(await fs.readFile(suggestionsPath, 'utf8')); } catch { return; }
-  const norm = (v) => String(v ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/g, '');
-  if (!Array.isArray(doc?.suggestions) || doc.suggestions.length === 0) return;
-  for (const s of doc.suggestions) {
-    if (!s.field_key || !s.value) continue;
-    try {
-      db.upsertCurationSuggestion({
-        suggestion_id: s.suggestion_id || `enum_${s.field_key}_${norm(s.value)}`,
-        suggestion_type: s.suggestion_type || 'enum_value',
-        category: CATEGORY,
-        field_key: s.field_key,
-        value: s.value,
-        status: s.status || 'pending',
-        source: s.source || 'pipeline',
-        product_id: s.product_id || null,
-        run_id: s.run_id || null,
-        first_seen_at: s.first_seen_at || new Date().toISOString(),
-        last_seen_at: s.last_seen_at || new Date().toISOString(),
-      });
-    } catch { /* dedup */ }
-    // NOTE: Old code also added pending suggestions to list_values via collectListSeedRows.
-    // Omitted here — curation_suggestions alone drives the payload builder's visibility logic.
-  }
-}
 
 function seedFieldCandidatesFromProducts(db) {
   for (const [productId, product] of Object.entries(PRODUCTS)) {
@@ -755,8 +709,6 @@ async function withSeededSpecDb(config, run) {
       fieldRules,
       logger: null,
     });
-    seedComponentReviewSuggestions(db, COMPONENT_REVIEW_SEED_ITEMS);
-    await seedEnumSuggestionsFromFile(db, config);
     seedFieldCandidatesFromProducts(db);
     // Seed compiled_rules with component_dbs so reference candidates appear
     seedCompiledRulesComponentDbs(db);

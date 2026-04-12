@@ -91,13 +91,6 @@ function buildCommonStubs() {
         return selector(globalThis.__queryHarness.uiState);
       }
     `,
-    '../../stores/productStore.ts': `
-      export function useProductStore(selector) {
-        return selector({
-          setSelectedProduct() {},
-        });
-      }
-    `,
     '../../components/common/MetricRow.tsx': `
       export function MetricRow(props) {
         return { type: 'MetricRow', props };

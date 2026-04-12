@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CellMode, SaveStatus, BrandFilter } from '../../../types/review.ts';
 
-export type SortMode = 'brand' | 'recent' | 'confidence' | 'flags';
+export type SortMode = 'brand' | 'recent' | 'confidence';
 
 interface ActiveCell {
   productId: string;
@@ -29,8 +29,6 @@ function resolveBrandFilterMode(selectedSize: number, availableSize: number): Br
 interface ReviewState {
   activeCell: ActiveCell | null;
   drawerOpen: boolean;
-  flaggedCells: ActiveCell[];
-  flagIndex: number;
 
   // Cell mode + inline editing
   cellMode: CellMode;
@@ -42,17 +40,13 @@ interface ReviewState {
   availableBrands: string[];
   brandFilter: BrandFilter;
 
-  // Sort + filter
+  // Sort
   sortMode: SortMode;
-  showOnlyFlagged: boolean;
 
   // Existing actions
   setActiveCell: (cell: ActiveCell | null) => void;
   openDrawer: (productId: string, field: string) => void;
   closeDrawer: () => void;
-  setFlaggedCells: (cells: ActiveCell[]) => void;
-  nextFlagged: () => void;
-  prevFlagged: () => void;
 
   // Cell mode actions
   selectCell: (productId: string, field: string) => void;
@@ -68,16 +62,13 @@ interface ReviewState {
   setBrandFilterSelection: (brands: string[]) => void;
   toggleBrand: (brand: string) => void;
 
-  // Sort + filter actions
+  // Sort action
   setSortMode: (mode: SortMode) => void;
-  setShowOnlyFlagged: (value: boolean) => void;
 }
 
 export const useReviewStore = create<ReviewState>((set, get) => ({
   activeCell: null,
   drawerOpen: false,
-  flaggedCells: [],
-  flagIndex: -1,
 
   cellMode: 'viewing',
   editingValue: '',
@@ -88,26 +79,12 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   brandFilter: { mode: 'all', selected: new Set<string>() },
 
   sortMode: 'brand',
-  showOnlyFlagged: false,
 
   setActiveCell: (cell) => set({ activeCell: cell }),
   openDrawer: (productId, field) => {
     set({ activeCell: { productId, field }, drawerOpen: true });
   },
   closeDrawer: () => set({ drawerOpen: false }),
-  setFlaggedCells: (cells) => set({ flaggedCells: cells, flagIndex: cells.length > 0 ? 0 : -1 }),
-  nextFlagged: () => {
-    const { flaggedCells, flagIndex } = get();
-    if (flaggedCells.length === 0) return;
-    const next = (flagIndex + 1) % flaggedCells.length;
-    set({ flagIndex: next, activeCell: flaggedCells[next], drawerOpen: true });
-  },
-  prevFlagged: () => {
-    const { flaggedCells, flagIndex } = get();
-    if (flaggedCells.length === 0) return;
-    const prev = (flagIndex - 1 + flaggedCells.length) % flaggedCells.length;
-    set({ flagIndex: prev, activeCell: flaggedCells[prev], drawerOpen: true });
-  },
 
   // Cell mode actions
   selectCell: (productId, field) => {
@@ -223,9 +200,8 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     });
   },
 
-  // Sort + filter actions
+  // Sort action
   setSortMode: (mode) => set({ sortMode: mode }),
-  setShowOnlyFlagged: (value) => set({ showOnlyFlagged: value }),
 }));
 
 // WHY: selectedField and selectedProductId are derived from activeCell, not stored.

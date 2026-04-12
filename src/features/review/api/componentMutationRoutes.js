@@ -10,7 +10,6 @@ import {
 
 import {
   validateComponentPropertyCandidate,
-  applyComponentSharedAcceptLane,
   runComponentIdentityUpdateTx,
   isIdentityPropertyKey,
   normalizeStringEntries,
@@ -29,7 +28,6 @@ import {
 // Re-export for characterization tests and any external consumers
 export {
   validateComponentPropertyCandidate,
-  applyComponentSharedAcceptLane,
   runComponentIdentityUpdateTx,
   isIdentityPropertyKey,
   normalizeStringEntries,
@@ -60,11 +58,9 @@ async function handleComponentOverrideEndpoint({
     isMeaningfulValue,
     normalizeLower,
     buildComponentIdentifier,
-    applySharedLaneState,
     cascadeComponentChange,
     outputRoot,
     storage,
-    remapPendingComponentReviewItemsForNameChange,
     specDbCache,
     broadcastWs,
   } = context || {};
@@ -166,19 +162,6 @@ async function handleComponentOverrideEndpoint({
           });
           const componentSlotId = componentCtx?.componentValueId ?? existingProperty.id;
 
-          applyComponentSharedAcceptLane({
-            runtimeSpecDb,
-            applySharedLaneState,
-            category,
-            propertyKey: String(property),
-            componentIdentifier,
-            componentValueId: componentCtx?.componentValueId ?? existingProperty.id,
-            selectedCandidateId: acceptedCandidateId,
-            selectedValue: String(value),
-            nowIso,
-            candidateRow: null,
-          });
-
           if (!acceptedCandidateId) {
             clearComponentValueAcceptedCandidate({ runtimeSpecDb, componentValueId: existingProperty.id });
           }
@@ -237,26 +220,6 @@ async function handleComponentOverrideEndpoint({
             nextMaker: mutationPlan.nextMaker,
             componentIdentityId,
             selectedSource,
-          });
-          if (mutationPlan.requiresNameRemap) {
-            await remapPendingComponentReviewItemsForNameChange({
-              category,
-              componentType,
-              oldName: name,
-              newName: mutationPlan.nextName,
-              specDb: runtimeSpecDb,
-            });
-          }
-          applyComponentSharedAcceptLane({
-            runtimeSpecDb,
-            applySharedLaneState,
-            category,
-            propertyKey: property,
-            componentIdentifier: newComponentIdentifier,
-            componentIdentityId,
-            selectedCandidateId: acceptedCandidateId || null,
-            selectedValue: mutationPlan.selectedValue,
-            nowIso,
           });
           await cascadeComponentMutation({
             ...cascadeBase,
@@ -318,7 +281,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
     isMeaningfulValue,
     normalizeLower,
     buildComponentIdentifier,
-    applySharedLaneState,
     specDbCache,
     broadcastWs,
   } = context || {};
@@ -399,22 +361,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
       const componentSlotId = componentCtx?.componentValueId ?? propertyRow?.id ?? null;
       const pendingCandidateIds = [];
       const confirmStatusOverride = pendingCandidateIds.length > 0 ? 'pending' : 'confirmed';
-      const state = applySharedLaneState({
-        specDb: runtimeSpecDb,
-        category,
-        targetKind: 'component_key',
-        fieldKey: property,
-        componentIdentifier,
-        propertyKey: property,
-        componentValueId: componentSlotId,
-        componentIdentityId: componentIdentityId ?? null,
-        selectedCandidateId: resolvedCandidateId,
-        selectedValue: stateValue,
-        confidenceScore: resolvedConfidence,
-        laneAction: 'confirm',
-        nowIso,
-        confirmStatusOverride,
-      });
       if (componentSlotId) {
         updateComponentValueNeedsReview({ runtimeSpecDb, componentSlotId, needsReview: confirmStatusOverride === 'pending' });
       }
@@ -431,7 +377,7 @@ async function handleComponentKeyReviewConfirmEndpoint({
           name,
           property,
         },
-        payload: { keyReviewState: state },
+        payload: {},
       });
     } catch (err) {
       return respond(500, {

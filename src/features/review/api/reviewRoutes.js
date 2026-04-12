@@ -60,7 +60,6 @@ export function registerReviewRoutes(ctx) {
     getSpecDbReady,
     buildReviewLayout,
     buildProductReviewPayload,
-    buildReviewQueue,
     buildComponentReviewLayout,
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
@@ -81,10 +80,8 @@ export function registerReviewRoutes(ctx) {
     normalizeLower,
     isMeaningfulValue,
     buildComponentIdentifier,
-    applySharedLaneState,
     cascadeComponentChange,
 
-    remapPendingComponentReviewItemsForNameChange,
     // Enum mutation helpers
     resolveEnumMutationContext,
     cascadeEnumChange,
@@ -105,7 +102,7 @@ export function registerReviewRoutes(ctx) {
 
   const fieldReviewContext = {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage,
-    getSpecDb, buildReviewLayout, buildProductReviewPayload, buildReviewQueue,
+    getSpecDb, buildReviewLayout, buildProductReviewPayload,
     sessionCache, slugify,
     broadcastWs, path, spawn,
   };
@@ -118,7 +115,7 @@ export function registerReviewRoutes(ctx) {
     safeReadJson,
     invalidateFieldRulesCache, path, fs,
     HELPER_ROOT, OUTPUT_ROOT,
-    applySharedLaneState, cascadeEnumChange,
+    cascadeEnumChange,
     specDbCache, broadcastWs,
     runEnumConsistencyReview,
   };
@@ -168,11 +165,9 @@ export function registerReviewRoutes(ctx) {
         isMeaningfulValue,
         normalizeLower,
         buildComponentIdentifier,
-        applySharedLaneState,
         cascadeComponentChange,
         outputRoot: OUTPUT_ROOT,
         storage,
-        remapPendingComponentReviewItemsForNameChange,
         specDbCache,
         broadcastWs,
       },
@@ -192,7 +187,6 @@ export function registerReviewRoutes(ctx) {
         resolveEnumMutationContext,
         isMeaningfulValue,
         normalizeLower,
-        applySharedLaneState,
         specDbCache,
         storage,
         outputRoot: OUTPUT_ROOT,

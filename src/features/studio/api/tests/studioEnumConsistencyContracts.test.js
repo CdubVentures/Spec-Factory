@@ -3,10 +3,8 @@ import assert from 'node:assert/strict';
 
 import { invokeStudioRoute } from './helpers/studioRoutesHarness.js';
 
-function mockSpecDb(pendingSuggestions = [], listValueRows = []) {
+function mockSpecDb(listValueRows = []) {
   return {
-    getCurationSuggestions: () => pendingSuggestions,
-    updateCurationSuggestionStatus: () => {},
     getListValues: () => listValueRows,
     close: () => {},
   };
@@ -19,10 +17,11 @@ test('studio enum consistency skips when review consumer is disabled', async () 
       field: 'lighting',
       apply: true,
     }),
-    getSpecDbReady: async () => mockSpecDb(
-      [{ field_key: 'lighting', value: '1 zone rgb', status: 'pending' }],
-      [{ value: '1 zone (rgb)', needs_review: false }, { value: '7 zone (led)', needs_review: false }],
-    ),
+    getSpecDbReady: async () => mockSpecDb([
+      { value: '1 zone (rgb)', needs_review: false },
+      { value: '7 zone (led)', needs_review: false },
+      { value: '1 zone rgb', needs_review: true },
+    ]),
     sessionCache: {
       getSessionRules: async () => ({
         mergedFields: {
@@ -54,10 +53,11 @@ test('studio enum consistency uses field format hint when request guidance is om
       field: 'lighting',
       apply: false,
     }),
-    getSpecDbReady: async () => mockSpecDb(
-      [{ field_key: 'lighting', value: '1 zone rgb', status: 'pending' }],
-      [{ value: '1 zone (rgb)', needs_review: false }, { value: '7 zone (led)', needs_review: false }],
-    ),
+    getSpecDbReady: async () => mockSpecDb([
+      { value: '1 zone (rgb)', needs_review: false },
+      { value: '7 zone (led)', needs_review: false },
+      { value: '1 zone rgb', needs_review: true },
+    ]),
     sessionCache: {
       getSessionRules: async () => ({
         mergedFields: {

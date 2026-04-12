@@ -9,9 +9,9 @@ interface FinderPanelHeaderProps {
   collapsed: boolean;
   onToggle: () => void;
   title: string;
-  chipLabel: string;
+  chipLabel?: string;
   chipClass?: string;
-  statusChip: StatusChipData;
+  statusChip?: StatusChipData;
   tip: string;
   isRunning: boolean;
   /** Disable the run button (e.g. missing prerequisite data) */
@@ -20,6 +20,8 @@ interface FinderPanelHeaderProps {
   onRun: () => void;
   /** Extra elements between tip and Run button */
   children?: ReactNode;
+  /** When provided, replaces the default Run button entirely */
+  actionSlot?: ReactNode;
 }
 
 export function FinderPanelHeader({
@@ -35,6 +37,7 @@ export function FinderPanelHeader({
   runLabel = 'Run Now',
   onRun,
   children,
+  actionSlot,
 }: FinderPanelHeaderProps) {
   return (
     <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
@@ -49,24 +52,26 @@ export function FinderPanelHeader({
 
       {isRunning ? (
         <Chip label="Running" className="sf-chip-purple animate-pulse" />
-      ) : (
+      ) : statusChip ? (
         <Chip label={statusChip.label} className={toneToChipClass(statusChip.tone)} />
-      )}
+      ) : null}
 
-      <Chip label={chipLabel} className={chipClass} />
+      {chipLabel && <Chip label={chipLabel} className={chipClass} />}
       <Tip text={tip} />
 
       {children}
 
-      <button
-        onClick={(e) => { e.stopPropagation(); onRun(); }}
-        disabled={isRunning || runDisabled}
-        className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-      >
-        {isRunning ? (
-          <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Running...</span>
-        ) : runLabel}
-      </button>
+      {actionSlot ?? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRun(); }}
+          disabled={isRunning || runDisabled}
+          className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+        >
+          {isRunning ? (
+            <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Running...</span>
+          ) : runLabel}
+        </button>
+      )}
     </div>
   );
 }

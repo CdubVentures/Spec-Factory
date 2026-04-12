@@ -92,70 +92,11 @@ const PRODUCTS = {
   },
 };
 
-function seedComponentReviewSuggestions(db, category) {
-  const items = [
-    {
-      review_id: 'rv-cmp-35000',
-      category,
-      component_type: 'sensor',
-      field_key: 'sensor',
-      raw_query: 'PAW3950',
-      matched_component: 'paw3950',
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: PRODUCT_A,
-      created_at: '2026-02-18T00:00:00.000Z',
-      product_attributes: { dpi_max: '35000', ips: '750', sensor_brand: 'PixArt' },
-    },
-    {
-      review_id: 'rv-cmp-26000',
-      category,
-      component_type: 'sensor',
-      field_key: 'sensor',
-      raw_query: 'PAW3950',
-      matched_component: 'paw3950',
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: PRODUCT_B,
-      created_at: '2026-02-18T00:00:01.000Z',
-      product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' },
-    },
-    {
-      review_id: 'rv-enum-24',
-      category,
-      component_type: 'sensor',
-      field_key: 'connection',
-      raw_query: '2.4GHz',
-      matched_component: '',
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: PRODUCT_A,
-      created_at: '2026-02-18T00:00:02.000Z',
-      product_attributes: { connection: '2.4GHz' },
-    },
-    {
-      review_id: 'rv-enum-wireless',
-      category,
-      component_type: 'sensor',
-      field_key: 'connection',
-      raw_query: 'Wireless',
-      matched_component: '',
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: PRODUCT_B,
-      created_at: '2026-02-18T00:00:03.000Z',
-      product_attributes: { connection: 'Wireless' },
-    },
-  ];
-  for (const item of items) {
-    db.upsertComponentReviewItem(item);
-  }
-}
 
 function seedStrictLaneCandidates(db, category) {
   // WHY: seedSpecDb scopes raw candidate IDs (e.g. "PRODUCT::field::raw").
   // Purge all seed-generated candidates for PRODUCT_A so ONLY the exact
-  // unscoped IDs that key_review_state and GUI contracts reference exist.
+  // unscoped IDs that GUI contracts reference exist.
   db.db.prepare('DELETE FROM candidates WHERE category = ? AND product_id = ?')
     .run(category, PRODUCT_A);
   replaceCandidateRow(db, {
@@ -564,7 +505,6 @@ export async function createReviewLaneGuiHarness(t) {
       fieldRules: buildFieldRulesForSeed(),
       logger: null,
     });
-    seedComponentReviewSuggestions(db, CATEGORY);
     seedStrictLaneCandidates(db, CATEGORY);
     seedKeyReviewState(db, componentIdentifier);
 

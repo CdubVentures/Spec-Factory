@@ -4,7 +4,6 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
 import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx';
 import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
-import { FlagIcon } from '../../../shared/ui/icons/FlagIcon.tsx';
 import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -103,6 +102,11 @@ export function ReviewMatrix({
                 {colVirtualizer.getVirtualItems().map((vCol) => {
                   const p = products[vCol.index];
                   const dimmed = p.hasRun === false;
+                  const totalFields = rows.length;
+                  const filledFields = rows.filter((r) => {
+                    const fs = p.fields[r.key];
+                    return fs && fs.selected.confidence > 0;
+                  }).length;
                   return (
                     <div
                       key={p.product_id}
@@ -117,15 +121,7 @@ export function ReviewMatrix({
                       <div className="sf-text-nano sf-text-subtle flex items-center justify-center gap-1">
                         <span>{pct(p.metrics.confidence)}</span>
                         <span>|</span>
-                        {p.metrics.flags > 0 ? (
-                          <span className="inline-flex items-center gap-0.5 sf-status-text-warning">
-                            <FlagIcon className="w-2.5 h-2.5" />
-                            {p.metrics.flags}
-                          </span>
-                        ) : (
-                          <span className="sf-status-text-success">0f</span>
-                        )}
-                        <span>{p.metrics.missing}m</span>
+                        <span>{filledFields}/{totalFields}</span>
                       </div>
                     </div>
                   );
@@ -224,15 +220,12 @@ export function ReviewMatrix({
                               <ReviewValueCell
                                 state={fieldState}
                                 hasRun={p.hasRun}
-                                pendingAIPrimary={false}
-                                pendingAIShared={false}
                                 className="px-1 w-full"
                                 valueClassName="text-[11px]"
                                 valueMaxChars={22}
                                 unknownLabel=""
                                 showConfidence
                                 showOverrideBadge
-                                flagCount={fieldState?.needs_review ? (fieldState.reason_codes?.length || 1) : 0}
                               />
                             )}
                           </div>

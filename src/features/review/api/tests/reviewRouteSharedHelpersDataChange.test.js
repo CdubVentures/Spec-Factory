@@ -12,7 +12,7 @@ test('sendDataChangeResponse emits typed data-change contract for review mutatio
     broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
     eventType: 'key-review-accept',
     category: 'mouse',
-    payload: { keyReviewState: { id: 42 } },
+    payload: { customPayload: { id: 42 } },
     broadcastExtra: {
       productId: 'mouse-razer-viper-v3-pro',
       field: 'dpi',
@@ -24,7 +24,7 @@ test('sendDataChangeResponse emits typed data-change contract for review mutatio
   assert.equal(responses.length, 1);
   assert.equal(responses[0].status, 200);
   assert.equal(responses[0].body.ok, true);
-  assert.deepEqual(responses[0].body.keyReviewState, { id: 42 });
+  assert.deepEqual(responses[0].body.customPayload, { id: 42 });
   assert.equal(emitted.length, 1);
   assert.equal(emitted[0].channel, 'data-change');
   assert.equal(emitted[0].payload.type, 'data-change');

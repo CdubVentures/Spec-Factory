@@ -285,7 +285,7 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">LLM Route</td><td class="ct">llm_route_matrix</td><td class="cc">llmRouteSourceStore</td></tr>
         <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos</td><td class="cc">artifactStore</td></tr>
         <tr><td class="cn">Telemetry Index</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">telemetryIndexStore</td></tr>
-        <tr><td class="cn">Queue / Products</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">queueProductStore</td></tr>
+        <tr><td class="cn">Catalog</td><td class="ct">products, product_queue, product_runs</td><td class="cc">queueProductStore</td></tr>
         <tr><td class="cn">Field Studio Map</td><td class="ct">field_studio_map</td><td class="cc">fieldStudioMapStore</td></tr>
         <tr><td class="cn">Field Key Order</td><td class="ct">field_key_order</td><td class="cc">fieldKeyOrderStore</td></tr>
         <tr><td class="cn">Crawl Ledger</td><td class="ct">query_cooldowns, url_crawl_ledger</td><td class="cc">crawlLedgerStore</td></tr>
@@ -613,7 +613,7 @@ svg text{font-family:var(--sans)}
       <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix</td><td class="cc">1</td></tr>
       <tr><td class="cn">provenanceStore</td><td class="ct" style="opacity:0.7">Read-only: reconstructs provenance from field_candidates</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">purgeStore</td><td class="ct" style="opacity:0.7">Cross-store: bulk category/product cleanup in referential integrity order</td><td class="cc">Operational</td></tr>
-      <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue</td><td class="cc">5</td></tr>
+      <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs</td><td class="cc">3</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
       <tr><td class="cn">runMetaStore</td><td class="ct">runs</td><td class="cc">1</td></tr>
       <tr><td class="cn">sourceIntelStore</td><td class="ct">bridge_events</td><td class="cc">1</td></tr>

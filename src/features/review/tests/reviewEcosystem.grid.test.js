@@ -33,7 +33,6 @@ test('GRID-07: Confidence maps to color via confidence dot only', () => {
     summary: { fields_below_pass_target: ['weight'] },
   }));
   assert.equal(stateA.selected.color, 'yellow');
-  assert.equal(stateA.reason_codes.includes('below_pass_target'), false);
 
   const stateB = buildFieldState(buildFieldStateScenario({
     field: 'weight',
@@ -61,7 +60,7 @@ test('review ecosystem grid contracts share one fixture without weakening field-
       assert.equal(payload.fields.weight.overridden, true);
       assert.equal(payload.fields.weight.source, 'user');
       assert.equal(payload.fields.weight.method, 'manual_override');
-      assert.equal(payload.fields.weight.needs_review, false);
+      assert.equal(payload.fields.weight.selected.status, 'ok');
     });
 
     await t.test('GRID-03: Candidate acceptance does NOT set overridden=true', async () => {
@@ -79,7 +78,7 @@ test('review ecosystem grid contracts share one fixture without weakening field-
       const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-zowie-ec2-c' });
       assert.equal(payload.fields.encoder.selected.value, null);
       assert.equal(payload.fields.encoder.selected.color, 'gray');
-      assert.equal(payload.fields.encoder.reason_codes.includes('missing_value'), false);
+      assert.equal(payload.fields.encoder.selected.status, 'ok');
     });
 
     await t.test('GRID-05: Multiple fields maintain independent sources across products', async () => {

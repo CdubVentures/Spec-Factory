@@ -76,6 +76,42 @@ export const CATEGORY_VIEW_DEFAULTS = Object.freeze({
 });
 
 /**
+ * Per-category view budgets: which of the 8 canonical views are worth
+ * actively searching for this category. These are FALLBACK DEFAULTS only —
+ * the SSOT is the per-category `viewBudget` setting in product_image_finder_settings.
+ *
+ * Budget controls what we ASK for, not what we ACCEPT. If the LLM returns
+ * a valid canonical view not in the budget, we keep it.
+ */
+export const CATEGORY_VIEW_BUDGET_DEFAULTS = Object.freeze({
+  mouse:    ['top', 'left', 'angle', 'sangle', 'front', 'bottom'],  // 6 — sangle real, right extremely rare
+  keyboard: ['top', 'left', 'angle', 'sangle'],                      // 4
+  monitor:  ['front', 'angle', 'rear', 'left'],                      // 4
+  mousepad: ['top', 'angle'],                                         // 2
+});
+
+export const GENERIC_VIEW_BUDGET_DEFAULT = Object.freeze(['top', 'left', 'angle']);
+
+/**
+ * Resolve view budget from setting value + category fallback.
+ * @param {string} viewBudgetSetting — JSON array string or empty
+ * @param {string} category
+ * @returns {string[]} — array of canonical view keys
+ */
+export function resolveViewBudget(viewBudgetSetting, category) {
+  if (viewBudgetSetting && viewBudgetSetting.trim()) {
+    try {
+      const parsed = JSON.parse(viewBudgetSetting);
+      if (Array.isArray(parsed)) {
+        const valid = parsed.filter((k) => CANONICAL_VIEW_KEYS.includes(k));
+        if (valid.length > 0) return valid;
+      }
+    } catch { /* fall through to defaults */ }
+  }
+  return CATEGORY_VIEW_BUDGET_DEFAULTS[category] || [...GENERIC_VIEW_BUDGET_DEFAULT];
+}
+
+/**
  * Generic default descriptions for any category not in CATEGORY_VIEW_DEFAULTS.
  */
 export const GENERIC_VIEW_DESCRIPTIONS = Object.freeze({
@@ -224,10 +260,12 @@ export function buildProductImageFinderPrompt({
   viewConfig = [],
   minWidth = 800,
   minHeight = 600,
+  viewQualityMap = null,
   siblingsExcluded = [],
   familyModelCount = 1,
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  promptOverride = '',
 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
@@ -263,13 +301,19 @@ export function buildProductImageFinderPrompt({
   const priorityViews = viewConfig.filter(v => v.priority);
   const additionalViews = viewConfig.filter(v => !v.priority);
 
-  // Build view definitions — ALL views get full descriptions
+  // Build view definitions — ALL views get full descriptions + per-view minimums
+  const viewMinLabel = (v) => {
+    if (!viewQualityMap?.[v.key]) return '';
+    const vq = viewQualityMap[v.key];
+    return ` (min ${vq.minWidth}w × ${vq.minHeight}h)`;
+  };
+
   const prioritySection = priorityViews.length > 0
-    ? `PRIORITY (search for these first — most important):\n${priorityViews.map((v, i) => `  ${i + 1}. "${v.key}" — ${v.description}`).join('\n')}`
+    ? `PRIORITY (search for these first — most important):\n${priorityViews.map((v, i) => `  ${i + 1}. "${v.key}" — ${v.description}${viewMinLabel(v)}`).join('\n')}`
     : '';
 
   const additionalSection = additionalViews.length > 0
-    ? `ADDITIONAL (include if you find clean product shots matching these angles):\n${additionalViews.map(v => `  - "${v.key}" — ${v.description}`).join('\n')}`
+    ? `ADDITIONAL (include if you find clean product shots matching these angles):\n${additionalViews.map(v => `  - "${v.key}" — ${v.description}${viewMinLabel(v)}`).join('\n')}`
     : '';
 
   const allViewKeys = CANONICAL_VIEW_KEYS.join(', ');
@@ -289,15 +333,15 @@ For additional views, include any clean product shots you encounter while search
 
 Every image you return MUST use one of these view names: ${allViewKeys}
 
-Image requirements:
+${promptOverride || `Image requirements:
 - Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
 - NOT: lifestyle photos, styled banners, marketing collages, box art, screenshots, in-use/in-hand photos, group shots, images with decorative backgrounds
 - The image must show the EXACT product: ${brand} ${model} in ${variantDesc}
-- Minimum resolution: ${minWidth}px wide, ${minHeight}px tall — bigger is always better
+- Minimum resolution per view is listed above in the view definitions — bigger is always better
 - The URL must be a DIRECT link to the image file (.jpg, .png, .webp or image content-type). Not a page URL.
 - If a site uses dynamic image URLs (e.g. query-string sizing), find or construct the highest-resolution static variant
 - Prefer images where the product fills most of the frame with minimal background
-- Images below the minimum resolution will be rejected — do not return small thumbnails or icons
+- Images below the per-view minimum resolution will be rejected — do not return small thumbnails or icons`}
 
 ${previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0 ? `Previous searches for this variant (do not repeat — find NEW sources or verify these still work):
 ${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}` : ''}
@@ -329,6 +373,8 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    promptOverride: domainArgs.promptOverride || '',
+    viewQualityMap: domainArgs.viewQualityMap || null,
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };
@@ -338,6 +384,148 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
  */
 export function createProductImageFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, PRODUCT_IMAGE_FINDER_SPEC, (domainArgs) => ({
+    user: JSON.stringify({
+      brand: domainArgs.product?.brand || '',
+      model: domainArgs.product?.model || '',
+      base_model: domainArgs.product?.base_model || '',
+      variant_label: domainArgs.variantLabel || '',
+      variant_type: domainArgs.variantType || 'color',
+    }),
+  }));
+}
+
+/* ── Hero prompt builder ──────────────────────────────────────────── */
+
+/**
+ * Build the system prompt for hero/promotional image search.
+ * Completely separate intent from angle-based view search.
+ *
+ * @param {object} opts
+ * @param {object} opts.product — { brand, model, base_model, variant }
+ * @param {string} opts.variantLabel
+ * @param {string} opts.variantType — "color" or "edition"
+ * @param {number} opts.minWidth
+ * @param {number} opts.minHeight
+ * @param {string[]} opts.siblingsExcluded
+ * @param {number} opts.familyModelCount
+ * @param {string} opts.ambiguityLevel
+ * @param {object} opts.previousDiscovery — { urlsChecked, queriesRun }
+ * @param {string} [opts.promptOverride] — custom instruction text replacing default
+ * @returns {string}
+ */
+export function buildHeroImageFinderPrompt({
+  product = {},
+  variantLabel = '',
+  variantType = 'color',
+  minWidth = 800,
+  minHeight = 600,
+  siblingsExcluded = [],
+  familyModelCount = 1,
+  ambiguityLevel = 'easy',
+  previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  promptOverride = '',
+}) {
+  const brand = product.brand || '';
+  const model = product.model || '';
+  const variant = product.variant || '';
+
+  const variantDesc = variantType === 'edition'
+    ? `the "${variantLabel}" edition`
+    : `the "${variantLabel}" color variant`;
+
+  const familyCount = Math.max(1, familyModelCount || 1);
+  const ambiguity = ambiguityLevel || 'easy';
+
+  let identityWarning = '';
+  if (ambiguity === 'easy') {
+    identityWarning = 'This product has no known siblings — standard identity matching applies.';
+  } else if (ambiguity === 'medium') {
+    identityWarning = `CAUTION: This product has ${familyCount} models in its family. Verify you are looking at the exact "${model}".`;
+  } else {
+    identityWarning = `HIGH AMBIGUITY: ${familyCount} models in family. TRIPLE-CHECK every image for exact model "${model}".`;
+  }
+
+  const siblingLine = siblingsExcluded.length > 0
+    ? `\nKnown sibling models to EXCLUDE: ${siblingsExcluded.join(', ')}\n`
+    : '';
+
+  const discoverySection = (previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0)
+    ? `Previous searches (do not repeat — find NEW sources):
+${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}` : ''}
+${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}` : ''}
+` : '';
+
+  // Use custom override or built-in instructions
+  const instructions = promptOverride || `Find clean, high-quality studio product shots for: ${brand} ${model} — ${variantDesc}
+
+You are looking for the kind of image a manufacturer releases for retailers and press kits — a clean studio photograph or official render where the product is the clear subject.
+
+WHAT MAKES A GOOD HERO IMAGE:
+- Clean studio product photography with a neutral background — dark, light, gradient, or simple surface all fine (NOT white-background cutouts — those are "view" images)
+- Product is the sole focal point — may sit on a desk or surface but nothing competes for attention
+- Official manufacturer product gallery images, press kit photos, or authorized retailer gallery images
+- High-resolution, landscape-oriented (will be cropped to 16:9 later)
+- Moody or dramatic lighting is fine as long as the product is clearly visible and unobstructed
+
+HARD REJECTS — do NOT return any image that has:
+- Text overlays, watermarks, logos, price tags, or advertising copy of any kind
+- Busy promotional banners, box art, or marketing collateral with graphics/text
+- Editorial photos from review sites (TechRadar, Tom's Hardware, RTINGS, Gamer Nexus, etc.) — these are copyrighted
+- User photos, unboxing images, or screenshots
+- Product shown in-use (hands gripping it, mid-gameplay) — lifestyle shots are NOT heroes
+- Multiple products in frame competing for attention
+- Generic category banners or brand-only imagery
+- Small thumbnails or low-resolution images
+
+QUALITY OVER QUANTITY: Return ONLY images you are confident meet ALL criteria above. It is far better to return 0 images than to return a single bad one. If you cannot find a clean studio shot meeting every requirement, return an empty images array.
+
+Image requirements:
+- Minimum resolution: ${minWidth}px wide, ${minHeight}px tall — bigger is always better
+- Direct image URL (.jpg, .png, .webp or image content-type)
+- Must show the EXACT product: ${brand} ${model} in ${variantDesc}
+
+Allowed sources (in priority order):
+1. Manufacturer's official product page gallery for this ${variantType === 'edition' ? 'edition' : 'color'}
+2. Manufacturer's press/media page or press kit downloads
+3. Authorized retailer product galleries (Amazon, Best Buy) — these images are manufacturer-supplied
+Do NOT use images from editorial review sites — even if the photo looks clean, it is copyrighted editorial content.`;
+
+  return `${instructions}
+
+IDENTITY: You are looking for the EXACT product "${brand} ${model}"${variant ? ` (variant: ${variant})` : ''}.
+${identityWarning}
+${siblingLine}
+Every image you return MUST use the view name "hero".
+
+${discoverySection}Return JSON:
+- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+}
+
+export const HERO_IMAGE_FINDER_SPEC = {
+  phase: 'imageFinder',
+  reason: 'hero_image_finding',
+  role: 'triage',
+  system: (domainArgs) => buildHeroImageFinderPrompt({
+    product: domainArgs.product,
+    variantLabel: domainArgs.variantLabel || '',
+    variantType: domainArgs.variantType || 'color',
+    minWidth: domainArgs.minWidth || 800,
+    minHeight: domainArgs.minHeight || 600,
+    siblingsExcluded: domainArgs.siblingsExcluded || [],
+    familyModelCount: domainArgs.familyModelCount || 1,
+    ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
+    previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    promptOverride: domainArgs.promptOverride || '',
+  }),
+  jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
+};
+
+/**
+ * Factory: create a bound LLM caller for hero image search.
+ */
+export function createHeroImageFinderCallLlm(deps) {
+  return createPhaseCallLlm(deps, HERO_IMAGE_FINDER_SPEC, (domainArgs) => ({
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',

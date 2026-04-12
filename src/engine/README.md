@@ -12,9 +12,7 @@ Field validation, normalization, and rule enforcement engine. Validates individu
 - `engineFieldValidators.js`: `validateRange()`, `validateShapeAndUnits()`, `enforceEnumPolicy()`.
 - `engineEvidenceAuditor.js`: `auditEvidence()`.
 - `engineEnumIndex.js`: `buildEnumIndex()`, `buildUiGroupIndex()`, `buildRuleEnumSpec()`.
-- `constraintEvaluator.js`: `parseConstraint()`, `evaluateConstraint()`, `evaluateAllConstraints()`.
 - `compoundBoundary.js`: `computeCompoundRange()`, `evaluateCompoundRange()`.
-- `curationSuggestions.js`: `appendEnumCurationSuggestions()`, `appendComponentCurationSuggestions()`, `appendComponentReviewItems()`, `appendComponentIdentityObservations()`.
 
 ## Dependencies
 - Allowed: `src/field-rules/` (rule loading, consumer gates, migrations), `src/shared/`, `src/utils/` (transitional).

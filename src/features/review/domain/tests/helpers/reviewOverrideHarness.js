@@ -122,17 +122,6 @@ export async function seedReviewCandidates(
     }, null, 2), 'utf8'),
     { contentType: 'application/json' },
   );
-  await storage.writeObject(
-    `${reviewBase}/review_queue.json`,
-    Buffer.from(JSON.stringify({
-      version: 1,
-      category,
-      product_id: productId,
-      count: 1,
-      items: [{ field: 'weight', reason_codes: ['missing_required_field'] }],
-    }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
 }
 
 export async function seedLatestArtifacts({ storage, category, productId }) {

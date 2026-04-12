@@ -137,14 +137,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     last_executed_at: now, cooldown_until: '2026-05-01T00:00:00.000Z',
   });
 
-  // curation_suggestions (use run+url combo for uniqueness)
-  specDb.db.prepare(`INSERT OR IGNORE INTO curation_suggestions (suggestion_id, category, suggestion_type, field_key, value, normalized_value, status, source, product_id, run_id, first_seen_at, last_seen_at)
-    VALUES (?, ?, 'field', 'weight', '80g', '80', 'pending', 'pipeline', ?, ?, ?, ?)`).run(`sug_${runId}_${contentHash.slice(0, 6)}`, cat, productId, runId, now, now);
-
-  // component_review_queue
-  specDb.db.prepare(`INSERT OR IGNORE INTO component_review_queue (review_id, category, component_type, field_key, raw_query, matched_component, match_type, name_score, property_score, combined_score, product_id, run_id, status)
-    VALUES (?, ?, 'sensor', 'sensor', 'PAW3950', 'PAW3950', 'exact', 1.0, 1.0, 1.0, ?, ?, 'pending')`).run(`crq_${runId}_${contentHash.slice(0, 6)}`, cat, productId, runId);
-
 }
 
 /** Seed product identity rows (not deleted by deleteProductHistory). */
@@ -238,8 +230,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
     assert.equal(countRows(h.specDb.db, 'query_index', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'url_index', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'prompt_index', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'component_review_queue', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', "product_id = ?", [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', "product_id = ?", [PID_A]), 0);
 
@@ -523,8 +513,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'billing_entries', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'curation_suggestions', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'component_review_queue', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);

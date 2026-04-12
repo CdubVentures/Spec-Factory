@@ -39,7 +39,6 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
 
   // ── Catalog group ───────────────────────────────────────────────
   { path: '/',            label: 'Overview',            tabGroup: 'catalog', loader: () => import('../pages/overview/OverviewPage.tsx'),                            exportName: 'OverviewPage' },
-  { path: '/product',     label: 'Selected Product',    tabGroup: 'catalog', loader: () => import('../pages/product/ProductPage.tsx'),                              exportName: 'ProductPage' },
   { path: '/catalog',     label: 'Catalog',             tabGroup: 'catalog', loader: () => import('../features/catalog/components/CatalogPage.tsx'),                 exportName: 'CatalogPage',dividerAfter: true },
   { path: '/studio',      label: 'Field Rules Studio',  tabGroup: 'catalog', loader: () => import('../features/studio/components/StudioPage.tsx'),                   exportName: 'StudioPage', dividerAfter: true },
 

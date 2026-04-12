@@ -1,9 +1,9 @@
 import {
-  buildReviewLayout, buildProductReviewPayload, buildReviewQueue,
+  buildReviewLayout, buildProductReviewPayload,
   buildComponentReviewLayout, buildComponentReviewPayloads,
   buildEnumReviewPayloads, readLatestArtifacts,
   findProductsReferencingComponent,
-  applySharedLaneState, cascadeComponentChange,
+  cascadeComponentChange,
   cascadeEnumChange,
 } from '../../review-curation/index.js';
 import {
@@ -26,14 +26,13 @@ export function createReviewRouteContext(options = {}) {
     broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson, spawn,
     isMeaningfulValue,
     normalizeLower,
-    remapPendingComponentReviewItemsForNameChange,
     patchCompiledComponentDb,
   } = options;
 
   return {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady, buildReviewLayout,
-    buildProductReviewPayload, buildReviewQueue, buildComponentReviewLayout,
+    buildProductReviewPayload, buildComponentReviewLayout,
     buildComponentReviewPayloads, buildEnumReviewPayloads,
     readLatestArtifacts, sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, findProductsReferencingComponent,
@@ -41,8 +40,7 @@ export function createReviewRouteContext(options = {}) {
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,
     isMeaningfulValue,
     resolveComponentMutationContext, normalizeLower,
-    buildComponentIdentifier, applySharedLaneState, cascadeComponentChange,
-    remapPendingComponentReviewItemsForNameChange,
+    buildComponentIdentifier, cascadeComponentChange,
     resolveEnumMutationContext,
     cascadeEnumChange,
     runEnumConsistencyReview,

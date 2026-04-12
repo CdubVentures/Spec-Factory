@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { trafficColor, trafficTextColor } from '../../../utils/colors.ts';
 import { pct } from '../../../utils/formatting.ts';
-import { hasKnownValue } from '../../../utils/fieldNormalize.ts';
+import { hasKnownValue, formatCellValue } from '../../../utils/fieldNormalize.ts';
 import { CellTooltip, type CellTooltipState } from '../feedback/CellTooltip.tsx';
 import { FlagIcon } from '../icons/FlagIcon.tsx';
 
@@ -21,17 +21,15 @@ interface ReviewValueCellProps {
   unknownLabel?: string;
   showConfidence?: boolean;
   showOverrideBadge?: boolean;
-  flagCount?: number;
   valueMaxChars?: number;
   emptyWhenNoRun?: ReactNode;
   emptyWhenMissing?: ReactNode;
-  pendingAI?: boolean;
-  pendingAIPrimary?: boolean;
   pendingAIShared?: boolean;
   showLinkedProductBadge?: boolean;
   linkedProductCount?: number;
   showSourceCountBadge?: boolean;
   sourceCount?: number;
+  flagCount?: number;
 }
 
 function joinClassNames(parts: Array<string | false | null | undefined>): string {
@@ -47,21 +45,17 @@ export function ReviewValueCell({
   unknownLabel = '',
   showConfidence = false,
   showOverrideBadge = false,
-  flagCount = 0,
   valueMaxChars = 40,
   emptyWhenNoRun = null,
   emptyWhenMissing = null,
-  pendingAI = false,
-  pendingAIPrimary = false,
   pendingAIShared = false,
   showLinkedProductBadge = false,
   linkedProductCount = 0,
   showSourceCountBadge = false,
   sourceCount = 0,
+  flagCount = 0,
 }: ReviewValueCellProps) {
-  // Two-lane pending flags; legacy pendingAI maps to shared for backward compat
-  const hasPrimary = pendingAIPrimary;
-  const hasShared = pendingAIShared || (pendingAI && !pendingAIPrimary && !pendingAIShared);
+  const hasShared = pendingAIShared;
   const normalizedLinkedProductCount = Number.isFinite(Number(linkedProductCount))
     ? Math.max(0, Math.trunc(Number(linkedProductCount)))
     : 0;
@@ -77,7 +71,7 @@ export function ReviewValueCell({
 
   const color = state.selected.color;
   const known = hasKnownValue(state.selected.value);
-  const rawText = known ? String(state.selected.value) : unknownLabel;
+  const rawText = known ? formatCellValue(state.selected.value) : unknownLabel;
   const displayText = known && valueMaxChars > 0
     ? rawText.slice(0, valueMaxChars)
     : rawText;
@@ -93,21 +87,21 @@ export function ReviewValueCell({
       {/* Tooltip trigger wraps the dot + confidence for a bigger hover target */}
       <CellTooltip state={state}>
         <span className="inline-flex items-center gap-1 cursor-help rounded-full px-0.5 py-0.5 -my-0.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex-shrink-0">
-          <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${hasShared ? 'bg-purple-500' : hasPrimary ? 'bg-orange-500' : trafficColor(color)}`} />
-          {showConfidence && known && (
+          <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${hasShared ? 'bg-purple-500' : trafficColor(color)}`} />
+          {showConfidence && state.selected.confidence > 0 && (
             <span className="text-[9px] text-gray-400 flex-shrink-0 tabular-nums">
               {pct(state.selected.confidence)}
             </span>
           )}
         </span>
       </CellTooltip>
-      {showConfidence && known && (
+      {showConfidence && state.selected.confidence > 0 && known && (
         <span className="text-gray-300 dark:text-gray-600 flex-shrink-0 text-[8px] leading-none">·</span>
       )}
       <span
         className={joinClassNames([
           'truncate text-[11px]',
-          hasShared ? 'text-purple-700 dark:text-purple-300' : hasPrimary ? 'text-orange-700 dark:text-orange-300' : known ? trafficTextColor(color) : 'text-gray-400',
+          hasShared ? 'text-purple-700 dark:text-purple-300' : known ? trafficTextColor(color) : 'text-gray-400',
           valueClassName,
         ])}
         title={rawText}
@@ -118,9 +112,6 @@ export function ReviewValueCell({
         <span className="text-[9px] text-orange-500 font-bold flex-shrink-0" title="Overridden">
           OVR
         </span>
-      )}
-      {hasPrimary && (
-        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 shrink-0" title="Item AI review pending">AI</span>
       )}
       {hasShared && (
         <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 shrink-0" title="Shared AI review pending">AI</span>

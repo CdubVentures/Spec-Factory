@@ -128,8 +128,6 @@ test('review ecosystem enum contracts share one fixture without weakening enum b
       }));
       const payload = await buildEnumPayloadFromSpecDb(config);
       const field = findEnumField(payload, 'cable_type');
-      // Curation suggestions are tracked in curation_suggestions table, not list_values.
-      // The seed pipeline may promote pending suggestions to list_values; dismissed ones should not appear.
       const values = field.values.map((entry) => entry.value);
       assert.ok(!values.includes('Coiled'), 'Dismissed curation suggestion should not appear in values');
     });

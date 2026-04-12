@@ -55,6 +55,7 @@ export interface LlmPolicy {
   reasoning: LlmPolicyReasoning;
   phaseOverrides: Record<string, Partial<LlmPhaseOverride>>;
   providerRegistry: LlmProviderEntry[];
+  labQueueDelayMs: number;
   timeoutMs: number;
 }
 
@@ -84,6 +85,7 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
 };
 
 export const FLAT_TOP_LEVEL: Record<string, string> = {
+  llmLabQueueDelayMs: 'labQueueDelayMs',
   llmTimeoutMs: 'timeoutMs',
 };
 
@@ -110,6 +112,7 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmPlanUseReasoning',
   'llmReasoningBudget',
   'llmReasoningMode',
+  'llmLabQueueDelayMs',
   'llmTimeoutMs',
   'llmPhaseOverridesJson',
   'llmProviderRegistryJson',
@@ -117,19 +120,21 @@ export const LLM_POLICY_MANAGED_KEYS = [
 
 // --- Reader utilities (inlined for zero-dependency assembly) ---
 
-function readStr(source: Record<string, unknown>, key: string): string {
-  return String(source[key] ?? '');
+function readStr(source: Record<string, unknown>, key: string, fallback = ''): string {
+  return String(source[key] ?? fallback);
 }
 
-function readNum(source: Record<string, unknown>, key: string): number {
+function readNum(source: Record<string, unknown>, key: string, fallback = 0): number {
   const raw = source[key];
-  if (raw === undefined || raw === null) return 0;
+  if (raw === undefined || raw === null) return fallback;
   const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function readBool(source: Record<string, unknown>, key: string): boolean {
-  return Boolean(source[key] ?? false);
+function readBool(source: Record<string, unknown>, key: string, fallback = false): boolean {
+  const raw = source[key];
+  if (raw === undefined || raw === null) return fallback;
+  return Boolean(raw);
 }
 
 function safeJsonParse<T>(value: unknown, fallback: T): T {
@@ -140,41 +145,42 @@ function safeJsonParse<T>(value: unknown, fallback: T): T {
 export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmPolicy {
   return {
     apiKeys: {
-      anthropic: readStr(source, 'anthropicApiKey'),
-      deepseek: readStr(source, 'deepseekApiKey'),
-      gemini: readStr(source, 'geminiApiKey'),
-      openai: readStr(source, 'openaiApiKey'),
+      anthropic: readStr(source, 'anthropicApiKey', ""),
+      deepseek: readStr(source, 'deepseekApiKey', ""),
+      gemini: readStr(source, 'geminiApiKey', ""),
+      openai: readStr(source, 'openaiApiKey', ""),
     },
     provider: {
-      baseUrl: readStr(source, 'llmBaseUrl'),
-      id: readStr(source, 'llmProvider'),
+      baseUrl: readStr(source, 'llmBaseUrl', "https://generativelanguage.googleapis.com/v1beta/openai"),
+      id: readStr(source, 'llmProvider', "gemini"),
     },
     budget: {
-      costCachedInputPer1M: readNum(source, 'llmCostCachedInputPer1M'),
-      costInputPer1M: readNum(source, 'llmCostInputPer1M'),
-      costOutputPer1M: readNum(source, 'llmCostOutputPer1M'),
+      costCachedInputPer1M: readNum(source, 'llmCostCachedInputPer1M', 0.125),
+      costInputPer1M: readNum(source, 'llmCostInputPer1M', 1.25),
+      costOutputPer1M: readNum(source, 'llmCostOutputPer1M', 10),
     },
     tokens: {
-      maxOutput: readNum(source, 'llmMaxOutputTokens'),
-      plan: readNum(source, 'llmMaxOutputTokensPlan'),
-      planFallback: readNum(source, 'llmMaxOutputTokensPlanFallback'),
-      triage: readNum(source, 'llmMaxOutputTokensTriage'),
-      reasoning: readNum(source, 'llmMaxOutputTokensReasoning'),
-      maxTokens: readNum(source, 'llmMaxTokens'),
+      maxOutput: readNum(source, 'llmMaxOutputTokens', 1400),
+      plan: readNum(source, 'llmMaxOutputTokensPlan', 4096),
+      planFallback: readNum(source, 'llmMaxOutputTokensPlanFallback', 2048),
+      triage: readNum(source, 'llmMaxOutputTokensTriage', 20000),
+      reasoning: readNum(source, 'llmMaxOutputTokensReasoning', 4096),
+      maxTokens: readNum(source, 'llmMaxTokens', 16384),
     },
     models: {
-      plan: readStr(source, 'llmModelPlan'),
-      reasoning: readStr(source, 'llmModelReasoning'),
-      planFallback: readStr(source, 'llmPlanFallbackModel'),
-      reasoningFallback: readStr(source, 'llmReasoningFallbackModel'),
+      plan: readStr(source, 'llmModelPlan', "gemini-2.5-flash"),
+      reasoning: readStr(source, 'llmModelReasoning', "deepseek-reasoner"),
+      planFallback: readStr(source, 'llmPlanFallbackModel', "deepseek-chat"),
+      reasoningFallback: readStr(source, 'llmReasoningFallbackModel', "gemini-2.5-pro"),
     },
     reasoning: {
-      enabled: readBool(source, 'llmPlanUseReasoning'),
-      budget: readNum(source, 'llmReasoningBudget'),
-      mode: readBool(source, 'llmReasoningMode'),
+      enabled: readBool(source, 'llmPlanUseReasoning', false),
+      budget: readNum(source, 'llmReasoningBudget', 32768),
+      mode: readBool(source, 'llmReasoningMode', true),
     },
     phaseOverrides: safeJsonParse(source.llmPhaseOverridesJson, {}),
     providerRegistry: safeJsonParse(source.llmProviderRegistryJson, []),
-    timeoutMs: readNum(source, 'llmTimeoutMs'),
+    labQueueDelayMs: readNum(source, 'llmLabQueueDelayMs', 1000),
+    timeoutMs: readNum(source, 'llmTimeoutMs', 30000),
   };
 }

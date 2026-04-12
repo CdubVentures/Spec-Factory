@@ -2,6 +2,7 @@ import { callLlmProvider } from './llmClient.js';
 import { resolveModelFromRegistry, stripCompositeKey } from '../routeResolver.js';
 import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 import { providerFromModelToken, defaultBaseUrlForProvider, bootstrapApiKeyForProvider, KNOWN_PROVIDERS, normalizeProvider } from '../providerMeta.js';
+import { enqueueLabCall } from '../labQueue.js';
 
 // WHY: All roles alias to plan model via configPostMerge. ROLE_KEYS only needs
 // model + fallbackModel. Provider/baseUrl/apiKey resolved via registry or bootstrap.
@@ -555,6 +556,16 @@ export async function callLlmWithRouting({
 
   const jsonStrictEnabled = resolvePhaseJsonStrict(config, phase);
 
+  // WHY: Lab-proxied calls serialize through a global queue to avoid overwhelming
+  // the upstream ChatGPT session. Non-lab calls bypass entirely.
+  const labQueueDelayMs = configInt(config, 'llmLabQueueDelayMs');
+  const wrapLabQueue = (route, callFn) => {
+    const isLab = route?._registryEntry?.accessMode === 'lab';
+    return (isLab && labQueueDelayMs > 0)
+      ? enqueueLabCall(callFn, labQueueDelayMs)
+      : callFn();
+  };
+
   logger?.info?.('llm_route_selected', {
     reason,
     role: resolvedRole,
@@ -643,7 +654,7 @@ export async function callLlmWithRouting({
     };
     const effectiveFbRequestOptions = Object.keys(fbRequestOptions).length > 0 ? fbRequestOptions : baseRequestOptions;
 
-    return callLlmProvider({
+    return wrapLabQueue(fallback, () => callLlmProvider({
       ...sharedParams,
       costRates: effectiveFallbackCostRates,
       requestOptions: effectiveFbRequestOptions,
@@ -661,7 +672,7 @@ export async function callLlmWithRouting({
         fallback_attempt: true,
         fallback_from_model: primary.model || null
       }
-    });
+    }));
   };
 
   // WHY: When jsonStrict is false AND a jsonSchema is provided, split into two phases:
@@ -673,7 +684,7 @@ export async function callLlmWithRouting({
     onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
     let researchText;
     try {
-      researchText = await callLlmProvider({
+      researchText = await wrapLabQueue(primary, () => callLlmProvider({
         ...effectiveSharedParams,
         jsonSchema: null,
         rawTextMode: true,
@@ -682,7 +693,7 @@ export async function callLlmWithRouting({
           provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
         },
         providerHealth,
-      });
+      }));
     } catch (error) {
       // Research failed → fall back to single-call WITH schema (existing fallback behavior)
       logger?.warn?.('llm_writer_research_failed_falling_back', {
@@ -722,7 +733,7 @@ export async function callLlmWithRouting({
     };
     const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
 
-    return callLlmProvider({
+    return wrapLabQueue(writerRoute, () => callLlmProvider({
       ...sharedParams,
       system: writerSystem,
       user,
@@ -742,20 +753,20 @@ export async function callLlmWithRouting({
         writer_phase: true,
         research_model: primary.model,
       },
-    });
+    }));
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
   onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
   try {
-    return await callLlmProvider({
+    return await wrapLabQueue(primary, () => callLlmProvider({
       ...effectiveSharedParams,
       route: {
         model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
         provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
       },
       providerHealth
-    });
+    }));
   } catch (error) {
     return dispatchFallback(error);
   }

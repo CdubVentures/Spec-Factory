@@ -839,7 +839,8 @@ export async function callLlmProvider({
       if (shouldCountAsProviderFailure(firstError)) {
         health.recordFailure(providerLabel, firstError);
       }
-      const safeMessage = sanitizeText(firstError.message, [apiKey]);
+      const causeMsg = firstError.cause?.message ? ` (${firstError.cause.message})` : '';
+      const safeMessage = sanitizeText(firstError.message + causeMsg, [apiKey]);
       emitFailure(safeMessage);
       throw new Error(safeMessage);
     }
@@ -880,7 +881,8 @@ export async function callLlmProvider({
       if (shouldCountAsProviderFailure(retryError)) {
         health.recordFailure(providerLabel, retryError);
       }
-      const safeMessage = sanitizeText(retryError.message, [apiKey]);
+      const causeMsg = retryError.cause?.message ? ` (${retryError.cause.message})` : '';
+      const safeMessage = sanitizeText(retryError.message + causeMsg, [apiKey]);
       emitFailure(safeMessage);
       throw new Error(safeMessage);
     }

@@ -4,7 +4,6 @@ function createPageStub(exportName) {
 
 export const PAGE_REGISTRY_MODULE_STUBS = Object.freeze({
   '../pages/overview/OverviewPage.tsx': createPageStub('OverviewPage'),
-  '../pages/product/ProductPage.tsx': createPageStub('ProductPage'),
   '../features/catalog/components/CategoryManager.tsx': createPageStub('CategoryManager'),
   '../features/catalog/components/CatalogPage.tsx': createPageStub('CatalogPage'),
   '../features/studio/components/StudioPage.tsx': createPageStub('StudioPage'),

@@ -7,7 +7,6 @@ import {
   createComponentRowHarness,
   linkProductToComponent,
   upsertComponentLane,
-  writeComponentReviewItems,
 } from './helpers/componentReviewRowHarness.js';
 
 test('component payload aggregates candidates from all linked products for every slot type', async (t) => {
@@ -39,8 +38,6 @@ test('component payload aggregates candidates from all linked products for every
       matchType: 'exact',
     });
   }
-
-  writeComponentReviewItems(specDb, []);
 
   const payload = await buildComponentReviewPayloads({
     config,

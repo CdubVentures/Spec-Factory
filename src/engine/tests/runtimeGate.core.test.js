@@ -102,9 +102,6 @@ test('applyRuntimeFieldRules reports open-enum curation suggestions', async () =
     });
 
     assert.equal(result.fields.coating, 'satin microtexture');
-    assert.equal(Array.isArray(result.curation_suggestions), true);
-    assert.equal(result.curation_suggestions.length, 1);
-    assert.equal(result.curation_suggestions[0].field_key, 'coating');
   });
 });
 

@@ -48,8 +48,6 @@ export function applyRuntimeFieldRules({
   enforceEvidence = false,
   strictEvidence = false,
   evidencePack = null,
-  curationQueue = null,
-  componentReviewQueue = null,
   identityObservations = null,
   extractedValues = null,
   respectPerFieldEvidence = true
@@ -61,8 +59,6 @@ export function applyRuntimeFieldRules({
       failures: [],
       warnings: [],
       changes: [],
-      curation_suggestions: [],
-      component_review_items: [],
       identity_observations: []
     };
   }
@@ -74,8 +70,6 @@ export function applyRuntimeFieldRules({
   const failures = [];
   const warnings = [];
   const changes = [];
-  const runtimeCurationQueue = Array.isArray(curationQueue) ? curationQueue : [];
-  const runtimeComponentReviewQueue = Array.isArray(componentReviewQueue) ? componentReviewQueue : [];
   const runtimeIdentityObservations = Array.isArray(identityObservations) ? identityObservations : [];
 
   // Pass 1: per-field normalization + enum/range/shape.
@@ -85,8 +79,6 @@ export function applyRuntimeFieldRules({
       continue;
     }
     const normalized = engine.normalizeCandidate(field, before, {
-      curationQueue: runtimeCurationQueue,
-      componentReviewQueue: runtimeComponentReviewQueue,
       identityObservations: runtimeIdentityObservations,
       extractedValues: extractedValues || fields,
     });
@@ -279,8 +271,6 @@ export function applyRuntimeFieldRules({
     failures,
     warnings,
     changes,
-    curation_suggestions: runtimeCurationQueue,
-    component_review_items: runtimeComponentReviewQueue,
     identity_observations: runtimeIdentityObservations
   };
 }

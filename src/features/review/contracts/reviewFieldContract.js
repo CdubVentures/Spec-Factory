@@ -17,8 +17,6 @@ export const FIELD_STATE_SELECTED_KEYS = Object.freeze(FIELD_STATE_SELECTED_SHAP
 
 export const FIELD_STATE_SHAPE = Object.freeze([
   { key: 'selected', coerce: 'object' },
-  { key: 'needs_review', coerce: 'bool' },
-  { key: 'reason_codes', coerce: 'array', itemType: 'string' },
   { key: 'candidate_count', coerce: 'int' },
   { key: 'candidates', coerce: 'array', itemRef: 'ReviewCandidateGen' },
   { key: 'accepted_candidate_id', coerce: 'string', nullable: true },
@@ -38,7 +36,7 @@ export const FIELD_STATE_OPTIONAL_KEYS = Object.freeze(
   FIELD_STATE_SHAPE.filter(d => d.optional).map(d => d.key),
 );
 
-export const FIELD_STATE_STATUS_VALUES = Object.freeze(['ok', 'needs_review']);
+export const FIELD_STATE_STATUS_VALUES = Object.freeze(['ok']);
 export const CONFIDENCE_COLOR_VALUES = Object.freeze(['green', 'yellow', 'red', 'gray']);
 
 // ── Candidate ───────────────────────────────────────────────────────
@@ -87,7 +85,6 @@ export const PRODUCT_IDENTITY_KEYS = Object.freeze(PRODUCT_IDENTITY_SHAPE.map(d 
 export const PRODUCT_METRICS_SHAPE = Object.freeze([
   { key: 'confidence', coerce: 'float' },
   { key: 'coverage', coerce: 'float' },
-  { key: 'flags', coerce: 'int' },
   { key: 'missing', coerce: 'int' },
   { key: 'has_run', coerce: 'bool' },
   { key: 'updated_at', coerce: 'string' },
@@ -123,7 +120,6 @@ export const REVIEW_LAYOUT_KEYS = Object.freeze(REVIEW_LAYOUT_SHAPE.map(d => d.k
 export const RUN_METRICS_SHAPE = Object.freeze([
   { key: 'confidence', coerce: 'float' },
   { key: 'coverage', coerce: 'float' },
-  { key: 'flags', coerce: 'int' },
   { key: 'missing', coerce: 'int' },
   { key: 'count', coerce: 'int' },
 ]);

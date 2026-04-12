@@ -1,31 +1,25 @@
 import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useReviewStore, selectSelectedField, selectSelectedProductId } from '../state/reviewStore.ts';
 import type { SortMode } from '../state/reviewStore.ts';
 import { ReviewMatrix } from './ReviewMatrix.tsx';
 import { CellDrawer } from '../../../shared/ui/overlay/CellDrawer.tsx';
-import { FlagsSection } from '../../../shared/ui/feedback/FlagsSection.tsx';
 import { BrandFilterBar } from './BrandFilterBar.tsx';
 import { MetricRow } from '../../../shared/ui/data-display/MetricRow.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
-import { ActionTooltip } from '../../../shared/ui/feedback/ActionTooltip.tsx';
 import { pct } from '../../../utils/formatting.ts';
-import { hasKnownValue } from '../../../utils/fieldNormalize.ts';
 import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
-import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
-import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review.ts';
+import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
   { value: 'recent', label: 'Recent' },
   { value: 'confidence', label: 'Confidence' },
-  { value: 'flags', label: 'Flags' },
 ];
 
 function hostFromUrl(url: string): string {
@@ -54,18 +48,16 @@ export function ReviewPage() {
   const { getLabel } = useFieldLabels(category);
   const {
     activeCell, drawerOpen, openDrawer, closeDrawer,
-    setFlaggedCells, nextFlagged, prevFlagged,
     cellMode, editingValue, originalEditingValue, saveStatus,
     selectCell, startEditing, cancelEditing, setEditingValue, commitEditing, setSaveStatus,
     brandFilter, setAvailableBrands, setBrandFilterMode, setBrandFilterSelection,
-    sortMode, setSortMode, showOnlyFlagged, setShowOnlyFlagged,
+    sortMode, setSortMode,
   } = useReviewStore();
   const selectedField = useReviewStore(selectSelectedField);
   const selectedProductId = useReviewStore(selectSelectedProductId);
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
-  const [reviewActionsDrawerOpen, toggleReviewActionsDrawer] = usePersistedToggle('review:top:actionsDrawer:open', false);
   const persistedGridState = useMemo(
     () => readReviewGridSessionState(category),
     [category],
@@ -107,7 +99,6 @@ export function ReviewPage() {
     if (!indexData?.brands || indexData.brands.length === 0) return;
     if (reviewGridHydratedRef.current === category) return;
     setSortMode(persistedGridState.sortMode);
-    setShowOnlyFlagged(persistedGridState.showOnlyFlagged);
     if (persistedGridState.brandFilterMode === 'custom') {
       setBrandFilterSelection(persistedGridState.selectedBrands);
     } else {
@@ -119,7 +110,6 @@ export function ReviewPage() {
     indexData?.brands,
     persistedGridState,
     setSortMode,
-    setShowOnlyFlagged,
     setBrandFilterMode,
     setBrandFilterSelection,
   ]);
@@ -128,11 +118,10 @@ export function ReviewPage() {
     if (reviewGridHydratedRef.current !== category) return;
     writeReviewGridSessionState(category, {
       sortMode,
-      showOnlyFlagged,
       brandFilterMode: brandFilter.mode,
       selectedBrands: Array.from(brandFilter.selected),
     });
-  }, [category, sortMode, showOnlyFlagged, brandFilter.mode, brandFilter.selected]);
+  }, [category, sortMode, brandFilter.mode, brandFilter.selected]);
 
   // Auto-clear "saved" status after 2 seconds
   useEffect(() => {
@@ -144,7 +133,7 @@ export function ReviewPage() {
     }
   }, [saveStatus, setSaveStatus]);
 
-  // Client-side brand filtering + flagged filter + sorting
+  // Client-side brand filtering + sorting
   const products = useMemo(() => {
     if (!indexData?.products) return [];
     let filtered = indexData.products;
@@ -156,11 +145,6 @@ export function ReviewPage() {
         const brand = (p.identity?.brand || '').trim();
         return brandFilter.selected.has(brand);
       });
-    }
-
-    // Flagged-only filter
-    if (showOnlyFlagged) {
-      filtered = filtered.filter((p) => p.metrics.flags > 0);
     }
 
     // Sort
@@ -176,9 +160,6 @@ export function ReviewPage() {
       case 'confidence':
         sorted.sort((a, b) => a.metrics.confidence - b.metrics.confidence);
         break;
-      case 'flags':
-        sorted.sort((a, b) => b.metrics.flags - a.metrics.flags);
-        break;
       case 'brand':
       default:
         sorted.sort((a, b) => {
@@ -192,22 +173,7 @@ export function ReviewPage() {
         break;
     }
     return sorted;
-  }, [indexData?.products, brandFilter, sortMode, showOnlyFlagged]);
-
-  // Build flagged cells list
-  useEffect(() => {
-    if (!layout || !products.length) return;
-    const flagged: { productId: string; field: string }[] = [];
-    for (const p of products) {
-      for (const row of layout.rows) {
-        const state = p.fields[row.key];
-        if (state?.needs_review) {
-          flagged.push({ productId: p.product_id, field: row.key });
-        }
-      }
-    }
-    setFlaggedCells(flagged);
-  }, [layout, products, setFlaggedCells]);
+  }, [indexData?.products, brandFilter, sortMode]);
 
   // Single click = select + edit + open drawer.
   // Uses getState() / getQueryData() to avoid stale closure deps that would cause
@@ -310,11 +276,8 @@ export function ReviewPage() {
                     status: 'ok',
                     color: 'green' as const,
                   },
-                  needs_review: false,
-                  reason_codes: [],
                   overridden: isManualOverride,
                   source_timestamp: now,
-                  // Update source metadata if provided, otherwise preserve existing
                   ...(sourceMeta?.source !== undefined ? { source: sourceMeta.source } : {}),
                   ...(sourceMeta?.method !== undefined ? { method: sourceMeta.method } : {}),
                   ...(sourceMeta?.tier !== undefined ? { tier: sourceMeta.tier } : {}),
@@ -366,185 +329,24 @@ export function ReviewPage() {
     }
   }, [cellMode, saveStatus, editingValue, originalEditingValue, activeCell, debouncedSave]);
 
-  // Approve all greens for a product
-  const approveAllGreens = useCallback(() => {
-    if (!products.length || !layout) return;
-    for (const p of products) {
-      for (const row of layout.rows) {
-        const state = p.fields[row.key];
-        if (state?.selected.color === 'green' && state.needs_review) {
-          overrideMut.mutate({
-            productId: p.product_id,
-            field: row.key,
-            candidateId: state.candidates[0]?.candidate_id,
-            value: state.candidates[0]?.value != null ? String(state.candidates[0]?.value) : undefined,
-          });
-        }
-      }
-    }
-  }, [products, layout, overrideMut]);
-
-  // ── Keyboard shortcuts ──────────────────────────────────────────────
-
-  // Tab: if editing → commit + move next; otherwise → next flagged
-  useHotkeys('tab', (e) => {
-    e.preventDefault();
-    if (cellMode === 'editing') {
-      debouncedSave.cancel();
-      if (activeCell) saveEdit(activeCell.productId, activeCell.field, editingValue, originalEditingValue);
-      commitEditing();
-    }
-    nextFlagged();
-  }, { enableOnFormTags: true }, [cellMode, activeCell, editingValue, originalEditingValue, nextFlagged, commitEditing, debouncedSave, saveEdit]);
-
-  useHotkeys('shift+tab', (e) => { e.preventDefault(); prevFlagged(); }, { enableOnFormTags: false }, [prevFlagged]);
-
-  // Escape: if editing → cancel edit; if drawer open → close drawer
-  useHotkeys('escape', () => {
-    if (cellMode === 'editing') {
-      debouncedSave.cancel();
-      cancelEditing();
-    } else if (drawerOpen) {
-      closeDrawer();
-    }
-  }, { enableOnFormTags: true }, [cellMode, drawerOpen, cancelEditing, closeDrawer, debouncedSave]);
-
-  // Space: open drawer for selected cell (if not already open)
-  useHotkeys('space', (e) => {
-    if (activeCell && !drawerOpen && cellMode !== 'editing') {
-      e.preventDefault();
-      openDrawer(activeCell.productId, activeCell.field);
-    }
-  }, { enableOnFormTags: false }, [activeCell, drawerOpen, cellMode, openDrawer]);
-
-  // F2: enter edit mode for selected cell
-  useHotkeys('f2', (e) => {
-    if (activeCell && cellMode === 'selected') {
-      e.preventDefault();
-      const product = products.find(p => p.product_id === activeCell.productId);
-      const currentValue = product?.fields[activeCell.field]?.selected.value;
-      startEditing(currentValue != null ? String(currentValue) : '');
-    }
-  }, { enableOnFormTags: false }, [activeCell, cellMode, products, startEditing]);
-
-  // Enter: if editing → commit; if selected → approve top candidate
-  useHotkeys('enter', () => {
-    if (cellMode === 'editing') {
-      debouncedSave.cancel();
-      if (activeCell) saveEdit(activeCell.productId, activeCell.field, editingValue, originalEditingValue);
-      commitEditing();
-      return;
-    }
-    if (!activeCell || !products.length) return;
-    const product = products.find(p => p.product_id === activeCell.productId);
-    if (!product) return;
-    const state = product.fields[activeCell.field];
-    if (!state || state.candidates.length === 0) return;
-    const topCand = state.candidates[0];
-    optimisticUpdateField(
-      activeCell.productId,
-      activeCell.field,
-      String(topCand.value ?? ''),
-      { source: topCand.source || '', method: topCand.method || undefined, tier: topCand.tier },
-    );
-    overrideMut.mutate({
-      productId: activeCell.productId,
-      field: activeCell.field,
-      candidateId: topCand.candidate_id,
-      value: String(topCand.value ?? ''),
-      candidateSource: topCand.source_id || topCand.source || '',
-      candidateMethod: topCand.method || undefined,
-      candidateTier: topCand.tier,
-      candidateConfidence: Number(topCand.score ?? 0),
-      candidateEvidence: topCand.evidence,
-    });
-  }, { enableOnFormTags: true }, [cellMode, activeCell, editingValue, originalEditingValue, products, overrideMut, commitEditing, debouncedSave, saveEdit, optimisticUpdateField]);
-
-  useHotkeys('ctrl+a', (e) => { e.preventDefault(); approveAllGreens(); }, [approveAllGreens]);
-
-  // Ctrl+S: save any pending edit
-  useHotkeys('ctrl+s', (e) => {
-    e.preventDefault();
-    if (cellMode === 'editing') {
-      debouncedSave.cancel();
-      if (activeCell) saveEdit(activeCell.productId, activeCell.field, editingValue, originalEditingValue);
-      commitEditing();
-    }
-  }, { enableOnFormTags: true }, [cellMode, activeCell, editingValue, originalEditingValue, commitEditing, debouncedSave, saveEdit]);
-
-  // E: open evidence URL for active cell's top candidate
-  useHotkeys('e', () => {
-    if (cellMode === 'editing') return;
-    if (!activeCell || !products.length) return;
-    const product = products.find(p => p.product_id === activeCell.productId);
-    if (!product) return;
-    const state = product.fields[activeCell.field];
-    const url = state?.candidates[0]?.evidence?.url;
-    if (url) window.open(url, '_blank');
-  }, { enableOnFormTags: false }, [activeCell, products, cellMode]);
-
-  // 1-9 candidate shortcuts
-  useHotkeys('1,2,3,4,5,6,7,8,9', (e) => {
-    if (cellMode === 'editing') return;
-    if (!activeCell || !products.length) return;
-    const idx = parseInt(e.key) - 1;
-    const product = products.find(p => p.product_id === activeCell.productId);
-    if (!product) return;
-    const state = product.fields[activeCell.field];
-    if (!state || idx >= state.candidates.length) return;
-    const cand = state.candidates[idx];
-    optimisticUpdateField(
-      activeCell.productId,
-      activeCell.field,
-      String(cand.value ?? ''),
-      { source: cand.source || '', method: cand.method || undefined, tier: cand.tier },
-    );
-    overrideMut.mutate({
-      productId: activeCell.productId,
-      field: activeCell.field,
-      candidateId: cand.candidate_id,
-      value: String(cand.value ?? ''),
-      candidateSource: cand.source_id || cand.source || '',
-      candidateMethod: cand.method || undefined,
-      candidateTier: cand.tier,
-      candidateConfidence: Number(cand.score ?? 0),
-      candidateEvidence: cand.evidence,
-    });
-  }, { enableOnFormTags: false }, [activeCell, products, overrideMut, cellMode, optimisticUpdateField]);
-
   // Aggregate metrics — use run-only metrics from server if available
   const metrics = useMemo(() => {
     if (!indexData) return null;
     const mr = indexData.metrics_run;
     if (mr && mr.count > 0) {
-      return { confidence: mr.confidence, coverage: mr.coverage, flags: mr.flags, missing: mr.missing, count: mr.count };
+      return { confidence: mr.confidence, coverage: mr.coverage, missing: mr.missing, count: mr.count };
     }
     // Fallback: compute from filtered products
     if (!products.length) return null;
     const totalConf = products.reduce((s, p) => s + p.metrics.confidence, 0) / products.length;
     const totalCov = products.reduce((s, p) => s + p.metrics.coverage, 0) / products.length;
-    const totalFlags = products.reduce((s, p) => s + p.metrics.flags, 0);
     const totalMissing = products.reduce((s, p) => s + (p.metrics.missing || 0), 0);
-    return { confidence: totalConf, coverage: totalCov, flags: totalFlags, missing: totalMissing, count: products.length };
+    return { confidence: totalConf, coverage: totalCov, missing: totalMissing, count: products.length };
   }, [indexData, products]);
 
   // Active product for drawer
   const activeProduct = products.find(p => p.product_id === selectedProductId);
   const activeFieldState = activeProduct?.fields[selectedField];
-  const pendingGreenAcceptCount = useMemo(() => {
-    if (!layout || products.length === 0) return 0;
-    let count = 0;
-    for (const product of products) {
-      for (const row of layout.rows) {
-        const state = product.fields[row.key];
-        if (state?.selected.color === 'green' && state.needs_review) {
-          count += 1;
-        }
-      }
-    }
-    return count;
-  }, [layout, products]);
-  const allGreensAccepted = pendingGreenAcceptCount === 0;
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || !indexData || indexData.total === 0) {
@@ -560,7 +362,7 @@ export function ReviewPage() {
 
   return (
     <div className="space-y-2">
-      {/* Top bar: metrics + actions */}
+      {/* Top bar: metrics + sort */}
       <div className="flex items-center justify-between">
         {metrics && (
           <MetricRow
@@ -568,13 +370,11 @@ export function ReviewPage() {
               { label: 'Products', value: `${metrics.count}/${indexData.total}` },
               { label: 'Avg Confidence', value: pct(metrics.confidence) },
               { label: 'Avg Coverage', value: pct(metrics.coverage) },
-              { label: 'Flags', value: metrics.flags },
               { label: 'Missing', value: metrics.missing },
             ]}
           />
         )}
         <div className="flex gap-2 items-center">
-          {/* Sort dropdown */}
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as SortMode)}
@@ -585,82 +385,14 @@ export function ReviewPage() {
             ))}
           </select>
 
-          {/* Flagged Only toggle */}
-          <button
-            onClick={() => setShowOnlyFlagged(!showOnlyFlagged)}
-            className={`px-2 py-1 text-[10px] rounded font-medium border transition-colors ${
-              showOnlyFlagged
-                ? 'sf-chip-info sf-border-default'
-                : 'sf-icon-button'
-            }`}
-          >
-            Flagged Only {showOnlyFlagged ? 'ON' : 'OFF'}
-          </button>
-
           {saveStatus === 'saving' && <span className="sf-text-nano sf-status-text-info">Saving...</span>}
           {saveStatus === 'saved' && <span className="sf-text-nano sf-status-text-success">Saved</span>}
           {saveStatus === 'error' && <span className="sf-text-nano sf-status-text-danger">Save failed</span>}
-          <div className="relative h-7 w-7">
-            <div
-              className={`absolute right-0 top-0 z-20 h-7 overflow-hidden rounded-md sf-review-actions-drawer transition-[width] duration-300 ease-out ${
-                reviewActionsDrawerOpen ? 'w-[20rem]' : 'w-7'
-              }`}
-            >
-              <div className="flex h-full items-stretch">
-                <button
-                  onClick={() => toggleReviewActionsDrawer()}
-                  className="sf-review-actions-drawer-toggle inline-flex h-7 w-7 flex-shrink-0 items-center justify-center"
-                  title={reviewActionsDrawerOpen ? 'Close review action drawer' : 'Open review action drawer'}
-                  aria-label={reviewActionsDrawerOpen ? 'Close review action drawer' : 'Open review action drawer'}
-                >
-                  <svg
-                    className={`h-4 w-4 transition-transform duration-200 ${reviewActionsDrawerOpen ? 'rotate-180' : ''}`}
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                <div
-                  className={`sf-review-actions-drawer-content flex min-w-0 flex-1 items-center gap-1 px-1 transition-opacity duration-200 ${
-                    reviewActionsDrawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
-                  }`}
-                >
-                  <ActionTooltip text={allGreensAccepted ? 'All green cells in view are already accepted.' : 'Approve all pending green cells in view. Shortcut: Ctrl+A.'}>
-                    <button
-                      onClick={approveAllGreens}
-                      disabled={allGreensAccepted}
-                      className={`sf-review-actions-drawer-button h-6 flex-1 min-w-0 px-2.5 rounded disabled:opacity-50 ${
-                        allGreensAccepted ? 'sf-success-button-solid' : 'sf-primary-button'
-                      }`}
-                    >
-                      {allGreensAccepted ? 'Approved' : 'Approve'}
-                    </button>
-                  </ActionTooltip>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Brand filter bar */}
       <BrandFilterBar brands={indexData.brands} products={indexData.products} />
-
-      {/* Keyboard hint */}
-      <div className="sf-text-nano sf-text-subtle flex flex-wrap gap-x-4 gap-y-0.5">
-        <span>Click: edit + drawer</span>
-        <span>F2/type: edit</span>
-        <span>Tab/Shift+Tab: flags</span>
-        <span>Enter: approve/commit</span>
-        <span>1-9: candidate</span>
-        <span>E: evidence URL</span>
-        <span>Ctrl+A: approve greens</span>
-        <span>Ctrl+S: save</span>
-        <span>Space: drawer</span>
-        <span>Esc: cancel/close</span>
-      </div>
 
       {/* Main content: matrix + drawer */}
       <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,420px]' : 'grid-cols-1'} gap-3`}>
@@ -696,10 +428,7 @@ export function ReviewPage() {
                 overridden: activeFieldState.overridden,
                 acceptedCandidateId: activeFieldState.accepted_candidate_id ?? null,
               }}
-              badges={activeFieldState.reason_codes.map((code) => ({
-                label: code,
-                className: 'sf-chip-warning',
-              }))}
+              badges={[]}
               onManualOverride={(value) => {
                 optimisticUpdateField(
                   selectedProductId,
@@ -742,11 +471,6 @@ export function ReviewPage() {
               }}
               onRunAIReview={() => runGridAiReviewMut.mutate()}
               aiReviewPending={runGridAiReviewMut.isPending}
-              extraSections={
-                <>
-                  {activeFieldState.reason_codes?.length > 0 && <FlagsSection reasonCodes={activeFieldState.reason_codes} />}
-                </>
-              }
             />
           );
         })()}

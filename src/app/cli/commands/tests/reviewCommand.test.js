@@ -15,23 +15,13 @@ function createDeps(overrides = {}) {
       try { return await fn(specDb); } finally { try { specDb?.close(); } catch { /* */ } }
     },
     buildReviewLayout: async () => ({ columns: [] }),
-    buildReviewQueue: async () => [],
     buildProductReviewPayload: async () => ({ product_id: 'mouse-1', fields: {} }),
     writeProductReviewArtifacts: async () => ({ product_id: 'mouse-1' }),
-    writeCategoryReviewArtifacts: async () => ({ queue_path: 'review/queue.json' }),
-    startReviewQueueWebSocket: async () => ({
-      port: 8789,
-      poll_seconds: 5,
-      ws_url: 'ws://127.0.0.1:8789/review/queue',
-      health_url: 'http://127.0.0.1:8789/health',
-      stop: async () => {},
-    }),
     setOverrideFromCandidate: async () => ({ updated: true }),
     approveGreenOverrides: async () => ({ approved_count: 0, approved_fields: [] }),
     setManualOverride: async () => ({ updated: true }),
     finalizeOverrides: async () => ({ finalized: true }),
     buildReviewMetrics: async () => ({ reviewed_products: 0, products_per_hour: 0 }),
-    appendReviewSuggestion: async () => ({ appended: true }),
     ...overrides,
   };
 }
@@ -40,24 +30,11 @@ function createReviewHarness(overrides = {}) {
   return createReviewCommand(createDeps(overrides));
 }
 
-async function withImmediateTimeout(run) {
-  const originalSetTimeout = global.setTimeout;
-  global.setTimeout = (callback, _delay, ...args) => {
-    callback(...args);
-    return 0;
-  };
-  try {
-    return await run();
-  } finally {
-    global.setTimeout = originalSetTimeout;
-  }
-}
-
 test('review command requires a subcommand', async () => {
   const commandReview = createReviewHarness();
   await assert.rejects(
     commandReview({}, {}, { category: 'mouse', _: [] }),
-    /review requires a subcommand: layout\|queue\|product\|build\|ws-queue\|override\|approve-greens\|manual-override\|finalize\|metrics\|suggest/,
+    /review requires a subcommand: layout\|product\|build\|override\|approve-greens\|manual-override\|finalize\|metrics/,
   );
 });
 
@@ -73,43 +50,6 @@ test('review layout returns the layout payload', async () => {
     action: 'layout',
     columns: ['identity', 'confidence'],
   });
-});
-
-test('review queue defaults status and limit in the returned payload', async () => {
-  const commandReview = createReviewHarness({
-    buildReviewQueue: async () => [{ product_id: 'mouse-review-1' }],
-  });
-
-  const result = await commandReview({}, {}, { _: ['queue'] });
-
-  assert.deepEqual(result, {
-    command: 'review',
-    action: 'queue',
-    category: 'mouse',
-    status: 'needs_review',
-    count: 1,
-    items: [{ product_id: 'mouse-review-1' }],
-  });
-});
-
-test('review queue closes the SpecDb and rethrows when queue building fails', async () => {
-  let closeCount = 0;
-  const expectedError = new Error('queue_build_failed');
-  const commandReview = createReviewHarness({
-    withSpecDb: async (_config, _category, fn) => {
-      const specDb = { close() { closeCount += 1; } };
-      try { return await fn(specDb); } finally { try { specDb?.close(); } catch { /* */ } }
-    },
-    buildReviewQueue: async () => {
-      throw expectedError;
-    },
-  });
-
-  await assert.rejects(
-    commandReview({}, {}, { _: ['queue'] }),
-    expectedError,
-  );
-  assert.equal(closeCount, 1);
 });
 
 test('review product requires --product-id', async () => {
@@ -156,17 +96,11 @@ test('review product reflects without-candidates in the returned payload', async
   });
 });
 
-test('review build returns product and queue artifact payloads', async () => {
+test('review build requires --product-id and returns product artifact payload', async () => {
   const commandReview = createReviewHarness({
     writeProductReviewArtifacts: async ({ productId }) => ({
       product_id: productId,
-      review_field_count: 3,
-    }),
-    writeCategoryReviewArtifacts: async ({ status, limit }) => ({
-      queue_path: 'review/queue.json',
-      queue_count: 12,
-      status,
-      limit,
+      candidate_count: 5,
     }),
   });
 
@@ -182,52 +116,17 @@ test('review build returns product and queue artifact payloads', async () => {
     category: 'mouse',
     product: {
       product_id: 'mouse-2',
-      review_field_count: 3,
-    },
-    queue: {
-      queue_path: 'review/queue.json',
-      queue_count: 12,
-      status: 'needs_review',
-      limit: 500,
+      candidate_count: 5,
     },
   });
 });
 
-test('review ws-queue returns websocket metadata', async () => {
-  const commandReview = createReviewHarness({
-    startReviewQueueWebSocket: async ({ pollSeconds }) => ({
-      port: 9099,
-      poll_seconds: pollSeconds,
-      ws_url: 'ws://127.0.0.1:9099/review/queue',
-      health_url: 'http://127.0.0.1:9099/health',
-      stop: async () => {},
-    }),
-  });
-
-  const result = await withImmediateTimeout(() => commandReview({}, {}, {
-    category: 'mouse',
-    _: ['ws-queue'],
-    status: 'queued',
-    limit: '50',
-    host: '0.0.0.0',
-    port: '9090',
-    'poll-seconds': '3',
-    'duration-seconds': '1',
-  }));
-
-  assert.deepEqual(result, {
-    command: 'review',
-    action: 'ws-queue',
-    category: 'mouse',
-    status: 'queued',
-    limit: 50,
-    host: '0.0.0.0',
-    port: 9099,
-    poll_seconds: 3,
-    ws_url: 'ws://127.0.0.1:9099/review/queue',
-    health_url: 'http://127.0.0.1:9099/health',
-    stop_reason: 'duration_elapsed',
-  });
+test('review build requires --product-id', async () => {
+  const commandReview = createReviewHarness();
+  await assert.rejects(
+    commandReview({}, {}, { category: 'mouse', _: ['build'] }),
+    /review build requires --product-id <id>/,
+  );
 });
 
 test('review manual-override requires --product-id --field --value', async () => {
@@ -314,71 +213,6 @@ test('review metrics returns the metrics payload for the requested window', asyn
     reviewed_products: 4,
     products_per_hour: 2,
     window_hours: 12,
-  });
-});
-
-test('review suggest requires --type --field --value', async () => {
-  const commandReview = createReviewHarness();
-  await assert.rejects(
-    commandReview({}, {}, {
-      category: 'mouse',
-      _: ['suggest'],
-      type: 'enum',
-      field: 'switch_type',
-    }),
-    /review suggest requires --type --field --value/,
-  );
-});
-
-test('review suggest returns the normalized suggestion payload', async () => {
-  const commandReview = createReviewHarness({
-    parseJsonArg: (name, value, fallback) => {
-      if (name === 'evidence-quote-span') {
-        return JSON.parse(String(value));
-      }
-      return fallback;
-    },
-    appendReviewSuggestion: async ({ type, payload }) => ({
-      appended: true,
-      type,
-      suggestion: payload,
-    }),
-  });
-
-  const result = await commandReview({}, {}, {
-    category: 'mouse',
-    _: ['suggest'],
-    type: 'enum',
-    field: 'switch_type',
-    value: 'optical-v2',
-    canonical: 'optical_v2',
-    'product-id': 'mouse-1',
-    'evidence-url': 'https://manufacturer.example/spec',
-    'evidence-quote': 'Switch Type: Optical V2',
-    'evidence-quote-span': '{"start":0,"end":12}',
-  });
-
-  assert.deepEqual(result, {
-    command: 'review',
-    action: 'suggest',
-    category: 'mouse',
-    appended: true,
-    type: 'enum',
-    suggestion: {
-      product_id: 'mouse-1',
-      field: 'switch_type',
-      value: 'optical-v2',
-      canonical: 'optical_v2',
-      reason: '',
-      reviewer: '',
-      evidence: {
-        url: 'https://manufacturer.example/spec',
-        quote: 'Switch Type: Optical V2',
-        quote_span: { start: 0, end: 12 },
-        snippet_id: '',
-        snippet_hash: '',
-      },
-    },
   });
 });
 

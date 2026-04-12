@@ -5,19 +5,16 @@ Own all product, component, and enum review workflows: grid state assembly, cand
 ## Public API (The Contract)
 
 - `index.js` -- public exports for cross-feature access
-- `reviewCandidateRuntime.js` -- `createReviewCandidateRuntime()` -- factory returning `normalizeLower`, `isMeaningfulValue`, `candidateLooksReference`, `remapPendingComponentReviewItemsForNameChange`
-- `keyReviewState.js` -- key review state operations
+- `reviewCandidateRuntime.js` -- `normalizeLower`, `isMeaningfulValue`, `candidateLooksReference` utilities
 - `reviewGridData.js`, `reviewGridHelpers.js` -- grid assembly and helpers
 - `candidateInfrastructure.js` -- candidate management infrastructure
 - `componentImpact.js`, `componentReviewData.js`, `componentReviewHelpers.js` -- component review
 - `enumReviewData.js` -- enum review data
-- `overrideWorkflow.js`, `overrideHelpers.js`, `overridesReseed.js` -- override handling
+- `overrideWorkflow.js`, `overrideHelpers.js` -- override handling
 - `confidenceColor.js` -- confidence color mapping
 - `qaJudge.js` -- QA judgment logic
-- `suggestions.js` -- suggestion generation
 - `varianceEvaluator.js` -- variance evaluation
 - `reviewNormalization.js` -- review data normalization
-- `queueWebSocket.js` -- queue WebSocket integration
 
 ## Dependencies
 

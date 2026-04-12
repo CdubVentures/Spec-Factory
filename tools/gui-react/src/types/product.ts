@@ -7,7 +7,6 @@ import type {
   CatalogProductGen,
   CatalogRowGen,
   BrandGen,
-  ProductSummaryGen,
   QueueProductGen,
 } from './product.generated.ts';
 
@@ -19,37 +18,7 @@ export type CatalogRow = CatalogRowGen;
 export type Brand = BrandGen;
 export type QueueProduct = QueueProductGen;
 
-// WHY: ProductSummary extends the generated base with a typed constraint_analysis
-// and an index signature for forward-compatible field_reasoning payloads.
-export interface ProductSummary extends ProductSummaryGen {
-  constraint_analysis?: {
-    contradictions: Array<{
-      code: string;
-      severity: string;
-      message: string;
-      fields: string[];
-    }>;
-  };
-  [key: string]: unknown;
-}
-
 // ── Manual types (no backend shape descriptor) ──
-
-
-export interface NormalizedProduct {
-  identity: {
-    brand: string;
-    base_model: string;
-    model: string;
-    variant?: string;
-  };
-  fields: Record<string, unknown>;
-}
-
-export interface TrafficLight {
-  color: 'green' | 'yellow' | 'red' | 'gray';
-  field: string;
-}
 
 export interface BrandMutationResult {
   ok: boolean;

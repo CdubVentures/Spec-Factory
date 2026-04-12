@@ -145,7 +145,7 @@ const storeMap = {
   component_identity: 'componentStore', component_aliases: 'componentStore', component_values: 'componentStore',
   enum_lists: 'enumListStore', list_values: 'enumListStore',
   item_component_links: 'itemStateStore', item_list_links: 'itemStateStore',
-  products: 'queueProductStore', curation_suggestions: 'queueProductStore', component_review_queue: 'queueProductStore',
+  products: 'queueProductStore',
   llm_route_matrix: 'llmRouteSourceStore',
   bridge_events: 'sourceIntelStore',
   crawl_sources: 'artifactStore', source_screenshots: 'artifactStore', source_videos: 'artifactStore',
@@ -177,9 +177,8 @@ const persistenceMap = {
   component_values: 'deferred', enum_lists: 'deferred',
   list_values: 'deferred',
   item_component_links: 'deferred', item_list_links: 'deferred',
-  component_review_queue: 'deferred',
   // DB-only
-  curation_suggestions: 'db-only', billing_entries: 'db-only',
+  billing_entries: 'db-only',
   bridge_events: 'db-only',
   knob_snapshots: 'db-only', query_index: 'db-only',
   url_index: 'db-only', prompt_index: 'db-only',
@@ -249,18 +248,6 @@ const lifecycleMap = {
     'yes',
     'Product identity rows rebuild from product checkpoints.',
     'yes'
-  ),
-  curation_suggestions: life(
-    'none',
-    'no',
-    'na',
-    'Runtime queue state only.'
-  ),
-  component_review_queue: life(
-    'none',
-    'no',
-    'na',
-    'Runtime queue state only.'
   ),
   llm_route_matrix: life(
     'category_authority/{cat}/_control_plane/llm_route_matrix.json',
@@ -458,7 +445,7 @@ const specDbGroups = [
   { label: 'Component Identity', tables: ['component_identity', 'component_aliases', 'component_values'] },
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
   { label: 'Item State', tables: ['item_component_links', 'item_list_links'] },
-  { label: 'Catalog & Queue', tables: ['products', 'curation_suggestions', 'component_review_queue'] },
+  { label: 'Catalog', tables: ['products'] },
   { label: 'LLM Route Configuration', tables: ['llm_route_matrix'] },
   { label: 'Billing', tables: ['billing_entries'] },
   { label: 'Bridge Events', tables: ['bridge_events'] },
@@ -1135,7 +1122,7 @@ const cqrsCompliance = {
   source_screenshots: true, source_videos: true,
   // DB-only intentionally ephemeral (telemetry / runtime queues / audit trails)
   knob_snapshots: true, query_index: true, url_index: true, prompt_index: true,
-  bridge_events: true, curation_suggestions: true,
+  bridge_events: true,
   // DB-only ephemeral — audit cache, rebuilt on re-run
   field_audit_cache: true,
   // System-managed — auto-recreated
@@ -1144,7 +1131,6 @@ const cqrsCompliance = {
   component_identity: false, component_aliases: false, component_values: false,
   enum_lists: false, list_values: false,
   item_component_links: false, item_list_links: false,
-  component_review_queue: false,
   // DB-only with durability gap
   billing_entries: false,
 };

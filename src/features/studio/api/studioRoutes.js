@@ -8,6 +8,7 @@ import {
   buildStudioComponentDbFromSpecDb,
   buildStudioKnownValuesFromSpecDb,
   dedupeEnumValues,
+  hasMeaningfulEnumValue,
   isEnumConsistencyReviewEnabled,
   readEnumConsistencyFormatHint,
   summarizeStudioMapPayload,
@@ -254,14 +255,13 @@ export function registerStudioRoutes(ctx) {
           .filter((row) => !Boolean(row?.needs_review))
           .map((row) => row?.value)
       );
-      // WHY: Phase E3 — SQL is sole source for pending enum values
-      const pendingValues = runtimeSpecDb
-        ? runtimeSpecDb.getCurationSuggestions('enum_value', 'pending')
-            .filter(r => String(r.field_key || '').trim() === field)
-            .map(r => String(r.value || '').trim())
-            .filter(Boolean)
-            .slice(0, maxPending)
-        : [];
+      // WHY: Pending enum values come from list_values (publisher writes needs_review=true)
+      const pendingValues = dedupeEnumValues(
+        listRows
+          .filter((row) => Boolean(row?.needs_review) && hasMeaningfulEnumValue(row?.value))
+          .slice(0, maxPending)
+          .map((row) => row?.value)
+      );
       const enumPolicy = String(
         session?.mergedFields?.[field]?.enum?.policy
         || session?.mergedFields?.[field]?.enum_policy

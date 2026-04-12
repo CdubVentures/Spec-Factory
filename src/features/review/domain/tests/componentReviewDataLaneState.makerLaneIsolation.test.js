@@ -7,7 +7,6 @@ import {
   createComponentRowHarness,
   linkProductToComponent,
   upsertComponentLane,
-  writeComponentReviewItems,
 } from './helpers/componentReviewRowHarness.js';
 
 test('component payload isolates same-name lanes by maker for linked-product candidate attribution', async (t) => {
@@ -49,41 +48,6 @@ test('component payload isolates same-name lanes by maker for linked-product can
   for (const productId of productsB) {
     linkProductToMaker(productId, makerB);
   }
-
-  writeComponentReviewItems(specDb, [
-    {
-      review_id: 'rv_switch_omron',
-      category: CATEGORY,
-      component_type: componentType,
-      field_key: 'switch',
-      raw_query: componentName,
-      matched_component: componentName,
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: productsA[0],
-      created_at: '2026-02-20T00:00:00.000Z',
-      product_attributes: {
-        switch_brand: makerA,
-        [propertyKey]: '55',
-      },
-    },
-    {
-      review_id: 'rv_switch_huano',
-      category: CATEGORY,
-      component_type: componentType,
-      field_key: 'switch',
-      raw_query: componentName,
-      matched_component: componentName,
-      match_type: 'exact',
-      status: 'pending_ai',
-      product_id: productsB[0],
-      created_at: '2026-02-20T00:00:01.000Z',
-      product_attributes: {
-        switch_brand: makerB,
-        [propertyKey]: '65',
-      },
-    },
-  ]);
 
   const payload = await buildComponentReviewPayloads({
     config,

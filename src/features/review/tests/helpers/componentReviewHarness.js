@@ -10,12 +10,10 @@ import {
   buildEnumReviewPayloads,
   resolvePropertyFieldMeta,
 } from '../../domain/componentReviewData.js';
-import { applySharedLaneState } from '../../domain/keyReviewState.js';
 
 export const CATEGORY = 'mouse';
 
 export {
-  applySharedLaneState,
   buildComponentIdentifier,
   buildComponentReviewLayout,
   buildComponentReviewPayloads,
@@ -40,12 +38,6 @@ export async function cleanupTempSpecDb(tempRoot, specDb) {
 
 export function makeCategoryAuthorityConfig(tempRoot) {
   return { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
-}
-
-export function writeComponentReviewItems(specDb, items) {
-  for (const item of items) {
-    specDb.upsertComponentReviewItem(item);
-  }
 }
 
 export function getComponentIdentityId(specDb, componentType, canonicalName, maker = '') {

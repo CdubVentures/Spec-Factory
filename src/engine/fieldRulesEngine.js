@@ -571,14 +571,6 @@ export class FieldRulesEngine {
       };
     }
 
-    if (enumCheck.needs_curation && Array.isArray(context?.curationQueue)) {
-      context.curationQueue.push({
-        field_key: key,
-        raw_value: rawCandidate,
-        normalized_value: enumCheck.canonical_value
-      });
-    }
-
     // Candidate-level list_rules: dedupe only (sort + limits applied in runtimeGate)
     let finalValue = enumCheck.canonical_value;
     if (Array.isArray(finalValue)) {

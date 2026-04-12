@@ -7,7 +7,6 @@ import {
   cleanupTempSpecDb,
   createTempSpecDb,
   makeCategoryAuthorityConfig,
-  writeComponentReviewItems,
 } from '../../tests/helpers/componentReviewHarness.js';
 
 test('confidence boundaries are reflected in component payload slot colors', async () => {
@@ -44,8 +43,6 @@ test('confidence boundaries are reflected in component payload slot colors', asy
         constraints: [],
       });
     }
-
-    writeComponentReviewItems(specDb, []);
 
     const payload = await buildComponentReviewPayloads({
       config: makeCategoryAuthorityConfig(tempRoot),

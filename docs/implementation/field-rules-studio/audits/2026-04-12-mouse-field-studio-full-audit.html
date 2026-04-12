@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mouse Field Studio Map - Full Contract Audit (2026-04-12)</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#334155;padding:32px 24px;line-height:1.6}
+    .ctr{max-width:1320px;margin:0 auto}
+    .hdr{background:#fff;border-radius:12px;padding:32px;margin-bottom:24px;border:1px solid #e2e8f0}
+    .hdr h1{font-size:26px;color:#0f172a;margin-bottom:4px}
+    .sub{color:#64748b;font-size:14px}
+    .meta{display:flex;gap:24px;margin-top:16px;flex-wrap:wrap}
+    .meta-i{font-size:13px;color:#475569}
+    .meta-i strong{color:#0f172a}
+    .score-row{display:flex;align-items:center;gap:32px;margin-top:20px;flex-wrap:wrap}
+    .ring{width:100px;height:100px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff}
+    .ring .rl{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;opacity:.9}
+    .ring-red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+    .ring-amb{background:linear-gradient(135deg,#d97706,#b45309)}
+    .sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:28px}
+    .sc{background:#fff;border-radius:10px;padding:16px;text-align:center;border:1px solid #e2e8f0;transition:transform .15s}
+    .sc:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
+    .sc .n{font-size:28px;font-weight:800;color:#0f172a}
+    .sc .l{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+    h2{font-size:20px;color:#0f172a;margin-top:36px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+    h3{font-size:16px;color:#1e293b;margin-top:20px;margin-bottom:8px}
+    .leg{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+    .leg-i{display:flex;align-items:center;gap:6px;font-size:13px;color:#475569}
+    .dot{width:12px;height:12px;border-radius:3px}
+    .dc{background:#dc2626}.dh{background:#ea580c}.dm{background:#d97706}.dl{background:#3b82f6}.di{background:#8b5cf6}
+    .f{background:#fff;border-radius:10px;padding:20px;margin-bottom:14px;border:1px solid #e2e8f0;transition:box-shadow .15s}
+    .f:hover{box-shadow:0 4px 12px rgba(0,0,0,.05)}
+    .f.sc1{border-left:5px solid #dc2626}.f.sh{border-left:5px solid #ea580c}.f.sm{border-left:5px solid #d97706}.f.sl{border-left:5px solid #3b82f6}.f.si{border-left:5px solid #8b5cf6}
+    .fh{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+    .fid{font-size:12px;font-weight:700;color:#fff;padding:2px 8px;border-radius:4px;white-space:nowrap}
+    .ic{background:#dc2626}.ih{background:#ea580c}.im{background:#d97706}.il{background:#3b82f6}.ii{background:#8b5cf6}
+    .ft{font-size:15px;font-weight:700;color:#0f172a}
+    .ff{display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    .tag{font-size:12px;font-family:'SF Mono','Fira Code',monospace;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;border:1px solid #e2e8f0}
+    .fb{font-size:14px;color:#475569;margin-top:8px}
+    .fb p{margin-bottom:8px}
+    .fb code{font-family:'SF Mono','Fira Code',monospace;font-size:13px;background:#f8fafc;color:#be185d;padding:1px 5px;border-radius:3px}
+    .fb ul{margin-left:20px;margin-bottom:8px}
+    .fb li{margin-bottom:4px}
+    .rec{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-top:10px;font-size:13px;color:#166534}
+    .rec strong{color:#15803d}
+    .et{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+    .et th{text-align:left;padding:8px 12px;background:#f8fafc;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+    .et td{padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#334155}
+    .et tr:hover td{background:#f8fafc}
+    .ks{background:#fff;border-radius:10px;padding:20px;margin-bottom:14px;border:1px solid #e2e8f0}
+    .ks.hi{border-left:4px solid #ea580c}.ks.ok{border-left:4px solid #16a34a}
+    .kh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+    .kn{font-size:15px;font-weight:700;font-family:'SF Mono','Fira Code',monospace;color:#0f172a}
+    .km{font-size:12px;color:#64748b}
+    .b{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
+    .bid{background:#fef3c7;color:#92400e}.bcr{background:#fee2e2;color:#991b1b}.brq{background:#dbeafe;color:#1e40af}.bex{background:#f0fdf4;color:#166534}.bop{background:#f1f5f9;color:#475569}.bok{background:#dcfce7;color:#166534}.bw{background:#fef9c3;color:#854d0e}.be{background:#fee2e2;color:#991b1b}
+    .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 16px;margin-top:10px;font-size:13px}
+    .p{color:#64748b}.p strong{color:#334155;font-weight:600}
+    .il2{margin-top:10px}
+    .ii2{font-size:13px;padding:6px 10px;margin-bottom:4px;border-radius:6px;display:flex;align-items:flex-start;gap:8px}
+    .ii2.e{background:#fef2f2;color:#991b1b}.ii2.w{background:#fffbeb;color:#92400e}.ii2.i{background:#eff6ff;color:#1e40af}
+    .iic{font-weight:700;flex-shrink:0}
+    .persist{display:inline-block;font-size:10px;font-weight:700;background:#fef2f2;color:#991b1b;padding:1px 6px;border-radius:3px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px}
+    .new-tag{display:inline-block;font-size:10px;font-weight:700;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:3px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px}
+    .toc{background:#fff;border-radius:10px;padding:20px;margin-bottom:24px;border:1px solid #e2e8f0}
+    .toc h3{margin-top:0}
+    .toc ul{list-style:none;padding:0;columns:2;column-gap:24px}
+    .toc li{font-size:13px;margin-bottom:4px}
+    .toc a{color:#3b82f6;text-decoration:none}
+    .toc a:hover{text-decoration:underline}
+    .grid-ok{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+    .grid-ok .ks{margin-bottom:0;padding:12px}
+    @media(max-width:768px){.toc ul{columns:1}.score-row{flex-direction:column;align-items:flex-start}.pg{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="ctr">
+
+<!-- ========== HEADER ========== -->
+<div class="hdr">
+  <h1>Mouse Field Studio Map &mdash; Full Contract Audit</h1>
+  <div class="sub">Comprehensive per-key analysis of field_studio_map.json &bull; Compiled: 2026-04-11T04:58:16Z &bull; Audit: 2026-04-12</div>
+  <div class="meta">
+    <div class="meta-i"><strong>Category:</strong> mouse</div>
+    <div class="meta-i"><strong>Fields:</strong> 85</div>
+    <div class="meta-i"><strong>Components:</strong> 4 (sensor, switch, encoder, material)</div>
+    <div class="meta-i"><strong>Compile Warnings:</strong> 17</div>
+    <div class="meta-i"><strong>Compile Errors:</strong> 0</div>
+    <div class="meta-i"><strong>Map Hash:</strong> <code style="font-size:11px">687173e9&hellip;</code></div>
+  </div>
+  <div class="score-row">
+    <div class="ring ring-amb">62%<div class="rl">Health</div></div>
+    <div>
+      <div style="font-size:14px;color:#475569"><strong style="color:#0f172a">Verdict: Needs Revision</strong></div>
+      <div style="font-size:13px;color:#64748b;margin-top:4px">
+        8 critical, 13 high, 8 medium, 6 low findings across 85 fields.
+        <strong>All issues from the 2026-04-10 audit persist unfixed.</strong>
+        Key gaps: zero numeric range validation, garbage enum data, unit inconsistencies, type mismatches, orphaned groups.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== STAT GRID ========== -->
+<div class="sg">
+  <div class="sc"><div class="n">85</div><div class="l">Total Fields</div></div>
+  <div class="sc"><div class="n" style="color:#dc2626">8</div><div class="l">Critical</div></div>
+  <div class="sc"><div class="n" style="color:#ea580c">13</div><div class="l">High</div></div>
+  <div class="sc"><div class="n" style="color:#d97706">8</div><div class="l">Medium</div></div>
+  <div class="sc"><div class="n" style="color:#3b82f6">6</div><div class="l">Low</div></div>
+  <div class="sc"><div class="n" style="color:#16a34a">50</div><div class="l">Clean Keys</div></div>
+  <div class="sc"><div class="n">17</div><div class="l">Compile Warns</div></div>
+  <div class="sc"><div class="n">0</div><div class="l">Fixed Since Last</div></div>
+</div>
+
+<!-- ========== LEGEND ========== -->
+<div class="leg">
+  <div class="leg-i"><div class="dot dc"></div>Critical &mdash; Data corruption / wrong contracts</div>
+  <div class="leg-i"><div class="dot dh"></div>High &mdash; Missing validation / type mismatches</div>
+  <div class="leg-i"><div class="dot dm"></div>Medium &mdash; Completeness / coverage gaps</div>
+  <div class="leg-i"><div class="dot dl"></div>Low &mdash; Polish / cosmetic</div>
+  <div class="leg-i"><span class="persist">PERSIST</span> = Unfixed from prior audit</div>
+  <div class="leg-i"><span class="new-tag">NEW</span> = First identified this audit</div>
+</div>
+
+<!-- ========== TOC ========== -->
+<div class="toc">
+  <h3>Jump To</h3>
+  <ul>
+    <li><a href="#critical">Critical Findings (C1&ndash;C8)</a></li>
+    <li><a href="#high">High Findings (H1&ndash;H13)</a></li>
+    <li><a href="#medium">Medium Findings (M1&ndash;M8)</a></li>
+    <li><a href="#low">Low Findings (L1&ndash;L6)</a></li>
+    <li><a href="#per-key">Per-Key Audit (85 fields)</a></li>
+    <li><a href="#ranges">Recommended Range Table</a></li>
+    <li><a href="#component-db">Component DB Coverage</a></li>
+    <li><a href="#groups">Group Integrity</a></li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<!--                     CRITICAL FINDINGS                            -->
+<!-- ================================================================ -->
+<h2 id="critical">Critical Findings</h2>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C1</span><span class="ft">Zero numeric range validation on ALL 22 numeric fields</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">dpi</span><span class="tag">weight</span><span class="tag">height</span><span class="tag">width</span><span class="tag">lngth</span><span class="tag">battery_hours</span><span class="tag">click_force</span><span class="tag">acceleration</span><span class="tag">ips</span><span class="tag">polling_rate</span><span class="tag">+12 more</span></div>
+  <div class="fb">
+    <p>No field defines <code>contract.range</code>. The cross_validation_rules.json has only 3 rules (wireless_battery, sensor_dpi_consistency, dimensions_consistency) &mdash; <strong>zero range plausibility checks</strong>. The keyboard category has range checks on every numeric field.</p>
+    <p>Consequence: DPI of 999,999,999, weight of &minus;50g, battery life of 0h all pass publisher validation.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Add <code>contract.range: { min, max }</code> to every numeric field in field_overrides. See <a href="#ranges">Recommended Ranges</a> table.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C2</span><span class="ft">Garbage test data in production enum lists</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">switch_type</span><span class="tag">feet_material</span><span class="tag">coating</span></div>
+  <div class="fb">
+    <table class="et">
+      <thead><tr><th>Field</th><th>Garbage Values</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr><td><code>switch_type</code></td><td><code>"eqwe"</code>, <code>"yay"</code></td><td>Pollutes open_prefer_known matching; LLM may try to map real switches to these</td></tr>
+        <tr><td><code>feet_material</code></td><td><code>"l"</code></td><td>Single-char incomplete entry pollutes normalization</td></tr>
+        <tr><td><code>coating</code></td><td><code>"A"</code>, <code>"help"</code></td><td>Placeholder text treated as valid coating options</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Remove garbage values from data_lists in field_studio_map.json, then recompile.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C3</span><span class="ft">Unit mismatch: click_force (<code>gf</code>) vs releasing_force (<code>g</code>)</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">click_force</span><span class="tag">releasing_force</span></div>
+  <div class="fb">
+    <p>Both measure switch actuation/release force but use different unit tokens. <code>click_force</code> correctly uses <code>"gf"</code> (gram-force). <code>releasing_force</code> uses <code>"g"</code> (ambiguous: mass vs force). The switch component_source also declares releasing_force with <code>"unit": "g"</code>.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Standardize to <code>"gf"</code> in both component_sources and field_overrides.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C4</span><span class="ft">sensor_date: string type with date-ordering constraint</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">sensor_date</span></div>
+  <div class="fb">
+    <p>Contract: <code>type: "string"</code>. Constraint: <code>"sensor_date &lt;= release_date"</code>. But <code>release_date</code> is properly typed as <code>"date"</code>. String-vs-date comparison is undefined behavior.</p>
+    <p>Sample values confirm date data: <code>"2018-01-01"</code>, <code>"2022-04-01"</code>.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Change to <code>contract.type: "date"</code>.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C5</span><span class="ft">switch_life_span: string type but numeric data</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">switch_life_span</span></div>
+  <div class="fb">
+    <p>Compiled as <code>type: "string"</code> (line 9058). Component_source switch also declares <code>"type": "string"</code>. But actual data values are lifespan numbers ("20", "50", "70", "100" million clicks). No unit defined.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Change to <code>type: "number"</code>, add <code>unit: "million clicks"</code>, add <code>range: { min: 1, max: 200 }</code>.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C6</span><span class="ft">encoder_life_span and encoder_steps: numbers without units</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">encoder_life_span</span><span class="tag">encoder_steps</span></div>
+  <div class="fb">
+    <p>Compile report explicitly warns: <em>"field encoder_life_span: numeric type 'number' without unit declared"</em> and same for encoder_steps. Both have <code>unit: ""</code>.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> <code>encoder_life_span</code> &rarr; unit <code>"million rotations"</code>. <code>encoder_steps</code> &rarr; unit <code>"steps"</code>.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C7</span><span class="ft">connectivity enum: meaningless values</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">connectivity</span></div>
+  <div class="fb">
+    <p>known_values contains: <code>"1"</code>, <code>"2.5"</code>, <code>"n/a"</code>, <code>"unk"</code> alongside valid values. "1" and "2.5" are data-entry errors. "n/a"/"unk" should be handled by unknown_reason, not as enum values.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Remove <code>"1"</code>, <code>"2.5"</code>, <code>"n/a"</code>, <code>"unk"</code>. Add <code>"USB-A dongle"</code>, <code>"USB-C dongle"</code> if needed.</div>
+</div>
+
+<div class="f sc1">
+  <div class="fh"><span class="fid ic">C8</span><span class="ft">sensor_date: nonsensical rounding on a string field</span><span class="new-tag">NEW</span></div>
+  <div class="ff"><span class="tag">sensor_date</span></div>
+  <div class="fb">
+    <p>The compiled contract has <code>rounding: { decimals: 0, mode: "nearest" }</code> on a field with <code>type: "string"</code> (line 7380-7385). You cannot round a string. This was injected by the compiler because the component_source declares sensor_date as a number-like property, but the type override is string. The rounding block is dead config that could confuse downstream consumers.</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Either remove the rounding block or (better) change the type to <code>"date"</code> per C4.</div>
+</div>
+
+<!-- ================================================================ -->
+<!--                       HIGH FINDINGS                              -->
+<!-- ================================================================ -->
+<h2 id="high">High Findings</h2>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H1</span><span class="ft">rgb: string type with yes_no boolean enum source</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">rgb</span></div>
+  <div class="fb">
+    <p><code>contract.type: "string"</code> but <code>enum.source: "yes_no"</code>. Similar boolean-indicator fields (bluetooth, hot_swappable, silent_clicks) are correctly typed as <code>"boolean"</code>. Sample values are "yes"/"no" (line 7052-7056).</p>
+  </div>
+  <div class="rec"><strong>Fix:</strong> Change to <code>type: "boolean"</code>.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H2</span><span class="ft">nvidia_reflex: invalid availability value <code>"rare"</code></span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">nvidia_reflex</span></div>
+  <div class="fb"><p>Confirmed at line 5941: <code>availability: "rare"</code>. Valid enum: <code>always | expected | sometimes | never</code>. "rare" is not recognized by the schema.</p></div>
+  <div class="rec"><strong>Fix:</strong> Change to <code>"sometimes"</code>.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H3</span><span class="ft">form_factor conflates handedness with form factor</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">form_factor</span></div>
+  <div class="fb"><p>Values: <code>ambidextrous</code>, <code>left</code>, <code>right</code>. These describe handedness, not form factor. Mouse form factor typically means: standard, ergonomic, vertical, trackball, mini/travel.</p></div>
+  <div class="rec"><strong>Fix:</strong> Rename to <code>handedness</code>, or redefine values.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H4</span><span class="ft">hump enum: contradictory / redundant values</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">hump</span></div>
+  <div class="fb"><p>Contains <code>"back - rear"</code> (redundant: back = rear) and <code>"back - front"</code> (confusing span notation). Standard positions: rear, center, front.</p></div>
+  <div class="rec"><strong>Fix:</strong> Normalize to: <code>rear</code>, <code>center</code>, <code>front</code>, <code>rear-center</code>, <code>front-center</code>.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H5</span><span class="ft">encoder_steps: closed enum on numeric field with suspect value</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">encoder_steps</span></div>
+  <div class="fb"><p>Closed policy with string values <code>["5","16","18","20","24","25","26","30","59"]</code>. Any new encoder with a different step count (e.g., 12, 36) is rejected. The value <code>"59"</code> is highly unusual (standard: 12-24). Values are strings but field is numeric.</p></div>
+  <div class="rec"><strong>Fix:</strong> Change to <code>"open_prefer_known"</code>. Remove <code>"59"</code> if unverified. Add <code>range: { min: 5, max: 48 }</code>.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H6</span><span class="ft">click_latency &amp; sensor_latency: selection_policy references nonexistent fields</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">click_latency</span><span class="tag">sensor_latency</span></div>
+  <div class="fb"><p><code>click_latency.selection_policy.source_field: "click_latency_list"</code> &mdash; no such field exists. Same for <code>sensor_latency</code> referencing <code>"sensor_latency_list"</code>. The mode-specific variants are individual scalar fields, not a list.</p></div>
+  <div class="rec"><strong>Fix:</strong> Create the aggregate list fields, or rewrite selection_policy to reference the 3 variant fields.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H7</span><span class="ft">polling_rate: no known_values enum for discrete standard rates</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">polling_rate</span></div>
+  <div class="fb"><p>The <strong>only critical field</strong>. Has <code>enum.policy: "open"</code> with no known_values source and no data_list (manual_values is empty). Polling rates are discrete: 125, 250, 500, 1000, 2000, 4000, 8000 Hz.</p></div>
+  <div class="rec"><strong>Fix:</strong> Add known_values or data_list with standard polling rate values.</div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H8</span><span class="ft">Orphaned / misplaced field groups</span><span class="persist">PERSIST</span></div>
+  <div class="fb">
+    <table class="et">
+      <thead><tr><th>Field</th><th>Current Group</th><th>Should Be</th></tr></thead>
+      <tbody>
+        <tr><td><code>switch_life_span</code></td><td><strong>controls</strong> (1 field &mdash; orphan!)</td><td>switches</td></tr>
+        <tr><td><code>encoder_life_span</code></td><td>general</td><td>encoder</td></tr>
+        <tr><td><code>encoder_steps</code></td><td>general</td><td>encoder</td></tr>
+        <tr><td><code>encoder_type</code></td><td>general</td><td>encoder</td></tr>
+        <tr><td><code>releasing_force</code></td><td>general</td><td>switches</td></tr>
+      </tbody>
+    </table>
+    <p>The "controls" group has only 1 field and lowercase display_name <code>"controls"</code> while all other groups are Title Case.</p>
+  </div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H9</span><span class="ft">releasing_force: missing rounding, wrong unit, no parse_rules</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">releasing_force</span></div>
+  <div class="fb">
+    <p>Contract has <code>type: "number", unit: "g"</code> but <strong>no rounding</strong> (cf. click_force which has <code>rounding: { decimals: 0 }</code>). Empty <code>parse: {}</code>. Compile warns: <em>"enum_policy=open but parse_rules is empty"</em>. Also has <code>field_studio_hints: { key_cell: null, row: null }</code> &mdash; unmapped to data entry.</p>
+  </div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H10</span><span class="ft">Generic tooltips provide zero LLM guidance</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Nearly every field uses: <code>"Define 'X' according to contract. If not provable with evidence, output 'unk' with unknown_reason."</code> No domain-specific guidance. The keyboard category has rich, field-specific tooltips.</p></div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H11</span><span class="ft">Empty ai_assist.reasoning_note on all 4 component sources</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>All component_sources (sensor, switch, encoder, material) have <code>ai_assist.reasoning_note: ""</code>.</p></div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H12</span><span class="ft">17 compile warnings unfixed</span><span class="persist">PERSIST</span></div>
+  <div class="fb">
+    <ul>
+      <li>Key migration reversal (length &rarr; lngth)</li>
+      <li>2 numeric fields without units (encoder_life_span, encoder_steps)</li>
+      <li>4 fields with open policy but empty parse_rules</li>
+      <li>10 component DB coverage warnings (flawless_sensor 4.3%, sensor_date 24.1%, releasing_force 36.8%, click_force 56.6%, etc.)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="f sh">
+  <div class="fh"><span class="fid ih">H13</span><span class="ft">releasing_force and switch_life_span have null field_studio_hints</span><span class="new-tag">NEW</span></div>
+  <div class="ff"><span class="tag">releasing_force</span><span class="tag">switch_life_span</span></div>
+  <div class="fb"><p>Both have <code>key_cell: null, row: null, sample_values: []</code> in their dataEntry hints. These fields exist in compiled rules but have no mapping to actual cells in the data entry sheet. They are "ghost fields" &mdash; defined by the compiler from component sources but not present on the main dataEntry sheet.</p></div>
+</div>
+
+<!-- ================================================================ -->
+<!--                      MEDIUM FINDINGS                             -->
+<!-- ================================================================ -->
+<h2 id="medium">Medium Findings</h2>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M1</span><span class="ft">Component DB: flawless_sensor at 4.3% coverage</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Only 5/116 sensors. Most modern PixArt/HERO sensors are flawless &mdash; data readily available from sensor.fyi.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M2</span><span class="ft">Component DB: sensor_date at 24.1%</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>28/116 sensors. Undermines the <code>sensor_date &lt;= release_date</code> constraint for 76% of sensors.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M3</span><span class="ft">Component DB: click_force 56.6%, releasing_force 36.8%</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Switch force data available from Omron/Kailh/TTC datasheets.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M4</span><span class="ft">design field: no enum values, unclear purpose</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">design</span></div>
+  <div class="fb"><p><code>shape: "list"</code>, <code>policy: "open_prefer_known"</code>, but no known_values defined anywhere.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M5</span><span class="ft">price_range: string with no defined values</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">price_range</span></div>
+  <div class="fb"><p>Should define buckets: <code>budget</code>, <code>mid-range</code>, <code>premium</code>, <code>ultra-premium</code>.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M6</span><span class="ft">41 fields have zero aliases</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Aliases are critical for search discovery. Notable missing: <code>bluetooth</code> (BT/BLE), <code>feet_material</code> (mouse feet/skates), <code>hot_swappable</code> (hot swap), <code>silent_clicks</code> (quiet clicks).</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M7</span><span class="ft">Latency variants share same field_studio_hints row</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">click_latency_*</span><span class="tag">sensor_latency_*</span></div>
+  <div class="fb"><p>All click_latency variants point to row 70; all sensor_latency variants to row 51.</p></div>
+</div>
+
+<div class="f sm">
+  <div class="fh"><span class="fid im">M8</span><span class="ft">coating known_values inadequate</span><span class="persist">PERSIST</span></div>
+  <div class="ff"><span class="tag">coating</span></div>
+  <div class="fb"><p>After removing garbage ("A", "help"), only 2 values remain: <code>matte</code>, <code>rubber grips</code>. Missing: glossy, soft-touch, textured, PBT, sandblasted, UV coating.</p></div>
+</div>
+
+<!-- ================================================================ -->
+<!--                       LOW FINDINGS                               -->
+<!-- ================================================================ -->
+<h2 id="low">Low Findings</h2>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L1</span><span class="ft">switches_link: label typo "LInk"</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Display name at line 9286: <code>"Switches LInk"</code> (capital I). Should be <code>"Switches Link"</code>.</p></div>
+</div>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L2</span><span class="ft">switches_link: non-standard field_studio_hints</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Uses <code>key_column</code>/<code>key_row</code>/<code>key_sheet</code> instead of standard <code>dataEntry: { key_cell, row }</code> format.</p></div>
+</div>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L3</span><span class="ft">lngth key name is confusing</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p><code>length &rarr; lngth</code> migration confirmed. Compile warns about reversed direction.</p></div>
+</div>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L4</span><span class="ft">sku: no format validation</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>Only identity field has no regex pattern or format constraint.</p></div>
+</div>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L5</span><span class="ft">lift: unique mixed_number_range type</span><span class="persist">PERSIST</span></div>
+  <div class="fb"><p>One-off type used only by this field. Creates unique code path in publisher.</p></div>
+</div>
+
+<div class="f sl">
+  <div class="fh"><span class="fid il">L6</span><span class="ft">"controls" group: lowercase display_name</span><span class="new-tag">NEW</span></div>
+  <div class="fb"><p>display_name is <code>"controls"</code> (lowercase) while all other groups use Title Case. Cosmetic inconsistency.</p></div>
+</div>
+
+<!-- ================================================================ -->
+<!--                  RECOMMENDED RANGES TABLE                        -->
+<!-- ================================================================ -->
+<h2 id="ranges">Recommended Range Validations</h2>
+<p style="font-size:14px;color:#475569;margin-bottom:16px">Based on real-world mouse specs from RTINGS, TechPowerUp, sensor.fyi, and manufacturer datasheets.</p>
+
+<table class="et">
+  <thead><tr><th>Field</th><th>Unit</th><th>Min</th><th>Max</th><th>Rationale</th></tr></thead>
+  <tbody>
+    <tr><td><code>dpi</code></td><td>dpi</td><td>100</td><td>50,000</td><td>PAW3950=42K, HERO 2=44K. Headroom.</td></tr>
+    <tr><td><code>ips</code></td><td>ips</td><td>50</td><td>1,000</td><td>Budget ~150, flagship ~750.</td></tr>
+    <tr><td><code>acceleration</code></td><td>g</td><td>10</td><td>100</td><td>Budget ~15G, HERO 2=88G.</td></tr>
+    <tr><td><code>weight</code></td><td>g</td><td>30</td><td>200</td><td>Ultralight ~40g, ergo ~150g.</td></tr>
+    <tr><td><code>lngth</code></td><td>mm</td><td>80</td><td>170</td><td>Mini ~100mm, large ~140mm.</td></tr>
+    <tr><td><code>width</code></td><td>mm</td><td>40</td><td>90</td><td>Narrow ~55mm, wide ~75mm.</td></tr>
+    <tr><td><code>height</code></td><td>mm</td><td>25</td><td>55</td><td>Low-profile ~33mm, ergo ~45mm.</td></tr>
+    <tr><td><code>battery_hours</code></td><td>h</td><td>5</td><td>500</td><td>RGB-on ~20h, BT ~300h.</td></tr>
+    <tr><td><code>polling_rate</code></td><td>Hz</td><td>100</td><td>8,000</td><td>Legacy 125Hz to 8KHz cutting edge.</td></tr>
+    <tr><td><code>click_force</code></td><td>gf</td><td>20</td><td>100</td><td>Light ~30gf, heavy ~80gf.</td></tr>
+    <tr><td><code>releasing_force</code></td><td>gf</td><td>10</td><td>80</td><td>Lower than click force.</td></tr>
+    <tr><td><code>click_latency</code></td><td>ms</td><td>0.1</td><td>30</td><td>Sub-1ms (optical@8KHz) to ~20ms (BT).</td></tr>
+    <tr><td><code>click_latency_wired</code></td><td>ms</td><td>0.1</td><td>15</td><td>Wired fastest.</td></tr>
+    <tr><td><code>click_latency_wireless</code></td><td>ms</td><td>0.1</td><td>20</td><td>2.4GHz dongle.</td></tr>
+    <tr><td><code>click_latency_bluetooth</code></td><td>ms</td><td>0.5</td><td>30</td><td>BT highest latency.</td></tr>
+    <tr><td><code>sensor_latency</code></td><td>ms</td><td>0.1</td><td>25</td><td>Motion delay.</td></tr>
+    <tr><td><code>sensor_latency_wired</code></td><td>ms</td><td>0.1</td><td>10</td><td>Wired tracking.</td></tr>
+    <tr><td><code>sensor_latency_wireless</code></td><td>ms</td><td>0.1</td><td>15</td><td>2.4GHz tracking.</td></tr>
+    <tr><td><code>sensor_latency_bluetooth</code></td><td>ms</td><td>0.5</td><td>25</td><td>BT tracking.</td></tr>
+    <tr><td><code>debounce</code></td><td>ms</td><td>0</td><td>25</td><td>Optical=0ms, mechanical 1-20ms.</td></tr>
+    <tr><td><code>shift_latency</code></td><td>ms</td><td>0.1</td><td>25</td><td>Motion-start delay.</td></tr>
+    <tr><td><code>lift</code></td><td>mm</td><td>0.3</td><td>10</td><td>Competitive ~1mm, adjustable to 10mm.</td></tr>
+    <tr><td><code>encoder_steps</code></td><td>steps</td><td>5</td><td>48</td><td>Standard 12-24.</td></tr>
+    <tr><td><code>encoder_life_span</code></td><td>M rot.</td><td>0.5</td><td>50</td><td>Budget ~1M, premium ~20M.</td></tr>
+    <tr><td><code>switch_life_span</code></td><td>M clicks</td><td>1</td><td>200</td><td>Budget 10M, optical 100M+.</td></tr>
+    <tr><td><code>middle_buttons</code></td><td>&mdash;</td><td>0</td><td>5</td><td>Most mice 0-1.</td></tr>
+    <tr><td><code>side_buttons</code></td><td>&mdash;</td><td>0</td><td>20</td><td>Standard 2, MMO up to 12-20.</td></tr>
+    <tr><td><code>programmable_buttons</code></td><td>&mdash;</td><td>0</td><td>30</td><td>Total programmable.</td></tr>
+    <tr><td><code>onboard_memory_value</code></td><td>&mdash;</td><td>1</td><td>20</td><td>Profile slots, typically 1-5.</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!--                  COMPONENT DB COVERAGE                           -->
+<!-- ================================================================ -->
+<h2 id="component-db">Component DB Coverage</h2>
+
+<table class="et">
+  <thead><tr><th>Component</th><th>Property</th><th>Coverage</th><th>Missing</th><th>Examples</th></tr></thead>
+  <tbody>
+    <tr><td>sensor</td><td>flawless_sensor</td><td style="color:#dc2626;font-weight:700">4.3% (5/116)</td><td>111</td><td>Focus Pro 45K, PAW3950 Ti/Max</td></tr>
+    <tr><td>sensor</td><td>sensor_date</td><td style="color:#ea580c;font-weight:700">24.1% (28/116)</td><td>88</td><td>Focus Pro 45K, PAW3950 Ti/Max</td></tr>
+    <tr><td>switch</td><td>releasing_force</td><td style="color:#ea580c;font-weight:700">36.8% (39/106)</td><td>67</td><td>ROG Micro Switch, Light Blade</td></tr>
+    <tr><td>switch</td><td>click_force</td><td style="color:#d97706;font-weight:700">56.6% (60/106)</td><td>46</td><td>ROG Micro Switch II, Light Blade</td></tr>
+    <tr><td>switch</td><td>switch_life_span</td><td style="color:#3b82f6">85.8% (91/106)</td><td>15</td><td>Crispy Pink, Optical Switches</td></tr>
+    <tr><td>sensor</td><td>dpi / ips / accel / type</td><td style="color:#16a34a">95.7% (111/116)</td><td>5</td><td>PAW3392, PMW3367, PAW3393</td></tr>
+    <tr><td>encoder</td><td>encoder_steps</td><td style="color:#16a34a">95.0% (38/40)</td><td>2</td><td>Magnetic Encoder, Optical Encoder</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!--                  GROUP INTEGRITY                                 -->
+<!-- ================================================================ -->
+<h2 id="groups">Group Integrity Audit</h2>
+
+<table class="et">
+  <thead><tr><th>Group</th><th>Display Name</th><th>Count</th><th>Issues</th></tr></thead>
+  <tbody>
+    <tr><td>buttons_features</td><td>Buttons &amp; Features</td><td>8</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td>connectivity</td><td>Connectivity</td><td>9</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td>construction</td><td>Construction</td><td>6</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td style="color:#dc2626;font-weight:700">controls</td><td style="color:#dc2626">controls (lowercase!)</td><td style="color:#dc2626;font-weight:700">1</td><td style="color:#dc2626">Orphan group. Only switch_life_span. Should be in "switches".</td></tr>
+    <tr><td>dimensions</td><td>Dimensions</td><td>3</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td>electronics</td><td>Electronics</td><td>2</td><td style="color:#d97706">Sparse (only mcu + mcu_link)</td></tr>
+    <tr><td>encoder</td><td>Encoder</td><td>3</td><td style="color:#ea580c">Missing encoder_life_span, encoder_steps, encoder_type (in "general")</td></tr>
+    <tr><td>ergonomics</td><td>Ergonomics</td><td>7</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td style="color:#ea580c;font-weight:700">general</td><td>General</td><td style="color:#ea580c;font-weight:700">13</td><td style="color:#ea580c">Overpopulated. Contains encoder_*, releasing_force that belong elsewhere.</td></tr>
+    <tr><td>sensor_performance</td><td>Sensor &amp; Performance</td><td>21</td><td style="color:#16a34a">Clean</td></tr>
+    <tr><td>switches</td><td>Switches</td><td>12</td><td style="color:#d97706">Missing switch_life_span and releasing_force</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!--                     PER-KEY AUDIT                                -->
+<!-- ================================================================ -->
+<h2 id="per-key">Per-Key Audit &mdash; All 85 Fields</h2>
+
+<h3>Identity (1)</h3>
+<div class="ks hi">
+  <div class="kh"><span class="kn">sku</span><span class="b bid">identity</span><span class="b bw">1 issue</span><span class="km">string &middot; scalar &middot; effort 4</span></div>
+  <div class="il2"><div class="ii2 w"><span class="iic">!</span>No format validation (L4)</div></div>
+</div>
+
+<h3>Critical (1)</h3>
+<div class="ks hi">
+  <div class="kh"><span class="kn">polling_rate</span><span class="b bcr">critical</span><span class="b be">2 issues</span><span class="km">number &middot; list &middot; Hz &middot; effort 3</span></div>
+  <div class="il2">
+    <div class="ii2 e"><span class="iic">X</span>No range validation (C1)</div>
+    <div class="ii2 e"><span class="iic">X</span>No known_values for discrete standard rates (H7)</div>
+  </div>
+</div>
+
+<h3>Required (13)</h3>
+
+<div class="ks ok"><div class="kh"><span class="kn">connection</span><span class="b brq">required</span><span class="b bok">OK</span><span class="km">string &middot; scalar &middot; open_prefer_known &middot; effort 6</span></div></div>
+
+<div class="ks hi">
+  <div class="kh"><span class="kn">connectivity</span><span class="b brq">required</span><span class="b be">1 issue</span><span class="km">string &middot; list &middot; effort 6</span></div>
+  <div class="il2"><div class="ii2 e"><span class="iic">X</span>Garbage enum values "1", "2.5", "n/a", "unk" (C7)</div></div>
+</div>
+
+<div class="ks hi">
+  <div class="kh"><span class="kn">dpi</span><span class="b brq">required</span><span class="b be">1 issue</span><span class="km">number &middot; scalar &middot; dpi &middot; 2 refs &middot; upper_bound</span></div>
+  <div class="il2"><div class="ii2 e"><span class="iic">X</span>No range (C1). Rec: 100&ndash;50,000</div></div>
+</div>
+
+<div class="ks hi"><div class="kh"><span class="kn">height</span><span class="b brq">required</span><span class="b be">1</span><span class="km">number &middot; mm &middot; 1dp &middot; 2 refs</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 25&ndash;55mm</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">lngth</span><span class="b brq">required</span><span class="b be">2</span><span class="km">number &middot; mm &middot; 1dp &middot; 2 refs</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 80&ndash;170mm</div><div class="ii2 w"><span class="iic">!</span>Confusing abbreviated key (L3)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">middle_buttons</span><span class="b brq">required</span><span class="b be">1</span><span class="km">integer &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 0&ndash;5</div></div></div>
+
+<div class="ks ok"><div class="kh"><span class="kn">sensor</span><span class="b brq">required</span><span class="b bok">OK</span><span class="km">string &middot; component_ref &middot; 2 refs &middot; 116 entities</span></div></div>
+<div class="ks ok"><div class="kh"><span class="kn">sensor_brand</span><span class="b brq">required</span><span class="b bok">OK</span><span class="km">string &middot; open_prefer_known</span></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">side_buttons</span><span class="b brq">required</span><span class="b be">1</span><span class="km">integer &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 0&ndash;20</div></div></div>
+
+<div class="ks ok"><div class="kh"><span class="kn">switch</span><span class="b brq">required</span><span class="b bok">OK</span><span class="km">string &middot; component_ref &middot; 106 entities</span></div></div>
+<div class="ks ok"><div class="kh"><span class="kn">switch_brand</span><span class="b brq">required</span><span class="b bok">OK</span><span class="km">string &middot; open_prefer_known</span></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">weight</span><span class="b brq">required</span><span class="b be">1</span><span class="km">number &middot; g &middot; 1dp &middot; 2 refs</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 30&ndash;200g</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">width</span><span class="b brq">required</span><span class="b be">1</span><span class="km">number &middot; mm &middot; 1dp &middot; 2 refs</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 40&ndash;90mm</div></div></div>
+
+<h3>Expected &mdash; Fields With Issues (17 of 56)</h3>
+
+<div class="ks hi"><div class="kh"><span class="kn">acceleration</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">number &middot; list &middot; g &middot; upper_bound</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 10&ndash;100G</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">battery_hours</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">number &middot; h &middot; 0dp</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 5&ndash;500h</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">coating</span><span class="b bex">expected</span><span class="b be">2</span><span class="km">string &middot; list</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Garbage: "A", "help" (C2)</div><div class="ii2 w"><span class="iic">!</span>Only 2 real values remain (M8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">design</span><span class="b bex">expected</span><span class="b bw">1</span><span class="km">string &middot; list</span></div><div class="il2"><div class="ii2 w"><span class="iic">!</span>No enum values at all (M4)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">encoder_life_span</span><span class="b bex">expected</span><span class="b be">2</span><span class="km">number &middot; NO UNIT</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Missing unit (C6)</div><div class="ii2 e"><span class="iic">X</span>Wrong group: general &rarr; encoder (H8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">encoder_steps</span><span class="b bex">expected</span><span class="b be">3</span><span class="km">number &middot; NO UNIT</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Missing unit (C6)</div><div class="ii2 e"><span class="iic">X</span>Closed enum on numeric + suspect "59" (H5)</div><div class="ii2 e"><span class="iic">X</span>Wrong group: general &rarr; encoder (H8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">encoder_type</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Wrong group: general &rarr; encoder (H8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">feet_material</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Garbage: "l" (C2)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">form_factor</span><span class="b bex">expected</span><span class="b bw">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 w"><span class="iic">!</span>Values = handedness, not form factor (H3)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">hump</span><span class="b bex">expected</span><span class="b bw">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 w"><span class="iic">!</span>"back - rear" redundant (H4)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">ips</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">number &middot; ips &middot; upper_bound</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 50&ndash;1000</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">price_range</span><span class="b bex">expected</span><span class="b bw">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 w"><span class="iic">!</span>No known_values (M5)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">releasing_force</span><span class="b bex">expected</span><span class="b be">3</span><span class="km">number &middot; g &middot; NO rounding</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Unit "g" should be "gf" (C3)</div><div class="ii2 e"><span class="iic">X</span>Missing rounding + parse (H9, H13)</div><div class="ii2 e"><span class="iic">X</span>Wrong group: general &rarr; switches (H8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">rgb</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>String with yes_no enum &rarr; should be boolean (H1)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">sensor_date</span><span class="b bex">expected</span><span class="b be">2</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>String with date constraint (C4)</div><div class="ii2 e"><span class="iic">X</span>Nonsensical rounding on string (C8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">switch_life_span</span><span class="b bex">expected</span><span class="b be">3</span><span class="km">string &middot; NO UNIT</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Should be number (C5)</div><div class="ii2 e"><span class="iic">X</span>Missing unit "million clicks" (C5)</div><div class="ii2 e"><span class="iic">X</span>Orphan group "controls" (H8)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">switch_type</span><span class="b bex">expected</span><span class="b be">1</span><span class="km">string &middot; scalar</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Garbage: "eqwe", "yay" (C2)</div></div></div>
+
+<h3>Expected &mdash; Clean (39 fields)</h3>
+<div class="grid-ok">
+  <div class="ks ok" style="padding:12px"><span class="kn">adjustable_scroll_wheel</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">adjustable_weight</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">bluetooth</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">cable_type</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">colors</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">computer_side_connector</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">discontinued</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">editions</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">encoder</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">encoder_brand</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">encoder_link</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">flawless_sensor</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">front_flare</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">grip</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">hand_size</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">hardware_acceleration</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">honeycomb_frame</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">hot_swappable</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">lift</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">lift_settings</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">lighting</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">material</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">mcu</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">mcu_link</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">motion_sync</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">mouse_side_connector</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">onboard_memory</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">onboard_memory_value</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">paracord</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">profile_switching</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">programmable_buttons</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">release_date</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">sensor_link</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">sensor_type</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">shape</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">silent_clicks</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">smoothing</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">thumb_rest</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">tilt_scroll_wheel</span> <span class="b bok">OK</span></div>
+  <div class="ks ok" style="padding:12px"><span class="kn">wireless_charging</span> <span class="b bok">OK</span></div>
+</div>
+
+<h3 style="margin-top:24px">Optional (14) &mdash; Issues Only</h3>
+
+<div class="ks hi"><div class="kh"><span class="kn">click_force</span><span class="b bop">optional</span><span class="b be">1</span><span class="km">number &middot; gf &middot; override_allowed</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range. Rec: 20&ndash;100gf</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">click_latency</span><span class="b bop">optional</span><span class="b be">2</span><span class="km">number &middot; ms &middot; 2dp</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>No range (C1)</div><div class="ii2 e"><span class="iic">X</span>selection_policy refs nonexistent field (H6)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">nvidia_reflex</span><span class="b bop">optional</span><span class="b be">1</span><span class="km">boolean</span></div><div class="il2"><div class="ii2 e"><span class="iic">X</span>Invalid availability "rare" (H2)</div></div></div>
+
+<div class="ks hi"><div class="kh"><span class="kn">switches_link</span><span class="b bop">optional</span><span class="b bw">2</span><span class="km">url &middot; scalar</span></div><div class="il2"><div class="ii2 w"><span class="iic">!</span>Typo "LInk" (L1)</div><div class="ii2 w"><span class="iic">!</span>Non-standard hints (L2)</div></div></div>
+
+<p style="font-size:13px;color:#64748b;margin-top:12px"><strong>Remaining optional (clean):</strong> click_latency_bluetooth, click_latency_wired, click_latency_wireless, debounce, editions, sensor_latency, sensor_latency_bluetooth, sensor_latency_wired, sensor_latency_wireless, shift_latency &mdash; correct contracts aside from missing ranges (C1).</p>
+
+<!-- ========== FOOTER ========== -->
+<div style="margin-top:48px;padding-top:24px;border-top:2px solid #e2e8f0;color:#94a3b8;font-size:12px">
+  <p>Audit: 2026-04-12 | Compile: 2026-04-11T04:58:16Z | Map hash: <code>687173e9&hellip;</code> | Rules hash: <code>242e4b36&hellip;</code></p>
+  <p>Prior audit: 2026-04-10 (all findings persist). Methodology: field_studio_map &rarr; compiled field_rules &rarr; known_values &rarr; cross_validation_rules &rarr; component_db &rarr; domain validation via web research (RTINGS, sensor.fyi, TechPowerUp, manufacturer datasheets).</p>
+</div>
+
+</div>
+</body>
+</html>

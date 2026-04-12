@@ -43,7 +43,6 @@ function makeQueueCtx(overrides = {}) {
     OUTPUT_ROOT: 'out',
     path: { join: (...parts) => parts.join('/') },
     getSpecDb: () => null,
-    buildReviewQueue: async () => [],
     broadcastWs: () => {},
     safeReadJson: async () => null,
     safeStat: async () => null,

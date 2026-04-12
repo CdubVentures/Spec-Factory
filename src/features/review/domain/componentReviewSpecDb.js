@@ -15,19 +15,14 @@ import {
   toArray,
   normalizeToken,
   slugify,
-  splitCandidateParts,
 } from './reviewNormalization.js';
 import {
   hasKnownValue,
-  buildPipelineAttributionContext,
-  buildPipelineReviewCandidate,
   ensureTrackedStateCandidateInvariant,
   hasActionableCandidate,
-  isReviewItemCandidateVisible,
   isSharedLanePending,
 } from './candidateInfrastructure.js';
 import {
-  parseReviewItemAttributes,
   safeReadJson,
   listJsonFiles,
   discoveredFromSource,
@@ -35,7 +30,6 @@ import {
   resolveDeclaredComponentPropertyColumns,
   mergePropertyColumns,
   componentLaneSlug,
-  reviewItemMatchesMakerLane,
 } from './componentReviewHelpers.js';
 import { resolvePropertyFieldMeta } from './componentReviewHelpers.js';
 
@@ -50,9 +44,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     specDb.getPropertyColumnsForType(componentType),
     resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
   );
-
-  // Load review items from SQL (component_review_queue table)
-  const reviewItems = specDb.getComponentReviewItems(componentType) || [];
 
   // Immutable reference baseline for this component type from compiled_rules blob.
   const refDbByIdentity = new Map();
@@ -78,48 +69,13 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     // Best-effort reference baseline only.
   }
 
-  // Index review items by component name (case-insensitive)
-  const dbNameLower = new Map();
-  for (const comp of allComponents) {
-    dbNameLower.set((comp.identity.canonical_name || '').toLowerCase(), comp.identity.canonical_name);
-  }
-  const reviewByComponent = new Map();
-  for (const ri of reviewItems) {
-    if (!isReviewItemCandidateVisible(ri)) continue;
-    if (ri.component_type !== componentType) continue;
-    let dbName = null;
-    if (ri.matched_component) {
-      const matched = String(ri.matched_component || '').trim();
-      dbName = dbNameLower.get(matched.toLowerCase()) || matched;
-    } else {
-      const rawQuery = String(ri.raw_query || '').trim();
-      dbName = dbNameLower.get(rawQuery.toLowerCase()) || rawQuery || null;
-    }
-    if (!dbName) continue;
-    const componentKey = String(dbName).trim().toLowerCase();
-    if (!componentKey) continue;
-    if (!reviewByComponent.has(componentKey)) reviewByComponent.set(componentKey, []);
-    reviewByComponent.get(componentKey).push(ri);
-  }
-
-  // Include unresolved component names seen in item field state and/or review queue.
+  // Include unresolved component names seen in item field values.
   const existingNames = new Set(
     allComponents
       .map((c) => String(c?.identity?.canonical_name || '').trim().toLowerCase())
       .filter(Boolean)
   );
   const unresolvedNames = new Set();
-
-  for (const ri of reviewItems) {
-    if (!isReviewItemCandidateVisible(ri)) continue;
-    if (ri.component_type !== componentType) continue;
-    const hasMatchedComponent = Boolean(String(ri.matched_component || '').trim());
-    const matchType = String(ri.match_type || '').trim().toLowerCase();
-    if (hasMatchedComponent || (matchType && matchType !== 'new_component')) continue;
-    const rawQuery = String(ri.raw_query || '').trim();
-    if (!rawQuery) continue;
-    if (!existingNames.has(rawQuery.toLowerCase())) unresolvedNames.add(rawQuery);
-  }
 
   try {
     const distinctValues = specDb.getDistinctItemFieldValues(componentType);
@@ -233,7 +189,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       || refDbByName.get(String(itemName || '').toLowerCase())
       || null;
     const componentIdentifier = buildComponentIdentifier(componentType, itemName, itemMaker);
-    // Phase 1b: key_review_state is retired — use null/empty defaults
     const nameKeyState = null;
     const makerKeyState = null;
     const componentKeyStateByProperty = new Map();
@@ -345,10 +300,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       overridden: linksOverridden,
     }));
 
-    const reviewItemsForName = reviewByComponent.get(String(itemName || '').toLowerCase()) || [];
-    let itemReviewItems = [];
-    let itemReviewAttribution = buildPipelineAttributionContext([]);
-
     // Build properties
     const properties = {};
     let itemPropCount = 0;
@@ -405,17 +356,12 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       itemPropCount++;
     }
 
-    // Property candidates are sourced from linked-product candidate rows (SpecDb).
-    // Pipeline review rows are used only as fallback when there are no linked products.
-
     // SpecDb enrichment: product-level candidates from SQLite
     const laneSlug = componentLaneSlug(itemName, itemMaker);
     let linkedProducts = [];
-    let hasDbLinkedProducts = false;
     try {
       const linkRows = specDb.getProductsForComponent(componentType, itemName, itemMaker);
       const productIds = linkRows.map(r => r.product_id);
-      hasDbLinkedProducts = productIds.length > 0;
       linkedProducts = linkRows.map(r => ({
         product_id: r.product_id,
         field_key: r.field_key,
@@ -493,112 +439,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       }
     } catch (_specDbErr) {
       // SpecDb enrichment is best-effort
-    }
-    if (!hasDbLinkedProducts && reviewItemsForName.length > 0) {
-      const makerVariants = makerVariantsByName.get(String(itemName || '').trim().toLowerCase()) || null;
-      const allowMakerlessForNamedLane = Boolean(String(itemMaker || '').trim()) && Number(makerVariants?.size || 0) <= 1;
-      itemReviewItems = reviewItemsForName.filter((ri) => reviewItemMatchesMakerLane(ri, {
-        componentType,
-        maker: itemMaker,
-        allowMakerlessForNamedLane,
-      }));
-      itemReviewAttribution = buildPipelineAttributionContext(itemReviewItems);
-      if (itemReviewItems.length > 0) {
-        const existingNameCandidateIds = new Set(name_tracked.candidates.map((candidate) => String(candidate?.candidate_id || '').trim()));
-        for (const ri of itemReviewItems) {
-          const val = (ri.raw_query || '').trim();
-          if (!val) continue;
-          const candidateId = buildComponentReviewSyntheticCandidateId({
-            productId: ri.product_id || '',
-            fieldKey: '__name',
-            reviewId: ri.review_id || '',
-            value: val,
-          });
-          if (existingNameCandidateIds.has(candidateId)) continue;
-          existingNameCandidateIds.add(candidateId);
-          const productLabel = String(ri.product_id || '').trim() || 'unknown_product';
-          name_tracked.candidates.push(buildPipelineReviewCandidate({
-            candidateId,
-            value: val,
-            reviewItem: ri,
-            method: ri.match_type || 'component_review',
-            quote: `Extracted from ${productLabel}${ri.review_id ? ` (${ri.review_id})` : ''}`,
-            snippetText: `Component ${ri.match_type === 'fuzzy_flagged' ? 'fuzzy matched' : 'not found in DB'}`,
-            attributionContext: itemReviewAttribution,
-          }));
-        }
-        name_tracked.candidate_count = name_tracked.candidates.length;
-
-        const brandKey = `${componentType}_brand`;
-        const existingMakerCandidateIds = new Set(maker_tracked.candidates.map((candidate) => String(candidate?.candidate_id || '').trim()));
-        for (const ri of itemReviewItems) {
-          const attrs = parseReviewItemAttributes(ri);
-          const makerFromPipeline = attrs[brandKey] || attrs.ai_suggested_maker || ri.ai_suggested_maker;
-          if (!makerFromPipeline) continue;
-          for (const val of splitCandidateParts(makerFromPipeline)) {
-            const candidateId = buildComponentReviewSyntheticCandidateId({
-              productId: ri.product_id || '',
-              fieldKey: '__maker',
-              reviewId: ri.review_id || '',
-              value: val,
-            });
-            if (existingMakerCandidateIds.has(candidateId)) continue;
-            existingMakerCandidateIds.add(candidateId);
-            const productLabel = String(ri.product_id || '').trim() || 'unknown_product';
-            maker_tracked.candidates.push(buildPipelineReviewCandidate({
-              candidateId,
-              value: val,
-              reviewItem: ri,
-              method: 'product_extraction',
-              quote: `Extracted ${brandKey}="${val}" from ${productLabel}${ri.review_id ? ` (${ri.review_id})` : ''}`,
-              snippetText: 'Pipeline extraction from product runs',
-              attributionContext: itemReviewAttribution,
-            }));
-          }
-        }
-        maker_tracked.candidate_count = maker_tracked.candidates.length;
-      }
-    }
-    if (linkedProducts.length === 0 && itemReviewAttribution.productIds.length > 0) {
-      linkedProducts = itemReviewAttribution.productIds.map((productId) => ({
-        product_id: productId,
-        field_key: componentType,
-        match_type: 'pipeline_review',
-        match_score: null,
-      }));
-    }
-    if (!hasDbLinkedProducts && itemReviewItems.length > 0) {
-      for (const key of propertyColumns) {
-        const prop = properties[key];
-        if (!prop) continue;
-        const existingPropCandidateIds = new Set(prop.candidates.map((candidate) => String(candidate?.candidate_id || '').trim()));
-        for (const ri of itemReviewItems) {
-          const attrs = parseReviewItemAttributes(ri);
-          const pipelineVal = attrs[key];
-          if (pipelineVal === undefined || pipelineVal === null || pipelineVal === '') continue;
-          for (const valStr of splitCandidateParts(pipelineVal)) {
-            const candidateId = buildComponentReviewSyntheticCandidateId({
-              productId: ri.product_id || '',
-              fieldKey: key,
-              reviewId: ri.review_id || '',
-              value: valStr,
-            });
-            if (existingPropCandidateIds.has(candidateId)) continue;
-            existingPropCandidateIds.add(candidateId);
-            const productLabel = String(ri.product_id || '').trim() || 'unknown_product';
-            prop.candidates.push(buildPipelineReviewCandidate({
-              candidateId,
-              value: valStr,
-              reviewItem: ri,
-              method: 'product_extraction',
-              quote: `Extracted ${key}="${valStr}" from ${productLabel}${ri.review_id ? ` (${ri.review_id})` : ''}`,
-              snippetText: 'Pipeline extraction from product runs',
-              attributionContext: itemReviewAttribution,
-            }));
-          }
-        }
-        prop.candidate_count = prop.candidates.length;
-      }
     }
 
     ensureTrackedStateCandidateInvariant(name_tracked, {

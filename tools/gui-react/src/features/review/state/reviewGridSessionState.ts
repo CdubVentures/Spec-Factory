@@ -1,10 +1,9 @@
 const REVIEW_GRID_SESSION_KEY_PREFIX = 'review:grid:sessionState:';
-const SORT_MODES = new Set(['brand', 'recent', 'confidence', 'flags']);
+const SORT_MODES = new Set(['brand', 'recent', 'confidence']);
 const BRAND_FILTER_MODES = new Set(['all', 'none', 'custom']);
 
 export interface ReviewGridSessionState {
-  sortMode: 'brand' | 'recent' | 'confidence' | 'flags';
-  showOnlyFlagged: boolean;
+  sortMode: 'brand' | 'recent' | 'confidence';
   brandFilterMode: 'all' | 'none' | 'custom';
   selectedBrands: string[];
 }
@@ -57,7 +56,6 @@ function parseStateObject(value: unknown): ReviewGridSessionState {
     : {};
   return {
     sortMode: parseSortMode(base.sortMode),
-    showOnlyFlagged: base.showOnlyFlagged === true,
     brandFilterMode: parseBrandFilterMode(base.brandFilterMode),
     selectedBrands: parseSelectedBrands(base.selectedBrands),
   };

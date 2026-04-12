@@ -30,7 +30,6 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     getSpecDb,
     buildReviewLayout,
     buildProductReviewPayload,
-    buildReviewQueue,
     sessionCache,
     slugify,
     broadcastWs,
@@ -111,16 +110,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     if (idsParam) {
       productIds = idsParam.split(',').filter(Boolean);
     } else {
-      const queue = await buildReviewQueue({
-        storage,
-        config,
-        category,
-        status: 'needs_review',
-        limit,
-        specDb,
-        catalogProducts: dbProductMap,
-      });
-      productIds = queue.map(q => q.product_id || q.productId).filter(Boolean).slice(0, limit);
+      productIds = Object.keys(dbProductMap).slice(0, limit);
     }
     const validPids = new Set(Object.keys(dbProductMap));
     productIds = productIds.filter(pid => validPids.has(pid));

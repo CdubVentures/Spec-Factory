@@ -59,7 +59,7 @@
 | `src/categories/` | category loader and tests | `loader.js` |
 | `src/core/` | config manifest, LLM client plumbing, storage, events, and other infra | `config/manifest/index.js`, `llm/`, `storage/`, `events/` |
 | `src/db/` | SQLite schemas, migrations, composition roots, and stores | `appDb.js`, `appDbSchema.js`, `specDb.js`, `specDbSchema.js`, `specDbMigrations.js`, `stores/` |
-| `src/engine/` | validation engine helpers | `fieldRulesEngine.js`, `constraintEvaluator.js`, `runtimeGate.js` |
+| `src/engine/` | validation engine helpers | `fieldRulesEngine.js`, `runtimeGate.js`, `ruleAccessors.js` |
 | `src/features/` | feature-first backend code (`14` feature directories) | `catalog/`, `category-authority/`, `color-edition/`, `color-registry/`, `crawl/`, `extraction/`, `indexing/`, `publisher/`, `review/`, `review-curation/`, `settings/`, `settings-authority/`, `studio/`, `unit-registry/` |
 | `src/field-rules/` | field-rules compiler, cache, and consumer helpers | `compiler.js`, `loader.js`, `sessionCache.js`, `unitRegistry.js` |
 | `src/indexlab/` | runtime bridge and run artifact helpers | `runtimeBridgeArtifacts.js`, `runtimeBridgeEventHandlers.js` |

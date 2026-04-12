@@ -154,17 +154,13 @@ const loadReviewCommandHandler = createLazyLoader(async () => {
     parseJsonArg,
     withSpecDb,
     buildReviewLayout: reviewDomain.buildReviewLayout,
-    buildReviewQueue: reviewDomain.buildReviewQueue,
     buildProductReviewPayload: reviewDomain.buildProductReviewPayload,
     writeProductReviewArtifacts: reviewDomain.writeProductReviewArtifacts,
-    writeCategoryReviewArtifacts: reviewDomain.writeCategoryReviewArtifacts,
-    startReviewQueueWebSocket: reviewDomain.startReviewQueueWebSocket,
     setOverrideFromCandidate: reviewDomain.setOverrideFromCandidate,
     approveGreenOverrides: reviewDomain.approveGreenOverrides,
     setManualOverride: reviewDomain.setManualOverride,
     finalizeOverrides: reviewDomain.finalizeOverrides,
     buildReviewMetrics: reviewDomain.buildReviewMetrics,
-    appendReviewSuggestion: reviewDomain.appendReviewSuggestion,
   });
 });
 

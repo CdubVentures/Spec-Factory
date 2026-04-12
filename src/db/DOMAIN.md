@@ -23,11 +23,10 @@ specDbIntegrity.js     — cleanupLegacyIdentityFallbackRows(db), assertStrictId
 stores/
   itemStateStore.js        — 19 methods: item_field_state + item_component_links + item_list_links
   componentStore.js        — 17 methods: component_identity + component_aliases + component_values
-  enumListStore.js         — 15 methods: enum_lists + list_values (cross-dep: key review store)
-  keyReviewStore.js        — 15 methods: key_review_state + key_review_runs + key_review_run_sources + key_review_audit
+  enumListStore.js         — 15 methods: enum_lists + list_values
   billingStore.js          —  5 methods: billing_entries
   sourceIntelStore.js      —  3 methods: bridge_events
-  queueProductStore.js     — 11 methods: products + curation_suggestions + component_review_queue
+  queueProductStore.js     —  4 methods: products
   llmRouteSourceStore.js   —  4 methods: llm_route_matrix
 ```
 

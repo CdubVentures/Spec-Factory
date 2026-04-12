@@ -10,7 +10,7 @@ import { z } from 'zod';
  */
 export const productImageFinderResponseSchema = z.object({
   images: z.array(z.object({
-    view: z.enum(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']),
+    view: z.enum(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero']),
     url: z.string(),
     source_page: z.string().default(''),
     alt_text: z.string().default(''),

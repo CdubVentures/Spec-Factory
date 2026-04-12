@@ -312,6 +312,32 @@ function ViewConfigEditor({
   );
 }
 
+/* ── Settings Card ───────────────────────────────────────────────── */
+
+function SettingsCard({
+  title,
+  subtitle,
+  trailing,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  trailing?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="sf-surface-elevated border sf-border-soft rounded-lg p-4 space-y-3">
+      <header className="flex items-center gap-3 flex-wrap">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] sf-text-muted">{title}</h3>
+        {subtitle && <span className="text-[10px] sf-text-muted">{subtitle}</span>}
+        <div className="flex-1" />
+        {trailing}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 /* ── PIF Settings ────────────────────────────────────────────────── */
 
 function PifSettingsForm({
@@ -346,95 +372,486 @@ function PifSettingsForm({
   }, [category, onSave]);
 
   return (
-    <div className="space-y-6">
-      {/* View Configuration */}
-      <div>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="text-[11px] font-bold uppercase tracking-[0.06em] sf-text-muted">View Configuration</div>
-          {isDefaults && (
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: 'var(--sf-info-bg, rgba(59,130,246,0.1))', color: 'var(--sf-info, #3b82f6)' }}
-            >
+    <div className="space-y-4">
+      {/* ── View Configuration ── */}
+      <SettingsCard
+        title="View Configuration"
+        trailing={
+          isDefaults ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full sf-text-info sf-surface-elevated">
               Using {category} defaults
             </span>
-          )}
-          {!isDefaults && (
+          ) : (
             <button
               onClick={handleResetToDefaults}
               disabled={isSaving}
-              className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost"
-              style={{ color: 'var(--sf-muted)' }}
+              className="text-[10px] px-2 py-0.5 rounded sf-btn-ghost sf-text-muted"
             >
               Reset to {category} defaults
             </button>
-          )}
-        </div>
-
+          )
+        }
+      >
         <ViewConfigEditor
           views={localViews}
           category={category}
           isSaving={isSaving}
           onChange={handleViewConfigChange}
         />
-      </div>
+      </SettingsCard>
 
-      {/* Image Quality */}
-      <div>
-        <div className="text-[11px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Image Quality</div>
-        <div className="space-y-3">
-          <div className="flex gap-4">
-            <div>
-              <label className="block sf-text-label font-semibold mb-1" style={{ color: 'var(--sf-text)' }}>
-                Min Width (px)
-              </label>
-              <input
-                type="number"
-                value={settings.minWidth ?? '800'}
-                onChange={(e) => onSave('minWidth', e.target.value)}
-                disabled={isSaving}
-                className="sf-input w-28 px-2 py-1.5 rounded sf-text-label"
-                min="100"
-                max="4000"
-              />
-            </div>
-            <div>
-              <label className="block sf-text-label font-semibold mb-1" style={{ color: 'var(--sf-text)' }}>
-                Min Height (px)
-              </label>
-              <input
-                type="number"
-                value={settings.minHeight ?? '600'}
-                onChange={(e) => onSave('minHeight', e.target.value)}
-                disabled={isSaving}
-                className="sf-input w-28 px-2 py-1.5 rounded sf-text-label"
-                min="100"
-                max="4000"
-              />
-            </div>
-          </div>
-          <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-            Images below these dimensions are rejected and deleted after download.
-          </p>
+      {/* ── Image Quality ── */}
+      <SettingsCard
+        title="Image Quality"
+        subtitle="Per-view minimum dimensions based on natural aspect ratio"
+      >
+        <ViewQualityGrid
+          viewQualityConfig={settings.viewQualityConfig || ''}
+          category={category}
+          isSaving={isSaving}
+          onSave={(val) => onSave('viewQualityConfig', val)}
+        />
+      </SettingsCard>
+
+      {/* ── View Budget ── */}
+      <SettingsCard
+        title="View Budget"
+        subtitle="Which views to actively search for this category"
+      >
+        <ViewBudgetEditor
+          viewBudget={settings.viewBudget || ''}
+          category={category}
+          isSaving={isSaving}
+          onSave={(val) => onSave('viewBudget', val)}
+        />
+      </SettingsCard>
+
+      {/* ── Search Behavior (merged Carousel + Hero + Safety) ── */}
+      <SettingsCard title="Search Behavior">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block sf-text-label font-semibold mb-1" style={{ color: 'var(--sf-text)' }}>
-              Min File Size (bytes)
+            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+              Satisfaction Threshold
             </label>
             <input
               type="number"
-              value={settings.minFileSize ?? '50000'}
-              onChange={(e) => onSave('minFileSize', e.target.value)}
+              value={settings.satisfactionThreshold ?? '3'}
+              onChange={(e) => onSave('satisfactionThreshold', e.target.value)}
               disabled={isSaving}
-              className="sf-input w-36 px-2 py-1.5 rounded sf-text-label"
-              min="0"
-              max="10000000"
+              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+              min="1"
+              max="10"
             />
-            <p className="mt-1 sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-              Reject images smaller than this. Default 50KB (50000). Set to 0 to disable.
+            <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+              Quality images per view before it&apos;s considered filled.
+            </p>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+              Hero Search
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer rounded border sf-border-soft px-3 py-2">
+              <input
+                type="checkbox"
+                checked={settings.heroEnabled !== 'false'}
+                onChange={(e) => onSave('heroEnabled', e.target.checked ? 'true' : 'false')}
+                disabled={isSaving}
+                className="sf-checkbox"
+              />
+              <span className="text-[11px] sf-text-primary">Enabled</span>
+            </label>
+            <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+              Search for hero / marketing images.
+            </p>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+              Hero Count
+            </label>
+            <input
+              type="number"
+              value={settings.heroCount ?? '3'}
+              onChange={(e) => onSave('heroCount', e.target.value)}
+              disabled={isSaving}
+              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+              min="1"
+              max="5"
+            />
+            <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+              Target hero images per variant.
             </p>
           </div>
         </div>
+
+        {/* Safety Caps */}
+        <div className="pt-3 mt-1 border-t sf-border-soft">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Attempt Budgets</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+                View Attempt Budget
+              </label>
+              <input
+                type="number"
+                value={settings.viewAttemptBudget ?? '5'}
+                onChange={(e) => onSave('viewAttemptBudget', e.target.value)}
+                disabled={isSaving}
+                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+                min="1"
+                max="20"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+                Hero Attempt Budget
+              </label>
+              <input
+                type="number"
+                value={settings.heroAttemptBudget ?? '3'}
+                onChange={(e) => onSave('heroAttemptBudget', e.target.value)}
+                disabled={isSaving}
+                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+                min="1"
+                max="10"
+              />
+            </div>
+          </div>
+        </div>
+      </SettingsCard>
+
+      {/* ── Prompt Configuration ── */}
+      <SettingsCard title="Prompt Configuration" subtitle="Override the default LLM instructions">
+        <PromptOverrideEditor
+          label="View Prompt Instructions"
+          value={settings.viewPromptOverride || ''}
+          isSaving={isSaving}
+          onSave={(val) => onSave('viewPromptOverride', val)}
+        />
+        <PromptOverrideEditor
+          label="Hero Prompt Instructions"
+          value={settings.heroPromptOverride || ''}
+          isSaving={isSaving}
+          onSave={(val) => onSave('heroPromptOverride', val)}
+        />
+      </SettingsCard>
+    </div>
+  );
+}
+
+/* ── View Quality Grid ────────────────────────────────────────────── */
+
+interface ViewQualityEntry {
+  minWidth: number;
+  minHeight: number;
+  minFileSize: number;
+}
+
+const CATEGORY_VIEW_QUALITY_DEFAULTS: Record<string, Record<string, ViewQualityEntry>> = {
+  mouse: {
+    top: { minWidth: 300, minHeight: 600, minFileSize: 30000 },
+    bottom: { minWidth: 300, minHeight: 600, minFileSize: 30000 },
+    left: { minWidth: 600, minHeight: 300, minFileSize: 30000 },
+    right: { minWidth: 600, minHeight: 300, minFileSize: 30000 },
+    front: { minWidth: 400, minHeight: 600, minFileSize: 30000 },
+    rear: { minWidth: 400, minHeight: 600, minFileSize: 30000 },
+    sangle: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    angle: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    hero: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+  },
+  monitor: {
+    front: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+    angle: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    rear: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+    left: { minWidth: 250, minHeight: 600, minFileSize: 30000 },
+    right: { minWidth: 250, minHeight: 600, minFileSize: 30000 },
+    top: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    bottom: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    sangle: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    hero: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+  },
+  keyboard: {
+    top: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    left: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    right: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    angle: { minWidth: 600, minHeight: 300, minFileSize: 30000 },
+    sangle: { minWidth: 600, minHeight: 300, minFileSize: 30000 },
+    bottom: { minWidth: 600, minHeight: 250, minFileSize: 30000 },
+    front: { minWidth: 600, minHeight: 200, minFileSize: 30000 },
+    rear: { minWidth: 600, minHeight: 200, minFileSize: 30000 },
+    hero: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+  },
+  mousepad: {
+    top: { minWidth: 600, minHeight: 400, minFileSize: 30000 },
+    angle: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    hero: { minWidth: 600, minHeight: 350, minFileSize: 30000 },
+    bottom: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+    left: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+    right: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+    front: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+    rear: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+    sangle: { minWidth: 600, minHeight: 300, minFileSize: 25000 },
+  },
+};
+
+const GENERIC_VQ_DEFAULT: ViewQualityEntry = { minWidth: 600, minHeight: 400, minFileSize: 30000 };
+
+const VIEW_LABELS: Record<string, string> = {
+  top: 'Top', bottom: 'Bottom', left: 'Left', right: 'Right',
+  front: 'Front', rear: 'Rear', sangle: 'S-Angle', angle: 'Angle', hero: 'Hero',
+};
+
+const ALL_QUALITY_VIEWS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero'];
+
+function ViewQualityGrid({
+  viewQualityConfig,
+  category,
+  isSaving,
+  onSave,
+}: {
+  viewQualityConfig: string;
+  category: string;
+  isSaving: boolean;
+  onSave: (val: string) => void;
+}) {
+  const catDefaults = CATEGORY_VIEW_QUALITY_DEFAULTS[category] || {};
+  const isUsingDefaults = !viewQualityConfig || !viewQualityConfig.trim();
+
+  let currentConfig: Record<string, Partial<ViewQualityEntry>>;
+  try {
+    const parsed = JSON.parse(viewQualityConfig || '{}');
+    currentConfig = typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    currentConfig = {};
+  }
+
+  const getVal = (view: string, field: keyof ViewQualityEntry): number => {
+    const override = currentConfig[view]?.[field];
+    if (override !== undefined && override !== null) return Number(override);
+    return (catDefaults[view] ?? GENERIC_VQ_DEFAULT)[field];
+  };
+
+  const handleChange = (view: string, field: keyof ViewQualityEntry, value: string) => {
+    const next = { ...currentConfig };
+    if (!next[view]) next[view] = {};
+    next[view] = { ...next[view], [field]: Number(value) };
+    onSave(JSON.stringify(next));
+  };
+
+  const handleReset = () => onSave('');
+
+  return (
+    <div className="rounded border sf-border-soft overflow-hidden">
+      <table className="w-full text-[11px] border-collapse">
+        <thead>
+          <tr className="sf-text-muted sf-surface-elevated">
+            <th className="text-left py-2 pl-3 pr-2 font-semibold border-b sf-border-soft">View</th>
+            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min Width</th>
+            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min Height</th>
+            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min File Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ALL_QUALITY_VIEWS.map((view, idx) => (
+            <tr key={view} className={`sf-text-primary ${idx % 2 === 1 ? 'sf-surface-elevated' : ''}`}>
+              <td className="py-1.5 pl-3 pr-2 font-medium">{VIEW_LABELS[view] ?? view}</td>
+              <td className="py-1.5 px-2">
+                <input
+                  type="number"
+                  value={getVal(view, 'minWidth')}
+                  onChange={(e) => handleChange(view, 'minWidth', e.target.value)}
+                  disabled={isSaving}
+                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  min="0"
+                  max="4000"
+                />
+              </td>
+              <td className="py-1.5 px-2">
+                <input
+                  type="number"
+                  value={getVal(view, 'minHeight')}
+                  onChange={(e) => handleChange(view, 'minHeight', e.target.value)}
+                  disabled={isSaving}
+                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  min="0"
+                  max="4000"
+                />
+              </td>
+              <td className="py-1.5 px-2">
+                <input
+                  type="number"
+                  value={getVal(view, 'minFileSize')}
+                  onChange={(e) => handleChange(view, 'minFileSize', e.target.value)}
+                  disabled={isSaving}
+                  className="sf-input w-[88px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  min="0"
+                  max="10000000"
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-3 py-2 border-t sf-border-soft sf-surface-elevated">
+        {isUsingDefaults ? (
+          <span className="text-[10px] sf-text-muted">Using {category} defaults</span>
+        ) : (
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted"
+          >
+            Reset to {category} defaults
+          </button>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* ── View Budget Editor ──────────────────────────────────────────── */
+
+const CATEGORY_VIEW_BUDGET_DEFAULTS: Record<string, string[]> = {
+  mouse:    ['top', 'left', 'angle', 'sangle', 'front', 'bottom'],
+  keyboard: ['top', 'left', 'angle', 'sangle'],
+  monitor:  ['front', 'angle', 'rear', 'left'],
+  mousepad: ['top', 'angle'],
+};
+
+function ViewBudgetEditor({
+  viewBudget,
+  category,
+  isSaving,
+  onSave,
+}: {
+  viewBudget: string;
+  category: string;
+  isSaving: boolean;
+  onSave: (val: string) => void;
+}) {
+  const defaultBudget = CATEGORY_VIEW_BUDGET_DEFAULTS[category] || ['top', 'left', 'angle'];
+  const isUsingDefaults = !viewBudget || !viewBudget.trim();
+
+  let currentBudget: string[];
+  try {
+    const parsed = JSON.parse(viewBudget || '[]');
+    currentBudget = Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultBudget;
+  } catch {
+    currentBudget = defaultBudget;
+  }
+
+  const budgetSet = new Set(currentBudget);
+
+  const handleToggle = (key: string) => {
+    const next = new Set(budgetSet);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    onSave(JSON.stringify([...next]));
+  };
+
+  const handleReset = () => onSave('');
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {CANONICAL_VIEWS.map((v) => {
+          const active = budgetSet.has(v.key);
+          return (
+            <label
+              key={v.key}
+              className={`flex items-center gap-1.5 cursor-pointer rounded-full px-3 py-1.5 border transition-colors ${
+                active
+                  ? 'sf-border-default sf-surface-elevated'
+                  : 'sf-border-soft'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={active}
+                onChange={() => handleToggle(v.key)}
+                disabled={isSaving}
+                className="sf-checkbox w-3.5 h-3.5"
+              />
+              <span className={`text-[11px] font-medium ${active ? 'sf-text-primary' : 'sf-text-muted'}`}>
+                {v.label}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      <div>
+        {isUsingDefaults ? (
+          <span className="text-[10px] sf-text-muted">Using {category} defaults ({defaultBudget.length} views)</span>
+        ) : (
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted"
+          >
+            Reset to {category} defaults
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Prompt Override Editor ──────────────────────────────────────── */
+
+function PromptOverrideEditor({
+  label,
+  value,
+  isSaving,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  isSaving: boolean;
+  onSave: (val: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasOverride = Boolean(value.trim());
+
+  return (
+    <div className="rounded border sf-border-soft overflow-hidden mb-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        type="button"
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span
+          className="text-[10px] sf-text-muted shrink-0 transition-transform duration-150"
+          style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+        >
+          {'\u25B6'}
+        </span>
+        <span className="text-[11px] font-semibold sf-text-primary">{label}</span>
+        <div className="flex-1" />
+        {hasOverride ? (
+          <span
+            onClick={(e) => { e.stopPropagation(); onSave(''); }}
+            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted cursor-pointer"
+          >
+            Clear Override
+          </span>
+        ) : (
+          <span className="text-[10px] sf-text-muted">Using default</span>
+        )}
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3 border-t sf-border-soft">
+          <textarea
+            value={value}
+            onChange={(e) => onSave(e.target.value)}
+            disabled={isSaving}
+            placeholder="Leave empty to use the built-in default prompt. Edit to customize the instruction block."
+            className="sf-input w-full px-3 py-2 mt-3 rounded sf-text-label font-mono text-[11px] leading-relaxed resize-y"
+            rows={8}
+          />
+        </div>
+      )}
     </div>
   );
 }

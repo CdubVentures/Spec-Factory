@@ -114,7 +114,20 @@ export const FINDER_MODULES = Object.freeze([
     // Per-category settings (stored in {tableName}_settings table)
     // viewConfig: JSON array of {key, description} in priority order.
     // Empty string = use category defaults from CATEGORY_VIEW_DEFAULTS.
-    settingsDefaults: { viewConfig: '', minWidth: '800', minHeight: '600', minFileSize: '50000' },
+    settingsDefaults: {
+      viewConfig: '', minWidth: '800', minHeight: '600', minFileSize: '50000',
+      rmbgConcurrency: '0',            // 0 = auto-detect from system RAM; >0 = fixed ONNX inference slot count
+      viewQualityConfig: '',           // JSON { [view]: { minWidth, minHeight, minFileSize } }; empty = category defaults
+      // Carousel strategy settings
+      viewBudget: '',                  // JSON array of view keys; empty = use CATEGORY_VIEW_BUDGET_DEFAULTS
+      satisfactionThreshold: '3',     // quality images per view to be "satisfied"
+      heroEnabled: 'true',            // whether hero search is active
+      heroCount: '3',                 // target hero images per variant
+      viewAttemptBudget: '5',         // max LLM calls per view before moving on
+      heroAttemptBudget: '3',         // max hero LLM calls per variant
+      viewPromptOverride: '',         // custom view prompt instructions; empty = built-in template
+      heroPromptOverride: '',         // custom hero prompt instructions; empty = built-in template
+    },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildProductImageFinderPrompt',

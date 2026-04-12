@@ -60,68 +60,6 @@ export function validateEnumCandidate({
   return null;
 }
 
-export function applyEnumSharedLaneState({
-  runtimeSpecDb,
-  applySharedLaneState,
-  category,
-  field,
-  normalizedValue,
-  listValueRow,
-  selectedCandidateId,
-  selectedValue,
-  confidenceScore,
-  laneAction,
-  nowIso,
-  confirmStatusOverride,
-}) {
-  return applySharedLaneState({
-    specDb: runtimeSpecDb,
-    category,
-    targetKind: 'enum_key',
-    fieldKey: field,
-    enumValueNorm: normalizedValue,
-    listValueId: listValueRow?.id ?? null,
-    enumListId: listValueRow?.list_id ?? null,
-    selectedCandidateId: selectedCandidateId || null,
-    selectedValue,
-    confidenceScore,
-    laneAction,
-    nowIso,
-    confirmStatusOverride,
-  });
-}
-
-export function applyEnumSharedLaneWithResolvedConfidence({
-  runtimeSpecDb,
-  applySharedLaneState,
-  category,
-  field,
-  normalizedValue,
-  listValueRow,
-  selectedCandidateId,
-  selectedValue,
-  laneAction,
-  nowIso,
-  confirmStatusOverride = undefined,
-  fallbackConfidence = 1.0,
-}) {
-  const sharedConfidence = fallbackConfidence;
-  return applyEnumSharedLaneState({
-    runtimeSpecDb,
-    applySharedLaneState,
-    category,
-    field,
-    normalizedValue,
-    listValueRow,
-    selectedCandidateId,
-    selectedValue,
-    confidenceScore: sharedConfidence,
-    laneAction,
-    nowIso,
-    confirmStatusOverride,
-  });
-}
-
 export function upsertEnumListValueAndFetch({
   runtimeSpecDb,
   field,

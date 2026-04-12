@@ -373,7 +373,7 @@ export function ComponentSubTab({
               valueMaxChars={cellIsPendingAI ? 50 : 60}
               showConfidence
               showOverrideBadge
-              pendingAI={cellIsPendingAI}
+              pendingAIShared={cellIsPendingAI}
               showLinkedProductBadge={debugLinkedProducts}
               linkedProductCount={row.original.linked_products?.length ?? 0}
               showSourceCountBadge={debugLinkedProducts}
@@ -410,7 +410,7 @@ export function ComponentSubTab({
               valueMaxChars={40}
               showConfidence
               showOverrideBadge
-              pendingAI={cellIsPendingAI}
+              pendingAIShared={cellIsPendingAI}
               showLinkedProductBadge={debugLinkedProducts}
               linkedProductCount={row.original.linked_products?.length ?? 0}
               showSourceCountBadge={debugLinkedProducts}
@@ -561,7 +561,7 @@ export function ComponentSubTab({
               showConfidence
               showOverrideBadge
               flagCount={flagCount}
-              pendingAI={cellIsPendingAI}
+              pendingAIShared={cellIsPendingAI}
               showLinkedProductBadge={debugLinkedProducts}
               linkedProductCount={row.original.linked_products?.length ?? 0}
               showSourceCountBadge={debugLinkedProducts}

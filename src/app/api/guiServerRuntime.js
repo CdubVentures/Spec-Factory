@@ -125,7 +125,6 @@ export function createGuiServerRuntime({
       },
       domain: {
         normalizeLower, isMeaningfulValue, candidateLooksReference,
-        remapPendingComponentReviewItemsForNameChange,
         buildCatalog, patchCompiledComponentDb,
       },
     } = bootstrapServer({ projectRoot });
@@ -228,7 +227,6 @@ export function createGuiServerRuntime({
         sessionCache, reviewLayoutByCategory,
         broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson,
         isMeaningfulValue, normalizeLower,
-        remapPendingComponentReviewItemsForNameChange,
         patchCompiledComponentDb,
         spawn,
       }),

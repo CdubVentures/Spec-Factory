@@ -14,13 +14,26 @@ import {
 } from '../../../src/core/llm/llmPolicySchema.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../../../src/shared/settingsRegistry.js';
 
-// --- Build flat-key → registry-type lookup for reader selection + TS type inference ---
+// --- Build flat-key → registry-type and default lookup for reader selection + TS type inference ---
 function buildFlatKeyTypeMap() {
   const map = new Map();
   for (const entry of RUNTIME_SETTINGS_REGISTRY) {
     map.set(entry.key, entry.type);
     if (entry.configKey && entry.configKey !== entry.key) {
       map.set(entry.configKey, entry.type);
+    }
+  }
+  return map;
+}
+
+function buildFlatKeyDefaultMap() {
+  const map = new Map();
+  for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+    if (entry.default !== undefined) {
+      map.set(entry.key, entry.default);
+      if (entry.configKey && entry.configKey !== entry.key) {
+        map.set(entry.configKey, entry.default);
+      }
     }
   }
   return map;
@@ -43,12 +56,14 @@ function capitalize(str) {
 export function generateLlmPolicyAdapter() {
   const lines = [];
   const flatKeyToType = buildFlatKeyTypeMap();
+  const flatKeyToDefault = buildFlatKeyDefaultMap();
 
   function readerFor(flatKey) {
     const type = flatKeyToType.get(flatKey);
-    if (type === 'bool') return `readBool(source, '${flatKey}')`;
-    if (type === 'int' || type === 'float') return `readNum(source, '${flatKey}')`;
-    return `readStr(source, '${flatKey}')`;
+    const def = flatKeyToDefault.get(flatKey);
+    if (type === 'bool') return `readBool(source, '${flatKey}', ${def === true})`;
+    if (type === 'int' || type === 'float') return `readNum(source, '${flatKey}', ${typeof def === 'number' ? def : 0})`;
+    return `readStr(source, '${flatKey}', ${JSON.stringify(String(def ?? ''))})`;
   }
 
   lines.push('// AUTO-GENERATED from registry policyGroup/policyField metadata — do not edit manually.');
@@ -124,19 +139,21 @@ export function generateLlmPolicyAdapter() {
   // ── Reader utilities ──
   lines.push('// --- Reader utilities (inlined for zero-dependency assembly) ---');
   lines.push('');
-  lines.push('function readStr(source: Record<string, unknown>, key: string): string {');
-  lines.push("  return String(source[key] ?? '');");
+  lines.push('function readStr(source: Record<string, unknown>, key: string, fallback = \'\'): string {');
+  lines.push('  return String(source[key] ?? fallback);');
   lines.push('}');
   lines.push('');
-  lines.push('function readNum(source: Record<string, unknown>, key: string): number {');
+  lines.push('function readNum(source: Record<string, unknown>, key: string, fallback = 0): number {');
   lines.push('  const raw = source[key];');
-  lines.push('  if (raw === undefined || raw === null) return 0;');
+  lines.push('  if (raw === undefined || raw === null) return fallback;');
   lines.push('  const parsed = Number(raw);');
-  lines.push('  return Number.isFinite(parsed) ? parsed : 0;');
+  lines.push('  return Number.isFinite(parsed) ? parsed : fallback;');
   lines.push('}');
   lines.push('');
-  lines.push('function readBool(source: Record<string, unknown>, key: string): boolean {');
-  lines.push('  return Boolean(source[key] ?? false);');
+  lines.push('function readBool(source: Record<string, unknown>, key: string, fallback = false): boolean {');
+  lines.push('  const raw = source[key];');
+  lines.push('  if (raw === undefined || raw === null) return fallback;');
+  lines.push('  return Boolean(raw);');
   lines.push('}');
   lines.push('');
   lines.push('function safeJsonParse<T>(value: unknown, fallback: T): T {');

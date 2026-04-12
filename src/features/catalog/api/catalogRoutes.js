@@ -210,38 +210,6 @@ export function registerCatalogRoutes(ctx) {
       return jsonRes(res, 200, rows);
     }
 
-    // Product detail
-    if (parts[0] === 'product' && parts[1] && parts[2] && method === 'GET') {
-      const [, category, productId] = parts;
-      const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-      const specDb = resolveSpecDb(category);
-      const [summary, normalized, provenance] = await Promise.all([
-        specDb
-          ? Promise.resolve(specDb.getSummaryForProduct(productId))
-          : storage.readJsonOrNull(`${latestBase}/summary.json`),
-        specDb
-          ? Promise.resolve(specDb.getNormalizedForProduct(productId))
-          : storage.readJsonOrNull(`${latestBase}/normalized.json`),
-        specDb
-          ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
-          : storage.readJsonOrNull(`${latestBase}/provenance.json`),
-      ]);
-      const trafficLight = specDb
-        ? specDb.getTrafficLightForProduct(productId)
-        : (await storage.readJsonOrNull(`${latestBase}/traffic_light.json`));
-      if (normalized && typeof normalized === 'object') {
-        normalized.identity = await resolveProductIdentity({
-          productId,
-          category,
-          config,
-          specDb,
-          normalizedIdentity: normalized.identity,
-        });
-      }
-      const sessionProduct = await sessionCache.getSessionRules(category);
-      return jsonRes(res, 200, { summary, normalized, provenance, trafficLight, fieldOrder: sessionProduct.cleanFieldOrder });
-    }
-
     return false;
   };
 }

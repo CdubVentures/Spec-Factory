@@ -10,6 +10,7 @@ Own repo-wide infrastructure for LLM provider/client/prompt plumbing: model reso
 - `llmPolicySchema.js` -- LLM policy schema definitions
 - `llmRouteHelpers.js` -- `llmProviderFromModel`, `resolveLlmRoleDefaults`, `resolveLlmKnobDefaults`, `resolvePricingForModel`, `resolveTokenProfileForModel`, `collectLlmModels`, `deriveTrafficLightCounts`
 - `buildLlmCallDeps.js` -- `buildLlmCallDeps` (dependency injection for LLM calls)
+- `labQueue.js` -- `enqueueLabCall` (serial queue for lab-proxied LLM calls)
 - `createRouteLlmLogger.js` -- `createRouteLlmLogger` (per-route LLM logging)
 - `zodToLlmSchema.js` -- Zod-to-LLM schema conversion
 - `client/` -- LLM client implementations

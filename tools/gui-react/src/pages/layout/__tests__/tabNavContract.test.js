@@ -119,14 +119,10 @@ test('TabNav exposes the active route through link semantics instead of relying 
 
   const anchors = collectNodes(tree, (node) => node.type === 'a');
   const overviewLink = anchors.find((node) => node.props?.children === 'Overview');
-  const productLink = anchors.find((node) => node.props?.children === 'Selected Product');
 
   assert.ok(overviewLink, 'expected Overview nav link');
   assert.equal(overviewLink?.props?.href, '/');
   assert.equal(overviewLink?.props?.['aria-current'], 'page');
-  assert.ok(productLink, 'expected Selected Product nav link');
-  assert.equal(productLink?.props?.href, '/product');
-  assert.equal(productLink?.props?.['aria-current'], undefined);
 });
 
 test('TabNav renders Categories, Brands, and Billing as navigable links in the global group', async () => {

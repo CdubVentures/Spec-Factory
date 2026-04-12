@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
-import { useProductStore } from '../../../stores/productStore.ts';
 import { api } from '../../../api/client.ts';
 import {
   MODULE_STYLES as FINDER_STYLES,
@@ -179,7 +178,6 @@ function OpCard({ op, onClick, onDismiss }: {
 
 export function OperationsTracker() {
   const operations = useOperationsStore((s) => s.operations);
-  const setSelectedProduct = useProductStore((s) => s.setSelectedProduct);
   const [isOpen, toggleOpen] = usePersistedToggle('sidebar:ops-tracker', true);
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
 
@@ -199,9 +197,8 @@ export function OperationsTracker() {
   }, [runningCount]);
 
   const handleCardClick = useCallback((op: Operation) => {
-    setSelectedProduct(op.productId, '', '', '');
     setSelectedOpId(op.id);
-  }, [setSelectedProduct]);
+  }, []);
 
   const remove = useOperationsStore((s) => s.remove);
   const handleDismiss = useCallback((e: React.MouseEvent, op: Operation) => {

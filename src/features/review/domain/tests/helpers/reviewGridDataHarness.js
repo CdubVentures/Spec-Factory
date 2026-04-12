@@ -3,8 +3,6 @@ import path from 'node:path';
 import {
   buildReviewLayout,
   buildProductReviewPayload,
-  buildReviewQueue,
-  writeCategoryReviewArtifacts,
   writeProductReviewArtifacts,
   buildFieldState,
 } from '../../reviewGridData.js';
@@ -12,8 +10,6 @@ import {
 export {
   buildReviewLayout,
   buildProductReviewPayload,
-  buildReviewQueue,
-  writeCategoryReviewArtifacts,
   writeProductReviewArtifacts,
   buildFieldState,
 };

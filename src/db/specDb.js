@@ -402,15 +402,6 @@ export class SpecDb {
   getAllProducts(sf) { return this._queueProductStore.getAllProducts(sf); }
   deleteProduct(pid) { return this._queueProductStore.deleteProduct(pid); }
 
-  upsertCurationSuggestion(row) { this._queueProductStore.upsertCurationSuggestion(row); }
-  getCurationSuggestions(st, sf) { return this._queueProductStore.getCurationSuggestions(st, sf); }
-  updateCurationSuggestionStatus(st, fk, v, s, e) { this._queueProductStore.updateCurationSuggestionStatus(st, fk, v, s, e); }
-
-  upsertComponentReviewItem(row) { this._queueProductStore.upsertComponentReviewItem(row); }
-  getComponentReviewItems(ct, sf) { return this._queueProductStore.getComponentReviewItems(ct, sf); }
-  updateComponentReviewQueueMatchedComponent(cat, rid, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponent(cat, rid, v); }
-  updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v); }
-
   // --- LLM Route Matrix ---
 
   ensureDefaultLlmRouteMatrix() { this._llmRouteSourceStore.ensureDefaultLlmRouteMatrix(); }
@@ -423,7 +414,7 @@ export class SpecDb {
       'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_component_links',
       'item_list_links', 'products',
-      'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
+      'llm_route_matrix',
       'billing_entries',
       'color_edition_finder',
       'color_edition_finder_runs'

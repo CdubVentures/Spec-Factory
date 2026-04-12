@@ -30,37 +30,6 @@ export function validateComponentPropertyCandidate({
   return null;
 }
 
-export function applyComponentSharedAcceptLane({
-  runtimeSpecDb,
-  applySharedLaneState,
-  category,
-  propertyKey,
-  componentIdentifier,
-  componentValueId = null,
-  componentIdentityId = null,
-  selectedCandidateId = null,
-  selectedValue,
-  nowIso,
-  candidateRow = null,
-}) {
-  const sharedConfidence = 1.0;
-  return applySharedLaneState({
-    specDb: runtimeSpecDb,
-    category,
-    targetKind: 'component_key',
-    fieldKey: String(propertyKey),
-    componentIdentifier,
-    propertyKey: String(propertyKey),
-    componentValueId: componentValueId ?? null,
-    componentIdentityId: componentIdentityId ?? null,
-    selectedCandidateId: selectedCandidateId || null,
-    selectedValue: String(selectedValue ?? ''),
-    confidenceScore: sharedConfidence,
-    laneAction: 'accept',
-    nowIso,
-  });
-}
-
 export function runComponentIdentityUpdateTx({
   runtimeSpecDb,
   buildComponentIdentifier,

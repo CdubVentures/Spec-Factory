@@ -25,7 +25,7 @@ describe('reviewFieldContract', () => {
 
   it('FIELD_STATE_KEYS includes required builder output keys', () => {
     const expected = [
-      'selected', 'needs_review', 'reason_codes', 'candidate_count',
+      'selected', 'candidate_count',
       'candidates', 'accepted_candidate_id', 'selected_candidate_id',
     ];
     for (const key of expected) {

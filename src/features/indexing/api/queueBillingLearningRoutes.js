@@ -7,46 +7,12 @@ export function registerQueueBillingLearningRoutes(ctx) {
     OUTPUT_ROOT,
     path,
     getSpecDb,
-    buildReviewQueue,
     safeReadJson,
     safeStat,
     listFiles,
   } = ctx;
 
   return async function handleQueueBillingLearningRoutes(parts, params, method, req, res) {
-    // Queue review
-    if (parts[0] === 'queue' && parts[1] && method === 'GET') {
-      const category = parts[1];
-      const specDb = getSpecDb(category);
-      if (parts[2] === 'review') {
-        const status = params.get('status') || 'needs_review';
-        const limit = toInt(params.get('limit'), 200);
-        // WHY: SQL is the sole SSOT for products.
-        const dbRows = specDb?.getAllProducts?.() || [];
-        const dbProductMap = Object.fromEntries(dbRows.map((p) => [p.product_id, {
-          id: p.id,
-          identifier: p.identifier,
-          brand: p.brand,
-          base_model: p.base_model,
-          model: p.model,
-          variant: p.variant,
-        }]));
-        const items = await buildReviewQueue({
-          storage,
-          config,
-          category,
-          status,
-          limit,
-          specDb,
-          catalogProducts: dbProductMap,
-        });
-        const validPids = new Set(Object.keys(dbProductMap));
-        const filtered = items.filter(item => validPids.has(item.product_id));
-        return jsonRes(res, 200, filtered);
-      }
-      return jsonRes(res, 200, []);
-    }
-
     // Billing
     if (parts[0] === 'billing' && parts[1] && parts[2] === 'monthly' && method === 'GET') {
       const category = parts[1];

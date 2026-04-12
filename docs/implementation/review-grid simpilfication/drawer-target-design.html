@@ -199,63 +199,59 @@
 <!-- ─── LEFT: Design Notes ─── -->
 <div class="notes">
   <h1>Drawer Panel &mdash; Target Design</h1>
-  <p class="sub">What the CellDrawer should look like after frontend cleanup.</p>
+  <p class="sub">Target state for the CellDrawer after full cleanup. Status updated 2026-04-11.</p>
 
   <div class="callout">
-    <strong>Core principle:</strong> No accept, no confirm. The pipeline auto-publishes.
-    The resolved candidate IS the published value. The only user actions are
-    <strong>override</strong> (click candidate or type value) and <strong>AI review</strong> (per-source or all-sources).
+    <strong>Core principle:</strong> No accept, no confirm, no flags, no keyboard shortcuts.
+    The pipeline auto-publishes. The resolved candidate IS the published value.
+    The only user actions are <strong>override</strong> (click candidate or type value)
+    and <strong>AI review</strong> (future).
   </div>
 
   <h2>Interaction Model</h2>
   <ol>
-    <li><strong>Click a candidate card</strong> &rarr; overrides the published value (flows through <code>submitCandidate()</code> with confidence 1.0)</li>
+    <li><strong>Click a cell</strong> &rarr; opens drawer + starts editing</li>
+    <li><strong>Click a candidate card</strong> &rarr; overrides the published value</li>
     <li><strong>Type in Manual Override</strong> &rarr; same flow, manual entry</li>
-    <li><strong>AI Review (per source)</strong> &rarr; sends that source's data to LLM for validation. Result flows back through <code>submitCandidate()</code>. <em>Future &mdash; not connected yet.</em></li>
-    <li><strong>AI Review (all sources)</strong> &rarr; sends all candidates for cross-reference. <em>Future &mdash; not connected yet.</em></li>
+    <li><strong>AI Review</strong> &rarr; future, not connected yet</li>
   </ol>
-  <p>That's it. No accept step. No confirm step. No flags. No lanes.</p>
+  <p>No accept step. No confirm step. No flags. No lanes. No keyboard shortcuts.</p>
 
   <h2>Sections</h2>
   <ol>
     <li><strong>Published Value</strong> &mdash; the resolved candidate. Confidence dot + value + source. OVR badge if manual override.</li>
     <li><strong>Manual Override</strong> &mdash; text input + Apply.</li>
     <li><strong>Candidates</strong> &mdash; clickable cards. The published source is marked. Click any other to override.</li>
-    <li><strong>AI Review</strong> &mdash; per-source button on each candidate + "Review All Sources" button.</li>
-    <li><strong>Flags</strong> &mdash; only if empty (missing_value). No inference flags.</li>
+    <li><strong>AI Review</strong> &mdash; button placeholder (future).</li>
   </ol>
 
-  <h2>Props (target: ~10)</h2>
+  <h2>Current props (field review grid)</h2>
   <ul>
     <li class="kept">title, subtitle, onClose</li>
-    <li class="kept">currentValue (value, confidence, color, source, sourceTimestamp, overridden)</li>
-    <li class="kept">onOverride(candidateId, candidate) &mdash; click candidate to publish</li>
-    <li class="kept">onManualOverride(value) &mdash; type to publish</li>
+    <li class="kept">currentValue (value, confidence, color, source, sourceTimestamp, overridden, acceptedCandidateId)</li>
+    <li class="kept">badges (always [] for field review)</li>
+    <li class="kept">onAcceptCandidate(candidateId, candidate)</li>
+    <li class="kept">onManualOverride(value)</li>
     <li class="kept">isPending</li>
     <li class="kept">candidates, candidatesLoading</li>
-    <li class="kept">onRunAIReview(source?) &mdash; per-source or all</li>
-    <li class="kept">aiReviewPending</li>
-    <li class="kept">extraSections (flags)</li>
+    <li class="kept">onRunAIReview, aiReviewPending</li>
   </ul>
 
-  <h2>Dead props to remove (~20)</h2>
-  <ul>
-    <li class="removed">isCurrentAccepted, onAcceptCurrent</li>
-    <li class="removed">onAcceptCandidate (rename to onOverride)</li>
-    <li class="removed">sharedAcceptedCandidateId</li>
-    <li class="removed">onConfirmCandidate</li>
-    <li class="removed">pendingAIConfirmation</li>
-    <li class="removed">pendingAIPrimary, pendingAIShared</li>
-    <li class="removed">pendingPrimaryCandidateId/Ids</li>
-    <li class="removed">pendingSharedCandidateId/Ids</li>
-    <li class="removed">onConfirmPrimary/Shared</li>
-    <li class="removed">onConfirmPrimaryCandidate/SharedCandidate</li>
-    <li class="removed">onAcceptPrimary/Shared</li>
-    <li class="removed">onAcceptPrimaryCandidate/SharedCandidate</li>
-    <li class="removed">candidateUiContext</li>
-    <li class="removed">showCandidateDebugIds</li>
-    <li class="removed">extraActions</li>
-    <li class="removed">badges (flags are dead in new model)</li>
+  <h2>Dead props removed <span class="badge-sm badge-alive">DONE</span></h2>
+  <p style="font-size:0.85rem; color:var(--text-muted);">
+    14 dead props removed. Component review retains: isCurrentAccepted, pendingAIShared,
+    onConfirmShared, onConfirmSharedCandidate, candidateUiContext, showCandidateDebugIds, extraActions.
+  </p>
+
+  <h2>What was removed from ReviewPage (Phase 3+4)</h2>
+  <ul style="font-size:0.85rem; padding-left:1.25rem;">
+    <li>Approve-all-greens button + actions drawer</li>
+    <li>All 10 keyboard shortcuts (useHotkeys removed entirely)</li>
+    <li>Keyboard hints bar</li>
+    <li>Flags system (needs_review, reason_codes, REAL_FLAG_CODES, inferFlags, inferReasonCodes)</li>
+    <li>Flagged-only filter, flag sort, flag navigation (Tab/Shift+Tab)</li>
+    <li>FlagsSection from drawer extraSections</li>
+    <li>700 &rarr; 340 LOC</li>
   </ul>
 </div>
 

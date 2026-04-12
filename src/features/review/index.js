@@ -8,13 +8,11 @@ export { createReviewRouteContext } from './api/reviewRouteContext.js';
 export {
   buildFieldLabelsMap, buildReviewLayout, readLatestArtifacts,
   buildFieldState, buildProductReviewPayload, writeProductReviewArtifacts,
-  buildReviewQueue, writeCategoryReviewArtifacts,
   resolveOverrideFilePath, readReviewArtifacts, setOverrideFromCandidate,
   setManualOverride, approveGreenOverrides, buildReviewMetrics, finalizeOverrides,
   resolvePropertyFieldMeta, buildComponentReviewLayout,
   buildComponentReviewPayloads, buildEnumReviewPayloads,
   findProductsReferencingComponent, cascadeComponentChange, cascadeEnumChange,
-  normalizeFieldKey, applySharedLaneState, confidenceColor, runQaJudge,
-  startReviewQueueWebSocket, appendReviewSuggestion,
+  normalizeFieldKey, confidenceColor, runQaJudge,
   evaluateVariance, evaluateVarianceBatch,
 } from './domain/index.js';

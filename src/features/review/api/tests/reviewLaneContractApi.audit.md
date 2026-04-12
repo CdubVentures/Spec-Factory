@@ -15,7 +15,7 @@ Disposition:
 | `grid candidates endpoint synthesizes selected candidate id when lane points to missing candidate row` | KEEP | Preserves selected-candidate visibility contract on the read path. | `reviewLaneReadContracts.test.js` | Preserved |
 | `grid shared confirm is context-local (no cross-context propagation)` | KEEP | Protects shared-lane locality across peer products. | `reviewLaneGridContracts.test.js` | Preserved |
 | `grid shared accept is slot-scoped (no peer grid/enum mutation)` | KEEP | Protects grid-to-enum decoupling on shared-lane accept. | `reviewLaneGridContracts.test.js` | Preserved |
-| `grid lane endpoints reject non-grid key_review_state ids` | KEEP | Input guard for route/context mismatch. | `reviewLaneGridContracts.test.js` | Preserved |
+| `grid lane endpoints reject non-grid context ids` | KEEP | Input guard for route/context mismatch. | `reviewLaneGridContracts.test.js` | Preserved |
 | `component accept and confirm remain decoupled and confirm is candidate scoped` | KEEP | Preserves component candidate review semantics without mutating suggestion state. | `reviewLaneComponentContracts.test.js` | Preserved |
 | `component authoritative update cascades to linked items and re-flags constraints` | KEEP | Runtime-critical propagation contract. | `reviewLaneComponentContracts.test.js` | Preserved |
 | `enum accept and confirm remain decoupled and confirm is candidate scoped` | KEEP | Preserves enum shared-lane candidate semantics. | `reviewLaneEnumContracts.test.js` | Preserved |

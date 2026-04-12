@@ -275,6 +275,15 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
               onChange={(e) => onNumberChange('llmReasoningBudget', e.target.value, getNumberBounds('llmReasoningBudget'))}
             />
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Lab Queue Delay (ms)</label>
+            <input
+              className={inputCls}
+              type="number"
+              value={runtimeDraft.llmLabQueueDelayMs}
+              onChange={(e) => onNumberChange('llmLabQueueDelayMs', e.target.value, getNumberBounds('llmLabQueueDelayMs'))}
+            />
+          </div>
         </div>
       </SettingGroupBlock>
 

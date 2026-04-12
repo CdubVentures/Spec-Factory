@@ -42,8 +42,6 @@ export interface ReviewCandidateGen {
 
 export interface FieldStateGen {
   selected: Record<string, unknown>;
-  needs_review: boolean;
-  reason_codes: string[];
   candidate_count: number;
   candidates: ReviewCandidateGen[];
   accepted_candidate_id: string | null;
@@ -68,7 +66,6 @@ export interface ProductIdentityGen {
 export interface ProductMetricsGen {
   confidence: number;
   coverage: number;
-  flags: number;
   missing: number;
   has_run: boolean;
   updated_at: string;
@@ -98,7 +95,6 @@ export interface ReviewLayoutGen {
 export interface RunMetricsGen {
   confidence: number;
   coverage: number;
-  flags: number;
   missing: number;
   count: number;
 }

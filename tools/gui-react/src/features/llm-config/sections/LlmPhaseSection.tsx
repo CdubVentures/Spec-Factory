@@ -43,7 +43,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; response_schema: Record<string, unknown> } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown> } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -464,24 +464,53 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
-        <div className="space-y-3">
-          {phaseSchema.system_prompt && (
-            <div>
-              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                {String(phaseSchema.system_prompt)}
-              </pre>
+        {phaseSchema.hero_system_prompt ? (
+          /* Two-column layout: View prompt (left) + Hero prompt (right) */
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">View System Prompt</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
+                  {String(phaseSchema.system_prompt)}
+                </pre>
+              </div>
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Hero System Prompt</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
+                  {String(phaseSchema.hero_system_prompt)}
+                </pre>
+              </div>
             </div>
-          )}
-          {phaseSchema.response_schema && (
-            <div>
-              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                {JSON.stringify(phaseSchema.response_schema, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
+            {phaseSchema.response_schema && (
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema (shared)</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {JSON.stringify(phaseSchema.response_schema, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Single-column layout (default for non-PIF phases) */
+          <div className="space-y-3">
+            {phaseSchema.system_prompt && (
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {String(phaseSchema.system_prompt)}
+                </pre>
+              </div>
+            )}
+            {phaseSchema.response_schema && (
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {JSON.stringify(phaseSchema.response_schema, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
       </SettingGroupBlock>
     )}
   </>

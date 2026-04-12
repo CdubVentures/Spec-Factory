@@ -10,8 +10,6 @@ import {
 
 import {
   validateEnumCandidate,
-  applyEnumSharedLaneState,
-  applyEnumSharedLaneWithResolvedConfidence,
   upsertEnumListValueAndFetch,
   resolveEnumPreAffectedProductIds,
   resolveEnumRequiredCandidate,
@@ -20,8 +18,6 @@ import {
 // Re-export for characterization tests and any external consumers
 export {
   validateEnumCandidate,
-  applyEnumSharedLaneState,
-  applyEnumSharedLaneWithResolvedConfidence,
   upsertEnumListValueAndFetch,
   resolveEnumPreAffectedProductIds,
   resolveEnumRequiredCandidate,
@@ -41,7 +37,6 @@ async function handleEnumOverrideEndpoint({
     resolveEnumMutationContext,
     isMeaningfulValue,
     normalizeLower,
-    applySharedLaneState,
     specDbCache,
     storage,
     outputRoot,
@@ -184,18 +179,6 @@ async function handleEnumOverrideEndpoint({
             acceptedCandidateId: resolvedCandidateId,
           },
         });
-        applyEnumSharedLaneWithResolvedConfidence({
-          runtimeSpecDb,
-          applySharedLaneState,
-          category,
-          field,
-          normalizedValue: normalized,
-          listValueRow: resolvedLv,
-          selectedCandidateId: resolvedCandidateId,
-          selectedValue: resolvedValue,
-          laneAction: 'accept',
-          nowIso,
-        });
       } else if (action === 'confirm') {
         const resolvedValue = value;
         if (!isMeaningfulValue(resolvedValue)) {
@@ -267,19 +250,6 @@ async function handleEnumOverrideEndpoint({
             acceptedCandidateId: resolvedCandidateId,
           },
         });
-        applyEnumSharedLaneWithResolvedConfidence({
-          runtimeSpecDb,
-          applySharedLaneState,
-          category,
-          field,
-          normalizedValue: normalized,
-          listValueRow: existingLv,
-          selectedCandidateId: resolvedCandidateId,
-          selectedValue: resolvedValue,
-          laneAction: 'confirm',
-          nowIso,
-          confirmStatusOverride,
-        });
       } else {
         const resolvedValue = value;
         const manualLv = upsertEnumListValueAndFetch({
@@ -294,19 +264,6 @@ async function handleEnumOverrideEndpoint({
             sourceTimestamp: nowIso,
             acceptedCandidateId: null,
           },
-        });
-        applyEnumSharedLaneWithResolvedConfidence({
-          runtimeSpecDb,
-          applySharedLaneState,
-          category,
-          field,
-          normalizedValue: normalized,
-          listValueRow: manualLv,
-          selectedCandidateId: null,
-          selectedValue: resolvedValue,
-          laneAction: 'accept',
-          nowIso,
-          fallbackConfidence: 1.0,
         });
       }
 

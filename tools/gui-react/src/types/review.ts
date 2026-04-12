@@ -62,8 +62,6 @@ export interface FieldState {
     status: string;
     color: 'green' | 'yellow' | 'red' | 'gray';
   };
-  needs_review: boolean;
-  reason_codes: string[];
   candidate_count: number;
   candidates: ReviewCandidate[];
   overridden?: boolean;
@@ -91,7 +89,6 @@ export interface ProductReviewPayload {
   metrics: {
     confidence: number;
     coverage: number;
-    flags: number;
     missing: number;
     has_run: boolean;
     updated_at: string;
@@ -112,7 +109,6 @@ export interface BrandFilter {
 export interface RunMetrics {
   confidence: number;
   coverage: number;
-  flags: number;
   missing: number;
   count: number;
 }

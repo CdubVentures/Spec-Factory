@@ -8,7 +8,6 @@ import {
   getComponentIdentityId,
   getComponentValueId,
   makeCategoryAuthorityConfig,
-  writeComponentReviewItems,
 } from '../../../tests/helpers/componentReviewHarness.js';
 
 export {
@@ -18,7 +17,6 @@ export {
   buildComponentReviewPayloads,
   getComponentIdentityId,
   getComponentValueId,
-  writeComponentReviewItems,
 };
 
 export async function createComponentRowHarness(t) {

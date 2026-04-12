@@ -166,7 +166,6 @@ function reconcileComponentDbRows(db, fieldRules) {
       removed_identity_rows: 0,
       removed_value_rows: 0,
       removed_alias_rows: 0,
-      removed_key_review_rows: 0,
     };
   }
   const existing = db.db
@@ -177,7 +176,6 @@ function reconcileComponentDbRows(db, fieldRules) {
       removed_identity_rows: 0,
       removed_value_rows: 0,
       removed_alias_rows: 0,
-      removed_key_review_rows: 0,
     };
   }
 
@@ -193,7 +191,6 @@ function reconcileComponentDbRows(db, fieldRules) {
       removed_identity_rows: 0,
       removed_value_rows: 0,
       removed_alias_rows: 0,
-      removed_key_review_rows: 0,
     };
   }
 
@@ -204,10 +201,6 @@ function reconcileComponentDbRows(db, fieldRules) {
   const deleteComponentValue = db.db.prepare(
     'DELETE FROM component_values WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?'
   );
-  const deleteComponentValueReviewRows = db.db.prepare('DELETE FROM key_review_state WHERE component_value_id = ?');
-  const deleteComponentIdentityReviewRows = db.db.prepare(
-    'DELETE FROM key_review_state WHERE category = ? AND target_kind = ? AND component_identity_id = ?'
-  );
   const deleteItemComponentLinks = db.db.prepare(
     'DELETE FROM item_component_links WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?'
   );
@@ -216,7 +209,6 @@ function reconcileComponentDbRows(db, fieldRules) {
   let removedIdentityRows = 0;
   let removedValueRows = 0;
   let removedAliasRows = 0;
-  let removedKeyReviewRows = 0;
   let removedItemComponentLinks = 0;
 
   const tx = db.db.transaction((rows) => {
@@ -229,17 +221,11 @@ function reconcileComponentDbRows(db, fieldRules) {
       const valueRows = selectComponentValues.all(db.category, componentType, canonicalName, maker);
       for (const valueRow of valueRows) {
         const valueId = valueRow.id;
-        removedKeyReviewRows += deleteComponentValueReviewRows.run(valueId).changes || 0;
         removedValueRows += deleteComponentValuesById(db, valueId);
       }
 
       removedAliasRows += deleteComponentAliasRows.run(componentId).changes || 0;
       removedItemComponentLinks += deleteItemComponentLinks.run(db.category, componentType, canonicalName, maker).changes || 0;
-      removedKeyReviewRows += deleteComponentIdentityReviewRows.run(
-        db.category,
-        'component_key',
-        componentId
-      ).changes || 0;
       removedValueRows += deleteComponentValue.run(db.category, componentType, canonicalName, maker).changes || 0;
       deleteComponentIdentity.run(componentId, db.category);
       removedIdentityRows += 1;
@@ -252,7 +238,6 @@ function reconcileComponentDbRows(db, fieldRules) {
     removed_value_rows: removedValueRows,
     removed_alias_rows: removedAliasRows,
     removed_item_component_link_rows: removedItemComponentLinks,
-    removed_key_review_rows: removedKeyReviewRows,
   };
 }
 
@@ -931,17 +916,6 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
 }
 
 // ── Step 9: Source + Key Review backfill ──────────────────────────────────────
-// Phase 1b: key_review_state, item_field_state, and product_review_state tables
-// are retired. This function is now a no-op that returns zero counts.
-
-function seedSourceAndKeyReview(_db, _category, _fieldMeta) {
-  return {
-    keyReviewStateCount: 0,
-    keyReviewAuditCount: 0,
-    keyReviewRunCount: 0,
-  };
-}
-
 // ── Category surface registry (built once at module load) ────────────────────
 
 const categorySurfaces = buildCategorySurfaces({
@@ -950,7 +924,6 @@ const categorySurfaces = buildCategorySurfaces({
   seedListValues, reconcileListSeedRows,
   seedProducts,
   backfillComponentLinks,
-  seedSourceAndKeyReview,
 });
 
 // ── Main entry point ─────────────────────────────────────────────────────────

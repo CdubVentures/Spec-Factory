@@ -171,10 +171,8 @@ export interface CellDrawerProps {
     overridden?: boolean;
     acceptedCandidateId?: string | null;
   };
-  sharedAcceptedCandidateId?: string | null;
   badges: Array<{ label: string; className: string }>;
   isCurrentAccepted?: boolean;
-  onAcceptCurrent?: () => void;
 
   // Section 2: Manual override
   onManualOverride: (value: string) => void;
@@ -186,7 +184,6 @@ export interface CellDrawerProps {
   candidates: ReviewCandidate[];
   candidatesLoading?: boolean;
   onAcceptCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
-  onConfirmCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
   onRunAIReview?: () => void;
   aiReviewPending?: boolean;
 
@@ -194,24 +191,11 @@ export interface CellDrawerProps {
   extraActions?: ReactNode;
   extraSections?: ReactNode;
 
-  // Pending AI confirmation — legacy single-lane
-  pendingAIConfirmation?: boolean;
-
-  // Two-lane pending AI
-  pendingAIPrimary?: boolean;
+  // Shared-lane pending AI
   pendingAIShared?: boolean;
-  pendingPrimaryCandidateId?: string | null;
-  pendingSharedCandidateId?: string | null;
-  pendingPrimaryCandidateIds?: string[];
   pendingSharedCandidateIds?: string[];
-  onConfirmPrimary?: () => void;
   onConfirmShared?: () => void;
-  onConfirmPrimaryCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
   onConfirmSharedCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
-  onAcceptPrimary?: () => void;
-  onAcceptShared?: () => void;
-  onAcceptPrimaryCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
-  onAcceptSharedCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
   candidateUiContext?: 'grid' | 'shared';
   showCandidateDebugIds?: boolean;
 }
@@ -221,10 +205,8 @@ export function CellDrawer({
   subtitle,
   onClose,
   currentValue,
-  sharedAcceptedCandidateId,
   badges,
   isCurrentAccepted,
-  onAcceptCurrent,
   onManualOverride,
   manualOverrideLabel,
   manualOverridePlaceholder,
@@ -232,62 +214,31 @@ export function CellDrawer({
   candidates,
   candidatesLoading,
   onAcceptCandidate,
-  onConfirmCandidate,
   onRunAIReview,
   aiReviewPending,
   extraActions,
   extraSections,
-  pendingAIConfirmation,
-  pendingAIPrimary,
   pendingAIShared,
-  pendingPrimaryCandidateId,
-  pendingSharedCandidateId,
-  pendingPrimaryCandidateIds,
   pendingSharedCandidateIds,
-  onConfirmPrimary,
   onConfirmShared,
-  onConfirmPrimaryCandidate,
   onConfirmSharedCandidate,
-  onAcceptPrimary,
-  onAcceptShared,
-  onAcceptPrimaryCandidate,
-  onAcceptSharedCandidate,
   candidateUiContext = 'grid',
   showCandidateDebugIds = false,
 }: CellDrawerProps) {
-  const pendingPrimaryIdSet = new Set(
-    (Array.isArray(pendingPrimaryCandidateIds) && pendingPrimaryCandidateIds.length > 0
-      ? pendingPrimaryCandidateIds
-      : (pendingPrimaryCandidateId ? [pendingPrimaryCandidateId] : [])
-    )
-      .map((id) => String(id || '').trim())
-      .filter(Boolean),
-  );
   const pendingSharedIdSet = new Set(
-    (Array.isArray(pendingSharedCandidateIds) && pendingSharedCandidateIds.length > 0
-      ? pendingSharedCandidateIds
-      : (pendingSharedCandidateId ? [pendingSharedCandidateId] : [])
-    )
+    (Array.isArray(pendingSharedCandidateIds) ? pendingSharedCandidateIds : [])
       .map((id) => String(id || '').trim())
       .filter(Boolean),
   );
   const isGridContext = candidateUiContext === 'grid';
   const currentValueIsMeaningful = isMeaningfulValue(currentValue.value);
 
-  // Merge legacy single-lane into two-lane flags, favoring candidate-id sets when provided.
-  const hasPrimary = pendingPrimaryIdSet.size > 0 ? true : Boolean(pendingAIPrimary);
-  const hasShared = pendingSharedIdSet.size > 0
-    ? true
-    : (isGridContext
-        ? Boolean(pendingAIShared)
-        : Boolean(pendingAIShared ?? pendingAIConfirmation));
-  const hasAnyPending = hasPrimary || hasShared;
+  const hasShared = pendingSharedIdSet.size > 0 ? true : Boolean(pendingAIShared);
+  const hasAnyPending = hasShared;
   const hasCandidateRows = candidates.length > 0;
   const hasMeaningfulCandidates = candidates.some((candidate) => isMeaningfulValue(candidate?.value));
   const confirmSharedButtonClass = 'sf-shared-confirm-button';
-  const confirmPrimaryBannerClass = 'sf-review-ai-pending-banner';
   const confirmSharedBannerClass = 'sf-review-ai-pending-banner';
-  const confirmPrimaryBadgeClass = 'sf-review-ai-pending-badge';
   const confirmSharedBadgeClass = 'sf-review-ai-pending-badge';
   const acceptButtonClass = candidateUiContext === 'grid'
     ? 'sf-item-accept-button'
@@ -295,10 +246,6 @@ export function CellDrawer({
   const acceptCandidateTitle = candidateUiContext === 'grid'
     ? 'Accept this candidate as the grid item value.'
     : 'Accept this candidate as the shared value (component/list/enum).';
-  const acceptCurrentTitle = candidateUiContext === 'grid'
-    ? 'Accept the current selected grid item value.'
-    : 'Accept the current shared value.';
-  const confirmPrimaryTooltip = 'Confirm item AI review without changing the selected value.';
   const confirmSharedTooltip = 'Confirm shared AI review without changing the selected value.';
   const runAiReviewTooltip = 'Run AI Review for this value and update candidate suggestions.';
   // Normalize current value for matching
@@ -311,17 +258,8 @@ export function CellDrawer({
     return currentValue.acceptedCandidateId || null;
   })();
   const acceptedCandidateIdToken = String(acceptedCandidateId || '').trim();
-  const sharedAcceptedCandidateIdToken = String(sharedAcceptedCandidateId || '').trim();
-  const hasPrimaryTargetInCandidates = pendingPrimaryIdSet.size > 0
-    && candidates.some((c) => isActionableCandidate(c) && pendingPrimaryIdSet.has(String(c?.candidate_id || '').trim()));
   const hasSharedTargetInCandidates = pendingSharedIdSet.size > 0
     && candidates.some((c) => isActionableCandidate(c) && pendingSharedIdSet.has(String(c?.candidate_id || '').trim()));
-  const showPrimaryFallbackAction = !currentValue.overridden
-    && !candidatesLoading
-    && hasPrimary
-    && currentValueIsMeaningful
-    && Boolean(onConfirmPrimary)
-    && (!hasCandidateRows || pendingPrimaryIdSet.size === 0 || !hasPrimaryTargetInCandidates);
   const showSharedFallbackAction = !currentValue.overridden
     && !candidatesLoading
     && hasShared
@@ -343,8 +281,8 @@ export function CellDrawer({
 
   return (
     <DrawerShell title={title} subtitle={subtitle} onClose={onClose}>
-      {/* Section 1: Current Value */}
-      <DrawerSection title="Current Value">
+      {/* Section 1: Published Value */}
+      <DrawerSection title="Published Value">
         <DrawerValueRow
           color={currentValue.color}
           value={currentValue.value}
@@ -358,32 +296,11 @@ export function CellDrawer({
             Overridden (manual)
           </div>
         )}
-        {!currentValue.overridden && isCurrentAccepted && !hasAnyPending && (
-          <div className="mt-1 px-2 py-1 text-center font-medium sf-status sf-status-success">
-            Accepted
-          </div>
-        )}
-        {/* Two-lane AI status banners */}
-        {!currentValue.overridden && hasPrimary && (currentValueIsMeaningful || hasMeaningfulCandidates) && (
-          <div className={`mt-1 px-2 py-1 text-[11px] font-medium border rounded ${confirmPrimaryBannerClass}`}>
-            AI Pending
-          </div>
-        )}
+        {/* Shared AI status banner */}
         {!currentValue.overridden && hasShared && (currentValueIsMeaningful || hasMeaningfulCandidates) && (
           <div className={`mt-1 px-2 py-1 text-[11px] font-medium border rounded ${confirmSharedBannerClass}`}>
             AI Pending
           </div>
-        )}
-        {showPrimaryFallbackAction && (
-          <ActionTooltip text={confirmPrimaryTooltip}>
-            <button
-              onClick={onConfirmPrimary}
-              disabled={isPending}
-              className="mt-1 w-full px-2 py-1.5 text-[11px] sf-confirm-button-solid transition-colors disabled:opacity-50"
-            >
-              Confirm
-            </button>
-          </ActionTooltip>
         )}
         {showSharedFallbackAction && (
           <ActionTooltip text={confirmSharedTooltip}>
@@ -393,17 +310,6 @@ export function CellDrawer({
               className={`mt-1 w-full px-2 py-1.5 text-[11px] disabled:opacity-50 ${confirmSharedButtonClass}`}
             >
               Confirm Shared
-            </button>
-          </ActionTooltip>
-        )}
-        {!isCurrentAccepted && !currentValue.overridden && onAcceptCurrent && currentValueIsMeaningful && (
-          <ActionTooltip text={acceptCurrentTitle}>
-            <button
-              onClick={onAcceptCurrent}
-              disabled={isPending}
-              className="mt-1 w-full px-2 py-1.5 text-[11px] sf-item-accept-button transition-colors disabled:opacity-50"
-            >
-              Accept
             </button>
           </ActionTooltip>
         )}
@@ -420,17 +326,6 @@ export function CellDrawer({
       {/* Section 3: Candidates */}
       {(candidates.length > 0 || candidatesLoading || onRunAIReview) && (
         <DrawerSection title={`Candidates (${candidatesLoading ? '...' : candidates.length})`}>
-          {onRunAIReview && (
-            <ActionTooltip text={runAiReviewTooltip}>
-              <button
-                onClick={onRunAIReview}
-                disabled={aiReviewPending}
-                className="w-full mb-2 px-2 py-1.5 text-[11px] font-medium rounded sf-run-ai-button transition-colors disabled:opacity-50"
-              >
-                {aiReviewPending ? 'Running AI Review...' : 'Run AI Review'}
-              </button>
-            </ActionTooltip>
-          )}
           {candidatesLoading ? (
             <div className="flex justify-center py-4">
               <Spinner className="h-5 w-5" />
@@ -449,68 +344,18 @@ export function CellDrawer({
                 const isCurrentSourceCandidate = index === currentSourceCandidateIndex;
                 const isActiveAccepted = Boolean(acceptedCandidateIdToken)
                   && candidateId === acceptedCandidateIdToken;
-                const isSharedAccepted = Boolean(sharedAcceptedCandidateIdToken)
-                  && candidateId === sharedAcceptedCandidateIdToken;
-                const isPrimaryTarget = hasPrimary
-                  && candidateIsActionable
-                  && (pendingPrimaryIdSet.size > 0 ? pendingPrimaryIdSet.has(candidateId) : false);
                 const isSharedTarget = hasShared
                   && candidateIsActionable
                   && (pendingSharedIdSet.size > 0 ? pendingSharedIdSet.has(candidateId) : false);
-                const showSharedBadge = isSharedTarget && !(candidateUiContext === 'grid' && isPrimaryTarget);
-                const showPrimaryAction = hasPrimary
-                  && candidateValueIsMeaningful
-                  && pendingPrimaryIdSet.size > 0
-                  && isPrimaryTarget;
+                const showSharedBadge = isSharedTarget;
                 const showSharedAction = !isGridContext
                   && hasShared
                   && candidateValueIsMeaningful
                   && pendingSharedIdSet.size > 0
                   && isSharedTarget;
-                const showPrimaryAcceptAction = isGridContext
-                  ? candidateIsActionable && Boolean(onAcceptPrimaryCandidate || onAcceptPrimary || onAcceptCandidate)
-                  : candidateIsActionable && Boolean(onAcceptCandidate);
-                const showSharedAcceptAction = false;
+                const showAcceptAction = candidateIsActionable && Boolean(onAcceptCandidate);
                 const acceptThisCandidateDisabled = isPending;
                 const acceptThisCandidateTitle = acceptCandidateTitle;
-
-                const handleAcceptPrimary = () => {
-                  if (onAcceptPrimaryCandidate) {
-                    onAcceptPrimaryCandidate(candidate.candidate_id, candidate);
-                    return;
-                  }
-                  if (onAcceptCandidate) {
-                    onAcceptCandidate(candidate.candidate_id, candidate);
-                    return;
-                  }
-                  if (onAcceptPrimary) {
-                    onAcceptPrimary();
-                  }
-                };
-
-                const handleAcceptShared = () => {
-                  if (onAcceptSharedCandidate) {
-                    onAcceptSharedCandidate(candidate.candidate_id, candidate);
-                    return;
-                  }
-                  if (onAcceptShared) {
-                    onAcceptShared();
-                  }
-                };
-
-                const handleConfirmPrimary = () => {
-                  if (onConfirmPrimaryCandidate) {
-                    onConfirmPrimaryCandidate(candidate.candidate_id, candidate);
-                    return;
-                  }
-                  if (onConfirmPrimary) {
-                    onConfirmPrimary();
-                    return;
-                  }
-                  if (onConfirmCandidate) {
-                    onConfirmCandidate(candidate.candidate_id, candidate);
-                  }
-                };
 
                 const handleConfirmShared = () => {
                   if (onConfirmSharedCandidate) {
@@ -519,35 +364,23 @@ export function CellDrawer({
                   }
                   if (onConfirmShared) {
                     onConfirmShared();
-                    return;
-                  }
-                  if (onConfirmCandidate) {
-                    onConfirmCandidate(candidate.candidate_id, candidate);
                   }
                 };
 
                 // Candidate visuals are strictly ID-scoped.
                 // Accepting one candidate must not visually accept peer rows that share the same value.
-                const pendingTintClass = (() => {
-                  if (isPrimaryTarget) {
-                    return 'sf-review-candidate-pending';
-                  }
-                  if (isSharedTarget) {
-                    return 'sf-review-candidate-pending';
-                  }
-                  return undefined;
-                })();
+                const pendingTintClass = isSharedTarget
+                  ? 'sf-review-candidate-pending'
+                  : undefined;
                 const cardClass = isActiveAccepted
                   ? 'border sf-review-candidate-accepted'
                   : pendingTintClass;
 
                 const valueClass = isActiveAccepted
                   ? 'sf-review-candidate-value-accepted font-bold'
-                  : isPrimaryTarget
+                  : isSharedTarget
                     ? 'sf-review-candidate-value-pending'
-                    : isSharedTarget
-                      ? 'sf-review-candidate-value-pending'
-                      : '';
+                    : '';
 
                 return (
                   <DrawerCard key={candidateId ? `${candidateId}::${index}` : `candidate::${index}`} className={cardClass}>
@@ -572,17 +405,7 @@ export function CellDrawer({
                       <span className="text-xs sf-text-subtle">{pct(candidate.score)}</span>
                       {isActiveAccepted && (
                         <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-chip-success">
-                          Accepted
-                        </span>
-                      )}
-                      {!isGridContext && isSharedAccepted && !isActiveAccepted && (
-                        <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-chip-success">
-                          Accepted
-                        </span>
-                      )}
-                      {isPrimaryTarget && (
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${confirmPrimaryBadgeClass}`}>
-                          AI Pending
+                          Published
                         </span>
                       )}
                       {showSharedBadge && (
@@ -611,58 +434,26 @@ export function CellDrawer({
 
                     {(() => {
                       const actionCount =
-                        (showPrimaryAcceptAction ? 1 : 0)
-                        + (showSharedAcceptAction ? 1 : 0)
-                        + (showPrimaryAction ? 1 : 0)
+                        (showAcceptAction ? 1 : 0)
                         + (showSharedAction ? 1 : 0);
                       if (actionCount === 0) return null;
                       const widthClass = actionCount === 1
                         ? 'w-full'
-                        : actionCount === 2
-                          ? 'w-1/2'
-                          : actionCount === 3
-                            ? 'w-1/3'
-                            : 'w-1/4';
+                        : 'w-1/2';
 
                       return (
                         <div className="flex gap-1.5 mt-1">
-                          {showPrimaryAcceptAction && (
+                          {showAcceptAction && (
                             <ActionTooltip text={acceptThisCandidateTitle}>
                               <button
-                                onClick={handleAcceptPrimary}
+                                onClick={() => onAcceptCandidate!(candidate.candidate_id, candidate)}
                                 disabled={acceptThisCandidateDisabled}
                                 aria-pressed={isActiveAccepted}
                                 data-candidate-id={candidateId || undefined}
-                                data-review-action="accept-primary"
+                                data-review-action="accept"
                                 className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isActiveAccepted ? 'sf-review-accepted-button' : acceptButtonClass}`}
                               >
-                                {isActiveAccepted ? 'Accepted' : 'Accept'}
-                              </button>
-                            </ActionTooltip>
-                          )}
-                          {showSharedAcceptAction && (
-                            <ActionTooltip text="Accept this candidate as the shared value.">
-                              <button
-                                onClick={handleAcceptShared}
-                                disabled={acceptThisCandidateDisabled}
-                                data-candidate-id={candidateId || undefined}
-                                data-review-action="accept-shared"
-                                className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isSharedAccepted ? 'sf-review-accepted-button' : 'sf-shared-accept-button'}`}
-                              >
-                                {isSharedAccepted ? 'Accepted' : 'Accept Shared'}
-                              </button>
-                            </ActionTooltip>
-                          )}
-                          {showPrimaryAction && (
-                            <ActionTooltip text={confirmPrimaryTooltip}>
-                              <button
-                                onClick={handleConfirmPrimary}
-                                disabled={isPending}
-                                data-candidate-id={candidateId || undefined}
-                                data-review-action="confirm-primary"
-                                className={`${widthClass} px-2 py-1 text-[11px] sf-confirm-button-solid transition-colors disabled:opacity-50`}
-                              >
-                                Confirm
+                                {isActiveAccepted ? 'Published' : 'Override'}
                               </button>
                             </ActionTooltip>
                           )}
@@ -685,6 +476,25 @@ export function CellDrawer({
                   </DrawerCard>
                 );
               })}
+            </div>
+          )}
+          {onRunAIReview && (
+            <>
+              <div className="my-1 h-px sf-border-subtle" />
+              <ActionTooltip text={runAiReviewTooltip}>
+                <button
+                  onClick={onRunAIReview}
+                  disabled={aiReviewPending}
+                  className="w-full px-2 py-1.5 text-[11px] font-medium rounded sf-run-ai-button transition-colors disabled:opacity-50"
+                >
+                  {aiReviewPending ? 'Running AI Review...' : 'AI Review All Sources'}
+                </button>
+              </ActionTooltip>
+            </>
+          )}
+          {hasCandidateRows && (
+            <div className="sf-text-caption sf-text-subtle text-center py-1">
+              Click any candidate to override the published value
             </div>
           )}
         </DrawerSection>

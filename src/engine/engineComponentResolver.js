@@ -42,7 +42,7 @@ export function simpleSimilarity(left, right) {
  *   { ok: false, reason_code, raw_input, attempted_normalizations } — on failure (caller returns this)
  *   { ok: true, value } — on success (caller sets value to result.value)
  *
- * Mutates `attempts` array and `context` arrays (identityObservations, componentReviewQueue, curationQueue).
+ * Mutates `attempts` array and `context` arrays (identityObservations).
  */
 export function resolveComponentRef(value, {
   rule, fieldKey, rawCandidate,
@@ -195,65 +195,12 @@ export function resolveComponentRef(value, {
 
   if (fuzzy.match && combinedScore >= flagReviewScore) {
     attempts.push(`component:flagged_review:${combinedScore.toFixed(2)}`);
-    const aiConfig = isObject(componentRule.ai) ? componentRule.ai : {};
-    if (Array.isArray(context?.componentReviewQueue)) {
-      const productAttrs = {};
-      const ev = isObject(context?.extractedValues) ? context.extractedValues : {};
-      const keysToCollect = propKeys.length > 0 ? propKeys : Object.keys(ev);
-      for (const pk of keysToCollect) {
-        if (ev[pk] !== undefined && ev[pk] !== null) productAttrs[pk] = ev[pk];
-      }
-      context.componentReviewQueue.push({
-        field_key: fieldKey,
-        raw_query: query,
-        matched_component: fuzzy.match.canonical_name,
-        name_score: nameScore,
-        property_score: propScore,
-        combined_score: combinedScore,
-        match_type: 'fuzzy_flagged',
-        component_type: dbName,
-        alternatives: (fuzzy.alternatives || []).slice(0, 5),
-        reasoning_note: aiConfig.reasoning_note || '',
-        product_attributes: productAttrs,
-      });
-    }
     return { ok: true, value: fuzzy.match.canonical_name };
   }
 
   if (componentRule.allow_new_components === true) {
     const newValue = normalizeText(Array.isArray(value) ? value[0] : value);
     attempts.push('component:new_suggestion_flagged');
-    const aiConfigNew = isObject(componentRule.ai) ? componentRule.ai : {};
-    if (Array.isArray(context?.componentReviewQueue)) {
-      const productAttrs = {};
-      const ev = isObject(context?.extractedValues) ? context.extractedValues : {};
-      const keysToCollect = propKeys.length > 0 ? propKeys : Object.keys(ev);
-      for (const pk of keysToCollect) {
-        if (ev[pk] !== undefined && ev[pk] !== null) productAttrs[pk] = ev[pk];
-      }
-      context.componentReviewQueue.push({
-        field_key: fieldKey,
-        raw_query: query,
-        matched_component: null,
-        name_score: nameScore,
-        property_score: 0,
-        combined_score: combinedScore,
-        match_type: 'new_component',
-        component_type: dbName,
-        alternatives: (fuzzy.alternatives || []).slice(0, 5),
-        reasoning_note: aiConfigNew.reasoning_note || '',
-        product_attributes: productAttrs,
-      });
-    }
-    if (Array.isArray(context?.curationQueue)) {
-      context.curationQueue.push({
-        field_key: fieldKey,
-        raw_value: rawCandidate,
-        normalized_value: newValue,
-        suggestion_type: 'new_component',
-        component_type: dbName
-      });
-    }
     return { ok: true, value: newValue };
   }
 

@@ -8,8 +8,6 @@ export {
   buildFieldState,
   buildProductReviewPayload,
   writeProductReviewArtifacts,
-  buildReviewQueue,
-  writeCategoryReviewArtifacts,
 } from './reviewGridData.js';
 
 export {
@@ -36,9 +34,6 @@ export {
 } from './componentImpact.js';
 
 export { normalizeFieldKey } from './reviewNormalization.js';
-export { applySharedLaneState } from './keyReviewState.js';
 export { confidenceColor } from './confidenceColor.js';
 export { runQaJudge } from './qaJudge.js';
-export { startReviewQueueWebSocket } from './queueWebSocket.js';
-export { appendReviewSuggestion } from './suggestions.js';
 export { evaluateVariance, evaluateVarianceBatch } from './varianceEvaluator.js';

@@ -4,13 +4,13 @@ Frontend sidebar widget that displays all active long-running operations (LLM ca
 
 ## Public API (The Contract)
 
-- `OperationsTracker` — React component, renders in Sidebar below variant dropdown
+- `OperationsTracker` — React component, renders in Sidebar below category selector
 - `useOperationsStore` — Zustand store: `{ operations, upsert, remove, clear }`
 - `useOperationsHydration` — Hook: fetches GET /api/operations on mount, seeds store
 
 ## Dependencies
 
-Allowed: `src/stores/collapseStore`, `src/stores/productStore`, `src/api/client`, `src/api/ws`
+Allowed: `src/stores/collapseStore`, `src/api/client`, `src/api/ws`
 
 ## Domain Invariants
 

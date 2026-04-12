@@ -139,35 +139,6 @@ CREATE TABLE IF NOT EXISTS products (
   UNIQUE(category, product_id)
 );
 
-CREATE TABLE IF NOT EXISTS curation_suggestions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  suggestion_id TEXT NOT NULL,
-  category TEXT NOT NULL, suggestion_type TEXT NOT NULL,
-  field_key TEXT, component_type TEXT,
-  value TEXT NOT NULL, normalized_value TEXT,
-  status TEXT DEFAULT 'pending',
-  source TEXT, product_id TEXT, run_id TEXT,
-  first_seen_at TEXT DEFAULT (datetime('now')), last_seen_at TEXT,
-  reviewed_by TEXT, reviewed_at TEXT, review_note TEXT,
-  created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, suggestion_type, field_key, value)
-);
-
-CREATE TABLE IF NOT EXISTS component_review_queue (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  review_id TEXT NOT NULL,
-  category TEXT NOT NULL, component_type TEXT NOT NULL,
-  field_key TEXT, raw_query TEXT, matched_component TEXT,
-  match_type TEXT, name_score REAL, property_score REAL, combined_score REAL,
-  alternatives TEXT, product_id TEXT, run_id TEXT,
-  status TEXT DEFAULT 'pending_ai',
-  ai_decision TEXT, ai_suggested_name TEXT, ai_suggested_maker TEXT, ai_reviewed_at TEXT,
-  product_attributes TEXT, reasoning_note TEXT,
-  human_reviewed_at TEXT,
-  created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(review_id)
-);
-
 CREATE TABLE IF NOT EXISTS llm_route_matrix (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL,
@@ -206,10 +177,6 @@ CREATE TABLE IF NOT EXISTS llm_route_matrix (
   updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, route_key)
 );
-
-CREATE INDEX IF NOT EXISTS idx_cs_category ON curation_suggestions(category, suggestion_type, status);
-CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, component_type, status);
-
 
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)

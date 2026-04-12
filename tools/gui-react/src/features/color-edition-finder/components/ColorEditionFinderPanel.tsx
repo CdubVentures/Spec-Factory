@@ -413,8 +413,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         collapsed={collapsed}
         onToggle={toggleCollapsed}
         title="Color & Edition Finder"
-        chipLabel="CEF"
-        statusChip={statusChip}
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
         onRun={() => runMut.mutate()}

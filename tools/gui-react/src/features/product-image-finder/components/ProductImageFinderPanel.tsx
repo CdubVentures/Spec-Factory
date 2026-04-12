@@ -31,11 +31,13 @@ import { useColorEditionFinderQuery } from '../../color-edition-finder/api/color
 import {
   useProductImageFinderQuery,
   useProductImageFinderRunMutation,
+  useProductImageFinderLoopMutation,
   useDeleteProductImageFinderAllMutation,
   useDeleteProductImageFinderRunMutation,
   useDeleteProductImageMutation,
+  useProcessProductImageMutation,
 } from '../api/productImageFinderQueries.ts';
-import type { ProductImageEntry, ProductImageFinderRun, VariantInfo } from '../types.ts';
+import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress } from '../types.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -52,6 +54,10 @@ function formatDims(w: number, h: number): string {
 
 function imageServeUrl(category: string, productId: string, filename: string): string {
   return `/api/v1/product-image-finder/${category}/${productId}/images/${encodeURIComponent(filename)}`;
+}
+
+function originalImageServeUrl(category: string, productId: string, filename: string): string {
+  return `/api/v1/product-image-finder/${category}/${productId}/images/originals/${encodeURIComponent(filename)}`;
 }
 
 /**
@@ -149,13 +155,26 @@ function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[]): 
 function ImageLightbox({
   img,
   src,
+  category,
+  productId,
   onClose,
 }: {
   readonly img: GalleryImage;
   readonly src: string;
+  readonly category: string;
+  readonly productId: string;
   readonly onClose: () => void;
 }) {
   const dims = formatDims(img.width, img.height);
+  const hasOriginal = Boolean(img.original_filename);
+
+  const originalSrc = hasOriginal
+    ? originalImageServeUrl(category, productId, img.original_filename ?? '')
+    : '';
+
+  const checkerboard = img.bg_removed
+    ? 'repeating-conic-gradient(#808080 0% 25%, #606060 0% 50%) 0 0 / 20px 20px'
+    : 'none';
 
   // Close on Escape
   useEffect(() => {
@@ -179,14 +198,35 @@ function ImageLightbox({
         {'\u2715'}
       </button>
 
-      {/* Image */}
-      <div className="flex-1 flex items-center justify-center w-full p-8" onClick={(e) => e.stopPropagation()}>
-        <img
-          src={src}
-          alt={img.alt_text || `${img.view} view`}
-          className="max-w-full max-h-full object-contain"
-        />
-      </div>
+      {/* Image area — side by side when original exists, single when not */}
+      {hasOriginal ? (
+        <div
+          className="flex-1 flex items-center justify-center w-full p-6 gap-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Processed (left) */}
+          <div className="flex-1 flex flex-col items-center gap-2 max-h-full">
+            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Processed</span>
+            <div
+              className="flex items-center justify-center flex-1 rounded-lg overflow-hidden"
+              style={{ background: checkerboard }}
+            >
+              <img src={src} alt={`${img.view} processed`} className="max-w-full max-h-[75vh] object-contain" />
+            </div>
+          </div>
+          {/* Original (right) */}
+          <div className="flex-1 flex flex-col items-center gap-2 max-h-full">
+            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Original</span>
+            <div className="flex items-center justify-center flex-1 rounded-lg overflow-hidden">
+              <img src={originalSrc} alt={`${img.view} original`} className="max-w-full max-h-[75vh] object-contain" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center w-full p-8" onClick={(e) => e.stopPropagation()}>
+          <img src={src} alt={img.alt_text || `${img.view} view`} className="max-w-full max-h-full object-contain" />
+        </div>
+      )}
 
       {/* Info bar */}
       <div
@@ -196,6 +236,7 @@ function ImageLightbox({
       >
         <Chip label={`Run #${img.run_number}`} className="sf-chip-info" />
         <Chip label={img.view} className="sf-chip-neutral" />
+        {hasOriginal && <Chip label={img.bg_removed ? 'BG Removed' : 'RAW'} className={img.bg_removed ? 'sf-chip-success' : 'sf-chip-neutral'} />}
         <span className="text-[12px] text-white/80 font-mono">{formatBytes(img.bytes)}</span>
         {dims && <span className="text-[12px] text-white/60 font-mono">{dims}px</span>}
         <span className="text-[12px] text-white/50">{img.variant_label || img.variant_key}</span>
@@ -233,12 +274,16 @@ function GalleryCard({
   productId,
   onOpen,
   onDelete,
+  onProcess,
+  isProcessing,
 }: {
   readonly img: GalleryImage;
   readonly category: string;
   readonly productId: string;
   readonly onOpen: () => void;
   readonly onDelete: (filename: string) => void;
+  readonly onProcess: (filename: string) => void;
+  readonly isProcessing: boolean;
 }) {
   const [errored, setErrored] = useState(false);
   const src = img.filename ? imageServeUrl(category, productId, img.filename) : '';
@@ -254,7 +299,7 @@ function GalleryCard({
       {/* Thumbnail — clickable */}
       <button
         onClick={onOpen}
-        className="w-full h-28 flex items-center justify-center p-2 cursor-pointer hover:opacity-80 transition-opacity"
+        className="relative w-full h-28 flex items-center justify-center p-2 cursor-pointer hover:opacity-80 transition-opacity"
         style={{ backgroundColor: 'var(--sf-surface-bg)' }}
         title="Click to view full size"
       >
@@ -271,14 +316,21 @@ function GalleryCard({
             {img.view}
           </span>
         )}
+        {/* Run number badge — small circle, bottom-right */}
+        <span
+          className="absolute bottom-1 right-1 flex items-center justify-center rounded-full text-[8px] font-bold font-mono leading-none text-white pointer-events-none"
+          style={{ width: 16, height: 16, backgroundColor: 'var(--sf-accent, #4263eb)' }}
+        >
+          {img.run_number}
+        </span>
       </button>
 
       {/* Meta */}
       <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
         <div className="flex items-center gap-1.5">
-          <Chip label={`#${img.run_number}`} className="sf-chip-info" />
           <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">{img.view}</span>
           {!passesQuality && <Chip label="low" className="sf-chip-danger" />}
+          {img.bg_removed === false && img.original_filename && <Chip label="RAW" className="sf-chip-neutral" />}
         </div>
         <span className="text-[8px] font-mono sf-text-subtle">
           {formatBytes(img.bytes)}
@@ -299,16 +351,29 @@ function GalleryCard({
             {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}
           </a>
         )}
-        {img.filename && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(img.filename); }}
-            className="mt-0.5 text-[9px] sf-btn-ghost px-1 py-0.5 rounded self-start"
-            style={{ color: 'var(--sf-danger, #ef4444)' }}
-            title={`Delete ${img.filename}`}
-          >
-            delete
-          </button>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          {img.filename && !img.bg_removed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onProcess(img.filename); }}
+              disabled={isProcessing}
+              className="text-[9px] sf-btn-ghost px-1 py-0.5 rounded"
+              style={{ color: 'var(--sf-accent, #4263eb)' }}
+              title="Remove background with RMBG 2.0"
+            >
+              {isProcessing ? 'processing...' : 'process'}
+            </button>
+          )}
+          {img.filename && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(img.filename); }}
+              className="text-[9px] sf-btn-ghost px-1 py-0.5 rounded"
+              style={{ color: 'var(--sf-danger, #ef4444)' }}
+              title={`Delete ${img.filename}`}
+            >
+              delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -319,14 +384,28 @@ function GalleryCard({
 function VariantRow({
   variant,
   imageCount,
-  onRun,
+  progress,
+  heroEnabled,
+  loopBusy,
+  onRunView,
+  onRunHero,
+  onLoop,
 }: {
   readonly variant: VariantInfo;
   readonly imageCount: number;
-  readonly onRun: () => void;
+  readonly progress: CarouselProgress | undefined;
+  readonly heroEnabled: boolean;
+  readonly loopBusy: boolean;
+  readonly onRunView: () => void;
+  readonly onRunHero: () => void;
+  readonly onLoop: () => void;
 }) {
+  const progressLabel = progress
+    ? `${progress.viewsFilled}/${progress.viewsTotal} views · ${progress.heroCount}/${progress.heroTarget} heroes`
+    : null;
+
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 sf-surface-panel rounded-lg">
+    <div className="flex items-center gap-2 px-4 py-2.5 sf-surface-panel rounded-lg">
       <Chip
         label={variant.type === 'edition' ? 'ED' : 'CLR'}
         className={variant.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
@@ -339,12 +418,35 @@ function VariantRow({
       ) : (
         <span className="text-[10px] sf-text-muted italic">no images</span>
       )}
-      <button
-        onClick={onRun}
-        className="shrink-0 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded sf-primary-button"
-      >
-        Run
-      </button>
+      {progressLabel && (
+        <span className="text-[9px] sf-text-muted font-mono whitespace-nowrap">{progressLabel}</span>
+      )}
+      <div className="shrink-0 flex items-center gap-1">
+        <button
+          onClick={onRunView}
+          className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
+          title="Single view run"
+        >
+          View
+        </button>
+        {heroEnabled && (
+          <button
+            onClick={onRunHero}
+            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
+            title="Single hero run"
+          >
+            Hero
+          </button>
+        )}
+        <button
+          onClick={onLoop}
+          disabled={loopBusy}
+          className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Loop: views then heroes until carousel complete"
+        >
+          Loop
+        </button>
+      </div>
     </div>
   );
 }
@@ -483,10 +585,25 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
-  const runMutation = useProductImageFinderRunMutation(category, productId);
+
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
+  const processImageMut = useProcessProductImageMutation(category, productId);
+  const [processingFilename, setProcessingFilename] = useState<string | null>(null);
+  const [processError, setProcessError] = useState<string | null>(null);
+
+  const handleProcessImage = useCallback((filename: string) => {
+    setProcessingFilename(filename);
+    setProcessError(null);
+    processImageMut.mutate(filename, {
+      onSuccess: () => setProcessingFilename(null),
+      onError: (err) => {
+        setProcessingFilename(null);
+        setProcessError(`Failed to process ${filename}: ${err.message}`);
+      },
+    });
+  }, [processImageMut]);
 
   // Operations tracker
   const ops = useOperationsStore((s) => s.operations);
@@ -514,6 +631,37 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     [pifData],
   );
 
+  const unprocessedImages = useMemo(
+    () => galleryImages.filter(img => !img.bg_removed && img.filename),
+    [galleryImages],
+  );
+
+  const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [processAllProgress, setProcessAllProgress] = useState({ done: 0, total: 0 });
+
+  const handleProcessAll = useCallback(async () => {
+    const toProcess = unprocessedImages;
+    if (toProcess.length === 0) return;
+    setIsProcessingAll(true);
+    setProcessError(null);
+    setProcessAllProgress({ done: 0, total: toProcess.length });
+
+    for (let i = 0; i < toProcess.length; i++) {
+      const img = toProcess[i];
+      setProcessingFilename(img.filename);
+      setProcessAllProgress({ done: i, total: toProcess.length });
+      try {
+        await processImageMut.mutateAsync(img.filename);
+      } catch (err) {
+        setProcessError(`Failed on ${img.filename}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    setProcessingFilename(null);
+    setIsProcessingAll(false);
+    setProcessAllProgress({ done: toProcess.length, total: toProcess.length });
+  }, [unprocessedImages, processImageMut]);
+
   // Images grouped by variant (preserves CEF variant order)
   const imageGroups = useMemo(
     () => groupImagesByVariant(galleryImages, variants),
@@ -531,13 +679,29 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     return map;
   }, [galleryImages]);
 
-  const handleRunAll = useCallback(() => {
-    if (variants.length > 0) runMutation.mutate({});
-  }, [runMutation, variants.length]);
+  // ── Single-run handlers (for testing individual variants) ────────
+  const runMutation = useProductImageFinderRunMutation(category, productId);
 
-  const handleRunVariant = useCallback((variantKey: string) => {
-    runMutation.mutate({ variant_key: variantKey });
+  const handleRunVariantView = useCallback((variantKey: string) => {
+    runMutation.mutate({ variant_key: variantKey, mode: 'view' });
   }, [runMutation]);
+
+  const handleRunVariantHero = useCallback((variantKey: string) => {
+    runMutation.mutate({ variant_key: variantKey, mode: 'hero' });
+  }, [runMutation]);
+
+  // ── Loop handler (server-side carousel: views → heroes → done) ──
+  const loopMutation = useProductImageFinderLoopMutation(category, productId);
+
+  const handleLoopAll = useCallback(() => {
+    loopMutation.mutate({});
+  }, [loopMutation]);
+
+  const handleLoopVariant = useCallback((variantKey: string) => {
+    loopMutation.mutate({ variant_key: variantKey });
+  }, [loopMutation]);
+
+  const heroEnabled = pifData?.carouselSettings?.heroEnabled ?? true;
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -558,14 +722,27 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const runCount = effectiveResult?.run_count ?? 0;
   const runs = effectiveResult?.runs || [];
 
+  // Aggregate carousel progress across all variants
+  const carouselProgressMap = effectiveResult?.carouselProgress ?? {};
+  const carouselAgg = useMemo(() => {
+    const entries = Object.values(carouselProgressMap);
+    if (entries.length === 0) return { viewsFilled: 0, viewsTotal: 0, heroCount: 0, heroTarget: 0, allComplete: false };
+    const viewsFilled = entries.reduce((s, e) => s + e.viewsFilled, 0);
+    const viewsTotal = entries.reduce((s, e) => s + e.viewsTotal, 0);
+    const heroCount = entries.reduce((s, e) => s + e.heroCount, 0);
+    const heroTarget = entries.reduce((s, e) => s + e.heroTarget, 0);
+    const allComplete = entries.every((e) => e.viewsFilled >= e.viewsTotal && e.heroSatisfied);
+    return { viewsFilled, viewsTotal, heroCount, heroTarget, allComplete };
+  }, [carouselProgressMap]);
+
   const kpiCards: KpiCard[] = [
     { label: 'Images', value: String(imageCount), tone: 'accent' },
     { label: 'Variants', value: String(variants.length), tone: 'purple' },
     { label: 'Runs', value: String(runCount), tone: 'success' },
     {
-      label: 'Cooldown',
-      value: cooldown.onCooldown ? `${cooldown.daysRemaining}d` : runCount > 0 ? 'Ready' : '--',
-      tone: 'info',
+      label: 'Carousel',
+      value: carouselAgg.viewsTotal > 0 ? `${carouselAgg.viewsFilled}/${carouselAgg.viewsTotal}` : '--',
+      tone: carouselAgg.allComplete ? 'success' : 'info',
     },
   ];
 
@@ -583,20 +760,27 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         collapsed={collapsed}
         onToggle={toggleCollapsed}
         title="Product Image Finder"
-        chipLabel="PIF"
-        chipClass="sf-chip-info"
-        statusChip={statusChip}
         tip="Finds and downloads high-resolution product images per color variant and edition. Requires CEF data."
         isRunning={isRunning}
         runDisabled={!hasCefData}
-        runLabel={hasCefData ? `Run All (${variants.length})` : 'Run All'}
-        onRun={handleRunAll}
-      >
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-          <ModelBadgeGroup {...badgeProps} />
-          {modelDisplay}
-        </span>
-      </FinderPanelHeader>
+        onRun={handleLoopAll}
+        actionSlot={
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
+              <ModelBadgeGroup {...badgeProps} />
+              {modelDisplay}
+            </span>
+            <button
+              onClick={handleLoopAll}
+              disabled={loopMutation.isPending || !hasCefData}
+              className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Loop: views then heroes until carousel complete for all variants"
+            >
+              Loop
+            </button>
+          </div>
+        }
+      />
 
       {/* Body */}
       {collapsed ? null : !hasCefData ? (
@@ -627,18 +811,35 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               storeKey={`pif:images:${productId}`}
               defaultOpen
               trailing={
-                <button
-                  onClick={() => {
-                    if (expandedImageGroups.size === imageGroups.length) {
-                      setExpandedImageGroups(new Set());
-                    } else {
-                      setExpandedImageGroups(new Set(imageGroups.map(g => g.key)));
-                    }
-                  }}
-                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button border sf-border-soft opacity-60 hover:opacity-100"
-                >
-                  {expandedImageGroups.size === imageGroups.length ? 'Collapse All' : 'Expand All'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {unprocessedImages.length > 0 && (
+                    <button
+                      onClick={handleProcessAll}
+                      disabled={isProcessingAll}
+                      className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded border sf-border-soft hover:opacity-100"
+                      style={{
+                        color: isProcessingAll ? 'var(--sf-muted)' : 'var(--sf-accent, #4263eb)',
+                        opacity: isProcessingAll ? 0.8 : 0.7,
+                      }}
+                    >
+                      {isProcessingAll
+                        ? `Processing ${processAllProgress.done + 1}/${processAllProgress.total}...`
+                        : `Process All (${unprocessedImages.length})`}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (expandedImageGroups.size === imageGroups.length) {
+                        setExpandedImageGroups(new Set());
+                      } else {
+                        setExpandedImageGroups(new Set(imageGroups.map(g => g.key)));
+                      }
+                    }}
+                    className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button border sf-border-soft opacity-60 hover:opacity-100"
+                  >
+                    {expandedImageGroups.size === imageGroups.length ? 'Collapse All' : 'Expand All'}
+                  </button>
+                </div>
               }
             >
               <div style={{ columns: 2, columnGap: '0.75rem' }}>
@@ -679,6 +880,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                               productId={productId}
                               onOpen={() => setLightboxImg(img)}
                               onDelete={(filename) => deleteImageMut.mutate(filename)}
+                              onProcess={handleProcessImage}
+                              isProcessing={processingFilename === img.filename}
                             />
                           ))}
                         </div>
@@ -702,7 +905,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                   <VariantRow
                     variant={v}
                     imageCount={variantImageCounts.get(v.key) || 0}
-                    onRun={() => handleRunVariant(v.key)}
+                    progress={carouselProgressMap[v.key]}
+                    heroEnabled={heroEnabled}
+                    loopBusy={loopMutation.isPending}
+                    onRunView={() => handleRunVariantView(v.key)}
+                    onRunHero={() => handleRunVariantHero(v.key)}
+                    onLoop={() => handleLoopVariant(v.key)}
                   />
                 </div>
               ))}
@@ -738,9 +946,14 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           )}
 
           {/* Error display */}
-          {runMutation.isError && (
+          {(runMutation.isError || loopMutation.isError) && (
             <div className="sf-callout sf-callout-danger px-3 py-2 rounded sf-text-caption">
-              {String(runMutation.error)}
+              {String(runMutation.error || loopMutation.error)}
+            </div>
+          )}
+          {processError && (
+            <div className="sf-callout sf-callout-danger px-3 py-2 rounded sf-text-caption cursor-pointer" onClick={() => setProcessError(null)}>
+              {processError}
             </div>
           )}
 
@@ -773,6 +986,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         <ImageLightbox
           img={lightboxImg}
           src={lightboxImg.filename ? imageServeUrl(category, productId, lightboxImg.filename) : ''}
+          category={category}
+          productId={productId}
           onClose={() => setLightboxImg(null)}
         />
       )}

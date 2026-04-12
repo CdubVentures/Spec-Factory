@@ -40,12 +40,8 @@ export function resolveOverrideFilePath({ config = {}, category, productId }) {
 export async function readReviewArtifacts({ storage, category, productId }) {
   const keys = reviewKeys(storage, category, productId);
   let candidates = await storage.readJsonOrNull(keys.candidatesKey);
-  let reviewQueue = await storage.readJsonOrNull(keys.reviewQueueKey);
   if (!candidates) {
     candidates = await storage.readJsonOrNull(keys.legacyCandidatesKey);
-  }
-  if (!reviewQueue) {
-    reviewQueue = await storage.readJsonOrNull(keys.legacyReviewQueueKey);
   }
   return {
     keys,
@@ -58,14 +54,6 @@ export async function readReviewArtifacts({ storage, category, productId }) {
       field_count: 0,
       items: [],
       by_field: {}
-    },
-    reviewQueue: reviewQueue || {
-      version: 1,
-      generated_at: nowIso(),
-      category,
-      product_id: productId,
-      count: 0,
-      items: []
     }
   };
 }
@@ -300,9 +288,7 @@ export async function approveGreenOverrides({
     const selected = isObject(state.selected) ? state.selected : {};
     const selectedValue = selected.value;
     const color = normalizeToken(selected.color || '');
-    const needsReview = Boolean(state.needs_review);
-
-    if (color !== 'green' || needsReview || !hasKnownValue(selectedValue)) {
+    if (color !== 'green' || !hasKnownValue(selectedValue)) {
       skipped.push({
         field,
         reason: 'not_green_or_not_review_ready'

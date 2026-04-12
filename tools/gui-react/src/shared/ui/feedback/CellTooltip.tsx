@@ -11,8 +11,8 @@ export interface CellTooltipState {
     confidence: number;
     color: 'green' | 'yellow' | 'red' | 'gray' | 'purple';
   };
-  needs_review: boolean;
-  reason_codes: string[];
+  needs_review?: boolean;
+  reason_codes?: string[];
   source?: string;
   source_timestamp?: string | null;
   method?: string;
@@ -177,9 +177,9 @@ export function CellTooltip({ state, children }: CellTooltipProps) {
           )}
 
           {/* Row 6: Reason codes */}
-          {state.reason_codes.length > 0 && (
+          {(state.reason_codes ?? []).length > 0 && (
             <div className="sf-cell-tooltip-reason-list mt-1.5 flex flex-wrap gap-1">
-              {state.reason_codes.slice(0, 4).map((rc) => (
+              {(state.reason_codes ?? []).slice(0, 4).map((rc) => (
                 <span key={rc} className="sf-cell-tooltip-reason-chip px-1.5 py-0.5 text-[9px] rounded">
                   {rc.replace(/_/g, ' ')}
                 </span>

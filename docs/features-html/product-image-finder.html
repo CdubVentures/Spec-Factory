@@ -223,24 +223,112 @@
   </div>
 </div>
 
-<!-- 6. Image Serving -->
-<div class="section-title"><span class="num">6</span> Image Serving</div>
+<!-- 6. RMBG 2.0 Image Processing -->
+<div class="section-title"><span class="num">6</span> RMBG 2.0 Image Processing</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--accent-light);">Static File Serving Endpoint</div>
+  <div class="card-header" style="background:var(--green-bg);">Post-Download Processing Pipeline</div>
   <div class="card-body">
+    <p style="margin-bottom:12px;">Every downloaded image that passes the quality gate is processed through an automated background removal pipeline. Originals are always preserved for reprocessing.</p>
+    <div class="flow-row" style="margin:12px 0; justify-content:flex-start;">
+      <span class="tag tag-accent">Download</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-orange">Quality Gate</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-green">RMBG 2.0</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-teal">Trim</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span class="tag tag-purple">Master PNG</span>
+    </div>
     <dl class="detail-grid">
-      <dt>Route</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/:filename</code></dd>
-      <dt>Storage path</dt><dd><code>.workspace/products/{pid}/images/</code></dd>
-      <dt>MIME types</dt><dd>Proper Content-Type headers for PNG, JPEG, WebP, GIF</dd>
-      <dt>Caching</dt><dd>24-hour cache (<code>Cache-Control: max-age=86400</code>)</dd>
-      <dt>Backfill</dt><dd>Dimensions backfilled on GET for older images that lack stored dimension metadata</dd>
+      <dt>Model</dt><dd>RMBG 2.0 by Bria AI (ONNX, ~366 MB <code>model_int8.onnx</code>)</dd>
+      <dt>Location</dt><dd><code>.workspace/models/rmbg-2.0/</code> (git-ignored, auto-downloaded with <code>HF_TOKEN</code>)</dd>
+      <dt>Type</dt><dd>Vision segmentation (NOT an LLM) &mdash; CPU inference, few seconds per image</dd>
+      <dt>License</dt><dd>CC BY-NC 4.0 (non-commercial / personal use)</dd>
+      <dt>Input</dt><dd>Any image format sharp supports &mdash; resized to 1024&times;1024 for inference</dd>
+      <dt>Output</dt><dd>Alpha matte composited onto original &rarr; transparent-edge trimmed &rarr; lossless PNG</dd>
     </dl>
   </div>
 </div>
 
-<!-- 7. Architecture -->
-<div class="section-title"><span class="num">7</span> Architecture</div>
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">File Storage</div>
+  <div class="card-body">
+    <pre style="background:var(--surface-alt); padding:12px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto;">.workspace/products/{pid}/images/
+  top-black.png              &larr; processed master (transparent, trimmed)
+  left-glacier-blue.png
+  originals/                 &larr; raw downloads preserved as-is
+    top-black.jpg
+    left-glacier-blue.webp</pre>
+    <table style="margin-top:12px;">
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>original_filename</code></td><td>string</td><td>Raw download in <code>originals/</code> (e.g. <code>top-black.jpg</code>)</td></tr>
+        <tr><td><code>bg_removed</code></td><td>boolean</td><td>Whether RMBG 2.0 processing succeeded</td></tr>
+        <tr><td><code>original_format</code></td><td>string</td><td>Source format before conversion (jpg, webp, png, avif)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Graceful Degradation</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Scenario</th><th>Behavior</th><th>Flags</th></tr></thead>
+      <tbody>
+        <tr><td>Model not downloaded</td><td>Raw download converted to PNG as master</td><td><code>bg_removed: false</code></td></tr>
+        <tr><td>ONNX inference fails</td><td>Same &mdash; raw saved as PNG fallback</td><td><code>bg_removed: false</code></td></tr>
+        <tr><td>Trim produces empty canvas</td><td>Pre-trim transparent image kept</td><td><code>bg_removed: true, trim_failed: true</code></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px; font-size:13px; color:var(--text-muted);">
+      Processing never blocks the run. If RMBG is unavailable, PIF continues to function exactly as before &mdash; images are just saved without background removal.
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--red-bg);">Concurrency &amp; Remaining Work</div>
+  <div class="card-body">
+    <p style="margin-bottom:8px; font-weight:600;">Current state: no inference queue</p>
+    <p style="font-size:13.5px; margin-bottom:8px;">
+      PIF fires variants concurrently (1s stagger). Each variant's images are processed sequentially within its runner, but
+      multiple variants can hit RMBG inference simultaneously. With many concurrent variants, this causes CPU contention
+      and memory spikes (~500MB+ per concurrent inference).
+    </p>
+    <p style="font-size:13px; font-weight:600; color:var(--red); margin-bottom:4px;">Needed: processing semaphore</p>
+    <p style="font-size:13.5px;">
+      Add a mutex/semaphore around <code>session.run()</code> in <code>imageProcessor.js</code> so ONNX inference
+      runs one image at a time regardless of how many variants are processing concurrently. Downloads and quality gates
+      can remain parallel &mdash; only the inference step needs serialization. The &ldquo;Process All&rdquo; GUI button already
+      serializes (sequential <code>mutateAsync</code> calls), but the PIF run pipeline does not.
+    </p>
+  </div>
+</div>
+
+<!-- 7. Image Serving -->
+<div class="section-title"><span class="num">7</span> Image Serving</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Static File Serving Endpoints</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Masters</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/:filename</code></dd>
+      <dt>Originals</dt><dd><code>GET /api/v1/product-image-finder/:category/:productId/images/originals/:filename</code></dd>
+      <dt>Storage</dt><dd><code>.workspace/products/{pid}/images/</code> (masters) and <code>images/originals/</code> (raw downloads)</dd>
+      <dt>MIME types</dt><dd>Proper Content-Type headers for PNG, JPEG, WebP, GIF, AVIF</dd>
+      <dt>Caching</dt><dd>24-hour cache (<code>Cache-Control: max-age=86400</code>)</dd>
+      <dt>Backfill</dt><dd>Dimensions backfilled on GET for older images that lack stored dimension metadata</dd>
+      <dt>Process</dt><dd><code>POST /api/v1/product-image-finder/:category/:productId/images/:filename/process</code> &mdash; runs RMBG on a single image, updates JSON + SQL</dd>
+      <dt>Delete</dt><dd>Deleting a master also removes its corresponding original from <code>originals/</code></dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 8. Architecture -->
+<div class="section-title"><span class="num">8</span> Architecture</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--surface-alt);">Module Architecture Detail</div>
@@ -258,8 +346,8 @@
   </div>
 </div>
 
-<!-- 8. GUI Panel -->
-<div class="section-title"><span class="num">8</span> GUI Panel</div>
+<!-- 9. GUI Panel -->
+<div class="section-title"><span class="num">9</span> GUI Panel</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--purple-bg);">Panel Layout and Interactions</div>
@@ -283,9 +371,12 @@
     <p style="font-size:13.5px; margin-bottom:6px;">
       Every image from every run displayed together, tagged with run number.
       Quality failures shown with <span class="tag tag-red">LOW</span> badge and red border.
+      Unprocessed images (no RMBG) shown with <span class="tag tag-accent">RAW</span> chip.
     </p>
     <dl class="detail-grid" style="margin-bottom:16px;">
-      <dt>Click action</dt><dd>Opens full-size lightbox portaled to <code>document.body</code></dd>
+      <dt>Click action</dt><dd>Opens full-size lightbox &mdash; side-by-side: processed (checkerboard bg) on left, original on right. Single image if no original.</dd>
+      <dt>Process button</dt><dd>Per-card &ldquo;process&rdquo; button on unprocessed images. Runs RMBG on that image, updates thumbnail + JSON + SQL in-place.</dd>
+      <dt>Process All</dt><dd>Section-level button processes every unprocessed image sequentially. Shows <code>Processing 3/7...</code> progress. Disappears when all images are processed.</dd>
       <dt>Dismiss</dt><dd>Press Escape or click outside to close lightbox</dd>
     </dl>
 
@@ -312,7 +403,7 @@
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from source &mdash; Spec Factory Product Image Finder (PIF)<br>
-  CEF-dependent &bull; staggered parallel &bull; flag-based quality gate &bull; per-variant latest-wins accumulation
+  CEF-dependent &bull; staggered parallel &bull; RMBG 2.0 background removal &bull; per-variant latest-wins accumulation
 </div>
 
 </div>

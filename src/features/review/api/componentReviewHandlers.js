@@ -66,13 +66,7 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
     findProductsReferencingComponent,
-    safeReadJson,
-    invalidateFieldRulesCache,
-    path,
-    fs,
-    HELPER_ROOT,
     OUTPUT_ROOT,
-    applySharedLaneState,
     cascadeEnumChange,
     specDbCache,
     broadcastWs,
@@ -285,25 +279,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
             overridden: Boolean(sourceRow?.overridden),
             sourceTimestamp: nowIso,
           });
-          const updatedRow = specDb.getListValueByFieldAndValue(field, rawValue) || sourceRow;
-          if (typeof applySharedLaneState === 'function') {
-            applySharedLaneState({
-              specDb,
-              category,
-              targetKind: 'enum_key',
-              fieldKey: field,
-              enumValueNorm: normalizedValue,
-              listValueId: updatedRow?.id ?? sourceRow?.id ?? null,
-              enumListId: updatedRow?.list_id ?? enumListRow?.id ?? null,
-              selectedCandidateId: String(updatedRow?.accepted_candidate_id || '').trim() || null,
-              selectedValue: updatedRow?.value ?? rawValue,
-              confidenceScore: 1.0,
-              laneAction: 'confirm',
-              nowIso,
-              confirmStatusOverride: 'confirmed',
-              updateSelection: false,
-            });
-          }
           applied.kept += 1;
           applied.changed += 1;
           continue;
@@ -363,120 +338,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       specDb: runtimeSpecDb,
     });
     return jsonRes(res, 200, { affected_products: affected, total: affected.length });
-  }
-
-  // Get component review items (flagged for AI/human review)
-  if (parts[0] === 'review-components' && parts[1] && parts[2] === 'component-review' && method === 'GET') {
-    const category = parts[1];
-    const specDb = getSpecDb(category);
-    if (!specDb) {
-      return jsonRes(res, 200, { version: 1, category, items: [], updated_at: null });
-    }
-    // Collect all component types from the review queue
-    const allItems = [];
-    try {
-      const typeRows = specDb.db.prepare(
-        'SELECT DISTINCT component_type FROM component_review_queue WHERE category = ?'
-      ).all(category);
-      for (const typeRow of typeRows) {
-        const ct = String(typeRow?.component_type || '').trim();
-        if (!ct) continue;
-        const rows = specDb.getComponentReviewItems(ct) || [];
-        allItems.push(...rows);
-      }
-    } catch {
-      // best-effort
-    }
-    return jsonRes(res, 200, { version: 1, category, items: allItems, updated_at: null });
-  }
-
-  // Component review action (approve_new, merge_alias, dismiss)
-  if (parts[0] === 'review-components' && parts[1] && parts[2] === 'component-review-action' && method === 'POST') {
-    const category = parts[1];
-    const body = await readJsonBody(req);
-    const { review_id, action, merge_target } = body;
-    if (!review_id || !action) return jsonRes(res, 400, { error: 'review_id and action required' });
-
-    const specDb = getSpecDb(category);
-    if (!specDb) return jsonRes(res, 404, { error: 'No review data found' });
-
-    // Find the review item by review_id from SQL
-    let item = null;
-    try {
-      item = specDb.db.prepare(
-        'SELECT * FROM component_review_queue WHERE category = ? AND review_id = ? LIMIT 1'
-      ).get(category, review_id);
-      if (item?.alternatives) try { item.alternatives = JSON.parse(item.alternatives); } catch { /* */ }
-      if (item?.product_attributes) try { item.product_attributes = JSON.parse(item.product_attributes); } catch { /* */ }
-    } catch {
-      // best-effort
-    }
-    if (!item) return jsonRes(res, 404, { error: 'Review item not found' });
-
-    let newStatus;
-    if (action === 'approve_new') {
-      newStatus = 'approved_new';
-    } else if (action === 'merge_alias' && merge_target) {
-      newStatus = 'accepted_alias';
-      // Update matched_component in SQL
-      specDb.updateComponentReviewQueueMatchedComponent(category, review_id, merge_target);
-      // Write alias to overrides
-      const slug = String(merge_target).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      const overrideDir = path.join(HELPER_ROOT, category, '_overrides', 'components');
-      await fs.mkdir(overrideDir, { recursive: true });
-      const overridePath = path.join(overrideDir, `${item.component_type}_${slug}.json`);
-      const existing = await safeReadJson(overridePath) || { componentType: item.component_type, name: merge_target, properties: {} };
-      if (!existing.identity) existing.identity = {};
-      const aliases = Array.isArray(existing.identity.aliases) ? existing.identity.aliases : [];
-      const alias = String(item.raw_query).trim();
-      if (alias && !aliases.some((a) => a.toLowerCase() === alias.toLowerCase())) {
-        aliases.push(alias);
-        existing.identity.aliases = aliases;
-      }
-      existing.updated_at = new Date().toISOString();
-      await fs.writeFile(overridePath, JSON.stringify(existing, null, 2));
-      invalidateFieldRulesCache(category);
-      sessionCache.invalidateSessionCache(category);
-      // Write alias to SpecDb
-      if (alias) {
-        try {
-          const idRow = specDb.getComponentIdentity(item.component_type, merge_target, '');
-          if (idRow) {
-            specDb.insertAlias(idRow.id, alias, 'user');
-          }
-          specDbCache.delete(category);
-        } catch (_specDbErr) {
-          return jsonRes(res, 500, {
-            error: 'component_review_alias_specdb_write_failed',
-            message: _specDbErr?.message || 'SpecDb write failed',
-          });
-        }
-      }
-    } else if (action === 'dismiss') {
-      newStatus = 'dismissed';
-    } else {
-      return jsonRes(res, 400, { error: `Unknown action: ${action}` });
-    }
-
-    // Update status in SQL
-    try {
-      specDb.db.prepare(
-        `UPDATE component_review_queue SET status = ?, updated_at = datetime('now') WHERE category = ? AND review_id = ?`
-      ).run(newStatus, category, review_id);
-    } catch {
-      // best-effort
-    }
-    emitDataChange({
-      broadcastWs,
-      event: 'component-review',
-      category,
-      meta: {
-        action,
-        review_id,
-      },
-    });
-
-    return jsonRes(res, 200, { ok: true, review_id, action, status: newStatus });
   }
 
   return false;

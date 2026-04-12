@@ -29,17 +29,13 @@ import {
   extractFieldStudioHints,
   reviewKeys,
   normalizeFieldContract,
-  REAL_FLAG_CODES,
-  inferFlags,
   writeJson,
   candidateEvidenceFromRows,
   candidateScore,
-  inferReasonCodes,
   dbSourceLabel,
   dbSourceMethod,
   extractHostFromUrl,
   candidateSourceLabel,
-  urgencyScore,
 } from './reviewGridHelpers.js';
 
 
@@ -344,22 +340,8 @@ export function buildFieldState({
     }
   }
 
-  const fieldContradictions = toArray(summary.constraint_analysis?.contradictions).filter((row) =>
-    toArray(row?.fields).map((token) => normalizeField(token)).includes(fieldKey)
-  );
-  const hasConflict = fieldContradictions.length > 0;
-  const hasCompoundConflict = fieldContradictions.some((row) => row?.code === 'compound_range_conflict');
-  const reasonCodes = inferReasonCodes({
-    field: fieldKey,
-    selectedValue: resolvedSelectedValue,
-    selectedConfidence: resolvedSelectedConfidence,
-    summary,
-    hasConflict,
-    hasCompoundConflict
-  });
-
   const color = hasKnownValue(resolvedSelectedValue)
-    ? confidenceColor(resolvedSelectedConfidence, reasonCodes)
+    ? confidenceColor(resolvedSelectedConfidence)
     : 'gray';
 
   const sourceCandidate = selectedCandidate || topCandidate;
@@ -383,11 +365,9 @@ export function buildFieldState({
       value: resolvedSelectedValue,
       unit: contractUnit || null,
       confidence: resolvedSelectedConfidence,
-      status: reasonCodes.length > 0 ? 'needs_review' : 'ok',
+      status: 'ok',
       color
     },
-    needs_review: reasonCodes.length > 0,
-    reason_codes: reasonCodes,
     candidate_count: normalizedCandidates.length,
     candidates: includeCandidates ? normalizedCandidates : [],
     accepted_candidate_id: overridden ? null : (acceptedCandidate?.candidate_id || null),
@@ -412,18 +392,11 @@ export async function buildProductReviewPayload({
 }) {
   const resolvedLayout = layout || await buildReviewLayout({ storage, config, category });
   const rows = {};
-  let reviewableFlags = 0;
   let missingCount = 0;
 
   // Two tables only: products + field_candidates.
   const dbProduct = specDb?.getProduct(productId) || null;
   const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
-
-  // File-based fallback when specDb is not available.
-  let fileArtifacts = null;
-  if (!specDb && storage) {
-    try { fileArtifacts = await readLatestArtifacts(storage, category, productId); } catch { /* best effort */ }
-  }
 
   // Group candidates by field_key, track resolved (published) per field.
   const candidatesByField = new Map();
@@ -446,27 +419,11 @@ export async function buildProductReviewPayload({
     const resolvedRow = resolvedByField.get(field) || null;
     const isOverridden = resolvedRow?.metadata_json?.source === 'manual_override';
 
-    // Published value = resolved candidate, or file-based fallback.
-    let resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
+    const resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
       ? resolvedRow.value : null;
-
-    // File-based fallback: use normalized.json fields when specDb is unavailable.
-    if (resolvedValue == null && fileArtifacts) {
-      const normalizedFields = isObject(fileArtifacts.normalized?.fields)
-        ? fileArtifacts.normalized.fields : {};
-      const fileValue = normalizedFields[field];
-      if (fileValue != null && String(fileValue).trim() !== '') {
-        resolvedValue = fileValue;
-      }
-    }
-    let resolvedConfidence = resolvedRow
+    const resolvedConfidence = resolvedRow
       ? Math.max(0, Math.min(1, toNumber(resolvedRow.confidence, 0)))
       : 0;
-    // File-based confidence fallback.
-    if (!resolvedRow && fileArtifacts) {
-      const fileProvenance = isObject(fileArtifacts.provenance?.[field]) ? fileArtifacts.provenance[field] : {};
-      resolvedConfidence = Math.max(0, Math.min(1, toNumber(fileProvenance.confidence, 0)));
-    }
     const hasValue = hasKnownValue(resolvedValue);
 
     // Map field_candidates rows → candidate shape.
@@ -492,32 +449,7 @@ export async function buildProductReviewPayload({
       };
     });
 
-    // File-based candidate fallback when specDb is unavailable.
-    if (candidates.length === 0 && fileArtifacts) {
-      const fileCandidates = toArray(fileArtifacts.candidates?.[field]);
-      const fileProvenance = isObject(fileArtifacts.provenance?.[field]) ? fileArtifacts.provenance[field] : {};
-      candidates = fileCandidates.map((c) => {
-        const evidence = candidateEvidenceFromRows(c, fileProvenance);
-        const sourceLabel = candidateSourceLabel(c, evidence);
-        return {
-          candidate_id: String(c.candidate_id || ''),
-          value: c.value,
-          score: Math.max(0, Math.min(1, toNumber(c.score, 0))),
-          source_id: String(c.source_id || c.host || ''),
-          source: sourceLabel,
-          tier: c.tier ?? null,
-          method: String(c.method || '').trim() || null,
-          status: 'candidate',
-          evidence: {
-            url: String(evidence.url || '').trim(),
-            quote: String(evidence.quote || '').trim(),
-            source_id: String(c.source_id || c.host || ''),
-          },
-        };
-      });
-    }
-
-    // Determine source/method from resolved candidate or file fallback.
+    // Determine source/method from resolved candidate.
     let source = '';
     let method = null;
     if (isOverridden) {
@@ -527,29 +459,21 @@ export async function buildProductReviewPayload({
       const st = String(resolvedRow.metadata_json?.source || '').trim();
       source = dbSourceLabel(st) || st;
       method = String(resolvedRow.metadata_json?.method || '').trim() || null;
-    } else if (fileArtifacts && candidates.length > 0) {
-      // Use top candidate from file fallback.
-      const topCandidate = candidates.reduce((best, c) => (c.score > (best?.score || 0) ? c : best), null);
-      source = topCandidate?.source || '';
-      method = topCandidate?.method || null;
     }
 
     const color = hasValue
       ? confidenceColor(isOverridden ? 1 : resolvedConfidence, [])
       : 'gray';
 
-    const needsReview = !hasValue;
-    if (needsReview) missingCount += 1;
+    if (!hasValue) missingCount += 1;
 
     rows[field] = {
       selected: {
         value: resolvedValue,
         confidence: isOverridden ? 1 : resolvedConfidence,
-        status: needsReview ? 'needs_review' : 'ok',
+        status: 'ok',
         color,
       },
-      needs_review: needsReview,
-      reason_codes: [],
       candidate_count: fieldCandidateRows.length || candidates.length,
       candidates: includeCandidates ? candidates : [],
       accepted_candidate_id: null,
@@ -574,19 +498,13 @@ export async function buildProductReviewPayload({
     ? (totalFields - missingCount) / totalFields
     : 0;
 
-  // File-based identity fallback when specDb is not available.
-  let normalizedIdentity = {};
-  if (fileArtifacts) {
-    normalizedIdentity = isObject(fileArtifacts.normalized?.identity) ? fileArtifacts.normalized.identity : {};
-  }
-
   const catalogIdentity = isObject(catalogProduct) ? catalogProduct : {};
   const authoritativeIdentity = resolveAuthoritativeProductIdentity({
     productId,
     category,
     catalogProduct: catalogIdentity,
     dbProduct,
-    normalizedIdentity,
+    normalizedIdentity: {},
   });
 
   let updatedAt = nowIso();
@@ -603,7 +521,6 @@ export async function buildProductReviewPayload({
     metrics: {
       confidence: computedConfidence,
       coverage: computedCoverage,
-      flags: reviewableFlags,
       missing: missingCount,
       has_run: allCandidates.length > 0,
       updated_at: updatedAt,
@@ -615,7 +532,8 @@ export async function writeProductReviewArtifacts({
   storage,
   config = {},
   category,
-  productId
+  productId,
+  specDb = null,
 }) {
   const layout = await buildReviewLayout({ storage, config, category });
   const payload = await buildProductReviewPayload({
@@ -623,19 +541,17 @@ export async function writeProductReviewArtifacts({
     config,
     category,
     productId,
-    layout
+    layout,
+    specDb,
   });
   const keys = reviewKeys(storage, category, productId);
 
   const items = [];
   const byField = {};
-  const queueItems = [];
   for (const row of layout.rows || []) {
     const field = normalizeField(row.key);
     const state = payload.fields[field] || {
-      selected: { value: null, confidence: 0, status: 'needs_review', color: 'gray' },
-      needs_review: true,
-      reason_codes: ['missing_value'],
+      selected: { value: null, confidence: 0, status: 'ok', color: 'gray' },
       candidates: []
     };
     byField[field] = [];
@@ -652,19 +568,9 @@ export async function writeProductReviewArtifacts({
         tier: candidate.tier,
         method: candidate.method || '',
         evidence: candidate.evidence || {},
-        needs_review: state.needs_review
       };
       items.push(item);
       byField[field].push(item);
-    }
-    if (state.needs_review) {
-      queueItems.push({
-        field,
-        reason_codes: state.reason_codes || [],
-        selected_value: state.selected.value,
-        confidence: state.selected.confidence,
-        color: state.selected.color
-      });
     }
   }
 
@@ -678,20 +584,9 @@ export async function writeProductReviewArtifacts({
     items,
     by_field: byField
   };
-  const reviewQueueArtifact = {
-    version: 1,
-    generated_at: nowIso(),
-    category,
-    product_id: productId,
-    count: queueItems.length,
-    items: queueItems
-  };
-
   await Promise.all([
     writeJson(storage, keys.candidatesKey, candidatesArtifact),
     writeJson(storage, keys.legacyCandidatesKey, candidatesArtifact),
-    writeJson(storage, keys.reviewQueueKey, reviewQueueArtifact),
-    writeJson(storage, keys.legacyReviewQueueKey, reviewQueueArtifact),
     writeJson(storage, keys.productKey, payload),
     writeJson(storage, keys.legacyProductKey, payload)
   ]);
@@ -700,118 +595,6 @@ export async function writeProductReviewArtifacts({
     product_id: productId,
     category,
     candidate_count: items.length,
-    review_field_count: queueItems.length,
     keys
-  };
-}
-
-
-export async function buildReviewQueue({
-  storage,
-  config = {},
-  category,
-  status = 'needs_review',
-  limit = 200,
-  specDb = null,
-  catalogProducts = null,
-}) {
-  // WHY: Queue module retired — product enumeration is no longer queue-driven.
-  const products = [];
-  const rows = [];
-
-  for (const product of products) {
-    const productId = String(product.productId || '').trim();
-    if (!productId) {
-      continue;
-    }
-    const latest = await readLatestArtifacts(storage, category, productId, specDb);
-    const keys = reviewKeys(storage, category, productId);
-    let reviewQueue = await storage.readJsonOrNull(keys.reviewQueueKey);
-    if (!reviewQueue) {
-      reviewQueue = await storage.readJsonOrNull(keys.legacyReviewQueueKey);
-    }
-    const flags = toInt(reviewQueue?.count, 0);
-    const confidence = toNumber(latest.summary.confidence, 0);
-    const coverage = toNumber(latest.summary.coverage_overall_percent, 0) / 100;
-    const identity = isObject(latest.normalized.identity) ? latest.normalized.identity : {};
-    const catalogIdentity = isObject(catalogProducts?.[productId]) ? catalogProducts[productId] : {};
-    const authoritativeIdentity = resolveAuthoritativeProductIdentity({
-      productId,
-      category,
-      catalogProduct: catalogIdentity,
-      normalizedIdentity: identity,
-    });
-    const item = {
-      product_id: productId,
-      category,
-      id: authoritativeIdentity.id,
-      identifier: authoritativeIdentity.identifier,
-      brand: authoritativeIdentity.brand,
-      base_model: authoritativeIdentity.base_model,
-      model: authoritativeIdentity.model,
-      variant: authoritativeIdentity.variant,
-      coverage,
-      confidence,
-      flags,
-      status: String(product.status || '').trim() || 'unknown',
-      updated_at: String(product.updated_at || latest.summary.generated_at || nowIso())
-    };
-    const needsReview = flags > 0 || ['needs_manual', 'exhausted', 'failed'].includes(normalizeToken(item.status));
-    if (normalizeToken(status) === 'needs_review' && !needsReview) {
-      continue;
-    }
-    if (normalizeToken(status) && normalizeToken(status) !== 'needs_review') {
-      if (normalizeToken(item.status) !== normalizeToken(status)) {
-        continue;
-      }
-    }
-    rows.push(item);
-  }
-
-  rows.sort((a, b) => {
-    const urgency = urgencyScore(b) - urgencyScore(a);
-    if (urgency !== 0) {
-      return urgency;
-    }
-    const updated = parseDateMs(b.updated_at) - parseDateMs(a.updated_at);
-    if (updated !== 0) {
-      return updated;
-    }
-    return a.product_id.localeCompare(b.product_id);
-  });
-
-  return rows.slice(0, Math.max(1, toInt(limit, 200)));
-}
-
-export async function writeCategoryReviewArtifacts({
-  storage,
-  config = {},
-  category,
-  status = 'needs_review',
-  limit = 200,
-  specDb = null,
-}) {
-  const items = await buildReviewQueue({
-    storage,
-    config,
-    category,
-    status,
-    limit,
-    specDb,
-  });
-  const key = `_review/${normalizePathToken(category)}/queue.json`;
-  const payload = {
-    version: 1,
-    generated_at: nowIso(),
-    category,
-    status: normalizeToken(status) || 'needs_review',
-    count: items.length,
-    items
-  };
-  await writeJson(storage, key, payload);
-  return {
-    key,
-    count: items.length,
-    items
   };
 }

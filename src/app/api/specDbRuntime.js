@@ -4,7 +4,6 @@ import { rebuildFieldCandidatesFromJson, rebuildPublishedFieldsFromJson } from '
 import { rebuildLlmRouteMatrixFromJson } from '../../features/settings/llmRouteMatrixReseed.js';
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
-import { reseedOverridesFromJson } from '../../features/review/domain/overridesReseed.js';
 import { buildReseedSurfaces } from '../../db/seedRegistry.js';
 
 function assertFunction(name, value) {
@@ -56,7 +55,6 @@ export function createSpecDbRuntime({
     rebuildLlmRouteMatrixFromJson,
     reseedFieldKeyOrderFromJson,
     reseedFieldStudioMapFromJson,
-    reseedOverridesFromJson,
     rebuildFieldCandidatesFromJson,
     rebuildPublishedFieldsFromJson,
   });

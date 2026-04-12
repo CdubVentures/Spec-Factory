@@ -375,62 +375,6 @@ Table constraints: `UNIQUE(category, product_id)`.
 | `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
 | `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
 
-### `curation_suggestions`
-
-Table constraints: `UNIQUE(category, suggestion_type, field_key, value)`.
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
-| `suggestion_id` | `TEXT` | `NOT NULL` | stable suggestion token |
-| `category` | `TEXT` | `NOT NULL` | category slug |
-| `suggestion_type` | `TEXT` | `NOT NULL` | suggestion family |
-| `field_key` | `TEXT` |  | related field |
-| `component_type` | `TEXT` |  | related component family |
-| `value` | `TEXT` | `NOT NULL` | suggested value |
-| `normalized_value` | `TEXT` |  | normalized token |
-| `status` | `TEXT` | `DEFAULT 'pending'` | triage state |
-| `source` | `TEXT` |  | provenance label |
-| `product_id` | `TEXT` |  | product identifier |
-| `run_id` | `TEXT` |  | source run id |
-| `first_seen_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
-| `last_seen_at` | `TEXT` |  | timestamp |
-| `reviewed_by` | `TEXT` |  | actor id |
-| `reviewed_at` | `TEXT` |  | timestamp |
-| `review_note` | `TEXT` |  | operator note |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
-
-### `component_review_queue`
-
-Table constraints: `UNIQUE(review_id)`.
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
-| `review_id` | `TEXT` | `NOT NULL` | stable queue item token |
-| `category` | `TEXT` | `NOT NULL` | category slug |
-| `component_type` | `TEXT` | `NOT NULL` | component family |
-| `field_key` | `TEXT` |  | related field |
-| `raw_query` | `TEXT` |  | unresolved search/query text |
-| `matched_component` | `TEXT` |  | matched name candidate |
-| `match_type` | `TEXT` |  | matching mode |
-| `name_score` | `REAL` |  | name-match score |
-| `property_score` | `REAL` |  | property-match score |
-| `combined_score` | `REAL` |  | combined score |
-| `alternatives` | `TEXT` |  | serialized alternatives list |
-| `product_id` | `TEXT` |  | product identifier |
-| `run_id` | `TEXT` |  | source run id |
-| `status` | `TEXT` | `DEFAULT 'pending_ai'` | queue state |
-| `ai_decision` | `TEXT` |  | AI outcome |
-| `ai_suggested_name` | `TEXT` |  | AI suggestion |
-| `ai_suggested_maker` | `TEXT` |  | AI suggestion |
-| `ai_reviewed_at` | `TEXT` |  | timestamp |
-| `product_attributes` | `TEXT` |  | serialized product context |
-| `reasoning_note` | `TEXT` |  | AI/operator explanation |
-| `human_reviewed_at` | `TEXT` |  | timestamp |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
 
 ### `product_runs`
 

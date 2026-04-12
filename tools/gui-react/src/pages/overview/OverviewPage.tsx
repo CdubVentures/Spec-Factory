@@ -8,7 +8,6 @@ import { StatusBadge } from '../../shared/ui/feedback/StatusBadge.tsx';
 import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct, usd, relativeTime } from '../../utils/formatting.ts';
-import { useProductStore } from '../../stores/productStore.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -99,7 +98,6 @@ const columns: ColumnDef<CatalogRow, unknown>[] = [
 
 export function OverviewPage() {
   const category = useUiStore((s) => s.category);
-  const setSelectedProduct = useProductStore((s) => s.setSelectedProduct);
 
   const { data: catalog = [], isLoading } = useQuery({
     queryKey: ['catalog', category],
@@ -148,7 +146,6 @@ export function OverviewPage() {
           searchable
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
-          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.base_model, row.variant)}
         />
       </div>
     </div>

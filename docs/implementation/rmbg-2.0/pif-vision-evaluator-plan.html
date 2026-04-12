@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIF Vision Evaluator — LLM Image Selection Plan</title>
+<style>
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --surface-alt: #f4f6f8;
+    --border: #e2e6ea;
+    --text: #1a1d21;
+    --text-muted: #6b7280;
+    --text-subtle: #9ca3af;
+    --accent: #3b82f6;
+    --accent-light: #eff6ff;
+    --success: #10b981;
+    --success-light: #ecfdf5;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --orange: #f59e0b;
+    --orange-light: #fffbeb;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+    --teal: #14b8a6;
+    --teal-light: #f0fdfa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid var(--border);
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin: 0 4px;
+  }
+  .badge-accent { background: var(--accent-light); color: var(--accent); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+  .badge-orange { background: var(--orange-light); color: var(--orange); }
+  .badge-teal { background: var(--teal-light); color: var(--teal); }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+
+  /* Sections */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 20px 0 10px;
+  }
+  .section p, .section li {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .section ul, .section ol {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+  .section li { margin-bottom: 4px; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .flow-step {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-step .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .flow-step .detail {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .flow-step.highlight {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .flow-step.highlight .label { color: var(--accent); }
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--text-subtle);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  .compare-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .compare-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .callout-success { border-left-color: var(--success); background: var(--success-light); }
+  .callout-orange { border-left-color: var(--orange); background: var(--orange-light); }
+  .callout-purple { border-left-color: var(--purple); background: var(--purple-light); }
+  .callout-danger { border-left-color: var(--danger); background: var(--danger-light); }
+  .callout-teal { border-left-color: var(--teal); background: var(--teal-light); }
+
+  /* Code inline */
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Code block */
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+    color: var(--text);
+  }
+
+  /* Token math */
+  .token-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .token-card {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .token-card .val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .token-card .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  /* Button mockup */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+  }
+  .btn-mock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .btn-mock.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-mock.purple { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-mock .icon { font-size: 14px; }
+
+  /* Two-col layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 12px 0;
+  }
+  .two-col .col {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .two-col .col h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .two-col .col p, .two-col .col li {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* Sequence diagram (text) */
+  .sequence {
+    background: #1e293b;
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #e2e8f0;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .sequence .comment { color: #64748b; }
+  .sequence .highlight { color: #60a5fa; font-weight: 600; }
+  .sequence .success { color: #34d399; }
+  .sequence .warn { color: #fbbf24; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-subtle);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>PIF Vision Evaluator</h1>
+    <p class="subtitle">LLM-powered image quality evaluation &mdash; pick the best candidate per view, flag watermarks, select heroes</p>
+    <span class="badge badge-accent">PIF</span>
+    <span class="badge badge-purple">Vision LLM</span>
+    <span class="badge badge-teal">LLM Lab Queue</span>
+    <span class="badge badge-orange">Plan</span>
+  </div>
+
+  <!-- Section 1: Problem -->
+  <div class="section">
+    <h2><span class="num">1</span> Problem</h2>
+    <p>
+      PIF downloads 2&ndash;3 image candidates per view per variant across multiple runs. Currently the user must
+      manually inspect every image to find the best one for each angle and decide which shots deserve "hero" status.
+      Many downloaded images also contain <strong>watermarks, retailer badges, or promotional overlays</strong> that
+      disqualify them &mdash; but these are only visible on manual inspection.
+    </p>
+    <div class="callout">
+      <strong>Goal:</strong> Use an LLM with vision capability to automatically evaluate candidates, flag problems
+      (watermarks, badges, crops), rank by quality, and pick the best image per view &mdash; plus select hero shots
+      for the product carousel.
+    </div>
+  </div>
+
+  <!-- Section 2: Architecture -->
+  <div class="section">
+    <h2><span class="num">2</span> Architecture</h2>
+    <p>
+      The Vision Evaluator is a new LLM phase (<code>imageEvaluator</code>) with its own prompt configuration.
+      It reads images from disk, creates lightweight thumbnails, and sends them through the existing
+      LLM Lab queue for bounded, serialized inference.
+    </p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="label">Read</div>
+        <div class="detail">Images from disk</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Resize</div>
+        <div class="detail">512&times;512 thumb</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Encode</div>
+        <div class="detail">Base64 PNG</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step highlight">
+        <div class="label">LLM Lab</div>
+        <div class="detail">Vision Call</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Parse</div>
+        <div class="detail">Ranking + flags</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">
+        <div class="label">Persist</div>
+        <div class="detail">JSON + SQL</div>
+      </div>
+    </div>
+
+    <h3>Key Constraints</h3>
+    <ul>
+      <li><strong>Own LLM phase:</strong> <code>imageEvaluator</code> &mdash; separate from <code>imageFinder</code> (discovery) and independent prompt config</li>
+      <li><strong>No HTTP serving needed:</strong> images read from disk &rarr; sharp resize &rarr; buffer &rarr; base64 &rarr; <code>data:image/png;base64,...</code> in <code>image_url</code> content part</li>
+      <li><strong>Queue integration:</strong> all calls go through LLM Lab's <code>BoundedConcurrencyGate</code> &mdash; fire them all, let the queue serialize</li>
+      <li><strong>No new dependencies:</strong> uses <code>sharp</code> (already installed) + existing LLM call infrastructure</li>
+    </ul>
+  </div>
+
+  <!-- Section 3: Token Budget -->
+  <div class="section">
+    <h2><span class="num">3</span> Token Budget</h2>
+    <p>Vision calls are surprisingly affordable at thumbnail resolution:</p>
+
+    <div class="token-grid">
+      <div class="token-card">
+        <div class="val">512&times;512</div>
+        <div class="lbl">Thumbnail size</div>
+      </div>
+      <div class="token-card">
+        <div class="val">~50&ndash;100 KB</div>
+        <div class="lbl">PNG per thumb</div>
+      </div>
+      <div class="token-card">
+        <div class="val">~20&ndash;35K</div>
+        <div class="lbl">Tokens per image</div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Call Type</th><th>Images Sent</th><th>Token Estimate</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>View eval</strong> (one view)</td>
+          <td>2&ndash;3 candidates</td>
+          <td>~60&ndash;100K</td>
+          <td>All candidates for one view of one variant</td>
+        </tr>
+        <tr>
+          <td><strong>Hero selection</strong></td>
+          <td>6&ndash;8 best-per-view</td>
+          <td>~150&ndash;250K</td>
+          <td>Best image from each view, pick hero shots</td>
+        </tr>
+        <tr>
+          <td><strong>Full variant eval</strong> (6 views)</td>
+          <td>~12&ndash;18 total</td>
+          <td>6 calls &times; ~80K</td>
+          <td>One call per view, queued sequentially</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout-success callout">
+      <strong>Why 512&times;512 is enough:</strong> The LLM is judging composition, watermarks, badges, and sharpness &mdash;
+      not pixel-level detail. 512&times;512 is plenty to spot a Getty watermark, a "SAMPLE" badge, a cropped product,
+      or a blurry photo. Original full-res files stay on disk untouched.
+    </div>
+  </div>
+
+  <!-- Section 4: Two Evaluation Modes -->
+  <div class="section">
+    <h2><span class="num">4</span> Two Evaluation Modes</h2>
+
+    <div class="two-col">
+      <div class="col">
+        <h4>View Evaluation</h4>
+        <p>Pick the best candidate for a single view of a single variant.</p>
+        <ul>
+          <li>Input: all candidates for one view (e.g., <code>top-black.png</code>, <code>top-black-2.png</code>, <code>top-black-3.png</code>)</li>
+          <li>LLM sees them side-by-side as numbered thumbnails</li>
+          <li>Judges: composition, watermarks/badges, sharpness, product visibility, background removal quality</li>
+          <li>Returns: ranked order + per-image flags</li>
+          <li>Winner gets <code>eval_rank: 1</code> on its image entry</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Hero Selection</h4>
+        <p>Pick the best overall promotional shots for the product carousel.</p>
+        <ul>
+          <li>Input: the <code>eval_rank: 1</code> winner from each evaluated view</li>
+          <li>LLM sees all best-per-view images together</li>
+          <li>Judges: which angles show the product most attractively for a product page</li>
+          <li>Returns: ordered list of hero candidates + reasoning</li>
+          <li>Top picks get <code>hero: true</code> flag on their image entry</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Evaluation Criteria (prompted)</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Criterion</th><th>What LLM Checks</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Watermarks</strong></td>
+          <td>Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays</td>
+          <td>Immediate disqualification &mdash; <code>eval_flag: 'watermark'</code></td>
+        </tr>
+        <tr>
+          <td><strong>Badges / overlays</strong></td>
+          <td>Sale stickers, "NEW" badges, retailer branding, promotional text</td>
+          <td>Disqualification &mdash; <code>eval_flag: 'badge'</code></td>
+        </tr>
+        <tr>
+          <td><strong>Cropping</strong></td>
+          <td>Product cut off at edges, missing parts, too tight framing</td>
+          <td>Penalty in ranking &mdash; <code>eval_flag: 'cropped'</code></td>
+        </tr>
+        <tr>
+          <td><strong>Wrong product</strong></td>
+          <td>Different model, wrong color, accessory instead of product</td>
+          <td>Disqualification &mdash; <code>eval_flag: 'wrong_product'</code></td>
+        </tr>
+        <tr>
+          <td><strong>Sharpness</strong></td>
+          <td>Blur, compression artifacts, noise, low resolution appearance</td>
+          <td>Penalty in ranking</td>
+        </tr>
+        <tr>
+          <td><strong>Composition</strong></td>
+          <td>View angle matches requested view, product centered, clean background</td>
+          <td>Affects ranking order</td>
+        </tr>
+        <tr>
+          <td><strong>BG removal quality</strong></td>
+          <td>Halo artifacts, missing parts, jagged edges (if <code>bg_removed: true</code>)</td>
+          <td>Affects ranking order</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 5: Call Structure -->
+  <div class="section">
+    <h2><span class="num">5</span> LLM Call Structure</h2>
+
+    <h3>View Evaluation Call</h3>
+    <pre>{
+  "model": "gpt-5.4-low",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a product photography evaluator..."
+    },
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "Evaluate these 3 candidates for the TOP view of [Product]..." },
+        { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } },
+        { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } },
+        { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } }
+      ]
+    }
+  ],
+  "request_options": { "json_mode": true, "reasoning_effort": "low" }
+}</pre>
+
+    <h3>Response Schema</h3>
+    <pre>{
+  "rankings": [
+    {
+      "image_number": 1,
+      "rank": 1,
+      "flags": [],
+      "reasoning": "Clean product shot, no watermarks, good composition"
+    },
+    {
+      "image_number": 3,
+      "rank": 2,
+      "flags": ["cropped"],
+      "reasoning": "Product slightly cropped at bottom edge"
+    },
+    {
+      "image_number": 2,
+      "rank": null,
+      "flags": ["watermark"],
+      "reasoning": "Getty Images watermark visible across center"
+    }
+  ],
+  "best": 1,
+  "notes": "Image 1 is clearly the best — sharp, well-composed, no issues"
+}</pre>
+
+    <div class="callout-purple callout">
+      <strong>Image numbering:</strong> Images are labeled <code>Image 1</code>, <code>Image 2</code>, <code>Image 3</code> in the prompt text,
+      matching the order of <code>image_url</code> content parts. The LLM references these numbers in its response.
+      Backend maps numbers back to filenames via the same ordered list.
+    </div>
+
+    <h3>Hero Selection Call</h3>
+    <pre>{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "These are the best images for each view. Pick 1-3 hero shots..." },
+    { "type": "text", "text": "Image 1 — TOP view:" },
+    { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } },
+    { "type": "text", "text": "Image 2 — LEFT view:" },
+    { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } },
+    { "type": "text", "text": "Image 3 — ANGLE view:" },
+    { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } }
+  ]
+}</pre>
+  </div>
+
+  <!-- Section 6: Queue Strategy -->
+  <div class="section">
+    <h2><span class="num">6</span> Queue Strategy</h2>
+    <p>
+      All evaluation calls go through LLM Lab's <code>BoundedConcurrencyGate</code>.
+      Fire them all at once &mdash; the queue serializes them in priority order.
+    </p>
+
+    <div class="sequence">
+      <span class="comment">// User clicks "Loop Views" for variant "black" (6 budgeted views)</span><br>
+      <br>
+      <span class="highlight">queue.enqueue</span>( evaluate("top",    "black", [img1, img2, img3]) )  <span class="comment">// priority 1</span><br>
+      <span class="highlight">queue.enqueue</span>( evaluate("left",   "black", [img1, img2])      )  <span class="comment">// priority 2</span><br>
+      <span class="highlight">queue.enqueue</span>( evaluate("angle",  "black", [img1])             )  <span class="comment">// priority 3</span><br>
+      <span class="highlight">queue.enqueue</span>( evaluate("sangle", "black", [img1, img2])      )  <span class="comment">// priority 4</span><br>
+      <span class="highlight">queue.enqueue</span>( evaluate("front",  "black", [img1])             )  <span class="comment">// priority 5</span><br>
+      <span class="highlight">queue.enqueue</span>( evaluate("bottom", "black", [img1])             )  <span class="comment">// priority 6</span><br>
+      <br>
+      <span class="comment">// LLM Lab processes them one at a time (or N at a time per MAX_CONCURRENT)</span><br>
+      <span class="comment">// Each completes independently &mdash; results persisted immediately</span><br>
+      <br>
+      <span class="success">result</span> &larr; { best: "top-black.png", flags: [], rank: 1 }  <span class="comment">// persisted to JSON + SQL</span><br>
+      <span class="success">result</span> &larr; { best: "left-black-2.png", flags: [], rank: 1 }<br>
+      <span class="warn">result</span> &larr; { best: null, flags: ["watermark"] }  <span class="comment">// only candidate had watermark</span><br>
+      <span class="comment">// ...</span>
+    </div>
+
+    <h3>Priority Order</h3>
+    <p>Views are queued in the category's priority order (from view budget). This means the most important angles get evaluated first:</p>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Category</th><th>Queue Order</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Mouse</strong></td><td>top &rarr; left &rarr; angle &rarr; sangle &rarr; front &rarr; bottom</td></tr>
+        <tr><td><strong>Keyboard</strong></td><td>top &rarr; left &rarr; angle &rarr; sangle</td></tr>
+        <tr><td><strong>Monitor</strong></td><td>front &rarr; angle &rarr; rear &rarr; left</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Skip Logic</h3>
+    <ul>
+      <li>Views with only 1 candidate: auto-elect (no LLM call needed). Still check for watermarks if eval explicitly requested.</li>
+      <li>Views with 0 candidates: skip entirely</li>
+      <li>Views already evaluated (same images, same eval run): skip (idempotent)</li>
+    </ul>
+  </div>
+
+  <!-- Section 7: Thumbnail Pipeline -->
+  <div class="section">
+    <h2><span class="num">7</span> Thumbnail Pipeline</h2>
+    <p>No HTTP serving needed. Images are read from disk, resized, and encoded in-process:</p>
+
+    <pre>
+// Per image: disk &rarr; sharp &rarr; base64 &rarr; content part
+async function imageToContentPart(imagePath) {
+  const thumb = await sharp(imagePath)
+    .resize(512, 512, { fit: 'inside', withoutEnlargement: false })
+    .png()
+    .toBuffer();
+
+  const b64 = thumb.toString('base64');
+  return {
+    type: 'image_url',
+    image_url: { url: `data:image/png;base64,${b64}` }
+  };
+}</pre>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Property</th><th>Value</th><th>Rationale</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Target size</td>
+          <td><code>512&times;512</code></td>
+          <td>Plenty for judging composition + detecting watermarks. Small token cost.</td>
+        </tr>
+        <tr>
+          <td>Fit mode</td>
+          <td><code>inside</code></td>
+          <td>Preserve aspect ratio, fit within 512&times;512 box. No distortion.</td>
+        </tr>
+        <tr>
+          <td>Format</td>
+          <td>PNG</td>
+          <td>Lossless &mdash; no compression artifacts that might confuse watermark detection.</td>
+        </tr>
+        <tr>
+          <td>Source</td>
+          <td>Master PNG (processed)</td>
+          <td>Send the bg-removed version so LLM can judge BG removal quality too.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 8: Data Model -->
+  <div class="section">
+    <h2><span class="num">8</span> Data Model Changes</h2>
+
+    <h3>New Fields on Image Entry</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>eval_rank</code></td><td>number | null</td><td>Rank within its view group (1 = best). <code>null</code> = not yet evaluated.</td></tr>
+        <tr><td><code>eval_flags</code></td><td>string[]</td><td>Issue flags: <code>'watermark'</code>, <code>'badge'</code>, <code>'cropped'</code>, <code>'wrong_product'</code></td></tr>
+        <tr><td><code>eval_reasoning</code></td><td>string</td><td>Short LLM explanation for the ranking / flag</td></tr>
+        <tr><td><code>eval_run</code></td><td>number | null</td><td>Which evaluation run produced this assessment</td></tr>
+        <tr><td><code>hero</code></td><td>boolean</td><td>Whether this image was selected as a hero shot</td></tr>
+        <tr><td><code>hero_rank</code></td><td>number | null</td><td>Order among hero shots (1 = primary hero)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>New JSON Section</h3>
+    <pre>// product_images.json
+{
+  "selected": { "images": [...] },
+  "runs": [...],
+  "evaluations": [
+    {
+      "eval_number": 1,
+      "evaluated_at": "2026-04-12T14:00:00.000Z",
+      "model": "gpt-5.4-low",
+      "variant_key": "color:black",
+      "mode": "view",             // "view" or "hero"
+      "view": "top",              // null for hero mode
+      "candidates": ["top-black.png", "top-black-2.png", "top-black-3.png"],
+      "result": {
+        "best": "top-black.png",
+        "rankings": [
+          { "filename": "top-black.png", "rank": 1, "flags": [], "reasoning": "..." },
+          { "filename": "top-black-2.png", "rank": 2, "flags": ["cropped"], "reasoning": "..." },
+          { "filename": "top-black-3.png", "rank": null, "flags": ["watermark"], "reasoning": "..." }
+        ]
+      },
+      "prompt": { "system": "...", "user": "..." },
+      "response_raw": "..."
+    }
+  ]
+}</pre>
+
+    <div class="callout-teal callout">
+      <strong>Rebuild contract:</strong> Evaluation data lives inside <code>product_images.json</code> (the existing
+      PIF SSOT file). SQL projections of <code>eval_rank</code>, <code>eval_flags</code>, and <code>hero</code> are
+      derived during the standard rebuild. No new tables needed &mdash; fields added to existing
+      <code>product_image_finder</code> summary row.
+    </div>
+  </div>
+
+  <!-- Section 9: GUI -->
+  <div class="section">
+    <h2><span class="num">9</span> GUI &mdash; 4-Button UI</h2>
+
+    <h3>Top-Level Buttons (All Variants)</h3>
+    <div class="btn-row">
+      <span class="btn-mock primary"><span class="icon">&#x1F50D;</span> Eval Views</span>
+      <span class="btn-mock purple"><span class="icon">&#x2B50;</span> Pick Heroes</span>
+      <span class="btn-mock"><span class="icon">&#x1F501;</span> Loop Views</span>
+      <span class="btn-mock"><span class="icon">&#x1F501;</span> Loop Heroes</span>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Button</th><th>Action</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Eval Views</strong></td>
+          <td>Evaluate all views for the selected variant. Queues one call per view in priority order.</td>
+          <td>Single variant, all budgeted views</td>
+        </tr>
+        <tr>
+          <td><strong>Pick Heroes</strong></td>
+          <td>After views are evaluated, send best-per-view to LLM for hero selection.</td>
+          <td>Single variant, cross-view</td>
+        </tr>
+        <tr>
+          <td><strong>Loop Views</strong></td>
+          <td>Loop through <strong>all variants</strong>, evaluating all views for each. All calls queued at once.</td>
+          <td>All variants, all budgeted views</td>
+        </tr>
+        <tr>
+          <td><strong>Loop Heroes</strong></td>
+          <td>Loop through <strong>all variants</strong>, picking heroes for each. Requires views to be evaluated first.</td>
+          <td>All variants, cross-view</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Per-Variant Row Buttons</h3>
+    <div class="btn-row">
+      <span class="btn-mock primary"><span class="icon">&#x1F50D;</span> View</span>
+      <span class="btn-mock purple"><span class="icon">&#x2B50;</span> Hero</span>
+      <span class="btn-mock"><span class="icon">&#x1F501;</span> All Views</span>
+      <span class="btn-mock"><span class="icon">&#x1F501;</span> All Heroes</span>
+    </div>
+    <p style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">
+      Same 4 actions, scoped to one variant. "View" evaluates the next unevaluated view in priority order.
+      "Hero" runs hero selection for just that variant.
+    </p>
+
+    <h3>Gallery Card Enhancements</h3>
+    <ul>
+      <li><strong>Rank badge:</strong> <code>#1</code>, <code>#2</code>, <code>#3</code> in the corner (replacing or alongside the run number badge)</li>
+      <li><strong>Flag chips:</strong> <span class="badge badge-danger">watermark</span> <span class="badge badge-orange">badge</span> <span class="badge badge-accent">cropped</span> on flagged images</li>
+      <li><strong>Hero star:</strong> Gold star overlay on hero-selected images</li>
+      <li><strong>Dimming:</strong> Flagged images (watermark, wrong_product) shown at 40% opacity with strikethrough indicator</li>
+      <li><strong>Reasoning tooltip:</strong> Hover over rank badge to see LLM's reasoning text</li>
+    </ul>
+  </div>
+
+  <!-- Section 10: LLM Phase Config -->
+  <div class="section">
+    <h2><span class="num">10</span> LLM Phase Configuration</h2>
+    <p>
+      The Vision Evaluator registers as a new LLM phase with its own prompt configuration,
+      model selection, and settings &mdash; fully independent from the image discovery phase.
+    </p>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Property</th><th>Value</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Phase ID</td><td><code>imageEvaluator</code></td><td>Separate from <code>imageFinder</code></td></tr>
+        <tr><td>Default model</td><td><code>gpt-5.4-low</code></td><td>Vision-capable, low reasoning effort (cost-efficient)</td></tr>
+        <tr><td>Fallback model</td><td><code>gemini-2.5-flash</code></td><td>Vision-capable, fast, cheap</td></tr>
+        <tr><td>JSON mode</td><td><code>true</code></td><td>Structured ranking output</td></tr>
+        <tr><td>Web search</td><td><code>false</code></td><td>Not needed &mdash; images provided inline</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Prompt Structure</h3>
+    <div class="two-col">
+      <div class="col">
+        <h4>View Evaluation Prompt</h4>
+        <ul>
+          <li>Product identity (brand, model, variant)</li>
+          <li>Requested view definition (what angle this should be)</li>
+          <li>Numbered image references</li>
+          <li>Evaluation criteria checklist</li>
+          <li>JSON response schema</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Hero Selection Prompt</h4>
+        <ul>
+          <li>Product identity (brand, model)</li>
+          <li>View labels for each best-per-view image</li>
+          <li>Context: "product page carousel"</li>
+          <li>Pick 1&ndash;3 hero shots</li>
+          <li>JSON response schema</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Settings (per-category, DB-backed)</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>evalEnabled</code></td><td><code>true</code></td><td>Enable/disable the evaluator</td></tr>
+        <tr><td><code>evalPromptOverride</code></td><td><code>''</code></td><td>Custom view evaluation system prompt (empty = use default)</td></tr>
+        <tr><td><code>heroPromptOverride</code></td><td><code>''</code></td><td>Custom hero selection system prompt (empty = use default)</td></tr>
+        <tr><td><code>thumbSize</code></td><td><code>512</code></td><td>Thumbnail dimension for LLM calls</td></tr>
+        <tr><td><code>autoEvalOnRun</code></td><td><code>false</code></td><td>Auto-trigger view eval after each PIF run completes</td></tr>
+        <tr><td><code>heroCount</code></td><td><code>3</code></td><td>Target number of hero selections per variant</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout-orange callout">
+      <strong>Prompt configurability:</strong> Both the view evaluation and hero selection prompts are
+      configurable via the settings UI (<code>evalPromptOverride</code> / <code>heroPromptOverride</code>).
+      This lets the user tune evaluation criteria per category without code changes.
+    </div>
+  </div>
+
+  <!-- Section 11: Integration Points -->
+  <div class="section">
+    <h2><span class="num">11</span> Integration Points</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Layer</th><th>File</th><th>Change</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Evaluator module</td>
+          <td><code>src/features/product-image/imageEvaluator.js</code></td>
+          <td>New file. Thumbnail creation, prompt building, LLM call, result parsing.</td>
+        </tr>
+        <tr>
+          <td>Evaluator schema</td>
+          <td><code>src/features/product-image/imageEvaluatorSchema.js</code></td>
+          <td>New file. Zod schema for evaluation response validation.</td>
+        </tr>
+        <tr>
+          <td>Routes</td>
+          <td><code>productImageFinderRoutes.js</code></td>
+          <td>Add <code>POST .../evaluate</code> and <code>POST .../evaluate/hero</code> endpoints.</td>
+        </tr>
+        <tr>
+          <td>Store</td>
+          <td><code>productImageStore.js</code></td>
+          <td>Add <code>mergeEvaluation()</code> to persist eval results into image entries + evaluations array.</td>
+        </tr>
+        <tr>
+          <td>LLM adapter</td>
+          <td><code>productImageLlmAdapter.js</code></td>
+          <td>Add <code>buildViewEvalPrompt()</code> and <code>buildHeroSelectionPrompt()</code>.</td>
+        </tr>
+        <tr>
+          <td>Phase registry</td>
+          <td><code>finderModuleRegistry.js</code></td>
+          <td>Register <code>imageEvaluator</code> phase with settings defaults.</td>
+        </tr>
+        <tr>
+          <td>GUI panel</td>
+          <td><code>ProductImageFinderPanel.tsx</code></td>
+          <td>Add 4-button eval UI, rank badges, flag chips, hero stars on gallery cards.</td>
+        </tr>
+        <tr>
+          <td>GUI queries</td>
+          <td><code>productImageFinderQueries.ts</code></td>
+          <td>Add <code>useEvaluateViewMutation</code> and <code>useEvaluateHeroMutation</code>.</td>
+        </tr>
+        <tr>
+          <td>Types</td>
+          <td><code>types.ts</code></td>
+          <td>Add <code>eval_rank</code>, <code>eval_flags</code>, <code>eval_reasoning</code>, <code>hero</code>, <code>hero_rank</code> to <code>ProductImageEntry</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 12: Example Sequence -->
+  <div class="section">
+    <h2><span class="num">12</span> End-to-End Example</h2>
+
+    <div class="sequence">
+      <span class="comment">// Scenario: Mouse product "Razer Viper V3 Pro", variant "black"</span><br>
+      <span class="comment">// PIF has already downloaded images across 3 runs:</span><br>
+      <span class="comment">//   top-black.png (run 1), top-black-2.png (run 2), top-black-3.png (run 3)</span><br>
+      <span class="comment">//   left-black.png (run 1), left-black-2.png (run 3)</span><br>
+      <span class="comment">//   angle-black.png (run 2)</span><br>
+      <br>
+      <span class="highlight">1. User clicks "Eval Views" for variant black</span><br>
+      <br>
+      <span class="comment">// Queue 3 calls (views with candidates), in category priority order:</span><br>
+      &rarr; Call 1: evaluate <span class="success">top</span> (3 candidates)  <span class="comment">// ~90K tokens</span><br>
+      &rarr; Call 2: evaluate <span class="success">left</span> (2 candidates) <span class="comment">// ~65K tokens</span><br>
+      &rarr; Call 3: evaluate <span class="success">angle</span> (1 candidate) <span class="comment">// auto-elect, check for watermarks</span><br>
+      <br>
+      <span class="comment">// Results come back as queue drains:</span><br>
+      &larr; top: <span class="success">best = top-black.png</span>, top-black-2.png flagged <span class="warn">[watermark]</span><br>
+      &larr; left: <span class="success">best = left-black-2.png</span>, left-black.png <span class="warn">[cropped]</span><br>
+      &larr; angle: <span class="success">best = angle-black.png</span> (only candidate, no flags)<br>
+      <br>
+      <span class="highlight">2. User clicks "Pick Heroes" for variant black</span><br>
+      <br>
+      <span class="comment">// Send the 3 winners to hero selection:</span><br>
+      &rarr; Hero call: top-black.png + left-black-2.png + angle-black.png<br>
+      <br>
+      &larr; Heroes: <span class="success">#1 angle-black.png</span>, <span class="success">#2 top-black.png</span><br>
+      <br>
+      <span class="comment">// Gallery now shows: rank badges, watermark flag, hero stars</span><br>
+      <span class="comment">// Watermarked image dimmed at 40% opacity</span>
+    </div>
+  </div>
+
+  <!-- Section 13: Out of Scope -->
+  <div class="section">
+    <h2><span class="num">13</span> Out of Scope (Future)</h2>
+    <ul>
+      <li><strong>Automatic re-download:</strong> If best candidate has watermark, auto-trigger a new PIF run for that view. (Requires progressive carousel integration.)</li>
+      <li><strong>Cross-variant comparison:</strong> Comparing the same view across different color variants (e.g., is black's top shot better than blue's?).</li>
+      <li><strong>Inpainting/removal:</strong> Using LaMa or similar to remove detected watermarks rather than just flagging them.</li>
+      <li><strong>Automation page integration:</strong> "Run full pipeline" button that chains: PIF search &rarr; RMBG &rarr; eval &rarr; hero &rarr; export.</li>
+      <li><strong>A/B comparison mode:</strong> Side-by-side lightbox for comparing two candidates with the LLM's reasoning overlay.</li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    PIF Vision Evaluator Plan &mdash; LLM Image Selection &mdash; April 2026<br>
+    Spec Factory &mdash; Product Image Finder
+  </div>
+
+</div>
+</body>
+</html>
